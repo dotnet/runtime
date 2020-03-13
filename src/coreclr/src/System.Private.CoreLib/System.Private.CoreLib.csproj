@@ -151,14 +151,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Delegate.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventDispatcher.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventProvider.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeMetadataGenerator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipePayloadDecoder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\RuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventHandleTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrameHelper.cs" />
@@ -300,9 +293,6 @@
   <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.CoreCLR.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
-  </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
   </ItemGroup>
@@ -389,7 +379,6 @@
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Unix.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\RuntimeEventSourceHelper.Unix.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
@@ -400,7 +389,6 @@
     <Compile Include="$(BclSourcesRoot)\System\ApplicationModel.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\RuntimeEventSourceHelper.Windows.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureAppX)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.Uap.cs" />
@@ -439,8 +427,8 @@
   <ItemGroup>
     <EventingGenerationScript Include="$(CoreClrProjectRoot)/src/scripts/genRuntimeEventSources.py" />
     <EventManifestFile Include="$(CoreClrProjectRoot)/src/vm/ClrEtwAll.man" />
-    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
-      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.cs</Link>
+    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.CoreCLR.cs</Link>
     </EventingSourceFile>
     <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
@@ -451,7 +439,7 @@
           DependsOnTargets="FindPython"
           BeforeTargets="BeforeCompile">
 
-    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
+    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.CoreCLR.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
     <PropertyGroup>
       <_PythonWarningParameter>-Wall</_PythonWarningParameter>
       <_PythonWarningParameter Condition="'$(MSBuildTreatWarningsAsErrors)' == 'true'">$(_PythonWarningParameter) -Werror</_PythonWarningParameter>

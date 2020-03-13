@@ -117,7 +117,7 @@ namespace ReadyToRun.SuperIlc
         public static BuildFolder FromDirectory(string inputDirectory, IEnumerable<CompilerRunner> compilerRunners, string outputRoot, BuildOptions options)
         {
             List<string> compilationInputFiles = new List<string>();
-            List<string> passThroughFiles = new List<string>();
+            HashSet<string> passThroughFiles = new HashSet<string>();
             List<string> mainExecutables = new List<string>();
             List<string> executionScripts = new List<string>();
 
@@ -171,6 +171,14 @@ namespace ReadyToRun.SuperIlc
                     foreach (string lib in s_runtimeWindowsOnlyLibraries)
                     {
                         passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, lib.AppendOSDllSuffix()));
+                    }
+                }
+                else
+                {
+                    // Several native lib*.so / dylib are needed by the runtime
+                    foreach (string nativeLib in Directory.EnumerateFiles(options.CoreRootDirectory.FullName, "lib*".AppendOSDllSuffix()))
+                    {
+                        passThroughFiles.Add(nativeLib);
                     }
                 }
             }

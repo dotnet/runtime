@@ -19,9 +19,19 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData("")]
         [InlineData(0)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Ctor_NonNull_ThrowsPlatformNotSupportedException(object value)
         {
             Assert.Throws<PlatformNotSupportedException>(() => new DispatchWrapper(value));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(0)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Ctor_NonDispatchObject_ThrowsInvalidCastException(object value)
+        {
+            Assert.Throws<InvalidCastException>(() => new DispatchWrapper(value));
         }
     }
 #pragma warning restore 0618

@@ -172,6 +172,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"\s+\d+", "sdf 12sad", RegexOptions.RightToLeft, 0, 9, true, " 12" };
             yield return new object[] { @"\s+\d+", " asdf12 ", RegexOptions.RightToLeft, 0, 6, false, string.Empty };
             yield return new object[] { "aaa", "aaabbb", RegexOptions.None, 3, 3, false, string.Empty };
+            yield return new object[] { "abc|def", "123def456", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, true, "def" };
 
             yield return new object[] { @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 3, false, string.Empty };
             yield return new object[] { @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 11, 21, false, string.Empty };
@@ -383,6 +384,7 @@ namespace System.Text.RegularExpressions.Tests
                 VerifyMatch(r.Match(input), expectedSuccess, expectedValue);
                 VerifyMatch(Regex.Match(input, pattern, options), expectedSuccess, expectedValue);
 
+                Assert.Equal(expectedSuccess, r.IsMatch(input));
                 Assert.Equal(expectedSuccess, Regex.IsMatch(input, pattern, options));
             }
 
@@ -462,17 +464,34 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("a", match.Value);
         }
 
-        [Fact]
-        public void Match_Timeout_Throws()
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.None | (RegexOptions)0x80 /* Debug */)]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.Compiled | (RegexOptions)0x80 /* Debug */)]
+        public void Match_Timeout_Throws(RegexOptions options)
         {
-            RemoteExecutor.Invoke(() =>
+            const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
+            string input = new string('a', 50) + "@a.a";
+
+            Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, options, TimeSpan.FromMilliseconds(100)).Match(input));
+        }
+
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.None | (RegexOptions)0x80 /* Debug */)]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.Compiled | (RegexOptions)0x80 /* Debug */)]
+        public void Match_DefaultTimeout_Throws(RegexOptions options)
+        {
+            RemoteExecutor.Invoke(optionsString =>
             {
                 const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
                 string input = new string('a', 50) + "@a.a";
 
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
-                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Match(input));
-            }).Dispose();
+                Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern, (RegexOptions)int.Parse(optionsString, CultureInfo.InvariantCulture)).Match(input));
+            }, ((int)options).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
@@ -492,8 +511,8 @@ namespace System.Text.RegularExpressions.Tests
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
         [OuterLoop("Can take several seconds")]
         [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
-        [InlineData(RegexOptions.Compiled)]
         [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
         public void Match_Timeout_Repetition_Throws(RegexOptions options)
         {
             int repetitionCount = 800_000_000;

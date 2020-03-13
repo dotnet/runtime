@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             writer.WriteInt64(input);
             byte[] encoding = writer.ToArray();
 
-            var reader = new CborValueReader(encoding);
+            var reader = new CborReader(encoding);
             long result = reader.ReadInt64();
             Assert.Equal(input, result);
         }
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             writer.WriteUInt64(input);
             byte[] encoding = writer.ToArray();
 
-            var reader = new CborValueReader(encoding);
+            var reader = new CborReader(encoding);
             ulong result = reader.ReadUInt64();
             Assert.Equal(input, result);
         }
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             writer.WriteByteString(input);
             byte[] encoding = writer.ToArray();
 
-            var reader = new CborValueReader(encoding);
+            var reader = new CborReader(encoding);
             byte[] result = reader.ReadByteString();
             AssertHelper.HexEqual(input ?? Array.Empty<byte>(), result);
         }
@@ -141,7 +141,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             writer.WriteTextString(input);
             byte[] encoding = writer.ToArray();
 
-            var reader = new CborValueReader(encoding);
+            var reader = new CborReader(encoding);
             string result = reader.ReadTextString();
             Assert.Equal(input ?? "", result);
         }

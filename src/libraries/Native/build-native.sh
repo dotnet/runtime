@@ -46,7 +46,17 @@ __VerboseBuild=false
 source "$__RepoRootDir"/eng/native/build-commons.sh
 
 # Set cross build
-if [[ "$__BuildArch" != wasm ]]; then
+
+if [[ "$__BuildArch" == wasm ]]; then
+    if [[ -z "$EMSDK_PATH" ]]; then
+        echo "Error: Should set EMSDK_PATH environment variable pointing to emsdk root."
+        exit 1
+    fi
+    source "$EMSDK_PATH"/emsdk_env.sh
+elif [[ "$__TargetOS" == iOS ]]; then
+    # nothing to do here
+    true
+else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
@@ -54,17 +64,29 @@ if [[ "$__BuildArch" != wasm ]]; then
         __CrossBuild=1
         echo "Set CrossBuild for $__BuildArch build"
     fi
-else
-    if [[ -z "$EMSDK_PATH" ]]; then
-        echo "Error: Should set EMSDK_PATH environment variable pointing to emsdk root."
-        exit 1
-    fi
-    source "$EMSDK_PATH"/emsdk_env.sh
 fi
 
-# set default OSX deployment target
 if [[ "$__TargetOS" == OSX ]]; then
+    # set default OSX deployment target
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
+elif [[ "$__TargetOS" == iOS ]]; then
+    __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS $__CMakeArgs"
+    if [[ "$__BuildArch" == x64 ]]; then
+        # set default iOS simulator deployment target (8.0 is the minimum supported by Xcode 11)
+        # keep in sync with src/mono/Directory.Build.props
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+    elif [[ "$__BuildArch" == arm64 ]]; then
+        # set default iOS device deployment target (7.0 is the minimum supported by Xcode 11)
+        # keep in sync with src/mono/Directory.Build.props
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=7.0 -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+    elif [[ "$__BuildArch" == arm ]]; then
+        # set default iOS device deployment target (7.0 is the minimum supported by Xcode 11)
+        # keep in sync with src/mono/Directory.Build.props
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=7.0 -DCMAKE_OSX_ARCHITECTURES=\"armv7;armv7s\" $__CMakeArgs"
+    else
+        echo "Error: Unknown iOS architecture $__BuildArch."
+        exit 1
+    fi
 fi
 
 # Set the remaining variables based upon the determined build configuration
