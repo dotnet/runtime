@@ -735,9 +735,15 @@ namespace System.Net.Http.Functional.Tests
                    server.AcceptConnectionSendCustomResponseAndCloseAsync("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhe"));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion.Version11)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             const string content = "hello world";
 
             // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields

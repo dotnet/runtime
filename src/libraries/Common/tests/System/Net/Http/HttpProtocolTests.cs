@@ -20,9 +20,15 @@ namespace System.Net.Http.Functional.Tests
 
         public HttpProtocolTests(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
+        [ConditionalFact]
         public async Task GetAsync_RequestVersion10_Success()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion.Version11)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
