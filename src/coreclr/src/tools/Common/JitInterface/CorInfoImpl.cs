@@ -2887,7 +2887,7 @@ namespace Internal.JitInterface
                 if (targetArchitecture == TargetArchitecture.X86
                     && _compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
                 {
-                    throw new NotSupportedException("ReadyToRun: Methods with NativeCallableAttribute not supported");
+                    throw new NotImplementedException("ReadyToRun: Methods with NativeCallableAttribute not implemented");
                 }
 #endif
 

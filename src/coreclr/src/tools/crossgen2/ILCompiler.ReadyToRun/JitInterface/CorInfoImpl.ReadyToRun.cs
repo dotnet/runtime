@@ -1665,7 +1665,7 @@ namespace Internal.JitInterface
                 && targetDetails.OperatingSystem == TargetOS.Windows
                 && targetMethod.IsNativeCallable)
             {
-                throw new NotSupportedException("ReadyToRun: References to methods with NativeCallableAttribute not supported");
+                throw new NotImplementedException("ReadyToRun: References to methods with NativeCallableAttribute not implemented");
             }
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
