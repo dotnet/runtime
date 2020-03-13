@@ -1264,7 +1264,15 @@ static const char * const  bRegNames[] =
 // clang-format on
 
 //------------------------------------------------------------------------
-// emitRegName: Returns a string that a general-purpose register name or SIMD and floating-point scalar register name
+// emitRegName: Returns a general-purpose register name or SIMD and floating-point scalar register name.
+//
+// Arguments:
+//    reg - A general-purpose register or SIMD and floating-point register.
+//    size - A register size.
+//    varName - unused parameter.
+//
+// Return value:
+//    A string that represents a general-purpose register name or SIMD and floating-point scalar register name.
 //
 const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
 {
@@ -1302,7 +1310,13 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
 }
 
 //------------------------------------------------------------------------
-// emitVectorRegName: Returns a string that represents a SIMD vector register name
+// emitVectorRegName: Returns a SIMD vector register name.
+//
+// Arguments:
+//    reg - A SIMD and floating-point register.
+//
+// Return value:
+//    A string  that represents a SIMD vector register name.
 //
 const char* emitter::emitVectorRegName(regNumber reg)
 {
@@ -3230,18 +3244,24 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 }
 
 //------------------------------------------------------------------------
-// insGetLoadStoreVectorSelem: Returns a number of structure elements for a Load/Store Vector instruction
+// insGetLoadStoreRegisterListSize: Returns a size of the register list a given instruction operates on.
 //
-/*static*/ unsigned emitter::insGetLoadStoreVectorSelem(instruction ins)
+// Arguments:
+//   ins - A Load/Store Vector instruction (e.g. ld1 (2 registers), ld1r, st1).
+//
+// Return value:
+//   A number of consecutive SIMD and floating-point registers the instruction loads to/store from.
+//
+/*static*/ unsigned emitter::insGetLoadStoreRegisterListSize(instruction ins)
 {
-    unsigned selem = 0;
+    unsigned registerListSize = 0;
 
     switch (ins)
     {
         case INS_ld1:
         case INS_ld1r:
         case INS_st1:
-            selem = 1;
+            registerListSize = 1;
             break;
 
         case INS_ld1_2regs:
@@ -3249,7 +3269,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case INS_ld2r:
         case INS_st1_2regs:
         case INS_st2:
-            selem = 2;
+            registerListSize = 2;
             break;
 
         case INS_ld1_3regs:
@@ -3257,7 +3277,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case INS_ld3r:
         case INS_st1_3regs:
         case INS_st3:
-            selem = 3;
+            registerListSize = 3;
             break;
 
         case INS_ld1_4regs:
@@ -3265,7 +3285,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case INS_ld4r:
         case INS_st1_4regs:
         case INS_st4:
-            selem = 4;
+            registerListSize = 4;
             break;
 
         default:
@@ -3273,7 +3293,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             break;
     }
 
-    return selem;
+    return registerListSize;
 }
 
 //  For the given 'arrangement' returns the 'datasize' specified by the vector register arrangement
@@ -4707,7 +4727,7 @@ void emitter::emitIns_R_R_I(
     {
         bool       canEncode;
         bitMaskImm bmi;
-        unsigned   selem;
+        unsigned   registerListSize;
 
         case INS_mov:
             // Check for the 'mov' aliases for the vector registers
@@ -5128,10 +5148,10 @@ void emitter::emitIns_R_R_I(
 
             if (insOptsAnyArrangement(opt))
             {
-                selem = insGetLoadStoreVectorSelem(ins);
+                registerListSize = insGetLoadStoreRegisterListSize(ins);
                 assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
-                assert((size * selem) == imm);
+                assert((size * registerListSize) == imm);
 
                 // Load/Store multiple structures  post-indexed by an immediate
                 fmt = IF_LS_2E;
@@ -5161,9 +5181,9 @@ void emitter::emitIns_R_R_I(
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
 
-            elemsize = optGetElemsize(opt);
-            selem    = insGetLoadStoreVectorSelem(ins);
-            assert((elemsize * selem) == imm);
+            elemsize         = optGetElemsize(opt);
+            registerListSize = insGetLoadStoreRegisterListSize(ins);
+            assert((elemsize * registerListSize) == imm);
 
             // Load single structure and replicate  post-indexed by an immediate
             reg2 = encodingSPtoZR(reg2);
@@ -6298,7 +6318,7 @@ void emitter::emitIns_R_R_I_I(
         int        lsb;
         int        width;
         bitMaskImm bmi;
-        unsigned   selem;
+        unsigned   registerListSize;
 
         case INS_bfm:
         case INS_sbfm:
@@ -6380,8 +6400,8 @@ void emitter::emitIns_R_R_I_I(
             assert(isValidVectorElemsize(elemsize));
             assert(isValidVectorIndex(EA_16BYTE, elemsize, imm1));
 
-            selem = insGetLoadStoreVectorSelem(ins);
-            assert((elemsize * selem) == (unsigned)imm2);
+            registerListSize = insGetLoadStoreRegisterListSize(ins);
+            assert((elemsize * registerListSize) == (unsigned)imm2);
             assert(insOptsPostIndex(opt));
 
             // Load/Store single structure  post-indexed by an immediate
@@ -11431,7 +11451,7 @@ void emitter::emitDispIns(
         emitAttr     dstsize;
         ssize_t      index;
         ssize_t      index2;
-        unsigned     selem;
+        unsigned     registerListSize;
 
         case IF_BI_0A: // BI_0A   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00
         case IF_BI_0B: // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
@@ -11608,8 +11628,8 @@ void emitter::emitDispIns(
 
         case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
         case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn
-            selem = insGetLoadStoreVectorSelem(id->idIns());
-            emitDispVectorRegList(id->idReg1(), selem, id->idInsOpt(), true);
+            registerListSize = insGetLoadStoreRegisterListSize(id->idIns());
+            emitDispVectorRegList(id->idReg1(), registerListSize, id->idInsOpt(), true);
 
             if (fmt == IF_LS_2D)
             {
@@ -11627,9 +11647,9 @@ void emitter::emitDispIns(
 
         case IF_LS_2F: // LS_2F   .Q.............. ...Sssnnnnnttttt      Vt[] Rn
         case IF_LS_2G: // LS_2G   .Q.............. ...Sssnnnnnttttt      Vt[] Rn
-            selem    = insGetLoadStoreVectorSelem(id->idIns());
-            elemsize = id->idOpSize();
-            emitDispVectorElemList(id->idReg1(), selem, elemsize, id->idSmallCns(), true);
+            registerListSize = insGetLoadStoreRegisterListSize(id->idIns());
+            elemsize         = id->idOpSize();
+            emitDispVectorElemList(id->idReg1(), registerListSize, elemsize, id->idSmallCns(), true);
 
             if (fmt == IF_LS_2F)
             {
@@ -11639,7 +11659,7 @@ void emitter::emitDispIns(
             else
             {
                 // Load/Store single structure  post-indexed by an immediate
-                emitDispAddrRI(id->idReg2(), INS_OPTS_POST_INDEX, (selem * elemsize));
+                emitDispAddrRI(id->idReg2(), INS_OPTS_POST_INDEX, (registerListSize * elemsize));
             }
             break;
 
@@ -11691,19 +11711,19 @@ void emitter::emitDispIns(
 
         case IF_LS_3F: // LS_3F   .Q.........mmmmm ....ssnnnnnttttt      Vt Rn Rm
         case IF_LS_3G: // LS_3G   .Q.........mmmmm ...Sssnnnnnttttt      Vt[] Rn Rm
-            selem = insGetLoadStoreVectorSelem(id->idIns());
+            registerListSize = insGetLoadStoreRegisterListSize(id->idIns());
 
             if (fmt == IF_LS_3F)
             {
                 // Load/Store multiple structures       post-indexed by a register
                 // Load single structure and replicate  post-indexed by a register
-                emitDispVectorRegList(id->idReg1(), selem, id->idInsOpt(), true);
+                emitDispVectorRegList(id->idReg1(), registerListSize, id->idInsOpt(), true);
             }
             else
             {
                 // Load/Store single structure          post-indexed by a register
                 elemsize = id->idOpSize();
-                emitDispVectorElemList(id->idReg1(), selem, elemsize, id->idSmallCns(), true);
+                emitDispVectorElemList(id->idReg1(), registerListSize, elemsize, id->idSmallCns(), true);
             }
 
             printf("[");
