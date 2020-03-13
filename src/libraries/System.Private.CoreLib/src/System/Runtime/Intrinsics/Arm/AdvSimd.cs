@@ -1065,6 +1065,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<float> ReciprocalExponentScalar(Vector64<float> value) => ReciprocalExponentScalar(value);
 
             /// <summary>
+            /// float64x2_t vrsqrteq_f64 (float64x2_t a)
+            ///   A64: FRSQRTE Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> ReciprocalSquareRootEstimate(Vector128<double> value) => ReciprocalSquareRootEstimate(value);
+
+            /// <summary>
+            /// float64x1_t vrsqrte_f64 (float64x1_t a)
+            ///   A64: FRSQRTE Dd, Dn
+            /// </summary>
+            public static Vector64<double> ReciprocalSquareRootEstimateScalar(Vector64<double> value) => ReciprocalSquareRootEstimateScalar(value);
+
+            /// <summary>
+            /// float32_t vrsqrtes_f32 (float32_t a)
+            ///   A64: FRSQRTE Sd, Sn
+            /// </summary>
+            public static Vector64<float> ReciprocalSquareRootEstimateScalar(Vector64<float> value) => ReciprocalSquareRootEstimateScalar(value);
+
+            /// <summary>
             /// float64x2_t vrecpsq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FRECPS Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -4748,6 +4766,34 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: URECPE Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<uint> ReciprocalEstimate(Vector128<uint> value) => ReciprocalEstimate(value);
+
+        /// <summary>
+        /// float32x2_t vrsqrte_f32 (float32x2_t a)
+        ///   A32: VRSQRTE.F32 Dd, Dm
+        ///   A64: FRSQRTE Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> ReciprocalSquareRootEstimate(Vector64<float> value) => ReciprocalSquareRootEstimate(value);
+
+        /// <summary>
+        /// uint32x2_t vrsqrte_u32 (uint32x2_t a)
+        ///   A32: VRSQRTE.U32 Dd, Dm
+        ///   A64: URSQRTE Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ReciprocalSquareRootEstimate(Vector64<uint> value) => ReciprocalSquareRootEstimate(value);
+
+        /// <summary>
+        /// float32x4_t vrsqrteq_f32 (float32x4_t a)
+        ///   A32: VRSQRTE.F32 Qd, Qm
+        ///   A64: FRSQRTE Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> ReciprocalSquareRootEstimate(Vector128<float> value) => ReciprocalSquareRootEstimate(value);
+
+        /// <summary>
+        /// uint32x4_t vrsqrteq_u32 (uint32x4_t a)
+        ///   A32: VRSQRTE.U32 Qd, Qm
+        ///   A64: URSQRTE Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ReciprocalSquareRootEstimate(Vector128<uint> value) => ReciprocalSquareRootEstimate(value);
 
         /// <summary>
         /// float32x2_t vrecps_f32 (float32x2_t a, float32x2_t b)
