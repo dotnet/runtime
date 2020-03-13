@@ -1,17 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the https://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Extensions.FileSystemGlobbing
 {
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct FilePatternMatch : System.IEquatable<Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch>
     {
         private object _dummy;
         private int _dummyPrimitive;
         public FilePatternMatch(string path, string stem) { throw null; }
-        public string Path { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Stem { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public readonly string Path { get { throw null; } }
+        public readonly string Stem { get { throw null; } }
         public bool Equals(Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch other) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -19,8 +21,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
     public partial class InMemoryDirectoryInfo : Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase
     {
         public InMemoryDirectoryInfo(string rootDir, System.Collections.Generic.IEnumerable<string> files) { }
-        public override string FullName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public override string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public override string FullName { get { throw null; } }
+        public override string Name { get { throw null; } }
         public override Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase ParentDirectory { get { throw null; } }
         public override System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase> EnumerateFileSystemInfos() { throw null; }
         public override Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase GetDirectory(string path) { throw null; }
@@ -48,8 +50,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
     {
         public PatternMatchingResult(System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch> files) { }
         public PatternMatchingResult(System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch> files, bool hasMatches) { }
-        public System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch> Files { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public bool HasMatches { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch> Files { get { throw null; } set { } }
+        public bool HasMatches { get { throw null; } }
     }
 }
 namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
@@ -126,14 +128,13 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
         public MatcherContext(System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileSystemGlobbing.Internal.IPattern> includePatterns, System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileSystemGlobbing.Internal.IPattern> excludePatterns, Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase directoryInfo, System.StringComparison comparison) { }
         public Microsoft.Extensions.FileSystemGlobbing.PatternMatchingResult Execute() { throw null; }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct PatternTestResult
     {
         private object _dummy;
         private int _dummyPrimitive;
         public static readonly Microsoft.Extensions.FileSystemGlobbing.Internal.PatternTestResult Failed;
-        public bool IsSuccessful { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string Stem { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public readonly bool IsSuccessful { get { throw null; } }
+        public readonly string Stem { get { throw null; } }
         public static Microsoft.Extensions.FileSystemGlobbing.Internal.PatternTestResult Success(string stem) { throw null; }
     }
 }
@@ -149,7 +150,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
     {
         public LiteralPathSegment(string value, System.StringComparison comparisonType) { }
         public bool CanProduceStem { get { throw null; } }
-        public string Value { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public string Value { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public bool Match(string value) { throw null; }
@@ -170,10 +171,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
     {
         public static readonly Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments.WildcardPathSegment MatchAll;
         public WildcardPathSegment(string beginsWith, System.Collections.Generic.List<string> contains, string endsWith, System.StringComparison comparisonType) { }
-        public string BeginsWith { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public string BeginsWith { get { throw null; } }
         public bool CanProduceStem { get { throw null; } }
-        public System.Collections.Generic.List<string> Contains { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public string EndsWith { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Collections.Generic.List<string> Contains { get { throw null; } }
+        public string EndsWith { get { throw null; } }
         public bool Match(string value) { throw null; }
     }
 }
@@ -182,13 +183,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     public abstract partial class PatternContextLinear : Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext<Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextLinear.FrameData>
     {
         public PatternContextLinear(Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern pattern) { }
-        protected Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern Pattern { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        protected Microsoft.Extensions.FileSystemGlobbing.Internal.ILinearPattern Pattern { get { throw null; } }
         protected string CalculateStem(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase matchedFile) { throw null; }
         protected bool IsLastSegment() { throw null; }
         public override void PushDirectory(Microsoft.Extensions.FileSystemGlobbing.Abstractions.DirectoryInfoBase directory) { }
         public override Microsoft.Extensions.FileSystemGlobbing.Internal.PatternTestResult Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase file) { throw null; }
         protected bool TestMatchingSegment(string value) { throw null; }
-        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct FrameData
         {
             private object _dummy;
@@ -214,7 +214,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     public abstract partial class PatternContextRagged : Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContext<Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts.PatternContextRagged.FrameData>
     {
         public PatternContextRagged(Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern pattern) { }
-        protected Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern Pattern { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        protected Microsoft.Extensions.FileSystemGlobbing.Internal.IRaggedPattern Pattern { get { throw null; } }
         protected string CalculateStem(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase matchedFile) { throw null; }
         protected bool IsEndingGroup() { throw null; }
         protected bool IsStartingGroup() { throw null; }
@@ -223,7 +223,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
         public override Microsoft.Extensions.FileSystemGlobbing.Internal.PatternTestResult Test(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileInfoBase file) { throw null; }
         protected bool TestMatchingGroup(Microsoft.Extensions.FileSystemGlobbing.Abstractions.FileSystemInfoBase value) { throw null; }
         protected bool TestMatchingSegment(string value) { throw null; }
-        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public partial struct FrameData
         {
             private object _dummy;
@@ -268,7 +267,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
     {
         public PatternBuilder() { }
         public PatternBuilder(System.StringComparison comparisonType) { }
-        public System.StringComparison ComparisonType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.StringComparison ComparisonType { get { throw null; } }
         public Microsoft.Extensions.FileSystemGlobbing.Internal.IPattern Build(string pattern) { throw null; }
     }
 }

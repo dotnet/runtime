@@ -15,6 +15,171 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.Configuration",
+    "Description": "Implementation of key-value pair based configuration for Microsoft.Extensions.Configuration. Includes the memory configuration provider.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Abstraction",
+    "Description": "Abstractions of key-value pair based configuration.",
+    "CommonTypes": [
+      "Microsoft.Extensions.Configuration.IConfiguration",
+      "Microsoft.Extensions.Configuration.IConfigurationBuilder",
+      "Microsoft.Extensions.Configuration.IConfigurationProvider",
+      "Microsoft.Extensions.Configuration.IConfigurationRoot",
+      "Microsoft.Extensions.Configuration.IConfigurationSection"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Bindar",
+    "Description": "Functionality to bind an object to data in configuration providers for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.CommandLine",
+    "Description": "Command line configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.EnvironmentVariables",
+    "Description": "Environment variables configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.FileExtensions",
+    "Description": "Extension methods for configuring file-based configuration providers for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Ini",
+    "Description": "INI configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Json",
+    "Description": "JSON configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.UserSecrets",
+    "Description": "User secrets configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Configuration.Xml",
+    "Description": "XML configuration provider implementation for Microsoft.Extensions.Configuration.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.DependencyInjection",
+    "Description": "Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.DependencyInjection.Abstractions",
+    "Description": "Abstractions for dependency injection.",
+    "CommonTypes": [
+      "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.FileProviders.Abstractions",
+    "Description": "Abstractions of files and directories.",
+    "CommonTypes": [
+      "Microsoft.Extensions.FileProviders.IDirectoryContents",
+      "Microsoft.Extensions.FileProviders.IFileInfo",
+      "Microsoft.Extensions.FileProviders.IFileProvider"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.FileProviders.Composite",
+    "Description": "Composite file and directory providers for Microsoft.Extensions.FileProviders.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.FileProviders.Physical",
+    "Description": "File provider for physical files for Microsoft.Extensions.FileProviders.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.FileSystemGlobbing",
+    "Description": "File system globbing to find files matching a specified pattern.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Hosting",
+    "Description": ".NET Core hosting and startup infrastructures for applications.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Hosting.Abstractions",
+    "Description": ".NET Core hosting and startup abstractions for applications.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging",
+    "Description": "Logging infrastructure default implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Abstractions",
+    "Description": "Logging abstractions for Microsoft.Extensions.Logging.",
+    "CommonTypes": [
+      "Microsoft.Extensions.Logging.ILogger",
+      "Microsoft.Extensions.Logging.ILoggerFactory",
+      "Microsoft.Extensions.Logging.ILogger&lt;TCategoryName&gt;",
+      "Microsoft.Extensions.Logging.LogLevel",
+      "Microsoft.Extensions.Logging.Logger&lt;T&gt;",
+      "Microsoft.Extensions.Logging.LoggerMessage",
+      "Microsoft.Extensions.Logging.Abstractions.NullLogger"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Configuration",
+    "Description": "Configuration support for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Console",
+    "Description": "Console logger provider implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.Debug",
+    "Description": "Debug output logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a debugger monitor by writing messages with System.Diagnostics.Debug.WriteLine().",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.EventLog",
+    "Description": "Windows Event Log logger provider implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.EventSource",
+    "Description": "EventSource/EventListener logger provider implementation for Microsoft.Extensions.Logging.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Logging.TraceSource",
+    "Description": "TraceSource logger provider implementation for Microsoft.Extensions.Logging. This logger logs messages to a trace listener by writing messages with System.Diagnostics.TraceSource.TraceEvent().",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Options",
+    "Description": "Provides a strongly typed way of specifying and accessing settings using dependency injection.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Options.ConfigurationExtensions",
+    "Description": "Provides additional configuration specific functionality related to Options.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Options.DataAnnotations",
+    "Description": "Provides additional DataAnnotations specific functionality related to Options.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.Extensions.Primitives",
     "Description": "Primitives shared by framework extensions. Commonly used types include:",
     "CommonTypes": [

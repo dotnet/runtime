@@ -2,11 +2,15 @@
 
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders.Composite</RootNamespace>
-    <TargetFrameworks>$(DefaultNetCoreTargetFramework);net472</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Shared\**\*.cs" />
+    <Compile Include="**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
   </ItemGroup>
 
   <ItemGroup>
