@@ -81,6 +81,10 @@
       <Versions>1;2</Versions>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="WebAssembly">
+      <Parent>linux</Parent>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="ol">
       <Parent>rhel</Parent>
       <Architectures>x64</Architectures>

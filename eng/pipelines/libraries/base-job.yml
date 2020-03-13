@@ -97,7 +97,7 @@ jobs:
 
           # WebAssembly uses linux implementation detail
           - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-            - _runtimeArtifactName: '$(runtimeFlavorName)Product_Linux_x64_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_linux_x64_${{ parameters.liveRuntimeBuildConfig }}'
 
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'win') }}:

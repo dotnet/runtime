@@ -275,13 +275,13 @@ EOF
 	rm -f $dummy.s $dummy
 	echo ${UNAME_MACHINE}-dec-osf`echo ${UNAME_RELEASE} | sed -e 's/^[VTX]//' | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`
 	exit 0 ;;
-    Alpha\ *:Windows_NT*:*)
+    Alpha\ *:win*:*)
 	# How do we know it's Interix rather than the generic POSIX subsystem?
 	# Should we change UNAME_MACHINE based on the output of uname instead
 	# of the specific Alpha model?
 	echo alpha-pc-interix
 	exit 0 ;;
-    21064:Windows_NT:50:3)
+    21064:win:50:3)
 	echo alpha-dec-winnt3.5
 	exit 0 ;;
     Amiga*:UNIX_System_V:4.0:*)
@@ -735,7 +735,7 @@ EOF
     x86:Interix*:3*)
 	echo i386-pc-interix3
 	exit 0 ;;
-    i*:Windows_NT*:* | Pentium*:Windows_NT*:*)
+    i*:win*:* | Pentium*:win*:*)
 	# How do we know it's Interix rather than the generic POSIX subsystem?
 	# It also conflicts with pre-2.0 versions of AT&T UWIN. Should we
 	# UNAME_MACHINE based on the output of uname instead of i386?

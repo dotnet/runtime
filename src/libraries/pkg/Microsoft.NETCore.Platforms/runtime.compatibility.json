@@ -1,4 +1,11 @@
 {
+  "WebAssembly": [
+    "WebAssembly",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
   "alpine": [
     "alpine",
     "linux-musl",

@@ -1,5 +1,10 @@
 {
   "runtimes": {
+    "WebAssembly": {
+      "#import": [
+        "linux"
+      ]
+    },
     "alpine": {
       "#import": [
         "linux-musl"
