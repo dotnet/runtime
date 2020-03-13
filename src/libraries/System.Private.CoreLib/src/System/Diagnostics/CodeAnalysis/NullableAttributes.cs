@@ -128,6 +128,7 @@ namespace System.Diagnostics.CodeAnalysis
 
     /// <summary>Sepcifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+    [CLSCompliant(false)]
 #if INTERNAL_NULLABLE_ATTRIBUTES
     internal
 #else
@@ -144,6 +145,7 @@ namespace System.Diagnostics.CodeAnalysis
 
     /// <summary>Sepcifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+    [CLSCompliant(false)]
 #if INTERNAL_NULLABLE_ATTRIBUTES
     internal
 #else
