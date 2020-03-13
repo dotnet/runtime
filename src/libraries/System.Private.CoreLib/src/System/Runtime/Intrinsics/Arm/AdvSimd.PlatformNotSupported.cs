@@ -985,6 +985,36 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float32x2_t vmulx_f32 (float32x2_t a, float32x2_t b)
+            ///   A64: FMULX Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> MultiplyExtended(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vmulxq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMULX Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MultiplyExtended(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vmulxq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMULX Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MultiplyExtended(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x1_t vmulx_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FMULX Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> MultiplyExtendedScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vmulxs_f32 (float32_t a, float32_t b)
+            ///   A64: FMULX Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> MultiplyExtendedScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vnegq_f64 (float64x2_t a)
             ///   A64: FNEG Vd.2D, Vn.2D
             /// </summary>
