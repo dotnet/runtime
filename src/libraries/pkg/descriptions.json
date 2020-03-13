@@ -44,7 +44,7 @@
     ]
   },
   {
-    "Name": "Microsoft.Extensions.Configuration.Bindar",
+    "Name": "Microsoft.Extensions.Configuration.Binder",
     "Description": "Functionality to bind an object to data in configuration providers for Microsoft.Extensions.Configuration.",
     "CommonTypes": []
   },
