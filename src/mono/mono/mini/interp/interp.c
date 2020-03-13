@@ -3595,7 +3595,6 @@ main_loop:
 					THROW_EX (ex, ip);
 				EXCEPTION_CHECKPOINT;
 			}
-			ip += 2;
 			const gboolean realloc_frame = new_method->alloca_size > frame->imethod->alloca_size;
 			frame->imethod = new_method;
 			/*
