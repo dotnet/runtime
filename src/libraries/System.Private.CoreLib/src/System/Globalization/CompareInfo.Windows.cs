@@ -64,7 +64,7 @@ namespace System.Globalization
                             source.Length,
                             pValue,
                             value.Length,
-                            bIgnoreCase ? 1 : 0);
+                            bIgnoreCase);
 
                 Debug.Assert(ret >= -1 && ret <= source.Length);
 

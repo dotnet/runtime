@@ -101,7 +101,7 @@ internal static partial class Interop
                     int cchSource,
                     char* lpStringValue,
                     int cchValue,
-                    int bIgnoreCase);
+                    bool bIgnoreCase);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern bool IsNLSDefinedString(
