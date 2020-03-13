@@ -7109,6 +7109,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildSIToFP (builder, shuffle, LLVMVectorType (LLVMDoubleType (), 2), dname);
 			break;
 		}
+		case OP_CVTSD2SD: {
+			LLVMValueRef rhs_elem = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			LLVMValueRef fpext = LLVMBuildFPExt (builder, rhs_elem, LLVMDoubleType (), dname);
+			values [ins->dreg] = LLVMBuildInsertElement (builder, lhs, fpext, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			break;
+		}
 		case OP_CVTPS2PD: {
 			LLVMValueRef indexes [16];
 
@@ -7615,7 +7621,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_SSE_MOVNTPS: {
-			LLVMValueRef store = mono_llvm_build_aligned_store (builder, rhs, lhs, FALSE, 16);
+			LLVMValueRef store = mono_llvm_build_aligned_store (builder, rhs, lhs, FALSE, ins->inst_c0);
 			set_nontemporal_flag (store);
 			break;
 		}
@@ -7891,6 +7897,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_CVTSI2SS64: id = INTRINS_SSE_CVTSI2SS64; break;
 			case SIMD_OP_SSE_CVTSI2SD: id = INTRINS_SSE_CVTSI2SD; break;
 			case SIMD_OP_SSE_CVTSI2SD64: id = INTRINS_SSE_CVTSI2SD64; break;
+			case SIMD_OP_SSE_CVTSD2SS: id = INTRINS_SSE_CVTSD2SS; break; 
 			case SIMD_OP_SSE_MAXPS: id = INTRINS_SSE_MAXPS; break;
 			case SIMD_OP_SSE_MAXSS: id = INTRINS_SSE_MAXSS; break;
 			case SIMD_OP_SSE_MINPS: id = INTRINS_SSE_MINPS; break;
@@ -7905,9 +7912,22 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_PMULUDQ: id = INTRINS_SSE_PMULUDQ; break;
 			case SIMD_OP_SSE_PACKSSWB: id = INTRINS_SSE_PACKSSWB; break;
 			case SIMD_OP_SSE_PACKSSDW: id = INTRINS_SSE_PACKSSDW; break;
+			case SIMD_OP_SSE_PSRLW_IMM: id = INTRINS_SSE_PSRLI_W; break;
+			case SIMD_OP_SSE_PSRLD_IMM: id = INTRINS_SSE_PSRLI_D; break;
+			case SIMD_OP_SSE_PSRLQ_IMM: id = INTRINS_SSE_PSRLI_Q; break;
+			case SIMD_OP_SSE_PSRLW: id = INTRINS_SSE_PSRL_W; break;
+			case SIMD_OP_SSE_PSRLD: id = INTRINS_SSE_PSRL_D; break;
+			case SIMD_OP_SSE_PSRLQ: id = INTRINS_SSE_PSRL_Q; break;
 			case SIMD_OP_SSE_PSLLW_IMM: id = INTRINS_SSE_PSLLI_W; break;
 			case SIMD_OP_SSE_PSLLD_IMM: id = INTRINS_SSE_PSLLI_D; break;
 			case SIMD_OP_SSE_PSLLQ_IMM: id = INTRINS_SSE_PSLLI_Q; break;
+			case SIMD_OP_SSE_PSLLW: id = INTRINS_SSE_PSLL_W; break;
+			case SIMD_OP_SSE_PSLLD: id = INTRINS_SSE_PSLL_D; break;
+			case SIMD_OP_SSE_PSLLQ: id = INTRINS_SSE_PSLL_Q; break;
+			case SIMD_OP_SSE_PSRAW_IMM: id = INTRINS_SSE_PSRAI_W; break;
+			case SIMD_OP_SSE_PSRAD_IMM: id = INTRINS_SSE_PSRAI_D; break;
+			case SIMD_OP_SSE_PSRAW: id = INTRINS_SSE_PSRA_W; break;
+			case SIMD_OP_SSE_PSRAD: id = INTRINS_SSE_PSRA_D; break;
 			case SIMD_OP_SSE_PSUBSB: id = INTRINS_SSE_PSUBSB; break;
 			case SIMD_OP_SSE_PSUBSW: id = INTRINS_SSE_PSUBSW; break;
 			case SIMD_OP_SSE_PSUBUSB: id = INTRINS_SSE_PSUBUSB; break;
