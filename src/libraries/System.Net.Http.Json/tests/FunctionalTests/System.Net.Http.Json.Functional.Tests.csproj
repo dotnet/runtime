@@ -4,6 +4,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="HttpClientJsonExtensionsTests.cs" />
+    <Compile Include="HttpContentJsonExtensionsTests.cs" />
+    <Compile Include="JsonContentTests.cs" />
+    <Compile Include="Person.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs">
@@ -33,8 +36,5 @@
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
-    <Compile Include="HttpContentJsonExtensionsTests.cs" />
-    <Compile Include="JsonContentTests.cs" />
-    <Compile Include="Person.cs" />
   </ItemGroup>
 </Project>
