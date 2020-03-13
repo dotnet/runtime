@@ -230,7 +230,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     sigset_t signal_set;
     sigset_t old_signal_set;
 
-#ifndef TARGET_ANDROID
+#ifndef HAVE_PTHREAD_SETCANCELSTATE
     int thread_cancel_state;
 
     // None of this code can be canceled without leaking handles, so just don't allow it
@@ -501,7 +501,7 @@ done:;
         errno = priorErrno;
     }
 
-#ifndef TARGET_ANDROID
+#ifndef HAVE_PTHREAD_SETCANCELSTATE
     // Restore thread cancel state
     pthread_setcancelstate(thread_cancel_state, &thread_cancel_state);
 #endif
