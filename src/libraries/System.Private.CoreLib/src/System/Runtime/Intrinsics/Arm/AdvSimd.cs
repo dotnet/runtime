@@ -4730,6 +4730,34 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> OrNot(Vector128<ulong> left, Vector128<ulong> right) => OrNot(left, right);
 
         /// <summary>
+        /// poly8x8_t vmul_p8 (poly8x8_t a, poly8x8_t b)
+        ///   A32: VMUL.P8 Dd, Dn, Dm
+        ///   A64: PMUL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> PolynomialMultiply(Vector64<byte> left, Vector64<byte> right) => PolynomialMultiply(left, right);
+
+        /// <summary>
+        /// poly8x8_t vmul_p8 (poly8x8_t a, poly8x8_t b)
+        ///   A32: VMUL.P8 Dd, Dn, Dm
+        ///   A64: PMUL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> PolynomialMultiply(Vector64<sbyte> left, Vector64<sbyte> right) => PolynomialMultiply(left, right);
+
+        /// <summary>
+        /// poly8x16_t vmulq_p8 (poly8x16_t a, poly8x16_t b)
+        ///   A32: VMUL.P8 Qd, Qn, Qm
+        ///   A64: PMUL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> PolynomialMultiply(Vector128<byte> left, Vector128<byte> right) => PolynomialMultiply(left, right);
+
+        /// <summary>
+        /// poly8x16_t vmulq_p8 (poly8x16_t a, poly8x16_t b)
+        ///   A32: VMUL.P8 Qd, Qn, Qm
+        ///   A64: PMUL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> PolynomialMultiply(Vector128<sbyte> left, Vector128<sbyte> right) => PolynomialMultiply(left, right);
+
+        /// <summary>
         /// uint8x8_t vcnt_u8 (uint8x8_t a)
         ///   A32: VCNT.I8 Dd, Dm
         ///   A64: CNT Vd.8B, Vn.8B
