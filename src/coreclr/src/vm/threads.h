@@ -1058,8 +1058,7 @@ public:
     StackingAllocator* m_stackLocalAllocator = NULL;
 
     // If we are trying to suspend a thread, we set the appropriate pending bit to
-    // indicate why we want to suspend it (TS_GCSuspendPending, TS_UserSuspendPending,
-    // TS_DebugSuspendPending).
+    // indicate why we want to suspend it (TS_GCSuspendPending or TS_DebugSuspendPending).
     //
     // If instead the thread has blocked itself, via WaitSuspendEvent, we indicate
     // this with TS_SyncSuspended.  However, we need to know whether the synchronous
@@ -1075,7 +1074,6 @@ public:
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
         TS_GCSuspendPending       = 0x00000002,    // waiting to get to safe spot for GC
-        TS_UserSuspendPending     = 0x00000004,    // user suspension at next opportunity
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
@@ -1137,8 +1135,8 @@ public:
         //         enum is changed, we also need to update SOS to reflect this.</TODO>
 
         // We require (and assert) that the following bits are less than 0x100.
-        TS_CatchAtSafePoint = (TS_UserSuspendPending | TS_AbortRequested |
-                               TS_GCSuspendPending | TS_DebugSuspendPending | TS_GCOnTransitions),
+        TS_CatchAtSafePoint = (TS_AbortRequested | TS_GCSuspendPending |
+                               TS_DebugSuspendPending | TS_GCOnTransitions),
     };
 
     // Thread flags that aren't really states in themselves but rather things the thread
@@ -3375,10 +3373,6 @@ private:
     {
         WRAPPER_NO_CONTRACT;
 
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(bit & TS_UserSuspendPending));
-
-
         if (bit & TS_DebugSuspendPending) {
             m_DebugSuspendEvent.Reset();
         }
@@ -3395,20 +3389,13 @@ private:
         //
         ThreadState oldState = m_State;
 
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(oldState & TS_UserSuspendPending));
 
-        while ((oldState & (TS_UserSuspendPending | TS_DebugSuspendPending)) == 0)
+        while ((oldState & TS_DebugSuspendPending) == 0)
         {
-            // CoreCLR does not support user-requested thread suspension
-            _ASSERTE(!(oldState & TS_UserSuspendPending));
-
             //
             // Construct the destination state we desire - all suspension bits turned off.
             //
-            ThreadState newState = (ThreadState)(oldState & ~(TS_UserSuspendPending |
-                                                              TS_DebugSuspendPending |
-                                                              TS_SyncSuspended));
+            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
 
             if (FastInterlockCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
             {
@@ -3420,9 +3407,6 @@ private:
             //
             oldState = m_State;
         }
-
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(bit & TS_UserSuspendPending));
 
         if (bit & TS_DebugSuspendPending) {
             m_DebugSuspendEvent.Set();
