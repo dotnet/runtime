@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -1015,6 +1016,48 @@ namespace System.Tests
         {
             Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue));
             Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue, pinned: true));
+        }
+
+        [Fact]
+        private static void AllocateArrayRefType()
+        {
+            GC.AllocateUninitializedArray<string>(100);
+            Assert.Throws<ArgumentException>(() => GC.AllocateUninitializedArray<string>(100, pinned: true));
+        }
+
+        [Fact]
+        private unsafe static void AllocateArrayCheckPinning()
+        {
+            var list = new List<long[]>();
+
+            var r = new Random(1234);
+            for (int i = 0; i < 10000; i++)
+            {
+                int size = r.Next(2, 100);
+                var arr = i % 2 == 1 ?
+                    GC.AllocateArray<long>(size, pinned: true) :
+                    GC.AllocateUninitializedArray<long>(size, pinned: true) ;
+
+                fixed (long* pElem = &arr[0])
+                {
+                    *pElem = (long)pElem;
+                }
+
+                if (r.Next(100) % 2 == 0)
+                {
+                    list.Add(arr);
+                }
+            }
+
+            GC.Collect();
+
+            foreach (var arr in list)
+            {
+                fixed (long* pElem = &arr[0])
+                {
+                    Assert.Equal(*pElem, (long)pElem);
+                }
+            }
         }
     }
 }
