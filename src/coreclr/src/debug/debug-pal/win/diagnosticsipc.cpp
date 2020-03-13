@@ -141,8 +141,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 
     HANDLE hPipe = ::CreateFileA( 
         _pNamedPipeName,                    // pipe name 
-        GENERIC_READ |                      // read and write access 
-        GENERIC_WRITE, 
+        PIPE_ACCESS_DUPLEX,                 // pipe access
         0,                                  // no sharing 
         NULL,                               // default security attributes
         OPEN_EXISTING,                      // opens existing pipe 
