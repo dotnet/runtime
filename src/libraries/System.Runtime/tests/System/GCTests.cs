@@ -424,7 +424,8 @@ namespace System.Tests
         public static void LatencyRoundtrips_LowLatency(GCLatencyMode value) => LatencyRoundtrips(value);
     }
 
-    public class GCExtendedTests    {
+    public class GCExtendedTests
+    {
         private const int TimeoutMilliseconds = 10 * 30 * 1000; //if full GC is triggered it may take a while
 
         /// <summary>
@@ -891,6 +892,129 @@ namespace System.Tests
                 stash = new byte[1234];
                 previous = CallGetTotalAllocatedBytes(previous);
             }
+        }
+
+        [Fact]
+        private static void AllocateUninitializedArray()
+        {
+            // allocate a bunch of SOH byte arrays and touch them.
+            var r = new Random(1234);
+            for (int i = 0; i < 10000; i++)
+            {
+                int size = r.Next(10000);
+                var arr = GC.AllocateUninitializedArray<byte>(size, pinned: i % 2 == 1);
+
+                if (size > 1)
+                {
+                    arr[0] = 5;
+                    arr[size - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+                }
+            }
+
+            // allocate a bunch of LOH int arrays and touch them.
+            for (int i = 0; i < 1000; i++)
+            {
+                int size = r.Next(100000, 1000000);
+                var arr = GC.AllocateUninitializedArray<int>(size, pinned: i % 2 == 1);
+
+                arr[0] = 5;
+                arr[size - 1] = 17;
+                Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+            }
+
+            // allocate a string array
+            {
+                int i = 100;
+                var arr = GC.AllocateUninitializedArray<string>(i);
+
+                arr[0] = "5";
+                arr[i - 1] = "17";
+                Assert.True(arr[0] == "5" && arr[i - 1] == "17");
+            }
+
+            // allocate max size byte array
+            {
+                if (IntPtr.Size == 8)
+                {
+                    int i = 0x7FFFFFC7;
+                    var arr = GC.AllocateUninitializedArray<byte>(i);
+
+                    arr[0] = 5;
+                    arr[i - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[i - 1] == 17);
+                }
+            }
+        }
+
+        [Fact]
+        private static void AllocateArray()
+        {
+            // allocate a bunch of SOH byte arrays and touch them.
+            var r = new Random(1234);
+            for (int i = 0; i < 10000; i++)
+            {
+                int size = r.Next(10000);
+                var arr = GC.AllocateArray<byte>(size, pinned: i % 2 == 1);
+
+                if (size > 1)
+                {
+                    arr[0] = 5;
+                    arr[size - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+                }
+            }
+
+            // allocate a bunch of LOH int arrays and touch them.
+            for (int i = 0; i < 1000; i++)
+            {
+                int size = r.Next(100000, 1000000);
+                var arr = GC.AllocateArray<int>(size, pinned: i % 2 == 1);
+
+                arr[0] = 5;
+                arr[size - 1] = 17;
+                Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+            }
+
+            // allocate a string array
+            {
+                int i = 100;
+                var arr = GC.AllocateArray<string>(i);
+
+                arr[0] = "5";
+                arr[i - 1] = "17";
+                Assert.True(arr[0] == "5" && arr[i - 1] == "17");
+            }
+
+            // allocate max size byte array
+            {
+                if (IntPtr.Size == 8)
+                {
+                    int i = 0x7FFFFFC7;
+                    var arr = GC.AllocateArray<byte>(i);
+
+                    arr[0] = 5;
+                    arr[i - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[i - 1] == 17);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        private static void AllocateArrayNegativeSize(int negValue)
+        {
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1));
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(negValue));
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1, pinned: true));
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(negValue, pinned: true));
+        }
+
+        [Fact]
+        private static void AllocateArrayTooLarge()
+        {
+            Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue));
+            Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue, pinned: true));
         }
     }
 }
