@@ -955,15 +955,16 @@ namespace Mono.Linker.Steps
 
 			Instruction GetReturnInitialization (out Instruction[] initInstructions)
 			{
-				var cinstr = CodeRewriterStep.CreateConstantResultInstruction (body.Method.ReturnType);
+				var rtype = body.Method.ReturnType;
+
+				var cinstr = CodeRewriterStep.CreateConstantResultInstruction (rtype);
 				if (cinstr != null) {
 					initInstructions = null;
 					return cinstr;
 				}
 
-				var rtype = body.Method.ReturnType;
-
-				switch (rtype.MetadataType) {
+				var td = rtype.Resolve ();
+				switch (td.MetadataType) {
 				case MetadataType.MVar:
 				case MetadataType.ValueType:
 					var vd = new VariableDefinition (rtype);
@@ -986,7 +987,7 @@ namespace Mono.Linker.Steps
 					return Instruction.Create (OpCodes.Conv_I);
 				}
 
-				throw new NotImplementedException ($"Initialization of return value in method '{body.Method.FullName}'");
+				throw new NotImplementedException ($"Initialization of return value kind '{td.MetadataType}' in method '{body.Method.FullName}'");
 			}
 
 			void CleanRemovedVariables (List<VariableDefinition> variables)
