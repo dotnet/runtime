@@ -126,7 +126,7 @@ namespace System.Diagnostics.CodeAnalysis
         public bool ParameterValue { get; }
     }
 
-    /// <summary>Sepcifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
+    /// <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     [CLSCompliant(false)]
 #if INTERNAL_NULLABLE_ATTRIBUTES
@@ -134,7 +134,7 @@ namespace System.Diagnostics.CodeAnalysis
 #else
     public
 #endif
-    sealed class MemberNotNullAttribute : Attribute
+        sealed class MemberNotNullAttribute : Attribute
     {
         /// <summary>Initializes the attribute with the list of field and property members.</summary>
         /// <param name="members">
@@ -143,7 +143,7 @@ namespace System.Diagnostics.CodeAnalysis
         public MemberNotNullAttribute(params string[] members) { }
     }
 
-    /// <summary>Sepcifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
+    /// <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     [CLSCompliant(false)]
 #if INTERNAL_NULLABLE_ATTRIBUTES
@@ -151,7 +151,7 @@ namespace System.Diagnostics.CodeAnalysis
 #else
     public
 #endif
-    sealed class MemberNotNullWhenAttribute : Attribute
+        sealed class MemberNotNullWhenAttribute : Attribute
     {
         /// <summary>Initializes the attribute with the specified return value condition and list of field and property members.</summary>
         /// <param name="returnValue">
