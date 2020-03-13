@@ -20,7 +20,11 @@
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
-  <Target Name="GeneratingFilesBeforeRunningSourceLink"
-          BeforeTargets="SetEmbeddedFilesFromSourceControlManagerUntrackedFiles"
-          DependsOnTargets="GenerateAssemblyInfo;GenerateInternalsVisibleToFile" />
+  <PropertyGroup>
+    <GeneratedAssemblyInfoFile>$([System.IO.Path]::Combine('$(IntermediateOutputPath)','$(MSBuildProjectName).AssemblyInfo$(DefaultLanguageSourceExtension)'))</GeneratedAssemblyInfoFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedFiles Include="$(GeneratedAssemblyInfoFile)"/>
+  </ItemGroup>
 </Project>
