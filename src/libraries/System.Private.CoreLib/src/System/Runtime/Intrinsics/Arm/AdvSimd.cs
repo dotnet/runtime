@@ -1035,6 +1035,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<long> NegateScalar(Vector64<long> value) => NegateScalar(value);
 
             /// <summary>
+            /// float64x2_t vrecpeq_f64 (float64x2_t a)
+            ///   A64: FRECPE Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> ReciprocalEstimate(Vector128<double> value) => ReciprocalEstimate(value);
+
+            /// <summary>
+            /// float64x1_t vrecpe_f64 (float64x1_t a)
+            ///   A64: FRECPE Dd, Dn
+            /// </summary>
+            public static Vector64<double> ReciprocalEstimateScalar(Vector64<double> value) => ReciprocalEstimateScalar(value);
+
+            /// <summary>
+            /// float32_t vrecpes_f32 (float32_t a)
+            ///   A64: FRECPE Sd, Sn
+            /// </summary>
+            public static Vector64<float> ReciprocalEstimateScalar(Vector64<float> value) => ReciprocalEstimateScalar(value);
+
+            /// <summary>
             /// float32x2_t vsqrt_f32 (float32x2_t a)
             ///   A64: FSQRT Vd.2S, Vn.2S
             /// </summary>
@@ -4672,6 +4690,34 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: CNT Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<sbyte> PopCount(Vector128<sbyte> value) => PopCount(value);
+
+        /// <summary>
+        /// float32x2_t vrecpe_f32 (float32x2_t a)
+        ///   A32: VRECPE.F32 Dd, Dm
+        ///   A64: FRECPE Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> ReciprocalEstimate(Vector64<float> value) => ReciprocalEstimate(value);
+
+        /// <summary>
+        /// uint32x2_t vrecpe_u32 (uint32x2_t a)
+        ///   A32: VRECPE.U32 Dd, Dm
+        ///   A64: URECPE Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<uint> ReciprocalEstimate(Vector64<uint> value) => ReciprocalEstimate(value);
+
+        /// <summary>
+        /// float32x4_t vrecpeq_f32 (float32x4_t a)
+        ///   A32: VRECPE.F32 Qd, Qm
+        ///   A64: FRECPE Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> ReciprocalEstimate(Vector128<float> value) => ReciprocalEstimate(value);
+
+        /// <summary>
+        /// uint32x4_t vrecpeq_u32 (uint32x4_t a)
+        ///   A32: VRECPE.U32 Qd, Qm
+        ///   A64: URECPE Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<uint> ReciprocalEstimate(Vector128<uint> value) => ReciprocalEstimate(value);
 
         /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
