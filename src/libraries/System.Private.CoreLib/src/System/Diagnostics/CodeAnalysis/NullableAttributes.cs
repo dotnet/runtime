@@ -127,11 +127,11 @@ namespace System.Diagnostics.CodeAnalysis
     }
 
     /// <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-    [CLSCompliant(false)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, Inherited = false)]
 #if INTERNAL_NULLABLE_ATTRIBUTES
     internal
 #else
+    [CLSCompliant(false)]
     public
 #endif
         sealed class MemberNotNullAttribute : Attribute
@@ -144,11 +144,11 @@ namespace System.Diagnostics.CodeAnalysis
     }
 
     /// <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values when returning with the specified return value condition.</summary>
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-    [CLSCompliant(false)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, Inherited = false)]
 #if INTERNAL_NULLABLE_ATTRIBUTES
     internal
 #else
+    [CLSCompliant(false)]
     public
 #endif
         sealed class MemberNotNullWhenAttribute : Attribute
