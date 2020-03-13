@@ -1081,6 +1081,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<float> ReciprocalSquareRootEstimateScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vrsqrtsq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FRSQRTS Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> ReciprocalSquareRootStep(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x1_t vrsqrts_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FRSQRTS Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> ReciprocalSquareRootStepScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vrsqrtss_f32 (float32_t a, float32_t b)
+            ///   A64: FRSQRTS Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> ReciprocalSquareRootStepScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vrecpsq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FRECPS Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -4792,6 +4810,20 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: URSQRTE Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<uint> ReciprocalSquareRootEstimate(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vrsqrts_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VRSQRTS.F32 Dd, Dn, Dm
+        ///   A64: FRSQRTS Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> ReciprocalSquareRootStep(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vrsqrtsq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VRSQRTS.F32 Qd, Qn, Qm
+        ///   A64: FRSQRTS Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> ReciprocalSquareRootStep(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x2_t vrecps_f32 (float32x2_t a, float32x2_t b)
