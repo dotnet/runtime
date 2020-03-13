@@ -33,17 +33,17 @@ namespace Microsoft.NET.HostModel.Tests
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
-        private void BundleRun(TestProjectFixture fixture, string publishDir, string singleFileDir)
+        private void BundleRun(TestProjectFixture fixture, string publishPath, string singleFileDir)
         {
             var hostName = BundleHelper.GetHostName(fixture);
 
             // Run the App normally
-            RunTheApp(Path.Combine(publishDir, hostName));
+            RunTheApp(Path.Combine(publishPath, hostName));
 
             // Bundle to a single-file
             // Bundle all content, until the host can handle other scenarios.
             Bundler bundler = new Bundler(hostName, singleFileDir, BundleOptions.BundleAllContent);
-            string singleFile = bundler.GenerateBundle(publishDir);
+            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
 
             // Run the extracted app
             RunTheApp(singleFile);
