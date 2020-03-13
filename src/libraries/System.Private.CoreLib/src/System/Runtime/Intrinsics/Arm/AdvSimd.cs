@@ -1053,6 +1053,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<float> ReciprocalEstimateScalar(Vector64<float> value) => ReciprocalEstimateScalar(value);
 
             /// <summary>
+            /// float64x2_t vrecpsq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FRECPS Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> ReciprocalStep(Vector128<double> left, Vector128<double> right) => ReciprocalStep(left, right);
+
+            /// <summary>
+            /// float64x1_t vrecps_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FRECPS Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> ReciprocalStepScalar(Vector64<double> left, Vector64<double> right) => ReciprocalStepScalar(left, right);
+
+            /// <summary>
+            /// float32_t vrecpss_f32 (float32_t a, float32_t b)
+            ///   A64: FRECPS Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> ReciprocalStepScalar(Vector64<float> left, Vector64<float> right) => ReciprocalStepScalar(left, right);
+
+            /// <summary>
             /// float32x2_t vsqrt_f32 (float32x2_t a)
             ///   A64: FSQRT Vd.2S, Vn.2S
             /// </summary>
@@ -4718,6 +4736,20 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: URECPE Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<uint> ReciprocalEstimate(Vector128<uint> value) => ReciprocalEstimate(value);
+
+        /// <summary>
+        /// float32x2_t vrecps_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VRECPS.F32 Dd, Dn, Dm
+        ///   A64: FRECPS Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> ReciprocalStep(Vector64<float> left, Vector64<float> right) => ReciprocalStep(left, right);
+
+        /// <summary>
+        /// float32x4_t vrecpsq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VRECPS.F32 Qd, Qn, Qm
+        ///   A64: FRECPS Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> ReciprocalStep(Vector128<float> left, Vector128<float> right) => ReciprocalStep(left, right);
 
         /// <summary>
         /// float64x1_t vsqrt_f64 (float64x1_t a)
