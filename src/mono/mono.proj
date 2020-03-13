@@ -34,8 +34,8 @@
   <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac" Outputs="$(MonoObjDir)config.h">
 
     <!-- Sanity checks -->
-    <Error Condition="'$(TargetOS)' == 'iOS' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
-    <Error Condition="'$(TargetOS)' == 'iOS' and !$([MSBuild]::IsOSPlatform('OSX'))" Text="Error: $(TargetOS) can only be built on macOS." />
+    <Error Condition="'$(TargetOS)' == 'ios' and '$(Platform)' != 'x64' and '$(Platform)' != 'arm64' and '$(Platform)' != 'arm'" Text="Error: Invalid platform for $(TargetOS): $(Platform)." />
+    <Error Condition="'$(TargetOS)' == 'ios' and !$([MSBuild]::IsOSPlatform('OSX'))" Text="Error: $(TargetOS) can only be built on macOS." />
 
     <!-- Common options -->
     <ItemGroup>
@@ -72,7 +72,7 @@
     </ItemGroup>
 
     <!-- iOS device specific options -->
-    <ItemGroup Condition="'$(TargetOS)' == 'iOS' and '$(TargetsiOSSimulator)' != 'true'">
+    <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(TargetsiOSSimulator)' != 'true'">
       <_MonoConfigureParams Condition="'$(Platform)' == 'arm64'" Include="--host=aarch64-apple-darwin10" />
       <_MonoConfigureParams Condition="'$(Platform)' == 'arm'" Include="--host=arm-apple-darwin10" />
       <_MonoConfigureParams Include="--disable-boehm" />
@@ -208,7 +208,7 @@
     </ItemGroup>
 
     <!-- iOS simulator specific options -->
-    <ItemGroup Condition="'$(TargetOS)' == 'iOS' and '$(TargetsiOSSimulator)' == 'true'">
+    <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(TargetsiOSSimulator)' == 'true'">
       <_MonoConfigureParams Include="--host=x86_64-apple-darwin10" />
       <_MonoConfigureParams Include="--disable-boehm" />
       <_MonoConfigureParams Include="--disable-btls" />
@@ -258,7 +258,7 @@
     </ItemGroup>
 
     <!-- iOS device/simulator specific options -->
-    <PropertyGroup Condition="'$(TargetOS)' == 'iOS'">
+    <PropertyGroup Condition="'$(TargetOS)' == 'ios'">
       <_MonoCCOption>CC="$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang"</_MonoCCOption>
       <_MonoCXXOption>CXX="$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++"</_MonoCXXOption>
       <_MonoAROption>AR=""</_MonoAROption>
@@ -323,7 +323,7 @@
     </PropertyGroup>
 
     <!-- AOT cross-compiler specific options -->
-    <PropertyGroup Condition="'$(TargetOS)' == 'iOS' and '$(TargetsiOSSimulator)' != 'true'">
+    <PropertyGroup Condition="'$(TargetOS)' == 'ios' and '$(TargetsiOSSimulator)' != 'true'">
       <_MonoAotCrossCFLAGSOption Condition="@(_MonoAotCrossCFLAGS->Count()) &gt; 0">CFLAGS="@(_MonoAotCrossCFLAGS, ' ')"</_MonoAotCrossCFLAGSOption>
       <_MonoAotCrossCXXFLAGSOption Condition="@(_MonoAotCrossCXXFLAGS->Count()) &gt; 0">CXXFLAGS="@(_MonoAotCrossCXXFLAGS, ' ')"</_MonoAotCrossCXXFLAGSOption>
       <_MonoAotCrossCPPFLAGSOption Condition="@(_MonoAotCrossCPPFLAGS->Count()) &gt; 0">CPPFLAGS="@(_MonoAotCrossCPPFLAGS, ' ')"</_MonoAotCrossCPPFLAGSOption>
@@ -366,7 +366,7 @@
   <Target Name="BuildMonoRuntimeWindows" Condition="'$(OS)' == 'Windows_NT'">
 
     <!-- Sanity checks -->
-    <Error Condition="'$(TargetOS)' == 'iOS'" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
+    <Error Condition="'$(TargetOS)' == 'ios'" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
 
     <ItemGroup>
       <_MonoBuildParams Include="/p:MONO_BUILD_DIR_PREFIX=&quot;&quot;$(MonoObjDir)&quot;&quot;" />

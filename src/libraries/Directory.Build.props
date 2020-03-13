@@ -44,13 +44,13 @@
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm'">arm</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm64'">arm64</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(TargetOS)' == 'WebAssembly'">wasm</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(TargetOS)' == 'iOS'">x64</ArchGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(TargetOS)' == 'ios'">x64</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
 
     <!-- RuntimeOS is calculated based on the build system OS, however if building for WebAssembly or iOS we need to let
          the build system to use webassembly/ios as the RuntimeOS for produced package RIDs. -->
     <RuntimeOS Condition="'$(TargetOS)' == 'WebAssembly'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
-    <RuntimeOS Condition="'$(TargetOS)' == 'iOS'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
+    <RuntimeOS Condition="'$(TargetOS)' == 'ios'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
  
     <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>

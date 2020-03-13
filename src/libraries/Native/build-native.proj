@@ -20,7 +20,7 @@
         then we should consider calling Environment.ProcessorCount
       -->
       <_ProcessorCountArg> -numproc $(MSBuildNodeCount)</_ProcessorCountArg>
-      <_StripSymbolsArg Condition="'$(BuildNativeStripSymbols)' == 'true' and '$(TargetOS)' != 'WebAssembly' and '$(TargetOS)' != 'iOS'"> -stripsymbols</_StripSymbolsArg>
+      <_StripSymbolsArg Condition="'$(BuildNativeStripSymbols)' == 'true' and '$(TargetOS)' != 'WebAssembly' and '$(TargetOS)' != 'ios'"> -stripsymbols</_StripSymbolsArg>
       <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
       <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
       <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> $(CMakeArgs)</_CMakeArgs>

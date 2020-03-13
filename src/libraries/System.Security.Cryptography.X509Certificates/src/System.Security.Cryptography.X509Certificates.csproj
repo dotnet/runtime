@@ -4,7 +4,7 @@
     <AssemblyName>System.Security.Cryptography.X509Certificates</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS3016;CA5379;CA5384;CA5385</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-osx;(NetCoreAppCurrent)-iOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-osx;(NetCoreAppCurrent)-ios</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />

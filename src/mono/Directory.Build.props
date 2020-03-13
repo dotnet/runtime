@@ -39,7 +39,7 @@
     <TargetsLinux Condition="'$(TargetOS)' == 'linux'">true</TargetsLinux>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
-    <TargetsiOS Condition="'$(TargetOS)' == 'iOS'">true</TargetsiOS>
+    <TargetsiOS Condition="'$(TargetOS)' == 'ios'">true</TargetsiOS>
     <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetsiOSSimulator>
     <TargetsWindows Condition="'$(TargetOS)' == 'win'">true</TargetsWindows>
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true'">true</TargetsUnix>
@@ -47,8 +47,8 @@
 
   <PropertyGroup>
     <!-- Minimum target OS version, keep in sync with src/libraries/Native/build-native.sh -->
-    <iOSVersionMin Condition="'$(TargetOS)' == 'iOS' and '$(TargetsiOSSimulator)' != 'true'">7.0</iOSVersionMin>
-    <iOSVersionMin Condition="'$(TargetOS)' == 'iOS' and '$(TargetsiOSSimulator)' == 'true'">8.0</iOSVersionMin>
+    <iOSVersionMin Condition="'$(TargetOS)' == 'ios' and '$(TargetsiOSSimulator)' != 'true'">7.0</iOSVersionMin>
+    <iOSVersionMin Condition="'$(TargetOS)' == 'ios' and '$(TargetsiOSSimulator)' == 'true'">8.0</iOSVersionMin>
     <tvOSVersionMin>9.0</tvOSVersionMin>
     <watchOSVersionMin>2.0</watchOSVersionMin>
     <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>

@@ -53,7 +53,7 @@ if [[ "$__BuildArch" == wasm ]]; then
         exit 1
     fi
     source "$EMSDK_PATH"/emsdk_env.sh
-elif [[ "$__TargetOS" == iOS ]]; then
+elif [[ "$__TargetOS" == ios ]]; then
     # nothing to do here
     true
 else
@@ -69,7 +69,7 @@ fi
 if [[ "$__TargetOS" == osx ]]; then
     # set default OSX deployment target
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
-elif [[ "$__TargetOS" == iOS ]]; then
+elif [[ "$__TargetOS" == ios ]]; then
     __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS $__CMakeArgs"
     if [[ "$__BuildArch" == x64 ]]; then
         # set default iOS simulator deployment target (8.0 is the minimum supported by Xcode 11)
