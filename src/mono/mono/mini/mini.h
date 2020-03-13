@@ -1227,7 +1227,9 @@ typedef enum {
 	/* Allow AOT to use all current CPU instructions */
 	JIT_FLAG_USE_CURRENT_CPU = (1 << 10),
 	/* Generate code to self-init the method for AOT */
-	JIT_FLAG_SELF_INIT = (1 << 11)
+	JIT_FLAG_SELF_INIT = (1 << 11),
+	/* Assume code memory is exec only */
+	JIT_FLAG_CODE_EXEC_ONLY = (1 << 12),
 } JitFlags;
 
 /* Bit-fields in the MonoBasicBlock.region */
