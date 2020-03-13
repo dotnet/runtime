@@ -14,7 +14,7 @@ namespace System.Text.Json
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/>.
+        /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
@@ -37,7 +37,7 @@ namespace System.Text.Json
         /// </exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <paramref name="inputType"/>.
+        /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>

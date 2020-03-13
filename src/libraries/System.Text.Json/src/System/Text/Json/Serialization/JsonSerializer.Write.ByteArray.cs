@@ -14,7 +14,7 @@ namespace System.Text.Json
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/>.
+        /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static byte[] SerializeToUtf8Bytes<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
@@ -32,11 +32,11 @@ namespace System.Text.Json
         /// <paramref name="inputType"/> is not compatible with <paramref name="value"/>.
         /// </exception>
         /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="inputType"/> is null.
+        /// <paramref name="inputType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <paramref name="inputType"/>.
+        /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         public static byte[] SerializeToUtf8Bytes(object? value, Type inputType, JsonSerializerOptions? options = null)
         {

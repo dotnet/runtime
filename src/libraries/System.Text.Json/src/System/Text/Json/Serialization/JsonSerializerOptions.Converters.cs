@@ -119,7 +119,7 @@ namespace System.Text.Json
         /// </exception>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <paramref name="typeToConvert"/>.
+        /// for <paramref name="typeToConvert"/> or its serializable members.
         /// </exception>
         public JsonConverter GetConverter(Type typeToConvert)
         {
