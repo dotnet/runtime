@@ -10946,9 +10946,8 @@ void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     // We receive ownership of the array
-    _ASSERTE(m_pPatchpointInfo == NULL);
-    m_fOwnsPatchpointInfo = true;
-    m_pPatchpointInfo = patchpointInfo;
+    _ASSERTE(m_pPatchpointInfoFromJit == NULL);
+    m_pPatchpointInfoFromJit = patchpointInfo;
 #else
     UNREACHABLE();
 #endif
@@ -10970,7 +10969,7 @@ PatchpointInfo* CEEJitInfo::getOSRInfo(unsigned* ilOffset)
     JIT_TO_EE_TRANSITION();
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    result = m_pPatchpointInfo;
+    result = m_pPatchpointInfoFromRuntime;
     *ilOffset = m_ilOffset;
 #endif
 
@@ -10988,7 +10987,7 @@ void CEEJitInfo::CompressDebugInfo()
     } CONTRACTL_END;
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    PatchpointInfo* patchpointInfo = m_pPatchpointInfo;
+    PatchpointInfo* patchpointInfo = m_pPatchpointInfoFromJit;
 #else
     PatchpointInfo* patchpointInfo = NULL;
 #endif

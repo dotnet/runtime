@@ -1298,11 +1298,11 @@ public:
         m_pNativeVarInfo = NULL;
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-        if (m_fOwnsPatchpointInfo && (m_pPatchpointInfo != NULL))
-            delete [] ((BYTE*) m_pPatchpointInfo);
+        if (m_pPatchpointInfoFromJit != NULL)
+            delete [] ((BYTE*) m_pPatchpointInfoFromJit);
 
-        m_pPatchpointInfo = NULL;
-        m_fOwnsPatchpointInfo = false;
+        m_pPatchpointInfoFromJit = NULL;
+        m_pPatchpointInfoFromRuntime = NULL;
         m_ilOffset = 0;
 #endif
 
@@ -1369,13 +1369,13 @@ public:
 #endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
+    // Called by the runtime to supply patchpoint information to the jit.
     void SetOSRInfo(PatchpointInfo* patchpointInfo, unsigned ilOffset)
     {
-        _ASSERTE(m_pPatchpointInfo == NULL);
+        _ASSERTE(m_pPatchpointInfoFromRuntime == NULL);
         _ASSERTE(patchpointInfo != NULL);
-        m_pPatchpointInfo = patchpointInfo;
+        m_pPatchpointInfoFromRuntime = patchpointInfo;
         m_ilOffset = ilOffset;
-        m_fOwnsPatchpointInfo = false;
     }
 #endif
 
@@ -1407,8 +1407,8 @@ public:
           m_iNativeVarInfo(0),
           m_pNativeVarInfo(NULL),
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-          m_fOwnsPatchpointInfo(false),
-          m_pPatchpointInfo(NULL),
+          m_pPatchpointInfoFromJit(NULL),
+          m_pPatchpointInfoFromRuntime(NULL),
           m_ilOffset(0),
 #endif
           m_gphCache()
@@ -1439,8 +1439,8 @@ public:
             delete [] ((BYTE*) m_pNativeVarInfo);
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-        if (m_fOwnsPatchpointInfo && (m_pPatchpointInfo != NULL))
-            delete [] ((BYTE*) m_pPatchpointInfo);
+        if (m_pPatchpointInfoFromJit != NULL)
+            delete [] ((BYTE*) m_pPatchpointInfoFromJit);
 #endif
 
     }
@@ -1517,8 +1517,8 @@ protected :
     ICorDebugInfo::NativeVarInfo * m_pNativeVarInfo;
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    bool                    m_fOwnsPatchpointInfo;
-    PatchpointInfo        * m_pPatchpointInfo;
+    PatchpointInfo        * m_pPatchpointInfoFromJit;
+    PatchpointInfo        * m_pPatchpointInfoFromRuntime;
     unsigned                m_ilOffset;
 #endif
 
