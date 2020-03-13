@@ -11,19 +11,15 @@ typedef Elf32_auxv_t elf_aux_entry;
 #define PRIu PRIu32
 #define PRId PRId32
 #define PRIA "08"
+#define PRIxA PRIA PRIx
 #elif defined(__x86_64__) || defined(__aarch64__)
 typedef Elf64_auxv_t elf_aux_entry;
-#ifdef TARGET_ANDROID
-#define PRIx __PRI_PTR_prefix PRIx64  // PRIx64 in defined as "lu" on aarch64 Android, prepend it with another macro to form "llu"
-#else // TARGET_ANDROID
 #define PRIx PRIx64
-#endif // TARGET_ANDROID
-#define PRIu PRIx
+#define PRIu PRIu64
 #define PRId PRId64
 #define PRIA "016"
-#endif
-
 #define PRIxA PRIA PRIx
+#endif
 
 typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 

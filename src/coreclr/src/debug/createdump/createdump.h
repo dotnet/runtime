@@ -65,44 +65,4 @@ typedef int T_CONTEXT;
 #include "threadinfo.h"
 #include "memoryregion.h"
 #include "crashinfo.h"
-
-#ifdef TARGET_ANDROID
-// copied from .tools/android-rootfs/android-ndk-r21/sysroot/usr/include/linux/elfcore.h
-// (after running eng/common/cross/build-android-rootfs.sh), because we should not use
-// Linux headers in Android build, and if we do it clashes with sys/procfs.h (included above).
-
-struct elf_prstatus {
-  struct elf_siginfo pr_info;
-  short pr_cursig;
-  unsigned long pr_sigpend;
-  unsigned long pr_sighold;
-  pid_t pr_pid;
-  pid_t pr_ppid;
-  pid_t pr_pgrp;
-  pid_t pr_sid;
-  struct timeval pr_utime;
-  struct timeval pr_stime;
-  struct timeval pr_cutime;
-  struct timeval pr_cstime;
-  elf_gregset_t pr_reg;
-  int pr_fpvalid;
-};
-
-struct elf_prpsinfo {
-  char pr_state;
-  char pr_sname;
-  char pr_zomb;
-  char pr_nice;
-  unsigned long pr_flag;
-  __kernel_uid_t pr_uid;
-  __kernel_gid_t pr_gid;
-  pid_t pr_pid, pr_ppid, pr_pgrp, pr_sid;
-  char pr_fname[16];
-  char pr_psargs[ELF_PRARGSZ];
-};
-
-typedef struct elf_prstatus prstatus_t;
-typedef struct elf_prpsinfo prpsinfo_t;
-#endif
-
 #include "dumpwriter.h"

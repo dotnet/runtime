@@ -47,8 +47,6 @@ target_link_libraries(createdump
     dbgutil
     # share the PAL in the dac module
     mscordaccore
-    ${ANDROID_GLOB}
-    ${LZMA}
 )
 
 add_dependencies(createdump mscordaccore)

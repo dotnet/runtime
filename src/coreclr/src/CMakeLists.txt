@@ -16,9 +16,9 @@ endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
 add_subdirectory(debug/dbgutil)
 
 if(CLR_CMAKE_HOST_UNIX)
-  if(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86)
+  if(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID)
     add_subdirectory(debug/createdump)
-  endif(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86)
+  endif(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID)
 
   # Include the dummy c++ include files
   include_directories("pal/inc/rt/cpp")
