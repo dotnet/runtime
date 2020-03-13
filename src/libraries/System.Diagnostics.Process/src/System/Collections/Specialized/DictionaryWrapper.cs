@@ -6,29 +6,29 @@ using System.Collections.Generic;
 
 namespace System.Collections.Specialized
 {
-    internal sealed class DictionaryWrapper : IDictionary<string, string>, IDictionary
+    internal sealed class DictionaryWrapper : IDictionary<string, string?>, IDictionary
     {
-        private readonly Dictionary<string, string> _contents;
+        private readonly Dictionary<string, string?> _contents;
 
-        public DictionaryWrapper(Dictionary<string, string> contents)
+        public DictionaryWrapper(Dictionary<string, string?> contents)
         {
             _contents = contents;
         }
 
-        public string this[string key]
+        public string? this[string key]
         {
             get => _contents[key];
             set => _contents[key] = value;
         }
 
-        public object this[object key]
+        public object? this[object key]
         {
             get => this[(string)key];
-            set => this[(string)key] = (string)value;
+            set => this[(string)key] = (string?)value;
         }
 
         public ICollection<string> Keys => _contents.Keys;
-        public ICollection<string> Values => _contents.Values;
+        public ICollection<string?> Values => _contents.Values;
 
         ICollection IDictionary.Keys => _contents.Keys;
         ICollection IDictionary.Values => _contents.Values;
@@ -40,26 +40,26 @@ namespace System.Collections.Specialized
         public bool IsFixedSize => ((IDictionary)_contents).IsFixedSize;
         public object SyncRoot => ((IDictionary)_contents).SyncRoot;
 
-        public void Add(string key, string value) => this[key] = value;
+        public void Add(string key, string? value) => this[key] = value;
 
-        public void Add(KeyValuePair<string, string> item) => Add(item.Key, item.Value);
+        public void Add(KeyValuePair<string, string?> item) => Add(item.Key, item.Value);
 
-        public void Add(object key, object value) => Add((string)key, (string)value);
+        public void Add(object key, object? value) => Add((string)key, (string?)value);
 
         public void Clear() => _contents.Clear();
 
-        public bool Contains(KeyValuePair<string, string> item)
+        public bool Contains(KeyValuePair<string, string?> item)
         {
             return _contents.ContainsKey(item.Key) && _contents[item.Key] == item.Value;
         }
 
         public bool Contains(object key) => ContainsKey((string)key);
         public bool ContainsKey(string key) => _contents.ContainsKey(key);
-        public bool ContainsValue(string value) => _contents.ContainsValue(value);
+        public bool ContainsValue(string? value) => _contents.ContainsValue(value);
 
-        public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex)
+        public void CopyTo(KeyValuePair<string, string?>[] array, int arrayIndex)
         {
-            ((IDictionary<string, string>)_contents).CopyTo(array, arrayIndex);
+            ((IDictionary<string, string?>)_contents).CopyTo(array, arrayIndex);
         }
 
         public void CopyTo(Array array, int index) => ((IDictionary)_contents).CopyTo(array, index);
@@ -67,7 +67,7 @@ namespace System.Collections.Specialized
         public bool Remove(string key) => _contents.Remove(key);
         public void Remove(object key) => Remove((string)key);
 
-        public bool Remove(KeyValuePair<string, string> item)
+        public bool Remove(KeyValuePair<string, string?> item)
         {
             if (!Contains(item))
             {
@@ -77,9 +77,9 @@ namespace System.Collections.Specialized
             return Remove(item.Key);
         }
 
-        public bool TryGetValue(string key, out string value) => _contents.TryGetValue(key, out value);
+        public bool TryGetValue(string key, out string? value) => _contents.TryGetValue(key, out value);
 
-        public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => _contents.GetEnumerator();
+        public IEnumerator<KeyValuePair<string, string?>> GetEnumerator() => _contents.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _contents.GetEnumerator();
         IDictionaryEnumerator IDictionary.GetEnumerator() => _contents.GetEnumerator();
     }

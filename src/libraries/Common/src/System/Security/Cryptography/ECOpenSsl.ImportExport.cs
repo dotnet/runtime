@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 
@@ -109,12 +110,12 @@ namespace System.Security.Cryptography
 
             // Use oid Value first if present, otherwise FriendlyName
             string oid = !string.IsNullOrEmpty(parameters.Curve.Oid.Value) ?
-                parameters.Curve.Oid.Value : parameters.Curve.Oid.FriendlyName;
+                parameters.Curve.Oid.Value : parameters.Curve.Oid.FriendlyName!;
 
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByKeyParameters(
                 oid,
-                parameters.Q.X, parameters.Q.X.Length,
-                parameters.Q.Y, parameters.Q.Y.Length,
+                parameters.Q.X!, parameters.Q.X!.Length,
+                parameters.Q.Y!, parameters.Q.Y!.Length,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length);
 
             return key;
@@ -125,16 +126,16 @@ namespace System.Security.Cryptography
             Debug.Assert(parameters.Curve.IsPrime);
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
                 parameters.Curve.CurveType,
-                parameters.Q.X, parameters.Q.X.Length,
-                parameters.Q.Y, parameters.Q.Y.Length,
+                parameters.Q.X, parameters.Q.X!.Length,
+                parameters.Q.Y, parameters.Q.Y!.Length,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length,
-                parameters.Curve.Prime, parameters.Curve.Prime.Length,
-                parameters.Curve.A, parameters.Curve.A.Length,
-                parameters.Curve.B, parameters.Curve.B.Length,
-                parameters.Curve.G.X, parameters.Curve.G.X.Length,
-                parameters.Curve.G.Y, parameters.Curve.G.Y.Length,
-                parameters.Curve.Order, parameters.Curve.Order.Length,
-                parameters.Curve.Cofactor, parameters.Curve.Cofactor.Length,
+                parameters.Curve.Prime!, parameters.Curve.Prime!.Length,
+                parameters.Curve.A!, parameters.Curve.A!.Length,
+                parameters.Curve.B!, parameters.Curve.B!.Length,
+                parameters.Curve.G.X!, parameters.Curve.G.X!.Length,
+                parameters.Curve.G.Y!, parameters.Curve.G.Y!.Length,
+                parameters.Curve.Order!, parameters.Curve.Order!.Length,
+                parameters.Curve.Cofactor, parameters.Curve.Cofactor!.Length,
                 parameters.Curve.Seed, parameters.Curve.Seed == null ? 0 : parameters.Curve.Seed.Length);
 
             return key;
@@ -145,16 +146,16 @@ namespace System.Security.Cryptography
             Debug.Assert(parameters.Curve.IsCharacteristic2);
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
                 parameters.Curve.CurveType,
-                parameters.Q.X, parameters.Q.X.Length,
-                parameters.Q.Y, parameters.Q.Y.Length,
+                parameters.Q.X, parameters.Q.X!.Length,
+                parameters.Q.Y, parameters.Q.Y!.Length,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length,
-                parameters.Curve.Polynomial, parameters.Curve.Polynomial.Length,
-                parameters.Curve.A, parameters.Curve.A.Length,
-                parameters.Curve.B, parameters.Curve.B.Length,
-                parameters.Curve.G.X, parameters.Curve.G.X.Length,
-                parameters.Curve.G.Y, parameters.Curve.G.Y.Length,
-                parameters.Curve.Order, parameters.Curve.Order.Length,
-                parameters.Curve.Cofactor, parameters.Curve.Cofactor.Length,
+                parameters.Curve.Polynomial!, parameters.Curve.Polynomial!.Length,
+                parameters.Curve.A!, parameters.Curve.A!.Length,
+                parameters.Curve.B!, parameters.Curve.B!.Length,
+                parameters.Curve.G.X!, parameters.Curve.G.X!.Length,
+                parameters.Curve.G.Y!, parameters.Curve.G.Y!.Length,
+                parameters.Curve.Order!, parameters.Curve.Order!.Length,
+                parameters.Curve.Cofactor, parameters.Curve.Cofactor!.Length,
                 parameters.Curve.Seed, parameters.Curve.Seed == null ? 0 : parameters.Curve.Seed.Length);
 
             return key;
@@ -170,7 +171,7 @@ namespace System.Security.Cryptography
 
         public static SafeEcKeyHandle GenerateKeyByKeySize(int keySize)
         {
-            string oid = null;
+            string oid;
             switch (keySize)
             {
                 case 256: oid = ECDSA_P256_OID_VALUE; break;
@@ -181,7 +182,7 @@ namespace System.Security.Cryptography
                     throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
             }
 
-            SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByOid(oid);
+            SafeEcKeyHandle? key = Interop.Crypto.EcKeyCreateByOid(oid);
 
             if (key == null || key.IsInvalid)
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));

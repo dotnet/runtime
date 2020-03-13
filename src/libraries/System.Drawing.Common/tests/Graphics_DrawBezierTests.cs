@@ -22,7 +22,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(30683, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26624", TargetFrameworkMonikers.Netcoreapp)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawBezier_Points()
         {
@@ -44,7 +44,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(30683, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26624", TargetFrameworkMonikers.Netcoreapp)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawBezier_PointFs()
         {
@@ -93,8 +93,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void DrawBezier_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -115,8 +114,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void DrawBezier_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -143,7 +141,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawBeziers_DisposedPen_ThrowsArgumentException()
         {
@@ -170,7 +168,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawBeziers_EmptyPoints_ThrowsArgumentException()
         {
@@ -183,7 +181,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawBeziers_Busy_ThrowsInvalidOperationException()
         {
@@ -204,7 +202,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawBeziers_Disposed_ThrowsArgumentException()
         {

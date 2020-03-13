@@ -5,6 +5,8 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
 using System.Linq;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 
 namespace System.ComponentModel.Composition.Hosting
 {
@@ -14,7 +16,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             private readonly IEnumerable<ComposablePartDefinition> _parts;
             private readonly Func<ImportDefinition, bool> _importFilter;
-            private Dictionary<string, List<ComposablePartDefinition>> _exportersIndex;
+            private Dictionary<string, List<ComposablePartDefinition>>? _exportersIndex;
 
             public DependenciesTraversal(FilteredCatalog catalog, Func<ImportDefinition, bool> importFilter)
             {
@@ -50,8 +52,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             private void AddToExportersIndex(string contractName, ComposablePartDefinition part)
             {
-                List<ComposablePartDefinition> parts = null;
-                if (!_exportersIndex.TryGetValue(contractName, out parts))
+                if (!_exportersIndex!.TryGetValue(contractName, out List<ComposablePartDefinition>? parts))
                 {
                     parts = new List<ComposablePartDefinition>();
                     _exportersIndex.Add(contractName, parts);
@@ -59,16 +60,17 @@ namespace System.ComponentModel.Composition.Hosting
                 parts.Add(part);
             }
 
-            public bool TryTraverse(ComposablePartDefinition part, out IEnumerable<ComposablePartDefinition> reachableParts)
+            public bool TryTraverse(ComposablePartDefinition part, [NotNullWhen(true)] out IEnumerable<ComposablePartDefinition>? reachableParts)
             {
                 reachableParts = null;
-                List<ComposablePartDefinition> reachablePartList = null;
+                List<ComposablePartDefinition>? reachablePartList = null;
 
                 // Go through all part imports
                 foreach (ImportDefinition import in part.ImportDefinitions.Where(_importFilter))
                 {
                     // Find all parts that we know will import each export
-                    List<ComposablePartDefinition> candidateReachableParts = null;
+                    List<ComposablePartDefinition>? candidateReachableParts = null;
+                    Debug.Assert(_exportersIndex != null);
                     foreach (var contractName in import.GetCandidateContractNames(part))
                     {
                         if (_exportersIndex.TryGetValue(contractName, out candidateReachableParts))

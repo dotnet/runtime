@@ -5,7 +5,7 @@
 //===============================================================================
 #include "phase.h"
 
-class Rationalizer : public Phase
+class Rationalizer final : public Phase
 {
 private:
     BasicBlock* m_block;
@@ -57,7 +57,7 @@ private:
     Compiler::fgWalkResult RewriteNode(GenTree** useEdge, Compiler::GenTreeStack& parents);
 };
 
-inline Rationalizer::Rationalizer(Compiler* _comp) : Phase(_comp, "IR Rationalize", PHASE_RATIONALIZE)
+inline Rationalizer::Rationalizer(Compiler* _comp) : Phase(_comp, PHASE_RATIONALIZE)
 {
 #ifdef DEBUG
     comp->compNumStatementLinksTraversed = 0;

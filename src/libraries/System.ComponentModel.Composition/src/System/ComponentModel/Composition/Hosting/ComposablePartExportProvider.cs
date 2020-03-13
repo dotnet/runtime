@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -17,9 +18,9 @@ namespace System.ComponentModel.Composition.Hosting
         private List<ComposablePart> _parts = new List<ComposablePart>();
         private volatile bool _isDisposed = false;
         private volatile bool _isRunning = false;
-        private readonly CompositionLock _lock = null;
-        private ExportProvider _sourceProvider;
-        private ImportEngine _importEngine;
+        private readonly CompositionLock _lock;
+        private ExportProvider? _sourceProvider;
+        private ImportEngine? _importEngine;
         private volatile bool _currentlyComposing;
         private readonly CompositionOptions _compositionOptions;
 
@@ -67,7 +68,7 @@ namespace System.ComponentModel.Composition.Hosting
                 if (!_isDisposed)
                 {
                     bool disposeLock = false;
-                    ImportEngine importEngine = null;
+                    ImportEngine? importEngine = null;
                     try
                     {
                         using (_lock.LockStateForWrite())
@@ -126,8 +127,8 @@ namespace System.ComponentModel.Composition.Hosting
         ///     This property must be set before accessing any methods on the
         ///     <see cref="ComposablePartExportProvider"/>.
         /// </remarks>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "EnsureCanSet ensures that the property is set only once, Dispose is not required")]
-        public ExportProvider SourceProvider
+        [DisallowNull]
+        public ExportProvider? SourceProvider
         {
             get
             {
@@ -139,7 +140,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 ThrowIfDisposed();
 
-                Requires.NotNull(value, nameof(value));
+                Requires.NotNull(value!, nameof(value));
                 using (_lock.LockStateForWrite())
                 {
                     EnsureCanSet(_sourceProvider);
@@ -158,7 +159,7 @@ namespace System.ComponentModel.Composition.Hosting
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
-                    ImportEngine importEngine = new ImportEngine(_sourceProvider, _compositionOptions);
+                    ImportEngine? importEngine = new ImportEngine(_sourceProvider, _compositionOptions);
                     using (_lock.LockStateForWrite())
                     {
                         if (_importEngine == null)
@@ -199,7 +200,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// it should return an empty <see cref="IEnumerable{T}"/> of <see cref="Export"/>.
         /// </note>
         /// </remarks>
-        protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition)
+        protected override IEnumerable<Export>? GetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition)
         {
             ThrowIfDisposed();
             EnsureRunning();
@@ -208,7 +209,7 @@ namespace System.ComponentModel.Composition.Hosting
             // failing that use the usual list.  We never change the list of parts in place,
             // but rather copy, change and write a new list atomically.  Therefore all we need
             // to do here is to read the _parts member.
-            List<ComposablePart> parts = null;
+            List<ComposablePart>? parts = null;
             using (_lock.LockStateForRead())
             {
                 parts = atomicComposition.GetValueAllowNull(this, _parts);
@@ -327,7 +328,7 @@ namespace System.ComponentModel.Composition.Hosting
             // Copy the current list of parts - we are about to modify it
             // This is an OK thing to do as this is the only method that can modify the List AND Compose can
             // only be executed on one thread at a time - thus two different threads cannot tramp over each other
-            List<ComposablePart> parts = null;
+            List<ComposablePart>? parts = null;
             using (_lock.LockStateForRead())
             {
                 parts = _parts.ToList(); // this copies the list
@@ -338,7 +339,7 @@ namespace System.ComponentModel.Composition.Hosting
                 parts.Add(part);
             }
 
-            List<ComposablePart> partsToRemove = null;
+            List<ComposablePart>? partsToRemove = null;
 
             foreach (ComposablePart part in batch.PartsToRemove)
             {
@@ -396,7 +397,7 @@ namespace System.ComponentModel.Composition.Hosting
             return new Export(export, () => GetExportedValue(part, export));
         }
 
-        private object GetExportedValue(ComposablePart part, ExportDefinition export)
+        private object? GetExportedValue(ComposablePart part, ExportDefinition export)
         {
             ThrowIfDisposed();
             EnsureRunning();
@@ -439,7 +440,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [DebuggerStepThrough]
-        private void EnsureCanSet<T>(T currentValue)
+        private void EnsureCanSet<T>(T? currentValue)
             where T : class
         {
             if ((_isRunning) || (currentValue != null))

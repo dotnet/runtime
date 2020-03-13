@@ -407,7 +407,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(GetToArrayDataSources))]
         public void CollectionInterleavedWithLazyEnumerables_ToArray(IEnumerable<int>[] arrays)
         {
-            // See https://github.com/dotnet/corefx/issues/23680
+            // See https://github.com/dotnet/runtime/issues/23389
 
             IEnumerable<int> concats = arrays[0];
 

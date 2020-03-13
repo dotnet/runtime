@@ -44,7 +44,7 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
         return;
 
     case IMAGE_REL_BASED_PTR:
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         // Misaligned relocs disable ASLR on ARM. We should never ever emit them.
         _ASSERTE(IS_ALIGNED(rva, TARGET_POINTER_SIZE));
 #endif
@@ -67,7 +67,7 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
         // IMAGE_REL_BASED_RELPTR32 does not need base reloc entry
         return;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     case IMAGE_REL_BASED_REL32:
         {
             TADDR pSite = (TADDR)m_pImage->GetBaseAddress() + rva;
@@ -75,9 +75,9 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
         }
         // IMAGE_REL_BASED_REL32 does not need base reloc entry
         return;
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     case IMAGE_REL_BASED_THUMB_MOV32:
         {
             PutThumb2Mov32((UINT16 *)pLocation, (UINT32)pActualTarget);
@@ -122,8 +122,8 @@ void ZapBaseRelocs::WriteReloc(PVOID pSrc, int offset, ZapNode * pTarget, int ta
         }
         // IMAGE_REL_BASED_THUMB_BRANCH24 does not need base reloc entry
         return;
-#endif // defined(_TARGET_ARM_)
-#if defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM)
+#if defined(TARGET_ARM64)
     case IMAGE_REL_ARM64_BRANCH26:
         {
             TADDR pSite = (TADDR)m_pImage->GetBaseAddress() + rva;
@@ -290,13 +290,13 @@ void ZapBlobWithRelocs::Save(ZapWriter * pZapWriter)
                 targetOffset = (int)*(UNALIGNED INT32 *)pLocation;
                 break;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
             case IMAGE_REL_BASED_REL32:
                 targetOffset = *(UNALIGNED INT32 *)pLocation;
                 break;
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
             case IMAGE_REL_BASED_THUMB_MOV32:
             case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
                 targetOffset = (int)GetThumb2Mov32((UINT16 *)pLocation);
@@ -305,9 +305,9 @@ void ZapBlobWithRelocs::Save(ZapWriter * pZapWriter)
             case IMAGE_REL_BASED_THUMB_BRANCH24:
                 targetOffset = GetThumb2BlRel24((UINT16 *)pLocation);
                 break;
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
             case IMAGE_REL_ARM64_BRANCH26:
                 targetOffset = (int)GetArm64Rel28((UINT32*)pLocation);
                 break;
@@ -320,7 +320,7 @@ void ZapBlobWithRelocs::Save(ZapWriter * pZapWriter)
                 targetOffset = (int)GetArm64Rel12((UINT32*)pLocation);
                 break;
 
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
 
             default:
                 _ASSERTE(!"Unknown reloc type");

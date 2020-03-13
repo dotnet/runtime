@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
                 // Unreachable.
                 // Want to assert that this case isn't hit, but an assertion failure here will be eaten because
                 // we are in an exception filter. Therefore return true here and assert in the catch block.
-                handler = null;
+                handler = null!;
                 unwrappedException = exception;
                 return true;
             }
@@ -215,8 +215,9 @@ namespace System.Linq.Expressions.Interpreter
         private class DebugInfoComparer : IComparer<DebugInfo>
         {
             //We allow comparison between int and DebugInfo here
-            int IComparer<DebugInfo>.Compare(DebugInfo d1, DebugInfo d2)
+            int IComparer<DebugInfo>.Compare(DebugInfo? d1, DebugInfo? d2)
             {
+                Debug.Assert(d1 != null && d2 != null);
                 if (d1.Index > d2.Index) return 1;
                 else if (d1.Index == d2.Index) return 0;
                 else return -1;
@@ -260,12 +261,10 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
     internal readonly struct InterpretedFrameInfo
     {
         private readonly string? _methodName;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         private readonly DebugInfo? _debugInfo;
 
         public InterpretedFrameInfo(string? methodName, DebugInfo? info)
@@ -277,7 +276,6 @@ namespace System.Linq.Expressions.Interpreter
         public override string? ToString() => _debugInfo != null ? _methodName + ": " + _debugInfo : _methodName;
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     internal sealed class LightCompiler
     {
         private readonly InstructionList _instructions;
@@ -1787,7 +1785,6 @@ namespace System.Linq.Expressions.Interpreter
             _labelBlock = new LabelScopeInfo(_labelBlock, type);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kind")]
         private void PopLabelBlock(LabelScopeKind kind)
         {
             Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind);
@@ -3021,7 +3018,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void CompileNoLabelPush(Expression expr)
         {
             // When compiling deep trees, we run the risk of triggering a terminating StackOverflowException,

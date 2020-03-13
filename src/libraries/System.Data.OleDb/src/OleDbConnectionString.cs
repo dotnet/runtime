@@ -416,9 +416,9 @@ namespace System.Data.OleDb
 
                         StringBuilder builder = new StringBuilder();
                         builder.Append(KEY.Ole_DB_Services);
-                        builder.Append("=");
+                        builder.Append('=');
                         builder.Append(_oledbServices.ToString(CultureInfo.InvariantCulture));
-                        builder.Append(";");
+                        builder.Append(';');
                         builder.Append(connectionString);
                         connectionString = builder.ToString();
                     }
@@ -448,7 +448,7 @@ namespace System.Data.OleDb
             {
                 throw ODB.InvalidProviderSpecified();
             }
-            progid = progid.ToLower(CultureInfo.InvariantCulture);
+            progid = progid.ToLowerInvariant();
             if (IsMSDASQL(progid))
             {
                 // fail msdasql even if not on the machine.

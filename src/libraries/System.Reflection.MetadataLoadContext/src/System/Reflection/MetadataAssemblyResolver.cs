@@ -33,6 +33,6 @@ namespace System.Reflection
         /// The MetadataLoadContext cannot consume assemblies from other MetadataLoadContexts or other type providers (such as the underlying runtime's own Reflection system.)
         /// If a handler returns such an assembly, the MetadataLoadContext throws a FileLoadException.
         /// </remarks>
-        public abstract Assembly Resolve(MetadataLoadContext context, AssemblyName assemblyName);
+        public abstract Assembly? Resolve(MetadataLoadContext context, AssemblyName assemblyName);
     }
 }

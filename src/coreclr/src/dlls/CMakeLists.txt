@@ -1,6 +1,6 @@
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     add_subdirectory(clretwrc)
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 add_subdirectory(dbgshim)
 add_subdirectory(mscordbi)
 add_subdirectory(mscordac)

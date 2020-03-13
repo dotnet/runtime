@@ -1423,8 +1423,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                          BOOL fEmitsIL,
                          BOOL onInstanceMethod,
                          MethodDesc* pMD,
-                         BOOL fLoadCustomMarshal,
-                         BOOL fCalculatingFieldMetadata
+                         BOOL fLoadCustomMarshal
 #ifdef _DEBUG
                          ,
                          LPCUTF8 pDebugName,
@@ -1465,6 +1464,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
     CorElementType corElemType      = ELEMENT_TYPE_END;
     m_pMT                           = NULL;
     m_pMD                           = pMD;
+    m_onInstanceMethod              = onInstanceMethod;
 
 #ifdef FEATURE_COMINTEROP
     m_fDispItf                      = FALSE;
@@ -1595,54 +1595,33 @@ MarshalInfo::MarshalInfo(Module* pModule,
         }
 #endif // FEATURE_COMINTEROP
 
-        if (!fCalculatingFieldMetadata) // When calculating field metadata, we don't need to check the subtype of the pointer.
+        SigPointer sigtmp = sig;
+        IfFailGoto(sigtmp.GetElemType(NULL), lFail);
+
+        // Peek closed elem type here to prevent ELEMENT_TYPE_VALUETYPE turning into a primitive.
+        CorElementType mtype2 = sigtmp.PeekElemTypeClosed(pModule, pTypeContext);
+
+        if (mtype2 == ELEMENT_TYPE_VALUETYPE)
         {
-            SigPointer sigtmp = sig;
-            IfFailGoto(sigtmp.GetElemType(NULL), lFail);
+            TypeHandle th = sigtmp.GetTypeHandleThrowing(pModule, pTypeContext);
+            _ASSERTE(!th.IsNull());
 
-            // Peek closed elem type here to prevent ELEMENT_TYPE_VALUETYPE turning into a primitive.
-            CorElementType mtype2 = sigtmp.PeekElemTypeClosed(pModule, pTypeContext);
-
-            if (mtype2 == ELEMENT_TYPE_VALUETYPE)
+            // We want to leave out enums as they surely don't have copy constructors
+            // plus they are not marked as blittable.
+            if (!th.IsEnum())
             {
-                TypeHandle th = sigtmp.GetTypeHandleThrowing(pModule, pTypeContext);
-                _ASSERTE(!th.IsNull());
-
-                // We want to leave out enums as they surely don't have copy constructors
-                // plus they are not marked as blittable.
-                if (!th.IsEnum())
+                // Check for Copy Constructor Modifier
+                if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
+                    sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
                 {
-                    // It should be blittable
-                    if (!th.IsBlittable())
-                    {
-                        m_resID = IDS_EE_BADMARSHAL_PTRNONBLITTABLE;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
+                    mtype = mtype2;
 
-                    // Check for Copy Constructor Modifier
-                    if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
-                        sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
-                    {
-                        mtype = mtype2;
+                    // Keep the sig pointer in sync with mtype (skip ELEMENT_TYPE_PTR) because for the rest
+                    // of this method we are pretending that the parameter is a value type passed by-value.
+                    IfFailGoto(sig.GetElemType(NULL), lFail);
 
-                        // Keep the sig pointer in sync with mtype (skip ELEMENT_TYPE_PTR) because for the rest
-                        // of this method we are pretending that the parameter is a value type passed by-value.
-                        IfFailGoto(sig.GetElemType(NULL), lFail);
-
-                        fNeedsCopyCtor = TRUE;
-                        m_byref = FALSE;
-                    }
-                }
-            }
-            else
-            {
-                if (!(mtype2 != ELEMENT_TYPE_CLASS &&
-                    mtype2 != ELEMENT_TYPE_STRING &&
-                    mtype2 != ELEMENT_TYPE_OBJECT &&
-                    mtype2 != ELEMENT_TYPE_SZARRAY))
-                {
-                    m_resID = IDS_EE_BADMARSHAL_PTRSUBTYPE;
-                    IfFailGoto(E_FAIL, lFail);
+                    fNeedsCopyCtor = TRUE;
+                    m_byref = FALSE;
                 }
             }
         }
@@ -1650,7 +1629,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
     // System primitive types (System.Int32, et.al.) will be marshaled as expected
     // because the mtype CorElementType is normalized (e.g. ELEMENT_TYPE_I4).
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // We however need to detect if such a normalization occurred for non-system
     // trivial value types, because we hold CorNativeType belonging to the original
     // "un-normalized" signature type. It has to be verified that all the value types
@@ -1677,7 +1656,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
         }
 
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 
     if (nativeType == NATIVE_TYPE_CUSTOMMARSHALER)
@@ -1922,7 +1901,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_I;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -1936,7 +1915,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_I;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -1972,7 +1951,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_PTR;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -1993,7 +1972,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_FNPTR;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -2005,12 +1984,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
         case ELEMENT_TYPE_CLASS:
         case ELEMENT_TYPE_VAR:
         {
-            TypeHandle sigTH = sig.GetTypeHandleThrowing(
-                pModule,
-                pTypeContext,
-                ClassLoader::LoadTypes,
-                fCalculatingFieldMetadata ? CLASS_LOAD_APPROXPARENTS : CLASS_LOADED,
-                fCalculatingFieldMetadata ? TRUE : FALSE);
+            TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
 
             // Disallow marshaling generic types except for WinRT interfaces.
             if (sigTH.HasInstantiation())
@@ -2756,12 +2730,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             }
             else
             {
-                m_pMT =  sig.GetTypeHandleThrowing(
-                    pModule,
-                    pTypeContext,
-                    ClassLoader::LoadTypes,
-                    fCalculatingFieldMetadata ? CLASS_LOAD_APPROXPARENTS : CLASS_LOADED,
-                    fCalculatingFieldMetadata ? TRUE : FALSE).GetMethodTable();
+                m_pMT =  sig.GetTypeHandleThrowing(pModule, pTypeContext).GetMethodTable();
                 if (m_pMT == NULL)
                     break;
 
@@ -2802,26 +2771,35 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
                 // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
                 // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
-                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for inteorp scenarios
-
-                if (m_pMT->HasInstantiation() && (!m_pMT->IsBlittable()
-                    || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
-                    || m_pMT->HasSameTypeDefAs(g_pNullableClass)
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
+                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
+                // We can't block these types for field scenarios for back-compat reasons.
+                if (m_pMT->HasInstantiation() && !IsFieldScenario()
+                    && (!m_pMT->IsBlittable()
+                        || (m_pMT->HasSameTypeDefAs(g_pNullableClass)
+                        || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__SPAN))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__READONLY_SPAN))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
 #ifndef CROSSGEN_COMPILE
-                    // Crossgen scenarios block Vector<T> from even being loaded
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
+                            // Crossgen scenarios block Vector<T> from even being loaded
+                            || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
 #endif // !CROSSGEN_COMPILE
-                    ))
+                    )))
                 {
                     m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
                     IfFailGoto(E_FAIL, lFail);
                 }
 
+                if (!m_pMT->HasLayout())
+                {
+                    m_resID = IDS_EE_BADMARSHAL_AUTOLAYOUT;
+                    IfFailGoto(E_FAIL, lFail);
+                }
+
                 UINT managedSize = m_pMT->GetAlignedNumInstanceFieldBytes();
-                UINT  nativeSize = m_pMT->GetNativeSize();
+                UINT  nativeSize = 0;
 
                 if ( nativeSize > 0xfff0 ||
                     managedSize > 0xfff0)
@@ -2869,7 +2847,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR;
                         }
                         else
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                         // JIT64 is not aware of normalized value types and this optimization
                         // (returning small value types by value in registers) is already done in JIT64.
                         if (        !m_byref   // Permit register-sized structs as return values
@@ -2885,14 +2863,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             m_args.m_pMT = m_pMT;
                         }
                         else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
                         {
                             m_args.m_pMT = m_pMT;
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASS;
                         }
                     }
                 }
-                else if (m_pMT->HasLayout())
+                else
                 {
                     if (!(nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_STRUCT))
                     {
@@ -2916,12 +2894,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
         case ELEMENT_TYPE_ARRAY:
         {
             // Get class info from array.
-            TypeHandle arrayTypeHnd = sig.GetTypeHandleThrowing(
-                pModule,
-                pTypeContext,
-                ClassLoader::LoadTypes,
-                fCalculatingFieldMetadata ? CLASS_LOAD_APPROXPARENTS : CLASS_LOADED,
-                fCalculatingFieldMetadata ? TRUE : FALSE);
+            TypeHandle arrayTypeHnd = sig.GetTypeHandleThrowing(pModule, pTypeContext);
             _ASSERTE(!arrayTypeHnd.IsNull());
 
             TypeHandle thElement = arrayTypeHnd.GetArrayElementTypeHandle();
@@ -3161,6 +3134,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     CONTRACTL
     {
         STANDARD_VM_CHECK;
+        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pParamInfo));
     }
     CONTRACTL_END;
@@ -3355,7 +3329,7 @@ DWORD CalculateArgumentMarshalFlags(BOOL byref, BOOL in, BOOL out, BOOL fMngToNa
     return dwMarshalFlags;
 }
 
-DWORD CalculateReturnMarshalFlags(BOOL hrSwap, BOOL fMngToNative)
+DWORD CalculateReturnMarshalFlags(BOOL hrSwap, BOOL fMngToNative, BOOL onInstanceMethod)
 {
     LIMITED_METHOD_CONTRACT;
     DWORD dwMarshalFlags = MARSHAL_FLAG_RETVAL;
@@ -3368,6 +3342,11 @@ DWORD CalculateReturnMarshalFlags(BOOL hrSwap, BOOL fMngToNative)
     if (fMngToNative)
     {
         dwMarshalFlags |= MARSHAL_FLAG_CLR_TO_NATIVE;
+    }
+
+    if (onInstanceMethod)
+    {
+        dwMarshalFlags |= MARSHAL_FLAG_IN_MEMBER_FUNCTION;
     }
 
     return dwMarshalFlags;
@@ -3513,7 +3492,7 @@ void MarshalInfo::GenerateReturnIL(NDirectStubLinker* psl,
         }
 
         NewHolder<ILMarshaler> pMarshaler = CreateILMarshaler(m_type, psl);
-        DWORD dwMarshalFlags = CalculateReturnMarshalFlags(retval, fMngToNative);
+        DWORD dwMarshalFlags = CalculateReturnMarshalFlags(retval, fMngToNative, m_onInstanceMethod);
 
         if (!pMarshaler->SupportsReturnMarshal(dwMarshalFlags, &resID))
         {
@@ -3592,8 +3571,8 @@ void MarshalInfo::SetupArgumentSizes()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3617,8 +3596,8 @@ UINT16 MarshalInfo::GetNativeSize(MarshalType mtype)
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3957,6 +3936,7 @@ HRESULT MarshalInfo::TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, BOOL fIn
     CONTRACTL
     {
         STANDARD_VM_CHECK;
+        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!th.IsNull());
         PRECONDITION(CheckPointer(pInfo));
     }
@@ -5034,6 +5014,7 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
     CONTRACT_VOID
     {
         STANDARD_VM_CHECK;
+        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!thElement.IsNull());
         POSTCONDITION(!IsValid() || !m_thElement.IsNull());
     }

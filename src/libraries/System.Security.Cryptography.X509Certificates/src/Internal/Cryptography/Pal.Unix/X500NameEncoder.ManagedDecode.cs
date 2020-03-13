@@ -29,7 +29,9 @@ namespace Internal.Cryptography.Pal
 
             while (x500NameSequenceReader.HasData)
             {
-                rdnReaders.Add(x500NameSequenceReader.ReadSetOf());
+                // To match Windows' behavior, permit multi-value RDN SETs to not
+                // be DER sorted.
+                rdnReaders.Add(x500NameSequenceReader.ReadSetOf(skipSortOrderValidation: true));
             }
 
             // We need to allocate a StringBuilder to hold the data as we're building it, and there's the usual

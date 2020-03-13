@@ -21,7 +21,7 @@
 ******************************************************************************/
 
 // clang-format off
-#if !defined(_TARGET_XARCH_)
+#if !defined(TARGET_XARCH)
   #error Unexpected target type
 #endif
 
@@ -88,7 +88,7 @@ INST4(lea,              "lea",              IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(bt,               "bt",               IUM_RD, 0x0F00A3,     BAD_CODE,     0x0F00A3,                                INS_FLAGS_WritesFlags)
 
 INST3(movsx,            "movsx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BE,                                INS_FLAGS_None)
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 INST3(movsxd,           "movsxd",           IUM_WR, BAD_CODE,     BAD_CODE,     0x4800000063,                            INS_FLAGS_None)
 #endif
 INST3(movzx,            "movzx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00B6,                                INS_FLAGS_None)
@@ -128,7 +128,7 @@ INSTMUL(imul_BP,        "imul",             IUM_RD, BAD_CODE,     0x002868,     
 INSTMUL(imul_SI,        "imul",             IUM_RD, BAD_CODE,     0x003068,     BAD_CODE,                                INS_FLAGS_WritesFlags)
 INSTMUL(imul_DI,        "imul",             IUM_RD, BAD_CODE,     0x003868,     BAD_CODE,                                INS_FLAGS_WritesFlags)
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
 INSTMUL(imul_08,        "imul",             IUM_RD, BAD_CODE,     0x4400000068, BAD_CODE,                                INS_FLAGS_WritesFlags)
 INSTMUL(imul_09,        "imul",             IUM_RD, BAD_CODE,     0x4400000868, BAD_CODE,                                INS_FLAGS_WritesFlags)
@@ -139,7 +139,7 @@ INSTMUL(imul_13,        "imul",             IUM_RD, BAD_CODE,     0x4400002868, 
 INSTMUL(imul_14,        "imul",             IUM_RD, BAD_CODE,     0x4400003068, BAD_CODE,                                INS_FLAGS_WritesFlags)
 INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, BAD_CODE,                                INS_FLAGS_WritesFlags)
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 // the hex codes in this file represent the instruction encoding as follows:
 // 0x0000ff00 - modrm byte position
@@ -645,25 +645,25 @@ INST2(sar_N,            "sar",              IUM_RW, 0x0038C0,     0x0038C0,     
 //    id                nm                  um      mr                                                                   flags
 INST1(r_movsb,          "rep movsb",        IUM_RD, 0x00A4F3,                                                            INS_FLAGS_None)
 INST1(r_movsd,          "rep movsd",        IUM_RD, 0x00A5F3,                                                            INS_FLAGS_None)
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 INST1(r_movsq,          "rep movsq",        IUM_RD, 0xF3A548,                                                            INS_FLAGS_None)
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 INST1(movsb,            "movsb",            IUM_RD, 0x0000A4,                                                            INS_FLAGS_None)
 INST1(movsd,            "movsd",            IUM_RD, 0x0000A5,                                                            INS_FLAGS_None)
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 INST1(movsq,            "movsq",            IUM_RD, 0x00A548,                                                            INS_FLAGS_None)
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 
 INST1(r_stosb,          "rep stosb",        IUM_RD, 0x00AAF3,                                                            INS_FLAGS_None)
 INST1(r_stosd,          "rep stosd",        IUM_RD, 0x00ABF3,                                                            INS_FLAGS_None)
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 INST1(r_stosq,          "rep stosq",        IUM_RD, 0xF3AB48,                                                            INS_FLAGS_None)
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 INST1(stosb,            "stosb",            IUM_RD, 0x0000AA,                                                            INS_FLAGS_None)
 INST1(stosd,            "stosd",            IUM_RD, 0x0000AB,                                                            INS_FLAGS_None)
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 INST1(stosq,            "stosq",            IUM_RD, 0x00AB48,                                                            INS_FLAGS_None)
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 
 INST1(int3,             "int3",             IUM_RD, 0x0000CC,                                                            INS_FLAGS_None)
 INST1(nop,              "nop",              IUM_RD, 0x000090,                                                            INS_FLAGS_None)
@@ -691,10 +691,10 @@ INST1(shrd,             "shrd",             IUM_RW, 0x0F00AC,                   
 // For RyuJIT/x86, we follow the x86 calling convention that requires
 // us to return floating point value on the x87 FP stack, so we need
 // these instructions regardless of whether we're using full stack fp.
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 INST1(fld,              "fld",              IUM_WR, 0x0000D9,                                                            INS_FLAGS_x87Instr)
 INST1(fstp,             "fstp",             IUM_WR, 0x0018D9,                                                            INS_FLAGS_x87Instr)
-#endif // _TARGET_X86
+#endif // TARGET_X86
 
 INST1(seto,             "seto",             IUM_WR, 0x0F0090,                                                            INS_FLAGS_ReadsFlags)
 INST1(setno,            "setno",            IUM_WR, 0x0F0091,                                                            INS_FLAGS_ReadsFlags)
@@ -713,7 +713,7 @@ INST1(setge,            "setge",            IUM_WR, 0x0F009D,                   
 INST1(setle,            "setle",            IUM_WR, 0x0F009E,                                                            INS_FLAGS_ReadsFlags)
 INST1(setg,             "setg",             IUM_WR, 0x0F009F,                                                            INS_FLAGS_ReadsFlags)
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 // A jump with rex prefix. This is used for register indirect
 // tail calls.
 INST1(rex_jmp,          "rex.jmp",          IUM_RD, 0x0020FE,                                                            INS_FLAGS_None)

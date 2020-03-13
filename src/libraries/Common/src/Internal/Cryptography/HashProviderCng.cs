@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
@@ -21,7 +22,7 @@ namespace Internal.Cryptography
         //
         //   - "key" activates MAC hashing if present. If null, this HashProvider performs a regular old hash.
         //
-        public HashProviderCng(string hashAlgId, byte[] key) : this(hashAlgId, key, isHmac: key != null)
+        public HashProviderCng(string hashAlgId, byte[]? key) : this(hashAlgId, key, isHmac: key != null)
         {
         }
 
@@ -39,7 +40,7 @@ namespace Internal.Cryptography
             // Win7 won't set hHash, Win8+ will; and both will set _hHash.
             // So keep hHash trapped in this scope to prevent (mis-)use of it.
             {
-                SafeBCryptHashHandle hHash = null;
+                SafeBCryptHashHandle? hHash = null;
                 NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, key, key == null ? 0 : key.Length, BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG);
                 if (ntStatus == NTSTATUS.STATUS_INVALID_PARAMETER)
                 {
@@ -62,6 +63,7 @@ namespace Internal.Cryptography
             {
                 int cbSizeOfHashSize;
                 int hashSize;
+                Debug.Assert(_hHash != null);
                 NTSTATUS ntStatus = Interop.BCrypt.BCryptGetProperty(_hHash, Interop.BCrypt.BCryptPropertyStrings.BCRYPT_HASH_LENGTH, &hashSize, sizeof(int), out cbSizeOfHashSize, 0);
                 if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                     throw Interop.BCrypt.CreateCryptographicException(ntStatus);
@@ -71,6 +73,7 @@ namespace Internal.Cryptography
 
         public sealed override unsafe void AppendHashData(ReadOnlySpan<byte> source)
         {
+            Debug.Assert(_hHash != null);
             NTSTATUS ntStatus = Interop.BCrypt.BCryptHashData(_hHash, source, source.Length, 0);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
             {
@@ -95,6 +98,7 @@ namespace Internal.Cryptography
                 return false;
             }
 
+            Debug.Assert(_hHash != null);
             NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hHash, destination, _hashSize, 0);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
             {
@@ -138,7 +142,7 @@ namespace Internal.Cryptography
 
         private void DestroyHash()
         {
-            SafeBCryptHashHandle hHash = _hHash;
+            SafeBCryptHashHandle? hHash = _hHash;
             _hHash = null;
             if (hHash != null)
             {
@@ -149,8 +153,8 @@ namespace Internal.Cryptography
         }
 
         private readonly SafeBCryptAlgorithmHandle _hAlgorithm;
-        private SafeBCryptHashHandle _hHash;
-        private byte[] _key;
+        private SafeBCryptHashHandle? _hHash;
+        private byte[]? _key;
         private readonly bool _reusable;
 
         private readonly int _hashSize;

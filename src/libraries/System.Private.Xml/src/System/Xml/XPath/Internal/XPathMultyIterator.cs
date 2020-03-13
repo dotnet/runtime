@@ -66,7 +66,7 @@ namespace MS.Internal.Xml.XPath
         string Dump(ResetableIterator it) {
             it = (ResetableIterator) it.Clone();
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            sb.Append("(");
+            sb.Append('(');
             do {
                 XPathNavigator nav = it.Current.Clone();
                 nav.MoveToAttribute("id1", "");
@@ -74,7 +74,7 @@ namespace MS.Internal.Xml.XPath
                 sb.Append(", ");
             } while (it.MoveNext());
             sb.Length = sb.Length - 2;
-            sb.Append(")");
+            sb.Append(')');
             return sb.ToString();
         }
 

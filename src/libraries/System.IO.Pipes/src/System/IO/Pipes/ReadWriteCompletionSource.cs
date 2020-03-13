@@ -16,7 +16,7 @@ namespace System.IO.Pipes
         private int _numBytes; // number of buffer read OR written
 
         internal ReadWriteCompletionSource(PipeStream stream, ReadOnlyMemory<byte> bufferToPin, bool isWrite)
-            : base(stream._threadPoolBinding, bufferToPin)
+            : base(stream._threadPoolBinding!, bufferToPin)
         {
             _pipeStream = stream;
             _isWrite = isWrite;

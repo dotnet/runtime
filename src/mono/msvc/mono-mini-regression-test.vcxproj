@@ -1,0 +1,203 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="mono.vcxproj">
+      <Project>{a0eddcd9-940f-432c-a28f-7ef322437d79}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{3E0D229E-C39F-4EDA-9A6A-A33ECEA0322D}</ProjectGuid>
+    <RootNamespace>monoregressiontest</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="mono.props" />
+    <Import Project="mono-test.props" />
+    <Import Project="mono-test-Win32.props" />
+    <Import Project="mono-mini-regression-test.props" />
+    <Import Project="mono-test-env.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="mono.props" />
+    <Import Project="mono-test.props" />
+    <Import Project="mono-test-Win32.props" />
+    <Import Project="mono-mini-regression-test.props" />
+    <Import Project="mono-test-env.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="mono.props" />
+    <Import Project="mono-test.props" />
+    <Import Project="mono-test-x64.props" />
+    <Import Project="mono-mini-regression-test.props" />
+    <Import Project="mono-test-env.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="mono.props" />
+    <Import Project="mono-test.props" />
+    <Import Project="mono-test-x64.props" />
+    <Import Project="mono-mini-regression-test.props" />
+    <Import Project="mono-test-env.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommand>$(MONO_EXECUTABLE)</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_ARGS)</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>$(MONO_MINI_REGRESSION_TEST_DIR)</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
+$(MONO_CFG_DIR_ENV)
+$(MONO_TOOLCHAIN_PATH_ENV)
+$(MONO_LOG_LEVEL_ENV)
+$(MONO_LOG_MASK_ENV)
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LocalDebuggerCommand>$(MONO_EXECUTABLE)</LocalDebuggerCommand>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_ARGS)</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>$(MONO_MINI_REGRESSION_TEST_DIR)</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
+$(MONO_CFG_DIR_ENV)
+$(MONO_TOOLCHAIN_PATH_ENV)
+$(MONO_LOG_LEVEL_ENV)
+$(MONO_LOG_MASK_ENV)
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LocalDebuggerCommand>$(MONO_EXECUTABLE)</LocalDebuggerCommand>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_ARGS)</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>$(MONO_MINI_REGRESSION_TEST_DIR)</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
+$(MONO_CFG_DIR_ENV)
+$(MONO_TOOLCHAIN_PATH_ENV)
+$(MONO_LOG_LEVEL_ENV)
+$(MONO_LOG_MASK_ENV)
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerCommand>$(MONO_EXECUTABLE)</LocalDebuggerCommand>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>$(MONO_MINI_REGRESSION_TEST_ARGS)</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>$(MONO_MINI_REGRESSION_TEST_DIR)</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerEnvironment>$(MONO_PATH_ENV)
+$(MONO_CFG_DIR_ENV)
+$(MONO_TOOLCHAIN_PATH_ENV)
+$(MONO_LOG_LEVEL_ENV)
+$(MONO_LOG_MASK_ENV)
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -20,7 +20,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(39232)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30157")]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Dispose_NoSuchEntryPoint_SilentyCatchesException()
         {

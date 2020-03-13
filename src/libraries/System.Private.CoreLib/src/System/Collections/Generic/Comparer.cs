@@ -43,7 +43,7 @@ namespace System.Collections.Generic
             _comparison = comparison;
         }
 
-        public override int Compare(T x, T y)
+        public override int Compare([AllowNull] T x, [AllowNull] T y)
         {
             return _comparison(x, y);
         }

@@ -174,7 +174,7 @@ static const char PATH_SEPARATOR[] = "/";
 static
 ULONGLONG
 PERFGetTicks(){
-#ifdef _X86_ // for BSD and Windows.
+#ifdef HOST_X86 // for BSD and Windows.
     unsigned long a, d;
   #ifdef _MSC_VER
   __asm{
@@ -190,7 +190,7 @@ PERFGetTicks(){
   return ((ULONGLONG)((unsigned int)(d)) << 32) | (unsigned int)(a);
 #else
   return 0; // on non-BSD and non-Windows, we'll return 0 for now.
-#endif // _X86_
+#endif // HOST_X86
 }
 
 static

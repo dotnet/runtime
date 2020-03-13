@@ -39,7 +39,7 @@ namespace System.Net.Security
         {
             Debug.Assert((null != _credential), "Null credential in SafeDeleteContext");
             _credential.DangerousRelease();
-            _credential = null;
+            _credential = null!;
             return true;
         }
     }

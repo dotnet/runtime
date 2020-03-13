@@ -18,7 +18,7 @@
 #include "openum.h"
 
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 //
 // The x86 walker is currently pretty minimal.  It only recognizes call and return opcodes, plus a few jumps.  The rest

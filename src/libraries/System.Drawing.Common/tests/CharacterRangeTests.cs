@@ -72,7 +72,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new CharacterRange(1, 2), new object(), false };
 
             // .NET Framework throws NullReferenceException.
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 yield return new object[] { new CharacterRange(1, 2), null, false };
             }

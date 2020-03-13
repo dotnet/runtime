@@ -120,8 +120,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// </param>
         /// <returns>The name of the object.</returns>
         /// <remarks>This is used from DebuggerDisplay attributes.</remarks>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         internal static string GetNameForDebugger(
             IDataflowBlock block, DataflowBlockOptions options = null)
         {
@@ -206,7 +204,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Initializes the stack trace and watson bucket of an inactive exception.</summary>
         /// <param name="exception">The exception to initialize.</param>
         /// <returns>The initialized exception.</returns>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal static Exception InitializeStackTrace(Exception exception)
         {
             Debug.Assert(exception != null && exception.StackTrace == null,
@@ -223,7 +220,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="exc">The Exception whose Data collection should store message information.</param>
         /// <param name="messageValue">The message information to be stored.</param>
         /// <param name="targetInnerExceptions">Whether to store the data into the exception's inner exception(s) in addition to the exception itself.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal static void StoreDataflowMessageValueIntoExceptionData<T>(Exception exc, T messageValue, bool targetInnerExceptions = false)
         {
             Debug.Assert(exc != null, "The exception into which data should be stored must be provided.");
@@ -268,7 +264,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="key">The key.</param>
         /// <param name="value">The value to be serialized as a string and stored.</param>
         /// <remarks>If the key is already present in the exception's data dictionary, the value is not overwritten.</remarks>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static void StoreStringIntoExceptionData(Exception exception, string key, string value)
         {
             Debug.Assert(exception != null, "An exception is needed to store the data into.");
@@ -369,7 +364,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Creates a task canceled with the specified cancellation token.</summary>
         /// <typeparam name="TResult">Specifies the type of the result for this task.</typeparam>
         /// <returns>The canceled task.</returns>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         internal static Task<TResult> CreateTaskFromCancellation<TResult>(CancellationToken cancellationToken)
         {
             Debug.Assert(cancellationToken.IsCancellationRequested,
@@ -468,8 +462,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="task">Task to be started.</param>
         /// <param name="scheduler">TaskScheduler to schedule the task on.</param>
         /// <returns>null on success, an exception reference on scheduling error. In the latter case, the task reference is nulled out.</returns>
-        [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals")]
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static Exception StartTaskSafeCore(Task task, TaskScheduler scheduler)
         {
             Debug.Assert(task != null, "Task to start is needed.");
@@ -497,7 +489,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
         /// <summary>Pops and explicitly releases postponed messages after the block is done with processing.</summary>
         /// <remarks>No locks should be held at this time. Unfortunately we cannot assert that.</remarks>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal static void ReleaseAllPostponedMessages<T>(ITargetBlock<T> target,
                                     QueuedMap<ISourceBlock<T>, DataflowMessageHeader> postponedMessages,
                                     ref List<Exception> exceptions)
@@ -690,7 +681,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
     /// to ensure that the resulting task can't be upcast to something
     /// that in the future could lead to compat problems.
     /// </summary>
-    [SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses")]
     [DebuggerNonUserCode]
     internal struct VoidResult { }
 }

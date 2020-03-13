@@ -53,7 +53,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             if (pingReply.Status == IPStatus.TimedOut && pingReply.Address.AddressFamily == AddressFamily.InterNetworkV6 && PlatformDetection.IsOSX)
             {
-                // Workaround OSX ping6 bug, refer issue #15018
+                // Workaround OSX ping6 bug, see https://github.com/dotnet/runtime/issues/19861
                 return;
             }
 
@@ -773,8 +773,7 @@ namespace System.Net.NetworkInformation.Tests
             pingResultValidator(pingResult);
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "GC has different behavior on Mono")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void CanBeFinalized()
         {
             FinalizingPing.CreateAndRelease();

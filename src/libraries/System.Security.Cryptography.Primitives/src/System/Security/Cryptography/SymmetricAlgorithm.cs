@@ -123,7 +123,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                // Desktop compat: No null check is performed.
+                // .NET Framework compat: No null check is performed.
                 return (KeySizes[])LegalBlockSizesValue!.Clone();
             }
         }
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                // Desktop compat: No null check is performed.
+                // .NET Framework compat: No null check is performed.
                 return (KeySizes[])LegalKeySizesValue!.Clone();
             }
         }
@@ -173,14 +173,14 @@ namespace System.Security.Cryptography
             return CreateDecryptor(Key, IV);
         }
 
-        public abstract ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV);
+        public abstract ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV);
 
         public virtual ICryptoTransform CreateEncryptor()
         {
             return CreateEncryptor(Key, IV);
         }
 
-        public abstract ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV);
+        public abstract ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV);
 
         public void Dispose()
         {

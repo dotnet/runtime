@@ -29,14 +29,14 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsGenericParameter => true;
         public sealed override bool ContainsGenericParameters => true;
 
-        protected sealed override string ComputeNamespace() => DeclaringType.Namespace;
-        protected sealed override string ComputeFullName() => null;
+        protected sealed override string? ComputeNamespace() => DeclaringType!.Namespace;
+        protected sealed override string? ComputeFullName() => null;
         public sealed override string ToString() => Loader.GetDisposedString() ?? Name;
 
         protected sealed override TypeAttributes ComputeAttributeFlags() => TypeAttributes.Public;
         protected sealed override TypeCode GetTypeCodeImpl() => TypeCode.Object;
 
-        internal sealed override RoType GetRoElementType() => null;
+        internal sealed override RoType? GetRoElementType() => null;
         public sealed override int GetArrayRank() => throw new ArgumentException(SR.Argument_HasToBeArrayClass);
 
         public sealed override Type GetGenericTypeDefinition() => throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
@@ -52,13 +52,13 @@ namespace System.Reflection.TypeLoading
         public sealed override Type[] GetGenericParameterConstraints() => GetGenericParameterConstraintsNoCopy().CloneArray<Type>();
         private RoType[] GetGenericParameterConstraintsNoCopy() => _lazyConstraints ?? (_lazyConstraints = ComputeGenericParameterConstraints());
         protected abstract RoType[] ComputeGenericParameterConstraints();
-        private volatile RoType[] _lazyConstraints;
+        private volatile RoType[]? _lazyConstraints;
 
         public sealed override Guid GUID => Guid.Empty;
-        public sealed override StructLayoutAttribute StructLayoutAttribute => null;
+        public sealed override StructLayoutAttribute? StructLayoutAttribute => null;
         protected internal sealed override RoType ComputeEnumUnderlyingType() => throw new ArgumentException(SR.Arg_MustBeEnum);
 
-        protected sealed override RoType ComputeBaseTypeWithoutDesktopQuirk()
+        protected sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk()
         {
             RoType[] constraints = GetGenericParameterConstraintsNoCopy();
             foreach (RoType constraint in constraints)
@@ -80,11 +80,11 @@ namespace System.Reflection.TypeLoading
         }
 
         // Low level support for the BindingFlag-driven enumerator apis.
-        internal sealed override IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter filter) => Array.Empty<ConstructorInfo>();
-        internal sealed override IEnumerable<MethodInfo> GetMethodsCore(NameFilter filter, Type reflectedType) => Array.Empty<MethodInfo>();
-        internal sealed override IEnumerable<EventInfo> GetEventsCore(NameFilter filter, Type reflectedType) => Array.Empty<EventInfo>();
-        internal sealed override IEnumerable<FieldInfo> GetFieldsCore(NameFilter filter, Type reflectedType) => Array.Empty<FieldInfo>();
-        internal sealed override IEnumerable<PropertyInfo> GetPropertiesCore(NameFilter filter, Type reflectedType) => Array.Empty<PropertyInfo>();
-        internal sealed override IEnumerable<RoType> GetNestedTypesCore(NameFilter filter) => Array.Empty<RoType>();
+        internal sealed override IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter? filter) => Array.Empty<ConstructorInfo>();
+        internal sealed override IEnumerable<MethodInfo> GetMethodsCore(NameFilter? filter, Type reflectedType) => Array.Empty<MethodInfo>();
+        internal sealed override IEnumerable<EventInfo> GetEventsCore(NameFilter? filter, Type reflectedType) => Array.Empty<EventInfo>();
+        internal sealed override IEnumerable<FieldInfo> GetFieldsCore(NameFilter? filter, Type reflectedType) => Array.Empty<FieldInfo>();
+        internal sealed override IEnumerable<PropertyInfo> GetPropertiesCore(NameFilter? filter, Type reflectedType) => Array.Empty<PropertyInfo>();
+        internal sealed override IEnumerable<RoType> GetNestedTypesCore(NameFilter? filter) => Array.Empty<RoType>();
     }
 }

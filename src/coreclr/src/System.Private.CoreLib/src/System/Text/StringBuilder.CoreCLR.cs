@@ -83,7 +83,7 @@ namespace System.Text
                 // Both MultiByteToWideChar and the UTF8Encoding instance used on Unix-like
                 // platforms default to replacing invalid characters with the Unicode replacement
                 // character U+FFFD.
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
                 convertedChars = Interop.Kernel32.MultiByteToWideChar(
                     Interop.Kernel32.CP_ACP,
                     Interop.Kernel32.MB_PRECOMPOSED,

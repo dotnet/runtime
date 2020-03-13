@@ -8,7 +8,7 @@
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
-    <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.43</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
+    <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.49</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
     <CommandLineParserVersion>2.2.0</CommandLineParserVersion>
 

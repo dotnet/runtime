@@ -162,7 +162,7 @@ Thus the event names only need to be unique within a component.
   Short names make `IsEnabled()` faster.
 
 * DO - use activities (see [Activity Users Guide](ActivityUserGuide.md)) for events that are
-  marking the begining and end of an interval of time.   The key value of Activities is that they
+  marking the beginning and end of an interval of time.   The key value of Activities is that they
   indicate that they represent a DURATION, and they also track what 'caused' them (and thus
   logging systems can stitch together a 'causality graph').    
 

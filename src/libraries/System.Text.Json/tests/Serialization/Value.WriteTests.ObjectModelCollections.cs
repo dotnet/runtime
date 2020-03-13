@@ -24,12 +24,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("[true,false]", JsonSerializer.Serialize<KeyedCollection<string, bool>>(kc));
 
             ReadOnlyCollection<bool> roc = new ReadOnlyCollection<bool>(new List<bool> { true, false });
-            Assert.Equal("[true,false]", JsonSerializer.Serialize(oc));
+            Assert.Equal("[true,false]", JsonSerializer.Serialize(roc));
 
             ReadOnlyObservableCollection<bool> rooc = new ReadOnlyObservableCollection<bool>(oc);
             Assert.Equal("[true,false]", JsonSerializer.Serialize(rooc));
 
-            ReadOnlyDictionary<string, bool> rod = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool> { ["true"] = false } );
+            ReadOnlyDictionary<string, bool> rod = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool> { ["true"] = false });
             Assert.Equal(@"{""true"":false}", JsonSerializer.Serialize(rod));
         }
     }

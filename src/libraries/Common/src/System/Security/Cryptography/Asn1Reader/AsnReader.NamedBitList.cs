@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1
 {
-    internal partial class AsnReader
+    internal ref partial struct AsnValueReader
     {
         /// <summary>
         ///   Reads the next value as a NamedBitList with tag UNIVERSAL 3, converting it to the
@@ -165,8 +165,14 @@ namespace System.Security.Cryptography.Asn1
             }
 
             int sizeLimit = Marshal.SizeOf(backingType);
-            Span<byte> stackSpan = stackalloc byte[sizeLimit];
-            ReadOnlyMemory<byte> saveData = _data;
+            ReadOnlySpan<byte> saveData = _data;
+            Span<byte> stackSpan;
+
+            unsafe
+            {
+                byte* stackPtr = stackalloc byte[sizeLimit];
+                stackSpan = new Span<byte>(stackPtr, sizeLimit);
+            }
 
             // If TryCopyBitStringBytes succeeds but anything else fails _data will have moved,
             // so if anything throws here just move _data back to what it was.
@@ -263,6 +269,159 @@ namespace System.Security.Cryptography.Asn1
             }
 
             return accum;
+        }
+    }
+
+    internal partial class AsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as a NamedBitList with tag UNIVERSAL 3, converting it to the
+        ///   [<see cref="FlagsAttribute"/>] enum specfied by <typeparamref name="TFlagsEnum"/>.
+        /// </summary>
+        /// <typeparam name="TFlagsEnum">Destination enum type</typeparam>
+        /// <returns>
+        ///   the NamedBitList value converted to a <typeparamref name="TFlagsEnum"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules --OR--
+        ///   the encoded value is too big to fit in a <typeparamref name="TFlagsEnum"/> value
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <typeparamref name="TFlagsEnum"/> is not an enum type --OR--
+        ///   <typeparamref name="TFlagsEnum"/> was not declared with <see cref="FlagsAttribute"/>
+        /// </exception>
+        /// <seealso cref="ReadNamedBitListValue{TFlagsEnum}(Asn1Tag)"/>
+        public TFlagsEnum ReadNamedBitListValue<TFlagsEnum>() where TFlagsEnum : struct =>
+            ReadNamedBitListValue<TFlagsEnum>(Asn1Tag.PrimitiveBitString);
+
+        /// <summary>
+        ///   Reads the next value as a NamedBitList with tag UNIVERSAL 3, converting it to the
+        ///   [<see cref="FlagsAttribute"/>] enum specfied by <typeparamref name="TFlagsEnum"/>.
+        /// </summary>
+        /// <param name="expectedTag">The tag to check for before reading.</param>
+        /// <typeparam name="TFlagsEnum">Destination enum type</typeparam>
+        /// <returns>
+        ///   the NamedBitList value converted to a <typeparamref name="TFlagsEnum"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules --OR--
+        ///   the encoded value is too big to fit in a <typeparamref name="TFlagsEnum"/> value
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <typeparamref name="TFlagsEnum"/> is not an enum type --OR--
+        ///   <typeparamref name="TFlagsEnum"/> was not declared with <see cref="FlagsAttribute"/>
+        ///   --OR--
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method
+        /// </exception>
+        /// <remarks>
+        ///   The bit alignment performed by this method is to interpret the most significant bit
+        ///   in the first byte of the value as the least significant bit in <typeparamref name="TFlagsEnum"/>,
+        ///   with bits increasing in value until the least significant bit of the first byte, proceeding
+        ///   with the most significant bit of the second byte, and so on. Under this scheme, the following
+        ///   ASN.1 type declaration and C# enumeration can be used together:
+        ///
+        ///   <code>
+        ///     KeyUsage ::= BIT STRING {
+        ///       digitalSignature   (0),
+        ///       nonRepudiation     (1),
+        ///       keyEncipherment    (2),
+        ///       dataEncipherment   (3),
+        ///       keyAgreement       (4),
+        ///       keyCertSign        (5),
+        ///       cRLSign            (6),
+        ///       encipherOnly       (7),
+        ///       decipherOnly       (8) }
+        ///   </code>
+        ///
+        ///   <code>
+        ///     [Flags]
+        ///     enum KeyUsage
+        ///     {
+        ///         None              = 0,
+        ///         DigitalSignature  = 1 &lt;&lt; (0),
+        ///         NonRepudiation    = 1 &lt;&lt; (1),
+        ///         KeyEncipherment   = 1 &lt;&lt; (2),
+        ///         DataEncipherment  = 1 &lt;&lt; (3),
+        ///         KeyAgreement      = 1 &lt;&lt; (4),
+        ///         KeyCertSign       = 1 &lt;&lt; (5),
+        ///         CrlSign           = 1 &lt;&lt; (6),
+        ///         EncipherOnly      = 1 &lt;&lt; (7),
+        ///         DecipherOnly      = 1 &lt;&lt; (8),
+        ///     }
+        ///   </code>
+        ///
+        ///   Note that while the example here uses the KeyUsage NamedBitList from
+        ///   <a href="https://tools.ietf.org/html/rfc3280#section-4.2.1.3">RFC 3280 (4.2.1.3)</a>,
+        ///   the example enum uses values thar are different from
+        ///   System.Security.Cryptography.X509Certificates.X509KeyUsageFlags.
+        /// </remarks>
+        public TFlagsEnum ReadNamedBitListValue<TFlagsEnum>(Asn1Tag expectedTag) where TFlagsEnum : struct
+        {
+            Type tFlagsEnum = typeof(TFlagsEnum);
+
+            return (TFlagsEnum)Enum.ToObject(tFlagsEnum, ReadNamedBitListValue(expectedTag, tFlagsEnum));
+        }
+
+        /// <summary>
+        ///   Reads the next value as a NamedBitList with tag UNIVERSAL 3, converting it to the
+        ///   [<see cref="FlagsAttribute"/>] enum specfied by <paramref name="tFlagsEnum"/>.
+        /// </summary>
+        /// <param name="tFlagsEnum">Type object representing the destination type.</param>
+        /// <returns>
+        ///   the NamedBitList value converted to a <paramref name="tFlagsEnum"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules --OR--
+        ///   the encoded value is too big to fit in a <paramref name="tFlagsEnum"/> value
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="tFlagsEnum"/> is not an enum type --OR--
+        ///   <paramref name="tFlagsEnum"/> was not declared with <see cref="FlagsAttribute"/>
+        /// </exception>
+        /// <seealso cref="ReadNamedBitListValue{TFlagsEnum}(Asn1Tag)"/>
+        public Enum ReadNamedBitListValue(Type tFlagsEnum) =>
+            ReadNamedBitListValue(Asn1Tag.PrimitiveBitString, tFlagsEnum);
+
+        /// <summary>
+        ///   Reads the next value as a NamedBitList with tag UNIVERSAL 3, converting it to the
+        ///   [<see cref="FlagsAttribute"/>] enum specfied by <paramref name="tFlagsEnum"/>.
+        /// </summary>
+        /// <param name="expectedTag">The tag to check for before reading.</param>
+        /// <param name="tFlagsEnum">Type object representing the destination type.</param>
+        /// <returns>
+        ///   the NamedBitList value converted to a <paramref name="tFlagsEnum"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules --OR---
+        ///   the encoded value is too big to fit in a <paramref name="tFlagsEnum"/> value
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="tFlagsEnum"/> is not an enum type --OR--
+        ///   <paramref name="tFlagsEnum"/> was not declared with <see cref="FlagsAttribute"/>
+        ///   --OR--
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method
+        /// </exception>
+        /// <seealso cref="ReadNamedBitListValue{TFlagsEnum}(Asn1Tag)"/>
+        public Enum ReadNamedBitListValue(Asn1Tag expectedTag, Type tFlagsEnum)
+        {
+            AsnValueReader valueReader = OpenValueReader();
+            Enum ret = valueReader.ReadNamedBitListValue(expectedTag, tFlagsEnum);
+            valueReader.MatchSlice(ref _data);
+            return ret;
         }
     }
 }

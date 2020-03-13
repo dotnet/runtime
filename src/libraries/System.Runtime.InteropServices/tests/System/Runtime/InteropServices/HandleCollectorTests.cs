@@ -105,8 +105,8 @@ namespace System.Runtime.InteropServices
                 // Jump HandleCollector instance forward until it almost overflows
                 TypeInfo type = typeof(HandleCollector).GetTypeInfo();
                 FieldInfo handleCount =
-                    type.GetDeclaredField("_handleCount") ?? // corefx
-                    type.GetDeclaredField("handleCount");    // desktop
+                    type.GetDeclaredField("_handleCount") ?? // .NET Core
+                    type.GetDeclaredField("handleCount");    // .NET Framework
                 Assert.NotNull(handleCount);
                 handleCount.SetValue(collector, int.MaxValue - ToAdd);
             }

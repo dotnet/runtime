@@ -123,7 +123,6 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceiveAll"]/*' />
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public bool TryReceiveAll(out IList<Tuple<T1, T2>> items) { return _source.TryReceiveAll(out items); }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="OutputCount"]/*' />
@@ -189,7 +188,6 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get
@@ -259,7 +257,6 @@ namespace System.Threading.Tasks.Dataflow
     /// <typeparam name="T3">Specifies the type of data accepted by the block's third target.</typeparam>
     [DebuggerDisplay("{DebuggerDisplayContent,nq}")]
     [DebuggerTypeProxy(typeof(JoinBlock<,,>.DebugView))]
-    [SuppressMessage("Microsoft.Design", "CA1005:AvoidExcessiveParametersOnGenericTypes")]
     public sealed class JoinBlock<T1, T2, T3> : IReceivableSourceBlock<Tuple<T1, T2, T3>>, IDebuggerDisplay
     {
         /// <summary>Resources shared by all targets for this join block.</summary>
@@ -354,7 +351,6 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceiveAll"]/*' />
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public bool TryReceiveAll(out IList<Tuple<T1, T2, T3>> items) { return _source.TryReceiveAll(out items); }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="OutputCount"]/*' />
@@ -425,7 +421,6 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get
@@ -904,7 +899,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// In general, it is not safe to pass releaseReservedMessages:true, because releasing of reserved messages
         /// is done without taking a lock. We pass releaseReservedMessages:true only when an exception has been
         /// caught inside the message processing loop which is a single instance at any given moment.</summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal override void CompleteCore(Exception exception, bool dropPendingMessages, bool releaseReservedMessages)
         {
             bool greedy = _sharedResources._dataflowBlockOptions.Greedy;
@@ -963,7 +957,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         private int InputCountForDebugger { get { return _messages != null ? _messages.Count : _nonGreedy.ConsumedMessage.Key ? 1 : 0; } }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get
@@ -1036,7 +1029,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
     }
 
     /// <summary>Provides a container for resources shared across all targets used by the same BatchedJoin instance.</summary>
-    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     [DebuggerDisplay("{DebuggerDisplayContent,nq}")]
     internal sealed class JoinBlockTargetSharedResources
     {
@@ -1370,7 +1362,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>Task body used to process messages.</summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void ProcessMessagesLoopCore()
         {
             Debug.Assert(!_dataflowBlockOptions.Greedy || _boundingState != null, "This only makes sense in non-greedy or bounding mode");
@@ -1461,8 +1452,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>Gets the object to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get

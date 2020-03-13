@@ -9,13 +9,13 @@ using System.Numerics;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
-#else // BIT64
+#else // TARGET_64BIT
 using nint = System.Int32;
 using nuint = System.UInt32;
-#endif // BIT64
+#endif // TARGET_64BIT
 
 namespace System.Text.Unicode
 {
@@ -88,48 +88,47 @@ namespace System.Text.Unicode
                         Vector128<ushort> utf16Data = Sse2.LoadVector128((ushort*)pInputBuffer); // unaligned
                         uint mask;
 
-                        // The 'charIsNonAscii' vector we're about to build will have the 0x8000 or the 0x0080
-                        // bit set (but not both!) only if the corresponding input char is non-ASCII. Which of
-                        // the two bits is set doesn't matter, as will be explained in the diagram a few lines
-                        // below.
-
                         Vector128<ushort> charIsNonAscii;
                         if (Sse41.IsSupported)
                         {
-                            // sets 0x0080 bit if corresponding char element is >= 0x0080
+                            // Sets the 0x0080 bit of each element in 'charIsNonAscii' if the corresponding
+                            // input was 0x0080 <= [value]. (i.e., [value] is non-ASCII.)
+
                             charIsNonAscii = Sse41.Min(utf16Data, vector0080);
                         }
                         else
                         {
-                            // sets 0x8000 bit if corresponding char element is >= 0x0080
-                            charIsNonAscii = Sse2.AndNot(vector0080, Sse2.Subtract(vectorZero, Sse2.ShiftRightLogical(utf16Data, 7)));
+                            // Sets the 0x0080 bit of each element in 'charIsNonAscii' if the corresponding
+                            // input was 0x0080 <= [value] <= 0x7FFF. The case where 0x8000 <= [value] will
+                            // be handled in a few lines.
+
+                            charIsNonAscii = Sse2.AndNot(Sse2.CompareGreaterThan(vector0080.AsInt16(), utf16Data.AsInt16()).AsUInt16(), vector0080);
                         }
 
 #if DEBUG
-                        // Quick check to ensure we didn't accidentally set both 0x8080 bits in any element.
+                        // Quick check to ensure we didn't accidentally set the 0x8000 bit of any element.
                         uint debugMask = (uint)Sse2.MoveMask(charIsNonAscii.AsByte());
-                        Debug.Assert((debugMask & (debugMask << 1)) == 0, "Two set bits shouldn't occur adjacent to each other in this mask.");
+                        Debug.Assert((debugMask & 0b_1010_1010_1010_1010) == 0, "Shouldn't have set the 0x8000 bit of any element in 'charIsNonAscii'.");
 #endif // DEBUG
 
-                        // sets 0x8080 bits if corresponding char element is >= 0x0800
+                        // Sets the 0x8080 bits of each element in 'charIsNonAscii' if the corresponding
+                        // input was 0x0800 <= [value]. This also handles the missing range a few lines above.
+
                         Vector128<ushort> charIsThreeByteUtf8Encoded = Sse2.Subtract(vectorZero, Sse2.ShiftRightLogical(utf16Data, 11));
 
                         mask = (uint)Sse2.MoveMask(Sse2.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte());
 
-                        // Each odd bit of mask will be 1 only if the char was >= 0x0080,
-                        // and each even bit of mask will be 1 only if the char was >= 0x0800.
+                        // Each even bit of mask will be 1 only if the char was >= 0x0080,
+                        // and each odd bit of mask will be 1 only if the char was >= 0x0800.
                         //
                         // Example for UTF-16 input "[ 0123 ] [ 1234 ] ...":
                         //
-                        //            ,-- set if char[1] is non-ASCII
-                        //            |   ,-- set if char[0] is non-ASCII
+                        //            ,-- set if char[1] is >= 0x0800
+                        //            |   ,-- set if char[0] is >= 0x0800
                         //            v   v
-                        // mask = ... 1 1 1 0
-                        //              ^   ^-- set if char[0] is >= 0x0800
-                        //              `-- set if char[1] is >= 0x0800
-                        //
-                        // (If the SSE4.1 code path is taken above, the meaning of the odd and even
-                        // bits are swapped, but the logic below otherwise holds.)
+                        // mask = ... 1 1 0 1
+                        //              ^   ^-- set if char[0] is non-ASCII
+                        //              `-- set if char[1] is non-ASCII
                         //
                         // This means we can popcnt the number of set bits, and the result is the
                         // number of *additional* UTF-8 bytes that each UTF-16 code unit requires as

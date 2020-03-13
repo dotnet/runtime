@@ -129,7 +129,7 @@ namespace Microsoft.VisualBasic.Tests
             }
         }
 
-        [ActiveIssue(39888, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30419", TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData(0, 0)]
         [InlineData(33, 33)]

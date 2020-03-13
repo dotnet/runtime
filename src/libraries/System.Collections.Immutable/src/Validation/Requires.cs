@@ -121,7 +121,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Throws an <see cref="ArgumentException"/> if a condition does not evaluate to true.
         /// </summary>
-        [SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly")]
         [DebuggerStepThrough]
         public static void Argument(bool condition)
         {

@@ -245,7 +245,10 @@ namespace ILCompiler.PEWriter
         DirectoryEntry _relocationDirectoryEntry;
 
         /// <summary>
-        /// Symbol representing the ready-to-run header table.
+        /// Symbol representing the ready-to-run COR (MSIL) header table.
+        /// Only present in single-file R2R executables. Composite R2R
+        /// executables don't have a COR header and locate the ReadyToRun
+        /// header directly using the well-known export symbol RTR_HEADER.
         /// </summary>
         ISymbolNode _corHeaderSymbol;
 
@@ -253,6 +256,16 @@ namespace ILCompiler.PEWriter
         /// Size of the ready-to-run header table in bytes.
         /// </summary>
         int _corHeaderSize;
+
+        /// <summary>
+        /// Symbol representing the debug directory.
+        /// </summary>
+        ISymbolNode _debugDirectorySymbol;
+
+        /// <summary>
+        /// Size of the debug directory in bytes.
+        /// </summary>
+        int _debugDirectorySize;
 
         /// <summary>
         /// Symbol representing the start of the win32 resources
@@ -348,6 +361,19 @@ namespace ILCompiler.PEWriter
         }
 
         /// <summary>
+        /// Look up final file position for a given symbol. This assumes the section have already been placed.
+        /// </summary>
+        /// <param name="symbol">Symbol to look up</param>
+        /// <returns>File position of the symbol, from the begining of the emitted image</returns>
+        public int GetSymbolFilePosition(ISymbolNode symbol)
+        {
+            SymbolTarget symbolTarget = _symbolMap[symbol];
+            Section section = _sections[symbolTarget.SectionIndex];
+            Debug.Assert(section.RVAWhenPlaced != 0);
+            return section.FilePosWhenPlaced + symbolTarget.Offset;
+        }
+
+        /// <summary>
         /// Attach an export symbol to the output PE file.
         /// </summary>
         /// <param name="name">Export symbol identifier</param>
@@ -383,6 +409,12 @@ namespace ILCompiler.PEWriter
         {
             _corHeaderSymbol = symbol;
             _corHeaderSize = headerSize;
+        }
+
+        public void SetDebugDirectory(ISymbolNode symbol, int size)
+        {
+            _debugDirectorySymbol = symbol;
+            _debugDirectorySize = size;
         }
 
         public void SetWin32Resources(ISymbolNode symbol, int resourcesSize)
@@ -493,11 +525,6 @@ namespace ILCompiler.PEWriter
                 {
                     sectionList.Add(new SectionInfo(section.Name, section.Characteristics));
                 }
-            }
-
-            if (_exportSymbols.Count != 0 && FindSection(R2RPEBuilder.ExportDataSectionName) == null)
-            {
-                sectionList.Add(new SectionInfo(R2RPEBuilder.ExportDataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead));
             }
 
             return sectionList;
@@ -788,6 +815,14 @@ namespace ILCompiler.PEWriter
                 Debug.Assert(section.RVAWhenPlaced != 0);
                 directoriesBuilder.AddressOfEntryPoint = section.RVAWhenPlaced + symbolTarget.Offset;
             }
+
+            if (_debugDirectorySymbol != null)
+            {
+                SymbolTarget symbolTarget = _symbolMap[_debugDirectorySymbol];
+                Section section = _sections[symbolTarget.SectionIndex];
+                Debug.Assert(section.RVAWhenPlaced != 0);
+                directoriesBuilder.DebugTable = new DirectoryEntry(section.RVAWhenPlaced + symbolTarget.Offset, _debugDirectorySize);
+            }
         }
 
         /// <summary>
@@ -824,6 +859,7 @@ namespace ILCompiler.PEWriter
                         SymbolTarget relocationTarget = _symbolMap[relocation.Target];
                         Section targetSection = _sections[relocationTarget.SectionIndex];
                         int targetRVA = targetSection.RVAWhenPlaced + relocationTarget.Offset;
+                        int filePosWhenPlaced = targetSection.FilePosWhenPlaced + relocationTarget.Offset;
 
                         // If relocating to a node's size, switch out the target RVA with data length
                         if (relocation.RelocType == RelocType.IMAGE_REL_SYMBOL_SIZE)
@@ -832,7 +868,7 @@ namespace ILCompiler.PEWriter
                         }
 
                         // Apply the relocation
-                        relocationHelper.ProcessRelocation(relocation.RelocType, relocationRVA, targetRVA);
+                        relocationHelper.ProcessRelocation(relocation.RelocType, relocationRVA, targetRVA, filePosWhenPlaced);
                     }
                 }
             }

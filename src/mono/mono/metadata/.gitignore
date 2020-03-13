@@ -1,0 +1,14 @@
+/Makefile
+/Makefile.in
+/monosn
+/monodiet
+/.libs
+/.deps
+/*.lo
+/*.la
+/*.o
+/*.a
+/semantic.cache
+/.project
+/.cproject
+/TAGS

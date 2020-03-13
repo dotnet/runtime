@@ -41,8 +41,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { fillPath, null, LineCap.Flat, 0f, LineCap.Flat };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [MemberData(nameof(Ctor_Path_Path_LineCap_Float_TestData))]
         public void Ctor_Path_Path_LineCap_Float(GraphicsPath fillPath, GraphicsPath strokePath, LineCap baseCap, float baseInset, LineCap expectedCap)
         {
@@ -57,8 +56,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         // These values are outside the valid range of the LineCap enum.
         [InlineData(LineCap.Flat - 1)]
         [InlineData(LineCap.Custom + 1)]
@@ -72,7 +70,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_FillPath_Incomplete_ThrowsArgumentException()
         {
@@ -83,7 +81,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_FillPath_DoesNotCrossYAxis_ThrowsNotImplementedException()
         {
@@ -114,8 +112,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(LineCap.SquareAnchor, LineCap.SquareAnchor)]
         [InlineData(LineCap.Custom, LineCap.Custom)]
         [InlineData(LineCap.Square, LineCap.Custom)]
@@ -169,7 +166,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(LineCap.NoAnchor)]
         [InlineData(LineCap.SquareAnchor)]
         [InlineData(LineCap.RoundAnchor)]
@@ -177,7 +174,6 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(LineCap.Custom)]
         [InlineData(LineCap.Flat - 1)]
         [InlineData(LineCap.Custom + 1)]
-        [ActiveIssue(20884)]
         public void BaseCap_Set_InvalidLineCap_ThrowsArgumentException(LineCap baseCap)
         {
             using (GraphicsPath strokePath = new GraphicsPath())

@@ -206,7 +206,6 @@ namespace System.Reflection.Metadata.Ecma335
 
                 var partReader = GetBlobReader(blobReader.ReadBlobHandle());
 
-                // TODO: avoid allocating temp string (https://github.com/dotnet/corefx/issues/2102)
                 builder.Append(partReader.ReadUTF8(partReader.Length));
                 isFirstPart = false;
             }

@@ -23,13 +23,13 @@
 
 int __cdecl main(int argc, char* argv[])
 {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     if (0 != PAL_Initialize(argc, argv))
     {
         fprintf(stderr, "Error: Fail to PAL_Initialize\n");
         exit(1);
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     Logger::Initialize();
 

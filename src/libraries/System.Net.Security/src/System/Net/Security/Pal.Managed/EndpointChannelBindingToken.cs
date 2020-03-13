@@ -10,9 +10,9 @@ namespace System.Net.Security
 {
     internal static class EndpointChannelBindingToken
     {
-        internal static ChannelBinding Build(SafeDeleteContext securityContext)
+        internal static ChannelBinding? Build(SafeDeleteContext securityContext)
         {
-            using (X509Certificate2 cert = CertificateValidationPal.GetRemoteCertificate(securityContext))
+            using (X509Certificate2? cert = CertificateValidationPal.GetRemoteCertificate(securityContext))
             {
                 if (cert == null)
                     return null;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -151,7 +152,7 @@ namespace System.Security.Cryptography
                     finally
                     {
                         CryptographicOperations.ZeroMemory(decryptedSpan);
-                        CryptoPool.Return(decrypted.Array);
+                        CryptoPool.Return(decrypted.Array!);
                     }
                 }
             }
@@ -203,7 +204,7 @@ namespace System.Security.Cryptography
                     finally
                     {
                         CryptographicOperations.ZeroMemory(decryptedSpan);
-                        CryptoPool.Return(decrypted.Array, clearSize: 0);
+                        CryptoPool.Return(decrypted.Array!, clearSize: 0);
                     }
                 }
             }

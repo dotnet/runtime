@@ -10,7 +10,6 @@ namespace System.Xml.Linq
     /// <summary>
     /// Represents a name of an XML element or attribute. This class cannot be inherited.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Serialization", "CA2229", Justification = "Serialized with custom proxy")]
     public sealed class XName : IEquatable<XName>, ISerializable
     {
         private readonly XNamespace _ns;

@@ -11,9 +11,11 @@ extern uint32_t g_pageSizeUnixInl;
 
 #define OS_PAGE_SIZE GCToOSInterface::GetPageSize()
 
+#ifndef DACCESS_COMPILE
 __forceinline size_t GCToOSInterface::GetPageSize()
 {
     return g_pageSizeUnixInl;
 }
+#endif // DACCESS_COMPILE
 
 #endif // __GCENV_UNIX_INL__

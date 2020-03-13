@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/18690")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/runtime/issues/21236")]
         public void AddIssuerSerial_Null_Serial()
         {
             KeyInfoX509Data data = new KeyInfoX509Data();
@@ -161,7 +161,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/18690")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/runtime/issues/21236")]
         public void AddIssuerSerial_Invalid_Serial()
         {
             KeyInfoX509Data data = new KeyInfoX509Data();

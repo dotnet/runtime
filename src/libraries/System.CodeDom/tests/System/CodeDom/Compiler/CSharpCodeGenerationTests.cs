@@ -1054,7 +1054,8 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
-        public void CharEncoding()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1913", ~TargetFrameworkMonikers.NetFramework)]
+        public void CharEncodingNetFx()
         {
             string chars = "\u1234 \u4567 \uABCD \r \n \t \\ \" \' \0 \u2028 \u2029 \u0084 \u0085 \U00010F00";
 
@@ -1067,6 +1068,24 @@ namespace System.CodeDom.Compiler.Tests
             AssertEqual(main,
                  "public static void Main() { " +
                  "     System.Console.WriteLine(\"\u1234 \u4567 \uABCD \\r \\n \\t \\\\ \\\" \\' \\0 \\u2028 \\u2029 \u0084 \u0085 \U00010F00\"); " +
+                 "}");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1913", TargetFrameworkMonikers.NetFramework)]
+        public void CharEncoding()
+        {
+            string chars = "\u1234 \u4567 \uABCD \r \n \t \\ \" \' \0 \u2028 \u2029 \u0084 \u0085 \U00010F00";
+
+            var main = new CodeEntryPointMethod();
+            main.Statements.Add(
+                new CodeMethodInvokeExpression(
+                    new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(Console)), "WriteLine"),
+                    new CodeExpression[] { new CodePrimitiveExpression(chars) }));
+
+            AssertEqual(main,
+                 "public static void Main() { " +
+                 "     System.Console.WriteLine(\"\u1234 \u4567 \uABCD \\r \\n \\t \\\\ \\\" \\' \\0 \\u2028 \\u2029 \u0084 \\u0085 \U00010F00\"); " +
                  "}");
         }
 
@@ -3448,6 +3467,55 @@ namespace System.CodeDom.Compiler.Tests
                           }
                       }
                   }");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1913", TargetFrameworkMonikers.NetFramework)]
+        public void SpecialNewLineCharactersInStringsDoneCorrectly()
+        {
+            var cd = new CodeTypeDeclaration("ClassWithStringFields") { IsClass = true };
+
+            var field = new CodeMemberField("System.String", "StringWithSpecialNewLines");
+            field.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+            field.InitExpression = new CodePrimitiveExpression("\u0085\u2028\u2029");
+            cd.Members.Add(field);
+
+            AssertEqual(cd,
+                @"public class ClassWithStringFields {
+                      public static string StringWithSpecialNewLines = ""\u0085\u2028\u2029"";
+                  }");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void MethodTypeParameterConstraintLineOnlyAddedForTypesThatHaveConstraints()
+        {
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithGenericMethod") { IsClass = true };
+
+            var method = new CodeMemberMethod();
+            method.Name = "Test";
+            var t1 = new CodeTypeParameter("T1");
+            var t2 = new CodeTypeParameter("T2");
+            t2.Constraints.Add("MyBaseClass");
+            var t3 = new CodeTypeParameter("T3");
+            var t4 = new CodeTypeParameter("T4");
+
+            method.TypeParameters.Add(t1);
+            method.TypeParameters.Add(t2);
+            method.TypeParameters.Add(t3);
+            method.TypeParameters.Add(t4);
+
+            codeTypeDeclaration.Members.Add(method);
+
+            AssertEqualPreserveLineBreaks(codeTypeDeclaration,
+                @"
+                  public class ClassWithGenericMethod {
+
+                      private void Test<T1, T2, T3, T4>()
+                          where T2 : MyBaseClass {
+                      }
+                  }
+                ");
         }
     }
 }

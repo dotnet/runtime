@@ -599,7 +599,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
             ' Make sure the file exists
             If Not File.Exists(fullPath) Then
-                Throw New IO.FileNotFoundException(GetResourceString(SR.IO_FileNotFound_Path, fullPath))
+                Throw New IO.FileNotFoundException(SR.Format(SR.IO_FileNotFound_Path, fullPath))
             End If
 
             Return fullPath
@@ -914,7 +914,7 @@ Namespace Microsoft.VisualBasic.FileIO
                     If EndHelper.MalformedLine Then
                         m_ErrorLine = Line.TrimEnd(Chr(13), Chr(10))
                         m_ErrorLineNumber = CurrentLineNumber
-                        Throw New MalformedLineException(GetResourceString(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
+                        Throw New MalformedLineException(SR.Format(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
                     End If
 
                     If EndHelper.FieldFinished Then
@@ -934,13 +934,13 @@ Namespace Microsoft.VisualBasic.FileIO
                             If NewLine Is Nothing Then
                                 m_ErrorLine = Line.TrimEnd(Chr(13), Chr(10))
                                 m_ErrorLineNumber = CurrentLineNumber
-                                Throw New MalformedLineException(GetResourceString(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
+                                Throw New MalformedLineException(SR.Format(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
                             End If
 
                             If Line.Length + NewLine.Length > m_MaxLineSize Then
                                 m_ErrorLine = Line.TrimEnd(Chr(13), Chr(10))
                                 m_ErrorLineNumber = CurrentLineNumber
-                                Throw New MalformedLineException(GetResourceString(SR.TextFieldParser_MaxLineSizeExceeded, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
+                                Throw New MalformedLineException(SR.Format(SR.TextFieldParser_MaxLineSizeExceeded, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
                             End If
 
                             Line &= NewLine
@@ -949,7 +949,7 @@ Namespace Microsoft.VisualBasic.FileIO
                             If EndHelper.MalformedLine Then
                                 m_ErrorLine = Line.TrimEnd(Chr(13), Chr(10))
                                 m_ErrorLineNumber = CurrentLineNumber
-                                Throw New MalformedLineException(GetResourceString(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
+                                Throw New MalformedLineException(SR.Format(SR.TextFieldParser_MalFormedDelimitedLine, CurrentLineNumber.ToString(CultureInfo.InvariantCulture)), CurrentLineNumber)
                             End If
                         Loop Until EndHelper.FieldFinished
 
@@ -1099,7 +1099,7 @@ Namespace Microsoft.VisualBasic.FileIO
             If Line.LengthInTextElements < m_LineLength Then
                 m_ErrorLine = Line.String
                 m_ErrorLineNumber = m_LineNumber - 1
-                Throw New MalformedLineException(GetResourceString(SR.TextFieldParser_MalFormedFixedWidthLine, LineNumber.ToString(CultureInfo.InvariantCulture)), LineNumber)
+                Throw New MalformedLineException(SR.Format(SR.TextFieldParser_MalFormedFixedWidthLine, LineNumber.ToString(CultureInfo.InvariantCulture)), LineNumber)
             End If
 
         End Sub

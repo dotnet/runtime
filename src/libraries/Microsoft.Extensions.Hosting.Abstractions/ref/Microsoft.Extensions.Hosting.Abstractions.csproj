@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces"  />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Microsoft.Extensions.Hosting.Abstractions.cs" />
+  </ItemGroup>
+</Project>

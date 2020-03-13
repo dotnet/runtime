@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
@@ -74,8 +75,8 @@ namespace System.Security.Cryptography
             public override byte[] DeriveKeyFromHash(
                 ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
-                byte[] secretPrepend,
-                byte[] secretAppend)
+                byte[]? secretPrepend,
+                byte[]? secretAppend)
             {
                 if (otherPartyPublicKey == null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
@@ -96,9 +97,9 @@ namespace System.Security.Cryptography
             public override byte[] DeriveKeyFromHmac(
                 ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
-                byte[] hmacKey,
-                byte[] secretPrepend,
-                byte[] secretAppend)
+                byte[]? hmacKey,
+                byte[]? secretPrepend,
+                byte[]? secretAppend)
             {
                 if (otherPartyPublicKey == null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));

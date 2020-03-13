@@ -189,6 +189,14 @@ public unsafe struct S11
     public int i;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct ByteStruct3Byte
+{
+    public byte b1;
+    public byte b2;
+    public byte b3;
+}
+
 [StructLayout(LayoutKind.Explicit)]
 public struct U
 {

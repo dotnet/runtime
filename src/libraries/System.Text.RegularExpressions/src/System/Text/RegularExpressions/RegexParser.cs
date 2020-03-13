@@ -43,11 +43,14 @@ namespace System.Text.RegularExpressions
         private List<string>? _capnamelist;
 
         private RegexOptions _options;
-        private ValueListBuilder<RegexOptions> _optionsStack;
+        // NOTE: _optionsStack is ValueListBuilder<int> to ensure that
+        //       ArrayPool<int>.Shared, not ArrayPool<RegexOptions>.Shared,
+        //       will be created if the stackalloc'd capacity is ever exceeded.
+        private ValueListBuilder<int> _optionsStack;
 
         private bool _ignoreNextParen; // flag to skip capturing a parentheses group
 
-        private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Hashtable caps, int capsize, Hashtable? capnames, Span<RegexOptions> optionSpan)
+        private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Hashtable caps, int capsize, Hashtable? capnames, Span<int> optionSpan)
         {
             Debug.Assert(pattern != null, "Pattern must be set");
             Debug.Assert(culture != null, "Culture must be set");
@@ -59,7 +62,7 @@ namespace System.Text.RegularExpressions
             _capsize = capsize;
             _capnames = capnames;
 
-            _optionsStack = new ValueListBuilder<RegexOptions>(optionSpan);
+            _optionsStack = new ValueListBuilder<int>(optionSpan);
             _stack = default;
             _group = default;
             _alternation = default;
@@ -74,14 +77,14 @@ namespace System.Text.RegularExpressions
             _ignoreNextParen = false;
         }
 
-        private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Span<RegexOptions> optionSpan)
+        private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Span<int> optionSpan)
             : this(pattern, options, culture, new Hashtable(), default, null, optionSpan)
         {
         }
 
         public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
         {
-            var parser = new RegexParser(pattern, options, culture, stackalloc RegexOptions[OptionStackDefaultSize]);
+            var parser = new RegexParser(pattern, options, culture, stackalloc int[OptionStackDefaultSize]);
 
             parser.CountCaptures();
             parser.Reset(options);
@@ -100,7 +103,7 @@ namespace System.Text.RegularExpressions
         public static RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
         {
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-            var parser = new RegexParser(pattern, options, culture, caps, capsize, capnames, stackalloc RegexOptions[OptionStackDefaultSize]);
+            var parser = new RegexParser(pattern, options, culture, caps, capsize, capnames, stackalloc int[OptionStackDefaultSize]);
 
             RegexNode root = parser.ScanReplacement();
             var regexReplacement = new RegexReplacement(pattern, root, caps);
@@ -192,7 +195,7 @@ namespace System.Text.RegularExpressions
 
         private static string UnescapeImpl(string input, int i)
         {
-            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, stackalloc RegexOptions[OptionStackDefaultSize]);
+            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, stackalloc int[OptionStackDefaultSize]);
 
             // In the worst case the escaped string has the same length.
             // For small inputs we use stack allocation.
@@ -642,7 +645,21 @@ namespace System.Text.RegularExpressions
                         case '-':
                             if (!scanOnly)
                             {
-                                charClass!.AddRange(ch, ch);
+                                if (inRange)
+                                {
+                                    if (chPrev > ch)
+                                    {
+                                        throw MakeException(RegexParseError.ReversedCharRange, SR.ReversedCharRange);
+                                    }
+
+                                    charClass!.AddRange(chPrev, ch);
+                                    inRange = false;
+                                    chPrev = '\0';
+                                }
+                                else
+                                {
+                                    charClass!.AddRange(ch, ch);
+                                }
                             }
                             continue;
 
@@ -1736,7 +1753,7 @@ namespace System.Text.RegularExpressions
             ch switch
             {
                 'b' => UseOptionE() ? RegexNode.ECMABoundary : RegexNode.Boundary,
-                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.Nonboundary,
+                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.NonBoundary,
                 'A' => RegexNode.Beginning,
                 'G' => RegexNode.Start,
                 'Z' => RegexNode.EndZ,
@@ -1874,7 +1891,7 @@ namespace System.Text.RegularExpressions
                             else
                             {
                                 // Simple (unnamed) capture group.
-                                // Add unnamend parentheses if ExplicitCapture is not set
+                                // Add unnamed parentheses if ExplicitCapture is not set
                                 // and the next parentheses is not ignored.
                                 if (!UseOptionN() && !_ignoreNextParen)
                                 {
@@ -2277,10 +2294,10 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Saves options on a stack.</summary>
-        private void PushOptions() => _optionsStack.Append(_options);
+        private void PushOptions() => _optionsStack.Append((int)_options);
 
         /// <summary>Recalls options from the stack.</summary>
-        private void PopOptions() => _options = _optionsStack.Pop();
+        private void PopOptions() => _options = (RegexOptions)_optionsStack.Pop();
 
         /// <summary>True if options stack is empty.</summary>
         private bool EmptyOptionsStack() => _optionsStack.Length == 0;
@@ -2313,7 +2330,7 @@ namespace System.Text.RegularExpressions
         private char CharAt(int i) => _pattern[i];
 
         /// <summary>Returns the char right of the current parsing position.</summary>
-        internal char RightChar() => _pattern[_currentPos];
+        private char RightChar() => _pattern[_currentPos];
 
         /// <summary>Returns the char i chars right of the current parsing position.</summary>
         private char RightChar(int i) => _pattern[_currentPos + i];

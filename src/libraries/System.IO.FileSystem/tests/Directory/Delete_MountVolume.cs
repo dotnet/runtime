@@ -22,7 +22,7 @@ public class Directory_Delete_MountVolume
     private static bool s_pass = true;
 
     [Fact]
-    [ActiveIssue(1221)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
     [PlatformSpecific(TestPlatforms.Windows)] // testing volumes / mounts / drive letters
     public static void RunTest()
     {

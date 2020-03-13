@@ -13,11 +13,11 @@ using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
-#else // BIT64
+#else // TARGET_64BIT
 using nuint = System.UInt32;
-#endif // BIT64
+#endif // TARGET_64BIT
 
 namespace System
 {
@@ -83,7 +83,7 @@ namespace System
                 this = default;
                 return; // returns default
             }
-#if BIT64
+#if TARGET_64BIT
             // See comment in Span<T>.Slice for how this works.
             if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -196,7 +196,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlyMemory<T> Slice(int start, int length)
         {
-#if BIT64
+#if TARGET_64BIT
             // See comment in Span<T>.Slice for how this works.
             if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
@@ -279,7 +279,7 @@ namespace System
                     nuint desiredStartIndex = (uint)_index & (uint)RemoveFlagsBitMask;
                     int desiredLength = _length;
 
-#if BIT64
+#if TARGET_64BIT
                     // See comment in Span<T>.Slice for how this works.
                     if ((ulong)desiredStartIndex + (ulong)(uint)desiredLength > (ulong)(uint)lengthOfUnderlyingSpan)
                     {

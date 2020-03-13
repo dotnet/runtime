@@ -21,7 +21,7 @@ namespace System.Data.OleDb.Tests
                 Assert.Equal(UpdateRowSource.Both, cmd.UpdatedRowSource);
                 cmd.UpdatedRowSource = UpdateRowSource.FirstReturnedRecord;
                 Assert.Equal(UpdateRowSource.FirstReturnedRecord, cmd.UpdatedRowSource);
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     AssertExtensions.Throws<ArgumentOutOfRangeException>(
                         () => cmd.UpdatedRowSource = (UpdateRowSource)InvalidValue,
@@ -44,7 +44,7 @@ namespace System.Data.OleDb.Tests
             const int InvalidValue = -1;
             using (var cmd = new OleDbCommand(default, connection, transaction))
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     AssertExtensions.Throws<ArgumentException>(
                         () => cmd.CommandTimeout = InvalidValue,
@@ -81,7 +81,7 @@ namespace System.Data.OleDb.Tests
             const int InvalidValue = 0;
             using (var cmd = (OleDbCommand)OleDbFactory.Instance.CreateCommand())
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     AssertExtensions.Throws<ArgumentOutOfRangeException>(
                         () => cmd.CommandType = (CommandType)InvalidValue,
@@ -179,7 +179,7 @@ namespace System.Data.OleDb.Tests
         public void Parameters_AddNullParameter_Throws()
         {
             RunTest((command, tableName) => {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     AssertExtensions.Throws<ArgumentNullException>(
                         () => command.Parameters.Add(null),

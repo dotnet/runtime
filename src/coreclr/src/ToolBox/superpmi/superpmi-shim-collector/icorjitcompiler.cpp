@@ -11,7 +11,6 @@
 #include "superpmi-shim-collector.h"
 
 #define fatMC                               // this is nice to have on so ildump works...
-interceptor_IEEMM* current_IEEMM = nullptr; // we want this to live beyond the scope of a single compileMethodCall
 
 CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*                comp,     /* IN */
                                                        struct CORINFO_METHOD_INFO* info,     /* IN */
@@ -22,9 +21,6 @@ CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*             
 {
     interceptor_ICJI our_ICorJitInfo;
     our_ICorJitInfo.original_ICorJitInfo = comp;
-
-    if (current_IEEMM == nullptr)
-        current_IEEMM = new interceptor_IEEMM();
 
     auto* mc = new MethodContext();
     if (g_ourJitHost != nullptr)
@@ -89,16 +85,6 @@ CorJitResult __stdcall interceptor_ICJC::compileMethod(ICorJitInfo*             
     return temp;
 }
 
-void interceptor_ICJC::clearCache()
-{
-    original_ICorJitCompiler->clearCache();
-}
-
-BOOL interceptor_ICJC::isCacheCleanupRequired()
-{
-    return original_ICorJitCompiler->isCacheCleanupRequired();
-}
-
 void interceptor_ICJC::ProcessShutdownWork(ICorStaticInfo* info)
 {
     original_ICorJitCompiler->ProcessShutdownWork(info);
@@ -112,9 +98,4 @@ void interceptor_ICJC::getVersionIdentifier(GUID* versionIdentifier /* OUT */)
 unsigned interceptor_ICJC::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
 {
     return original_ICorJitCompiler->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
-}
-
-void interceptor_ICJC::setRealJit(ICorJitCompiler* realJitCompiler)
-{
-    original_ICorJitCompiler->setRealJit(realJitCompiler);
 }

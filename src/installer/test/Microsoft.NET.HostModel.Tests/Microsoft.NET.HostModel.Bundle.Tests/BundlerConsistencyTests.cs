@@ -11,6 +11,7 @@ using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.NET.HostModel.Bundle;
 using BundleTests.Helpers;
+using FluentAssertions;
 
 namespace Microsoft.NET.HostModel.Tests
 {
@@ -82,10 +83,36 @@ namespace Microsoft.NET.HostModel.Tests
             Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
         }
 
-        [InlineData(true)]
-        [InlineData(false)]
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleOtherFiles)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [InlineData(BundleOptions.BundleSymbolFiles)]
         [Theory]
-        public void TestFilesNotBundled(bool embedPDBs)
+        public void TestFilesAlwaysBundled(BundleOptions options)
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+
+            var hostName = BundleHelper.GetHostName(fixture);
+            var appName = Path.GetFileNameWithoutExtension(hostName);
+            string publishPath = BundleHelper.GetPublishPath(fixture);
+            var bundleDir = BundleHelper.GetBundleDir(fixture);
+
+            var bundler = new Bundler(hostName, bundleDir.FullName, options);
+            bundler.GenerateBundle(publishPath);
+
+            bundler.BundleManifest.Contains($"{appName}.dll").Should().BeTrue();
+            bundler.BundleManifest.Contains($"{appName}.deps.json").Should().BeTrue();
+            bundler.BundleManifest.Contains($"{appName}.runtimeconfig.json").Should().BeTrue();
+        }
+
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleOtherFiles)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [InlineData(BundleOptions.BundleSymbolFiles)]
+        [Theory]
+        public void TestFilesNeverBundled(BundleOptions options)
         {
             var fixture = sharedTestState.TestFixture.Copy();
 
@@ -98,49 +125,46 @@ namespace Microsoft.NET.HostModel.Tests
             File.Copy(Path.Combine(publishPath, $"{appName}.runtimeconfig.json"), 
                       Path.Combine(publishPath, $"{appName}.runtimeconfig.dev.json"));
 
-            var singleFile = new Bundler(hostName, bundleDir.FullName, embedPDBs).GenerateBundle(publishPath);
+            var bundler = new Bundler(hostName, bundleDir.FullName, options); 
+            bundler.GenerateBundle(publishPath);
 
-            bundleDir.Should().OnlyHaveFiles(new string[] { hostName });
-
-            new Extractor(singleFile, bundleDir.FullName).ExtractFiles();
-
-            bundleDir.Should().NotHaveFile($"{appName}.runtimeconfig.dev.json");
-            if (!embedPDBs)
-            {
-                bundleDir.Should().NotHaveFile($"{appName}.pdb");
-            }
+            bundler.BundleManifest.Contains($"{appName}.runtimeconfig.dev.json").Should().BeFalse();
         }
 
-        [Fact]
-        public void ExtractingANonBundleFails()
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleSymbolFiles)]
+        [Theory]
+        public void TestBundlingSymbols(BundleOptions options)
         {
             var fixture = sharedTestState.TestFixture.Copy();
 
             var hostName = BundleHelper.GetHostName(fixture);
-            var hostExe = Path.Combine(BundleHelper.GetPublishPath(fixture), hostName);
-
+            var appName = Path.GetFileNameWithoutExtension(hostName);
+            string publishPath = BundleHelper.GetPublishPath(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
-            Extractor extractor = new Extractor(hostExe, "extract");
-            Assert.Throws<BundleException>(() => extractor.ExtractFiles());
+
+            var bundler = new Bundler(hostName, bundleDir.FullName, options);
+            bundler.GenerateBundle(publishPath);
+
+            bundler.BundleManifest.Contains($"{appName}.pdb").Should().Be(options.HasFlag(BundleOptions.BundleSymbolFiles));
         }
 
-        [Fact]
-        public void AllBundledFilesAreExtracted()
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [Theory]
+        public void TestBundlingNativeBinaries(BundleOptions options)
         {
             var fixture = sharedTestState.TestFixture.Copy();
 
             var hostName = BundleHelper.GetHostName(fixture);
+            var hostfxr = Path.GetFileName(fixture.TestProject.HostFxrDll);
+            string publishPath = BundleHelper.GetPublishPath(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
 
-            var bundler = new Bundler(hostName, bundleDir.FullName);
-            string singleFile = bundler.GenerateBundle(BundleHelper.GetPublishPath(fixture));
+            var bundler = new Bundler(hostName, bundleDir.FullName, options);
+            bundler.GenerateBundle(publishPath);
 
-            var expectedFiles = new List<string>(bundler.BundleManifest.Files.Count);
-            expectedFiles.Add(hostName);
-            bundler.BundleManifest.Files.ForEach(file => expectedFiles.Add(file.RelativePath));
-
-            new Extractor(singleFile, bundleDir.FullName).ExtractFiles();
-            bundleDir.Should().OnlyHaveFiles(expectedFiles);
+            bundler.BundleManifest.Contains($"{hostfxr}").Should().Be(options.HasFlag(BundleOptions.BundleNativeBinaries));
         }
 
         [Fact]
@@ -153,12 +177,11 @@ namespace Microsoft.NET.HostModel.Tests
             string publishPath = BundleHelper.GetPublishPath(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
 
-            var bundler = new Bundler(hostName, bundleDir.FullName);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
             bundler.GenerateBundle(BundleHelper.GetPublishPath(fixture));
 
             bundler.BundleManifest.Files.ForEach(file => 
-                Assert.True((file.Type != FileType.IL && file.Type != FileType.Ready2Run) ||
-                            (file.Offset % Bundler.AssemblyAlignment == 0)));
+                Assert.True((file.Type != FileType.Assembly) || (file.Offset % Bundler.AssemblyAlignment == 0)));
         }
 
         [Fact]
@@ -169,7 +192,7 @@ namespace Microsoft.NET.HostModel.Tests
             var hostName = BundleHelper.GetHostName(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
 
-            var bundler = new Bundler(hostName, bundleDir.FullName);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
             string singleFile = bundler.GenerateBundle(BundleHelper.GetPublishPath(fixture));
 
             using (var file = File.OpenWrite(singleFile))

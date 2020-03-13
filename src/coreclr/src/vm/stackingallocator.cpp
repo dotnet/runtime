@@ -384,7 +384,7 @@ void * __cdecl operator new(size_t n, StackingAllocator * alloc)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_FAULT;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) ThrowOutOfMemory();
 #endif
@@ -399,7 +399,7 @@ void * __cdecl operator new[](size_t n, StackingAllocator * alloc)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_FAULT;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) ThrowOutOfMemory();
 #else
@@ -418,7 +418,7 @@ void * __cdecl operator new(size_t n, StackingAllocator * alloc, const NoThrow&)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FAULT;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) return NULL;
 #endif
@@ -431,7 +431,7 @@ void * __cdecl operator new[](size_t n, StackingAllocator * alloc, const NoThrow
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FAULT;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) return NULL;
 #else

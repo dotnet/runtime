@@ -94,7 +94,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(expected, imageFormat.ToString());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug fix in .NET Core that is not in NETFX yet, dotnet/corefx 16463")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug fix not in NETFX, https://github.com/dotnet/runtime/issues/20332")]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ImageFromFileToStringTestData))]
         public void Image_RawFormat_ToString(string path, string expected)

@@ -543,7 +543,7 @@ namespace System.IO.Ports.Tests
 
         private void BufferData(SerialPort com1, SerialPort com2, byte[] bytesToWrite)
         {
-            com2.Write(bytesToWrite, 0, 1); // Write one byte at the begining because we are going to read this to buffer the rest of the data
+            com2.Write(bytesToWrite, 0, 1); // Write one byte at the beginning because we are going to read this to buffer the rest of the data
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
             TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length);

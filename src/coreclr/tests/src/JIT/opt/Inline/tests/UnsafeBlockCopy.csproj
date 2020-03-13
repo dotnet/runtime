@@ -6,10 +6,8 @@
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
-    <NoLogo>True</NoLogo>
     <NoStandardLib>True</NoStandardLib>
     <Noconfig>True</Noconfig>
-    <DefineConstants>$(DefineConstants);CORECLR</DefineConstants>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>

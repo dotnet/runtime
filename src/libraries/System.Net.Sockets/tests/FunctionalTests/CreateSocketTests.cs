@@ -32,7 +32,7 @@ namespace System.Net.Sockets.Tests
         private static bool SupportsRawSockets => AdminHelpers.IsProcessElevated();
         private static bool NotSupportsRawSockets => !SupportsRawSockets;
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(DualModeSuccessInputs))]
         public void DualMode_Success(SocketType socketType, ProtocolType protocolType)
         {
@@ -41,7 +41,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(DualModeFailureInputs))]
         public void DualMode_Failure(SocketType socketType, ProtocolType protocolType)
         {
@@ -55,7 +55,7 @@ namespace System.Net.Sockets.Tests
             new object[] { AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp },
         };
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(CtorSuccessInputs))]
         public void Ctor_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
@@ -77,7 +77,7 @@ namespace System.Net.Sockets.Tests
             new object[] { AddressFamily.InterNetwork, SocketType.Unknown, ProtocolType.Udp },
         };
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(CtorFailureInputs))]
         public void Ctor_Failure(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
@@ -122,6 +122,9 @@ namespace System.Net.Sockets.Tests
         [InlineData(false, 2)]
         public void CtorAndAccept_SocketNotKeptAliveViaInheritance(bool validateClientOuter, int acceptApiOuter)
         {
+            // 300 ms should be long enough to connect if the socket is actually present & listening.
+            const int ConnectionTimeoutMs = 300;
+
             // Run the test in another process so as to not have trouble with other tests
             // launching child processes that might impact inheritance.
             RemoteExecutor.Invoke((validateClientString, acceptApiString) =>
@@ -186,11 +189,13 @@ namespace System.Net.Sockets.Tests
                                 listener.Dispose();
                                 using (var tmpClient = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                                 {
-                                    Assert.ThrowsAny<SocketException>(() => tmpClient.Connect(ep));
-                                }
+                                    bool connected = tmpClient.TryConnect(ep, ConnectionTimeoutMs);
 
-                                // Let the child process terminate.
-                                serverPipe.WriteByte(42);
+                                    // Let the child process terminate.
+                                    serverPipe.WriteByte(42);
+
+                                    Assert.False(connected);
+                                }
                             }
                         }
                     }

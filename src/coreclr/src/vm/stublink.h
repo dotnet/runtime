@@ -70,9 +70,9 @@ struct LabelRef;
 struct CodeElement;
 struct IntermediateUnwindInfo;
 
-#if !defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if !defined(TARGET_X86) && !defined(TARGET_UNIX)
 #define STUBLINKER_GENERATES_UNWIND_INFO
-#endif // !_TARGET_X86_ && !FEATURE_PAL
+#endif // !TARGET_X86 && !TARGET_UNIX
 
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
@@ -108,7 +108,7 @@ struct StubUnwindInfoHeapSegment
     StubUnwindInfoHeader *pUnwindHeaderList;
     StubUnwindInfoHeapSegment *pNext;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     class UnwindInfoTable* pUnwindInfoTable;       // Used to publish unwind info to ETW stack crawler
 #endif
 };
@@ -234,9 +234,9 @@ class StubLinker
 
         void SetDataOnly(BOOL fDataOnly = TRUE) { LIMITED_METHOD_CONTRACT; m_fDataOnly = fDataOnly; }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         void DescribeProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         void DescribeProlog(UINT cIntRegArgs, UINT cVecRegArgs, UINT cCalleeSavedRegs, UINT cbStackFrame);
         UINT GetSavedRegArgsOffset();
         UINT GetStackFrameSize();
@@ -309,23 +309,23 @@ public:
                                             //   internals.
         BOOL          m_fDataOnly;          // the stub contains only data - does not need FlushInstructionCache
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 protected:
         BOOL            m_fProlog;              // True if DescribeProlog has been called
         UINT            m_cCalleeSavedRegs;     // Count of callee saved registers (0 == none, 1 == r4, 2 ==
                                                 // r4-r5 etc. up to 8 == r4-r11)
         UINT            m_cbStackFrame;         // Count of bytes in the stack frame (excl of saved regs)
         BOOL            m_fPushArgRegs;         // If true, r0-r3 are saved before callee saved regs
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 protected:
         BOOL            m_fProlog;              // True if DescribeProlog has been called
         UINT            m_cIntRegArgs;          // Count of int register arguments (x0 - x7)
         UINT            m_cVecRegArgs;          // Count of FP register arguments (v0 - v7)
         UINT            m_cCalleeSavedRegs;     // Count of callee saved registers (x19 - x28)
         UINT            m_cbStackSpace;         // Additional stack space for return buffer and stack alignment
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
 
@@ -336,7 +336,7 @@ protected:
                                                  // code from 14 to 5 bytes.
 #endif
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         IntermediateUnwindInfo *m_pUnwindInfoList;
         UINT          m_nUnwindSlots;       // number of slots to allocate at end, == UNWIND_INFO::CountOfCodes
         BOOL          m_fHaveFramePointer;  // indicates stack operations no longer need to be recorded
@@ -350,9 +350,9 @@ protected:
 
             return sizeof(T_RUNTIME_FUNCTION) + offsetof(UNWIND_INFO, UnwindCode) + m_nUnwindSlots * sizeof(UNWIND_CODE);
         }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 #define MAX_UNWIND_CODE_WORDS 5  /* maximum number of 32-bit words to store unwind codes */
         // Cache information about the stack frame set up in the prolog and use it in the generation of the
         // epilog.
@@ -369,9 +369,9 @@ private:
 
             return c_nUnwindInfoSize;
         }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 #define MAX_UNWIND_CODE_WORDS 5  /* maximum number of 32-bit words to store unwind codes */
 
 private:
@@ -384,7 +384,7 @@ private:
             return c_nUnwindInfoSize;
         }
 
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 
 #endif // STUBLINKER_GENERATES_UNWIND_INFO
 
@@ -416,9 +416,9 @@ private:
 
         bool EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap);
 
-#if defined(_TARGET_AMD64_) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
+#if defined(TARGET_AMD64) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
         UNWIND_CODE *AllocUnwindInfo (UCHAR Op, UCHAR nExtraSlots = 0);
-#endif // defined(_TARGET_AMD64_) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
+#endif // defined(TARGET_AMD64) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
 };
 
 //************************************************************************
@@ -636,7 +636,7 @@ class Stub
 
             TADDR pEntryPoint = dac_cast<TADDR>(GetEntryPointInternal());
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
 #ifndef THUMB_CODE
 #define THUMB_CODE 1
@@ -813,11 +813,11 @@ class Stub
 
         UINT32  m_signature;
 #else
-#ifdef BIT64
+#ifdef HOST_64BIT
         //README ALIGNEMENT: in retail mode UINT m_numCodeBytes does not align to 16byte for the code
         //                   after the Stub struct. This is to pad properly
         UINT    m_pad_code_bytes;
-#endif // BIT64
+#endif // HOST_64BIT
 #endif // _DEBUG
 
 #ifdef _DEBUG

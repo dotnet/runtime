@@ -38,6 +38,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15168", TestRuntimes.Mono)]
         [Description("Verifies CompositionServices.GetDefaultContractName method.")]
         public void GetDefaultContractNameTest()
         {

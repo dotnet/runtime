@@ -536,7 +536,7 @@ namespace System.Tests
 
             Uri invalidPunicodeUri = new Uri("http://xn--\u1234pck.com");
             yield return new object[] { invalidPunicodeUri, UriComponents.Host, "xn--\u1234pck.com" };
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // TODO: [ActiveIssue(8242, TestPlatforms.AnyUnix)]
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // expected platform differences, see https://github.com/dotnet/runtime/issues/17190
             {
                 yield return new object[] { invalidPunicodeUri, UriComponents.NormalizedHost, "xn--\u1234pck.com" };
             }

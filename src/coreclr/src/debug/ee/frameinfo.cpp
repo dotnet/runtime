@@ -383,7 +383,7 @@ inline ULONG AdjustRelOffset(CrawlFrame *pCF,
     }
     CONTRACTL_END;
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     return pCF->GetRelOffset() & ~THUMB_CODE;
 #else
     return pCF->GetRelOffset();
@@ -422,7 +422,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
     }
     CONTRACTL_END;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     TADDR returnIP, returnSP;
 
     EX_TRY
@@ -454,7 +454,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
             (returnSP == NULL) ||
             ((TADDR)GetRegdisplaySP(&pData->regDisplay) <= returnSP));
 
-#else // _TARGET_X86_
+#else // TARGET_X86
     // DebuggerExitFrame always return a NULL returnSP on x86.
     if (pFrame->GetVTablePtr() == DebuggerExitFrame::GetMethodFrameVPtr())
     {
@@ -502,7 +502,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
 
         return true;
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 }
 
 #ifdef _DEBUG
@@ -769,7 +769,7 @@ void FrameInfo::InitFromStubHelper(
     // Method associated w/a stub will never have a JitManager.
     this->pIJM        = NULL;
     this->MethodToken = METHODTOKEN(NULL, 0);
-    this->currentAppDomain      = pCF->GetAppDomain();
+    this->currentAppDomain      = AppDomain::GetCurrentDomain();
     this->exactGenericArgsToken = NULL;
 
     // Stub frames are mutually exclusive with chain markers.
@@ -1424,13 +1424,13 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
         d->info.fp = GetFramePointerForDebugger(d, pCF);
 
-#if defined(_DEBUG) && !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_)
+#if defined(_DEBUG) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
         // Make sure the stackwalk is making progress.
 		// On ARM this is invalid as the stack pointer does necessarily have to move when unwinding a frame.
         _ASSERTE(IsCloserToLeaf(d->previousFP, d->info.fp));
 
         d->previousFP = d->info.fp;
-#endif // _DEBUG && !_TARGET_ARM_
+#endif // _DEBUG && !TARGET_ARM
 
         d->needParentInfo = false;
 
@@ -1545,7 +1545,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
     // Record the appdomain that the thread was in when it
     // was running code for this frame.
-    d->info.currentAppDomain = pCF->GetAppDomain();
+    d->info.currentAppDomain = AppDomain::GetCurrentDomain();
 
     //  Grab all the info from CrawlFrame that we need to
     //  check for "Am I in an exeption code blob?" now.
@@ -1602,7 +1602,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         d->info.pIJM = pCF->GetJitManager();
         d->info.MethodToken = pCF->GetMethodToken();
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         // This is collecting the ambientSP a lot more than we actually need it. Only time we need it is
         // inspecting local vars that are based off the ambient esp.
         d->info.ambientSP = pCF->GetAmbientSPFromCrawlFrame();
@@ -1842,11 +1842,11 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         d->info.md = md;
         CopyREGDISPLAY(&(d->info.registers), &(d->regDisplay));
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Saving REGDISPLAY with sp = 0x%p, pc = 0x%p.\n",
             GetRegdisplaySP(&(d->info.registers)),
             GetControlPC(&(d->info.registers))));
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
         d->needParentInfo = true;
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Setting needParentInfo\n"));
@@ -1873,7 +1873,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     return SWA_CONTINUE;
 }
 
-#if defined(_TARGET_X86_) && defined(FEATURE_INTEROP_DEBUGGING)
+#if defined(TARGET_X86) && defined(FEATURE_INTEROP_DEBUGGING)
 // Helper to get the Wait-Sleep-Join bit from the thread
 bool IsInWaitSleepJoin(Thread * pThread)
 {
@@ -2056,7 +2056,7 @@ bool PrepareLeafUMChain(DebuggerFrameData * pData, CONTEXT * pCtxTemp)
 
     return true;
 }
-#endif //  defined(_TARGET_X86_) && defined(FEATURE_INTEROP_DEBUGGING)
+#endif //  defined(TARGET_X86) && defined(FEATURE_INTEROP_DEBUGGING)
 
 //-----------------------------------------------------------------------------
 // Entry function for the debugger's stackwalking layer.
@@ -2097,7 +2097,7 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
 #endif
             memset((void *)&data, 0, sizeof(data));
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
             // @todo - this seems pointless. context->Eip will be 0; and when we copy it over to the DebuggerRD,
             // the context will be completely null.
             data.regDisplay.ControlPC = context->Eip;
@@ -2120,7 +2120,7 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
     data.Init(thread, targetFP, fIgnoreNonmethodFrames, pCallback, pData);
 
 
-#if defined(_TARGET_X86_) && defined(FEATURE_INTEROP_DEBUGGING)
+#if defined(TARGET_X86) && defined(FEATURE_INTEROP_DEBUGGING)
     CONTEXT ctxTemp; // Temp context for Leaf UM chain. Need it here so that it stays alive for whole stackwalk.
 
     // Important case for Interop Debugging -
@@ -2133,7 +2133,7 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
         PrepareLeafUMChain(&data, &ctxTemp);
 
     }
-#endif // defined(_TARGET_X86_) && defined(FEATURE_INTEROP_DEBUGGING)
+#endif // defined(TARGET_X86) && defined(FEATURE_INTEROP_DEBUGGING)
 
     if ((result != SWA_FAILED) && !thread->IsUnstarted() && !thread->IsDead())
     {

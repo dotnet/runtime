@@ -672,6 +672,18 @@ struct IntergerStructSequential // size = 4 bytes
     INT i;
 };
 
+void PrintIntergerStructSequential(IntergerStructSequential* str, const char* name)
+{
+    printf("\t%s.i = %d\n", name, str->i);
+}
+
+bool IsCorrectIntergerStructSequential(IntergerStructSequential* str)
+{
+    if(str->i != 32)
+        return false;
+    return true;
+}
+
 struct S9;
 typedef void (*TestDelegate1)(struct S9 myStruct);
 
@@ -876,6 +888,32 @@ void ChangeLongStructPack16Explicit(LongStructPack16Explicit* p)
 bool IsCorrectLongStructPack16Explicit(LongStructPack16Explicit* p)
 {
     if(p->l1 != 32 || p->l2 != 32)
+        return false;
+    return true;
+}
+
+struct ByteStruct3Byte
+{
+    BYTE b1;
+    BYTE b2;
+    BYTE b3;
+};
+void PrintByteStruct3Byte(ByteStruct3Byte* str, char const * name)
+{
+	printf("\t%s.b1 = %d", name, str->b1);
+	printf("\t%s.b2 = %d", name, str->b2);
+	printf("\t%s.b3 = %d", name, str->b3);
+}
+
+void ChangeByteStruct3Byte(ByteStruct3Byte* p)
+{
+	p->b1 = 1;
+	p->b2 = 42;
+	p->b2 = 90;
+}
+bool IsCorrectByteStruct3Byte(ByteStruct3Byte* p)
+{
+    if(p->b1 != 7 || p->b2 != 12 || p->b3 != 18)
         return false;
     return true;
 }

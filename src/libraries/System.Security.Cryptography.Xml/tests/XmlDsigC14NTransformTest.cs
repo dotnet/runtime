@@ -375,7 +375,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(xml, output);
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16780")]
+        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20487")]
         public void PrefixlessNamespaceOutput()
         {
             XmlDocument doc = new XmlDocument();

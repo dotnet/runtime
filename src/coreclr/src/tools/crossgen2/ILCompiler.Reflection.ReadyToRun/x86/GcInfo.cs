@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -52,12 +52,12 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"\tCodeLength: {CodeLength} bytes");
-            sb.AppendLine($"\tInfoHdr:");
+            sb.AppendLine($"    CodeLength: {CodeLength} bytes");
+            sb.AppendLine($"    InfoHdr:");
             sb.AppendLine($"{Header}");
             sb.AppendLine($"{SlotTable}");
 
-            sb.AppendLine($"\tSize: {Size} bytes");
+            sb.AppendLine($"    Size: {Size} bytes");
 
             return sb.ToString();
         }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Security.Principal;
 
 namespace System.Security.AccessControl
@@ -58,7 +59,7 @@ namespace System.Security.AccessControl
                     throw new ArgumentException(SR.Arg_MustBeIdentityReferenceType, nameof(targetType));
                 }
 
-                CommonAcl acl = null;
+                CommonAcl? acl = null;
 
                 if (access)
                 {
@@ -83,7 +84,7 @@ namespace System.Security.AccessControl
                     return result;
                 }
 
-                IdentityReferenceCollection irTarget = null;
+                IdentityReferenceCollection? irTarget = null;
 
                 if (targetType != typeof(SecurityIdentifier))
                 {
@@ -100,7 +101,7 @@ namespace System.Security.AccessControl
                         // A better way would be to have an internal method that would canonicalize the ACL
                         // and call it once, then use the RawAcl.
                         //
-                        QualifiedAce ace = acl[i] as QualifiedAce;
+                        QualifiedAce? ace = acl[i] as QualifiedAce;
 
                         if (ace == null)
                         {
@@ -150,7 +151,7 @@ namespace System.Security.AccessControl
                     // A better way would be to have an internal method that would canonicalize the ACL
                     // and call it once, then use the RawAcl.
                     //
-                    QualifiedAce ace = acl[i] as CommonAce;
+                    QualifiedAce? ace = acl[i] as CommonAce;
 
                     if (ace == null)
                     {
@@ -189,7 +190,7 @@ namespace System.Security.AccessControl
 
                     if ((includeExplicit && ((ace.AceFlags & AceFlags.Inherited) == 0)) || (includeInherited && ((ace.AceFlags & AceFlags.Inherited) != 0)))
                     {
-                        IdentityReference iref = (targetType == typeof(SecurityIdentifier)) ? ace.SecurityIdentifier : irTarget[i];
+                        IdentityReference iref = (targetType == typeof(SecurityIdentifier)) ? ace.SecurityIdentifier : irTarget![i];
 
                         if (access)
                         {
@@ -204,15 +205,13 @@ namespace System.Security.AccessControl
                                 type = AccessControlType.Deny;
                             }
 
-                            if (ace is ObjectAce)
+                            if (ace is ObjectAce objectAce)
                             {
-                                ObjectAce objectAce = ace as ObjectAce;
-
                                 result.AddRule(AccessRuleFactory(iref, objectAce.AccessMask, objectAce.IsInherited, objectAce.InheritanceFlags, objectAce.PropagationFlags, type, objectAce.ObjectAceType, objectAce.InheritedObjectAceType));
                             }
                             else
                             {
-                                CommonAce commonAce = ace as CommonAce;
+                                CommonAce? commonAce = ace as CommonAce;
 
                                 if (commonAce == null)
                                 {
@@ -224,15 +223,13 @@ namespace System.Security.AccessControl
                         }
                         else
                         {
-                            if (ace is ObjectAce)
+                            if (ace is ObjectAce objectAce)
                             {
-                                ObjectAce objectAce = ace as ObjectAce;
-
                                 result.AddRule(AuditRuleFactory(iref, objectAce.AccessMask, objectAce.IsInherited, objectAce.InheritanceFlags, objectAce.PropagationFlags, objectAce.AuditFlags, objectAce.ObjectAceType, objectAce.InheritedObjectAceType));
                             }
                             else
                             {
-                                CommonAce commonAce = ace as CommonAce;
+                                CommonAce? commonAce = ace as CommonAce;
 
                                 if (commonAce == null)
                                 {
@@ -291,8 +288,9 @@ namespace System.Security.AccessControl
                 }
             }
 
-            SecurityIdentifier sid = rule.IdentityReference.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier;
+            SecurityIdentifier sid = (SecurityIdentifier)rule.IdentityReference.Translate(typeof(SecurityIdentifier));
 
+            Debug.Assert(SecurityDescriptor.DiscretionaryAcl != null);
             if (rule.AccessControlType == AccessControlType.Allow)
             {
                 switch (modification)
@@ -431,8 +429,9 @@ nameof(modification),
                 }
             }
 
-            SecurityIdentifier sid = rule.IdentityReference.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier;
+            SecurityIdentifier sid = (SecurityIdentifier)rule.IdentityReference.Translate(typeof(SecurityIdentifier));
 
+            Debug.Assert(SecurityDescriptor.SystemAcl != null);
             switch (modification)
             {
                 case AccessControlModification.Add:
@@ -504,7 +503,7 @@ nameof(modification),
             //        SR.AccessControl_InvalidAccessRuleType,
             //        "rule");
             //}
-            return ModifyAccess(modification, rule as ObjectAccessRule, out modified);
+            return ModifyAccess(modification, (ObjectAccessRule)rule, out modified);
         }
 
         protected override bool ModifyAudit(AccessControlModification modification, AuditRule rule, out bool modified)
@@ -516,7 +515,7 @@ nameof(modification),
             //        SR.AccessControl_InvalidAuditRuleType,
             //        "rule");
             //}
-            return ModifyAudit(modification, rule as ObjectAuditRule, out modified);
+            return ModifyAudit(modification, (ObjectAuditRule)rule, out modified);
         }
 #endregion
 

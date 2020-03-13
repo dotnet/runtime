@@ -13,6 +13,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class SimpleHttpTests : IDisposable
     {
@@ -168,7 +169,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(39552)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30284")]
         public void ListenerRestart_BeginGetContext_Success()
         {
             using (HttpListenerFactory factory = new HttpListenerFactory())
@@ -182,7 +183,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact]
-        [ActiveIssue(39552)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30284")]
         public async Task ListenerRestart_GetContext_Success()
         {
             const string Content = "ListenerRestart_GetContext_Success";

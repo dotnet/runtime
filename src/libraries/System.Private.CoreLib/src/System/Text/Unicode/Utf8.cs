@@ -41,7 +41,7 @@ namespace System.Text.Unicode
         /// </remarks>
         public static unsafe OperationStatus FromUtf16(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/coreclr/issues/23437
+            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
 
             _ = source.Length;
             _ = destination.Length;
@@ -132,7 +132,7 @@ namespace System.Text.Unicode
         /// </remarks>
         public static unsafe OperationStatus ToUtf16(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/coreclr/issues/23437
+            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
 
             _ = source.Length;
             _ = destination.Length;

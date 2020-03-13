@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using Internal.NativeCrypto;
 using static Interop.Crypt32;
@@ -15,7 +16,7 @@ namespace System.Security.Cryptography
         /// </summary>
         internal static Interop.BCrypt.ECC_CURVE_ALG_ID_ENUM GetHashAlgorithmId(HashAlgorithmName? name)
         {
-            if (name.HasValue == false || string.IsNullOrEmpty(name.Value.Name))
+            if (name is null || string.IsNullOrEmpty(name.Value.Name))
             {
                 return Interop.BCrypt.ECC_CURVE_ALG_ID_ENUM.BCRYPT_NO_CURVE_GENERATION_ALG_ID;
             }
@@ -52,7 +53,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Is the curve named, or once of the special nist curves
         /// </summary>
-        internal static bool IsECNamedCurve(string algorithm)
+        internal static bool IsECNamedCurve(string? algorithm)
         {
             return (algorithm == BCryptNative.AlgorithmName.ECDH ||
                     algorithm == BCryptNative.AlgorithmName.ECDsa);
@@ -61,7 +62,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Maps algorithm to curve name accounting for the special nist curves
         /// </summary>
-        internal static string SpecialNistAlgorithmToCurveName(string algorithm, out string oidValue)
+        internal static string SpecialNistAlgorithmToCurveName(string? algorithm, out string oidValue)
         {
             switch (algorithm)
             {

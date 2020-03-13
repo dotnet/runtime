@@ -197,7 +197,7 @@ HRESULT wCoMarshalInterThreadInterfaceInStream(REFIID riid,
 
     if (SUCCEEDED(hr))
     {
-        // Reset the stream to the begining
+        // Reset the stream to the beginning
         LARGE_INTEGER li;
         LISet32(li, 0);
         ULARGE_INTEGER li2;
@@ -707,7 +707,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
                 }
                 else
                 {
-                    // Reset the stream to the begining
+                    // Reset the stream to the beginning
                     LARGE_INTEGER li;
                     LISet32(li, 0);
                     ULARGE_INTEGER li2;
@@ -734,7 +734,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
                     }
                     else
                     {
-                        // Reset the stream to the begining
+                        // Reset the stream to the beginning
                         LISet32(li, 0);
                         m_pStream->Seek(li, STREAM_SEEK_SET, &li2);
 

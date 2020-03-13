@@ -10,13 +10,13 @@ namespace System.Security.Cryptography
     public sealed partial class ECDiffieHellmanCngPublicKey : ECDiffieHellmanPublicKey
     {
         private readonly CngKeyBlobFormat _format;
-        private readonly string _curveName;
+        private readonly string? _curveName;
         private bool _disposed;
 
         /// <summary>
         /// Wrap a CNG key
         /// </summary>
-        internal ECDiffieHellmanCngPublicKey(byte[] keyBlob, string curveName, CngKeyBlobFormat format) : base(keyBlob)
+        internal ECDiffieHellmanCngPublicKey(byte[] keyBlob, string? curveName, CngKeyBlobFormat format) : base(keyBlob)
         {
             _format = format;
             // Can be null for P256, P384, P521, or an explicit blob
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
         internal static ECDiffieHellmanCngPublicKey FromKey(CngKey key)
         {
             CngKeyBlobFormat format;
-            string curveName;
+            string? curveName;
             byte[] blob = ECCng.ExportKeyBlob(key, false, out format, out curveName);
             return new ECDiffieHellmanCngPublicKey(blob, curveName, format);
         }
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography
             using (CngKey key = Import())
             {
                 ECParameters ecparams = default;
-                string curveName = key.GetCurveName(out _);
+                string? curveName = key.GetCurveName(out _);
 
                 if (string.IsNullOrEmpty(curveName))
                 {

@@ -1,9 +1,0 @@
-﻿<Project>
-  <PropertyGroup>
-    <BuildConfigurations>
-      $(NetCoreAppCurrent)-Linux;
-      $(NetCoreAppCurrent)-OSX;
-      $(NetCoreAppCurrent)-Windows_NT;
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>

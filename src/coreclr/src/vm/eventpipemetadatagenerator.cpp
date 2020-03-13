@@ -16,7 +16,7 @@ BYTE* EventPipeMetadataGenerator::GenerateEventMetadata(
     EventPipeEventLevel level,
     EventPipeParameterDesc *pParams,
     unsigned int paramCount,
-    size_t &metadataLength)
+    size_t *pMetadataLength)
 {
     CONTRACTL
     {
@@ -25,6 +25,7 @@ BYTE* EventPipeMetadataGenerator::GenerateEventMetadata(
         MODE_ANY;
         PRECONDITION(pEventName != NULL);
         PRECONDITION(paramCount == 0 || pParams != NULL);
+        PRECONDITION(pMetadataLength != NULL);
     }
     CONTRACTL_END;
 
@@ -35,18 +36,18 @@ BYTE* EventPipeMetadataGenerator::GenerateEventMetadata(
     // level            : 4 bytes
     // parameterCount   : 4 bytes
     size_t eventNameLength = wcslen(pEventName);
-    metadataLength = 24 + ((eventNameLength + 1) * sizeof(WCHAR));
+    *pMetadataLength = 24 + ((eventNameLength + 1) * sizeof(WCHAR));
 
     // Each parameter has a 4 byte TypeCode + (parameterName.Length + 1) * 2 bytes.
     for(unsigned int i=0; i<paramCount; i++)
     {
         _ASSERTE(pParams[i].Name != NULL);
 
-        metadataLength += (4 + ((wcslen(pParams[i].Name) + 1) * sizeof(WCHAR)));
+        *pMetadataLength += (4 + ((wcslen(pParams[i].Name) + 1) * sizeof(WCHAR)));
     }
 
     // Allocate a metadata blob.
-    BYTE *pMetadata = new BYTE[metadataLength];
+    BYTE *pMetadata = new BYTE[*pMetadataLength];
     BYTE *pCurrent = pMetadata;
 
     // Write the event ID.
@@ -89,7 +90,7 @@ BYTE* EventPipeMetadataGenerator::GenerateEventMetadata(
         pCurrent += sizeof(WCHAR);
     }
 
-    _ASSERTE(metadataLength == (size_t)(pCurrent - pMetadata));
+    _ASSERTE(*pMetadataLength == (size_t)(pCurrent - pMetadata));
 
     return pMetadata;
 }

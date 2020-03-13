@@ -412,12 +412,12 @@ public:
             char*    ptr             = res;
             if (sizeof(size_t) == sizeof(int64_t))
             {
-                sprintf_s(ptr, remaining, "%016zX", bits);
+                sprintf_s(ptr, remaining, "%016llX", bits);
             }
             else
             {
                 assert(sizeof(size_t) == sizeof(int));
-                sprintf_s(ptr, remaining, "%08zX", bits);
+                sprintf_s(ptr, remaining, "%08X", bits);
             }
             return res;
         }
@@ -511,7 +511,7 @@ public:
             {
                 DWORD nextBit;
                 BOOL  hasBit;
-#ifdef _HOST_64BIT_
+#ifdef HOST_64BIT
                 static_assert_no_msg(sizeof(size_t) == 8);
                 hasBit = BitScanForward64(&nextBit, m_bits);
 #else

@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <Configurations>$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

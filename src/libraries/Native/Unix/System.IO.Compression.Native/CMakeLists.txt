@@ -1,6 +1,6 @@
 project(System.IO.Compression.Native C)
 
-if (CLR_CMAKE_PLATFORM_WASM)
+if (CLR_CMAKE_TARGET_WASM)
     add_definitions(-s USE_ZLIB)
 else ()
     find_package(ZLIB REQUIRED)
@@ -59,11 +59,8 @@ endif ()
 add_library(System.IO.Compression.Native-Static
     STATIC
     ${NATIVECOMPRESSION_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
-# Disable the "lib" prefix and override default name
-set_target_properties(System.IO.Compression.Native-Static PROPERTIES PREFIX "")
 set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native  CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION .)

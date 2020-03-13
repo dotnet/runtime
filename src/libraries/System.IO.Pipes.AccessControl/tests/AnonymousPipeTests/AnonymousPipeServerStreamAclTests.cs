@@ -71,7 +71,7 @@ namespace System.IO.Pipes.Tests
             from accessControl in new[] { AccessControlType.Allow, AccessControlType.Deny }
             select new object[] { rights, accessControl };
 
-        // These tests match NetFX behavior
+        // These tests match .NET Framework behavior
         [Theory]
         [MemberData(nameof(Create_CombineRightsAndAccessControl_MemberData))]
         public void Create_CombineRightsAndAccessControl(PipeAccessRights rights, AccessControlType accessControl)

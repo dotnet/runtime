@@ -369,10 +369,6 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
         }
 
         asmInfo.szLocale = 0;
-        asmInfo.ulOS = 0;
-        asmInfo.rOS = 0;
-        asmInfo.ulProcessor = 0;
-        asmInfo.rProcessor = 0;
 
         if ((*pName)->GetCultureInfo() != NULL)
         {

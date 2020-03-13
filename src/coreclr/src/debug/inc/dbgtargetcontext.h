@@ -33,21 +33,21 @@
 // This odd define pattern is needed because in DBI we set _TARGET_ to match the host and
 // DBG_TARGET to control our targeting. In x-plat DBI DBG_TARGET won't match _TARGET_ and
 // DBG_TARGET needs to take precedence
-#if defined(DBG_TARGET_X86)
+#if defined(TARGET_X86)
 #define DTCONTEXT_IS_X86
-#elif defined (DBG_TARGET_AMD64)
+#elif defined (TARGET_AMD64)
 #define DTCONTEXT_IS_AMD64
-#elif defined (DBG_TARGET_ARM)
+#elif defined (TARGET_ARM)
 #define DTCONTEXT_IS_ARM
-#elif defined (DBG_TARGET_ARM64)
+#elif defined (TARGET_ARM64)
 #define DTCONTEXT_IS_ARM64
-#elif defined (_TARGET_X86_)
+#elif defined (TARGET_X86)
 #define DTCONTEXT_IS_X86
-#elif defined (_TARGET_AMD64_)
+#elif defined (TARGET_AMD64)
 #define DTCONTEXT_IS_AMD64
-#elif defined (_TARGET_ARM_)
+#elif defined (TARGET_ARM)
 #define DTCONTEXT_IS_ARM
-#elif defined (_TARGET_ARM64_)
+#elif defined (TARGET_ARM64)
 #define DTCONTEXT_IS_ARM64
 #endif
 

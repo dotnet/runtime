@@ -26,7 +26,7 @@ namespace System.Net.Http
                 proxy.HostName,
                 proxy.PortNumber);
 
-            // TODO: Issue #26593 - Credentials are not propagated
+            // TODO https://github.com/dotnet/runtime/issues/24799 - Credentials are not propagated
 
             return uriBuilder.Uri;
         }

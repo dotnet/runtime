@@ -7,18 +7,18 @@
 #include <xplatform.h>
 #include <platformdefines.h>
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     #include <emmintrin.h>
 
     typedef __m128i Vector128L;
-#elif defined(_TARGET_ARMARCH_)
+#elif defined(TARGET_ARMARCH)
     #if defined(_MSC_VER)
-        #if defined(_TARGET_ARM64_)
+        #if defined(TARGET_ARM64)
             #include <arm64_neon.h>
         #else
             #include <arm_neon.h>
         #endif
-    #elif defined(_TARGET_ARM64_)
+    #elif defined(TARGET_ARM64)
         #include <arm_neon.h>
     #else
         typedef struct {
@@ -51,7 +51,7 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector128LOut(int64_t e00, int64
 {
     Vector128L value = GetVector128L(e00, e01);
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     _mm_storeu_si128(pValue, value);
 #else
     *pValue = value;

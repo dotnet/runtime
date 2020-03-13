@@ -13,7 +13,6 @@ namespace System.Net.Http
     {
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
 
-        // TODO: Issue #2165. Merge with similar code used in System.Net.Security move to Common/src//System/Net.
         public static void BuildChain(
             X509Certificate2 certificate,
             X509Certificate2Collection remoteCertificateStore,
@@ -88,7 +87,6 @@ namespace System.Net.Http
                     else
                     {
                         // Failure checking the policy. This is a rare error. We will assume the name check failed.
-                        // TODO: Issue #2165. Log this error or perhaps throw an exception instead.
                         if (NetEventSource.IsEnabled) NetEventSource.Error(certificate, $"Failure calling {nameof(Interop.Crypt32.CertVerifyCertificateChainPolicy)}");
                         sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
                     }
@@ -96,7 +94,8 @@ namespace System.Net.Http
             }
         }
 
-        // TODO: Issue #3891. Get the Trusted Issuers List from WinHTTP and use that to help narrow down
+        // TODO https://github.com/dotnet/runtime/issues/15462:
+        // Get the Trusted Issuers List from WinHTTP and use that to help narrow down
         // the list of eligible client certificates.
     }
 }

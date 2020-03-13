@@ -13,7 +13,7 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class AnonymousPipeServerStream : PipeStream
     {
-        internal AnonymousPipeServerStream(PipeDirection direction, HandleInheritability inheritability, int bufferSize, PipeSecurity pipeSecurity)
+        internal AnonymousPipeServerStream(PipeDirection direction, HandleInheritability inheritability, int bufferSize, PipeSecurity? pipeSecurity)
             : base(direction, bufferSize)
         {
             if (direction == PipeDirection.InOut)
@@ -34,7 +34,7 @@ namespace System.IO.Pipes
             Create(direction, inheritability, bufferSize, null);
         }
 
-        private void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize, PipeSecurity pipeSecurity)
+        private void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize, PipeSecurity? pipeSecurity)
         {
             Debug.Assert(direction != PipeDirection.InOut, "Anonymous pipe direction shouldn't be InOut");
             Debug.Assert(bufferSize >= 0, "bufferSize is negative");

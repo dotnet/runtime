@@ -95,7 +95,7 @@ struct LabelRef : public CodeElement
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
 
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 // List of unwind operations, queued in StubLinker::m_pUnwindInfoList.
 struct IntermediateUnwindInfo
 {
@@ -104,7 +104,7 @@ struct IntermediateUnwindInfo
     UINT LocalOffset;
     UNWIND_CODE rgUnwindCode[1];    // variable length, depends on first entry's UnwindOp
 };
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 
 StubUnwindInfoHeapSegment *g_StubHeapSegments;
@@ -236,7 +236,7 @@ bool UnregisterUnwindInfoInLoaderHeapCallback (PVOID pvArgs, PVOID pvAllocationB
             _ASSERTE((BYTE*)pvAllocationBase + cbReserved <= pStubHeapSegment->pbBaseAddress + pStubHeapSegment->cbSegment);
 
             DeleteEEFunctionTable(pStubHeapSegment);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             if (pStubHeapSegment->pUnwindInfoTable != 0)
                 delete pStubHeapSegment->pUnwindInfoTable;
 #endif
@@ -352,7 +352,7 @@ StubLinker::StubLinker()
     m_pPatchLabel       = NULL;
     m_stackSize         = 0;
     m_fDataOnly         = FALSE;
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     m_fProlog           = FALSE;
     m_cCalleeSavedRegs  = 0;
     m_cbStackFrame      = 0;
@@ -362,12 +362,12 @@ StubLinker::StubLinker()
 #ifdef _DEBUG
     m_pUnwindInfoCheckLabel = NULL;
 #endif
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     m_pUnwindInfoList   = NULL;
     m_nUnwindSlots      = 0;
     m_fHaveFramePointer = FALSE;
 #endif
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     m_fProlog           = FALSE;
     m_cIntRegArgs       = 0;
     m_cVecRegArgs       = 0;
@@ -1158,7 +1158,7 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 
 // See RtlVirtualUnwind in base\ntos\rtl\amd64\exdsptch.c
 
@@ -1288,7 +1288,7 @@ UNWIND_CODE *StubLinker::AllocUnwindInfo (UCHAR Op, UCHAR nExtraSlots /*= 0*/)
 
     return pUnwindCode;
 }
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 
 struct FindBlockArgs
 {
@@ -1390,7 +1390,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 
     StubUnwindInfoHeader * pUnwindInfoHeader = pStub->GetUnwindInfoHeader();
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
     UNWIND_CODE *pDestUnwindCode = &pUnwindInfoHeader->UnwindInfo.UnwindCode[0];
 #ifdef _DEBUG
@@ -1506,7 +1506,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
     if (sTemp.IsOverflow())
         COMPlusThrowArithmetic();
     RUNTIME_FUNCTION__SetUnwindInfoAddress(pCurFunction, sTemp.Value());
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     //
     // Fill in the RUNTIME_FUNCTION struct for this prologue.
     //
@@ -1652,7 +1652,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
         ((int)epilogUnwindCodeIndex << 23)|
         ((int)codeWordsCount << 28);
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     if (!m_fProlog)
     {
         // If EmitProlog isn't called. This is a leaf function which doesn't need any unwindInfo
@@ -1832,7 +1832,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
         pNewStubHeapSegment->pbBaseAddress = pbBaseAddress;
         pNewStubHeapSegment->cbSegment = cbSegment;
         pNewStubHeapSegment->pUnwindHeaderList = NULL;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         pNewStubHeapSegment->pUnwindInfoTable = NULL;
 #endif
 
@@ -1860,7 +1860,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
     pHeader->pNext = pStubHeapSegment->pUnwindHeaderList;
                      pStubHeapSegment->pUnwindHeaderList = pHeader;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Publish Unwind info to ETW stack crawler
     UnwindInfoTable::AddToUnwindInfoTable(
         &pStubHeapSegment->pUnwindInfoTable, pCurFunction,
@@ -1878,7 +1878,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 }
 #endif // STUBLINKER_GENERATES_UNWIND_INFO
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 void StubLinker::DescribeProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs)
 {
     m_fProlog = TRUE;
@@ -1886,7 +1886,7 @@ void StubLinker::DescribeProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL f
     m_cbStackFrame = cbStackFrame;
     m_fPushArgRegs = fPushArgRegs;
 }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 void StubLinker::DescribeProlog(UINT cIntRegArgs, UINT cVecRegArgs, UINT cCalleeSavedRegs, UINT cbStackSpace)
 {
     m_fProlog               = TRUE;
@@ -1911,7 +1911,7 @@ UINT StubLinker::GetStackFrameSize()
 }
 
 
-#endif // ifdef _TARGET_ARM_, elif defined(_TARGET_ARM64_)
+#endif // ifdef TARGET_ARM, elif defined(TARGET_ARM64)
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1989,7 +1989,7 @@ VOID Stub::DeleteStub()
             if (pSegment)
             {
                 PBYTE pbCode = (PBYTE)GetEntryPointInternal();
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 UnwindInfoTable::RemoveFromUnwindInfoTable(&pSegment->pUnwindInfoTable,
                     (TADDR) pSegment->pbBaseAddress, (TADDR) pbCode);
 #endif
@@ -2038,7 +2038,7 @@ VOID Stub::DeleteStub()
                     if (!pSegment->pUnwindHeaderList)
                     {
                         DeleteEEFunctionTable(pSegment);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                         if (pSegment->pUnwindInfoTable != 0)
                             delete pSegment->pUnwindInfoTable;
 #endif
@@ -2061,7 +2061,7 @@ VOID Stub::DeleteStub()
         FillMemory(this+1, m_numCodeBytes, 0xcc);
 #endif
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         DeleteExecutable((BYTE*)GetAllocationBase());
 #else
         delete [] (BYTE*)GetAllocationBase();
@@ -2179,7 +2179,7 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     BYTE *pBlock;
     if (pHeap == NULL)
     {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         pBlock = new (executable) BYTE[totalSize];
 #else
         pBlock = new BYTE[totalSize];
@@ -2224,7 +2224,7 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
 #ifdef _DEBUG
     m_signature = kUsedStub;
 #else
-#ifdef BIT64
+#ifdef HOST_64BIT
     m_pad_code_bytes = 0;
 #endif
 #endif

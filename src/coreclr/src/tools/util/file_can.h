@@ -19,7 +19,7 @@ enum FileType
 
 HANDLE OpenFileEx( LPCWSTR filename, DWORD *fileLen, LPCWSTR relPath = NULL, bool bWrite = false);
 HRESULT ReadTextFile (PCWSTR pszFileName, UINT uiCodePage, WCAllocBuffer & textBuffer, FileType *fileType);
-#if !defined(FEATURE_PAL) && !defined(CSEE)
+#if !defined(TARGET_UNIX) && !defined(CSEE)
 // If you call ReadTextFile a lot you should create one HCRYPTPROV and pass it in to every call, otherwise
 // ReadTextFile indirectly creates and destroys a new HCRYPTPROV for every call, which is slow and unnecessary.
 // You can use CryptProvider to manage an HCRYPTPROV for you.

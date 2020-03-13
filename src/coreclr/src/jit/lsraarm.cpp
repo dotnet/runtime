@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
 #include "jit.h"
 #include "sideeffects.h"
@@ -717,7 +717,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_COPY:
             srcCount = 1;
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
             // This case currently only occurs for double types that are passed as TYP_LONG;
             // actual long types would have been decomposed by now.
             if (tree->TypeGet() == TYP_LONG)
@@ -749,7 +749,6 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_BITCAST:
         {
-            srcCount = 1;
             assert(dstCount == 1);
             regNumber argReg  = tree->GetRegNum();
             regMaskTP argMask = genRegMask(argReg);
@@ -763,8 +762,15 @@ int LinearScan::BuildNode(GenTree* tree)
                 argMask |= genRegMask(REG_NEXT(argReg));
                 dstCount = 2;
             }
-
-            BuildUse(tree->gtGetOp1());
+            if (!tree->gtGetOp1()->isContained())
+            {
+                BuildUse(tree->gtGetOp1());
+                srcCount = 1;
+            }
+            else
+            {
+                srcCount = 0;
+            }
             BuildDefs(tree, dstCount, argMask);
         }
         break;
@@ -810,4 +816,4 @@ int LinearScan::BuildNode(GenTree* tree)
     return srcCount;
 }
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM

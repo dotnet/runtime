@@ -16,10 +16,10 @@ namespace System.ComponentModel.Composition.Primitives
     /// </summary>
     public class Export
     {
-        private readonly ExportDefinition _definition;
-        private readonly Func<object> _exportedValueGetter;
+        private readonly ExportDefinition? _definition;
+        private readonly Func<object?>? _exportedValueGetter;
         private static readonly object _EmptyValue = new object();
-        private volatile object _exportedValue = Export._EmptyValue;
+        private volatile object? _exportedValue = Export._EmptyValue;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Export"/> class.
@@ -56,8 +56,8 @@ namespace System.ComponentModel.Composition.Primitives
         /// <exception cref="ArgumentException">
         ///     <paramref name="contractName"/> is an empty string ("").
         /// </exception>
-        public Export(string contractName, Func<object> exportedValueGetter)
-            : this(new ExportDefinition(contractName, (IDictionary<string, object>)null), exportedValueGetter)
+        public Export(string contractName, Func<object?> exportedValueGetter)
+            : this(new ExportDefinition(contractName, (IDictionary<string, object?>?)null), exportedValueGetter)
         {
         }
 
@@ -89,7 +89,7 @@ namespace System.ComponentModel.Composition.Primitives
         /// <exception cref="ArgumentException">
         ///     <paramref name="contractName"/> is an empty string ("").
         /// </exception>
-        public Export(string contractName, IDictionary<string, object> metadata, Func<object> exportedValueGetter)
+        public Export(string contractName, IDictionary<string, object?>? metadata, Func<object?> exportedValueGetter)
             : this(new ExportDefinition(contractName, metadata), exportedValueGetter)
         {
         }
@@ -113,7 +113,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     </para>
         ///     <paramref name="exportedValueGetter"/> is <see langword="null"/>.
         /// </exception>
-        public Export(ExportDefinition definition, Func<object> exportedValueGetter)
+        public Export(ExportDefinition definition, Func<object?> exportedValueGetter)
         {
             Requires.NotNull(definition, nameof(definition));
             Requires.NotNull(exportedValueGetter, nameof(exportedValueGetter));
@@ -167,7 +167,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///         of the <see cref="Definition"/> property.
         ///     </para>
         /// </remarks>
-        public IDictionary<string, object> Metadata
+        public IDictionary<string, object?> Metadata
         {
             get
             {
@@ -194,7 +194,7 @@ namespace System.ComponentModel.Composition.Primitives
         /// <exception cref="NotImplementedException">
         ///     The <see cref="GetExportedValueCore"/> method was not overridden by a derived class.
         /// </exception>
-        public object Value
+        public object? Value
         {
             get
             {
@@ -202,7 +202,7 @@ namespace System.ComponentModel.Composition.Primitives
                 // more than once, as locking would be required for that. The said locking is problematic, as we can't reliable call 3rd party code under a lock.
                 if (_exportedValue == Export._EmptyValue)
                 {
-                    object exportedValue = GetExportedValueCore();
+                    object? exportedValue = GetExportedValueCore();
                     Interlocked.CompareExchange(ref _exportedValue, exportedValue, Export._EmptyValue);
                 }
 
@@ -233,8 +233,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///         <see langword="null"/>.
         ///     </note>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        protected virtual object GetExportedValueCore()
+        protected virtual object? GetExportedValueCore()
         {
             if (_exportedValueGetter != null)
             {

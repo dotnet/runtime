@@ -201,12 +201,12 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
     for (int i = 1; i < argc; i++)
     {
         bool isASwitch = (argv[i][0] == '-');
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         if (argv[i][0] == '/') // Also accept "/" on Windows
         {
             isASwitch = true;
         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
         // Process a switch
         if (isASwitch)
@@ -596,12 +596,12 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
     if (o->targetArchitecture != nullptr)
     {
         const char* errorMessage = nullptr;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         if (0 != _stricmp(o->targetArchitecture, "arm64"))
         {
             errorMessage = "Illegal target architecture specified with -target (only arm64 is supported on x64 host).";
         }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
         if (0 != _stricmp(o->targetArchitecture, "arm"))
         {
             errorMessage = "Illegal target architecture specified with -target (only arm is supported on x86 host).";

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Logging.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../shared/*.cs" />
+    <Compile Include="../../../Shared/src/TypeNameHelper/TypeNameHelper.cs" />
+  </ItemGroup>
+
+</Project>

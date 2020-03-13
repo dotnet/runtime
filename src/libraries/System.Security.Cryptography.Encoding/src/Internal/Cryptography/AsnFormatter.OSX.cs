@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Text;
@@ -25,7 +24,7 @@ namespace Internal.Cryptography
         {
             if (oid == null || string.IsNullOrEmpty(oid.Value))
             {
-                return EncodeHexString(rawData, true);
+                return EncodeSpaceSeparatedHexString(rawData);
             }
 
             switch (oid.Value)
@@ -48,14 +47,14 @@ namespace Internal.Cryptography
             try
             {
                 StringBuilder output = new StringBuilder();
-                AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
-                AsnReader collectionReader = reader.ReadSequence();
+                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+                AsnValueReader collectionReader = reader.ReadSequence();
 
                 reader.ThrowIfNotEmpty();
 
                 while (collectionReader.HasData)
                 {
-                    GeneralNameAsn.Decode(collectionReader, out GeneralNameAsn generalName);
+                    GeneralNameAsn.Decode(ref collectionReader, rawData, out GeneralNameAsn generalName);
 
                     if (output.Length != 0)
                     {

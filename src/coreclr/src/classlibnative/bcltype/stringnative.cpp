@@ -26,7 +26,7 @@
 
 // Compile the string functionality with these pragma flags (equivalent of the command line /Ox flag)
 // Compiling this functionality differently gives us significant throughout gain in some cases.
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("tgy", on)
 #endif
 
@@ -95,6 +95,6 @@ FCIMPL2(VOID, COMString::FCSetTrailByte, StringObject* thisRefUNSAFE, UINT8 bDat
 FCIMPLEND
 
 // Revert to command line compilation flags
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize ("", on)
 #endif

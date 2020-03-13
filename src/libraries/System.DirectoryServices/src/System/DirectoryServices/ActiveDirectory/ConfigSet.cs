@@ -447,11 +447,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 str.Append("(&(");
                 str.Append(PropertyManager.ObjectCategory);
                 str.Append("=serviceConnectionPoint)");
-                str.Append("(");
+                str.Append('(');
                 str.Append(PropertyManager.Keywords);
                 str.Append("=1.2.840.113556.1.4.1851)(");
                 str.Append(PropertyManager.Keywords);
-                str.Append("=");
+                str.Append('=');
                 str.Append(Utils.GetEscapedFilterValue(context.Name)); // target = config set name
                 str.Append("))");
 

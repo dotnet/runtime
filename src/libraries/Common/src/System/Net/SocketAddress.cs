@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Sockets;
@@ -179,9 +180,9 @@ namespace System.Net.Internals
             return Buffer.Length - IntPtr.Size;
         }
 
-        public override bool Equals(object comparand)
+        public override bool Equals(object? comparand)
         {
-            SocketAddress castedComparand = comparand as SocketAddress;
+            SocketAddress? castedComparand = comparand as SocketAddress;
             if (castedComparand == null || this.Size != castedComparand.Size)
             {
                 return false;

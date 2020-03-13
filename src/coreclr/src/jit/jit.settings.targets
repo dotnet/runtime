@@ -93,6 +93,7 @@
         <CppCompile Include="..\LSRA.cpp" />
         <CppCompile Include="..\lsrabuild.cpp" />
         <CppCompile Include="..\codegenlinear.cpp" />
+        <CppCompile Include="..\phase.cpp" />
     </ItemGroup>
     <ItemGroup Condition="'$(TargetArch)'=='i386'">
         <CppCompile Include="..\emitXArch.cpp" />

@@ -28,8 +28,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal V Lookup<K, V>(K key) where K : notnull
         {
             IDictionary<K, V> _this = Unsafe.As<IDictionary<K, V>>(this);
-            V value;
-            bool keyFound = _this.TryGetValue(key, out value);
+            bool keyFound = _this.TryGetValue(key, out V value);
 
             if (!keyFound)
             {

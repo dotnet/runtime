@@ -135,7 +135,7 @@ namespace System.Data.OleDb.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(37438)]
+                return; // see https://github.com/dotnet/corefx/pull/37450
             }
 
             DataTable t1 = connection.GetSchema();
@@ -159,7 +159,7 @@ namespace System.Data.OleDb.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(37438)]
+                return; // see https://github.com/dotnet/corefx/pull/37450
             }
 
             DataTable schema = connection.GetSchema(tableName);
@@ -356,6 +356,18 @@ namespace System.Data.OleDb.Tests
             Assert.Empty(connectionStringBuilder.FileName);
             Assert.True(connectionStringBuilder.Remove("Provider"));
             Assert.Empty(connectionStringBuilder.Provider);
+        }
+
+        [ConditionalFact(Helpers.IsDriverAvailable)]
+        public void TransactionRollBackTest()
+        {
+            using (OleDbConnection connection = new OleDbConnection(ConnectionString))
+            {
+                connection.Open();
+                OleDbTransaction transaction = connection.BeginTransaction();
+                // This call shouldn't throw
+                transaction.Rollback();
+            }
         }
     }
 }

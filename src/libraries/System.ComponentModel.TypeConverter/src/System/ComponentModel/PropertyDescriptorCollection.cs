@@ -7,11 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.Add(System.Object,System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IList.set_Item(System.Int32,System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters", Scope = "member", Target = "System.ComponentModel.PropertyDescriptorCollection.System.Collections.IDictionary.set_Item(System.Object,System.Object):System.Void")]
-[assembly: SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields", Scope = "type", Target = "System.ComponentModel.PropertyDescriptorCollection")]
-
 namespace System.ComponentModel
 {
     /// <summary>
@@ -22,7 +17,6 @@ namespace System.ComponentModel
         /// <summary>
         /// An empty PropertyDescriptorCollection that can used instead of creating a new one with no items.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2112:SecuredTypesShouldNotExposeFields")]
         public static readonly PropertyDescriptorCollection Empty = new PropertyDescriptorCollection(null, true);
 
         private IDictionary _cachedFoundProperties;

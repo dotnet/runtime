@@ -75,7 +75,6 @@ namespace System.Dynamic
         /// </summary>
         internal override sealed bool IsStandardBinder => true;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         internal static bool OperationIsValid(ExpressionType operation)
         {
             switch (operation)

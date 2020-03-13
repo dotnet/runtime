@@ -201,7 +201,7 @@ do { hr = (EXPR); if(hr != ERROR_SUCCESS) { hr = HRESULT_FROM_WIN32(hr); goto LA
 #define _ASSERT _ASSERTE
 
 
-#if defined(_DEBUG) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && defined(HOST_WINDOWS)
 
 // This function returns the EXE time stamp (effectively a random number)
 // Under retail it always returns 0.  This is meant to be used in the

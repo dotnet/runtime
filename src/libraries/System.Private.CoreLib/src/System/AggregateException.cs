@@ -377,7 +377,7 @@ namespace System
             while (exceptionsToFlatten.Count > nDequeueIndex)
             {
                 // dequeue one from exceptionsToFlatten
-                IList<Exception> currentInnerExceptions = exceptionsToFlatten[nDequeueIndex++].InnerExceptions;
+                ReadOnlyCollection<Exception> currentInnerExceptions = exceptionsToFlatten[nDequeueIndex++].InnerExceptions;
 
                 for (int i = 0; i < currentInnerExceptions.Count; i++)
                 {
@@ -401,8 +401,7 @@ namespace System
                 }
             }
 
-
-            return new AggregateException(Message, flattenedExceptions);
+            return new AggregateException(GetType() == typeof(AggregateException) ? base.Message : Message, flattenedExceptions);
         }
 
         /// <summary>Gets a message that describes the exception.</summary>

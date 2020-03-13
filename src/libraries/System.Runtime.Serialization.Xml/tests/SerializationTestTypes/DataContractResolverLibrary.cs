@@ -396,9 +396,9 @@ namespace SerializationTestTypes
                 }
                 catch (System.IO.FileLoadException)
                 {
-                    //Type.GetType throws exception on netfx if it cannot find a type while it just returns null on NetCore.
+                    //Type.GetType throws exception on .NET Framework if it cannot find a type while it just returns null on NetCore.
                     //The behavior difference of Type.GetType is a known issue.
-                    //Catch the exception so that test case can pass on netfx.
+                    //Catch the exception so that test case can pass on .NET Framework.
                     return null;
                 }
             }

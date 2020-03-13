@@ -10,9 +10,8 @@ set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
 set __BuildTarget="build"
-set __appContainer=""
 set __VCBuildArch=x86_amd64
-set __BuildOS=Windows_NT
+set __TargetOS=Windows_NT
 set CMAKE_BUILD_TYPE=Debug
 set "__LinkArgs= "
 set "__LinkLibraries= "
@@ -33,7 +32,7 @@ if /i [%1] == [wasm]        ( set __BuildArch=wasm&&set __VCBuildArch=x86_amd64&
 
 if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
 
-if /i [%1] == [WebAssembly] ( set __BuildOS=WebAssembly&&shift&goto Arg_Loop)
+if /i [%1] == [WebAssembly] ( set __TargetOS=WebAssembly&&shift&goto Arg_Loop)
 
 if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 
@@ -95,7 +94,7 @@ echo Commencing build of native components
 echo.
 
 
-if [%__outConfig%] == [] set __outConfig=%__BuildOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
+if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 
 if %__CMakeBinDir% == "" (
     set "__CMakeBinDir=%__artifactsDir%\bin\native\%__outConfig%"
@@ -127,6 +126,11 @@ may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try a
 exit /b 1
 
 :GenVSSolution
+:: generate version file
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__repoRoot%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
+    %__repoRoot%\eng\empty.csproj /p:NativeVersionFile="%__artifactsDir%\obj\_version.h"^
+    /t:GenerateNativeVersionFile /restore
+
 :: Regenerate the VS solution
 
 pushd "%__IntermediatesDir%"
@@ -141,7 +145,7 @@ goto :Failure
 
 :BuildNativeProj
 :: Build the project created by Cmake
-set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%"
+set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
 
 call msbuild "%__IntermediatesDir%\install.vcxproj" /t:%__BuildTarget% /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
 IF ERRORLEVEL 1 (

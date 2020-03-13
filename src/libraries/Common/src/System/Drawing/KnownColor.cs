@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Drawing
 {
-    [SuppressMessage("Microsoft.Design", "CA1008:EnumsShouldHaveZeroValue")]
     [TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
 #if NETCOREAPP2_0
     internal

@@ -6,4 +6,4 @@
 
 #include "pal_compiler.h"
 
-DLLEXPORT int64_t SystemNative_GetSystemTimeAsTicks(void);
+PALEXPORT int64_t SystemNative_GetSystemTimeAsTicks(void);

@@ -47,13 +47,13 @@ namespace System.Reflection.TypeLoading
         {
             BaseTypeClassification classification = BaseTypeClassification.Computed;
 
-            Type baseType = BaseType;
+            Type? baseType = BaseType;
             if (baseType != null)
             {
                 CoreTypes coreTypes = Loader.GetAllFoundCoreTypes();
 
-                Type enumType = coreTypes[CoreType.Enum];
-                Type valueType = coreTypes[CoreType.ValueType];
+                Type? enumType = coreTypes[CoreType.Enum];
+                Type? valueType = coreTypes[CoreType.ValueType];
 
                 if (baseType == enumType)
                     classification |= BaseTypeClassification.IsEnum | BaseTypeClassification.IsValueType;

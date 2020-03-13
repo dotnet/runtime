@@ -1,0 +1,15 @@
+/Makefile
+/Makefile.in
+/.deps
+/.libs
+/*.la
+/*.lo
+/*.trs
+/test-memfuncs
+/test-mono-linked-list-set
+/test-sgen-qsort
+/test-conc-hashtable
+/test-mono-handle
+/test-mono-callspec
+/test-mono-string
+/test-path

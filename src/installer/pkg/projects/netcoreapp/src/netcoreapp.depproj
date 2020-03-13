@@ -3,11 +3,6 @@
   <PropertyGroup>
     <FrameworkPackageName>Microsoft.NETCore.App</FrameworkPackageName>
     <BuildFullPlatformManifest>false</BuildFullPlatformManifest>
-    <CoreCLROSGroup Condition="'$(TargetsWindows)' == 'true'">Windows_NT</CoreCLROSGroup>
-    <CoreCLROSGroup Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLROSGroup>
-    <CoreCLROSGroup Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLROSGroup>
-    <CoreCLROSGroup Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLROSGroup>
-    <LibrariesOSGroup>$(CoreCLROSGroup)</LibrariesOSGroup>
   </PropertyGroup>
 
   <ItemGroup>

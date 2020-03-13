@@ -26,7 +26,7 @@ namespace System.Threading
             if (handle.IsClosed || handle.IsInvalid)
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
 
-            throw new PlatformNotSupportedException(SR.NotSupported_Overlapped);
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 
         [CLSCompliant(false)]
@@ -35,7 +35,7 @@ namespace System.Threading
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            throw new PlatformNotSupportedException(SR.NotSupported_Overlapped);
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 
         [CLSCompliant(false)]
@@ -44,7 +44,7 @@ namespace System.Threading
             if (preAllocated == null)
                 throw new ArgumentNullException(nameof(preAllocated));
 
-            throw new PlatformNotSupportedException(SR.NotSupported_Overlapped);
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 
         [CLSCompliant(false)]
@@ -53,7 +53,7 @@ namespace System.Threading
             if (overlapped == null)
                 throw new ArgumentNullException(nameof(overlapped));
 
-            throw new PlatformNotSupportedException(SR.NotSupported_Overlapped);
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 
         [CLSCompliant(false)]
@@ -62,7 +62,7 @@ namespace System.Threading
             if (overlapped == null)
                 throw new ArgumentNullException(nameof(overlapped));
 
-            throw new PlatformNotSupportedException(SR.NotSupported_Overlapped);
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 
         public void Dispose()

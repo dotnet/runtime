@@ -1987,8 +1987,7 @@ protected:
 #endif //FEATURE_METADATA_INTERNAL_APIS
 
     UTSemReadWrite      *m_pSemReadWrite;
-    bool                m_fOwnSem;
-
+    unsigned    m_fOwnSem : 1;
     unsigned    m_bRemap : 1;               // If true, there is a token mapper.
     unsigned    m_bSaveOptimized : 1;       // If true, save optimization has been done.
     unsigned    m_hasOptimizedRefToDef : 1; // true if we have performed ref to def optimization

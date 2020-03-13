@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     var methodDefHandle = MetadataTokens.EntityHandle(TableIndex.MethodDef, i);
                     EcmaMethod method = _sourceModule.GetMethod(methodDefHandle) as EcmaMethod;
-                    builder.EmitReloc(((ReadyToRunCodegenNodeFactory)factory).CopiedMethodIL(method), RelocType.IMAGE_REL_BASED_ADDR32NB);
+                    builder.EmitReloc(factory.CopiedMethodIL(method), RelocType.IMAGE_REL_BASED_ADDR32NB);
                 }
 
                 // Skip the rest of the row
@@ -86,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 EcmaField fieldDesc = (EcmaField)_sourceModule.GetField(fieldHandle);
                 Debug.Assert(fieldDesc.HasRva);
 
-                builder.EmitReloc(((ReadyToRunCodegenNodeFactory)factory).CopiedFieldRva(fieldDesc), RelocType.IMAGE_REL_BASED_ADDR32NB);
+                builder.EmitReloc(factory.CopiedFieldRva(fieldDesc), RelocType.IMAGE_REL_BASED_ADDR32NB);
                 builder.EmitShort(fieldToken);
             }
         }

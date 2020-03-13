@@ -35,51 +35,23 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "dwreport.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef FEATURE_COMINTEROP
 #include "winrttypenameconverter.h"
 #endif
-
-
-GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
-
-#ifndef __GNUC__
-EXTERN_C __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
-#else // !__GNUC__
-EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo;
-#endif // !__GNUC__
-#ifndef FEATURE_PAL
-EXTERN_C UINT32 _tls_index;
-#else // FEATURE_PAL
-UINT32 _tls_index = 0;
-#endif // FEATURE_PAL
 
 #ifndef DACCESS_COMPILE
 
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
 extern void PrintToStdOutA(const char *pszString);
 extern void PrintToStdOutW(const WCHAR *pwzString);
-extern BOOL g_fEEHostedStartup;
 
 //***************************************************************************
 
 ULONG CorRuntimeHostBase::m_Version = 0;
-
-#endif // !DAC
-
-typedef DPTR(CONNID)   PTR_CONNID;
-
-
-
-// Keep track connection id and name
-
-#ifndef DACCESS_COMPILE
-
-
-
 
 // *** ICorRuntimeHost methods ***
 
@@ -133,22 +105,6 @@ STDMETHODIMP CorHost2::Start()
     }
     else
     {
-        // Using managed C++ libraries, its possible that when the runtime is already running,
-        // MC++ will use CorBindToRuntimeEx to make callbacks into specific appdomain of its
-        // choice. Now, CorBindToRuntimeEx results in CorHost2::CreateObject being invoked
-        // that will set runtime hosted flag "g_fHostConfig |= CLRHOSTED".
-        //
-        // For the case when managed code started without CLR hosting and MC++ does a
-        // CorBindToRuntimeEx, setting the CLR hosted flag is incorrect.
-        //
-        // Thus, before we attempt to start the runtime, we save the status of it being
-        // already running or not. Next, if we are able to successfully start the runtime
-        // and ONLY if it was not started earlier will we set the hosted flag below.
-        if (!g_fEEStarted)
-        {
-            g_fHostConfig |= CLRHOSTED;
-        }
-
         hr = CorRuntimeHostBase::Start();
         if (SUCCEEDED(hr))
         {
@@ -172,7 +128,7 @@ STDMETHODIMP CorHost2::Start()
     return hr;
 }
 
-// Starts the runtime. This is equivalent to CoInitializeEE();
+// Starts the runtime.
 HRESULT CorRuntimeHostBase::Start()
 {
     CONTRACTL
@@ -188,10 +144,7 @@ HRESULT CorRuntimeHostBase::Start()
     BEGIN_ENTRYPOINT_NOTHROW;
     {
         m_Started = TRUE;
-#ifdef FEATURE_EVENT_TRACE
-        g_fEEHostedStartup = TRUE;
-#endif // FEATURE_EVENT_TRACE
-        hr = InitializeEE(COINITEE_DEFAULT);
+        hr = EnsureEEStarted();
     }
     END_ENTRYPOINT_NOTHROW;
 
@@ -1143,12 +1096,12 @@ HRESULT CorHost2::QueryInterface(REFIID riid, void **ppUnk)
 
         *ppUnk = static_cast<ICLRRuntimeHost4 *>(this);
     }
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     else if (riid == IID_IPrivateManagedExceptionReporting)
     {
         *ppUnk = static_cast<IPrivateManagedExceptionReporting *>(this);
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     else
         return (E_NOINTERFACE);
     AddRef();
@@ -1156,7 +1109,7 @@ HRESULT CorHost2::QueryInterface(REFIID riid, void **ppUnk)
 }
 
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 HRESULT CorHost2::GetBucketParametersForCurrentException(BucketParameters *pParams)
 {
     CONTRACTL
@@ -1179,7 +1132,7 @@ HRESULT CorHost2::GetBucketParametersForCurrentException(BucketParameters *pPara
 
     return hr;
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 HRESULT CorHost2::CreateObject(REFIID riid, void **ppUnk)
 {
@@ -2028,11 +1981,11 @@ SIZE_T STDMETHODCALLTYPE CExecutionEngine::ClrVirtualQuery(LPCVOID lpAddress,
 }
 #define ClrVirtualQuery EEVirtualQuery
 
-#if defined(_DEBUG) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && !defined(TARGET_UNIX)
 static VolatilePtr<BYTE> s_pStartOfUEFSection = NULL;
 static VolatilePtr<BYTE> s_pEndOfUEFSectionBoundary = NULL;
 static Volatile<DWORD> s_dwProtection = 0;
-#endif // _DEBUG && !FEATURE_PAL
+#endif // _DEBUG && !TARGET_UNIX
 
 #undef ClrVirtualProtect
 
@@ -2077,7 +2030,7 @@ BOOL STDMETHODCALLTYPE CExecutionEngine::ClrVirtualProtect(LPVOID lpAddress,
    //
    // We assert if either of the two conditions above are true.
 
-#if defined(_DEBUG) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && !defined(TARGET_UNIX)
    // We do this check in debug/checked builds only
 
     // Do we have the UEF details?
@@ -2147,7 +2100,7 @@ BOOL STDMETHODCALLTYPE CExecutionEngine::ClrVirtualProtect(LPVOID lpAddress,
                 "Do not virtual protect the section in which UEF lives!");
         }
     }
-#endif // _DEBUG && !FEATURE_PAL
+#endif // _DEBUG && !TARGET_UNIX
 
     return EEVirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }

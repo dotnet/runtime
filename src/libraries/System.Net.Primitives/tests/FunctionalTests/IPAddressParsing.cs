@@ -137,7 +137,7 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(InvalidIpv4AddressesStandalone))]
         public void ParseIPv4_InvalidAddress_Failure(string address)
         {
-            ParseInvalidAddress(address, hasInnerSocketException: !PlatformDetection.IsFullFramework);
+            ParseInvalidAddress(address, hasInnerSocketException: !PlatformDetection.IsNetFramework);
         }
 
 
@@ -468,7 +468,7 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(InvalidIpv6AddressesNoInner))]
         public void ParseIPv6_InvalidAddress_ThrowsFormatExceptionWithNoInnerExceptionInNetfx(string invalidAddress)
         {
-            ParseInvalidAddress(invalidAddress, hasInnerSocketException: !PlatformDetection.IsFullFramework);
+            ParseInvalidAddress(invalidAddress, hasInnerSocketException: !PlatformDetection.IsNetFramework);
         }
 
         private void ParseInvalidAddress(string invalidAddress, bool hasInnerSocketException)

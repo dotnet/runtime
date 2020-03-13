@@ -51,6 +51,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.WriteIntPtr will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteIntPtr_BlittableObject_Roundtrips()
         {
             int offset1 = Marshal.OffsetOf<BlittableStruct>(nameof(BlittableStruct.value1)).ToInt32();
@@ -72,6 +73,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.WriteIntPtr will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteIntPtr_StructWithReferenceTypes_ReturnsExpected()
         {
             int pointerOffset = Marshal.OffsetOf<StructWithReferenceTypes>(nameof(StructWithReferenceTypes.pointerValue)).ToInt32();
@@ -97,6 +99,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadIntPtr will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadIntPtr_BlittableObject_ReturnsExpected()
         {
             int offset1 = Marshal.OffsetOf<BlittableStruct>(nameof(BlittableStruct.value1)).ToInt32();
@@ -113,6 +116,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadIntPtr will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadIntPtr_StructWithReferenceTypes_ReturnsExpected()
         {
             int pointerOffset = Marshal.OffsetOf<StructWithReferenceTypes>(nameof(StructWithReferenceTypes.pointerValue)).ToInt32();
@@ -139,12 +143,14 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadIntPtr will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadIntPtr_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.ReadIntPtr(null, 2));
         }
 
         [Fact]
+        [SkipOnMono("Marshal.ReadIntPtr will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadIntPtr_NotReadable_ThrowsArgumentException()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
@@ -164,12 +170,14 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Marshal.WriteIntPtr will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteIntPtr_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.WriteIntPtr(null, 2, (IntPtr)0));
         }
 
         [Fact]
+        [SkipOnMono("Marshal.WriteIntPtr will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteIntPtr_NotReadable_ThrowsArgumentException()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);

@@ -1109,7 +1109,6 @@ namespace System.Linq.Expressions.Compiler
 
         #region Expression helpers
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void EmitLift(ExpressionType nodeType, Type resultType, MethodCallExpression mc, ParameterExpression[] paramList, Expression[] argList)
         {
             Debug.Assert(TypeUtils.AreEquivalent(resultType.GetNonNullableType(), mc.Type.GetNonNullableType()));

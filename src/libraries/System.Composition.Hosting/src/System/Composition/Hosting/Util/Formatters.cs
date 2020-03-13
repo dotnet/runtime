@@ -46,7 +46,7 @@ namespace System.Composition.Hosting.Util
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
 
-            var name = closedGenericType.Name.Substring(0, closedGenericType.Name.IndexOf("`"));
+            var name = closedGenericType.Name.Substring(0, closedGenericType.Name.IndexOf('`'));
             var args = closedGenericType.GenericTypeArguments.Select(t => Format(t));
             return string.Format("{0}<{1}>", name, string.Join(", ", args));
         }

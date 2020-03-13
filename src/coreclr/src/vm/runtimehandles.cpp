@@ -100,7 +100,7 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
         dwAttr = pCACtor->GetAttrs();
     }
 
-    StaticAccessCheckContext accessContext(NULL, pDecoratedMT, pDecoratedModule->GetAssembly());
+    AccessCheckContext accessContext(NULL, pDecoratedMT, pDecoratedModule->GetAssembly());
 
     return ClassLoader::CanAccess(
         &accessContext,
@@ -1118,6 +1118,21 @@ PVOID QCALLTYPE RuntimeTypeHandle::GetGCHandle(QCall::TypeHandle pTypeHandle, IN
     return objHandle;
 }
 
+void QCALLTYPE RuntimeTypeHandle::FreeGCHandle(QCall::TypeHandle pTypeHandle, OBJECTHANDLE objHandle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    TypeHandle th = pTypeHandle.AsTypeHandle();
+    th.GetLoaderAllocator()->UnregisterHandleFromCleanup(objHandle);
+    DestroyTypedHandle(objHandle);
+
+    END_QCALL;
+}
+
 void QCALLTYPE RuntimeTypeHandle::VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle)
 {
     QCALL_CONTRACT;
@@ -1706,6 +1721,28 @@ FCIMPL1(IMDInternalImport*, RuntimeTypeHandle::GetMetadataImport, ReflectClassBa
 }
 FCIMPLEND
 
+PVOID QCALLTYPE RuntimeTypeHandle::AllocateTypeAssociatedMemory(QCall::TypeHandle type, UINT32 size)
+{
+    QCALL_CONTRACT;
+
+    void *allocatedMemory = nullptr;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = type.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsNull());
+
+    // Get the loader allocator for the associated type.
+    // Allocating using the type's associated loader allocator means
+    // that the memory will be freed when the type is unloaded.
+    PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
+    LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
+    allocatedMemory = loaderHeap->AllocMem(S_SIZE_T(size));
+
+    END_QCALL;
+
+    return allocatedMemory;
+}
 
 //***********************************************************************************
 //***********************************************************************************
@@ -3048,22 +3085,3 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
     return (ReflectMethodObject*)OBJECTREFToObject(gc.retMethod);
 }
 FCIMPLEND
-
-void QCALLTYPE RuntimeMethodHandle::GetCallerType(QCall::StackCrawlMarkHandle pStackMark, QCall::ObjectHandleOnStack retType)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    GCX_COOP();
-    MethodTable *pMT = NULL;
-
-    pMT = SystemDomain::GetCallersType(pStackMark);
-
-    if (pMT != NULL)
-        retType.Set(pMT->GetManagedClassObject());
-
-    END_QCALL;
-
-    return;
-}
-

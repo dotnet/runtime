@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Security.Cryptography
@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
     {
         protected Aes() { }
         public static new System.Security.Cryptography.Aes Create() { throw null; }
-        public static new System.Security.Cryptography.Aes Create(string algorithmName) { throw null; }
+        public static new System.Security.Cryptography.Aes? Create(string algorithmName) { throw null; }
     }
     public sealed partial class AesCcm : System.IDisposable
     {
@@ -19,10 +19,10 @@ namespace System.Security.Cryptography
         public AesCcm(System.ReadOnlySpan<byte> key) { }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
-        public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[] associatedData = null) { }
+        public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null) { }
         public void Decrypt(System.ReadOnlySpan<byte> nonce, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> tag, System.Span<byte> plaintext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { }
         public void Dispose() { }
-        public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[] associatedData = null) { }
+        public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null) { }
         public void Encrypt(System.ReadOnlySpan<byte> nonce, System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, System.Span<byte> tag, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { }
     }
     public sealed partial class AesGcm : System.IDisposable
@@ -31,10 +31,10 @@ namespace System.Security.Cryptography
         public AesGcm(System.ReadOnlySpan<byte> key) { }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
-        public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[] associatedData = null) { }
+        public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null) { }
         public void Decrypt(System.ReadOnlySpan<byte> nonce, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> tag, System.Span<byte> plaintext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { }
         public void Dispose() { }
-        public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[] associatedData = null) { }
+        public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null) { }
         public void Encrypt(System.ReadOnlySpan<byte> nonce, System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, System.Span<byte> tag, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -51,9 +51,9 @@ namespace System.Security.Cryptography
         public override System.Security.Cryptography.CipherMode Mode { get { throw null; } set { } }
         public override System.Security.Cryptography.PaddingMode Padding { get { throw null; } set { } }
         public override System.Security.Cryptography.ICryptoTransform CreateDecryptor() { throw null; }
-        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
+        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         public override System.Security.Cryptography.ICryptoTransform CreateEncryptor() { throw null; }
-        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
+        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override void GenerateIV() { }
         public override void GenerateKey() { }
@@ -61,16 +61,16 @@ namespace System.Security.Cryptography
     public abstract partial class AsymmetricKeyExchangeDeformatter
     {
         protected AsymmetricKeyExchangeDeformatter() { }
-        public abstract string Parameters { get; set; }
+        public abstract string? Parameters { get; set; }
         public abstract byte[] DecryptKeyExchange(byte[] rgb);
         public abstract void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key);
     }
     public abstract partial class AsymmetricKeyExchangeFormatter
     {
         protected AsymmetricKeyExchangeFormatter() { }
-        public abstract string Parameters { get; }
+        public abstract string? Parameters { get; }
         public abstract byte[] CreateKeyExchange(byte[] data);
-        public abstract byte[] CreateKeyExchange(byte[] data, System.Type symAlgType);
+        public abstract byte[] CreateKeyExchange(byte[] data, System.Type? symAlgType);
         public abstract void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key);
     }
     public abstract partial class AsymmetricSignatureDeformatter
@@ -95,10 +95,10 @@ namespace System.Security.Cryptography
         public static bool AllowOnlyFipsAlgorithms { get { throw null; } }
         public static void AddAlgorithm(System.Type algorithm, params string[] names) { }
         public static void AddOID(string oid, params string[] names) { }
-        public static object CreateFromName(string name) { throw null; }
-        public static object CreateFromName(string name, params object[] args) { throw null; }
+        public static object? CreateFromName(string name) { throw null; }
+        public static object? CreateFromName(string name, params object?[]? args) { throw null; }
         public static byte[] EncodeOID(string str) { throw null; }
-        public static string MapNameToOID(string name) { throw null; }
+        public static string? MapNameToOID(string name) { throw null; }
     }
     public abstract partial class DeriveBytes : System.IDisposable
     {
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
         protected DES() { }
         public override byte[] Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.DES Create() { throw null; }
-        public static new System.Security.Cryptography.DES Create(string algName) { throw null; }
+        public static new System.Security.Cryptography.DES? Create(string algName) { throw null; }
         public static bool IsSemiWeakKey(byte[] rgbKey) { throw null; }
         public static bool IsWeakKey(byte[] rgbKey) { throw null; }
     }
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.DSA Create() { throw null; }
         public static System.Security.Cryptography.DSA Create(int keySizeInBits) { throw null; }
         public static System.Security.Cryptography.DSA Create(System.Security.Cryptography.DSAParameters parameters) { throw null; }
-        public static new System.Security.Cryptography.DSA Create(string algName) { throw null; }
+        public static new System.Security.Cryptography.DSA? Create(string algName) { throw null; }
         public abstract byte[] CreateSignature(byte[] rgbHash);
         public abstract System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters);
         public override void FromXmlString(string xmlString) { }
@@ -156,13 +156,13 @@ namespace System.Security.Cryptography
     public partial struct DSAParameters
     {
         public int Counter;
-        public byte[] G;
-        public byte[] J;
-        public byte[] P;
-        public byte[] Q;
-        public byte[] Seed;
-        public byte[] X;
-        public byte[] Y;
+        public byte[]? G;
+        public byte[]? J;
+        public byte[]? P;
+        public byte[]? Q;
+        public byte[]? Seed;
+        public byte[]? X;
+        public byte[]? Y;
     }
     public partial class DSASignatureDeformatter : System.Security.Cryptography.AsymmetricSignatureDeformatter
     {
@@ -184,16 +184,16 @@ namespace System.Security.Cryptography
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public byte[] A;
-        public byte[] B;
-        public byte[] Cofactor;
+        public byte[]? A;
+        public byte[]? B;
+        public byte[]? Cofactor;
         public System.Security.Cryptography.ECCurve.ECCurveType CurveType;
         public System.Security.Cryptography.ECPoint G;
         public System.Security.Cryptography.HashAlgorithmName? Hash;
-        public byte[] Order;
-        public byte[] Polynomial;
-        public byte[] Prime;
-        public byte[] Seed;
+        public byte[]? Order;
+        public byte[]? Polynomial;
+        public byte[]? Prime;
+        public byte[]? Seed;
         public bool IsCharacteristic2 { get { throw null; } }
         public bool IsExplicit { get { throw null; } }
         public bool IsNamed { get { throw null; } }
@@ -238,15 +238,15 @@ namespace System.Security.Cryptography
         protected ECDiffieHellman() { }
         public override string KeyExchangeAlgorithm { get { throw null; } }
         public abstract System.Security.Cryptography.ECDiffieHellmanPublicKey PublicKey { get; }
-        public override string SignatureAlgorithm { get { throw null; } }
+        public override string? SignatureAlgorithm { get { throw null; } }
         public static new System.Security.Cryptography.ECDiffieHellman Create() { throw null; }
         public static System.Security.Cryptography.ECDiffieHellman Create(System.Security.Cryptography.ECCurve curve) { throw null; }
         public static System.Security.Cryptography.ECDiffieHellman Create(System.Security.Cryptography.ECParameters parameters) { throw null; }
-        public static new System.Security.Cryptography.ECDiffieHellman Create(string algorithm) { throw null; }
+        public static new System.Security.Cryptography.ECDiffieHellman? Create(string algorithm) { throw null; }
         public byte[] DeriveKeyFromHash(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
-        public virtual byte[] DeriveKeyFromHash(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] secretPrepend, byte[] secretAppend) { throw null; }
-        public byte[] DeriveKeyFromHmac(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] hmacKey) { throw null; }
-        public virtual byte[] DeriveKeyFromHmac(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] hmacKey, byte[] secretPrepend, byte[] secretAppend) { throw null; }
+        public virtual byte[] DeriveKeyFromHash(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[]? secretPrepend, byte[]? secretAppend) { throw null; }
+        public byte[] DeriveKeyFromHmac(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[]? hmacKey) { throw null; }
+        public virtual byte[] DeriveKeyFromHmac(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[]? hmacKey, byte[]? secretPrepend, byte[]? secretAppend) { throw null; }
         public virtual byte[] DeriveKeyMaterial(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey) { throw null; }
         public virtual byte[] DeriveKeyTls(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed) { throw null; }
         public virtual byte[] ExportECPrivateKey() { throw null; }
@@ -281,12 +281,12 @@ namespace System.Security.Cryptography
     public abstract partial class ECDsa : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected ECDsa() { }
-        public override string KeyExchangeAlgorithm { get { throw null; } }
+        public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override string SignatureAlgorithm { get { throw null; } }
         public static new System.Security.Cryptography.ECDsa Create() { throw null; }
         public static System.Security.Cryptography.ECDsa Create(System.Security.Cryptography.ECCurve curve) { throw null; }
         public static System.Security.Cryptography.ECDsa Create(System.Security.Cryptography.ECParameters parameters) { throw null; }
-        public static new System.Security.Cryptography.ECDsa Create(string algorithm) { throw null; }
+        public static new System.Security.Cryptography.ECDsa? Create(string algorithm) { throw null; }
         public virtual byte[] ExportECPrivateKey() { throw null; }
         public virtual System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { throw null; }
         public virtual System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { throw null; }
@@ -323,23 +323,23 @@ namespace System.Security.Cryptography
     public partial struct ECParameters
     {
         public System.Security.Cryptography.ECCurve Curve;
-        public byte[] D;
+        public byte[]? D;
         public System.Security.Cryptography.ECPoint Q;
         public void Validate() { }
     }
     public partial struct ECPoint
     {
-        public byte[] X;
-        public byte[] Y;
+        public byte[]? X;
+        public byte[]? Y;
     }
-    public static class HKDF
+    public static partial class HKDF
     {
-        public static byte[] Extract(HashAlgorithmName hashAlgorithmName, byte[] ikm, byte[] salt = null) { throw null; }
-        public static int Extract(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk) { throw null; }
-        public static byte[] Expand(HashAlgorithmName hashAlgorithmName, byte[] prk, int outputLength, byte[] info = null) { throw null; }
-        public static void Expand(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) { throw null; }
-        public static byte[] DeriveKey(HashAlgorithmName hashAlgorithmName, byte[] ikm, int outputLength, byte[] salt = null, byte[] info = null) { throw null; }
-        public static void DeriveKey(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info) { throw null; }
+        public static byte[] DeriveKey(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, byte[] ikm, int outputLength, byte[]? salt = null, byte[]? info = null) { throw null; }
+        public static void DeriveKey(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, System.ReadOnlySpan<byte> ikm, System.Span<byte> output, System.ReadOnlySpan<byte> salt, System.ReadOnlySpan<byte> info) { }
+        public static byte[] Expand(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, byte[] prk, int outputLength, byte[]? info = null) { throw null; }
+        public static void Expand(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, System.ReadOnlySpan<byte> prk, System.Span<byte> output, System.ReadOnlySpan<byte> info) { }
+        public static byte[] Extract(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, byte[] ikm, byte[]? salt = null) { throw null; }
+        public static int Extract(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, System.ReadOnlySpan<byte> ikm, System.ReadOnlySpan<byte> salt, System.Span<byte> prk) { throw null; }
     }
     public partial class HMACMD5 : System.Security.Cryptography.HMAC
     {
@@ -427,7 +427,7 @@ namespace System.Security.Cryptography
     {
         protected MD5() { }
         public static new System.Security.Cryptography.MD5 Create() { throw null; }
-        public static new System.Security.Cryptography.MD5 Create(string algName) { throw null; }
+        public static new System.Security.Cryptography.MD5? Create(string algName) { throw null; }
     }
     public partial class PKCS1MaskGenerationMethod : System.Security.Cryptography.MaskGenerationMethod
     {
@@ -439,7 +439,7 @@ namespace System.Security.Cryptography
     {
         protected RandomNumberGenerator() { }
         public static System.Security.Cryptography.RandomNumberGenerator Create() { throw null; }
-        public static System.Security.Cryptography.RandomNumberGenerator Create(string rngName) { throw null; }
+        public static System.Security.Cryptography.RandomNumberGenerator? Create(string rngName) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public static void Fill(System.Span<byte> data) { }
@@ -459,7 +459,7 @@ namespace System.Security.Cryptography
         public virtual int EffectiveKeySize { get { throw null; } set { } }
         public override int KeySize { get { throw null; } set { } }
         public static new System.Security.Cryptography.RC2 Create() { throw null; }
-        public static new System.Security.Cryptography.RC2 Create(string AlgName) { throw null; }
+        public static new System.Security.Cryptography.RC2? Create(string AlgName) { throw null; }
     }
     public partial class Rfc2898DeriveBytes : System.Security.Cryptography.DeriveBytes
     {
@@ -484,7 +484,7 @@ namespace System.Security.Cryptography
     {
         protected Rijndael() { }
         public static new System.Security.Cryptography.Rijndael Create() { throw null; }
-        public static new System.Security.Cryptography.Rijndael Create(string algName) { throw null; }
+        public static new System.Security.Cryptography.Rijndael? Create(string algName) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class RijndaelManaged : System.Security.Cryptography.Rijndael
@@ -498,9 +498,9 @@ namespace System.Security.Cryptography
         public override System.Security.Cryptography.CipherMode Mode { get { throw null; } set { } }
         public override System.Security.Cryptography.PaddingMode Padding { get { throw null; } set { } }
         public override System.Security.Cryptography.ICryptoTransform CreateDecryptor() { throw null; }
-        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
+        public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         public override System.Security.Cryptography.ICryptoTransform CreateEncryptor() { throw null; }
-        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
+        public override System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override void GenerateIV() { }
         public override void GenerateKey() { }
@@ -508,12 +508,12 @@ namespace System.Security.Cryptography
     public abstract partial class RSA : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected RSA() { }
-        public override string KeyExchangeAlgorithm { get { throw null; } }
+        public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override string SignatureAlgorithm { get { throw null; } }
         public static new System.Security.Cryptography.RSA Create() { throw null; }
         public static System.Security.Cryptography.RSA Create(int keySizeInBits) { throw null; }
         public static System.Security.Cryptography.RSA Create(System.Security.Cryptography.RSAParameters parameters) { throw null; }
-        public static new System.Security.Cryptography.RSA Create(string algName) { throw null; }
+        public static new System.Security.Cryptography.RSA? Create(string algName) { throw null; }
         public virtual byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         public virtual byte[] DecryptValue(byte[] rgb) { throw null; }
         public virtual byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
@@ -565,11 +565,11 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.RSAEncryptionPadding OaepSHA512 { get { throw null; } }
         public static System.Security.Cryptography.RSAEncryptionPadding Pkcs1 { get { throw null; } }
         public static System.Security.Cryptography.RSAEncryptionPadding CreateOaep(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
-        public override bool Equals(object obj) { throw null; }
-        public bool Equals(System.Security.Cryptography.RSAEncryptionPadding other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public bool Equals(System.Security.Cryptography.RSAEncryptionPadding? other) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static bool operator ==(System.Security.Cryptography.RSAEncryptionPadding left, System.Security.Cryptography.RSAEncryptionPadding right) { throw null; }
-        public static bool operator !=(System.Security.Cryptography.RSAEncryptionPadding left, System.Security.Cryptography.RSAEncryptionPadding right) { throw null; }
+        public static bool operator ==(System.Security.Cryptography.RSAEncryptionPadding? left, System.Security.Cryptography.RSAEncryptionPadding? right) { throw null; }
+        public static bool operator !=(System.Security.Cryptography.RSAEncryptionPadding? left, System.Security.Cryptography.RSAEncryptionPadding? right) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum RSAEncryptionPaddingMode
@@ -581,7 +581,7 @@ namespace System.Security.Cryptography
     {
         public RSAOAEPKeyExchangeDeformatter() { }
         public RSAOAEPKeyExchangeDeformatter(System.Security.Cryptography.AsymmetricAlgorithm key) { }
-        public override string Parameters { get { throw null; } set { } }
+        public override string? Parameters { get { throw null; } set { } }
         public override byte[] DecryptKeyExchange(byte[] rgbData) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
     }
@@ -589,30 +589,30 @@ namespace System.Security.Cryptography
     {
         public RSAOAEPKeyExchangeFormatter() { }
         public RSAOAEPKeyExchangeFormatter(System.Security.Cryptography.AsymmetricAlgorithm key) { }
-        public byte[] Parameter { get { throw null; } set { } }
-        public override string Parameters { get { throw null; } }
-        public System.Security.Cryptography.RandomNumberGenerator Rng { get { throw null; } set { } }
+        public byte[]? Parameter { get { throw null; } set { } }
+        public override string? Parameters { get { throw null; } }
+        public System.Security.Cryptography.RandomNumberGenerator? Rng { get { throw null; } set { } }
         public override byte[] CreateKeyExchange(byte[] rgbData) { throw null; }
-        public override byte[] CreateKeyExchange(byte[] rgbData, System.Type symAlgType) { throw null; }
+        public override byte[] CreateKeyExchange(byte[] rgbData, System.Type? symAlgType) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
     }
     public partial struct RSAParameters
     {
-        public byte[] D;
-        public byte[] DP;
-        public byte[] DQ;
-        public byte[] Exponent;
-        public byte[] InverseQ;
-        public byte[] Modulus;
-        public byte[] P;
-        public byte[] Q;
+        public byte[]? D;
+        public byte[]? DP;
+        public byte[]? DQ;
+        public byte[]? Exponent;
+        public byte[]? InverseQ;
+        public byte[]? Modulus;
+        public byte[]? P;
+        public byte[]? Q;
     }
     public partial class RSAPKCS1KeyExchangeDeformatter : System.Security.Cryptography.AsymmetricKeyExchangeDeformatter
     {
         public RSAPKCS1KeyExchangeDeformatter() { }
         public RSAPKCS1KeyExchangeDeformatter(System.Security.Cryptography.AsymmetricAlgorithm key) { }
-        public override string Parameters { get { throw null; } set { } }
-        public System.Security.Cryptography.RandomNumberGenerator RNG { get { throw null; } set { } }
+        public override string? Parameters { get { throw null; } set { } }
+        public System.Security.Cryptography.RandomNumberGenerator? RNG { get { throw null; } set { } }
         public override byte[] DecryptKeyExchange(byte[] rgbIn) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
     }
@@ -621,9 +621,9 @@ namespace System.Security.Cryptography
         public RSAPKCS1KeyExchangeFormatter() { }
         public RSAPKCS1KeyExchangeFormatter(System.Security.Cryptography.AsymmetricAlgorithm key) { }
         public override string Parameters { get { throw null; } }
-        public System.Security.Cryptography.RandomNumberGenerator Rng { get { throw null; } set { } }
+        public System.Security.Cryptography.RandomNumberGenerator? Rng { get { throw null; } set { } }
         public override byte[] CreateKeyExchange(byte[] rgbData) { throw null; }
-        public override byte[] CreateKeyExchange(byte[] rgbData, System.Type symAlgType) { throw null; }
+        public override byte[] CreateKeyExchange(byte[] rgbData, System.Type? symAlgType) { throw null; }
         public override void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
     }
     public partial class RSAPKCS1SignatureDeformatter : System.Security.Cryptography.AsymmetricSignatureDeformatter
@@ -648,11 +648,11 @@ namespace System.Security.Cryptography
         public System.Security.Cryptography.RSASignaturePaddingMode Mode { get { throw null; } }
         public static System.Security.Cryptography.RSASignaturePadding Pkcs1 { get { throw null; } }
         public static System.Security.Cryptography.RSASignaturePadding Pss { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
-        public bool Equals(System.Security.Cryptography.RSASignaturePadding other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public bool Equals(System.Security.Cryptography.RSASignaturePadding? other) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static bool operator ==(System.Security.Cryptography.RSASignaturePadding left, System.Security.Cryptography.RSASignaturePadding right) { throw null; }
-        public static bool operator !=(System.Security.Cryptography.RSASignaturePadding left, System.Security.Cryptography.RSASignaturePadding right) { throw null; }
+        public static bool operator ==(System.Security.Cryptography.RSASignaturePadding? left, System.Security.Cryptography.RSASignaturePadding? right) { throw null; }
+        public static bool operator !=(System.Security.Cryptography.RSASignaturePadding? left, System.Security.Cryptography.RSASignaturePadding? right) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum RSASignaturePaddingMode
@@ -664,7 +664,7 @@ namespace System.Security.Cryptography
     {
         protected SHA1() { }
         public static new System.Security.Cryptography.SHA1 Create() { throw null; }
-        public static new System.Security.Cryptography.SHA1 Create(string hashName) { throw null; }
+        public static new System.Security.Cryptography.SHA1? Create(string hashName) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA1Managed : System.Security.Cryptography.SHA1
@@ -681,7 +681,7 @@ namespace System.Security.Cryptography
     {
         protected SHA256() { }
         public static new System.Security.Cryptography.SHA256 Create() { throw null; }
-        public static new System.Security.Cryptography.SHA256 Create(string hashName) { throw null; }
+        public static new System.Security.Cryptography.SHA256? Create(string hashName) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA256Managed : System.Security.Cryptography.SHA256
@@ -698,7 +698,7 @@ namespace System.Security.Cryptography
     {
         protected SHA384() { }
         public static new System.Security.Cryptography.SHA384 Create() { throw null; }
-        public static new System.Security.Cryptography.SHA384 Create(string hashName) { throw null; }
+        public static new System.Security.Cryptography.SHA384? Create(string hashName) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA384Managed : System.Security.Cryptography.SHA384
@@ -715,7 +715,7 @@ namespace System.Security.Cryptography
     {
         protected SHA512() { }
         public static new System.Security.Cryptography.SHA512 Create() { throw null; }
-        public static new System.Security.Cryptography.SHA512 Create(string hashName) { throw null; }
+        public static new System.Security.Cryptography.SHA512? Create(string hashName) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SHA512Managed : System.Security.Cryptography.SHA512
@@ -732,12 +732,12 @@ namespace System.Security.Cryptography
     {
         public SignatureDescription() { }
         public SignatureDescription(System.Security.SecurityElement el) { }
-        public string DeformatterAlgorithm { get { throw null; } set { } }
-        public string DigestAlgorithm { get { throw null; } set { } }
-        public string FormatterAlgorithm { get { throw null; } set { } }
-        public string KeyAlgorithm { get { throw null; } set { } }
+        public string? DeformatterAlgorithm { get { throw null; } set { } }
+        public string? DigestAlgorithm { get { throw null; } set { } }
+        public string? FormatterAlgorithm { get { throw null; } set { } }
+        public string? KeyAlgorithm { get { throw null; } set { } }
         public virtual System.Security.Cryptography.AsymmetricSignatureDeformatter CreateDeformatter(System.Security.Cryptography.AsymmetricAlgorithm key) { throw null; }
-        public virtual System.Security.Cryptography.HashAlgorithm CreateDigest() { throw null; }
+        public virtual System.Security.Cryptography.HashAlgorithm? CreateDigest() { throw null; }
         public virtual System.Security.Cryptography.AsymmetricSignatureFormatter CreateFormatter(System.Security.Cryptography.AsymmetricAlgorithm key) { throw null; }
     }
     public abstract partial class TripleDES : System.Security.Cryptography.SymmetricAlgorithm
@@ -745,7 +745,7 @@ namespace System.Security.Cryptography
         protected TripleDES() { }
         public override byte[] Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.TripleDES Create() { throw null; }
-        public static new System.Security.Cryptography.TripleDES Create(string str) { throw null; }
+        public static new System.Security.Cryptography.TripleDES? Create(string str) { throw null; }
         public static bool IsWeakKey(byte[] rgbKey) { throw null; }
     }
 }

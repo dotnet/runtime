@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.NetworkInformation;
 
 namespace System.Net.Http
 {
@@ -42,6 +43,8 @@ namespace System.Net.Http
         private readonly HttpConnectionSettings _settings;
         private readonly IWebProxy _proxy;
         private readonly ICredentials _proxyCredentials;
+
+        private NetworkChangeCleanup _networkChangeCleanup;
 
         /// <summary>
         /// Keeps track of whether or not the cleanup timer is running. It helps us avoid the expensive
@@ -127,6 +130,73 @@ namespace System.Net.Http
                 {
                     _proxyCredentials = _proxy.Credentials ?? settings._defaultProxyCredentials;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Starts monitoring for network changes. Upon a change, <see cref="HttpConnectionPool.OnNetworkChanged"/> will be
+        /// called for every <see cref="HttpConnectionPool"/> in the <see cref="HttpConnectionPoolManager"/>.
+        /// </summary>
+        public void StartMonitoringNetworkChanges()
+        {
+            if (_networkChangeCleanup != null)
+            {
+                return;
+            }
+
+            // Monitor network changes to invalidate Alt-Svc headers.
+            // A weak reference is used to avoid NetworkChange.NetworkAddressChanged keeping a non-disposed connection pool alive.
+            var poolsRef = new WeakReference<ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>>(_pools);
+            NetworkAddressChangedEventHandler networkChangedDelegate = delegate
+            {
+                if (poolsRef.TryGetTarget(out ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> pools))
+                {
+                    foreach (HttpConnectionPool pool in pools.Values)
+                    {
+                        pool.OnNetworkChanged();
+                    }
+                }
+            };
+
+            var cleanup = new NetworkChangeCleanup(networkChangedDelegate);
+
+            if (Interlocked.CompareExchange(ref _networkChangeCleanup, cleanup, null) != null)
+            {
+                // We lost a race, another thread already started monitoring.
+                GC.SuppressFinalize(cleanup);
+                return;
+            }
+
+            if (!ExecutionContext.IsFlowSuppressed())
+            {
+                using (ExecutionContext.SuppressFlow())
+                {
+                    NetworkChange.NetworkAddressChanged += networkChangedDelegate;
+                }
+            }
+            else
+            {
+                NetworkChange.NetworkAddressChanged += networkChangedDelegate;
+            }
+        }
+
+        private sealed class NetworkChangeCleanup : IDisposable
+        {
+            private readonly NetworkAddressChangedEventHandler _handler;
+
+            public NetworkChangeCleanup(NetworkAddressChangedEventHandler handler)
+            {
+                _handler = handler;
+            }
+
+            // If user never disposes the HttpClient, use finalizer to remove from NetworkChange.NetworkAddressChanged.
+            // _handler will be rooted in NetworkChange, so should be safe to use here.
+            ~NetworkChangeCleanup() => NetworkChange.NetworkAddressChanged -= _handler;
+
+            public void Dispose()
+            {
+                NetworkChange.NetworkAddressChanged -= _handler;
+                GC.SuppressFinalize(this);
             }
         }
 
@@ -230,11 +300,7 @@ namespace System.Net.Http
             HttpConnectionPool pool;
             while (!_pools.TryGetValue(key, out pool))
             {
-                // TODO: #28863 Uri.IdnHost is missing '[', ']' characters around IPv6 address.
-                // So, we need to add them manually for now.
-                bool isNonNullIPv6address = key.Host != null && request.RequestUri.HostNameType == UriHostNameType.IPv6;
-
-                pool = new HttpConnectionPool(this, key.Kind, isNonNullIPv6address ? "[" + key.Host + "]" : key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
+                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
 
                 if (_cleaningTimer == null)
                 {
@@ -349,6 +415,8 @@ namespace System.Net.Http
             {
                 pool.Value.Dispose();
             }
+
+            _networkChangeCleanup?.Dispose();
         }
 
         /// <summary>Sets <see cref="_cleaningTimer"/> and <see cref="_timerIsRunning"/> based on the specified timeout.</summary>

@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition
 {
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class CatalogFilteringTests
     {
         [Fact]
@@ -48,33 +49,6 @@ namespace System.ComponentModel.Composition
             Assert.True(contC.IsPresent<ScopeAComponent2>());
             Assert.True(contC.IsPresent<ScopeBComponent>());
             Assert.True(contC.IsPresent<ScopeCComponent>());
-        }
-
-        [Fact]
-        [ActiveIssue(812029)]
-        public void FilteredCatalog_EventsFired()
-        {
-            var aggCatalog = CatalogFactory.CreateAggregateCatalog();
-            var cat1 = CatalogFactory.CreateAttributed(typeof(ScopeAComponent1), typeof(ScopeBComponent));
-
-            var filteredCatalog = CatalogFactory.CreateFiltered(aggCatalog,
-                partDef => partDef.Metadata.ContainsKey("Scope") &&
-                                    partDef.Metadata["Scope"].ToString() == "A");
-
-            var container = ContainerFactory.Create(filteredCatalog);
-
-            Assert.False(container.IsPresent<ScopeAComponent1>(), "sa before add");
-            Assert.False(container.IsPresent<ScopeBComponent>(), "sb before add");
-
-            aggCatalog.Catalogs.Add(cat1);
-
-            Assert.True(container.IsPresent<ScopeAComponent1>(), "sa after add");
-            Assert.False(container.IsPresent<ScopeBComponent>(), "sb after add");
-
-            aggCatalog.Catalogs.Remove(cat1);
-
-            Assert.False(container.IsPresent<ScopeAComponent1>(), "sa after remove");
-            Assert.False(container.IsPresent<ScopeBComponent>(), "sb after remove");
         }
 
         private ComposablePartCatalog GetCatalog()

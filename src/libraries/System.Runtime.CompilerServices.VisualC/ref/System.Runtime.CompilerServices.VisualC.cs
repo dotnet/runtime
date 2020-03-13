@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Runtime.CompilerServices
@@ -65,6 +65,11 @@ namespace System.Runtime.CompilerServices
     public sealed partial class NativeCppClassAttribute : System.Attribute
     {
         public NativeCppClassAttribute() { }
+    }
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=true)]
+    public sealed class CppInlineNamespaceAttribute : Attribute
+    {
+        public CppInlineNamespaceAttribute(string dottedName) {}
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class RequiredAttributeAttribute : System.Attribute

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Net
@@ -21,24 +21,30 @@ namespace System.Net
     public sealed partial class Cookie
     {
         public Cookie() { }
-        public Cookie(string name, string value) { }
-        public Cookie(string name, string value, string path) { }
-        public Cookie(string name, string value, string path, string domain) { }
+        public Cookie(string name, string? value) { }
+        public Cookie(string name, string? value, string? path) { }
+        public Cookie(string name, string? value, string? path, string? domain) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Comment { get { throw null; } set { } }
-        public System.Uri CommentUri { get { throw null; } set { } }
+        public System.Uri? CommentUri { get { throw null; } set { } }
         public bool Discard { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Domain { get { throw null; } set { } }
         public bool Expired { get { throw null; } set { } }
         public System.DateTime Expires { get { throw null; } set { } }
         public bool HttpOnly { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Name { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Path { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Port { get { throw null; } set { } }
         public bool Secure { get { throw null; } set { } }
         public System.DateTime TimeStamp { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Value { get { throw null; } set { } }
         public int Version { get { throw null; } set { } }
-        public override bool Equals(object comparand) { throw null; }
+        public override bool Equals(object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -49,7 +55,7 @@ namespace System.Net
         public bool IsReadOnly { get { throw null; } }
         public bool IsSynchronized { get { throw null; } }
         public System.Net.Cookie this[int index] { get { throw null; } }
-        public System.Net.Cookie this[string name] { get { throw null; } }
+        public System.Net.Cookie? this[string name] { get { throw null; } }
         public object SyncRoot { get { throw null; } }
         public void Add(System.Net.Cookie cookie) { }
         public void Add(System.Net.CookieCollection cookies) { }
@@ -95,11 +101,11 @@ namespace System.Net
         public static System.Net.NetworkCredential DefaultNetworkCredentials { get { throw null; } }
         public void Add(string host, int port, string authenticationType, System.Net.NetworkCredential credential) { }
         public void Add(System.Uri uriPrefix, string authType, System.Net.NetworkCredential cred) { }
-        public System.Net.NetworkCredential GetCredential(string host, int port, string authenticationType) { throw null; }
-        public System.Net.NetworkCredential GetCredential(System.Uri uriPrefix, string authType) { throw null; }
+        public System.Net.NetworkCredential? GetCredential(string host, int port, string authenticationType) { throw null; }
+        public System.Net.NetworkCredential? GetCredential(System.Uri uriPrefix, string authType) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
-        public void Remove(string host, int port, string authenticationType) { }
-        public void Remove(System.Uri uriPrefix, string authType) { }
+        public void Remove(string? host, int port, string? authenticationType) { }
+        public void Remove(System.Uri? uriPrefix, string? authType) { }
     }
     [System.FlagsAttribute]
     public enum DecompressionMethods
@@ -117,7 +123,7 @@ namespace System.Net
         public override System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
         public string Host { get { throw null; } }
         public int Port { get { throw null; } }
-        public override bool Equals(object comparand) { throw null; }
+        public override bool Equals(object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -203,14 +209,15 @@ namespace System.Net
         public static readonly System.Version Version10;
         public static readonly System.Version Version11;
         public static readonly System.Version Version20;
+        public static readonly System.Version Version30;
     }
     public partial interface ICredentials
     {
-        System.Net.NetworkCredential GetCredential(System.Uri uri, string authType);
+        System.Net.NetworkCredential? GetCredential(System.Uri uri, string authType);
     }
     public partial interface ICredentialsByHost
     {
-        System.Net.NetworkCredential GetCredential(string host, int port, string authenticationType);
+        System.Net.NetworkCredential? GetCredential(string host, int port, string authenticationType);
     }
     public partial class IPAddress
     {
@@ -235,7 +242,7 @@ namespace System.Net
         public bool IsIPv6SiteLocal { get { throw null; } }
         public bool IsIPv6Teredo { get { throw null; } }
         public long ScopeId { get { throw null; } set { } }
-        public override bool Equals(object comparand) { throw null; }
+        public override bool Equals(object? comparand) { throw null; }
         public byte[] GetAddressBytes() { throw null; }
         public override int GetHashCode() { throw null; }
         public static short HostToNetworkOrder(short host) { throw null; }
@@ -251,8 +258,8 @@ namespace System.Net
         public static System.Net.IPAddress Parse(string ipString) { throw null; }
         public override string ToString() { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> ipString, out System.Net.IPAddress address) { throw null; }
-        public static bool TryParse(string ipString, out System.Net.IPAddress address) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> ipString, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPAddress? address) { throw null; }
+        public static bool TryParse(string? ipString, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPAddress? address) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public partial class IPEndPoint : System.Net.EndPoint
@@ -265,37 +272,41 @@ namespace System.Net
         public override System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
         public int Port { get { throw null; } set { } }
         public override System.Net.EndPoint Create(System.Net.SocketAddress socketAddress) { throw null; }
-        public override bool Equals(object comparand) { throw null; }
+        public override bool Equals(object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Net.IPEndPoint Parse(System.ReadOnlySpan<char> s) { throw null; }
         public static System.Net.IPEndPoint Parse(string s) { throw null; }
         public override System.Net.SocketAddress Serialize() { throw null; }
         public override string ToString() { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, out System.Net.IPEndPoint result) { throw null; }
-        public static bool TryParse(string s, out System.Net.IPEndPoint result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPEndPoint result) { throw null; }
+        public static bool TryParse(string s, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Net.IPEndPoint? result) { throw null; }
     }
     public partial interface IWebProxy
     {
-        System.Net.ICredentials Credentials { get; set; }
-        System.Uri GetProxy(System.Uri destination);
+        System.Net.ICredentials? Credentials { get; set; }
+        System.Uri? GetProxy(System.Uri destination);
         bool IsBypassed(System.Uri host);
     }
     public partial class NetworkCredential : System.Net.ICredentials, System.Net.ICredentialsByHost
     {
         public NetworkCredential() { }
         [System.CLSCompliantAttribute(false)]
-        public NetworkCredential(string userName, System.Security.SecureString password) { }
+        public NetworkCredential(string? userName, System.Security.SecureString? password) { }
         [System.CLSCompliantAttribute(false)]
-        public NetworkCredential(string userName, System.Security.SecureString password, string domain) { }
-        public NetworkCredential(string userName, string password) { }
-        public NetworkCredential(string userName, string password, string domain) { }
+        public NetworkCredential(string? userName, System.Security.SecureString? password, string? domain) { }
+        public NetworkCredential(string? userName, string? password) { }
+        public NetworkCredential(string? userName, string? password, string? domain) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Domain { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Password { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Security.SecureString SecurePassword { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string UserName { get { throw null; } set { } }
-        public System.Net.NetworkCredential GetCredential(string host, int port, string authenticationType) { throw null; }
-        public System.Net.NetworkCredential GetCredential(System.Uri uri, string authType) { throw null; }
+        public System.Net.NetworkCredential GetCredential(string? host, int port, string? authenticationType) { throw null; }
+        public System.Net.NetworkCredential GetCredential(System.Uri? uri, string? authType) { throw null; }
     }
     public partial class SocketAddress
     {
@@ -304,14 +315,14 @@ namespace System.Net
         public System.Net.Sockets.AddressFamily Family { get { throw null; } }
         public byte this[int offset] { get { throw null; } set { } }
         public int Size { get { throw null; } }
-        public override bool Equals(object comparand) { throw null; }
+        public override bool Equals(object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
     public abstract partial class TransportContext
     {
         protected TransportContext() { }
-        public abstract System.Security.Authentication.ExtendedProtection.ChannelBinding GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind);
+        public abstract System.Security.Authentication.ExtendedProtection.ChannelBinding? GetChannelBinding(System.Security.Authentication.ExtendedProtection.ChannelBindingKind kind);
     }
 }
 namespace System.Net.Cache

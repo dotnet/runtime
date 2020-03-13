@@ -12,22 +12,13 @@ unsafe partial class GenericsNative
     public static extern Point2<char> GetPoint2C(char e00, char e01);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetPoint2COut(char e00, char e01, Point2<char>* value);
-
-    [DllImport(nameof(GenericsNative))]
     public static extern void GetPoint2COut(char e00, char e01, out Point2<char> value);
-
-    [DllImport(nameof(GenericsNative))]
-    public static extern Point2<char>* GetPoint2CPtr(char e00, char e01);
 
     [DllImport(nameof(GenericsNative), EntryPoint = "GetPoint2CPtr")]
     public static extern ref readonly Point2<char> GetPoint2CRef(char e00, char e01);
 
     [DllImport(nameof(GenericsNative))]
     public static extern Point2<char> AddPoint2C(Point2<char> lhs, Point2<char> rhs);
-
-    [DllImport(nameof(GenericsNative))]
-    public static extern Point2<char> AddPoint2Cs(Point2<char>* pValues, int count);
 
     [DllImport(nameof(GenericsNative))]
     public static extern Point2<char> AddPoint2Cs([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] Point2<char>[] pValues, int count);
@@ -42,14 +33,7 @@ unsafe partial class GenericsTest
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint2C('1', '2'));
 
-        Assert.Throws<MarshalDirectiveException>(() => {
-            GenericsNative.Point2<char> value2;
-            GenericsNative.GetPoint2COut('1', '2', &value2);
-        });
-
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint2COut('1', '2', out GenericsNative.Point2<char> value3));
-
-        Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint2CPtr('1', '2'));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint2CRef('1', '2'));
 
@@ -62,13 +46,6 @@ unsafe partial class GenericsTest
             default,
             default
         };
-
-        Assert.Throws<MarshalDirectiveException>(() => {
-            fixed (GenericsNative.Point2<char>* pValues = &values[0])
-            {
-                GenericsNative.AddPoint2Cs(pValues, values.Length);
-            }
-        });
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.AddPoint2Cs(values, values.Length));
 

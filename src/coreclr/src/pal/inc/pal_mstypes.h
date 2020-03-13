@@ -196,11 +196,11 @@ extern "C" {
 // they must be either signed or unsigned) and we want to be able to use
 // __int64 as though it were intrinsic
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define __int64     long
-#else // BIT64
+#else // HOST_64BIT
 #define __int64     long long
-#endif // BIT64
+#endif // HOST_64BIT
 
 #define __int32     int
 #define __int16     short int
@@ -214,7 +214,7 @@ extern "C" {
 #ifndef PAL_IMPLEMENTATION
 
 // OS X already defines these types in 64 bit
-#if !defined(_TARGET_MAC64)
+#if !defined(TARGET_OSX)
 typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
 typedef __int32 int32_t;
@@ -229,7 +229,7 @@ typedef unsigned __int8 uint8_t;
 
 #ifndef _MSC_VER
 
-#if BIT64
+#if HOST_64BIT
 typedef long double LONG_DOUBLE;
 #endif
 
@@ -302,13 +302,13 @@ typedef signed __int32 LONG32, *PLONG32;
 typedef unsigned __int64 ULONG64;
 typedef signed __int64 LONG64;
 
-#if defined(_X86_) && _MSC_VER >= 1300
+#if defined(HOST_X86) && _MSC_VER >= 1300
 #define _W64 __w64
 #else
 #define _W64
 #endif
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 
 #define _atoi64 (__int64)atoll
 
@@ -329,7 +329,7 @@ typedef unsigned __int64 DWORD_PTR, *PDWORD_PTR;
 
 #define __int3264   __int64
 
-#if !defined(BIT64)
+#if !defined(HOST_64BIT)
 __inline
 unsigned long
 HandleToULong(
@@ -482,7 +482,7 @@ UShortToPtr(
     return( (void *)(UINT_PTR)us );
 }
 
-#else // !defined(BIT64)
+#else // !defined(HOST_64BIT)
 #define HandleToULong( h ) ((ULONG)(ULONG_PTR)(h) )
 #define HandleToLong( h )  ((LONG)(LONG_PTR) (h) )
 #define ULongToHandle( ul ) ((HANDLE)(ULONG_PTR) (ul) )
@@ -499,7 +499,7 @@ UShortToPtr(
 #define ULongToPtr( ul ) ((VOID *)(ULONG_PTR)((unsigned long)(ul)))
 #define ShortToPtr( s )  ((VOID *)(INT_PTR)((short)(s)))
 #define UShortToPtr( us )  ((VOID *)(UINT_PTR)((unsigned short)(s)))
-#endif // !defined(BIT64)
+#endif // !defined(HOST_64BIT)
 
 
 
@@ -564,13 +564,13 @@ typedef LONG_PTR SSIZE_T, *PSSIZE_T;
 
 #ifndef PAL_STDCPP_COMPAT
 #if defined(__APPLE_CC__) || defined(__linux__)
-#ifdef BIT64
+#ifdef HOST_64BIT
 typedef unsigned long size_t;
 typedef long ptrdiff_t;
-#else // !BIT64
+#else // !HOST_64BIT
 typedef unsigned int size_t;
 typedef int ptrdiff_t;
-#endif // !BIT64
+#endif // !HOST_64BIT
 #else
 typedef ULONG_PTR size_t;
 typedef LONG_PTR ptrdiff_t;
@@ -592,13 +592,13 @@ typedef char16_t WCHAR;
 #ifndef PAL_STDCPP_COMPAT
 
 #if defined(__linux__)
-#ifdef BIT64
+#ifdef HOST_64BIT
 typedef long int intptr_t;
 typedef unsigned long int uintptr_t;
-#else // !BIT64
+#else // !HOST_64BIT
 typedef int intptr_t;
 typedef unsigned int uintptr_t;
-#endif // !BIT64
+#endif // !HOST_64BIT
 #else
 typedef INT_PTR intptr_t;
 typedef UINT_PTR uintptr_t;

@@ -1,9 +1,0 @@
-﻿<Project>
-  <PropertyGroup>
-    <BuildConfigurations>
-      $(NetFrameworkCurrent);
-      net461;
-      netstandard2.0;
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>

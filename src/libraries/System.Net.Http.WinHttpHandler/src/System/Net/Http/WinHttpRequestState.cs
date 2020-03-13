@@ -61,7 +61,7 @@ namespace System.Net.Http
             return GCHandle.ToIntPtr(_operationHandle);
         }
 
-        // TODO (Issue 2506): The current locking mechanism doesn't allow any two WinHttp functions executing at
+        // The current locking mechanism doesn't allow any two WinHttp functions executing at
         // the same time for the same handle. Enhance locking to prevent only WinHttpCloseHandle being called
         // during other API execution. E.g. using a Reader/Writer model or, even better, Interlocked functions.
         // The lock object must be used during the execution of any WinHttp function to ensure no race conditions with
@@ -155,7 +155,6 @@ namespace System.Net.Http
         public long? ExpectedBytesToRead { get; set; }
         public long CurrentBytesRead { get; set; }
 
-        // TODO (Issue 2505): temporary pinned buffer caches of 1 item. Will be replaced by PinnableBufferCache.
         private GCHandle _cachedReceivePinnedBuffer;
 
         public void PinReceiveBuffer(byte[] buffer)

@@ -102,14 +102,14 @@ namespace System.ServiceProcess.Tests
                 testServiceInstaller.ServicesDependedOn = new string[] { _dependentServices.TestServiceName };
             }
 
-            var comparer = PlatformDetection.IsFullFramework ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal; // Full framework upper cases the name
+            var comparer = PlatformDetection.IsNetFramework ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal; // .NET Framework upper cases the name
             string processName = Process.GetCurrentProcess().MainModule.FileName;
             string entryPointName = typeof(TestService).Assembly.Location;
             string arguments = TestServiceName;
 
             // if process and entry point aren't the same then we are running hosted so pass
             // in the entrypoint as the first argument
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 arguments = $"\"{entryPointName}\" {arguments}";
             }

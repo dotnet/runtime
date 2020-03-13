@@ -88,12 +88,12 @@ namespace System.Diagnostics
 
         private IEnumerable<Exception> KillTree()
         {
-            List<Exception> exceptions = null;
+            List<Exception>? exceptions = null;
             KillTree(ref exceptions);
             return exceptions ?? Enumerable.Empty<Exception>();
         }
 
-        private void KillTree(ref List<Exception> exceptions)
+        private void KillTree(ref List<Exception>? exceptions)
         {
             // If the process has exited, we can no longer determine its children.
             // If we know the process has exited, stop already.
@@ -135,7 +135,7 @@ namespace System.Diagnostics
                 childProcess.Dispose();
             }
 
-            void AddException(ref List<Exception> list, Exception e)
+            void AddException(ref List<Exception>? list, Exception e)
             {
                 if (list == null)
                 {
@@ -228,7 +228,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the main module for the associated process.</summary>
-        public ProcessModule MainModule
+        public ProcessModule? MainModule
         {
             get
             {
@@ -354,7 +354,7 @@ namespace System.Diagnostics
             {
                 ThrowIfExited(refresh: true);
 
-                return _processHandle;
+                return _processHandle!;
             }
 
             EnsureState(State.HaveNonExitedId | State.IsLocal);
@@ -370,7 +370,7 @@ namespace System.Diagnostics
         {
             EnsureInitialized();
 
-            string filename;
+            string? filename;
             string[] argv;
 
             if (startInfo.UseShellExecute)
@@ -383,12 +383,12 @@ namespace System.Diagnostics
 
             int stdinFd = -1, stdoutFd = -1, stderrFd = -1;
             string[] envp = CreateEnvp(startInfo);
-            string cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
+            string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
             uint userId = 0;
             uint groupId = 0;
-            uint[] groups = null;
+            uint[]? groups = null;
             if (setCredentials)
             {
                 (userId, groupId, groups) = GetUserAndGroupIds(startInfo);
@@ -484,9 +484,9 @@ namespace System.Diagnostics
         }
 
         private bool ForkAndExecProcess(
-            string filename, string[] argv, string[] envp, string cwd,
+            string? filename, string[] argv, string[] envp, string? cwd,
             bool redirectStdin, bool redirectStdout, bool redirectStderr,
-            bool setCredentials, uint userId, uint groupId, uint[] groups,
+            bool setCredentials, uint userId, uint groupId, uint[]? groups,
             out int stdinFd, out int stdoutFd, out int stderrFd,
             bool usesTerminal, bool throwOnNoExec = true)
         {
@@ -562,7 +562,7 @@ namespace System.Diagnostics
         // -----------------------------
 
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
-        private ProcessWaitState.Holder _waitStateHolder;
+        private ProcessWaitState.Holder? _waitStateHolder;
 
         /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
         private const int StreamBufferSize = 4096;
@@ -572,7 +572,7 @@ namespace System.Diagnostics
         /// <param name="resolvedExe">Resolved executable to open ProcessStartInfo.FileName</param>
         /// <param name="ignoreArguments">Don't pass ProcessStartInfo.Arguments</param>
         /// <returns>The argv array.</returns>
-        private static string[] ParseArgv(ProcessStartInfo psi, string resolvedExe = null, bool ignoreArguments = false)
+        private static string[] ParseArgv(ProcessStartInfo psi, string? resolvedExe = null, bool ignoreArguments = false)
         {
             if (string.IsNullOrEmpty(resolvedExe) &&
                 (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && psi.ArgumentList.Count == 0)))
@@ -620,12 +620,12 @@ namespace System.Diagnostics
             return envp;
         }
 
-        private static string ResolveExecutableForShellExecute(string filename, string workingDirectory)
+        private static string? ResolveExecutableForShellExecute(string filename, string? workingDirectory)
         {
             // Determine if filename points to an executable file.
             // filename may be an absolute path, a relative path or a uri.
 
-            string resolvedFilename = null;
+            string? resolvedFilename = null;
             // filename is an absolute path
             if (Path.IsPathRooted(filename))
             {
@@ -635,7 +635,7 @@ namespace System.Diagnostics
                 }
             }
             // filename is a uri
-            else if (Uri.TryCreate(filename, UriKind.Absolute, out Uri uri))
+            else if (Uri.TryCreate(filename, UriKind.Absolute, out Uri? uri))
             {
                 if (uri.IsFile && uri.Host == "" && File.Exists(uri.LocalPath))
                 {
@@ -680,7 +680,7 @@ namespace System.Diagnostics
         /// <summary>Resolves a path to the filename passed to ProcessStartInfo. </summary>
         /// <param name="filename">The filename.</param>
         /// <returns>The resolved path. It can return null in case of URLs.</returns>
-        private static string ResolvePath(string filename)
+        private static string? ResolvePath(string filename)
         {
             // Follow the same resolution that Windows uses with CreateProcess:
             // 1. First try the exact path provided
@@ -699,12 +699,12 @@ namespace System.Diagnostics
             }
 
             // Then check the executable's directory
-            string path = GetExePath();
+            string? path = GetExePath();
             if (path != null)
             {
                 try
                 {
-                    path = Path.Combine(Path.GetDirectoryName(path), filename);
+                    path = Path.Combine(Path.GetDirectoryName(path)!, filename);
                     if (File.Exists(path))
                     {
                         return path;
@@ -729,10 +729,10 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="program"></param>
         /// <returns></returns>
-        private static string FindProgramInPath(string program)
+        private static string? FindProgramInPath(string program)
         {
             string path;
-            string pathEnvVar = Environment.GetEnvironmentVariable("PATH");
+            string? pathEnvVar = Environment.GetEnvironmentVariable("PATH");
             if (pathEnvVar != null)
             {
                 var pathParser = new StringParser(pathEnvVar, ':', skipEmpty: true);
@@ -912,7 +912,7 @@ namespace System.Diagnostics
                 throw new Win32Exception(SR.Format(SR.UserDoesNotExist, startInfo.UserName));
             }
 
-            uint[] groups = Interop.Sys.GetGroupList(startInfo.UserName, groupId.Value);
+            uint[]? groups = Interop.Sys.GetGroupList(startInfo.UserName, groupId!.Value);
             if (groups == null)
             {
                 throw new Win32Exception(SR.Format(SR.UserGroupsCannotBeDetermined, startInfo.UserName));

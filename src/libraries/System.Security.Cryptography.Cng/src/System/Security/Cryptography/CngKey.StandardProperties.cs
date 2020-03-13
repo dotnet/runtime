@@ -29,8 +29,8 @@ namespace System.Security.Cryptography
         {
             get
             {
-                string algorithm = _keyHandle.GetPropertyAsString(KeyPropertyName.Algorithm, CngPropertyOptions.None);
-                // Desktop compat: Don't check for null. Just let CngAlgorithm handle it.
+                string algorithm = _keyHandle.GetPropertyAsString(KeyPropertyName.Algorithm, CngPropertyOptions.None)!;
+                // .NET Framework compat: Don't check for null. Just let CngAlgorithm handle it.
                 return new CngAlgorithm(algorithm);
             }
 
@@ -39,12 +39,12 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Name of the algorithm this key can be used with
         /// </summary>
-        public CngAlgorithmGroup AlgorithmGroup
+        public CngAlgorithmGroup? AlgorithmGroup
 
         {
             get
             {
-                string algorithmGroup = _keyHandle.GetPropertyAsString(KeyPropertyName.AlgorithmGroup, CngPropertyOptions.None);
+                string? algorithmGroup = _keyHandle.GetPropertyAsString(KeyPropertyName.AlgorithmGroup, CngPropertyOptions.None);
                 if (algorithmGroup == null)
                     return null;
                 return new CngAlgorithmGroup(algorithmGroup);
@@ -144,14 +144,14 @@ namespace System.Security.Cryptography
         ///     the CLR. Other ephemeral keys, such as those imported by handle, will get a CryptographicException
         ///     if they read this property.
         /// </summary>
-        public string KeyName
+        public string? KeyName
         {
             get
             {
                 if (IsEphemeral)
                     return null;
 
-                string keyName = _keyHandle.GetPropertyAsString(KeyPropertyName.Name, CngPropertyOptions.None);
+                string? keyName = _keyHandle.GetPropertyAsString(KeyPropertyName.Name, CngPropertyOptions.None);
                 return keyName;
             }
         }
@@ -226,11 +226,11 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     KSP which holds this key
         /// </summary>
-        public CngProvider Provider
+        public CngProvider? Provider
         {
             get
             {
-                string provider = _providerHandle.GetPropertyAsString(ProviderPropertyName.Name, CngPropertyOptions.None);
+                string? provider = _providerHandle.GetPropertyAsString(ProviderPropertyName.Name, CngPropertyOptions.None);
                 if (provider == null)
                     return null;
                 return new CngProvider(provider);
@@ -256,9 +256,9 @@ namespace System.Security.Cryptography
             get
             {
                 CngUIProtectionLevels uiProtectionLevel;
-                string friendlyName;
-                string description;
-                string creationTitle;
+                string? friendlyName;
+                string? description;
+                string? creationTitle;
                 unsafe
                 {
                     int numBytesNeeded;
@@ -300,7 +300,7 @@ namespace System.Security.Cryptography
                     }
                 }
 
-                string useContext = _keyHandle.GetPropertyAsString(KeyPropertyName.UseContext, CngPropertyOptions.None);
+                string? useContext = _keyHandle.GetPropertyAsString(KeyPropertyName.UseContext, CngPropertyOptions.None);
 
                 return new CngUIPolicy(uiProtectionLevel, friendlyName, description, useContext, creationTitle);
             }
@@ -310,14 +310,14 @@ namespace System.Security.Cryptography
         ///     Unique name of the key, null if it is ephemeral. See the comments on the Name property for
         ///     details about names of ephemeral keys.
         /// </summary>
-        public string UniqueName
+        public string? UniqueName
         {
             get
             {
                 if (IsEphemeral)
                     return null;
 
-                string uniqueName = _keyHandle.GetPropertyAsString(KeyPropertyName.UniqueName, CngPropertyOptions.None);
+                string? uniqueName = _keyHandle.GetPropertyAsString(KeyPropertyName.UniqueName, CngPropertyOptions.None);
                 return uniqueName;
             }
         }

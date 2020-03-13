@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="BinderTracingTest.Basic.cs" />
+    <Compile Include="BinderTracingTest.DefaultProbing.cs" />
+  </ItemGroup>
+  <Import Project="BinderTracingTest.targets" />
+</Project>

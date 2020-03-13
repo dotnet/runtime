@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <DefineConstants>$(DefineConstants);ActivatorUtilities_In_DependencyInjection</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyInjection.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(SharedSourceRoot)ParameterDefaultValue\*.cs" />
+    <Compile Include="$(SharedSourceRoot)ActivatorUtilities\*.cs" />
+  </ItemGroup>
+
+</Project>

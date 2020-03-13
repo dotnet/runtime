@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>436</NoWarn>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -17,6 +17,9 @@
     <Compile Include="..\..\src\System\UriEnumTypes.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
       <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

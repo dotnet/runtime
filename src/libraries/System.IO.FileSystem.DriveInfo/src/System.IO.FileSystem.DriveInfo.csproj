@@ -3,7 +3,7 @@
     <RootNamespace>System.IO.FileSystem.DriveInfo</RootNamespace>
     <AssemblyName>System.IO.FileSystem.DriveInfo</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -94,14 +94,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
 </Project>

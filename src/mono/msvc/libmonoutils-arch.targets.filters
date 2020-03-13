@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(ExcludeMASMFromWindowsBuild)'==''">
+    <ExcludeMASMFromWindowsBuild>false</ExcludeMASMFromWindowsBuild>
+  </PropertyGroup>
+  <ItemGroup Label="arch_x86_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-x86.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-x86.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\x86</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_amd64_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-amd64.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\amd64</Filter>
+    </ClCompile>
+    <MASM Include="$(MonoSourceLocation)\mono\utils\win64.asm" Condition="'$(ExcludeMASMFromWindowsBuild)'=='false'">
+      <Filter>Resource Files$(MonoUtilsFilterSubFolder)\arch\amd64</Filter>
+    </MASM>
+  </ItemGroup>
+  <ItemGroup Label="arch_arm_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-arm.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-arm.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\arm</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_arm64_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-arm64.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\arm64</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-arm64.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\arm64</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_mips_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-mips.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\mips</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_ppc_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-ppc.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\ppc</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_sparc_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-sparc.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\sparc</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_s390x_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-os390x.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\s390x</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_wasm_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-wasm.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\wasm</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_unknown_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-unknown.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\unknown</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_cross_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-cross.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\arch\cross</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Resource Files$(MonoUtilsFilterSubFolder)\arch">
+      <UniqueIdentifier>{CF1B494F-7FC7-4B1F-9356-1E6F4C3AA151}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch">
+      <UniqueIdentifier>{6603FB44-3F5A-490C-A2FB-3FCD4818EA6A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch\x86">
+      <UniqueIdentifier>{9931E7C8-6C44-48E6-8752-AD0E3CB99A40}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Resource Files$(MonoUtilsFilterSubFolder)\arch\amd64">
+      <UniqueIdentifier>{6F39D983-0414-4906-A8B4-F3EE6D66ADB2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch\amd64">
+      <UniqueIdentifier>{711787B7-91B8-4FDF-937B-35C28B17F264}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch\arm">
+      <UniqueIdentifier>{BF9E07DE-1E58-485B-8A1D-E98B51AA3335}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch\arm64">
+      <UniqueIdentifier>{7F0740FA-7CF3-4281-B044-76AA9D603173}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch\mips">
+      <UniqueIdentifier>{C994366B-5CDF-4221-9F02-0889EE48AE84}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch\ppc">
+      <UniqueIdentifier>{350298FD-D211-4A13-9FDD-5CFFE2693D3E}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch\sparc">
+      <UniqueIdentifier>{58B688AA-3E02-4D79-A17F-FC287BC36BD4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch\s390x">
+      <UniqueIdentifier>{D0DAB5B3-50DB-4122-81A2-FB82F6569DC7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch\wasm">
+      <UniqueIdentifier>{CCF0AA6D-4EC2-4D0B-80DE-3D304D3F1B06}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch\unknown">
+      <UniqueIdentifier>{1241F641-C6B5-4139-87D9-9981D309FFBA}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\arch\cross">
+      <UniqueIdentifier>{23738EAA-81C9-4974-B742-6054F15292A4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

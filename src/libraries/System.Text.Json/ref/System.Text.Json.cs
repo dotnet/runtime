@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Text.Json
@@ -463,8 +463,9 @@ namespace System.Text.Json
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.ReferenceHandling ReferenceHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
-        public System.Text.Json.Serialization.JsonConverter? GetConverter(System.Type typeToConvert) { throw null; }
+        public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
     }
     public sealed partial class JsonString : System.Text.Json.JsonNode, System.IEquatable<System.Text.Json.JsonString>
     {
@@ -750,7 +751,7 @@ namespace System.Text.Json.Serialization
         protected internal JsonConverter() { }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
         public abstract T Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
-        public abstract void Write(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
+        public abstract void Write(System.Text.Json.Utf8JsonWriter writer, [System.Diagnostics.CodeAnalysis.DisallowNull] T value, System.Text.Json.JsonSerializerOptions options);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonExtensionDataAttribute : System.Text.Json.Serialization.JsonAttribute
@@ -774,5 +775,11 @@ namespace System.Text.Json.Serialization
         public JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) { }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
         public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+    }
+    public sealed partial class ReferenceHandling
+    {
+        internal ReferenceHandling() { }
+        public static System.Text.Json.Serialization.ReferenceHandling Default { get { throw null; } }
+        public static System.Text.Json.Serialization.ReferenceHandling Preserve { get { throw null; } }
     }
 }

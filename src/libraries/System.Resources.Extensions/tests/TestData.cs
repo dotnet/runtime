@@ -301,7 +301,7 @@ namespace System.Resources.Extensions.Tests
                 // Apply type-forwarded from here, so that we mimic what would happen in ResXWriter which runs in VS on desktop
                 string assemblyQualifiedTypeName = GetSerializationTypeName(serializedType);
 
-                // workaround for https://github.com/dotnet/corefx/issues/42092
+                // workaround for https://github.com/dotnet/runtime/issues/31289
                 assemblyQualifiedTypeName = assemblyQualifiedTypeName.Replace(s_coreAssemblyName, s_mscorlibAssemblyName);
 
                 int pos = assemblyQualifiedTypeName.IndexOf(',');

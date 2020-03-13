@@ -10,15 +10,15 @@ namespace System.Security.Cryptography.Asn1
     /// <summary>
     ///   A stateful, forward-only reader for BER-, CER-, or DER-encoded ASN.1 data.
     /// </summary>
-    internal partial class AsnReader
+    internal ref partial struct AsnValueReader
     {
         // T-REC-X.690-201508 sec 9.2
         internal const int MaxCERSegmentSize = 1000;
 
         // T-REC-X.690-201508 sec 8.1.5 says only 0000 is legal.
-        private const int EndOfContentsEncodedLength = 2;
+        internal const int EndOfContentsEncodedLength = 2;
 
-        private ReadOnlyMemory<byte> _data;
+        private ReadOnlySpan<byte> _data;
 
         /// <summary>
         ///   The <see cref="AsnEncodingRules"/> in use by this reader.
@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Asn1
         public bool HasData => !_data.IsEmpty;
 
         /// <summary>
-        ///   Construct an <see cref="AsnReader"/> over <paramref name="data"/> with a given ruleset.
+        ///   Construct an <see cref="AsnValueReader"/> over <paramref name="data"/> with a given ruleset.
         /// </summary>
         /// <param name="data">The data to read.</param>
         /// <param name="ruleSet">The encoding constraints for the reader.</param>
@@ -45,12 +45,24 @@ namespace System.Security.Cryptography.Asn1
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
-        public AsnReader(ReadOnlyMemory<byte> data, AsnEncodingRules ruleSet)
+        public AsnValueReader(ReadOnlySpan<byte> data, AsnEncodingRules ruleSet)
         {
             CheckEncodingRules(ruleSet);
 
             _data = data;
             RuleSet = ruleSet;
+        }
+
+        // Reversed parameter order, to be used by OpenUnchecked.
+        private AsnValueReader(AsnEncodingRules ruleSet, ReadOnlySpan<byte> data)
+        {
+            _data = data;
+            RuleSet = ruleSet;
+        }
+
+        internal static AsnValueReader OpenUnchecked(ReadOnlySpan<byte> data, AsnEncodingRules ruleSet)
+        {
+            return new AsnValueReader(ruleSet, data);
         }
 
         /// <summary>
@@ -80,7 +92,7 @@ namespace System.Security.Cryptography.Asn1
         /// </exception>
         public Asn1Tag PeekTag()
         {
-            if (Asn1Tag.TryDecode(_data.Span, out Asn1Tag tag, out int bytesRead))
+            if (Asn1Tag.TryDecode(_data, out Asn1Tag tag, out int bytesRead))
             {
                 return tag;
             }
@@ -89,64 +101,75 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
-        ///   Get a <see cref="ReadOnlyMemory{T}"/> view of the next encoded value without
+        ///   Get a <see cref="ReadOnlySpan{T}"/> view of the next encoded value without
         ///   advancing the reader. For indefinite length encodings this includes the
         ///   End of Contents marker.
         /// </summary>
-        /// <returns>A <see cref="ReadOnlyMemory{T}"/> view of the next encoded value.</returns>
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> view of the next encoded value.</returns>
         /// <exception cref="CryptographicException">
         ///   The reader is positioned at a point where the tag or length is invalid
         ///   under the current encoding rules.
         /// </exception>
         /// <seealso cref="PeekContentBytes"/>
         /// <seealso cref="ReadEncodedValue"/>
-        public ReadOnlyMemory<byte> PeekEncodedValue()
+        public ReadOnlySpan<byte> PeekEncodedValue()
+        {
+            return Slice(_data, 0, GetNextEncodedValueLength());
+        }
+
+        internal int GetNextEncodedValueLength()
         {
             ReadTagAndLength(out int? length, out int bytesRead);
 
             if (length == null)
             {
                 int contentsLength = SeekEndOfContents(_data.Slice(bytesRead));
-                return Slice(_data, 0, bytesRead + contentsLength + EndOfContentsEncodedLength);
+                return bytesRead + contentsLength + AsnReader.EndOfContentsEncodedLength;
             }
 
-            return Slice(_data, 0, bytesRead + length.Value);
+            return bytesRead + length.Value;
         }
 
         /// <summary>
-        ///   Get a <see cref="ReadOnlyMemory{T}"/> view of the content octets (bytes) of the
+        ///   Get a <see cref="ReadOnlySpan{T}"/> view of the content octets (bytes) of the
         ///   next encoded value without advancing the reader.
         /// </summary>
         /// <returns>
-        ///   A <see cref="ReadOnlyMemory{T}"/> view of the contents octets of the next encoded value.
+        ///   A <see cref="ReadOnlySpan{T}"/> view of the contents octets of the next encoded value.
         /// </returns>
         /// <exception cref="CryptographicException">
         ///   The reader is positioned at a point where the tag or length is invalid
         ///   under the current encoding rules.
         /// </exception>
         /// <seealso cref="PeekEncodedValue"/>
-        public ReadOnlyMemory<byte> PeekContentBytes()
+        public ReadOnlySpan<byte> PeekContentBytes()
+        {
+            (int offset, int length) = GetNextContentRange();
+            return Slice(_data, offset, length);
+        }
+
+        internal (int Offset, int Length) GetNextContentRange()
         {
             ReadTagAndLength(out int? length, out int bytesRead);
 
             if (length == null)
             {
-                return Slice(_data, bytesRead, SeekEndOfContents(_data.Slice(bytesRead)));
+                return (bytesRead, SeekEndOfContents(_data.Slice(bytesRead)));
             }
 
-            return Slice(_data, bytesRead, length.Value);
+            return (bytesRead, length.Value);
         }
 
         /// <summary>
-        ///   Get a <see cref="ReadOnlyMemory{T}"/> view of the next encoded value,
+        ///   Get a <see cref="ReadOnlySpan{T}"/> view of the next encoded value,
         ///   and advance the reader past it. For an indefinite length encoding this includes
         ///   the End of Contents marker.
         /// </summary>
-        /// <returns>A <see cref="ReadOnlyMemory{T}"/> view of the next encoded value.</returns>
+        /// <returns>A <see cref="ReadOnlySpan{T}"/> view of the next encoded value.</returns>
         /// <seealso cref="PeekEncodedValue"/>
-        public ReadOnlyMemory<byte> ReadEncodedValue()
+        public ReadOnlySpan<byte> ReadEncodedValue()
         {
-            ReadOnlyMemory<byte> encodedValue = PeekEncodedValue();
+            ReadOnlySpan<byte> encodedValue = PeekEncodedValue();
             _data = _data.Slice(encodedValue.Length);
             return encodedValue;
         }
@@ -160,7 +183,7 @@ namespace System.Security.Cryptography.Asn1
             length = null;
             bytesRead = 0;
 
-            CheckEncodingRules(ruleSet);
+            AssertEncodingRules(ruleSet);
 
             if (source.IsEmpty)
             {
@@ -278,8 +301,8 @@ namespace System.Security.Cryptography.Asn1
 
         internal Asn1Tag ReadTagAndLength(out int? contentsLength, out int bytesRead)
         {
-            if (Asn1Tag.TryDecode(_data.Span, out Asn1Tag tag, out int tagBytesRead) &&
-                TryReadLength(_data.Slice(tagBytesRead).Span, RuleSet, out int? length, out int lengthBytesRead))
+            if (Asn1Tag.TryDecode(_data, out Asn1Tag tag, out int tagBytesRead) &&
+                TryReadLength(_data.Slice(tagBytesRead), RuleSet, out int? length, out int lengthBytesRead))
             {
                 int allBytesRead = tagBytesRead + lengthBytesRead;
 
@@ -318,12 +341,21 @@ namespace System.Security.Cryptography.Asn1
         /// Get the number of bytes between the start of <paramref name="source" /> and
         /// the End-of-Contents marker
         /// </summary>
-        private int SeekEndOfContents(ReadOnlyMemory<byte> source)
+        private int SeekEndOfContents(ReadOnlySpan<byte> source)
         {
-            ReadOnlyMemory<byte> cur = source;
+            return SeekEndOfContents(source, RuleSet);
+        }
+
+        /// <summary>
+        /// Get the number of bytes between the start of <paramref name="source" /> and
+        /// the End-of-Contents marker
+        /// </summary>
+        internal static int SeekEndOfContents(ReadOnlySpan<byte> source, AsnEncodingRules ruleSet)
+        {
+            ReadOnlySpan<byte> cur = source;
             int totalLen = 0;
 
-            AsnReader tmpReader = new AsnReader(cur, RuleSet);
+            AsnValueReader tmpReader = OpenUnchecked(cur, ruleSet);
             // Our reader is bounded by int.MaxValue.
             // The most aggressive data input would be a one-byte tag followed by
             // indefinite length "ad infinitum", which would be half the input.
@@ -361,7 +393,7 @@ namespace System.Security.Cryptography.Asn1
                 else
                 {
                     // This will throw a CryptographicException if the length exceeds our bounds.
-                    ReadOnlyMemory<byte> tlv = Slice(tmpReader._data, 0, bytesRead + length.Value);
+                    ReadOnlySpan<byte> tlv = Slice(tmpReader._data, 0, bytesRead + length.Value);
 
                     // No exception? Then slice the data and continue.
                     tmpReader._data = tmpReader._data.Slice(tlv.Length);
@@ -380,7 +412,7 @@ namespace System.Security.Cryptography.Asn1
             return value;
         }
 
-        private static int ParseNonNegativeInt(ReadOnlySpan<byte> data)
+        internal static int ParseNonNegativeInt(ReadOnlySpan<byte> data)
         {
             if (Utf8Parser.TryParse(data, out uint value, out int consumed) &&
                 value <= int.MaxValue &&
@@ -410,7 +442,7 @@ namespace System.Security.Cryptography.Asn1
             return source.Slice(offset, length);
         }
 
-        private static ReadOnlyMemory<byte> Slice(ReadOnlyMemory<byte> source, int offset, int? length)
+        private static ReadOnlySpan<byte> Slice(ReadOnlySpan<byte> source, int offset, int? length)
         {
             Debug.Assert(offset >= 0);
 
@@ -429,7 +461,40 @@ namespace System.Security.Cryptography.Asn1
             return source.Slice(offset, lengthVal);
         }
 
-        private static void CheckEncodingRules(AsnEncodingRules ruleSet)
+        internal static ReadOnlyMemory<byte> Slice(ReadOnlyMemory<byte> bigger, ReadOnlySpan<byte> smaller)
+        {
+            if (smaller.IsEmpty)
+            {
+                return default;
+            }
+
+            if (bigger.Span.Overlaps(smaller, out int offset))
+            {
+                return bigger.Slice(offset, smaller.Length);
+            }
+
+            Debug.Fail("AsnReader asked for a matching slice from a non-overlapping input");
+            throw new CryptographicException();
+        }
+
+        /// <summary>
+        ///   Slices <paramref name="memory"/> to represent the same data this reader value has.
+        /// </summary>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="memory"/> does not represent a super-range of the data this reader is processing.
+        /// </exception>
+        internal void MatchSlice(ref ReadOnlyMemory<byte> memory)
+        {
+            memory = Slice(memory, _data);
+        }
+
+        [Conditional("DEBUG")]
+        private static void AssertEncodingRules(AsnEncodingRules ruleSet)
+        {
+            Debug.Assert(ruleSet >= AsnEncodingRules.BER && ruleSet <= AsnEncodingRules.DER);
+        }
+
+        internal static void CheckEncodingRules(AsnEncodingRules ruleSet)
         {
             if (ruleSet != AsnEncodingRules.BER &&
                 ruleSet != AsnEncodingRules.CER &&
@@ -439,7 +504,7 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void CheckExpectedTag(Asn1Tag tag, Asn1Tag expectedTag, UniversalTagNumber tagNumber)
+        internal static void CheckExpectedTag(Asn1Tag tag, Asn1Tag expectedTag, UniversalTagNumber tagNumber)
         {
             if (expectedTag.TagClass == TagClass.Universal && expectedTag.TagValue != (int)tagNumber)
             {
@@ -452,6 +517,159 @@ namespace System.Security.Cryptography.Asn1
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
+        }
+    }
+
+    /// <summary>
+    ///   A stateful, forward-only reader for BER-, CER-, or DER-encoded ASN.1 data.
+    /// </summary>
+    internal partial class AsnReader
+    {
+        internal const int MaxCERSegmentSize = AsnValueReader.MaxCERSegmentSize;
+        internal const int EndOfContentsEncodedLength = AsnValueReader.EndOfContentsEncodedLength;
+
+        private ReadOnlyMemory<byte> _data;
+
+        /// <summary>
+        ///   The <see cref="AsnEncodingRules"/> in use by this reader.
+        /// </summary>
+        public AsnEncodingRules RuleSet { get; }
+
+        /// <summary>
+        ///   An indication of whether or not the reader has remaining data available to process.
+        /// </summary>
+        public bool HasData => !_data.IsEmpty;
+
+        /// <summary>
+        ///   Construct an <see cref="AsnReader"/> over <paramref name="data"/> with a given ruleset.
+        /// </summary>
+        /// <param name="data">The data to read.</param>
+        /// <param name="ruleSet">The encoding constraints for the reader.</param>
+        /// <remarks>
+        ///   This constructor does not evaluate <paramref name="data"/> for correctness,
+        ///   any correctness checks are done as part of member methods.
+        ///
+        ///   This constructor does not copy <paramref name="data"/>. The caller is responsible for
+        ///   ensuring that the values do not change until the reader is finished.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
+        /// </exception>
+        public AsnReader(ReadOnlyMemory<byte> data, AsnEncodingRules ruleSet)
+        {
+            AsnValueReader.CheckEncodingRules(ruleSet);
+
+            _data = data;
+            RuleSet = ruleSet;
+        }
+
+        /// <summary>
+        ///   Throws a standardized <see cref="CryptographicException"/> if the reader has remaining
+        ///   data, performs no function if <see cref="HasData"/> returns <c>false</c>.
+        /// </summary>
+        /// <remarks>
+        ///   This method provides a standardized target and standardized exception for reading a
+        ///   "closed" structure, such as the nested content for an explicitly tagged value.
+        /// </remarks>
+        public void ThrowIfNotEmpty()
+        {
+            if (HasData)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+        }
+
+        /// <summary>
+        ///   Read the encoded tag at the next data position, without advancing the reader.
+        /// </summary>
+        /// <returns>
+        ///   The decoded <see cref="Asn1Tag"/> value.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   a tag could not be decoded at the reader's current position.
+        /// </exception>
+        public Asn1Tag PeekTag()
+        {
+            if (Asn1Tag.TryDecode(_data.Span, out Asn1Tag tag, out int bytesRead))
+            {
+                return tag;
+            }
+
+            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+        }
+
+        private AsnValueReader OpenValueReader()
+        {
+            return AsnValueReader.OpenUnchecked(_data.Span, RuleSet);
+        }
+
+        /// <summary>
+        ///   Get a <see cref="ReadOnlyMemory{T}"/> view of the next encoded value without
+        ///   advancing the reader. For indefinite length encodings this includes the
+        ///   End of Contents marker.
+        /// </summary>
+        /// <returns>A <see cref="ReadOnlyMemory{T}"/> view of the next encoded value.</returns>
+        /// <exception cref="CryptographicException">
+        ///   The reader is positioned at a point where the tag or length is invalid
+        ///   under the current encoding rules.
+        /// </exception>
+        /// <seealso cref="PeekContentBytes"/>
+        /// <seealso cref="ReadEncodedValue"/>
+        public ReadOnlyMemory<byte> PeekEncodedValue()
+        {
+            AsnValueReader reader = OpenValueReader();
+            return Slice(_data, 0, reader.GetNextEncodedValueLength());
+        }
+
+        /// <summary>
+        ///   Get a <see cref="ReadOnlyMemory{T}"/> view of the content octets (bytes) of the
+        ///   next encoded value without advancing the reader.
+        /// </summary>
+        /// <returns>
+        ///   A <see cref="ReadOnlyMemory{T}"/> view of the contents octets of the next encoded value.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   The reader is positioned at a point where the tag or length is invalid
+        ///   under the current encoding rules.
+        /// </exception>
+        /// <seealso cref="PeekEncodedValue"/>
+        public ReadOnlyMemory<byte> PeekContentBytes()
+        {
+            AsnValueReader reader = OpenValueReader();
+            (int offset, int length) = reader.GetNextContentRange();
+            return Slice(_data, offset, length);
+        }
+
+        /// <summary>
+        ///   Get a <see cref="ReadOnlyMemory{T}"/> view of the next encoded value,
+        ///   and advance the reader past it. For an indefinite length encoding this includes
+        ///   the End of Contents marker.
+        /// </summary>
+        /// <returns>A <see cref="ReadOnlyMemory{T}"/> view of the next encoded value.</returns>
+        /// <seealso cref="PeekEncodedValue"/>
+        public ReadOnlyMemory<byte> ReadEncodedValue()
+        {
+            ReadOnlyMemory<byte> encodedValue = PeekEncodedValue();
+            _data = _data.Slice(encodedValue.Length);
+            return encodedValue;
+        }
+
+        internal Asn1Tag ReadTagAndLength(out int? contentsLength, out int bytesRead)
+        {
+            AsnValueReader reader = OpenValueReader();
+            return reader.ReadTagAndLength(out contentsLength, out bytesRead);
+        }
+
+        private static ReadOnlyMemory<byte> Slice(ReadOnlyMemory<byte> source, int offset, int length)
+        {
+            Debug.Assert(offset >= 0);
+
+            if (length < 0 || source.Length - offset < length)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            return source.Slice(offset, length);
         }
     }
 }

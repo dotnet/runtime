@@ -171,27 +171,30 @@ namespace Internal.TypeSystem.Ecma
         {
             ModuleReference moduleReference = _metadataReader.GetModuleReference(handle);
             string fileName = _metadataReader.GetString(moduleReference.Name);
-            return Context.ResolveModule(this.Assembly, fileName);
+
+            return _moduleResolver.ResolveModule(this.Assembly, fileName);
         }
 
         private LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
+        IModuleResolver _moduleResolver;
 
-        internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader, IAssemblyDesc containingAssembly)
+        internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader, IAssemblyDesc containingAssembly, IModuleResolver customModuleResolver)
             : base(context, containingAssembly)
         {
             _peReader = peReader;
             _metadataReader = metadataReader;
             _resolvedTokens = new EcmaObjectLookupHashtable(this);
+            _moduleResolver = customModuleResolver != null ? customModuleResolver : context;
         }
 
-        public static EcmaModule Create(TypeSystemContext context, PEReader peReader, IAssemblyDesc containingAssembly)
+        public static EcmaModule Create(TypeSystemContext context, PEReader peReader, IAssemblyDesc containingAssembly, IModuleResolver customModuleResolver = null)
         {
             MetadataReader metadataReader = CreateMetadataReader(context, peReader);
 
             if (containingAssembly == null)
-                return new EcmaAssembly(context, peReader, metadataReader);
+                return new EcmaAssembly(context, peReader, metadataReader, customModuleResolver);
             else
-                return new EcmaModule(context, peReader, metadataReader, containingAssembly);
+                return new EcmaModule(context, peReader, metadataReader, containingAssembly, customModuleResolver);
         }
 
         private static MetadataReader CreateMetadataReader(TypeSystemContext context, PEReader peReader)
@@ -260,6 +263,18 @@ namespace Internal.TypeSystem.Ecma
 
                 // Bad metadata
                 throw new BadImageFormatException();
+            }
+        }
+
+        public bool IsPlatformNeutral
+        {
+            get
+            {
+                PEHeaders peHeaders = PEReader.PEHeaders;
+                return peHeaders.PEHeader.Magic == PEMagic.PE32
+                    && (peHeaders.CorHeader.Flags & (CorFlags.Prefers32Bit | CorFlags.Requires32Bit)) != CorFlags.Requires32Bit
+                    && (peHeaders.CorHeader.Flags & CorFlags.ILOnly) != 0
+                    && peHeaders.CoffHeader.Machine == Machine.I386;
             }
         }
 
@@ -485,7 +500,7 @@ namespace Internal.TypeSystem.Ecma
             an.CultureName = _metadataReader.GetString(assemblyReference.Culture);
             an.ContentType = GetContentTypeFromAssemblyFlags(assemblyReference.Flags);
 
-            return Context.ResolveAssembly(an);
+            return _moduleResolver.ResolveAssembly(an);
         }
 
         private Object ResolveExportedType(ExportedTypeHandle handle)

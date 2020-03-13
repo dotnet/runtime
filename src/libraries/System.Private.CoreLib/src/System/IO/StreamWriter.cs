@@ -390,7 +390,7 @@ namespace System.IO
             else
             {
                 // For larger buffers or when we may run out of room in the internal char buffer, copy in chunks.
-                // Use unsafe code until https://github.com/dotnet/coreclr/issues/13827 is addressed, as spans are
+                // Use unsafe code until https://github.com/dotnet/runtime/issues/8890 is addressed, as spans are
                 // resulting in significant overhead (even when the if branch above is taken rather than this
                 // else) due to temporaries that need to be cleared.  Given the use of unsafe code, we also
                 // make local copies of instance state to protect against potential concurrent misuse.

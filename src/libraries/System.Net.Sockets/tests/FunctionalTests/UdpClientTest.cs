@@ -60,7 +60,7 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.Throws<ArgumentNullException>("localEP", () => new UdpClient(null));
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Ctor_CanSend()
         {
@@ -71,7 +71,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Ctor_Int_CanSend()
         {
@@ -89,7 +89,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Ctor_IntAddressFamily_IPv4_CanSend()
         {
@@ -107,7 +107,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Ctor_IntAddressFamily_IPv6_CanSend()
         {
@@ -125,7 +125,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Ctor_IPEndPoint_CanSend()
         {
@@ -143,7 +143,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Ctor_StringInt_CanSend()
         {
@@ -283,7 +283,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public void EnableBroadcast_Roundtrips()
         {
             using (var udpClient = new UdpClient())
@@ -321,7 +321,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void BeginSend_NegativeBytes_Throws()
         {
@@ -337,7 +337,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void BeginSend_BytesMoreThanArrayLength_Throws()
         {
@@ -353,7 +353,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void BeginSend_AsyncOperationCompletes_Success()
         {
@@ -392,7 +392,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Client_Idempotent()
         {
@@ -421,7 +421,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task ConnectAsync_StringHost_Success()
         {
@@ -431,7 +431,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task ConnectAsync_IPAddressHost_Success()
         {
@@ -441,7 +441,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Connect_StringHost_Success()
         {
@@ -451,7 +451,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public void Connect_IPAddressHost_Success()
         {
@@ -468,7 +468,7 @@ namespace System.Net.Sockets.Tests
             _waitHandle.Set();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]  // Udp.AllowNatTraversal only supported on Windows
         [InlineData(true, IPProtectionLevel.Unrestricted)]
@@ -482,7 +482,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Udp.AllowNatTraversal throws PNSE on Unix
         [InlineData(true)]
@@ -495,7 +495,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -520,7 +520,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // "localhost" resolves to IPv4 & IPV6 on Windows, but may resolve to only one of those on Unix
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         public void Send_Receive_Connected_Success()
         {
             using (var receiver = new UdpClient("localhost", 0))
@@ -538,7 +538,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -558,7 +558,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -583,7 +583,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // "localhost" resolves to IPv4 & IPV6 on Windows, but may resolve to only one of those on Unix
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         public void BeginEndSend_BeginEndReceive_Connected_Success()
         {
             using (var receiver = new UdpClient("localhost", 0))
@@ -601,7 +601,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -626,7 +626,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // "localhost" resolves to IPv4 & IPV6 on Windows, but may resolve to only one of those on Unix
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         public async Task SendAsync_ReceiveAsync_Connected_Success()
         {
             using (var receiver = new UdpClient("localhost", 0))

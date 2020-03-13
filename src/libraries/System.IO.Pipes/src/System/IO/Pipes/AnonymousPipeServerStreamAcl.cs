@@ -17,7 +17,7 @@ namespace System.IO.Pipes
         /// <remarks>Setting <paramref name="pipeSecurity" /> to <see langword="null" /> is equivalent to calling the `System.IO.Pipes.AnonymousPipeServerStream(System.IO.Pipes.PipeDirection direction, System.IO.HandleInheritability inheritability, int bufferSize)` constructor directly.</remarks>
         /// <exception cref="NotSupportedException"><paramref name="direction" /> is <see cref="PipeDirection.InOut" />.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inheritability" /> is not set to a valid <see cref="HandleInheritability" /> enum value.</exception>
-        public static AnonymousPipeServerStream Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize, PipeSecurity pipeSecurity)
+        public static AnonymousPipeServerStream Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize, PipeSecurity? pipeSecurity)
         {
             return new AnonymousPipeServerStream(direction, inheritability, bufferSize, pipeSecurity);
         }

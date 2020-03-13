@@ -41,7 +41,11 @@
 #endif
 
 #if HAVE_RT_MSGHDR
+#if HAVE_IOS_NET_ROUTE_H
+#include "ios/net/route.h"
+#else
 #include <net/route.h>
+#endif
 #endif
 
 // Convert mask to prefix length e.g. 255.255.255.0 -> 24
@@ -373,7 +377,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
                         ecmd.cmd = ETHTOOL_GSET;
                         if (ioctl(socketfd, SIOCETHTOOL, &ifr) == 0)
                         {
-                            nii->Speed = (int)ethtool_cmd_speed(&ecmd);
+                            nii->Speed = (int64_t)ethtool_cmd_speed(&ecmd);
                             if (nii->Speed > 0)
                             {
                                 // If we did not get -1

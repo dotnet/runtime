@@ -13,7 +13,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
     public class CustomAttributeDecoderTests
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Type assembly name is different on full framework.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Type assembly name is different on .NET Framework.")]
         public void TestCustomAttributeDecoder()
         {
             using (FileStream stream = File.OpenRead(typeof(HasAttributes).GetTypeInfo().Assembly.Location))
@@ -76,7 +76,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                             break;
 
                         default:
-                            // TODO: https://github.com/dotnet/corefx/issues/6534
+                            // TODO: https://github.com/dotnet/runtime/issues/16552
                             // The other cases are missing corresponding assertions. This needs some refactoring to
                             // be data-driven. A better approach would probably be to generically compare reflection
                             // CustomAttributeData to S.R.M CustomAttributeValue for every test attribute applied.

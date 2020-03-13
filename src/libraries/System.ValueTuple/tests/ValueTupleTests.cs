@@ -222,7 +222,8 @@ namespace System.Tests
 
             public void IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException()
             {
-                // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13429
+                // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+                // https://github.com/dotnet/runtime/issues/19275
                 IStructuralEquatable equatable = (IStructuralEquatable)valueTuple;
                 if (valueTuple is ValueTuple)
                 {
@@ -236,7 +237,8 @@ namespace System.Tests
 
             public void IStructuralEquatable_GetHashCode_NullComparer_ThrowsNullReferenceException()
             {
-                // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13429
+                // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+                // https://github.com/dotnet/runtime/issues/19275
                 IStructuralEquatable equatable = (IStructuralEquatable)valueTuple;
                 if (valueTuple is ValueTuple)
                 {
@@ -259,7 +261,8 @@ namespace System.Tests
 
             public void IStructuralComparable_NullComparer_ThrowsNullReferenceException()
             {
-                // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13429
+                // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+                // https://github.com/dotnet/runtime/issues/19275
                 IStructuralComparable comparable = (IStructuralComparable)valueTuple;
                 if (valueTuple is ValueTuple)
                 {

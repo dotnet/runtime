@@ -49,7 +49,7 @@ namespace LargeObjectTest
     {
         public static int ExitCode = 1;
 
-        public static int Main()
+        public static int Main(string[] args)
         {
             int size = 1;
             int loop = 1;

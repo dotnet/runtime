@@ -4,7 +4,7 @@
 // PNG Codec class testing unit
 //
 // Authors:
-//  Jordi Mas i Hernàndez (jordi@ximian.com)
+//  Jordi Mas i Hern?ndez (jordi@ximian.com)
 //  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // Copyright (C) 2006, 2007 Novell, Inc (http://www.novell.com)
@@ -37,7 +37,7 @@ using Xunit;
 
 namespace MonoTests.System.Drawing.Imaging
 {
-    [ActiveIssue(24354, TestPlatforms.AnyUnix)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/23691", TestPlatforms.AnyUnix)]
     public class PngCodecTest
     {
         private bool IsArm64Process()

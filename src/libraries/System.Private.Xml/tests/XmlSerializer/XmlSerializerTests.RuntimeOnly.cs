@@ -2629,7 +2629,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(39105)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/1395")]
     public static void Xml_TypeWithReadOnlyMyCollectionProperty()
     {
         var value = new TypeWithReadOnlyMyCollectionProperty();

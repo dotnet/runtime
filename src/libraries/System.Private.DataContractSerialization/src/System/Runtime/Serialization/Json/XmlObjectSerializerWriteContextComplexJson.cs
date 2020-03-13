@@ -109,7 +109,7 @@ namespace System.Runtime.Serialization.Json
                 }
                 else if (dataContractNamespace.StartsWith(Globals.DataContractXsdBaseNamespace, StringComparison.Ordinal))
                 {
-                    return string.Concat("#", dataContractNamespace.Substring(JsonGlobals.DataContractXsdBaseNamespaceLength));
+                    return string.Concat("#", dataContractNamespace.AsSpan(JsonGlobals.DataContractXsdBaseNamespaceLength));
                 }
             }
 

@@ -2430,14 +2430,14 @@ namespace System.Xml.Schema
             }
             else if (particle is XmlSchemaAny)
             {
-                sb.Append("<");
+                sb.Append('<');
                 sb.Append(((XmlSchemaAny)particle).NamespaceList.ToString());
-                sb.Append(">");
+                sb.Append('>');
             }
             else if (particle is XmlSchemaAll)
             {
                 XmlSchemaAll all = (XmlSchemaAll)particle;
-                sb.Append("[");
+                sb.Append('[');
                 bool first = true;
                 for (int i = 0; i < all.Items.Count; ++i)
                 {
@@ -2453,15 +2453,15 @@ namespace System.Xml.Schema
                     sb.Append(localElement.QualifiedName.Name);
                     if (localElement.MinOccurs == decimal.Zero)
                     {
-                        sb.Append("?");
+                        sb.Append('?');
                     }
                 }
-                sb.Append("]");
+                sb.Append(']');
             }
             else if (particle is XmlSchemaGroupBase)
             {
                 XmlSchemaGroupBase gb = (XmlSchemaGroupBase)particle;
-                sb.Append("(");
+                sb.Append('(');
                 string delimeter = (particle is XmlSchemaChoice) ? " | " : ", ";
                 bool first = true;
                 for (int i = 0; i < gb.Items.Count; ++i)
@@ -2476,7 +2476,7 @@ namespace System.Xml.Schema
                     }
                     DumpContentModelTo(sb, (XmlSchemaParticle)gb.Items[i]);
                 }
-                sb.Append(")");
+                sb.Append(')');
             }
             else
             {
@@ -2489,15 +2489,15 @@ namespace System.Xml.Schema
             }
             else if (particle.MinOccurs == decimal.Zero && particle.MaxOccurs == decimal.One)
             {
-                sb.Append("?");
+                sb.Append('?');
             }
             else if (particle.MinOccurs == decimal.Zero && particle.MaxOccurs == decimal.MaxValue)
             {
-                sb.Append("*");
+                sb.Append('*');
             }
             else if (particle.MinOccurs == decimal.One && particle.MaxOccurs == decimal.MaxValue)
             {
-                sb.Append("+");
+                sb.Append('+');
             }
             else
             {

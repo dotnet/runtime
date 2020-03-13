@@ -18,7 +18,7 @@ IID_IStream
 IID_ICLRDataTarget
 IID_ICorDebugDataTarget4
 IID_ICLRDataEnumMemoryRegionsCallback
-nativeStringResourceTable_mscorrc_debug
+nativeStringResourceTable_mscorrc
 
 ; All the # exports are prefixed with DAC_
 #PAL_CatchHardwareExceptionHolderEnter

@@ -38,8 +38,8 @@ namespace System.Reflection.Tests
 #endif
 
         //
-        // This is something no app should be doing but it does allow us to get full code coverage even when running tests on NETFX.
-        // NETFX can't directly invoke the Reflection apis added in NetCore, but we do know the underlying MetadataLoadContext Reflection objects
+        // This is something no app should be doing but it does allow us to get full code coverage even when running tests on .NET Framework.
+        // .NET Framework can't directly invoke the Reflection apis added in NetCore, but we do know the underlying MetadataLoadContext Reflection objects
         // implement the full NetCore set even in its NetStandard. We just have to do a little sneaky Reflection to get to it.
         //
         public static T CallUsingReflection<T>(this object _this, string name, Type[] parameterTypes = null, object[] arguments = null)

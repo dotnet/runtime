@@ -18,14 +18,14 @@ namespace System.ComponentModel.Composition.AttributedModel
     {
         private readonly Type _type;
         private readonly bool _ignoreConstructorImports = false;
-        private readonly ICompositionElement _origin;
-        private PartCreationPolicyAttribute _partCreationPolicy = null;
-        private ConstructorInfo _constructor;
-        private IEnumerable<ExportDefinition> _exports;
-        private IEnumerable<ImportDefinition> _imports;
-        private HashSet<string> _contractNamesOnNonInterfaces;
+        private readonly ICompositionElement? _origin;
+        private PartCreationPolicyAttribute? _partCreationPolicy = null;
+        private ConstructorInfo? _constructor;
+        private IEnumerable<ExportDefinition>? _exports;
+        private IEnumerable<ImportDefinition>? _imports;
+        private HashSet<string>? _contractNamesOnNonInterfaces;
 
-        public AttributedPartCreationInfo(Type type, PartCreationPolicyAttribute partCreationPolicy, bool ignoreConstructorImports, ICompositionElement origin)
+        public AttributedPartCreationInfo(Type type, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
         {
             if (type == null)
             {
@@ -48,7 +48,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             return new Lazy<Type>(GetPartType, LazyThreadSafetyMode.PublicationOnly);
         }
 
-        public ConstructorInfo GetConstructor()
+        public ConstructorInfo? GetConstructor()
         {
             if (_constructor == null && !_ignoreConstructorImports)
             {
@@ -57,7 +57,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             return _constructor;
         }
 
-        public IDictionary<string, object> GetMetadata()
+        public IDictionary<string, object?> GetMetadata()
         {
             return _type.GetPartMetadataForType(CreationPolicy);
         }
@@ -65,13 +65,13 @@ namespace System.ComponentModel.Composition.AttributedModel
         public IEnumerable<ExportDefinition> GetExports()
         {
             DiscoverExportsAndImports();
-            return _exports;
+            return _exports!;
         }
 
         public IEnumerable<ImportDefinition> GetImports()
         {
             DiscoverExportsAndImports();
-            return _imports;
+            return _imports!;
         }
 
         public bool IsDisposalRequired
@@ -160,7 +160,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             get { return GetDisplayName(); }
         }
 
-        ICompositionElement ICompositionElement.Origin
+        ICompositionElement? ICompositionElement.Origin
         {
             get { return _origin; }
         }
@@ -188,7 +188,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             }
         }
 
-        private static ConstructorInfo SelectPartConstructor(Type type)
+        private static ConstructorInfo? SelectPartConstructor(Type type)
         {
             if (type == null)
             {
@@ -218,8 +218,8 @@ namespace System.ComponentModel.Composition.AttributedModel
             }
 
             // Select the marked constructor if there is exactly one marked
-            ConstructorInfo importingConstructor = null;
-            ConstructorInfo defaultConstructor = null;
+            ConstructorInfo? importingConstructor = null;
+            ConstructorInfo? defaultConstructor = null;
             foreach (ConstructorInfo constructor in constructors)
             {
                 // an importing constructor found
@@ -324,9 +324,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         private AttributedExportDefinition CreateExportDefinition(MemberInfo member, ExportAttribute exportAttribute)
         {
-            string contractName = null;
-            Type typeIdentityType = null;
-            member.GetContractInfoFromExport(exportAttribute, out typeIdentityType, out contractName);
+            member.GetContractInfoFromExport(exportAttribute, out Type? typeIdentityType, out string contractName);
 
             return new AttributedExportDefinition(this, member, exportAttribute, typeIdentityType, contractName);
         }
@@ -388,7 +386,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             // in the hiearchy from most derived to the lowest base type, followed
             // by all the interfaces that this type implements.
 
-            Type currentType = type.BaseType;
+            Type? currentType = type.BaseType;
 
             if (currentType == null)
             {
@@ -436,7 +434,7 @@ namespace System.ComponentModel.Composition.AttributedModel
                 imports.Add(importDefinition);
             }
 
-            ConstructorInfo constructor = GetConstructor();
+            ConstructorInfo? constructor = GetConstructor();
 
             if (constructor != null)
             {
@@ -465,7 +463,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             // Walk up the type chain until you hit object.
             if (type.BaseType != null)
             {
-                Type baseType = type.BaseType;
+                Type? baseType = type.BaseType;
 
                 // Stopping at object instead of null to help with performance. It is a noticable performance
                 // gain (~5%) if we don't have to try and pull the attributes we know don't exist on object.

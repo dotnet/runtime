@@ -78,27 +78,28 @@ namespace System.Tests
             yield return new object[] { ulong.MinValue.ToString(), false, (UInt64Enum)ulong.MinValue };
             yield return new object[] { ulong.MaxValue.ToString(), false, (UInt64Enum)ulong.MaxValue };
 
-#if NETCOREAPP
-            // Char
-            yield return new object[] { "Value1", false, Enum.ToObject(s_charEnumType, (char)1) };
-            yield return new object[] { "vaLue2", true, Enum.ToObject(s_charEnumType, (char)2) };
-            yield return new object[] { "1", false, Enum.ToObject(s_charEnumType, '1') };
-
-            // Bool
-            yield return new object[] { "Value1", false, Enum.ToObject(s_boolEnumType, true) };
-            yield return new object[] { "vaLue2", true, Enum.ToObject(s_boolEnumType, false) };
-
-            if (!PlatformDetection.IsMonoRuntime) // tracked in issue #36887
+            if (PlatformDetection.IsReflectionEmitSupported)
             {
-                // Single - parses successfully, but doesn't properly represent the underlying value
-                yield return new object[] { "Value1", false, Enum.GetValues(s_floatEnumType).GetValue(0) };
-                yield return new object[] { "vaLue2", true, Enum.GetValues(s_floatEnumType).GetValue(0) };
+                // Char
+                yield return new object[] { "Value1", false, Enum.ToObject(s_charEnumType, (char)1) };
+                yield return new object[] { "vaLue2", true, Enum.ToObject(s_charEnumType, (char)2) };
+                yield return new object[] { "1", false, Enum.ToObject(s_charEnumType, '1') };
 
-                // Double - parses successfully, but doesn't properly represent the underlying value
-                yield return new object[] { "Value1", false, Enum.GetValues(s_doubleEnumType).GetValue(0) };
-                yield return new object[] { "vaLue2", true, Enum.GetValues(s_doubleEnumType).GetValue(0) };
+                // Bool
+                yield return new object[] { "Value1", false, Enum.ToObject(s_boolEnumType, true) };
+                yield return new object[] { "vaLue2", true, Enum.ToObject(s_boolEnumType, false) };
+
+                if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/29266")]
+                {
+                    // Single - parses successfully, but doesn't properly represent the underlying value
+                    yield return new object[] { "Value1", false, Enum.GetValues(s_floatEnumType).GetValue(0) };
+                    yield return new object[] { "vaLue2", true, Enum.GetValues(s_floatEnumType).GetValue(0) };
+
+                    // Double - parses successfully, but doesn't properly represent the underlying value
+                    yield return new object[] { "Value1", false, Enum.GetValues(s_doubleEnumType).GetValue(0) };
+                    yield return new object[] { "vaLue2", true, Enum.GetValues(s_doubleEnumType).GetValue(0) };
+                }
             }
-#endif
 
             // SimpleEnum
             yield return new object[] { "Red", false, SimpleEnum.Red };
@@ -189,33 +190,34 @@ namespace System.Tests
             yield return new object[] { typeof(UInt64Enum), "-1", false, typeof(OverflowException) };
             yield return new object[] { typeof(UInt64Enum), "18446744073709551616", false, typeof(OverflowException) };
 
-#if NETCOREAPP
-            // Char
-            yield return new object[] { s_charEnumType, ((char)1).ToString(), false, typeof(ArgumentException) };
-            yield return new object[] { s_charEnumType, ((char)5).ToString(), false, typeof(ArgumentException) };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                // Char
+                yield return new object[] { s_charEnumType, ((char)1).ToString(), false, typeof(ArgumentException) };
+                yield return new object[] { s_charEnumType, ((char)5).ToString(), false, typeof(ArgumentException) };
 
-            // Bool
-            yield return new object[] { s_boolEnumType, bool.TrueString, false, typeof(ArgumentException) };
-            yield return new object[] { s_boolEnumType, bool.FalseString, false, typeof(ArgumentException) };
+                // Bool
+                yield return new object[] { s_boolEnumType, bool.TrueString, false, typeof(ArgumentException) };
+                yield return new object[] { s_boolEnumType, bool.FalseString, false, typeof(ArgumentException) };
 
-            // Single
-            yield return new object[] { s_floatEnumType, "1", false, typeof(ArgumentException) };
-            yield return new object[] { s_floatEnumType, "5", false, typeof(ArgumentException) };
-            yield return new object[] { s_floatEnumType, "1.0", false, typeof(ArgumentException) };
+                // Single
+                yield return new object[] { s_floatEnumType, "1", false, typeof(ArgumentException) };
+                yield return new object[] { s_floatEnumType, "5", false, typeof(ArgumentException) };
+                yield return new object[] { s_floatEnumType, "1.0", false, typeof(ArgumentException) };
 
-            // Double
-            yield return new object[] { s_doubleEnumType, "1", false, typeof(ArgumentException) };
-            yield return new object[] { s_doubleEnumType, "5", false, typeof(ArgumentException) };
-            yield return new object[] { s_doubleEnumType, "1.0", false, typeof(ArgumentException) };
+                // Double
+                yield return new object[] { s_doubleEnumType, "1", false, typeof(ArgumentException) };
+                yield return new object[] { s_doubleEnumType, "5", false, typeof(ArgumentException) };
+                yield return new object[] { s_doubleEnumType, "1.0", false, typeof(ArgumentException) };
 
-            // IntPtr
-            yield return new object[] { s_intPtrEnumType, "1", false, typeof(InvalidCastException) };
-            yield return new object[] { s_intPtrEnumType, "5", false, typeof(InvalidCastException) };
+                // IntPtr
+                yield return new object[] { s_intPtrEnumType, "1", false, typeof(InvalidCastException) };
+                yield return new object[] { s_intPtrEnumType, "5", false, typeof(InvalidCastException) };
 
-            // UIntPtr
-            yield return new object[] { s_uintPtrEnumType, "1", false, typeof(InvalidCastException) };
-            yield return new object[] { s_uintPtrEnumType, "5", false, typeof(InvalidCastException) };
-#endif
+                // UIntPtr
+                yield return new object[] { s_uintPtrEnumType, "1", false, typeof(InvalidCastException) };
+                yield return new object[] { s_uintPtrEnumType, "5", false, typeof(InvalidCastException) };
+            }
         }
 
         [Theory]
@@ -354,20 +356,21 @@ namespace System.Tests
             yield return new object[] { typeof(UInt64Enum), ulong.MaxValue, "Max" };
             yield return new object[] { typeof(UInt64Enum), 3UL, null };
 
-#if NETCOREAPP
-            // Char
-            yield return new object[] { s_charEnumType, Enum.Parse(s_charEnumType, "Value1"), "Value1" };
-            yield return new object[] { s_charEnumType, Enum.Parse(s_charEnumType, "Value2"), "Value2" };
-            yield return new object[] { s_charEnumType, (char)1, "Value1"  };
-            yield return new object[] { s_charEnumType, (char)2, "Value2" };
-            yield return new object[] { s_charEnumType, (char)4, null };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                // Char
+                yield return new object[] { s_charEnumType, Enum.Parse(s_charEnumType, "Value1"), "Value1" };
+                yield return new object[] { s_charEnumType, Enum.Parse(s_charEnumType, "Value2"), "Value2" };
+                yield return new object[] { s_charEnumType, (char)1, "Value1" };
+                yield return new object[] { s_charEnumType, (char)2, "Value2" };
+                yield return new object[] { s_charEnumType, (char)4, null };
 
-            // Bool
-            yield return new object[] { s_boolEnumType, Enum.Parse(s_boolEnumType, "Value1"), "Value1" };
-            yield return new object[] { s_boolEnumType, Enum.Parse(s_boolEnumType, "Value2"), "Value2" };
-            yield return new object[] { s_boolEnumType, true, "Value1" };
-            yield return new object[] { s_boolEnumType, false, "Value2" };
-#endif
+                // Bool
+                yield return new object[] { s_boolEnumType, Enum.Parse(s_boolEnumType, "Value1"), "Value1" };
+                yield return new object[] { s_boolEnumType, Enum.Parse(s_boolEnumType, "Value2"), "Value2" };
+                yield return new object[] { s_boolEnumType, true, "Value1" };
+                yield return new object[] { s_boolEnumType, false, "Value2" };
+            }
         }
 
         [Theory]
@@ -513,22 +516,23 @@ namespace System.Tests
             yield return new object[] { typeof(UInt64Enum), (ulong)1, true };
             yield return new object[] { typeof(UInt64Enum), (ulong)99, false };
 
-#if NETCOREAPP
-            // Char
-            yield return new object[] { s_charEnumType, "Value1", true };
-            yield return new object[] { s_charEnumType, "None", false };
-            yield return new object[] { s_charEnumType, Enum.Parse(s_charEnumType, "Value1"), true };
-            yield return new object[] { s_charEnumType, (char)1, true };
-            yield return new object[] { s_charEnumType, (char)99, false };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                // Char
+                yield return new object[] { s_charEnumType, "Value1", true };
+                yield return new object[] { s_charEnumType, "None", false };
+                yield return new object[] { s_charEnumType, Enum.Parse(s_charEnumType, "Value1"), true };
+                yield return new object[] { s_charEnumType, (char)1, true };
+                yield return new object[] { s_charEnumType, (char)99, false };
 
-            // Boolean
-            yield return new object[] { s_boolEnumType, "Value1", true };
-            yield return new object[] { s_boolEnumType, "None", false };
-            yield return new object[] { s_boolEnumType, Enum.Parse(s_boolEnumType, "Value1"), true };
-            yield return new object[] { s_boolEnumType, "Value1", true };
-            yield return new object[] { s_boolEnumType, true, true };
-            yield return new object[] { s_boolEnumType, false, true };
-#endif
+                // Boolean
+                yield return new object[] { s_boolEnumType, "Value1", true };
+                yield return new object[] { s_boolEnumType, "None", false };
+                yield return new object[] { s_boolEnumType, Enum.Parse(s_boolEnumType, "Value1"), true };
+                yield return new object[] { s_boolEnumType, "Value1", true };
+                yield return new object[] { s_boolEnumType, true, true };
+                yield return new object[] { s_boolEnumType, false, true };
+            }
         }
 
         [Theory]
@@ -632,58 +636,59 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)0x3f06, (UInt64Enum)0x0010, false };
             yield return new object[] { (UInt64Enum)0x3f06, (UInt64Enum)0x3f16, false };
 
-#if NETCOREAPP
-            // Char
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3000"), true };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x0f06"), true };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x1000"), true };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x0000"), true };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f06"), true };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x0010"), false };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f16"), false };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                // Char
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3000"), true };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x0f06"), true };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x1000"), true };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x0000"), true };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f06"), true };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x0010"), false };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f16"), false };
 
-            // Bool
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), true };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), true };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value2"), true };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1"), false };
+                // Bool
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), true };
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), true };
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value2"), true };
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1"), false };
 
-            // Single
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x0000), true };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x0f06), true };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x1000), true };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x0000), true };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x3f06), true };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x0010), false };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x3f16), false };
+                // Single
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x0000), true };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x0f06), true };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x1000), true };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x0000), true };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x3f06), true };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x0010), false };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x3f16), false };
 
-            // Double
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x0000), true };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x0f06), true };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x1000), true };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x0000), true };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x3f06), true };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x0010), false };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x3f16), false };
+                // Double
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x0000), true };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x0f06), true };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x1000), true };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x0000), true };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x3f06), true };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x0010), false };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 0x3f06), Enum.ToObject(s_doubleEnumType, 0x3f16), false };
 
-            // IntPtr
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x0000), true };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x0f06), true };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x1000), true };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x0000), true };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x3f06), true };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x0010), false };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x3f16), false };
+                // IntPtr
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x0000), true };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x0f06), true };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x1000), true };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x0000), true };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x3f06), true };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x0010), false };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 0x3f06), Enum.ToObject(s_intPtrEnumType, 0x3f16), false };
 
-            // UIntPtr
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x0000), true };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x0f06), true };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x1000), true };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x0000), true };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x3f06), true };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x0010), false };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x3f16), false };
-#endif
+                // UIntPtr
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x0000), true };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x0f06), true };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x1000), true };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x0000), true };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x3f06), true };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x0010), false };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 0x3f06), Enum.ToObject(s_uintPtrEnumType, 0x3f16), false };
+            }
         }
 
         [Theory]
@@ -748,15 +753,16 @@ namespace System.Tests
             yield return new object[] { typeof(UInt64Enum), (ulong)77, (UInt64Enum)77 };
             yield return new object[] { typeof(UInt64Enum), (ulong)0x0123456789abcdefL, (UInt64Enum)0x0123456789abcdefL };
 
-#if NETCOREAPP
-            // Char
-            yield return new object[] { s_charEnumType, (char)1, Enum.Parse(s_charEnumType, "Value1") };
-            yield return new object[] { s_charEnumType, (char)2, Enum.Parse(s_charEnumType, "Value2") };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                // Char
+                yield return new object[] { s_charEnumType, (char)1, Enum.Parse(s_charEnumType, "Value1") };
+                yield return new object[] { s_charEnumType, (char)2, Enum.Parse(s_charEnumType, "Value2") };
 
-            // Bool
-            yield return new object[] { s_boolEnumType, true, Enum.Parse(s_boolEnumType, "Value1") };
-            yield return new object[] { s_boolEnumType, false, Enum.Parse(s_boolEnumType, "Value2") };
-#endif
+                // Bool
+                yield return new object[] { s_boolEnumType, true, Enum.Parse(s_boolEnumType, "Value1") };
+                yield return new object[] { s_boolEnumType, false, Enum.Parse(s_boolEnumType, "Value2") };
+            }
         }
 
         [Theory]
@@ -771,9 +777,9 @@ namespace System.Tests
             yield return new object[] { null, typeof(ArgumentNullException) };
             yield return new object[] { typeof(Enum), typeof(ArgumentException) };
             yield return new object[] { typeof(object), typeof(ArgumentException) };
-#if NETCOREAPP
-            yield return new object[] { GetNonRuntimeEnumTypeBuilder(typeof(int)), typeof(ArgumentException) };
-#endif
+
+            if (PlatformDetection.IsReflectionEmitSupported)
+                yield return new object[] { GetNonRuntimeEnumTypeBuilder(typeof(int)), typeof(ArgumentException) };
         }
 
         [Theory]
@@ -796,12 +802,14 @@ namespace System.Tests
         {
             yield return new object[] { typeof(SimpleEnum), null, typeof(ArgumentNullException) };
             yield return new object[] { typeof(SimpleEnum), "Hello", typeof(ArgumentException) };
-#if NETCOREAPP
-            yield return new object[] { s_floatEnumType, 1.0f, typeof(ArgumentException) };
-            yield return new object[] { s_doubleEnumType, 1.0, typeof(ArgumentException) };
-            yield return new object[] { s_intPtrEnumType, (IntPtr)1, typeof(ArgumentException) };
-            yield return new object[] { s_uintPtrEnumType, (UIntPtr)1, typeof(ArgumentException) };
-#endif
+
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                yield return new object[] { s_floatEnumType, 1.0f, typeof(ArgumentException) };
+                yield return new object[] { s_doubleEnumType, 1.0, typeof(ArgumentException) };
+                yield return new object[] { s_intPtrEnumType, (IntPtr)1, typeof(ArgumentException) };
+                yield return new object[] { s_uintPtrEnumType, (UIntPtr)1, typeof(ArgumentException) };
+            }
         }
 
         [Theory]
@@ -882,55 +890,56 @@ namespace System.Tests
             yield return new object[] { UInt64Enum.One, new object(), false };
             yield return new object[] { UInt64Enum.One, null, false };
 
-#if NETCOREAPP
-            // Char
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value1"), true };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), false };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), UInt16Enum.One, false };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), (char)1, false };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), new object(), false };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), null, false };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                // Char
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value1"), true };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), false };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), UInt16Enum.One, false };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), (char)1, false };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), new object(), false };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), null, false };
 
-            // Bool
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), true };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), false };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), UInt16Enum.One, false };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), true, false };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), new object(), false };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), null, false };
+                // Bool
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), true };
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), false };
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), UInt16Enum.One, false };
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), true, false };
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), new object(), false };
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), null, false };
 
-            // Single
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 1), true };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 2), false };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_doubleEnumType, 1), false };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1), 1.0f, false };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1), new object(), false };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1), null, false };
+                // Single
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 1), true };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 2), false };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_doubleEnumType, 1), false };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1), 1.0f, false };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1), new object(), false };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1), null, false };
 
-            // Double
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), Enum.ToObject(s_doubleEnumType, 1), true };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), Enum.ToObject(s_doubleEnumType, 2), false };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), Enum.ToObject(s_floatEnumType, 1), false };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), 1.0, false };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), new object(), false };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), null, false };
+                // Double
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), Enum.ToObject(s_doubleEnumType, 1), true };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), Enum.ToObject(s_doubleEnumType, 2), false };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), Enum.ToObject(s_floatEnumType, 1), false };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), 1.0, false };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), new object(), false };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), null, false };
 
-            // IntPtr
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), Enum.ToObject(s_intPtrEnumType, 1), true };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), Enum.ToObject(s_intPtrEnumType, 2), false };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), Enum.ToObject(s_uintPtrEnumType, 1), false };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), (IntPtr)1, false };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), new object(), false };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), null, false };
+                // IntPtr
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), Enum.ToObject(s_intPtrEnumType, 1), true };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), Enum.ToObject(s_intPtrEnumType, 2), false };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), Enum.ToObject(s_uintPtrEnumType, 1), false };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), (IntPtr)1, false };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), new object(), false };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), null, false };
 
-            // UIntPtr
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), Enum.ToObject(s_uintPtrEnumType, 1), true };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), Enum.ToObject(s_uintPtrEnumType, 2), false };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), Enum.ToObject(s_intPtrEnumType, 1), false };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), (UIntPtr)1, false };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), new object(), false };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), null, false };
-#endif
+                // UIntPtr
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), Enum.ToObject(s_uintPtrEnumType, 1), true };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), Enum.ToObject(s_uintPtrEnumType, 2), false };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), Enum.ToObject(s_intPtrEnumType, 1), false };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), (UIntPtr)1, false };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), new object(), false };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), null, false };
+            }
         }
 
         [Theory]
@@ -992,43 +1001,44 @@ namespace System.Tests
             yield return new object[] { UInt64Enum.One, UInt64Enum.Max, -1 };
             yield return new object[] { UInt64Enum.One, null, 1 };
 
-#if NETCOREAPP
-            // Char
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value2"), 0 };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value1"), 1 };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), -1 };
-            yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), null, 1 };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                // Char
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value2"), 0 };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value1"), 1 };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), -1 };
+                yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), null, 1 };
 
-            // Bool
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), 0 };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), 1 };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1"), -1 };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), null, 1 };
+                // Bool
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), 0 };
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), 1 };
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1"), -1 };
+                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), null, 1 };
 
-            // Single
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 1), 0 };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 2), -1 };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 3), Enum.ToObject(s_floatEnumType, 2), 1 };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1), null, 1 };
+                // Single
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 1), 0 };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 2), -1 };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 3), Enum.ToObject(s_floatEnumType, 2), 1 };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1), null, 1 };
 
-            // Double
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), Enum.ToObject(s_doubleEnumType, 1), 0 };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), Enum.ToObject(s_doubleEnumType, 2), -1 };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 3), Enum.ToObject(s_doubleEnumType, 2), 1 };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), null, 1 };
+                // Double
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), Enum.ToObject(s_doubleEnumType, 1), 0 };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), Enum.ToObject(s_doubleEnumType, 2), -1 };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 3), Enum.ToObject(s_doubleEnumType, 2), 1 };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), null, 1 };
 
-            // IntPtr
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), Enum.ToObject(s_intPtrEnumType, 1), 0 };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), Enum.ToObject(s_intPtrEnumType, 2), -1 };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 3), Enum.ToObject(s_intPtrEnumType, 2), 1 };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), null, 1 };
+                // IntPtr
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), Enum.ToObject(s_intPtrEnumType, 1), 0 };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), Enum.ToObject(s_intPtrEnumType, 2), -1 };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 3), Enum.ToObject(s_intPtrEnumType, 2), 1 };
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1), null, 1 };
 
-            // UIntPtr
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), Enum.ToObject(s_uintPtrEnumType, 1), 0 };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), Enum.ToObject(s_uintPtrEnumType, 2), -1 };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 3), Enum.ToObject(s_uintPtrEnumType, 2), 1 };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), null, 1 };
-#endif
+                // UIntPtr
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), Enum.ToObject(s_uintPtrEnumType, 1), 0 };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), Enum.ToObject(s_uintPtrEnumType, 2), -1 };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 3), Enum.ToObject(s_uintPtrEnumType, 2), 1 };
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 1), null, 1 };
+            }
         }
 
         [Theory]
@@ -1055,14 +1065,16 @@ namespace System.Tests
             yield return new object[] { typeof(UInt32Enum), typeof(uint) };
             yield return new object[] { typeof(Int64Enum), typeof(long) };
             yield return new object[] { typeof(UInt64Enum), typeof(ulong) };
-#if NETCOREAPP
-            yield return new object[] { s_charEnumType, typeof(char) };
-            yield return new object[] { s_boolEnumType, typeof(bool) };
-            yield return new object[] { s_floatEnumType, typeof(float) };
-            yield return new object[] { s_doubleEnumType, typeof(double) };
-            yield return new object[] { s_intPtrEnumType, typeof(IntPtr) };
-            yield return new object[] { s_uintPtrEnumType, typeof(UIntPtr) };
-#endif
+
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                yield return new object[] { s_charEnumType, typeof(char) };
+                yield return new object[] { s_boolEnumType, typeof(bool) };
+                yield return new object[] { s_floatEnumType, typeof(float) };
+                yield return new object[] { s_doubleEnumType, typeof(double) };
+                yield return new object[] { s_intPtrEnumType, typeof(IntPtr) };
+                yield return new object[] { s_uintPtrEnumType, typeof(UIntPtr) };
+            }
         }
 
         [Theory]
@@ -1153,55 +1165,56 @@ namespace System.Tests
                 new object[] { UInt64Enum.Min, UInt64Enum.One, UInt64Enum.Two, UInt64Enum.Max }
             };
 
-#if NETCOREAPP
-            // Char
-            yield return new object[]
+            if (PlatformDetection.IsReflectionEmitSupported)
             {
-                s_charEnumType,
-                new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" },
-                new object[] { Enum.Parse(s_charEnumType, "Value0x0000"), Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value0x0010"), Enum.Parse(s_charEnumType, "Value0x0f06"), Enum.Parse(s_charEnumType, "Value0x1000"), Enum.Parse(s_charEnumType, "Value0x3000"), Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f16") }
-            };
+                // Char
+                yield return new object[]
+                {
+                    s_charEnumType,
+                    new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" },
+                    new object[] { Enum.Parse(s_charEnumType, "Value0x0000"), Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value0x0010"), Enum.Parse(s_charEnumType, "Value0x0f06"), Enum.Parse(s_charEnumType, "Value0x1000"), Enum.Parse(s_charEnumType, "Value0x3000"), Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f16") }
+                };
 
-            // Bool
-            yield return new object[]
-            {
-                s_boolEnumType,
-                new string[] { "Value2", "Value1" },
-                new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1") }
-            };
+                // Bool
+                yield return new object[]
+                {
+                    s_boolEnumType,
+                    new string[] { "Value2", "Value1" },
+                    new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1") }
+                };
 
-            // Single
-            yield return new object[]
-            {
-                s_floatEnumType,
-                new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" },
-                new object[] { Enum.Parse(s_floatEnumType, "Value1"), Enum.Parse(s_floatEnumType, "Value2"), Enum.Parse(s_floatEnumType, "Value0x3f06"), Enum.Parse(s_floatEnumType, "Value0x3000"), Enum.Parse(s_floatEnumType, "Value0x0f06"), Enum.Parse(s_floatEnumType, "Value0x1000"), Enum.Parse(s_floatEnumType, "Value0x0000"), Enum.Parse(s_floatEnumType, "Value0x0010"), Enum.Parse(s_floatEnumType, "Value0x3f16") }
-            };
+                // Single
+                yield return new object[]
+                {
+                    s_floatEnumType,
+                    new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" },
+                    new object[] { Enum.Parse(s_floatEnumType, "Value1"), Enum.Parse(s_floatEnumType, "Value2"), Enum.Parse(s_floatEnumType, "Value0x3f06"), Enum.Parse(s_floatEnumType, "Value0x3000"), Enum.Parse(s_floatEnumType, "Value0x0f06"), Enum.Parse(s_floatEnumType, "Value0x1000"), Enum.Parse(s_floatEnumType, "Value0x0000"), Enum.Parse(s_floatEnumType, "Value0x0010"), Enum.Parse(s_floatEnumType, "Value0x3f16") }
+                };
 
-            // Double
-            yield return new object[]
-            {
-                s_doubleEnumType,
-                new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" },
-                new object[] { Enum.Parse(s_doubleEnumType, "Value1"), Enum.Parse(s_doubleEnumType, "Value2"), Enum.Parse(s_doubleEnumType, "Value0x3f06"), Enum.Parse(s_doubleEnumType, "Value0x3000"), Enum.Parse(s_doubleEnumType, "Value0x0f06"), Enum.Parse(s_doubleEnumType, "Value0x1000"), Enum.Parse(s_doubleEnumType, "Value0x0000"), Enum.Parse(s_doubleEnumType, "Value0x0010"), Enum.Parse(s_doubleEnumType, "Value0x3f16") }
-            };
+                // Double
+                yield return new object[]
+                {
+                    s_doubleEnumType,
+                    new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" },
+                    new object[] { Enum.Parse(s_doubleEnumType, "Value1"), Enum.Parse(s_doubleEnumType, "Value2"), Enum.Parse(s_doubleEnumType, "Value0x3f06"), Enum.Parse(s_doubleEnumType, "Value0x3000"), Enum.Parse(s_doubleEnumType, "Value0x0f06"), Enum.Parse(s_doubleEnumType, "Value0x1000"), Enum.Parse(s_doubleEnumType, "Value0x0000"), Enum.Parse(s_doubleEnumType, "Value0x0010"), Enum.Parse(s_doubleEnumType, "Value0x3f16") }
+                };
 
-            // IntPtr
-            yield return new object[]
-            {
-                s_intPtrEnumType,
-                new string[0],
-                new object[0]
-            };
+                // IntPtr
+                yield return new object[]
+                {
+                    s_intPtrEnumType,
+                    new string[0],
+                    new object[0]
+                };
 
-            // UIntPtr
-            yield return new object[]
-            {
-                s_uintPtrEnumType,
-                new string[0],
-                new object[0]
-            };
-#endif
+                // UIntPtr
+                yield return new object[]
+                {
+                    s_uintPtrEnumType,
+                    new string[0],
+                    new object[0]
+                };
+            }
         }
 
         [Theory]
@@ -1296,28 +1309,29 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)99, "D", "99" };
             yield return new object[] { UInt64Enum.Max, "D", "18446744073709551615" };
 
-#if NETCOREAPP
-            // "D": Char
-            yield return new object[] { Enum.ToObject(s_charEnumType, (char)0), "D", ((char)0).ToString() };
-            yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "D", ((char)1).ToString() };
-            yield return new object[] { Enum.ToObject(s_charEnumType, (char)2), "D", ((char)2).ToString() };
-            yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "D", char.MaxValue.ToString() };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                // "D": Char
+                yield return new object[] { Enum.ToObject(s_charEnumType, (char)0), "D", ((char)0).ToString() };
+                yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "D", ((char)1).ToString() };
+                yield return new object[] { Enum.ToObject(s_charEnumType, (char)2), "D", ((char)2).ToString() };
+                yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "D", char.MaxValue.ToString() };
 
-            // "D:" Bool
-            yield return new object[] { Enum.ToObject(s_boolEnumType, true), "D", bool.TrueString };
-            yield return new object[] { Enum.ToObject(s_boolEnumType, false), "D", bool.FalseString };
-            yield return new object[] { Enum.ToObject(s_boolEnumType, 123), "D", bool.TrueString };
+                // "D:" Bool
+                yield return new object[] { Enum.ToObject(s_boolEnumType, true), "D", bool.TrueString };
+                yield return new object[] { Enum.ToObject(s_boolEnumType, false), "D", bool.FalseString };
+                yield return new object[] { Enum.ToObject(s_boolEnumType, 123), "D", bool.TrueString };
 
-            // "D": Single
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 0), "D", "0" };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, 1), "D", float.Epsilon.ToString() };
-            yield return new object[] { Enum.ToObject(s_floatEnumType, int.MaxValue), "D", float.NaN.ToString() };
+                // "D": Single
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 0), "D", "0" };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, 1), "D", float.Epsilon.ToString() };
+                yield return new object[] { Enum.ToObject(s_floatEnumType, int.MaxValue), "D", float.NaN.ToString() };
 
-            // "D": Double
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 0), "D", "0" };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), "D", double.Epsilon.ToString() };
-            yield return new object[] { Enum.ToObject(s_doubleEnumType, long.MaxValue), "D", double.NaN.ToString() };
-#endif
+                // "D": Double
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 0), "D", "0" };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, 1), "D", double.Epsilon.ToString() };
+                yield return new object[] { Enum.ToObject(s_doubleEnumType, long.MaxValue), "D", double.NaN.ToString() };
+            }
 
             // "D": SimpleEnum
             yield return new object[] { SimpleEnum.Red, "D", "1" };
@@ -1378,19 +1392,20 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)99, "X", "0000000000000063" };
             yield return new object[] { UInt64Enum.Max, "X", "FFFFFFFFFFFFFFFF" };
 
-#if NETCOREAPP
-            // "X": Char
-            yield return new object[] { Enum.ToObject(s_charEnumType, (char)0), "X", "0000" };
-            yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "X", "0001" };
-            yield return new object[] { Enum.ToObject(s_charEnumType, (char)2), "X", "0002" };
-            yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "X", "FFFF" };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                // "X": Char
+                yield return new object[] { Enum.ToObject(s_charEnumType, (char)0), "X", "0000" };
+                yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "X", "0001" };
+                yield return new object[] { Enum.ToObject(s_charEnumType, (char)2), "X", "0002" };
+                yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "X", "FFFF" };
 
 
-            // "X": Bool
-            yield return new object[] { Enum.ToObject(s_boolEnumType, false), "X", "00" };
-            yield return new object[] { Enum.ToObject(s_boolEnumType, true), "X", "01" };
-            yield return new object[] { Enum.ToObject(s_boolEnumType, 123), "X", "01" };
-#endif
+                // "X": Bool
+                yield return new object[] { Enum.ToObject(s_boolEnumType, false), "X", "00" };
+                yield return new object[] { Enum.ToObject(s_boolEnumType, true), "X", "01" };
+                yield return new object[] { Enum.ToObject(s_boolEnumType, 123), "X", "01" };
+            }
 
             // "X": SimpleEnum
             yield return new object[] { SimpleEnum.Red, "X", "00000001" };
@@ -1443,23 +1458,24 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)5, "F", "5" };
             yield return new object[] { UInt64Enum.Max, "F", "Max" };
 
-#if NETCOREAPP
-            // "F": Char
-            yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "F", "Value1" };
-            yield return new object[] { Enum.ToObject(s_charEnumType, (char)(1 | 2)), "F", "Value1, Value2" };
-            yield return new object[] { Enum.ToObject(s_charEnumType, (char)5), "F", ((char)5).ToString() };
-            yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "F", char.MaxValue.ToString() };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                // "F": Char
+                yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "F", "Value1" };
+                yield return new object[] { Enum.ToObject(s_charEnumType, (char)(1 | 2)), "F", "Value1, Value2" };
+                yield return new object[] { Enum.ToObject(s_charEnumType, (char)5), "F", ((char)5).ToString() };
+                yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "F", char.MaxValue.ToString() };
 
-            // "F": Bool
-            yield return new object[] { Enum.ToObject(s_boolEnumType, true), "F", "Value1" };
-            yield return new object[] { Enum.ToObject(s_boolEnumType, false), "F", "Value2" };
+                // "F": Bool
+                yield return new object[] { Enum.ToObject(s_boolEnumType, true), "F", "Value1" };
+                yield return new object[] { Enum.ToObject(s_boolEnumType, false), "F", "Value2" };
 
-            // "F": IntPtr
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 5), "F", "5" };
+                // "F": IntPtr
+                yield return new object[] { Enum.ToObject(s_intPtrEnumType, 5), "F", "5" };
 
-            // "F": UIntPtr
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 5), "F", "5" };
-#endif
+                // "F": UIntPtr
+                yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 5), "F", "5" };
+            }
 
             // "F": SimpleEnum
             yield return new object[] { SimpleEnum.Red, "F", "Red" };
@@ -1470,10 +1486,11 @@ namespace System.Tests
             // "F": Flags Attribute
             yield return new object[] { AttributeTargets.Class | AttributeTargets.Delegate, "F", "Class, Delegate" };
 
-#if NETCOREAPP
-            // "G": Char
-            yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "G", char.MaxValue.ToString() };
-#endif
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                // "G": Char
+                yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "G", char.MaxValue.ToString() };
+            }
 
             // "G": SByte
             yield return new object[] { SByteEnum.Min, "G", "Min" };
@@ -1611,14 +1628,13 @@ namespace System.Tests
 
         public static IEnumerable<object[]> UnsupportedEnumType_TestData()
         {
-#if NETCOREAPP
-            yield return new object[] { s_floatEnumType, 1.0f };
-            yield return new object[] { s_doubleEnumType, 1.0 };
-            yield return new object[] { s_intPtrEnumType, (IntPtr)1 };
-            yield return new object[] { s_uintPtrEnumType, (UIntPtr)1 };
-#else
-            return Array.Empty<object[]>();
-#endif
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                yield return new object[] { s_floatEnumType, 1.0f };
+                yield return new object[] { s_doubleEnumType, 1.0 };
+                yield return new object[] { s_intPtrEnumType, (IntPtr)1 };
+                yield return new object[] { s_uintPtrEnumType, (UIntPtr)1 };
+            }
         }
 
         [Theory]
@@ -1673,6 +1689,9 @@ namespace System.Tests
 
         private static EnumBuilder GetNonRuntimeEnumTypeBuilder(Type underlyingType)
         {
+            if (!PlatformDetection.IsReflectionEmitSupported)
+                return null;
+
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
 
@@ -1683,6 +1702,9 @@ namespace System.Tests
         private static Type GetBoolEnumType()
         {
             EnumBuilder enumBuilder = GetNonRuntimeEnumTypeBuilder(typeof(bool));
+            if (enumBuilder == null)
+                return null;
+
             enumBuilder.DefineLiteral("Value1", true);
             enumBuilder.DefineLiteral("Value2", false);
 
@@ -1693,6 +1715,9 @@ namespace System.Tests
         private static Type GetCharEnumType()
         {
             EnumBuilder enumBuilder = GetNonRuntimeEnumTypeBuilder(typeof(char));
+            if (enumBuilder == null)
+                return null;
+
             enumBuilder.DefineLiteral("Value1", (char)1);
             enumBuilder.DefineLiteral("Value2", (char)2);
 
@@ -1711,6 +1736,9 @@ namespace System.Tests
         private static Type GetFloatEnumType()
         {
             EnumBuilder enumBuilder = GetNonRuntimeEnumTypeBuilder(typeof(float));
+            if (enumBuilder == null)
+                return null;
+
             enumBuilder.DefineLiteral("Value1", 1.0f);
             enumBuilder.DefineLiteral("Value2", 2.0f);
 
@@ -1729,6 +1757,9 @@ namespace System.Tests
         private static Type GetDoubleEnumType()
         {
             EnumBuilder enumBuilder = GetNonRuntimeEnumTypeBuilder(typeof(double));
+            if (enumBuilder == null)
+                return null;
+
             enumBuilder.DefineLiteral("Value1", 1.0);
             enumBuilder.DefineLiteral("Value2", 2.0);
 
@@ -1747,6 +1778,8 @@ namespace System.Tests
         private static Type GetIntPtrEnumType()
         {
             EnumBuilder enumBuilder = GetNonRuntimeEnumTypeBuilder(typeof(IntPtr));
+            if (enumBuilder == null)
+                return null;
 
             return enumBuilder.CreateTypeInfo().AsType();
         }
@@ -1755,6 +1788,8 @@ namespace System.Tests
         private static Type GetUIntPtrEnumType()
         {
             EnumBuilder enumBuilder = GetNonRuntimeEnumTypeBuilder(typeof(UIntPtr));
+            if (enumBuilder == null)
+                return null;
 
             return enumBuilder.CreateTypeInfo().AsType();
         }

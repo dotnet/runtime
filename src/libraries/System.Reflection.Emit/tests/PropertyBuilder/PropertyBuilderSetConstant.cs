@@ -42,6 +42,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(SetConstant_TestData))]
         public void SetConstant(Type returnType, object defaultValue)
         {
@@ -83,6 +84,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void SetConstant_TypeNotConstant_ThrowsArgumentException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);

@@ -213,11 +213,18 @@ int exe_start(const int argc, const pal::char_t* argv[])
         trace::info(_X("App path: [%s]"), app_path.c_str());
 
         hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
-
         {
             propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
 
             rc = main_fn_v2(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
+
+            if (trace::get_error_writer() != nullptr && rc == static_cast<int>(StatusCode::FrameworkMissingFailure) && !set_error_writer_fn)
+            {
+                pal::string_t url = get_download_url();
+                trace::error(_X("  _ To run this application, you need to install a newer version of .NET Core."));
+                trace::error(_X(""));
+                trace::error(_X("  - %s"), url.c_str());
+            }
         }
     }
     else

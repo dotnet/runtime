@@ -15,7 +15,7 @@ namespace BasicEventSourceTests
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(AdminHelpers.IsProcessElevated);
         private static bool IsProcessElevated => s_isElevated.Value;
         private static bool IsProcessElevatedAndNotWindowsNanoServer =>
-            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer; // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
+            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer; // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
 
         /// <summary>
         /// Tests WriteEvent using the manifest based mechanism.

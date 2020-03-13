@@ -29,15 +29,6 @@ FCIMPL1(INT32, ArrayNative::GetCorElementTypeOfElementType, ArrayBase* arrayUNSA
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ArrayNative::IsValueOfElementType, ArrayBase* arrayUNSAFE, Object* valueUNSAFE)
-{
-    _ASSERTE(arrayUNSAFE != NULL);
-    _ASSERTE(valueUNSAFE != NULL);
-
-    FC_RETURN_BOOL(arrayUNSAFE->GetArrayElementTypeHandle() == valueUNSAFE->GetTypeHandle());
-}
-FCIMPLEND
-
 // array is GC protected by caller
 void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
                            MethodTable* pArrayMT,
@@ -60,7 +51,7 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
 
     PCODE ctorFtn = pCanonMT->GetSlot(slot);
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(TARGET_X86) && !defined(TARGET_UNIX)
     BEGIN_CALL_TO_MANAGED();
 
 
@@ -91,7 +82,7 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
     }
 
     END_CALL_TO_MANAGED();
-#else // _TARGET_X86_ && !FEATURE_PAL
+#else // TARGET_X86 && !TARGET_UNIX
     //
     // This is quite a bit slower, but it is portable.
     //
@@ -115,7 +106,7 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
 
         offset += size;
     }
-#endif // !_TARGET_X86_ || FEATURE_PAL
+#endif // !TARGET_X86 || TARGET_UNIX
 }
 
 

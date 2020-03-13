@@ -29,7 +29,7 @@ namespace Internal.Cryptography.Pal.Windows
 
         public static string ToStringAnsi(this IntPtr psz)
         {
-            return Marshal.PtrToStringAnsi(psz);
+            return Marshal.PtrToStringAnsi(psz)!;
         }
 
         // Used for binary blobs without internal pointers.
@@ -100,8 +100,8 @@ namespace Internal.Cryptography.Pal.Windows
         {
             byte[] oidBytes = hCryptMsg.GetMsgParamAsByteArray(CryptMsgParamType.CMSG_INNER_CONTENT_TYPE_PARAM);
 
-            // Desktop compat: If we get a null or non-terminated string back from Crypt32, throwing an exception seems more apropros but
-            // for the desktop compat, we throw the result at the ASCII Encoder and let the chips fall where they may.
+            // .NET Framework compat: If we get a null or non-terminated string back from Crypt32, throwing an exception seems more apropros but
+            // for the .NET Framework compat, we throw the result at the ASCII Encoder and let the chips fall where they may.
             int length = oidBytes.Length;
             if (length > 0 && oidBytes[length - 1] == 0)
             {
@@ -221,10 +221,10 @@ namespace Internal.Cryptography.Pal.Windows
             switch (subjectIdentifierType)
             {
                 case SubjectIdentifierType.IssuerAndSerialNumber:
-                    return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.IssuerAndSerialNumber, subjectIdentifier.Value);
+                    return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.IssuerAndSerialNumber, subjectIdentifier.Value!);
 
                 case SubjectIdentifierType.SubjectKeyIdentifier:
-                    return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.SubjectKeyIdentifier, subjectIdentifier.Value);
+                    return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.SubjectKeyIdentifier, subjectIdentifier.Value!);
 
                 default:
                     Debug.Fail("Only the framework can construct SubjectIdentifier's so if we got a bad value here, that's our fault.");
@@ -310,7 +310,7 @@ namespace Internal.Cryptography.Pal.Windows
                     break;
 
                 default:
-                    // We've exhausted all the algorithm types that the desktop used to set the KeyLength for. Key lengths are not a viable way of
+                    // We've exhausted all the algorithm types that the .NET Framework used to set the KeyLength for. Key lengths are not a viable way of
                     // identifying algorithms in the long run so we will not extend this list any further.
                     keyLength = 0;
                     break;
@@ -400,7 +400,7 @@ namespace Internal.Cryptography.Pal.Windows
                 ((CspProviderFlags)keysetType & CspProviderFlags.UseMachineKeyStore) |
                 CspProviderFlags.UseExistingKey;
 
-            byte[] rented = null;
+            byte[]? rented = null;
             Span<byte> asciiStringBuf = stackSpan;
 
             string provName = GetStringProvParam(handle, CryptProvParam.PP_NAME, ref asciiStringBuf, ref rented, 0);
@@ -425,7 +425,7 @@ namespace Internal.Cryptography.Pal.Windows
             SafeProvOrNCryptKeyHandle handle,
             CryptProvParam dwParam,
             ref Span<byte> buf,
-            ref byte[] rented,
+            ref byte[]? rented,
             int clearLen)
         {
             int len = buf.Length;

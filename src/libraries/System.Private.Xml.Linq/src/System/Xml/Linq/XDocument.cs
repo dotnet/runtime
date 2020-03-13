@@ -184,7 +184,6 @@ namespace System.Xml.Linq
         /// An <see cref="XDocument"/> initialized with the contents of the file referenced
         /// in the passed in uri parameter.
         /// </returns>
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings", MessageId = "0#", Justification = "Back-compat with System.Xml.")]
         public static XDocument Load(string uri)
         {
             return Load(uri, LoadOptions.None);
@@ -213,7 +212,6 @@ namespace System.Xml.Linq
         /// in the passed uri parameter.  If LoadOptions.PreserveWhitespace is enabled then
         /// all whitespace will be preserved.
         /// </returns>
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings", MessageId = "0#", Justification = "Back-compat with System.Xml.")]
         public static XDocument Load(string uri, LoadOptions options)
         {
             XmlReaderSettings rs = GetXmlReaderSettings(options);

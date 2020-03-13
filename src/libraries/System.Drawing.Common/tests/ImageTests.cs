@@ -22,7 +22,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(InvalidBytes_TestData))]
         public void FromFile_InvalidBytes_ThrowsOutOfMemoryException(byte[] bytes)
@@ -52,7 +52,7 @@ namespace System.Drawing.Tests
         public void FromFile_LongSegment_ThrowsException()
         {
             // Throws PathTooLongException on Desktop and FileNotFoundException elsewhere.
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 string fileName = new string('a', 261);
 
@@ -77,7 +77,7 @@ namespace System.Drawing.Tests
             Assert.Throws<FileNotFoundException>(() => Image.FromFile("NoSuchFile", useEmbeddedColorManagement: true));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(InvalidBytes_TestData))]
         public void FromStream_InvalidBytes_ThrowsArgumentException(byte[] bytes)
@@ -159,12 +159,12 @@ namespace System.Drawing.Tests
             };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(GetEncoderParameterList_ReturnsExpected_TestData))]
         public void GetEncoderParameterList_ReturnsExpected(ImageFormat format, Guid[] expectedParameters)
         {
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 throw new SkipTestException("This is a known bug for .NET Framework");
             }

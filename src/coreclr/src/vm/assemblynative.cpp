@@ -31,66 +31,67 @@
 #include "../binder/inc/bindertracing.h"
 #include "../binder/inc/clrprivbindercoreclr.h"
 
-FCIMPL5(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE,
-        AssemblyBaseObject* requestingAssemblyUNSAFE,
-        StackCrawlMark* stackMark,
-        CLR_BOOL fThrowOnFileNotFound,
-        AssemblyLoadContextBaseObject *assemblyLoadContextUNSAFE)
+/* static */
+void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyName,
+                                            QCall::ObjectHandleOnStack requestingAssembly,
+                                            QCall::StackCrawlMarkHandle stackMark,
+                                            BOOL fThrowOnFileNotFound,
+                                            QCall::ObjectHandleOnStack assemblyLoadContext,
+                                            QCall::ObjectHandleOnStack retAssembly)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    struct _gc
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    if (assemblyName.Get() == NULL)
     {
-        ASSEMBLYNAMEREF        assemblyName;
-        ASSEMBLYREF            requestingAssembly;
-        ASSEMBLYREF            rv;
-        ASSEMBLYLOADCONTEXTREF assemblyLoadContext;
-    } gc;
-
-    gc.assemblyName        = (ASSEMBLYNAMEREF)        assemblyNameUNSAFE;
-    gc.requestingAssembly  = (ASSEMBLYREF)            requestingAssemblyUNSAFE;
-    gc.rv                  = NULL;
-    gc.assemblyLoadContext = (ASSEMBLYLOADCONTEXTREF) assemblyLoadContextUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    if (gc.assemblyName == NULL)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_AssemblyName"));
-
+    }
     ACQUIRE_STACKING_ALLOCATOR(pStackingAllocator);
 
     DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
+    ICLRPrivBinder *pBinderContext = NULL;
 
-    INT_PTR ptrLoadContextBinder = (gc.assemblyLoadContext != NULL) ? gc.assemblyLoadContext->GetNativeAssemblyLoadContext() : NULL;
+    if (assemblyLoadContext.Get() != NULL)
+    {
+        INT_PTR nativeAssemblyLoadContext = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyLoadContext();
+        pBinderContext = reinterpret_cast<ICLRPrivBinder*>(nativeAssemblyLoadContext);
+    }
 
-    if(gc.assemblyName->GetSimpleName() == NULL)
+    AssemblySpec spec;
+    ASSEMBLYNAMEREF assemblyNameRef = NULL;
+
+    GCPROTECT_BEGIN(assemblyNameRef);
+    assemblyNameRef = (ASSEMBLYNAMEREF)assemblyName.Get();
+    if (assemblyNameRef->GetSimpleName() == NULL)
     {
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
     }
-    else
-    {
-        // Compute parent assembly
-        if (gc.requestingAssembly != NULL)
-        {
-            pRefAssembly = gc.requestingAssembly->GetAssembly();
-        }
-        else if (ptrLoadContextBinder == NULL)
-        {
-            pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
-        }
 
-        if (pRefAssembly)
-        {
-            pParentAssembly = pRefAssembly->GetDomainAssembly();
-        }
+    // Compute parent assembly
+    if (requestingAssembly.Get() != NULL)
+    {
+        pRefAssembly = ((ASSEMBLYREF)requestingAssembly.Get())->GetAssembly();
+    }
+    else if (pBinderContext == NULL)
+    {
+        pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
+    }
+    if (pRefAssembly)
+    {
+        pParentAssembly = pRefAssembly->GetDomainAssembly();
     }
 
     // Initialize spec
-    AssemblySpec spec;
     spec.InitializeSpec(pStackingAllocator,
-                        &gc.assemblyName,
+                        &assemblyNameRef,
                         FALSE);
+    GCPROTECT_END();
+
+    spec.SetCodeBase(NULL);
 
     if (!spec.HasUniqueIdentity())
     {   // Insuficient assembly name for binding (e.g. ContentType=WindowsRuntime cannot bind by assembly name)
@@ -102,9 +103,9 @@ FCIMPL5(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
 
     // Have we been passed the reference to the binder against which this load should be triggered?
     // If so, then use it to set the fallback load context binder.
-    if (ptrLoadContextBinder != NULL)
+    if (pBinderContext != NULL)
     {
-        spec.SetFallbackLoadContextBinderForRequestingAssembly(reinterpret_cast<ICLRPrivBinder *>(ptrLoadContextBinder));
+        spec.SetFallbackLoadContextBinderForRequestingAssembly(pBinderContext);
         spec.SetPreferFallbackLoadContextBinder();
     }
     else if (pRefAssembly != NULL)
@@ -116,20 +117,18 @@ FCIMPL5(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
     }
 
     Assembly *pAssembly;
-
     {
         GCX_PREEMP();
         pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound);
     }
 
     if (pAssembly != NULL)
-        gc.rv = (ASSEMBLYREF) pAssembly->GetExposedObject();
+    {
+        retAssembly.Set(pAssembly->GetExposedObject());
+    }
 
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.rv);
+    END_QCALL;
 }
-FCIMPLEND
 
 /* static */
 Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImage *pILImage, PEImage *pNIImage)
@@ -360,7 +359,7 @@ void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadConte
     END_QCALL;
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 /*static */
 void QCALLTYPE AssemblyNative::LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyLoadContext, INT_PTR hModule, QCall::ObjectHandleOnStack retLoadedAssembly)
 {
@@ -1281,11 +1280,7 @@ INT_PTR QCALLTYPE AssemblyNative::InitializeAssemblyLoadContext(INT_PTR ptrManag
     {
         // We are initializing the managed instance of Assembly Load Context that would represent the TPA binder.
         // First, confirm we do not have an existing managed ALC attached to the TPA binder.
-        INT_PTR ptrTPAAssemblyLoadContext = pTPABinderContext->GetManagedAssemblyLoadContext();
-        if ((ptrTPAAssemblyLoadContext != NULL) && (ptrTPAAssemblyLoadContext != ptrManagedAssemblyLoadContext))
-        {
-            COMPlusThrow(kInvalidOperationException, IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_TPA_BINDING_CONTEXT);
-        }
+        _ASSERTE(pTPABinderContext->GetManagedAssemblyLoadContext() == NULL);
 
         // Attach the managed TPA binding context with the native one.
         pTPABinderContext->SetManagedAssemblyLoadContext(ptrManagedAssemblyLoadContext);
@@ -1326,55 +1321,13 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
 
     _ASSERTE(pAssembly != NULL);
 
-    // Get the PEAssembly for the RuntimeAssembly
-    PEFile *pPEFile = pAssembly->GetFile();
-    PTR_PEAssembly pPEAssembly = pPEFile ? pPEFile->AsAssembly() : NULL;
+    AssemblyLoadContext* pAssemblyLoadContext = pAssembly->GetFile()->GetAssemblyLoadContext();
 
-    // Platform assemblies are semantically bound against the "Default" binder.
-    // The reference to the same will be returned when this QCall returns.
-
-    // Get the binding context for the assembly.
-    //
-    ICLRPrivBinder *pOpaqueBinder = nullptr;
-    AppDomain *pCurDomain = AppDomain::GetCurrentDomain();
-    CLRPrivBinderCoreCLR *pTPABinder = pCurDomain->GetTPABinderContext();
-
-    // GetBindingContext returns a ICLRPrivAssembly which can be used to get access to the
-    // actual ICLRPrivBinder instance in which the assembly was loaded.
-    PTR_ICLRPrivBinder pBindingContext = pPEAssembly->GetBindingContext();
-    UINT_PTR assemblyBinderID = 0;
-
-    if (pBindingContext)
-    {
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        // If the assembly was bound using the TPA binder,
-        // then we will return the reference to "Default" binder from the managed implementation when this QCall returns.
-        //
-        // See earlier comment about "Default" binder for additional context.
-        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-    }
-    else
-    {
-        // GetBindingContext() returns NULL for System.Private.CoreLib
-        pOpaqueBinder = pTPABinder;
-    }
-
-    // We should have a load context binder at this point.
-    _ASSERTE(pOpaqueBinder != nullptr);
-
-    // the TPA binder uses the default ALC
-    // WinRT assemblies (bound using the WinRT binder) don't actually have an ALC,
-    // so treat them the same as if they were loaded into the TPA ALC in this case.
-#ifdef FEATURE_COMINTEROP
-    if (!AreSameBinderInstance(pTPABinder, pOpaqueBinder) && !AreSameBinderInstance(pCurDomain->GetWinRtBinder(), pOpaqueBinder))
-#else
-    if (!AreSameBinderInstance(pTPABinder, pOpaqueBinder))
-#endif // FEATURE_COMINTEROP
+    if (pAssemblyLoadContext != AppDomain::GetCurrentDomain()->GetTPABinderContext())
     {
         // Only CLRPrivBinderAssemblyLoadContext instance contains the reference to its
         // corresponding managed instance.
-        CLRPrivBinderAssemblyLoadContext *pBinder = (CLRPrivBinderAssemblyLoadContext *)(pOpaqueBinder);
+        CLRPrivBinderAssemblyLoadContext* pBinder = (CLRPrivBinderAssemblyLoadContext*)(pAssemblyLoadContext);
 
         // Fetch the managed binder reference from the native binder instance
         ptrManagedAssemblyLoadContext = pBinder->GetManagedAssemblyLoadContext();

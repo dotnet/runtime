@@ -12,7 +12,7 @@ namespace BasicEventSourceTests
 {
     public class TestShutdown
     {
-        // TODO: Depends on desktop APIs (AppDomainSetup and Evidence).
+        // TODO: Depends on .NET Framework APIs (AppDomainSetup and Evidence).
 #if FALSE
         /// <summary>
         /// Test for manifest event being logged during AD/Process shutdown during EventSource Dispose(bool) method.

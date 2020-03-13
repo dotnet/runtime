@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,6 +17,11 @@ public class ProcessParameters
     public const int DefaultIlcTimeout = 10 * 60 * 1000;
 
     /// <summary>
+    /// Increase compilation timeout for composite builds.
+    /// </summary>
+    public const int DefaultIlcCompositeTimeout = 30 * 60 * 1000;
+
+    /// <summary>
     /// Test execution timeout.
     /// </summary>
     public const int DefaultExeTimeout = 5 * 60 * 1000;
@@ -32,7 +37,7 @@ public class ProcessParameters
     public string LogPath;
     public int TimeoutMilliseconds;
     public int ExpectedExitCode;
-    public string InputFileName;
+    public IEnumerable<string> InputFileNames;
     public string OutputFileName;
     public long CompilationCostHeuristic;
     public bool CollectJittedMethods;

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -383,7 +383,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="offset">Signature offset within the PE file byte array</param>
         public SignatureDecoder(IAssemblyResolver options, ReadyToRunReader r2rReader, int offset)
         {
-            _metadataReader = r2rReader.MetadataReader;
+            _metadataReader = r2rReader.GetGlobalMetadataReader();
             _options = options;
             _image = r2rReader.Image;
             _offset = offset;

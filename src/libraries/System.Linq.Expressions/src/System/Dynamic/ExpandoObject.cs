@@ -18,7 +18,6 @@ namespace System.Dynamic
     /// <summary>
     /// Represents an object with members that can be dynamically added and removed at runtime.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public sealed class ExpandoObject : IDynamicMetaObjectProvider, IDictionary<string, object?>, INotifyPropertyChanged
     {
         private static readonly MethodInfo s_expandoTryGetValue =

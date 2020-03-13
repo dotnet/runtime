@@ -18,7 +18,7 @@ namespace System.Diagnostics
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
         /// </summary>
-        public static Process[] GetProcessesByName(string processName, string machineName)
+        public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             ProcessManager.ThrowIfRemoteMachine(machineName);
             if (processName == null)
@@ -83,7 +83,7 @@ namespace System.Diagnostics
                 // It includes suspended time and is updated based on the system time (settimeofday).
                 const string StatFile = Interop.procfs.ProcStatFilePath;
                 string text = File.ReadAllText(StatFile);
-                int btimeLineStart = text.IndexOf("\nbtime ");
+                int btimeLineStart = text.IndexOf("\nbtime ", StringComparison.Ordinal);
                 if (btimeLineStart >= 0)
                 {
                     int btimeStart = btimeLineStart + "\nbtime ".Length;
@@ -106,12 +106,12 @@ namespace System.Diagnostics
             GetStat().ppid;
 
         /// <summary>Gets execution path</summary>
-        private string GetPathToOpenFile()
+        private string? GetPathToOpenFile()
         {
             string[] allowedProgramsToRun = { "xdg-open", "gnome-open", "kfmclient" };
             foreach (var program in allowedProgramsToRun)
             {
-                string pathToProgram = FindProgramInPath(program);
+                string? pathToProgram = FindProgramInPath(program);
                 if (!string.IsNullOrEmpty(pathToProgram))
                 {
                     return pathToProgram;
@@ -148,7 +148,7 @@ namespace System.Diagnostics
 
         partial void EnsureHandleCountPopulated()
         {
-            if (_processInfo.HandleCount <= 0 && _haveProcessId)
+            if (_processInfo!.HandleCount <= 0 && _haveProcessId)
             {
                 // Don't get information for a PID that exited and has possibly been recycled.
                 if (GetHasExited(refresh: false))
@@ -248,7 +248,7 @@ namespace System.Diagnostics
 
         /// <summary>Gets the path to the executable for the process, or null if it could not be retrieved.</summary>
         /// <param name="processId">The pid for the target process, or -1 for the current process.</param>
-        internal static string GetExePath(int processId = -1)
+        internal static string? GetExePath(int processId = -1)
         {
             string exeFilePath = processId == -1 ?
                 Interop.procfs.SelfExeFilePath :
@@ -263,7 +263,7 @@ namespace System.Diagnostics
         {
             string cmdLineFilePath = Interop.procfs.GetCmdLinePathForProcess(stat.pid);
 
-            byte[] rentedArray = null;
+            byte[]? rentedArray = null;
             try
             {
                 // bufferSize == 1 used to avoid unnecessary buffer in FileStream
@@ -280,7 +280,7 @@ namespace System.Diagnostics
 
                             byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
                             buffer.CopyTo(tmp);
-                            byte[] toReturn = rentedArray;
+                            byte[]? toReturn = rentedArray;
                             buffer = rentedArray = tmp;
                             if (toReturn != null)
                             {
@@ -301,7 +301,7 @@ namespace System.Diagnostics
                         if (argEnd != -1)
                         {
                             // Check if argv[0] has the process name.
-                            string name = GetUntruncatedNameFromArg(argRemainder.Slice(0, argEnd), prefix: stat.comm);
+                            string? name = GetUntruncatedNameFromArg(argRemainder.Slice(0, argEnd), prefix: stat.comm);
                             if (name != null)
                             {
                                 return name;
@@ -336,7 +336,7 @@ namespace System.Diagnostics
                 }
             }
 
-            string GetUntruncatedNameFromArg(Span<byte> arg, string prefix)
+            string? GetUntruncatedNameFromArg(Span<byte> arg, string prefix)
             {
                 // Strip directory names from arg.
                 int nameStart = arg.LastIndexOf((byte)'/') + 1;

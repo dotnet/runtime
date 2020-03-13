@@ -92,7 +92,7 @@ namespace System.Threading.Tests
 
                 // Changing an async local value does not prevent undoing a flow-suppressed execution context. In .NET Core, the
                 // execution context is immutable, so changing an async local value changes the execution context instance,
-                // contrary to the desktop framework.
+                // contrary to the .NET Framework.
                 asyncFlowControl = ExecutionContext.SuppressFlow();
                 asyncLocal.Value = 2;
                 asyncFlowControl.Undo();
@@ -106,12 +106,12 @@ namespace System.Threading.Tests
                 ExecutionContext.RestoreFlow();
                 VerifyExecutionContextFlow(asyncLocal, 4);
 
-                // An async flow control cannot be undone when a different execution context is applied. The desktop framework
+                // An async flow control cannot be undone when a different execution context is applied. The .NET Framework
                 // mutates the execution context when its state changes, and only changes the instance when an execution context
                 // is applied (for instance, through ExecutionContext.Run). The framework prevents a suppressed-flow execution
                 // context from being applied by returning null from ExecutionContext.Capture, so the only type of execution
                 // context that can be applied is one whose flow is not suppressed. After suppressing flow and changing an async
-                // local's value, the desktop framework verifies that a different execution context has not been applied by
+                // local's value, the .NET Framework verifies that a different execution context has not been applied by
                 // checking the execution context instance against the one saved from when flow was suppressed. In .NET Core,
                 // since the execution context instance will change after changing the async local's value, it verifies that a
                 // different execution context has not been applied, by instead ensuring that the current execution context's
@@ -147,7 +147,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void CaptureThenSuppressThenRunFlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>

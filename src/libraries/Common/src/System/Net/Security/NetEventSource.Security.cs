@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.Net.Security;
@@ -10,13 +11,12 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    //TODO: If localization resources are not found, logging does not work. Issue #5126.
     internal sealed partial class NetEventSource
     {
         // Event ids are defined in NetEventSource.Common.cs.
 
         [Event(EnumerateSecurityPackagesId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        public void EnumerateSecurityPackages(string securityPackage)
+        public void EnumerateSecurityPackages(string? securityPackage)
         {
             if (IsEnabled())
             {

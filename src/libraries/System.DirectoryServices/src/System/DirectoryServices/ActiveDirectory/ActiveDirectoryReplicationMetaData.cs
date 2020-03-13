@@ -24,7 +24,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                string tempName = name.ToLower(CultureInfo.InvariantCulture);
+                string tempName = name.ToLowerInvariant();
                 if (Contains(tempName))
                 {
                     return (AttributeMetadata)InnerHashtable[tempName];
@@ -40,7 +40,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(string attributeName)
         {
-            string tempName = attributeName.ToLower(CultureInfo.InvariantCulture);
+            string tempName = attributeName.ToLowerInvariant();
             return Dictionary.Contains(tempName);
         }
 
@@ -51,7 +51,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private void Add(string name, AttributeMetadata value)
         {
-            Dictionary.Add(name.ToLower(CultureInfo.InvariantCulture), value);
+            Dictionary.Add(name.ToLowerInvariant(), value);
 
             AttributeNames.Add(name);
             Values.Add(value);
@@ -65,14 +65,14 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (advanced)
                 {
-                    addr = IntPtr.Add(info, Marshal.SizeOf(typeof(int)) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_ATTR_META_DATA_2)));
+                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_ATTR_META_DATA_2)));
 
                     AttributeMetadata managedMetaData = new AttributeMetadata(addr, true, _server, _nameTable);
                     Add(managedMetaData.Name, managedMetaData);
                 }
                 else
                 {
-                    addr = IntPtr.Add(info, Marshal.SizeOf(typeof(int)) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_ATTR_META_DATA)));
+                    addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_ATTR_META_DATA)));
 
                     AttributeMetadata managedMetaData = new AttributeMetadata(addr, false, _server, _nameTable);
                     Add(managedMetaData.Name, managedMetaData);

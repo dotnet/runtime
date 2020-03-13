@@ -29,7 +29,7 @@ int __cdecl main(int argc, char *argv[])
 /*
 **  Run only on 64 bit platforms
 */
-#if defined(BIT64)
+#if defined(HOST_64BIT)
 	Trace("Testing for 64 Bit Platforms \n");
 	DoPointerTest("%p", NULL, "NULL", "0000000000000000");
     DoPointerTest("%p", ptr, "pointer to 0x123456", "0000000000123456");

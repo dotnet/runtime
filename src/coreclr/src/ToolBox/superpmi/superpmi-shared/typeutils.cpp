@@ -71,7 +71,7 @@ const char* TypeUtils::GetCorInfoTypeName(CorInfoType type)
         case CORINFO_TYPE_NATIVEINT:
         case CORINFO_TYPE_NATIVEUINT:
 // Emulates the JIT's concept of TYP_I_IMPL
-#if defined(_TARGET_AMD64_) // TODO: should be _TARGET_64BIT_
+#if defined(TARGET_AMD64) // TODO: should be TARGET_64BIT
             return "long";
 #else
             return "int";
@@ -108,7 +108,7 @@ bool TypeUtils::IsValueClass(CorInfoType type)
 // by reference (i.e. it cannot be stuffed as-is into a register or stack slot).
 bool TypeUtils::ValueClassRequiresByref(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd)
 {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     size_t size = mc->repGetClassSize(clsHnd);
     return ((size > sizeof(void*)) || ((size & (size - 1)) != 0));
 #else

@@ -27,7 +27,7 @@
 // These macros tell us whether the arguments we see as we proceed with the signature walk are mapped
 //   to increasing or decreasing stack addresses. This is valid only for arguments that go on the stack.
 //---------------------------------------------------------------------------------------
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 #define STACK_GROWS_DOWN_ON_ARGS_WALK
 #else
 #define STACK_GROWS_UP_ON_ARGS_WALK

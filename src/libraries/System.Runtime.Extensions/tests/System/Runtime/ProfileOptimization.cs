@@ -12,6 +12,7 @@ namespace System.Runtime.Tests
     public class ProfileOptimizationTest : FileCleanupTestBase
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31853", TestRuntimes.Mono)]
         public void ProfileOptimization_CheckFileExists()
         {
             string profileFile = GetTestFileName();

@@ -13,6 +13,8 @@ enum class EventPipeEventLevel;
 // This enum is derived from the managed TypeCode type, though
 // not all of these values are available in TypeCode.
 // For example, Guid does not exist in TypeCode.
+// Keep this in sync with COR_PRF_EVENTPIPE_PARAM_TYPE defined in 
+// corprof.idl
 enum class EventPipeParameterType
 {
     Empty = 0,          // Null reference
@@ -55,7 +57,7 @@ public:
         EventPipeEventLevel level,
         EventPipeParameterDesc *pParams,
         unsigned int paramCount,
-        size_t &metadataLength);
+        size_t *pMetadataLength);
 };
 
 #endif // FEATURE_PERFTRACING

@@ -9,7 +9,7 @@ namespace System
 {
     //
     // This pattern of easily inlinable "void Throw" routines that stack on top of NoInlining factory methods
-    // is a compromise between older JITs and newer JITs (RyuJIT in Core CLR 1.1.0+ and desktop CLR in 4.6.3+).
+    // is a compromise between older JITs and newer JITs (RyuJIT in .NET Core 1.1.0+ and .NET Framework in 4.6.3+).
     // This package is explicitly targeted at older JITs as newer runtimes expect to implement Span intrinsically for
     // best performance.
     //

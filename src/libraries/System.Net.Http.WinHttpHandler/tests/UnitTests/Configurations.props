@@ -1,7 +1,0 @@
-<Project DefaultTargets="Build">
-  <PropertyGroup>
-    <BuildConfigurations>
-      $(NetCoreAppCurrent)-Windows_NT;
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>

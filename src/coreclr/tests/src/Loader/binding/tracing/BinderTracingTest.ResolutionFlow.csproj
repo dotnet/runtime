@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="BinderTracingTest.EventHandlers.cs" />
+    <Compile Include="BinderTracingTest.ResolutionFlow.cs" />
+  </ItemGroup>
+  <Import Project="BinderTracingTest.targets" />
+</Project>

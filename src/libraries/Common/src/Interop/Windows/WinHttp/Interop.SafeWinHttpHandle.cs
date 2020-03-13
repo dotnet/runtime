@@ -52,7 +52,6 @@ internal partial class Interop
                     _parentHandle = null;
                 }
 
-                // TODO (#7856): Add logging so we know when the handle gets closed.
                 return Interop.WinHttp.WinHttpCloseHandle(handle);
             }
         }

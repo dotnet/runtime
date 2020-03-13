@@ -4,6 +4,7 @@
     <EnableBinPlacing>false</EnableBinPlacing>
     <RuntimeIdentifier>$(ToolRuntimeRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Net.Http
@@ -128,9 +128,9 @@ namespace System.Net.Http
         protected HttpContent() { }
         public System.Net.Http.Headers.HttpContentHeaders Headers { get { throw null; } }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream) { throw null; }
-        public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Net.TransportContext context, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected virtual System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected virtual System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Dispose() { }
@@ -186,6 +186,8 @@ namespace System.Net.Http
         public HttpRequestException() { }
         public HttpRequestException(string message) { }
         public HttpRequestException(string message, System.Exception inner) { }
+        public HttpRequestException(string message, System.Exception inner, System.Net.HttpStatusCode? statusCode) { }
+        public System.Net.HttpStatusCode? StatusCode { get { throw null; } }
     }
     public partial class HttpRequestMessage : System.IDisposable
     {
@@ -541,9 +543,9 @@ namespace System.Net.Http.Headers
     }
     public partial class NameValueWithParametersHeaderValue : System.Net.Http.Headers.NameValueHeaderValue, System.ICloneable
     {
-        protected NameValueWithParametersHeaderValue(System.Net.Http.Headers.NameValueWithParametersHeaderValue source) : base (default(System.Net.Http.Headers.NameValueHeaderValue)) { }
-        public NameValueWithParametersHeaderValue(string name) : base (default(System.Net.Http.Headers.NameValueHeaderValue)) { }
-        public NameValueWithParametersHeaderValue(string name, string value) : base (default(System.Net.Http.Headers.NameValueHeaderValue)) { }
+        protected NameValueWithParametersHeaderValue(System.Net.Http.Headers.NameValueWithParametersHeaderValue source) : base (default(string)) { }
+        public NameValueWithParametersHeaderValue(string name) : base (default(string)) { }
+        public NameValueWithParametersHeaderValue(string name, string value) : base (default(string)) { }
         public System.Collections.Generic.ICollection<System.Net.Http.Headers.NameValueHeaderValue> Parameters { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }

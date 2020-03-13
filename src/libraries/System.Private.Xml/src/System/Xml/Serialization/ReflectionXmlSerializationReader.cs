@@ -708,7 +708,8 @@ namespace System.Xml.Serialization
 
         private bool IsSequence(Member[] members)
         {
-            // #10586: Currently the reflection based method treat this kind of type as normal types.
+            // https://github.com/dotnet/runtime/issues/1402:
+            // Currently the reflection based method treat this kind of type as normal types.
             // But potentially we can do some optimization for types that have ordered properties.
             return false;
         }
@@ -719,7 +720,8 @@ namespace System.Xml.Serialization
             bool isSequence = IsSequence(expectedMembers);
             if (isSequence)
             {
-                // #10586: Currently the reflection based method treat this kind of type as normal types.
+                // https://github.com/dotnet/runtime/issues/1402:
+                // Currently the reflection based method treat this kind of type as normal types.
                 // But potentially we can do some optimization for types that have ordered properties.
             }
 
@@ -961,7 +963,8 @@ namespace System.Xml.Serialization
 
                         if (sm.DerivedMappings != null)
                         {
-                            // #10587: To Support SpecialMapping Types Having DerivedMappings
+                            // https://github.com/dotnet/runtime/issues/1401:
+                            // To Support SpecialMapping Types Having DerivedMappings
                             throw new NotImplementedException("sm.DerivedMappings != null");
                             //WriteDerivedSerializable(sm, sm, source, isWrappedAny);
                             //WriteUnknownNode("UnknownNode", "null", null, true);
@@ -1103,7 +1106,8 @@ namespace System.Xml.Serialization
 
                     if (memberMapping.ChoiceIdentifier != null)
                     {
-                        // #10588: To Support ArrayMapping Types Having ChoiceIdentifier
+                        // https://github.com/dotnet/runtime/issues/1400:
+                        // To Support ArrayMapping Types Having ChoiceIdentifier
                         throw new NotImplementedException("memberMapping.ChoiceIdentifier != null");
                     }
 
@@ -1554,7 +1558,8 @@ namespace System.Xml.Serialization
             {
                 if (structMapping.TypeDesc.Type != null && typeof(XmlSchemaObject).IsAssignableFrom(structMapping.TypeDesc.Type))
                 {
-                    // #10589: To Support Serializing XmlSchemaObject
+                    // https://github.com/dotnet/runtime/issues/1399:
+                    // To Support Serializing XmlSchemaObject
                     throw new NotImplementedException(nameof(XmlSchemaObject));
                 }
 
@@ -1571,7 +1576,8 @@ namespace System.Xml.Serialization
 
                 if (isSequence)
                 {
-                    // #10586: Currently the reflection based method treat this kind of type as normal types.
+                    // https://github.com/dotnet/runtime/issues/1402:
+                    // Currently the reflection based method treat this kind of type as normal types.
                     // But potentially we can do some optimization for types that have ordered properties.
                 }
 
@@ -1740,7 +1746,8 @@ namespace System.Xml.Serialization
                 bool IsSequenceAllMembers = IsSequence(allMembers);
                 if (IsSequenceAllMembers)
                 {
-                    // #10586: Currently the reflection based method treat this kind of type as normal types.
+                    // https://github.com/dotnet/runtime/issues/1402:
+                    // Currently the reflection based method treat this kind of type as normal types.
                     // But potentially we can do some optimization for types that have ordered properties.
                 }
 
@@ -1920,7 +1927,8 @@ namespace System.Xml.Serialization
                 }
                 else if (special.TypeDesc.CanBeAttributeValue)
                 {
-                    // #10590: To Support special.TypeDesc.CanBeAttributeValue == true
+                    // https://github.com/dotnet/runtime/issues/1398:
+                    // To Support special.TypeDesc.CanBeAttributeValue == true
                     throw new NotImplementedException("special.TypeDesc.CanBeAttributeValue");
                 }
                 else
@@ -1950,7 +1958,6 @@ namespace System.Xml.Serialization
 
             if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
             {
-                // #10591: we need to add tests for this block.
                 member.CheckSpecifiedSource?.Invoke(null);
             }
         }

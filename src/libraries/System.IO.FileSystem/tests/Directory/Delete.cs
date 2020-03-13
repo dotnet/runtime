@@ -254,7 +254,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue(24242)]
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("This test is very slow.")]
         public void RecursiveDelete_DeepNesting()

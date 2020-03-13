@@ -9,7 +9,8 @@
   </PropertyGroup>
 
   <!-- Get artifact locations to sign. -->
-  <Import Project="$(RepositoryEngineeringDir)/liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
 
   <ItemGroup>
     <!--
@@ -38,13 +39,13 @@
 
     <ItemsToSign Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll" />
 
-    <ItemsToSign Include="$(CoreCLRArtifactsPath)crossgen2/crossgen2.exe" />
-    <ItemsToSign Include="$(CoreCLRArtifactsPath)crossgen2/crossgen2.dll" />
-    <ItemsToSign Include="$(CoreCLRArtifactsPath)crossgen2/ILCompiler.DependencyAnalysisFramework.dll" />
-    <ItemsToSign Include="$(CoreCLRArtifactsPath)crossgen2/ILCompiler.ReadyToRun.dll" />
-    <ItemsToSign Include="$(CoreCLRArtifactsPath)crossgen2/ILCompiler.TypeSystem.ReadyToRun.dll" />
-    <ItemsToSign Include="$(CoreCLRArtifactsPath)crossgen2/clrjitilc.dll" />
-    <ItemsToSign Include="$(CoreCLRArtifactsPath)crossgen2/jitinterface.dll" />
+    <ItemsToSign Include="$(CoreCLRCrossgen2Dir)crossgen2.exe" />
+    <ItemsToSign Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
+    <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.DependencyAnalysisFramework.dll" />
+    <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.ReadyToRun.dll" />
+    <ItemsToSign Include="$(CoreCLRCrossgen2Dir)ILCompiler.TypeSystem.ReadyToRun.dll" />
+    <ItemsToSign Include="$(CoreCLRCrossgen2Dir)clrjitilc.dll" />
+    <ItemsToSign Include="$(CoreCLRCrossgen2Dir)jitinterface.dll" />
 
     <ItemsToSign Include="@(CoreCLRCrossTargetItemsToSign)" />
 
@@ -52,7 +53,7 @@
 
     <!-- Sign api-ms-win-core-xstate-l2-1-0 binary as it is only catalog signed in the current SDK. -->
     <ItemsToSign
-      Condition="'$(ConfigurationGroup)' == 'Release' and '$(TargetArchitecture)' == 'x86'"
+      Condition="'$(Configuration)' == 'Release' and '$(TargetArchitecture)' == 'x86'"
       Include="$(CoreCLRArtifactsPath)Redist\ucrt\DLLs\$(TargetArchitecture)\api-ms-win-core-xstate-l2-1-0.dll" />
 
     <!-- Sign libraries. -->

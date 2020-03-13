@@ -117,7 +117,7 @@ EventPipeThread::EventPipeThread()
     m_lock.Init(LOCK_TYPE_DEFAULT);
     m_refCount = 0;
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     m_osThreadId = ::PAL_GetCurrentOSThreadId();
 #else
     m_osThreadId = ::GetCurrentThreadId();

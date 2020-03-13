@@ -40,22 +40,6 @@ namespace MonoTests.System.Runtime.Caching
     public class ObjectCacheTest
     {
         [Fact]
-        [ActiveIssue(25168)]
-        private static void Host_SetToProvider()
-        {
-            var tns1 = new TestNotificationSystem();
-            var tns2 = new TestNotificationSystem();
-            ObjectCache.Host = tns1;
-            Assert.NotNull(ObjectCache.Host);
-            Assert.Equal(tns1, ObjectCache.Host);
-
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                ObjectCache.Host = tns2;
-            });
-        }
-
-        [Fact]
         public void Add_CacheItem_CacheItemPolicy()
         {
             var poker = new PokerObjectCache();

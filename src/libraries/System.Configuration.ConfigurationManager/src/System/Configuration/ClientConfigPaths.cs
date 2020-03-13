@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security;
 
 namespace System.Configuration
@@ -32,7 +34,6 @@ namespace System.Configuration
             _includesUserConfig = includeUserConfig;
 
             Assembly exeAssembly = null;
-            string applicationFilename = null;
 
             if (exePath != null)
             {
@@ -42,39 +43,42 @@ namespace System.Configuration
                 {
                     throw ExceptionUtil.ParameterInvalid(nameof(exePath));
                 }
-
-                applicationFilename = ApplicationUri;
             }
             else
             {
                 // Exe path wasn't specified, get it from the entry assembly
                 exeAssembly = Assembly.GetEntryAssembly();
 
-                if (exeAssembly == null)
-                    throw new PlatformNotSupportedException();
-
-                HasEntryAssembly = true;
-
-                // The original NetFX (desktop) code tried to get the local path without using Uri.
-                // If we ever find a need to do this again be careful with the logic. "file:///" is
-                // used for local paths and "file://" for UNCs. Simply removing the prefix will make
-                // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
-                // "/home").
-                string configBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.ManifestModule.Name);
-                Uri uri = new Uri(configBasePath);
-
-                if (uri.IsFile)
+                if (exeAssembly != null)
                 {
+                    HasEntryAssembly = true;
+
+                    // The original .NET Framework code tried to get the local path without using Uri.
+                    // If we ever find a need to do this again be careful with the logic. "file:///" is
+                    // used for local paths and "file://" for UNCs. Simply removing the prefix will make
+                    // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
+                    // "/home").
+                    string configBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.ManifestModule.Name);
+                    Uri uri = new Uri(configBasePath);
+
+                    Debug.Assert(uri.IsFile);
                     ApplicationUri = uri.LocalPath;
-                    applicationFilename = uri.LocalPath;
                 }
                 else
                 {
-                    ApplicationUri = Uri.EscapeDataString(configBasePath);
+                    // An EntryAssembly may not be found when running from a custom host.
+                    // Try to find the native entry point.
+                    using (Process currentProcess = Process.GetCurrentProcess())
+                    {
+                        ApplicationUri = currentProcess.MainModule?.FileName;
+                    }
                 }
             }
 
-            ApplicationConfigUri = ApplicationUri + ConfigExtension;
+            if (!string.IsNullOrEmpty(ApplicationUri))
+            {
+                ApplicationConfigUri = ApplicationUri + ConfigExtension;
+            }
 
             // In the case when exePath was explicitly supplied, we will not be able to
             // construct user.config paths, so quit here.
@@ -84,7 +88,7 @@ namespace System.Configuration
             if (!_includesUserConfig) return;
 
             bool isHttp = StringUtil.StartsWithOrdinalIgnoreCase(ApplicationConfigUri, HttpUri);
-            SetNamesAndVersion(applicationFilename, exeAssembly, isHttp);
+            SetNamesAndVersion(exeAssembly, isHttp);
             if (isHttp) return;
 
             // Create a directory suffix for local and roaming config of three parts:
@@ -97,7 +101,7 @@ namespace System.Configuration
             if (string.IsNullOrEmpty(namePrefix))
                 namePrefix = Validate(ProductName, limitSize: true);
             string applicationUriLower = !string.IsNullOrEmpty(ApplicationUri)
-                ? ApplicationUri.ToLower(CultureInfo.InvariantCulture)
+                ? ApplicationUri.ToLowerInvariant()
                 : null;
             string hashSuffix = GetTypeAndHashSuffix(applicationUriLower);
             string part2 = !string.IsNullOrEmpty(namePrefix) && !string.IsNullOrEmpty(hashSuffix)
@@ -227,7 +231,7 @@ namespace System.Configuration
             return suffix;
         }
 
-        private void SetNamesAndVersion(string applicationFilename, Assembly exeAssembly, bool isHttp)
+        private void SetNamesAndVersion(Assembly exeAssembly, bool isHttp)
         {
             Type mainType = null;
 
@@ -272,7 +276,7 @@ namespace System.Configuration
                     // Try the remainder of the namespace
                     if (ns != null)
                     {
-                        int lastDot = ns.LastIndexOf(".", StringComparison.Ordinal);
+                        int lastDot = ns.LastIndexOf('.');
                         if ((lastDot != -1) && (lastDot < ns.Length - 1)) ProductName = ns.Substring(lastDot + 1);
                         else ProductName = ns;
 
@@ -291,7 +295,7 @@ namespace System.Configuration
                     // Try the first part of the namespace
                     if (ns != null)
                     {
-                        int firstDot = ns.IndexOf(".", StringComparison.Ordinal);
+                        int firstDot = ns.IndexOf('.');
                         _companyName = firstDot != -1 ? ns.Substring(0, firstDot) : ns;
 
                         _companyName = _companyName.Trim();

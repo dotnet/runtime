@@ -20,7 +20,6 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Security;
 using System.Threading;
 using Xunit;
@@ -816,7 +815,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         private static Tuple<Dictionary<int, Graph<int>>, List<List<int>>> FlattenGraph(Graph<int> n)
         {
             // ref -> id
-            var nodes = new Dictionary<Graph<int>, int>(new ReferenceComparer<Graph<int>>());
+            var nodes = new Dictionary<Graph<int>, int>(ReferenceEqualityComparer.Instance);
             GetIdsForGraphDFS(n, nodes);
 
             // id -> list of ids
@@ -1162,7 +1161,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 CheckEquals(@this.InnerException, other.InnerException, isSamePlatform);
             }
 
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 // Different by design for those exceptions
                 if (!((@this is NetworkInformationException || @this is SocketException) && !isSamePlatform))
@@ -1262,19 +1261,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.NotNull(other);
             Assert.Equal(@this.Width, other.Width);
             Assert.Equal(@this.Height, other.Height);
-        }
-
-        public class ReferenceComparer<T> : IEqualityComparer<T> where T : class
-        {
-            public bool Equals(T x, T y)
-            {
-                return ReferenceEquals(x, y);
-            }
-
-            public int GetHashCode(T x)
-            {
-                return RuntimeHelpers.GetHashCode(x);
-            }
         }
     }
 }

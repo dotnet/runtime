@@ -57,7 +57,8 @@ namespace System.Net.Tests
         }
     }
 
-    [SkipOnCoreClr("System.Net.Tests are inestable")]
+    [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", RuntimeConfiguration.Checked)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerResponseTests : HttpListenerResponseTestBase
     {
@@ -113,7 +114,6 @@ namespace System.Net.Tests
         [InlineData(" \r \t \n", 123)]
         [InlineData("http://microsoft.com", 155)]
         [InlineData("  http://microsoft.com  ", 155)]
-        [SkipOnCoreClr("System.Net.Tests are inestable")]
         public async Task Redirect_Invoke_SetsRedirectionProperties(string url, int expectedNumberOfBytes)
         {
             string expectedUrl = url?.Trim() ?? "";
@@ -155,7 +155,7 @@ namespace System.Net.Tests
         }
 
         // The managed implementation should also dispose the OutputStream after calling Abort.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19975, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21808", TestPlatforms.AnyUnix)]
         public async Task Abort_Invoke_ForciblyTerminatesConnection()
         {
             Client.Send(Factory.GetContent("1.1", "POST", null, "Give me a context, please", null, headerOnly: false));
@@ -266,7 +266,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_AllContentLengthAlreadySent_DoesNotSendEntity(bool willBlock)
@@ -360,7 +360,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_SendMoreThanContentLength_ThrowsInvalidOperationException(bool willBlock)

@@ -9,6 +9,7 @@ namespace System.Reflection.Emit.Tests
     public class EnumBuilderPropertyTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void Guid_TypeCreated()
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));

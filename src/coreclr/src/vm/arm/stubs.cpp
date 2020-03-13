@@ -532,9 +532,9 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
     do
     {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         pvControlPc = Thread::VirtualUnwindCallFrame(&ctx, &nonVolRegPtrs);
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 #ifdef DACCESS_COMPILE
         HRESULT hr = DacVirtualUnwind(threadId, &ctx, &nonVolRegPtrs);
         if (FAILED(hr))
@@ -550,7 +550,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         }
 #endif // DACCESS_COMPILE
         pvControlPc = GetIP(&ctx);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
         if (funCallDepth > 0)
         {
             --funCallDepth;
@@ -1328,7 +1328,7 @@ Stub *GenerateInitPInvokeFrameHelper()
     ThumbReg regScratch = ThumbReg(6);
     ThumbReg regR9 = ThumbReg(9);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // Erect frame to perform call to GetThread
     psl->ThumbEmitProlog(1, sizeof(ArgumentRegisters), FALSE); // Save r4 for aligned stack
 
@@ -1339,7 +1339,7 @@ Stub *GenerateInitPInvokeFrameHelper()
 
     psl->ThumbEmitGetThread(regThread);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     for (int reg = 0; reg < 4; reg++)
         psl->ThumbEmitLoadRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r) + sizeof(*ArgumentRegisters::r) * reg);
 #endif
@@ -1367,7 +1367,7 @@ Stub *GenerateInitPInvokeFrameHelper()
     psl->ThumbEmitMovConstant(regScratch, 0);
     psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfReturnAddress - negSpace);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     DWORD cbSavedRegs = sizeof(ArgumentRegisters) + 2 * 4; // r0-r3, r4, lr
     psl->ThumbEmitAdd(regScratch, thumbRegSp, cbSavedRegs);
     psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfCallSiteSP - negSpace);
@@ -1381,7 +1381,7 @@ Stub *GenerateInitPInvokeFrameHelper()
 
     // leave current Thread in R4
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     psl->ThumbEmitEpilog();
 #else
     // Return. The return address has been restored into LR at this point.
@@ -1395,7 +1395,7 @@ Stub *GenerateInitPInvokeFrameHelper()
 
 void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 
     ThumbEmitMovConstant(ThumbReg(0), (TADDR)GetThread);
 
@@ -1406,7 +1406,7 @@ void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
         ThumbEmitMovRegReg(dest, ThumbReg(0));
     }
 
-#else // FEATURE_PAL
+#else // TARGET_UNIX
 
     // mrc p15, 0, dest, c13, c0, 2
     Emit16(0xee1d);
@@ -1418,7 +1418,7 @@ void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 
     ThumbEmitLoadRegIndirect(dest, dest, (g_TlsIndex & 0x7FFF0000) >> 16);
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 #endif // CROSSGEN_COMPILE
 
@@ -2769,6 +2769,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
+
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
@@ -2777,6 +2779,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
     pArgs->signature = pLookup->signature;
     pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
+
+    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
 
     // It's available only via the run-time helper function,
 
@@ -2791,17 +2795,14 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     else
     {
         int indirectionsSize = 0;
+        if (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+        {
+            indirectionsSize += (pLookup->sizeOffset >= 0xFFF ? 10 : 4);
+            indirectionsSize += 12;
+        }
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
-            if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
-            {
-                indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 2);
-                indirectionsSize += 4;
-            }
-            else
-            {
-                indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 4);
-            }
+            indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 4);
         }
 
         int codeSize = indirectionsSize + (pLookup->testForNull ? 26 : 2);
@@ -2815,76 +2816,80 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             p += 2;
         }
 
+        BYTE* pBLECall = NULL;
+
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
-            if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
-                if (pLookup->offsets[i] >= 0xFF)
+                _ASSERTE(pLookup->testForNull && i > 0);
+
+                if (pLookup->sizeOffset >= 0xFFF)
                 {
                     // mov r2, offset
-                    MovRegImm(p, 2, pLookup->offsets[i]);
-                    p += 8;
-
-                    // add r0, r2
-                    *(WORD *)p = 0x4410;
-                    p += 2;
+                    MovRegImm(p, 2, pLookup->sizeOffset); p += 8;
+                    // ldr r1, [r0, r2]
+                    *(WORD*)p = 0x5881; p += 2;
                 }
                 else
                 {
-                    // add r0, <offset>
-                   *(WORD *)p = (WORD)((WORD)0x3000 | (WORD)((0x00FF) & pLookup->offsets[i]));
-                   p += 2;
+                    // ldr r1, [r0 + offset]
+                    *(WORD*)p = 0xF8D0; p += 2;
+                    *(WORD*)p = (WORD)(0xFFF & pLookup->sizeOffset) | 0x1000; p += 2;
                 }
 
-                // r0 is pointer + offset[0]
-                // ldr r2, [r0]
-                *(WORD *)p = 0x6802;
-                p += 2;
+                // mov r2, slotOffset
+                MovRegImm(p, 2, slotOffset); p += 8;
 
-                // r2 is offset1
-                // add r0, r2
-                *(WORD *)p = 0x4410;
+                // cmp r1,r2
+                *(WORD*)p = 0x4291; p += 2;
+
+                // ble 'CALL HELPER'
+                pBLECall = p;       // Offset filled later
+                *(WORD*)p = 0xdd00; p += 2;
+            }
+            if (pLookup->offsets[i] >= 0xFFF)
+            {
+                // mov r2, offset
+                MovRegImm(p, 2, pLookup->offsets[i]);
+                p += 8;
+
+                // ldr r0, [r0, r2]
+                *(WORD *)p = 0x5880;
                 p += 2;
             }
             else
             {
-                if (pLookup->offsets[i] >= 0xFFF)
-                {
-                    // mov r2, offset
-                    MovRegImm(p, 2, pLookup->offsets[i]);
-                    p += 8;
-
-                    // ldr r0, [r0, r2]
-                    *(WORD *)p = 0x5880;
-                    p += 2;
-                }
-                else
-                {
-                    // ldr r0, [r0 + offset]
-                    *(WORD *)p = 0xF8D0;
-                    p += 2;
-                    *(WORD *)p = (WORD)(0xFFF & pLookup->offsets[i]);
-                    p += 2;
-                }
+                // ldr r0, [r0 + offset]
+                *(WORD *)p = 0xF8D0;
+                p += 2;
+                *(WORD *)p = (WORD)(0xFFF & pLookup->offsets[i]);
+                p += 2;
             }
         }
 
         // No null test required
         if (!pLookup->testForNull)
         {
+            _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
+
             // mov pc, lr
             *(WORD *)p = 0x46F7;
             p += 2;
         }
         else
         {
-            // cbz r0, nullvaluelabel
+            // cbz r0, 'CALL HELPER'
             *(WORD *)p = 0xB100;
             p += 2;
             // mov pc, lr
             *(WORD *)p = 0x46F7;
             p += 2;
-            // nullvaluelabel:
+
+            // CALL HELPER:
+            if (pBLECall != NULL)
+                *(WORD*)pBLECall |= (((BYTE)(p - pBLECall) - 4) >> 1);
+
             // mov r0, r3
             *(WORD *)p = 0x4618;
             p += 2;

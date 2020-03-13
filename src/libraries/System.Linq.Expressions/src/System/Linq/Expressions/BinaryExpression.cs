@@ -877,7 +877,6 @@ namespace System.Linq.Expressions
         /// <param name="method">A MethodInfo that specifies the implementing method.</param>
         /// <param name="conversion">A LambdaExpression that represents a type conversion function. This parameter is used if binaryType is Coalesce or compound assignment.</param>
         /// <returns>The BinaryExpression that results from calling the appropriate factory method.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static BinaryExpression MakeBinary(ExpressionType binaryType, Expression left, Expression right, bool liftToNull, MethodInfo? method, LambdaExpression? conversion) =>
             binaryType switch
             {

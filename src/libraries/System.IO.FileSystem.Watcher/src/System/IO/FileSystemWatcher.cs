@@ -472,7 +472,6 @@ namespace System.IO
         /// <devdoc>
         ///    Raises the <see cref='System.IO.FileSystemWatcher.Changed'/> event.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnChanged(FileSystemEventArgs e)
         {
             InvokeOn(e, _onChangedHandler);
@@ -481,7 +480,6 @@ namespace System.IO
         /// <devdoc>
         ///    Raises the <see cref='System.IO.FileSystemWatcher.Created'/> event.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnCreated(FileSystemEventArgs e)
         {
             InvokeOn(e, _onCreatedHandler);
@@ -490,7 +488,6 @@ namespace System.IO
         /// <devdoc>
         ///    Raises the <see cref='System.IO.FileSystemWatcher.Deleted'/> event.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnDeleted(FileSystemEventArgs e)
         {
             InvokeOn(e, _onDeletedHandler);
@@ -511,7 +508,6 @@ namespace System.IO
         /// <devdoc>
         ///    Raises the <see cref='System.IO.FileSystemWatcher.Error'/> event.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnError(ErrorEventArgs e)
         {
             ErrorEventHandler? handler = _onErrorHandler;
@@ -528,7 +524,6 @@ namespace System.IO
         /// <devdoc>
         ///    Raises the <see cref='System.IO.FileSystemWatcher.Renamed'/> event.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnRenamed(RenamedEventArgs e)
         {
             RenamedEventHandler? handler = _onRenamedHandler;

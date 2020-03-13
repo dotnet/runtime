@@ -52,7 +52,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             // .NET Core and .NET Native throw PlatformNotSupportedExceptions when deserializing many exceptions.
             // The .NET Framework supports full deserialization.
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 return;
             }

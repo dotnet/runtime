@@ -16,7 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public AbortTest(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithmessage(Uri server)
         {
@@ -41,7 +41,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Abort_SendAndAbort_Success(Uri server)
         {
@@ -61,7 +61,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Abort_ReceiveAndAbort_Success(Uri server)
         {
@@ -85,7 +85,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Abort_CloseAndAbort_Success(Uri server)
         {
@@ -109,7 +109,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ClientWebSocket_Abort_CloseOutputAsync(Uri server)
         {

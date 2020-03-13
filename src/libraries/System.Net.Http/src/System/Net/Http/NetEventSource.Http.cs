@@ -8,7 +8,6 @@ using System.Net.Http;
 
 namespace System.Net
 {
-    //TODO: If localization resources are not found, logging does not work. Issue #5126.
     [EventSource(Name = "Microsoft-System-Net-Http", LocalizationResources = "FxResources.System.Net.Http.SR")]
     internal sealed partial class NetEventSource : EventSource
     {

@@ -145,16 +145,18 @@ namespace System.Collections.Immutable
         [Pure]
         public static ImmutableArray<T> Create<T>(params T[]? items)
         {
-            if (items == null)
+            if (items == null || items.Length == 0)
             {
-                return Create<T>();
+                return ImmutableArray<T>.Empty;
             }
 
             // We can't trust that the array passed in will never be mutated by the caller.
             // The caller may have passed in an array explicitly (not relying on compiler params keyword)
             // and could then change the array after the call, thereby violating the immutable
             // guarantee provided by this struct. So we always copy the array to ensure it won't ever change.
-            return CreateDefensiveCopy(items);
+            var tmp = new T[items.Length];
+            Array.Copy(items, tmp, items.Length);
+            return new ImmutableArray<T>(tmp);
         }
 
         /// <summary>
@@ -540,25 +542,6 @@ namespace System.Collections.Immutable
         public static int BinarySearch<T>(this ImmutableArray<T> array, int index, int length, T value, IComparer<T>? comparer)
         {
             return Array.BinarySearch<T>(array.array!, index, length, value, comparer);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct.
-        /// </summary>
-        /// <param name="items">The array from which to copy.</param>
-        internal static ImmutableArray<T> CreateDefensiveCopy<T>(T[] items)
-        {
-            Debug.Assert(items != null);
-
-            if (items.Length == 0)
-            {
-                return ImmutableArray<T>.Empty; // use just a shared empty array, allowing the input array to be potentially GC'd
-            }
-
-            // defensive copy
-            var tmp = new T[items.Length];
-            Array.Copy(items, tmp, items.Length);
-            return new ImmutableArray<T>(tmp);
         }
     }
 }

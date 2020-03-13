@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Microsoft.Composition.Demos.ExtendedCollectionImports</AssemblyName>
-    <Configurations>netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Dictionaries\DictionaryExportDescriptorProvider.cs" />

@@ -12,7 +12,6 @@
 
 #include "peimage.h"
 #include "eeconfig.h"
-#include "apithreadstress.h"
 #include <objbase.h>
 
 #include "eventtrace.h"
@@ -207,29 +206,6 @@ BOOL PEImage::CompareIJWDataBase(UPTR base, UPTR mapping)
     return ((BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase());
 }
 
-    // Thread stress
-#if 0
-class OpenFileStress : APIThreadStress
-    {
-      public:
-        const SString &path;
-    PEImage::Layout layout;
-    OpenFileStress(const SString &path, PEImage::Layout layout)
-          : path(path), layout(layout)
-        {
-            WRAPPER_NO_CONTRACT;
-
-            path.Normalize();
-        }
-        void Invoke()
-        {
-            WRAPPER_NO_CONTRACT;
-
-            PEImageHolder result(PEImage::Open(path, layout));
-        }
-};
-#endif
-
 ULONG PEImage::Release()
 {
     CONTRACTL
@@ -348,7 +324,7 @@ BOOL PEImage::PathEquals(const SString &p1, const SString &p2)
 #endif
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 /* static */
 void PEImage::GetPathFromDll(HINSTANCE hMod, SString &result)
 {
@@ -367,7 +343,7 @@ void PEImage::GetPathFromDll(HINSTANCE hMod, SString &result)
     WszGetModuleFileName(hMod, result);
 
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 /* static */
 BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
@@ -996,12 +972,12 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
         BOOL bIsMappedLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_MAPPED) != 0);
         BOOL bIsFlatLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_FLAT) != 0);
 
-#if !defined(PLATFORM_UNIX)
+#if !defined(TARGET_UNIX)
         if (bIsMappedLayoutSuitable)
         {
             bIsFlatLayoutSuitable = FALSE;
         }
-#endif // !PLATFORM_UNIX
+#endif // !TARGET_UNIX
 
         _ASSERTE(bIsMappedLayoutSuitable || bIsFlatLayoutSuitable);
 
@@ -1153,7 +1129,7 @@ PTR_PEImage PEImage::LoadFlat(const void *flat, COUNT_T size)
     RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 /* static */
 PTR_PEImage PEImage::LoadImage(HMODULE hMod)
 {
@@ -1184,7 +1160,7 @@ PTR_PEImage PEImage::LoadImage(HMODULE hMod)
 
     RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 void PEImage::Load()
 {
@@ -1206,7 +1182,7 @@ void PEImage::Load()
         return;
     }
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
     if (m_pLayouts[IMAGE_FLAT] != NULL
         && m_pLayouts[IMAGE_FLAT]->CheckILOnlyFormat()
         && !m_pLayouts[IMAGE_FLAT]->HasWriteableSections())
@@ -1224,7 +1200,7 @@ void PEImage::Load()
         SetLayout(IMAGE_LOADED, m_pLayouts[IMAGE_FLAT]);
     }
     else
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
     {
         if(!IsFile())
         {

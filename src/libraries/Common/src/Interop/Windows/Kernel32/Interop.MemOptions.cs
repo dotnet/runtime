@@ -10,6 +10,8 @@ internal partial class Interop
         {
             internal const int MEM_COMMIT = 0x1000;
             internal const int MEM_RESERVE = 0x2000;
+            internal const int MEM_RELEASE = 0x8000;
+            internal const int MEM_FREE = 0x10000;
         }
 
         internal const int INVALID_FILE_SIZE = -1;

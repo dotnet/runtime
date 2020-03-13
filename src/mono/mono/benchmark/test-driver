@@ -1,0 +1,39 @@
+#!/usr/bin/perl -w
+
+my $interpreter = shift;
+my $test = shift;
+my $output = $test;
+my $stdout = $test.'.stdout';
+my $stderr = $test.'.stderr';
+
+$output =~ s/\.exe$/.output/;
+
+$| = 0;
+print "Testing $test... ";
+
+for ($c = 20 - length ($test); $c > 0; $c--) { print " "; }
+
+my $res = system("/usr/bin/time -o .res -f '%U' $interpreter @ARGV $test 2>/dev/null 1>$stdout");
+
+if ($res) {
+	printf ("failed $? (%d) signal (%d).\n", $? >> 8, $? & 127);
+	exit (1);
+} elsif (-f $output) {
+	print "failed output.\n" if (read_file ($output) ne read_file ($stdout));
+	exit (1);
+} else {
+        $t = `cat .res`;
+	$t =~ s/\n//;
+	print "pass. $t\n";
+	#unlink ($result);
+}
+exit (0);
+
+sub read_file {
+	local ($/);
+	my $out = shift;
+	open (F, "<$out") || die $!;
+	$out = <F>;
+	close(F);
+	return $out;
+}

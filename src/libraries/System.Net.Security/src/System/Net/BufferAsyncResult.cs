@@ -21,7 +21,7 @@ namespace System.Net
         private bool _countOrResultIsResult;
 #endif
 
-        public BufferAsyncResult(object asyncObject, byte[] buffer, int offset, int count, object asyncState, AsyncCallback asyncCallback)
+        public BufferAsyncResult(object asyncObject, byte[] buffer, int offset, int count, object? asyncState, AsyncCallback? asyncCallback)
             : base(asyncObject, asyncState, asyncCallback)
         {
             Buffer = buffer;

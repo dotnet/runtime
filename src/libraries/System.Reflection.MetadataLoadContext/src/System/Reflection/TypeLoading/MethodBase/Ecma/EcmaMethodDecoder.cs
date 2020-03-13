@@ -121,7 +121,7 @@ namespace System.Reflection.TypeLoading.Ecma
             return results;
         }
 
-        public MethodBody SpecializeMethodBody(IRoMethodBase owner)
+        public MethodBody? SpecializeMethodBody(IRoMethodBase owner)
         {
             int rva = MethodDefinition.RelativeVirtualAddress;
             if (rva == 0)

@@ -93,4 +93,22 @@
   <data name="net_WebSockets_ArgumentOutOfRange_TooSmall" xml:space="preserve">
     <value>The argument must be a value greater than {0}.</value>
   </data>
+  <data name="net_Websockets_ReservedBitsSet" xml:space="preserve">
+    <value>The WebSocket received a frame with one or more reserved bits set.</value>
+  </data>
+  <data name="net_Websockets_ClientReceivedMaskedFrame" xml:space="preserve">
+    <value>The WebSocket server sent a masked frame.</value>
+  </data>
+  <data name="net_Websockets_ContinuationFromFinalFrame" xml:space="preserve">
+    <value>The WebSocket received a continuation frame from a previous final message.</value>
+  </data>
+  <data name="net_Websockets_NonContinuationAfterNonFinalFrame" xml:space="preserve">
+    <value>The WebSocket expected a continuation frame after having received a previous non-final frame.</value>
+  </data>
+  <data name="net_Websockets_InvalidControlMessage" xml:space="preserve">
+    <value>The WebSocket received an invalid control message.</value>
+  </data>
+  <data name="net_Websockets_UnknownOpcode" xml:space="preserve">
+    <value>The WebSocket received a frame with an unknown opcode: '0x{0}'.</value>
+  </data>
 </root>

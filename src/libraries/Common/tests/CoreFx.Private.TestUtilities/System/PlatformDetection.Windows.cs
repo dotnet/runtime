@@ -19,7 +19,7 @@ namespace System
         //
 
         public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        public static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
+        public static bool IsNetFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
         public static bool HasWindowsShell => IsWindows && IsNotWindowsServerCore && IsNotWindowsNanoServer && IsNotWindowsIoTCore;
         public static bool IsWindows7 => IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsWindows8x => IsWindows && GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
@@ -201,7 +201,7 @@ namespace System
             // This actually checks whether code is running in a modern app.
             // Currently this is the only situation where we run in app container.
             // If we want to distinguish the two cases in future,
-            // EnvironmentHelpers.IsAppContainerProcess in desktop code shows how to check for the AC token.
+            // EnvironmentHelpers.IsAppContainerProcess in .NET Framework code shows how to check for the AC token.
             get
             {
                 if (s_isInAppContainer != -1)

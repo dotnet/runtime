@@ -20,14 +20,13 @@ namespace System.ComponentModel
             get => (Volatile.Read(ref _data) & bit) == bit;
             set
             {
-                while (true)
+                if (value)
                 {
-                    int oldValue = _data;
-                    int newValue = value ? oldValue | bit : oldValue &= ~bit;
-                    if (Interlocked.CompareExchange(ref _data, newValue, oldValue) == oldValue)
-                    {
-                        break;
-                    }
+                    Interlocked.Or(ref _data, bit);
+                }
+                else
+                {
+                    Interlocked.And(ref _data, ~bit);
                 }
             }
         }

@@ -102,23 +102,24 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
     /* add length of methodName and opening bracket */
     length += strlen(methodName) + 1;
 
-    /* figure out the signature */
-
-    param.pThis->eeGetMethodSig(param.hnd, &param.sig);
-
-    // allocate space to hold the class names for each of the parameters
-
-    if (param.sig.numArgs > 0)
-    {
-        param.pArgNames = getAllocator(CMK_DebugOnly).allocate<const char*>(param.sig.numArgs);
-    }
-    else
-    {
-        param.pArgNames = nullptr;
-    }
-
     PAL_TRY(FilterSuperPMIExceptionsParam_eeinterface*, pParam, &param)
     {
+
+        /* figure out the signature */
+
+        pParam->pThis->eeGetMethodSig(pParam->hnd, &pParam->sig);
+
+        // allocate space to hold the class names for each of the parameters
+
+        if (pParam->sig.numArgs > 0)
+        {
+            pParam->pArgNames = pParam->pThis->getAllocator(CMK_DebugOnly).allocate<const char*>(pParam->sig.numArgs);
+        }
+        else
+        {
+            pParam->pArgNames = nullptr;
+        }
+
         unsigned i;
         pParam->argLst = pParam->sig.args;
 

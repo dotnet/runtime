@@ -156,7 +156,7 @@ private:
     // IMPORTANT: This is the ONLY member of this class.
     UINT_PTR     m_token;
 
-#ifndef BIT64
+#ifndef HOST_64BIT
     // NOTE: On 32-bit, we use the uppermost bit to indicate that the
     // token is really a DispatchTokenFat*, and to recover the pointer
     // we just shift left by 1; correspondingly, when storing a
@@ -172,7 +172,7 @@ private:
 #endif // FAT_DISPATCH_TOKENS
 
     static const UINT_PTR INVALID_TOKEN      = 0x7FFFFFFF;
-#else //BIT64
+#else //HOST_64BIT
     static const UINT_PTR MASK_TYPE_ID       = UI64(0x000000007FFFFFFF);
     static const UINT_PTR MASK_SLOT_NUMBER   = UI64(0x000000000000FFFF);
 
@@ -184,7 +184,7 @@ private:
 #endif // FAT_DISPATCH_TOKENS
 
     static const UINT_PTR INVALID_TOKEN      = 0x7FFFFFFFFFFFFFFF;
-#endif //BIT64
+#endif //HOST_64BIT
 
 #ifdef FAT_DISPATCH_TOKENS
     //------------------------------------------------------------------------
@@ -242,7 +242,7 @@ private:
 public:
 
 #ifdef FAT_DISPATCH_TOKENS
-#if !defined(BIT64)
+#if !defined(HOST_64BIT)
     static const UINT32   MAX_TYPE_ID_SMALL  = 0x00007FFF;
 #else
     static const UINT32   MAX_TYPE_ID_SMALL  = 0x7FFFFFFF;

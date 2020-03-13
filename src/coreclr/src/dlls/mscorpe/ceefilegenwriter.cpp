@@ -334,7 +334,7 @@ HRESULT CeeFileGenWriter::link()
         hr = emitExeMain();
         if (FAILED(hr))
             return hr;
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         hr = emitResourceSection();
         if (FAILED(hr))
             return hr;
@@ -388,7 +388,7 @@ HRESULT CeeFileGenWriter::generateImage(void **ppImage)
     HRESULT hr = S_OK;
     LPCWSTR outputFileName = NULL;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HANDLE hThreadToken = NULL;
     // Impersonation is only supported on Win2k and above.
     if (!OpenThreadToken(GetCurrentThread(), TOKEN_READ | TOKEN_IMPERSONATE, TRUE, &hThreadToken))
@@ -409,7 +409,7 @@ HRESULT CeeFileGenWriter::generateImage(void **ppImage)
             return HRESULT_FROM_GetLastError();
         }
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef ENC_DELTA_HACK
     // fixups break because we've set the base RVA to 0 for the delta stream
@@ -440,7 +440,7 @@ HRESULT CeeFileGenWriter::generateImage(void **ppImage)
         IfFailGo(getPEWriter().write(ppImage));
 
 ErrExit:
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (hThreadToken != NULL)
     {
         BOOL success = SetThreadToken(NULL, hThreadToken);
@@ -452,7 +452,7 @@ ErrExit:
             hr = HRESULT_FROM_GetLastError();
         }
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     return hr;
 } // HRESULT CeeFileGenWriter::generateImage()
 
@@ -962,7 +962,7 @@ HRESULT GetClrSystemDirectory(SString& pbuffer)
     return CopySystemDirectory(pPath, pbuffer);
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 BOOL RunProcess(LPCWSTR tempResObj, LPCWSTR pszFilename, DWORD* pdwExitCode, PEWriter &pewriter)
 {
     BOOL fSuccess = FALSE;
@@ -1442,7 +1442,7 @@ lDone: ;
 
     return hr;
 } // HRESULT CeeFileGenWriter::emitResourceSection()
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 HRESULT CeeFileGenWriter::setManifestEntry(ULONG size, ULONG offset)
 {
@@ -1608,7 +1608,7 @@ HRESULT CeeFileGenWriter::addFixup(CeeSection& sectionSource, unsigned offset, C
       TESTANDRETURN(pfixup != NULL, E_OUTOFMEMORY);
 
       // Initialize the IMAGE_DEBUG_TYPE_FIXUP entry relocations
-#ifdef BIT64
+#ifdef HOST_64BIT
       _ASSERTE(!"Base relocs are not yet implemented for 64-bit");
       m_pDebugDir->AddressOfRawData = 0; // @ToDo: srRelocAbsolutePtr can't take a 64-bit address
 #else
@@ -1716,7 +1716,7 @@ HRESULT CeeFileGenWriter::UpdateFixups()
 
       switch (relocType)
       {
-#ifdef _X86_
+#ifdef HOST_X86
       case srRelocAbsolute:
           // Emitted bytes: RVA, offset relative to image base
           // reloc src contains target offset relative to target section
@@ -1778,7 +1778,7 @@ HRESULT CeeFileGenWriter::UpdateFixups()
           pfixup->wType = IMAGE_REL_I386_TOKEN;
           break;
 
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
           /*
           //
           // X86-64 relocations

@@ -143,6 +143,83 @@ void ECall::PopulateManagedStringConstructors()
     INDEBUG(fInitialized = true);
 }
 
+void ECall::PopulateManagedCastHelpers()
+{
+#ifndef CROSSGEN_COMPILE
+
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc* pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFANY));
+    PCODE pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFANY, pDest);
+    // array cast uses the "ANY" helper
+    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFARRAY, pDest);
+
+#ifdef FEATURE_PREJIT
+    // When interface table uses indirect references, just set interface casts to "ANY" helper
+    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
+#else
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFINTERFACE));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFINTERFACE, pDest);
+#endif
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISINSTANCEOFCLASS));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ISINSTANCEOFCLASS, pDest);
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTANY));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTANY, pDest);
+    // array cast uses the "ANY" helper
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTARRAY, pDest);
+
+#ifdef FEATURE_PREJIT
+    // When interface table uses indirect references, just set interface casts to "ANY" handler
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
+#else
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);
+#endif
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASS));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS, pDest);
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTCLASSSPECIAL));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS_SPECIAL, pDest);
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__UNBOX));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);
+
+    // Array element accessors are more perf sensitive than other managed helpers and indirection 
+    // costs introduced by PreStub could be noticeable (7% to 30% depending on platform).
+    // Other helpers are either more complex, less common, or have their trivial case inlined by the JIT, 
+    // so indirection is not as big concern.
+    // We JIT-compile the following helpers eagerly here to avoid indirection costs.
+
+    //TODO: revise if this specialcasing is still needed when crossgen supports tailcall optimizations
+    //      see: https://github.com/dotnet/runtime/issues/5857
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF));
+    pMD->DoPrestub(NULL);
+    // This helper is marked AggressiveOptimization and its native code is in its final form.
+    // Get the code directly to avoid PreStub indirection.
+    pDest = pMD->GetNativeCode();
+    SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST, pDest);
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
+    pMD->DoPrestub(NULL);
+    // This helper is marked AggressiveOptimization and its native code is in its final form.
+    // Get the code directly to avoid PreStub indirection.
+    pDest = pMD->GetNativeCode();
+    SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
+#endif  //CROSSGEN_COMPILE
+}
+
 static CrstStatic gFCallLock;
 
 // This variable is used to force the compiler not to tailcall a function.
@@ -450,7 +527,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
 
     // Use the ECFunc address as a unique fake entrypoint to make the entrypoint<->MethodDesc mapping work
     PCODE pImplementation = (PCODE)ret;
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     pImplementation |= THUMB_CODE;
 #endif
 

@@ -109,7 +109,7 @@ c_ImportSectionProperties[ZapImportSectionType_Count] =
     { /* ZapImportSectionType_Handle,       */ CORCOMPILE_IMPORT_TYPE_UNKNOWN,         0,                    0                               },
     { /* ZapImportSectionType_TypeHandle,   */ CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE,     TARGET_POINTER_SIZE,  0                               },
     { /* ZapImportSectionType_MethodHandle, */ CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE,   TARGET_POINTER_SIZE,  0                               },
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     { /* ZapImportSectionType_PCode,        */ CORCOMPILE_IMPORT_TYPE_UNKNOWN,         0,                    CORCOMPILE_IMPORT_FLAGS_PCODE   },
 #endif
     { /* ZapImportSectionType_StringHandle, */ CORCOMPILE_IMPORT_TYPE_STRING_HANDLE,   TARGET_POINTER_SIZE,  0                               },
@@ -489,11 +489,11 @@ void ZapExternalMethodThunk::Save(ZapWriter * pZapWriter)
 
     CORCOMPILE_EXTERNAL_METHOD_THUNK thunk;
     memset(&thunk, DEFAULT_CODE_BUFFER_INIT, sizeof(thunk));
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     thunk.callJmp[0]  = 0xE8;  // call rel32
     pImage->WriteReloc(&thunk, 1, helper, 0, IMAGE_REL_BASED_REL32);
     thunk.precodeType = _PRECODE_EXTERNAL_METHOD_THUNK;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     // Setup the call to ExternalMethodFixupStub
     //
     // mov r12, pc
@@ -515,7 +515,7 @@ void ZapExternalMethodThunk::Save(ZapWriter * pZapWriter)
 
     // Setup the initial target to be our assembly helper.
     pImage->WriteReloc(&thunk, offsetof(CORCOMPILE_EXTERNAL_METHOD_THUNK, m_pTarget), helper, 0, IMAGE_REL_BASED_PTR);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
     thunk.m_rgCode[0] = 0x1000000C; //adr       x12, #0
     thunk.m_rgCode[1] = 0xF940098A; //ldr       x10, [x12, #16]
@@ -801,13 +801,13 @@ void ZapVirtualMethodThunk::Save(ZapWriter * pZapWriter)
     _ASSERTE(FitsIn<UINT16>((SIZE_T)GetHandle2() - 1));
     USHORT     slotNum = (USHORT)((SIZE_T)GetHandle2() - 1);
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     thunk.callJmp[0] = 0xE8;        // call rel32
     pImage->WriteReloc(&thunk, 1, helper, 0, IMAGE_REL_BASED_REL32);
 
     // Mark this as a Virtual Import Thunk
     thunk.precodeType = _PRECODE_VIRTUAL_IMPORT_THUNK;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     // Setup the call to VirtualMethodFixupStub
     //
     // mov r12, pc
@@ -830,7 +830,7 @@ void ZapVirtualMethodThunk::Save(ZapWriter * pZapWriter)
     // Slot ID is setup below, so now setup the initial target
     // to be our assembly helper.
     pImage->WriteReloc(&thunk, offsetof(CORCOMPILE_VIRTUAL_IMPORT_THUNK, m_pTarget), helper, 0, IMAGE_REL_BASED_PTR);
- #elif defined(_TARGET_ARM64_)
+ #elif defined(TARGET_ARM64)
 
     thunk.m_rgCode[0] = 0x1000000C; //adr       x12, #0
     thunk.m_rgCode[1] = 0xF940098A; //ldr       x10, [x12, #16]
@@ -1232,7 +1232,7 @@ public:
         return ZapNodeType_Import_FunctionEntry;
     }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     virtual ZapImportSectionType ComputePlacement(ZapImage * pImage, BOOL * pfIsEager, BOOL * pfNeedsSignature)
     {
         ZapImport::ComputePlacement(pImage, pfIsEager, pfNeedsSignature);
@@ -1974,7 +1974,7 @@ public:
     }
 };
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 static void MovRegImm(BYTE* p, int reg)
 {
     *(WORD *)(p + 0) = 0xF240;
@@ -1982,7 +1982,7 @@ static void MovRegImm(BYTE* p, int reg)
     *(WORD *)(p + 4) = 0xF2C0;
     *(WORD *)(p + 6) = (UINT16)(reg << 8);
 }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
 {
@@ -1991,7 +1991,7 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
     BYTE buffer[44];
     BYTE * p = buffer;
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     if (IsDelayLoadHelper())
     {
         // xor eax, eax
@@ -2027,7 +2027,7 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
     if (pImage != NULL)
         pImage->WriteReloc(buffer, (int) (p - buffer), pImage->GetImportTable()->GetHelperImport(GetReadyToRunHelper()), 0, IMAGE_REL_BASED_PTR);
     p += 4;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     if (IsDelayLoadHelper())
     {
         if (m_pCell != NULL)
@@ -2090,7 +2090,7 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
     if (pImage != NULL)
         pImage->WriteReloc(buffer, (int) (p - buffer), pImage->GetImportTable()->GetHelperImport(GetReadyToRunHelper()), 0, IMAGE_REL_BASED_REL32);
     p += 4;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     if (IsDelayLoadHelper())
     {
         // r4 contains indirection cell
@@ -2164,7 +2164,7 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
         *(WORD *)p = 0x4760;
         p += 2;
     }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     if (IsDelayLoadHelper())
     {
         // x11 contains indirection cell
@@ -2250,7 +2250,7 @@ void ZapImportTable::PlaceIndirectHelperThunk(ZapNode * pImport)
 ZapNode * ZapImportTable::GetIndirectHelperThunk(ReadyToRunHelper helperNum, PVOID pArg)
 {
     ZapNode * pImport = GetImport<ZapIndirectHelperThunk, ZapNodeType_IndirectHelperThunk>((void *)helperNum, pArg);
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     pImport = m_pImage->GetInnerPtr(pImport, THUMB_CODE);
 #endif
     return pImport;
@@ -2273,7 +2273,7 @@ ZapNode * ZapImportTable::GetPlacedIndirectHelperThunk(ReadyToRunHelper helperNu
     }
     if (!pImport->IsPlaced())
         PlaceIndirectHelperThunk(pImport);
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     pImport = m_pImage->GetInnerPtr(pImport, THUMB_CODE);
 #endif
     return pImport;

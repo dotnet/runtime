@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition.AttributedModel
 {
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class AttributedModelCompositionTests
     {
         [Fact]
@@ -257,7 +258,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void MemberExports()
         {
             var exporter = PartFactory.CreateAttributed(new ObjectWithMemberExports());
@@ -294,24 +295,6 @@ namespace System.ComponentModel.Composition.AttributedModel
 
             //  Exported value should have been cached and so it shouldn't change
             Assert.Equal("Value1", container.GetExportedValue<string>("Property"));
-        }
-
-        [Fact]
-        [ActiveIssue(739354)]
-        public void TestExportedValueCachesNullValue()
-        {
-            var container = ContainerFactory.Create();
-            var exporter = new ExportsMutableProperty();
-            exporter.Property = null;
-
-            container.ComposeParts(exporter);
-
-            Assert.Null(container.GetExportedValue<string>("Property"));
-
-            exporter.Property = "Value1";
-
-            //  Exported value should have been cached and so it shouldn't change
-            Assert.Null(container.GetExportedValue<string>("Property"));
         }
 
         public class ExportsMutableProperty

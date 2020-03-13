@@ -68,10 +68,10 @@ namespace System.Security.Cryptography
         public override void GenerateIV() => _impl.GenerateIV();
         public override void GenerateKey() => _impl.GenerateKey();
 
-        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) =>
+        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) =>
             _impl.CreateEncryptor(rgbKey, Helpers.TrimLargeIV(rgbIV, BlockSize));
 
-        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) =>
+        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) =>
             _impl.CreateDecryptor(rgbKey, Helpers.TrimLargeIV(rgbIV, BlockSize));
 
         protected override void Dispose(bool disposing)

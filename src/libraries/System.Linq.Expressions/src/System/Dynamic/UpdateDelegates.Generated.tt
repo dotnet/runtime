@@ -160,7 +160,6 @@ for (int i = 1; i <= 10; i++)
         }
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
         internal static TRet NoMatch<#=i#><<#=genericParameters#>>(<#=parameters#>)
         {
             site._match = false;
@@ -316,7 +315,6 @@ for (int i = 1; i <= 10; i++)
         }
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters")]
         internal static void NoMatchVoid<#=i#><<#=genericParameters#>>(<#=parameters#>)
         {
             site._match = false;

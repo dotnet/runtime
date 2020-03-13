@@ -807,7 +807,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
         fDebuggeeLoadedNgen = true;
         fDebuggerLoadingNgen = true;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // NGEN images are large and we shouldn't load them if they won't be shared, therefore fail the NGEN mapping and
         // fallback to IL image if the debugger doesn't have the image loaded already.
         // Its possible that the debugger would still load the NGEN image sometime in the future and we will miss a sharing
@@ -880,7 +880,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
                                                 DWORD dwOpenFlags,
                                                 bool validateFileInfo)
 {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // UNIXTODO: Some intricate details of file mapping don't work on Linux as on Windows.
     // We have to revisit this and try to fix it for POSIX system.
     return E_FAIL;
@@ -993,7 +993,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
     }
 
     return hr;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 
 //---------------------------------------------------------------------------------------
@@ -2566,7 +2566,7 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
         ReleaseHolder<ISymUnmanagedBinder> pBinder;
         if (symFormat == IDacDbiInterface::kSymbolFormatPDB)
         {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             // PDB format - use diasymreader.dll with COM activation
             InlineSString<_MAX_PATH> ssBuf;
             IfFailThrow(GetHModuleDirectory(GetModuleInst(), ssBuf));
@@ -4522,14 +4522,14 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
 
 int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 {
-#if defined(DBG_TARGET_ARM)
+#if defined(TARGET_ARM)
     if (Is32BitInstruction(*(WORD*)ip))
         return 4;
     else
         return 2;
-#elif defined(DBG_TARGET_ARM64)
+#elif defined(TARGET_ARM64)
     return MAX_INSTRUCTION_LENGTH;
-#elif defined(DBG_TARGET_X86)
+#elif defined(TARGET_X86)
     if (count < 2)
         return -1;
 
@@ -4680,7 +4680,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
     _ASSERTE(!"Unhandled opcode!");
     return -1;
 
-#elif defined(DBG_TARGET_AMD64)
+#elif defined(TARGET_AMD64)
     BYTE rex = NULL;
     BYTE prefix = *ip;
     BOOL fContainsPrefix = FALSE;
@@ -5191,7 +5191,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
 
                 int skipBytes = 0;
 
-#if defined(DBG_TARGET_X86) && defined(FEATURE_CORESYSTEM)
+#if defined(TARGET_X86) && defined(FEATURE_CORESYSTEM)
                 // Skip nop sleds on x86 coresystem.  The JIT adds these instructions as a security measure,
                 // and incorrectly reports to us the wrong offset of the call instruction.
                 const BYTE nop_opcode = 0x90;

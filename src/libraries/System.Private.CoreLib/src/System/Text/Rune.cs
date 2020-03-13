@@ -1133,8 +1133,8 @@ namespace System.Text
         {
             // Per the Unicode stability policy, the set of control characters
             // is forever fixed at [ U+0000..U+001F ], [ U+007F..U+009F ]. No
-            // characters will ever be added to the "control characters" group.
-            // See http://www.unicode.org/policies/stability_policy.html.
+            // characters will ever be added to or removed from the "control characters"
+            // group. See https://www.unicode.org/policies/stability_policy.html.
 
             // Logic below depends on Rune.Value never being -1 (since Rune is a validating type)
             // 00..1F (+1) => 01..20 (&~80) => 01..20

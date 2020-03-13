@@ -114,13 +114,13 @@ namespace System.Security.AccessControl
         // class to obtain pointers to SACL and DACL
         //
 
-        internal abstract GenericAcl GenericSacl { get; }
-        internal abstract GenericAcl GenericDacl { get; }
+        internal abstract GenericAcl? GenericSacl { get; }
+        internal abstract GenericAcl? GenericDacl { get; }
         private bool IsCraftedAefaDacl
         {
             get
             {
-                return (GenericDacl is DiscretionaryAcl) && (GenericDacl as DiscretionaryAcl).EveryOneFullAccessForNullDacl;
+                return (GenericDacl is DiscretionaryAcl dacl) && dacl.EveryOneFullAccessForNullDacl;
             }
         }
 
@@ -148,13 +148,13 @@ namespace System.Security.AccessControl
         // Allows retrieving and setting the owner SID for this security descriptor
         //
 
-        public abstract SecurityIdentifier Owner { get; set; }
+        public abstract SecurityIdentifier? Owner { get; set; }
 
         //
         // Allows retrieving and setting the group SID for this security descriptor
         //
 
-        public abstract SecurityIdentifier Group { get; set; }
+        public abstract SecurityIdentifier? Group { get; set; }
 
         //
         // Retrieves the length of the binary representation
@@ -204,7 +204,7 @@ namespace System.Security.AccessControl
         public string GetSddlForm(AccessControlSections includeSections)
         {
             byte[] binaryForm = new byte[BinaryLength];
-            string resultSddl;
+            string? resultSddl;
             int error;
 
             GetBinaryForm(binaryForm, 0);
@@ -249,7 +249,7 @@ namespace System.Security.AccessControl
                 throw new InvalidOperationException();
             }
 
-            return resultSddl;
+            return resultSddl!;
         }
 
         //
@@ -291,8 +291,8 @@ nameof(binaryForm),
             int length = BinaryLength;
 
             byte rmControl =
-                ((this is RawSecurityDescriptor) &&
-                 ((ControlFlags & ControlFlags.RMControlValid) != 0)) ? ((this as RawSecurityDescriptor).ResourceManagerControl) : (byte)0;
+                ((this is RawSecurityDescriptor rsd) &&
+                 ((ControlFlags & ControlFlags.RMControlValid) != 0)) ? (rsd.ResourceManagerControl) : (byte)0;
 
             // if the DACL is our internally crafted NULL replacement, then let us turn off this control
             int materializedControlFlags = (int)ControlFlags;
@@ -405,23 +405,23 @@ nameof(binaryForm),
     {
         #region Private Members
 
-        private SecurityIdentifier _owner;
-        private SecurityIdentifier _group;
+        private SecurityIdentifier? _owner;
+        private SecurityIdentifier? _group;
         private ControlFlags _flags;
-        private RawAcl _sacl;
-        private RawAcl _dacl;
+        private RawAcl? _sacl;
+        private RawAcl? _dacl;
         private byte _rmControl; // the not-so-reserved SBZ1 field
 
         #endregion
 
         #region Protected Properties
 
-        internal override GenericAcl GenericSacl
+        internal override GenericAcl? GenericSacl
         {
             get { return _sacl; }
         }
 
-        internal override GenericAcl GenericDacl
+        internal override GenericAcl? GenericDacl
         {
             get { return _dacl; }
         }
@@ -430,7 +430,7 @@ nameof(binaryForm),
 
         #region Private methods
 
-        private void CreateFromParts(ControlFlags flags, SecurityIdentifier owner, SecurityIdentifier group, RawAcl systemAcl, RawAcl discretionaryAcl)
+        private void CreateFromParts(ControlFlags flags, SecurityIdentifier? owner, SecurityIdentifier? group, RawAcl? systemAcl, RawAcl? discretionaryAcl)
         {
             SetFlags(flags);
             Owner = owner;
@@ -448,7 +448,7 @@ nameof(binaryForm),
         // Creates a security descriptor explicitly
         //
 
-        public RawSecurityDescriptor(ControlFlags flags, SecurityIdentifier owner, SecurityIdentifier group, RawAcl systemAcl, RawAcl discretionaryAcl)
+        public RawSecurityDescriptor(ControlFlags flags, SecurityIdentifier? owner, SecurityIdentifier? group, RawAcl? systemAcl, RawAcl? discretionaryAcl)
             : base()
         {
             CreateFromParts(flags, owner, group, systemAcl, discretionaryAcl);
@@ -513,8 +513,8 @@ nameof(binaryForm),
 
 
             ControlFlags flags;
-            SecurityIdentifier owner, group;
-            RawAcl sacl, dacl;
+            SecurityIdentifier? owner, group;
+            RawAcl? sacl, dacl;
             byte rmControl;
 
             //
@@ -633,7 +633,7 @@ nameof(binaryForm));
             int error;
             IntPtr byteArray = IntPtr.Zero;
             uint byteArraySize = 0;
-            byte[] binaryForm = null;
+            byte[]? binaryForm = null;
 
             try
             {
@@ -686,7 +686,7 @@ nameof(sddlForm));
                 //
                 if (byteArray != IntPtr.Zero)
                 {
-                    Interop.Kernel32.LocalFree(byteArray);
+                    Marshal.FreeHGlobal(byteArray);
                 }
             }
 
@@ -716,7 +716,7 @@ nameof(sddlForm));
         // Allows retrieving and setting the owner SID for this security descriptor
         //
 
-        public override SecurityIdentifier Owner
+        public override SecurityIdentifier? Owner
         {
             get
             {
@@ -733,7 +733,7 @@ nameof(sddlForm));
         // Allows retrieving and setting the group SID for this security descriptor
         //
 
-        public override SecurityIdentifier Group
+        public override SecurityIdentifier? Group
         {
             get
             {
@@ -750,7 +750,7 @@ nameof(sddlForm));
         // Allows retrieving and setting the SACL for this security descriptor
         //
 
-        public RawAcl SystemAcl
+        public RawAcl? SystemAcl
         {
             get
             {
@@ -767,7 +767,7 @@ nameof(sddlForm));
         // Allows retrieving and setting the DACL for this security descriptor
         //
 
-        public RawAcl DiscretionaryAcl
+        public RawAcl? DiscretionaryAcl
         {
             get
             {
@@ -824,16 +824,16 @@ nameof(sddlForm));
 
         private bool _isContainer;
         private bool _isDS;
-        private RawSecurityDescriptor _rawSd;
-        private SystemAcl _sacl;
-        private DiscretionaryAcl _dacl;
+        private RawSecurityDescriptor _rawSd = null!; // Initialized in helper.
+        private SystemAcl? _sacl;
+        private DiscretionaryAcl? _dacl;
 
 
         #endregion
 
         #region Private Methods
 
-        private void CreateFromParts(bool isContainer, bool isDS, ControlFlags flags, SecurityIdentifier owner, SecurityIdentifier group, SystemAcl systemAcl, DiscretionaryAcl discretionaryAcl)
+        private void CreateFromParts(bool isContainer, bool isDS, ControlFlags flags, SecurityIdentifier? owner, SecurityIdentifier? group, SystemAcl? systemAcl, DiscretionaryAcl? discretionaryAcl)
         {
             if (systemAcl != null &&
                 systemAcl.IsContainer != isContainer)
@@ -926,12 +926,12 @@ nameof(discretionaryAcl));
         // Creates a security descriptor explicitly
         //
 
-        public CommonSecurityDescriptor(bool isContainer, bool isDS, ControlFlags flags, SecurityIdentifier owner, SecurityIdentifier group, SystemAcl systemAcl, DiscretionaryAcl discretionaryAcl)
+        public CommonSecurityDescriptor(bool isContainer, bool isDS, ControlFlags flags, SecurityIdentifier? owner, SecurityIdentifier? group, SystemAcl? systemAcl, DiscretionaryAcl? discretionaryAcl)
         {
             CreateFromParts(isContainer, isDS, flags, owner, group, systemAcl, discretionaryAcl);
         }
 
-        private CommonSecurityDescriptor(bool isContainer, bool isDS, ControlFlags flags, SecurityIdentifier owner, SecurityIdentifier group, RawAcl systemAcl, RawAcl discretionaryAcl)
+        private CommonSecurityDescriptor(bool isContainer, bool isDS, ControlFlags flags, SecurityIdentifier? owner, SecurityIdentifier? group, RawAcl? systemAcl, RawAcl? discretionaryAcl)
             : this(isContainer, isDS, flags, owner, group, systemAcl == null ? null : new SystemAcl(isContainer, isDS, systemAcl), discretionaryAcl == null ? null : new DiscretionaryAcl(isContainer, isDS, discretionaryAcl))
         {
         }
@@ -980,12 +980,12 @@ nameof(discretionaryAcl));
 
         #region Protected Properties
 
-        internal sealed override GenericAcl GenericSacl
+        internal sealed override GenericAcl? GenericSacl
         {
             get { return _sacl; }
         }
 
-        internal sealed override GenericAcl GenericDacl
+        internal sealed override GenericAcl? GenericDacl
         {
             get { return _dacl; }
         }
@@ -1021,7 +1021,7 @@ nameof(discretionaryAcl));
         // Allows retrieving and setting the owner SID for this security descriptor
         //
 
-        public override SecurityIdentifier Owner
+        public override SecurityIdentifier? Owner
         {
             get
             {
@@ -1038,7 +1038,7 @@ nameof(discretionaryAcl));
         // Allows retrieving and setting the group SID for this security descriptor
         //
 
-        public override SecurityIdentifier Group
+        public override SecurityIdentifier? Group
         {
             get
             {
@@ -1052,7 +1052,7 @@ nameof(discretionaryAcl));
         }
 
 
-        public SystemAcl SystemAcl
+        public SystemAcl? SystemAcl
         {
             get
             {
@@ -1101,7 +1101,7 @@ nameof(value));
         // Allows retrieving and setting the DACL for this security descriptor
         //
 
-        public DiscretionaryAcl DiscretionaryAcl
+        public DiscretionaryAcl? DiscretionaryAcl
         {
             get
             {

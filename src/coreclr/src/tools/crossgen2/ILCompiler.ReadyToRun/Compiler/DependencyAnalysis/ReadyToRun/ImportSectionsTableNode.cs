@@ -8,11 +8,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class ImportSectionsTableNode : ArrayOfEmbeddedDataNode<ImportSectionNode>, ISignatureEmitter
     {
-        private readonly ReadyToRunCodegenNodeFactory _r2rFactory;
+        private readonly NodeFactory _r2rFactory;
 
         private bool _materializedSignature;
 
-        public ImportSectionsTableNode(ReadyToRunCodegenNodeFactory r2rFactory)
+        public ImportSectionsTableNode(NodeFactory r2rFactory)
             : base("ImportSectionsTableStart", "ImportSectionsTableEnd", new EmbeddedObjectNodeComparer(new CompilerComparer()))
         {
             _r2rFactory = r2rFactory;

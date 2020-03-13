@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="libmonoutils-common.targets.filters" />
+  <Import Project="libmonoutils-win32.targets.filters" />
+  <Import Project="libmonoutils-posix.targets.filters" />
+  <Import Project="libmonoutils-arch.targets.filters" />
+  <ItemGroup Condition="'$(MonoUtilsFilterSubFolder)'!=''">
+    <Filter Include="Header Files$(MonoUtilsFilterSubFolder)">
+      <UniqueIdentifier>{1ACFEA26-DBB0-44B9-8297-414DD74D7E22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files$(MonoUtilsFilterSubFolder)">
+      <UniqueIdentifier>{A52D473E-5928-4BD9-AA2D-284C4A04D9D4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoUtilsFilterSubFolder)">
+      <UniqueIdentifier>{69B9EC3D-597F-46CE-8F9F-55B732E95CCC}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

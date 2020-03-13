@@ -97,17 +97,17 @@ namespace System
             {
                 DateTime dt = new DateTime(ticks);
 
-                int year, month, day;
-                dt.GetDatePart(out year, out month, out day);
+                dt.GetDate(out int year, out int month, out int day);
+                dt.GetTime(out int hour, out int minute, out int second, out int millisecond);
 
                 systemTime.Year = (ushort)year;
                 systemTime.Month = (ushort)month;
                 systemTime.DayOfWeek = (ushort)dt.DayOfWeek;
                 systemTime.Day = (ushort)day;
-                systemTime.Hour = (ushort)dt.Hour;
-                systemTime.Minute = (ushort)dt.Minute;
-                systemTime.Second = (ushort)dt.Second;
-                systemTime.Milliseconds = (ushort)dt.Millisecond;
+                systemTime.Hour = (ushort)hour;
+                systemTime.Minute = (ushort)minute;
+                systemTime.Second = (ushort)second;
+                systemTime.Milliseconds = (ushort)millisecond;
                 hundredNanoSecond = 0;
             }
         }
@@ -121,7 +121,7 @@ namespace System
             {
                 // GetSystemTimePreciseAsFileTime exists and we'd like to use it.  However, on
                 // misconfigured systems, it's possible for the "precise" time to be inaccurate:
-                //     https://github.com/dotnet/coreclr/issues/14187
+                //     https://github.com/dotnet/runtime/issues/9014
                 // If it's inaccurate, though, we expect it to be wildly inaccurate, so as a
                 // workaround/heuristic, we get both the "normal" and "precise" times, and as
                 // long as they're close, we use the precise one. This workaround can be removed

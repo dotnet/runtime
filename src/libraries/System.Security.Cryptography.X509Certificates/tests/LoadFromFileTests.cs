@@ -212,7 +212,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2910, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/15073", TestPlatforms.AnyUnix)]
         public static void TestLoadSignedFile()
         {
             // X509Certificate2 can also extract the certificate from a signed file.

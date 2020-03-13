@@ -16,11 +16,11 @@
 #include "corcompile.h"
 #endif // FEATURE_PREJIT
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 
 enum StompWriteBarrierCompletionAction
@@ -91,7 +91,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 //
 // The legacy x86 monitor helpers do not need a state argument
 //
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
 
 #define FCDECL_MONHELPER(funcname, arg) FCDECL2(void, funcname, arg, BYTE* pbLockTaken)
 #define HCIMPL_MONHELPER(funcname, arg) HCIMPL2(void, funcname, arg, BYTE* pbLockTaken)
@@ -105,7 +105,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 #define MONHELPER_STATE(x)
 #define MONHELPER_ARG NULL
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 
 //
@@ -187,36 +187,6 @@ EXTERN_C FCDECL1(void*, JIT_GetSharedGCStaticBaseNoCtor_Portable, DomainLocalMod
 EXTERN_C FCDECL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor, DomainLocalModule *pLocalModule);
 EXTERN_C FCDECL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule);
 
-#ifndef JIT_ChkCastClass
-#define JIT_ChkCastClass JIT_ChkCastClass_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_ChkCastClass, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_ChkCastClass_Portable, MethodTable* pMT, Object* pObject);
-
-#ifndef JIT_ChkCastClassSpecial
-#define JIT_ChkCastClassSpecial JIT_ChkCastClassSpecial_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_ChkCastClassSpecial, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_ChkCastClassSpecial_Portable, MethodTable* pMT, Object* pObject);
-
-#ifndef JIT_IsInstanceOfClass
-#define JIT_IsInstanceOfClass JIT_IsInstanceOfClass_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfClass, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfClass_Portable, MethodTable* pMT, Object* pObject);
-
-#ifndef JIT_ChkCastInterface
-#define JIT_ChkCastInterface JIT_ChkCastInterface_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_ChkCastInterface, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_ChkCastInterface_Portable, MethodTable* pMT, Object* pObject);
-
-#ifndef JIT_IsInstanceOfInterface
-#define JIT_IsInstanceOfInterface JIT_IsInstanceOfInterface_Portable
-#endif
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfInterface, MethodTable* pMT, Object* pObject);
-EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfInterface_Portable, MethodTable* pMT, Object* pObject);
-
 extern FCDECL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_);
 extern FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
 
@@ -238,12 +208,6 @@ extern FCDECL1(Utf8StringObject*, FramedAllocateUtf8String, DWORD stringLength);
 extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-
-#ifndef JIT_Stelem_Ref
-#define JIT_Stelem_Ref JIT_Stelem_Ref_Portable
-#endif
-EXTERN_C FCDECL3(void, JIT_Stelem_Ref, PtrArray* array, unsigned idx, Object* val);
-EXTERN_C FCDECL3(void, JIT_Stelem_Ref_Portable, PtrArray* array, unsigned idx, Object* val);
 
 EXTERN_C FCDECL_MONHELPER(JITutil_MonEnterWorker, Object* obj);
 EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
@@ -272,23 +236,26 @@ extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 #endif
 
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
-
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
 
-extern "C" FCDECL2(Object*, JIT_ChkCastAny, CORINFO_CLASS_HANDLE type, Object *pObject);   // JITInterfaceX86.cpp, etc.
-extern "C" FCDECL2(Object*, JIT_IsInstanceOfAny, CORINFO_CLASS_HANDLE type, Object *pObject);
+extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
+extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
+extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
 
-extern "C" FCDECL2(Object*, JITutil_ChkCastInterface, MethodTable *pInterfaceMT, Object *obj);
-extern "C" FCDECL2(Object*, JITutil_IsInstanceOfInterface, MethodTable *pInterfaceMT, Object *obj);
-extern "C" FCDECL2(Object*, JITutil_ChkCastAny, CORINFO_CLASS_HANDLE type, Object *obj);
-extern "C" FCDECL2(Object*, JITutil_IsInstanceOfAny, CORINFO_CLASS_HANDLE type, Object *obj);
-extern "C" FCDECL2(Object*, JITutil_ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
-extern "C" FCDECL2(Object*, JITutil_IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
+#if defined(TARGET_ARM64) || defined(FEATURE_WRITEBARRIER_COPY)
+// ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
+// Copied write barriers must be called at a different location
+extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
+#define WriteBarrier_Helper JIT_WriteBarrier_Callable
+#else
+// in other cases the regular JIT helper is callable.
+#define WriteBarrier_Helper JIT_WriteBarrier
+#endif
 
 extern "C" FCDECL1(void, JIT_InternalThrow, unsigned exceptNum);
 extern "C" FCDECL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
 
 class WriteBarrierManager
@@ -343,15 +310,15 @@ private:
     PBYTE   m_pUpperBoundImmediate;         //         | POSTGROW |     | WRITE_WATCH |
 };
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 EXTERN_C FCDECL1(Object*, JIT_TrialAllocSFastMP_InlineGetThread, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, JIT_BoxFastMP_InlineGetThread, CORINFO_CLASS_HANDLE type, void* data);
 EXTERN_C FCDECL2(Object*, JIT_NewArr1VC_MP_InlineGetThread, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 EXTERN_C FCDECL2(Object*, JIT_NewArr1OBJ_MP_InlineGetThread, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 
-#endif // BIT64
+#endif // HOST_64BIT
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
@@ -366,20 +333,20 @@ EXTERN_C FCDECL1_V(INT32, JIT_Dbl2IntOvf, double val);
 EXTERN_C FCDECL2_VV(float, JIT_FltRem, float dividend, float divisor);
 EXTERN_C FCDECL2_VV(double, JIT_DblRem, double dividend, double divisor);
 
-#ifndef BIT64
-#ifdef _TARGET_X86_
+#ifndef HOST_64BIT
+#ifdef TARGET_X86
 // JIThelp.asm
 EXTERN_C void STDCALL JIT_LLsh();
 EXTERN_C void STDCALL JIT_LRsh();
 EXTERN_C void STDCALL JIT_LRsz();
-#else // _TARGET_X86_
+#else // TARGET_X86
 EXTERN_C FCDECL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift);
 EXTERN_C FCDECL2_VV(INT64, JIT_LRsh, INT64 num, int shift);
 EXTERN_C FCDECL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift);
-#endif // !_TARGET_X86_
-#endif // !BIT64
+#endif // !TARGET_X86
+#endif // !HOST_64BIT
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 extern "C"
 {
@@ -413,33 +380,33 @@ extern "C"
 
 void ValidateWriteBarrierHelpers();
 
-#endif //_TARGET_X86_
+#endif //TARGET_X86
 
 extern "C"
 {
 #ifndef FEATURE_EH_FUNCLETS
     void STDCALL JIT_EndCatch();               // JIThelp.asm/JIThelp.s
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     void STDCALL JIT_ByRefWriteBarrier();      // JIThelp.asm/JIThelp.s
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
 
     FCDECL2VA(void, JIT_TailCall, PCODE copyArgs, PCODE target);
 
-#else // _TARGET_AMD64_ || _TARGET_ARM_
+#else // TARGET_AMD64 || TARGET_ARM
 
     void STDCALL JIT_TailCall();                    // JIThelp.asm
 
-#endif // _TARGET_AMD64_ || _TARGET_ARM_
+#endif // TARGET_AMD64 || TARGET_ARM
 
     void STDCALL JIT_MemSet(void *dest, int c, SIZE_T count);
     void STDCALL JIT_MemCpy(void *dest, const void *src, SIZE_T count);
 
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
-#ifndef _TARGET_ARM64_
+#ifndef TARGET_ARM64
     void STDCALL JIT_StackProbe();
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 };
 
 
@@ -491,7 +458,6 @@ public:
                                   BOOL fAssembly);
     BOOL isValueClass (CORINFO_CLASS_HANDLE cls);
     CorInfoInlineTypeCheck canInlineTypeCheck (CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
-    BOOL canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE cls);
 
     DWORD getClassAttribs (CORINFO_CLASS_HANDLE cls);
 
@@ -535,7 +501,6 @@ public:
     static CorInfoHelpFunc getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing, bool * pfClassMustBeRestored);
 
     CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd);
-    CorInfoHelpFunc getSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn);
     CORINFO_CLASS_HANDLE getTypeForBox(CORINFO_CLASS_HANDLE  cls);
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls);
@@ -688,8 +653,6 @@ public:
     size_t findNameOfToken (CORINFO_MODULE_HANDLE module, mdToken metaTOK,
                                       __out_ecount (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
 
-    CorInfoCanSkipVerificationResult canSkipVerification(CORINFO_MODULE_HANDLE moduleHnd);
-
     // Checks if the given metadata token is valid
     BOOL isValidToken (
             CORINFO_MODULE_HANDLE       module,
@@ -699,6 +662,12 @@ public:
     BOOL isValidStringRef (
             CORINFO_MODULE_HANDLE       module,
             mdToken                    metaTOK);
+
+    // Get string length and content (can be null) for given metaTOK
+    LPCWSTR getStringLiteral (
+            CORINFO_MODULE_HANDLE       module,
+            mdToken                    metaTOK,
+            int*                        length);
 
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
                             __out_ecount (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
@@ -728,21 +697,6 @@ public:
                                  CorInfoInline inlineResult,
                                  const char * reason);
 
-    // Used by ngen
-    CORINFO_METHOD_HANDLE instantiateMethodAtObject(CORINFO_METHOD_HANDLE method);
-
-    // Loads the constraints on a typical method definition, detecting cycles;
-    // used by verifiers.
-    void initConstraintsForVerification(
-            CORINFO_METHOD_HANDLE   method,
-            BOOL *pfHasCircularClassConstraints,
-            BOOL *pfHasCircularMethodConstraints
-            );
-
-    CorInfoInstantiationVerification isInstantiationOfVerifiedGeneric (
-            CORINFO_METHOD_HANDLE  methodHnd);
-
-
     bool canTailCall (
             CORINFO_METHOD_HANDLE  callerHnd,
             CORINFO_METHOD_HANDLE  declaredCalleeHnd,
@@ -754,9 +708,6 @@ public:
                                  bool fIsTailPrefix,
                                  CorInfoTailCall tailCallResult,
                                  const char * reason);
-
-    CorInfoCanSkipVerificationResult canSkipMethodVerification(
-        CORINFO_METHOD_HANDLE ftnHnd);
 
     // Given a method descriptor ftnHnd, extract signature information into sigInfo
     // Obtain (representative) instantiation information from ftnHnd's owner class
@@ -830,12 +781,6 @@ public:
     LPVOID GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void ** ppIndirection);
     bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
 
-    // Check Visibility rules.
-
-    // should we enforce the new (for whidbey) restrictions on calling virtual methods?
-    BOOL shouldEnforceCallvirtRestriction(
-            CORINFO_MODULE_HANDLE   scope);
-
     // Check constraints on method type arguments (only).
     // The parent class should be checked separately using satisfiesClassConstraints(parent).
     BOOL satisfiesMethodConstraints(
@@ -866,14 +811,12 @@ public:
 
     unsigned getFieldOffset (CORINFO_FIELD_HANDLE field);
 
-    bool isWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field);
-
     void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection);
 
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
 
     // ICorDebugInfo stuff
-    void * allocateArray(ULONG cBytes);
+    void * allocateArray(size_t cBytes);
     void freeArray(void *array);
     void getBoundaries(CORINFO_METHOD_HANDLE ftn,
                        unsigned int *cILOffsets, DWORD **pILOffsets,
@@ -953,7 +896,6 @@ public:
     unsigned getClassDomainID (CORINFO_CLASS_HANDLE   cls, void **ppIndirection);
     CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO *sig, void **ppIndirection);
     bool canGetVarArgsHandle(CORINFO_SIG_INFO *sig);
-    void* getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void **ppIndirection);
     void* getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void **ppIndirection);
     void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP *pLookup);
     CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE **ppIndirection);
@@ -1001,11 +943,11 @@ public:
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE handle,
                                             void **ppIndirection);
 
-	void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
-		BOOL                     fEmbedParent,
-		CORINFO_GENERICHANDLE_RESULT *pResult);
+    void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
+        BOOL                     fEmbedParent,
+        CORINFO_GENERICHANDLE_RESULT *pResult);
 
-    CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
+    void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
 
 
     void setOverride(ICorDynamicInfo *pOverride, CORINFO_METHOD_HANDLE currentMethod)
@@ -1040,8 +982,6 @@ public:
     // ICorJitInfo stuff - none of this should be called on this class
     //
 
-    IEEMemoryManager* getMemoryManager();
-
     void allocMem (
             ULONG               hotCodeSize,    /* IN */
             ULONG               coldCodeSize,   /* IN */
@@ -1072,8 +1012,6 @@ public:
     void * allocGCInfo (
             size_t                  size        /* IN */
             );
-
-    void yieldExecution();
 
     void setEHcount (
             unsigned		     cEH    /* IN */
@@ -1120,11 +1058,6 @@ public:
             );
 
     WORD getRelocTypeHint(void * target);
-
-    void getModuleNativeEntryPointRange(
-            void ** pStart, /* OUT */
-            void ** pEnd    /* OUT */
-            );
 
     DWORD getExpectedTargetArchitecture();
 
@@ -1327,10 +1260,6 @@ public:
 
     WORD getRelocTypeHint(void * target);
 
-    void getModuleNativeEntryPointRange(
-            void**                   pStart,
-            void**                   pEnd);
-
     DWORD getExpectedTargetArchitecture();
 
     CodeHeader* GetCodeHeader()
@@ -1375,7 +1304,7 @@ public:
 #endif // FEATURE_EH_FUNCLETS
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     void SetAllowRel32(BOOL fAllowRel32)
     {
         LIMITED_METHOD_CONTRACT;
@@ -1383,7 +1312,7 @@ public:
     }
 #endif
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     void SetJumpStubOverflow(BOOL fJumpStubOverflow)
     {
         LIMITED_METHOD_CONTRACT;
@@ -1441,10 +1370,10 @@ public:
           m_totalUnwindInfos(0),
           m_usedUnwindInfos(0),
 #endif
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
           m_fAllowRel32(FALSE),
 #endif
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
           m_fJumpStubOverflow(FALSE),
           m_reserveForJumpStubs(0),
 #endif
@@ -1528,10 +1457,10 @@ protected :
     ULONG                   m_usedUnwindInfos;
 #endif
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     BOOL                    m_fAllowRel32;      // Use 32-bit PC relative address modes
 #endif
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     BOOL                    m_fJumpStubOverflow;   // Overflow while trying to alocate jump stub slot within PC relative branch region
                                                    // The code will need to be regenerated (with m_fRel32Allowed == FALSE for AMD64).
     size_t                  m_reserveForJumpStubs; // Space to reserve for jump stubs when allocating code
@@ -1592,7 +1521,7 @@ extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
 
 #endif
 
-#if defined(_DEBUG) && (defined(_TARGET_AMD64_) || defined(_TARGET_X86_)) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && (defined(TARGET_AMD64) || defined(TARGET_X86)) && !defined(TARGET_UNIX)
 typedef struct {
     void*       pfnRealHelper;
     const char* helperName;
@@ -1635,7 +1564,7 @@ void    DisableJitGCPoll();
 #endif
 
 // Helper for RtlVirtualUnwind-based tail calls
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
 
 // The Stub-linker generated assembly routine to copy arguments from the va_list
 // into the CONTEXT and the stack.
@@ -1648,7 +1577,7 @@ class TailCallFrame;
 // The shared stub return location
 EXTERN_C void JIT_TailCallHelperStub_ReturnAddress();
 
-#endif // _TARGET_AMD64_ || _TARGET_ARM_
+#endif // TARGET_AMD64 || TARGET_ARM
 
 void *GenFastGetSharedStaticBase(bool bCheckCCtor);
 
@@ -1674,7 +1603,7 @@ BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastEx
 
 EXTERN_C TypeHandle::CastResult STDCALL ObjIsInstanceOfCached(Object *pObject, TypeHandle toTypeHnd);
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 class InlinedCallFrame;
 Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg);
 #endif
