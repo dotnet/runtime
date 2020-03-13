@@ -772,6 +772,11 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
     {
         PrepareCodeConfigBuffer configBuffer(nativeCodeVersion);
         PrepareCodeConfig *config = configBuffer.GetConfig();
+
+        // This is a recompiling request which means the caller was
+        // in COOP mode since the code already ran.
+        _ASSERTE(!pMethod->HasNativeCallableAttribute());
+        config->SetCallerGCMode(CallerGCMode::Coop);
         pCode = pMethod->PrepareCode(config);
         LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "TieredCompilationManager::CompileCodeVersion Method=0x%pM (%s::%s), code version id=0x%x, code ptr=0x%p\n",
             pMethod, pMethod->m_pszDebugClassName, pMethod->m_pszDebugMethodName,

@@ -2220,7 +2220,7 @@ namespace Internal.JitInterface
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
 
-            pEEInfoOut.sizeOfReversePInvokeFrame = (uint)(2 * pointerSize);
+            pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
 
             pEEInfoOut.osPageSize = new UIntPtr(0x1000);
 
@@ -2882,7 +2882,17 @@ namespace Internal.JitInterface
             }
 
             if (this.MethodBeingCompiled.IsNativeCallable)
+            {
+#if READYTORUN
+                if (targetArchitecture == TargetArchitecture.X86
+                    && _compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
+                {
+                    throw new RequiresRuntimeJitException("ReadyToRun: Methods with NativeCallableAttribute not implemented");
+                }
+#endif
+
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
+            }
 
             if (this.MethodBeingCompiled.IsPInvoke)
             {
