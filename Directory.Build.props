@@ -86,9 +86,6 @@
 
     <!-- Resource naming bug: https://github.com/microsoft/msbuild/issues/4740 -->
     <EmbeddedResourceUseDependentUponConvention>false</EmbeddedResourceUseDependentUponConvention>
-
-    <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
-    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
   </PropertyGroup>
 
   <PropertyGroup>

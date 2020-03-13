@@ -291,6 +291,8 @@
 
   <PropertyGroup>
     <EnableProjectRestore Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssembly)' == 'true' or '$(IsTestProject)' == 'true'">true</EnableProjectRestore>
+    <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
+    <RestoreUseStaticGraphEvaluation Condition="'$(EnableProjectRestore)' == 'true'">true</RestoreUseStaticGraphEvaluation>
   </PropertyGroup>
 
   <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.props" />

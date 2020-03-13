@@ -11,8 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
-    <ProjectReference Include="$(PkgDir)*\*.proj" />
-    <ProjectReference Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true'" />
+    <Project Include="$(PkgDir)*\*.proj" />
+    <Project Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true'" />
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
@@ -84,7 +84,7 @@
   <Target Name="Build" DependsOnTargets="BuildAllProjects" />
   <Target Name="BuildAllProjects">
     <MSBuild Targets="Build"
-             Projects="@(ProjectReference)"
+             Projects="@(Project)"
              Properties="BuildAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
