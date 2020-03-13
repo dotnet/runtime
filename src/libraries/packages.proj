@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
-    <ProjectReference Include="$(PkgDir)*\*.builds" />
+    <ProjectReference Include="$(PkgDir)*\*.proj" />
     <ProjectReference Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true'" />
   </ItemGroup>
 
