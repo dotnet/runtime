@@ -1095,7 +1095,7 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
 
     END_QCALL;
 
-    return success;
+    return (success ? TRUE : FALSE);
 }
 
 BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
@@ -1134,12 +1134,13 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
             &newObj);
 
         // Set the return value
-        retValue.Set(newObj);
+        if (success)
+            retValue.Set(newObj);
     }
 
     END_QCALL;
 
-    return success;
+    return (success ? TRUE : FALSE);
 }
 
 void QCALLTYPE ComWrappersNative::GetIUnknownImpl(

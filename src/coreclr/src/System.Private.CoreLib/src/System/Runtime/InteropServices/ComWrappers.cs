@@ -133,7 +133,7 @@ namespace System.Runtime.InteropServices
         /// <param name="instance">The managed object to expose outside the .NET runtime.</param>
         /// <param name="flags">Flags used to configure the generated interface.</param>
         /// <param name="retValue">The generated COM interface that can be passed outside the .NET runtime or IntPtr.Zero if it could not be created.</param>
-        /// <returns>Returns <c>true</c> if a CEM representation could be created, <c>false</c> otherwise</returns>
+        /// <returns>Returns <c>true</c> if a COM representation could be created, <c>false</c> otherwise</returns>
         /// <remarks>
         /// If <paramref name="impl" /> is <c>null</c>, the global instance (if registered) will be used.
         /// </remarks>
