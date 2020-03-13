@@ -657,7 +657,6 @@ HRESULT ReJitManager::UpdateActiveILVersions(
                 // ThreadStore crsts
                 SystemDomain::LockHolder lh;
 
-                _ASSERTE(ThreadStore::HoldingThreadStore());
                 hr = pCodeVersionManager->SetActiveILCodeVersions(pCodeActivationBatch->m_methodsToActivate.Ptr(), pCodeActivationBatch->m_methodsToActivate.Count(), &errorRecords);
                 if (FAILED(hr))
                     break;

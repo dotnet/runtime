@@ -1048,12 +1048,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
     {
         _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
         _ASSERTE(pConfig->GetMethodDesc()->IsEligibleForTieredCompilation());
-        _ASSERTE(
-            pConfig
-                ->GetMethodDesc()
-                ->GetLoaderAllocator()
-                ->GetCallCountingManager()
-                ->IsCallCountingEnabled(pConfig->GetCodeVersion()));
 
         if (pConfig->JitSwitchedToOptimized())
         {

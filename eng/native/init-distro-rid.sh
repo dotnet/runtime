@@ -161,6 +161,8 @@ initDistroRidGlobal()
                 distroRid="linux-$buildArch"
             elif [ "$targetOs" = "OSX" ]; then
                 distroRid="osx-$buildArch"
+            elif [ "$targetOs" = "iOS" ]; then
+                distroRid="ios-$buildArch"
             elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"
             fi

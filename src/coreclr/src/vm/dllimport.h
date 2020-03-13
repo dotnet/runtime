@@ -455,6 +455,7 @@ private:
 
 #include "stubgen.h"
 
+#ifndef DACCESS_COMPILE
 class NDirectStubLinker : public ILStubLinker
 {
 public:
@@ -581,6 +582,7 @@ protected:
 
     DWORD               m_dwStubFlags;
 };
+#endif // DACCESS_COMPILE
 
 // This attempts to guess whether a target is an API call that uses SetLastError to communicate errors.
 BOOL HeuristicDoesThisLooksLikeAnApiCall(LPBYTE pTarget);
@@ -646,8 +648,10 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags = 0, MethodDesc
 HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, MethodDesc **ppRetStubMD);
 #endif // FEATURE_COMINTEROP
 
+#ifndef DACCESS_COMPILE
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
+#endif // DACCESS_COMPILE
 
 //
 // Limit length of string field in IL stub ETW events so that the whole

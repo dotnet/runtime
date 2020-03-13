@@ -327,7 +327,6 @@ mono_state_free_mem (MonoStateMem *mem)
 	if (!mem->mem)
 		return;
 
-  msync(mem->mem, mem->size, MS_SYNC);
 	munmap (mem->mem, mem->size);
 
 	// Note: We aren't calling msync on this file.

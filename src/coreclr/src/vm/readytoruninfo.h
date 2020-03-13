@@ -88,6 +88,8 @@ public:
 
     bool IsComponentAssembly() const { return m_isComponentAssembly; }
 
+    PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
+
     PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }
 
     PTR_PEImageLayout GetImage() const { return m_pComposite->GetImage(); }

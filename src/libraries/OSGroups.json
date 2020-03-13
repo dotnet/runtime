@@ -17,6 +17,11 @@
         "Unix"
         ]
       },
+    "iOS": {
+      "#import": [
+        "Unix"
+        ]
+      },
     "FreeBSD": {
       "#import": [
         "Unix"

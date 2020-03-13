@@ -135,8 +135,7 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
         return NativeCodeVersion::OptimizationTier1;
     }
 
-    if (!g_pConfig->TieredCompilation_QuickJit() ||
-        !pMethodDesc->GetLoaderAllocator()->GetCallCountingManager()->IsCallCountingEnabled(NativeCodeVersion(pMethodDesc)))
+    if (!pMethodDesc->GetLoaderAllocator()->GetCallCountingManager()->IsCallCountingEnabled(NativeCodeVersion(pMethodDesc)))
     {
         // Tier 0 call counting may have been disabled for several reasons, the intention is to start with and stay at an
         // optimized tier
@@ -920,15 +919,21 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(NativeCodeVersion nativeCodeV
     switch (nativeCodeVersion.GetOptimizationTier())
     {
         case NativeCodeVersion::OptimizationTier0:
-            _ASSERTE(g_pConfig->TieredCompilation_QuickJit());
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-            break;
+            if (g_pConfig->TieredCompilation_QuickJit())
+            {
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+                break;
+            }
+
+            nativeCodeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
+            goto Optimized;
 
         case NativeCodeVersion::OptimizationTier1:
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
             // fall through
 
         case NativeCodeVersion::OptimizationTierOptimized:
+        Optimized:
 #ifdef FEATURE_INTERPRETER
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
 #endif

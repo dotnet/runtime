@@ -58,11 +58,9 @@ namespace System.Text.Json
 
         /// <summary>
         /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
-        /// A policy property is not a real property on a type; instead it leverages the existing converter
-        /// logic and generic support to avoid boxing. It is used with values types, elements from collections and
-        /// dictionaries, and collections themselves. Typically it would represent a CLR type such as System.String.
+        /// See <seealso cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
         /// </summary>
-        internal static JsonPropertyInfo CreatePolicyProperty(
+        internal static JsonPropertyInfo CreatePropertyInfoForClassInfo(
             Type declaredPropertyType,
             Type runtimePropertyType,
             JsonConverter converter,

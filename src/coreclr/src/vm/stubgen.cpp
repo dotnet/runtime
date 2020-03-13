@@ -2055,6 +2055,8 @@ LocalSigBuilder::GetSig(
     }
 }
 
+#ifndef DACCESS_COMPILE
+
 FunctionSigBuilder::FunctionSigBuilder() :
     m_callingConv(IMAGE_CEE_CS_CALLCONV_DEFAULT)
 {
@@ -2283,6 +2285,8 @@ void ILStubLinker::SetStubTargetMethodSig(PCCOR_SIGNATURE pSig, DWORD cSig)
 
     m_nativeFnSigBuilder.SetSig(pSig, cSig);
 }
+
+#endif // DACCESS_COMPILE
 
 static BOOL SigHasVoidReturnType(const Signature &signature)
 {

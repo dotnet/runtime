@@ -7444,6 +7444,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // JIT helper that does not return. So peel off everything after the
         // call.
         Statement* nextMorphStmt = fgMorphStmt->GetNextStmt();
+        JITDUMP("Remove all stmts after the call.\n");
         while (nextMorphStmt != nullptr)
         {
             Statement* stmtToRemove = nextMorphStmt;
@@ -7451,7 +7452,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             fgRemoveStmt(compCurBB, stmtToRemove);
         }
 
-        fgMorphStmt->SetRootNode(call);
+        bool     isRootReplaced = false;
+        GenTree* root           = fgMorphStmt->GetRootNode();
+
+        if (root != call)
+        {
+            JITDUMP("Replace root node [%06d] with [%06d] tail call node.\n", dspTreeID(root), dspTreeID(call));
+            isRootReplaced = true;
+            fgMorphStmt->SetRootNode(call);
+        }
 
         // Avoid potential extra work for the return (for example, vzeroupper)
         call->gtType = TYP_VOID;
@@ -7510,45 +7519,44 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             // not need epilogue.
             compCurBB->bbJumpKind = BBJ_THROW;
         }
-
-        result = call;
-        // We have removed all statements after this statement and set the
-        // current statement expression to just be the call. However, we may
-        // still be morphing a parent node (such as a return) which will expect
-        // us to return something of a valid type. We thus return a placeholder
-        // node here that will not be used for anything since we have effectively
-        // removed the parent node from the tree already.
-        if (origCallType != TYP_VOID && info.compRetType != TYP_VOID)
+      
+        if (isRootReplaced)
         {
-            var_types nodeTy = origCallType;
-#ifdef FEATURE_HFA
-            // Return a dummy node, as the return is already removed.
-            if (nodeTy == TYP_STRUCT)
+            // We have replaced the root node of this stmt and deleted the rest,
+            // but we still have the deleted, dead nodes on the `fgMorph*` stack
+            // if the root node was an `ASG`, `RET` or `CAST`.
+            // Return a zero con node to exit morphing of the old trees without asserts
+            // and forbid POST_ORDER morphing doing something wrong with our call.
+            var_types callType;
+            if (varTypeIsStruct(origCallType))
             {
-                // This is a HFA, use float 0.
-                nodeTy = TYP_FLOAT;
+                CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
+                Compiler::structPassingKind howToReturnStruct;
+                callType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+                assert((howToReturnStruct != SPK_Unknown) && (howToReturnStruct != SPK_ByReference));
+                if (howToReturnStruct == SPK_ByValue)
+                {
+                    callType = TYP_I_IMPL;
+                }
+                else if (howToReturnStruct == SPK_ByValueAsHfa)
+                {
+                    callType = TYP_FLOAT;
+                }
+                assert((callType != TYP_UNKNOWN) && (callType != TYP_STRUCT));
             }
-#elif defined(UNIX_AMD64_ABI)
-            // Return a dummy node, as the return is already removed.
-            if (varTypeIsStruct(nodeTy))
+            else
             {
-                // This is a register-returned struct. Return a 0.
-                // The actual return registers are hacked in lower and the register allocator.
-                nodeTy = TYP_INT;
+                callType = origCallType;
             }
-#endif
-#ifdef FEATURE_SIMD
-            // Return a dummy node, as the return is already removed.
-            if (varTypeIsSIMD(nodeTy))
-            {
-                nodeTy = TYP_DOUBLE;
-            }
-#endif
-            result = gtNewZeroConNode(genActualType(nodeTy));
-            result = fgMorphTree(result);
+            GenTree* zero = gtNewZeroConNode(callType);
+            result = fgMorphTree(zero);
+        }
+        else
+        {
+            result = call;
         }
     }
-
+  
     return result;
 }
 
@@ -15352,8 +15360,10 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         /* Did we fold the conditional */
 
         noway_assert(lastStmt->GetRootNode()->AsOp()->gtOp1);
+        GenTree* condTree;
+        condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
         GenTree* cond;
-        cond = lastStmt->GetRootNode()->AsOp()->gtOp1;
+        cond = condTree->gtEffectiveVal(true);
 
         if (cond->OperKind() & GTK_CONST)
         {
@@ -15363,10 +15373,17 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
             noway_assert(cond->gtOper == GT_CNS_INT);
             noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
-            /* remove the statement from bbTreelist - No need to update
-             * the reference counts since there are no lcl vars */
-            fgRemoveStmt(block, lastStmt);
-
+            if (condTree != cond)
+            {
+                // Preserve any side effects
+                assert(condTree->OperIs(GT_COMMA));
+                lastStmt->SetRootNode(condTree);
+            }
+            else
+            {
+                // no side effects, remove the jump entirely
+                fgRemoveStmt(block, lastStmt);
+            }
             // block is a BBJ_COND that we are folding the conditional for
             // bTaken is the path that will always be taken from block
             // bNotTaken is the path that will never be taken from block
@@ -15565,8 +15582,10 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         /* Did we fold the conditional */
 
         noway_assert(lastStmt->GetRootNode()->AsOp()->gtOp1);
+        GenTree* condTree;
+        condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
         GenTree* cond;
-        cond = lastStmt->GetRootNode()->AsOp()->gtOp1;
+        cond = condTree->gtEffectiveVal(true);
 
         if (cond->OperKind() & GTK_CONST)
         {
@@ -15575,9 +15594,17 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 
             noway_assert(cond->gtOper == GT_CNS_INT);
 
-            /* remove the statement from bbTreelist - No need to update
-             * the reference counts since there are no lcl vars */
-            fgRemoveStmt(block, lastStmt);
+            if (condTree != cond)
+            {
+                // Preserve any side effects
+                assert(condTree->OperIs(GT_COMMA));
+                lastStmt->SetRootNode(condTree);
+            }
+            else
+            {
+                // no side effects, remove the switch entirely
+                fgRemoveStmt(block, lastStmt);
+            }
 
             /* modify the flow graph */
 

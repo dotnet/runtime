@@ -56,6 +56,7 @@ using namespace clr::fs;
 #define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
 #define LOAD_LIBRARY_SEARCH_DEFAULT_DIRS 0x00001000
 
+#ifndef DACCESS_COMPILE
 void AppendEHClause(int nClauses, COR_ILMETHOD_SECT_EH * pEHSect, ILStubEHClause * pClause, int * pCurIdx)
 {
     LIMITED_METHOD_CONTRACT;
@@ -92,6 +93,7 @@ VOID PopulateEHSect(COR_ILMETHOD_SECT_EH * pEHSect, int nClauses, ILStubEHClause
     AppendEHClause(nClauses, pEHSect, pOne, &curIdx);
     AppendEHClause(nClauses, pEHSect, pTwo, &curIdx);
 }
+#endif
 
 StubSigDesc::StubSigDesc(MethodDesc *pMD, PInvokeStaticSigInfo* pSigInfo /*= NULL*/)
 {
@@ -765,6 +767,7 @@ public:
 #endif // FEATURE_COMINTEROP
     }
 
+#ifndef DACCESS_COMPILE
     void FinishEmit(MethodDesc* pStubMD)
     {
         STANDARD_VM_CONTRACT;
@@ -1261,6 +1264,7 @@ public:
             strILStubCode.GetUnicode()                  // StubMethodILCode
             );
     } // EtwOnILStubGenerated
+#endif // DACCESS_COMPILE
 
 #ifdef LOGGING
     //---------------------------------------------------------------------------------------
@@ -2522,6 +2526,7 @@ void NDirectStubLinker::EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwP
     pslILEmit->EmitCALL(METHOD__STUBHELPERS__LOG_PINNED_ARGUMENT, 2, 0);
 }
 
+#ifndef DACCESS_COMPILE
 void NDirectStubLinker::GetCleanupFinallyOffsets(ILStubEHClause * pClause)
 {
     CONTRACTL
@@ -2544,6 +2549,7 @@ void NDirectStubLinker::GetCleanupFinallyOffsets(ILStubEHClause * pClause)
         pClause->cbHandlerLength       = (DWORD)m_pCleanupFinallyEndLabel->GetCodeOffset() - pClause->dwHandlerBeginOffset;
     }
 }
+#endif // DACCESS_COMPILE
 
 void NDirectStubLinker::ClearCode()
 {
@@ -5586,6 +5592,8 @@ MethodDesc* NDirect::CreateFieldAccessILStub(
 }
 #endif // FEATURE_COMINTEROP
 
+#ifndef DACCESS_COMPILE
+
 MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
 {
     CONTRACT(MethodDesc*)
@@ -5708,6 +5716,8 @@ PCODE NDirect::GetEntryPointForStructMarshalStub(MethodTable* pMT)
 
     return pMD->GetMultiCallableAddrOfCode();
 }
+
+#endif // DACCESS_COMPILE
 
 MethodDesc* NDirect::CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
                          DWORD dwStubFlags,
