@@ -9,6 +9,11 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
+    public class PolymorphicTests_Span : PolymorphicTests
+    {
+        public PolymorphicTests_Span() : base(SerializationWrapper.SpanSerializer) { }
+    }
+
     public class PolymorphicTests_String : PolymorphicTests
     {
         public PolymorphicTests_String() : base(SerializationWrapper.StringSerializer) { }

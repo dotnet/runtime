@@ -14,6 +14,7 @@ namespace System.Text.Json.Serialization.Tests
     {
         private static readonly JsonSerializerOptions _optionsWithSmallBuffer = new JsonSerializerOptions { DefaultBufferSize = 1 };
 
+        public static SerializationWrapper SpanSerializer => new SpanSerializerWrapper();
         public static SerializationWrapper StringSerializer => new StringSerializerWrapper();
         public static SerializationWrapper StreamSerializer => new StreamSerializerWrapper();
         public static SerializationWrapper StreamSerializerWithSmallBuffer => new StreamSerializerWrapperWithSmallBuffer();
@@ -22,6 +23,22 @@ namespace System.Text.Json.Serialization.Tests
         protected internal abstract string Serialize(object value, Type inputType, JsonSerializerOptions options = null);
 
         protected internal abstract string Serialize<T>(T value, JsonSerializerOptions options = null);
+
+
+        private class SpanSerializerWrapper : SerializationWrapper
+        {
+            protected internal override string Serialize(object value, Type inputType, JsonSerializerOptions options = null)
+            {
+                byte[] result = JsonSerializer.SerializeToUtf8Bytes(value, inputType, options);
+                return Encoding.UTF8.GetString(result);
+            }
+
+            protected internal override string Serialize<T>(T value, JsonSerializerOptions options = null)
+            {
+                byte[] result = JsonSerializer.SerializeToUtf8Bytes<T>(value, options);
+                return Encoding.UTF8.GetString(result);
+            }
+        }
 
         private class StringSerializerWrapper : SerializationWrapper
         {
