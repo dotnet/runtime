@@ -54,7 +54,7 @@
     <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'manpages'))</ManPagesDir>
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
   </PropertyGroup>
-  
+
   <!-- Packaging properties -->
   <PropertyGroup>
     <!--
