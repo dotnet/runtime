@@ -209,8 +209,6 @@ namespace System
                 throw new OverflowException(SR.Overflow_TimeSpanTooLong);
             if (ticks == long.MaxValue)
                 return TimeSpan.MaxValue;
-            if (ticks == long.MinValue)
-                return TimeSpan.MinValue;
             return new TimeSpan((long)ticks);
         }
 
