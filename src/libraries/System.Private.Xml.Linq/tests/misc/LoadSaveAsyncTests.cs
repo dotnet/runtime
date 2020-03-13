@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -186,7 +185,6 @@ namespace CoreXml.Test.XLinq
 
             // Compare to make sure the synchronous and asynchronous results are the same
             Assert.Equal(syncOutput.ToArray(), asyncOutput.ToArray());
-            Console.WriteLine(Encoding.ASCII.GetString(asyncOutput.ToArray()));
         }
 
         // Inputs to the Roundtrip* tests:

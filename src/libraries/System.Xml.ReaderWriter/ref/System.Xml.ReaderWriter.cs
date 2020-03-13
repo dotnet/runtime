@@ -5,8 +5,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Threading.Tasks;
-
 namespace System.Xml
 {
     public enum ConformanceLevel
@@ -1308,7 +1306,7 @@ namespace System.Xml
         public virtual void WriteValue(string value) { }
         public abstract void WriteWhitespace(string ws);
         public virtual System.Threading.Tasks.Task WriteWhitespaceAsync(string ws) { throw null; }
-        public ValueTask DisposeAsync() { throw null; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
     }
     public sealed partial class XmlWriterSettings
     {
