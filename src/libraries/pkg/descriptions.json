@@ -15,7 +15,7 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.Extensions.Caching.Abstraction",
+    "Name": "Microsoft.Extensions.Caching.Abstractions",
     "Description": "Caching abstractions for in-memory cache and distributed cache.",
     "CommonTypes": [
       "Microsoft.Extensions.Caching.Distributed.IDistributedCache",
@@ -33,7 +33,7 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.Extensions.Configuration.Abstraction",
+    "Name": "Microsoft.Extensions.Configuration.Abstractions",
     "Description": "Abstractions of key-value pair based configuration.",
     "CommonTypes": [
       "Microsoft.Extensions.Configuration.IConfiguration",
