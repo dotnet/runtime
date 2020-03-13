@@ -4,6 +4,8 @@
 
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Xml.Tests
@@ -120,6 +122,65 @@ namespace System.Xml.Tests
             Assert.False(mywriter.IsDisposed);
             mywriter.Dispose();
             Assert.True(mywriter.IsDisposed);
+        }
+
+        [Fact]
+        public static async Task AsyncWriterDispose_ShouldCall_FlushAsyncWriteAsyncOnly_UtfWriter()
+        {
+            using (var stream = new ForceAsyncSyncStream())
+            await using (var writer = XmlWriter.Create(stream, new XmlWriterSettings() { Async = true }))
+            {
+                await writer.WriteStartDocumentAsync();
+                await writer.WriteStartElementAsync(string.Empty, "root", null);
+                await writer.WriteStartElementAsync(null, "test", null);
+                await writer.WriteAttributeStringAsync(string.Empty, "abc", string.Empty, "1");
+                await writer.WriteEndElementAsync();
+                await writer.WriteEndElementAsync();
+            }
+        }
+
+        [Fact]
+        public static async Task AsyncWriterDispose_ShouldCall_FlushAsyncWriteAsyncOnly_TextWriter()
+        {
+            using (var sw = new AsyncOnlyWriter())
+            await using (var writer = XmlWriter.Create(sw, new XmlWriterSettings() { Async = true }))
+            {
+                await writer.WriteStartElementAsync(null, "book", null);
+                await writer.WriteElementStringAsync(null, "price", null, "19.95");
+                await writer.WriteEndElementAsync();
+            }
+        }
+
+        internal class AsyncOnlyWriter : StringWriter
+        {
+            public override void Flush()
+            {
+                Assert.True(false, "Sync operation not allowed");
+                base.Flush();
+            }
+        }
+
+        internal class ForceAsyncSyncStream : MemoryStream
+        {
+            public override void Flush()
+            {
+                Assert.True(false, "Sync operation not allowed");
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                return Task.CompletedTask;
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                Assert.True(false, "Sync operation not allowed");
+            }
+
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return Task.CompletedTask;
+            }
         }
     }
 }

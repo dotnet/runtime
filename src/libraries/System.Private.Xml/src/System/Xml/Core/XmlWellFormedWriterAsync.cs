@@ -1472,5 +1472,63 @@ namespace System.Xml
             }
             return Task.CompletedTask;
         }
+
+        public override async ValueTask CloseAsync()
+        {
+            if (_currentState != State.Closed)
+            {
+                try
+                {
+                    if (_writeEndDocumentOnClose)
+                    {
+                        while (_currentState != State.Error && _elemTop > 0)
+                        {
+                            await WriteEndElementAsync().ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        if (_currentState != State.Error && _elemTop > 0)
+                        {
+                            //finish the start element tag '>'
+                            try
+                            {
+                                await AdvanceStateAsync(Token.EndElement).ConfigureAwait(false);
+                            }
+                            catch
+                            {
+                                _currentState = State.Error;
+                                throw;
+                            }
+                        }
+                    }
+
+                    if (InBase64 && _rawWriter != null)
+                    {
+                        await _rawWriter.WriteEndBase64Async().ConfigureAwait(false);
+                    }
+
+                    await _writer.FlushAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    try
+                    {
+                        if (_rawWriter != null)
+                        {
+                            await _rawWriter.CloseAsync(WriteState).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            await _writer.CloseAsync().ConfigureAwait(false);
+                        }
+                    }
+                    finally
+                    {
+                        _currentState = State.Closed;
+                    }
+                }
+            }
+        }
     }
 }

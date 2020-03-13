@@ -37,7 +37,6 @@ namespace System.Xml
             // Output xml declaration only if user allows it and it was not already output
             if (!omitXmlDeclaration && !autoXmlDeclaration)
             {
-
                 await RawTextAsync("<?xml version=\"").ConfigureAwait(false);
 
                 // Version
@@ -71,6 +70,41 @@ namespace System.Xml
             }
 
             return Task.CompletedTask;
+        }
+
+        public override async ValueTask CloseAsync()
+        {
+            try
+            {
+                await FlushBufferAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                // Future calls to Close or Flush shouldn't write to Stream or Writer
+                writeToNull = true;
+
+                if (stream != null)
+                {
+                    try
+                    {
+                        await stream.FlushAsync().ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            if (closeOutput)
+                            {
+                                await stream.DisposeAsync().ConfigureAwait(false);
+                            }
+                        }
+                        finally
+                        {
+                            stream = null;
+                        }
+                    }
+                }
+            }
         }
 
         // Serialize the document type declaration.

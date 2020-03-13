@@ -73,6 +73,62 @@ namespace System.Xml
             return Task.CompletedTask;
         }
 
+        public override async ValueTask CloseAsync()
+        {
+            try
+            {
+                await FlushBufferAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                // Future calls to Close or Flush shouldn't write to Stream or Writer
+                writeToNull = true;
+
+                if (stream != null)
+                {
+                    try
+                    {
+                        await stream.FlushAsync().ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            if (closeOutput)
+                            {
+                                await stream.DisposeAsync().ConfigureAwait(false);
+                            }
+                        }
+                        finally
+                        {
+                            stream = null;
+                        }
+                    }
+                }
+                else if (writer != null)
+                {
+                    try
+                    {
+                        await writer.FlushAsync().ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            if (closeOutput)
+                            {
+                                await writer.DisposeAsync().ConfigureAwait(false);
+                            }
+                        }
+                        finally
+                        {
+                            writer = null;
+                        }
+                    }
+                }
+            }
+        }
+
         // Serialize the document type declaration.
         public override async Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
         {

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -185,6 +186,7 @@ namespace CoreXml.Test.XLinq
 
             // Compare to make sure the synchronous and asynchronous results are the same
             Assert.Equal(syncOutput.ToArray(), asyncOutput.ToArray());
+            Console.WriteLine(Encoding.ASCII.GetString(asyncOutput.ToArray()));
         }
 
         // Inputs to the Roundtrip* tests:
@@ -201,36 +203,43 @@ namespace CoreXml.Test.XLinq
                             yield return new object[] { doc, loadOptions, saveOptions };
             }
         }
-
-        [Fact]
-        public async Task XDocumentSaveAsync_ShouldCall_FlushAsyncWriteAsyncOnly()
+        public static IEnumerable<object[]> IsAsync_SaveOptions_Data
         {
-            var doc = XDocument.Parse("<root>Test document async save</root>");
-            var element = XElement.Parse("<test> Test element async save</test>");
-            using (TestMemoryStream stream = new TestMemoryStream(true))
+            get
             {
-                await doc.SaveAsync(stream, SaveOptions.None, CancellationToken.None);
-                await element.SaveAsync(stream, SaveOptions.None, CancellationToken.None);
+                foreach (bool isAsync in new[] { true, false })
+                    foreach (SaveOptions saveOptions in Enum.GetValues(typeof(SaveOptions)))
+                        yield return new object[] { isAsync, saveOptions };
             }
         }
 
-        [Fact]
-        public void XDocumentSave_ShouldNotCall_FlushAsyncWriteAsync()
+        [Theory]
+        [MemberData(nameof(IsAsync_SaveOptions_Data))]
+        public async Task SaveAsync_CallsAsyncOnly_SaveSync_CallsSyncOnly(bool isAsync, SaveOptions saveOptions)
         {
-            var doc = XDocument.Parse("<root>Test document async save</root>");
-            var element = XElement.Parse("<test> Test element save</test>");
-            using (TestMemoryStream stream = new TestMemoryStream(false))
+            XDocument document = XDocument.Parse("<root>Test document async save</root>");
+            var element = new XElement("Test");
+            using (ForceSyncAsyncStream stream = new ForceSyncAsyncStream(isAsync))
             {
-                doc.Save(stream);
-                element.Save(stream);
+                if (isAsync)
+                {
+                    await document.SaveAsync(stream, saveOptions, CancellationToken.None).ConfigureAwait(false);
+                    await element.SaveAsync(stream, saveOptions, CancellationToken.None).ConfigureAwait(false);
+                }
+                else
+                {
+                    document.Save(stream);
+                    element.Save(stream);
+                }
             }
         }
     }
-    public class TestMemoryStream : MemoryStream
+
+    public class ForceSyncAsyncStream : MemoryStream
     {
         private bool _isAsync;
 
-        public TestMemoryStream(bool async)
+        public ForceSyncAsyncStream(bool async)
         {
             _isAsync = async;
         }
@@ -242,19 +251,19 @@ namespace CoreXml.Test.XLinq
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            Assert.True(_isAsync, "Not a sync operation");
+            Assert.True(_isAsync, "Async operation not allowed");
             return Task.CompletedTask;
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            Assert.False(_isAsync, "Not a sync operation");
+            Assert.False(_isAsync, "Sync operation not allowed");
             base.Write(buffer, offset, count);
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            Assert.True(_isAsync, "Sync operation not allowed");
+            Assert.True(_isAsync, "Async operation not allowed");
             return Task.CompletedTask;
         }
     }
