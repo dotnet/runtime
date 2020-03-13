@@ -46,6 +46,5 @@
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetsNetFx)' == 'true'">
     <Compile Include="System\MemoryTests.netfx.cs" />
-    <Compile Include="System\ReflectionTests.netfx.cs" />
   </ItemGroup>
 </Project>

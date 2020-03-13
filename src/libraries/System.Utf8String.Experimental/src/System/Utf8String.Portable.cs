@@ -18,7 +18,7 @@ namespace System
         /// <summary>
         /// Returns the length (in UTF-8 code units, or <see cref="byte"/>s) of this instance.
         /// </summary>
-        public int Length => _bytes.Length == 0 ? 0 : _bytes.Length - 1; // -1 because the bytes are always null-terminated
+        public int Length => _bytes.Length - 1; // -1 because the bytes are always null-terminated
 
         public Utf8String(ReadOnlySpan<byte> value)
         {
@@ -192,6 +192,15 @@ namespace System
 
         private static byte[] AllocateBuffer(int length)
         {
+            Debug.Assert(length > 0);
+
+            if (length == int.MaxValue)
+            {
+                // Ensure we don't overflow below. The VM will throw an OutOfMemoryException
+                // if we try to create a byte[] this large anyway.
+                length = int.MaxValue - 1;
+            }
+
             // Actual storage allocated is "length + 1" bytes because instances are null-terminated.
             return new byte[length + 1];
         }

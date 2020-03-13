@@ -327,9 +327,9 @@ namespace System
             // routine. This normalizes the OutOfMemoryException the caller sees.
 
             long totalUtf8BytesRequired = (uint)value.Length + utf8CodeUnitCountAdjustment;
-            if (totalUtf8BytesRequired > int.MaxValue)
+            if (totalUtf8BytesRequired >= int.MaxValue)
             {
-                totalUtf8BytesRequired = int.MaxValue;
+                totalUtf8BytesRequired = int.MaxValue - 1;
             }
 
             // We can get away with FastAllocateSkipZeroInit here because we're not going to return the
@@ -341,7 +341,7 @@ namespace System
             // "skip validation" transcoder because the caller could've mutated the input buffer between the
             // initial counting step and the transcoding step below.
 
-            status = Utf8.FromUtf16(value, newBuffer, out _, out int bytesWritten, replaceInvalidSequences: false);
+            status = Utf8.FromUtf16(value, newBuffer.AsSpan(0, newBuffer.Length - 1), out _, out int bytesWritten, replaceInvalidSequences: false);
             if (status != OperationStatus.Done || bytesWritten != newBuffer.Length)
             {
                 // Did somebody mutate our input buffer? Shouldn't be any other way this could happen.

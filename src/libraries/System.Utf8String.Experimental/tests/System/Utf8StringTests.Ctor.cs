@@ -331,7 +331,7 @@ namespace System.Tests
                 ref Unsafe.AsRef(in Utf8String.Empty.GetPinnableReference()),
                 ref Unsafe.AsRef(in value.GetPinnableReference())));
 #else
-            Assert.Same(Utf8String.Empty, new Utf8String(ReadOnlySpan<char>.Empty));
+            Assert.Same(Utf8String.Empty, value);
 #endif
         }
     }

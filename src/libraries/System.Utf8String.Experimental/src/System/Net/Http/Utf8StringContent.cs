@@ -53,15 +53,11 @@ namespace System.Net.Http
             else
             {
                 byte[] localBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
-                try
-                {
-                    buffer.Span.CopyTo(localBuffer);
-                    await stream.WriteAsync(localBuffer, 0, buffer.Length).ConfigureAwait(false);
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(localBuffer);
-                }
+                buffer.Span.CopyTo(localBuffer);
+
+                await stream.WriteAsync(localBuffer, 0, buffer.Length).ConfigureAwait(false);
+
+                ArrayPool<byte>.Shared.Return(localBuffer);
             }
         }
 #elif NETSTANDARD2_1 || NETCOREAPP3_0
