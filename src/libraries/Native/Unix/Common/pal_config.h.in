@@ -61,7 +61,11 @@
 #cmakedefine01 HAVE_TCSANOW
 #cmakedefine01 HAVE_IN_PKTINFO
 #cmakedefine01 HAVE_IP_MREQN
-#cmakedefine01 HAVE_TCP_VAR_H
+#cmakedefine01 HAVE_NETINET_TCP_VAR_H
+#cmakedefine01 HAVE_NETINET_UDP_VAR_H
+#cmakedefine01 HAVE_NETINET_IP_VAR_H
+#cmakedefine01 HAVE_NETINET_ICMP_VAR_H
+#cmakedefine01 HAVE_IOS_NET_ROUTE_H
 #cmakedefine01 HAVE_RT_MSGHDR
 #cmakedefine01 HAVE_RT_MSGHDR2
 #cmakedefine01 HAVE_IF_MSGHDR2

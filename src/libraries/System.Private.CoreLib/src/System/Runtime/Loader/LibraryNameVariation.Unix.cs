@@ -10,7 +10,7 @@ namespace System.Runtime.Loader
     internal partial struct LibraryNameVariation
     {
         private const string LibraryNamePrefix = "lib";
-#if TARGET_OSX
+#if TARGET_OSX || TARGET_IOS
         private const string LibraryNameSuffix = ".dylib";
 #else
         private const string LibraryNameSuffix = ".so";

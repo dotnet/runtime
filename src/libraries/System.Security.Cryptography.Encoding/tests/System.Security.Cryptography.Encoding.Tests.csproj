@@ -48,10 +48,15 @@
     <Compile Include="Asn1\Writer\WriteObjectIdentifier.cs" />
     <Compile Include="Asn1\Writer\WriteUtcTime.cs" />
     <Compile Include="Asn1\Writer\WriteUtf8String.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.Array.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.Array.cs" />
+    <Compile Include="Cbor.Tests\CborWriterTests.cs" />
     <Compile Include="Cbor\CborInitialByte.cs" />
+    <Compile Include="Cbor\CborReader.Array.cs" />
     <Compile Include="Cbor\CborReader.cs" />
     <Compile Include="Cbor\CborReader.Integer.cs" />
     <Compile Include="Cbor\CborReader.String.cs" />
+    <Compile Include="Cbor\CborWriter.Array.cs" />
     <Compile Include="Cbor\CborWriter.String.cs" />
     <Compile Include="Cbor\CborWriter.cs" />
     <Compile Include="Cbor\CborWriter.Integer.cs" />

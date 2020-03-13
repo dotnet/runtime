@@ -275,6 +275,8 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 {
 #ifndef DISABLE_DLLMAP
 	mono_dllmap_insert_internal (assembly, dll, func, tdll, tfunc);
+#else
+	g_assert_not_reached ();
 #endif
 }
 

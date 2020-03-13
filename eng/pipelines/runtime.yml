@@ -143,6 +143,24 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
+# Build CoreCLR checked using GCC toolchain
+# Only when CoreCLR is changed
+# 
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: innerloop
+      useGCC: true
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
 # Build CoreCLR OSX_x64 checked
 # Only when CoreCLR or Libraries is changed
 #

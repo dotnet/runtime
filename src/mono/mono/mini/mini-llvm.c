@@ -6315,11 +6315,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_ADD_I4:
-		case OP_ATOMIC_ADD_I8: {
+		case OP_ATOMIC_ADD_I8:
+		case OP_ATOMIC_AND_I4:
+		case OP_ATOMIC_AND_I8:
+		case OP_ATOMIC_OR_I4:
+		case OP_ATOMIC_OR_I8: {
 			LLVMValueRef args [2];
 			LLVMTypeRef t;
-				
-			if (ins->opcode == OP_ATOMIC_ADD_I4)
+
+			if (ins->type == STACK_I4)
 				t = LLVMInt32Type ();
 			else
 				t = LLVMInt64Type ();
@@ -6329,7 +6333,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [0] = convert (ctx, lhs, LLVMPointerType (t, 0));
 			args [1] = convert (ctx, rhs, t);
 			ARM64_ATOMIC_FENCE_FIX;
-			values [ins->dreg] = LLVMBuildAdd (builder, mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_ADD, args [0], args [1]), args [1], dname);
+			if (ins->opcode == OP_ATOMIC_ADD_I4 || ins->opcode == OP_ATOMIC_ADD_I8)
+				// Interlocked.Add returns new value (that's why we emit additional Add here)
+				// see https://github.com/dotnet/runtime/pull/33102
+				values [ins->dreg] = LLVMBuildAdd (builder, mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_ADD, args [0], args [1]), args [1], dname);
+			else if (ins->opcode == OP_ATOMIC_AND_I4 || ins->opcode == OP_ATOMIC_AND_I8)
+				values [ins->dreg] = mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_AND, args [0], args [1]);
+			else if (ins->opcode == OP_ATOMIC_OR_I4 || ins->opcode == OP_ATOMIC_OR_I8)
+				values [ins->dreg] = mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_OR, args [0], args [1]);
+			else
+				g_assert_not_reached ();
 			ARM64_ATOMIC_FENCE_FIX;
 			break;
 		}
@@ -9994,7 +10007,11 @@ AddJitGlobal (MonoLLVMModule *module, LLVMTypeRef type, const char *name)
 	g_free (s);
 	return v;
 }
-#define FILE_INFO_NFIELDS (2 + MONO_AOT_FILE_INFO_NUM_SYMBOLS + 22 + 5)
+#define FILE_INFO_NUM_HEADER_FIELDS 2
+#define FILE_INFO_NUM_SCALAR_FIELDS 22
+#define FILE_INFO_NUM_ARRAY_FIELDS 5
+#define FILE_INFO_NUM_AOTID_FIELDS 1
+#define FILE_INFO_NFIELDS (FILE_INFO_NUM_HEADER_FIELDS + MONO_AOT_FILE_INFO_NUM_SYMBOLS + FILE_INFO_NUM_SCALAR_FIELDS + FILE_INFO_NUM_ARRAY_FIELDS + FILE_INFO_NUM_AOTID_FIELDS)
 
 static void
 create_aot_info_var (MonoLLVMModule *module)
@@ -10015,11 +10032,11 @@ create_aot_info_var (MonoLLVMModule *module)
 	for (i = 0; i < MONO_AOT_FILE_INFO_NUM_SYMBOLS; ++i)
 		eltypes [tindex ++] = LLVMPointerType (LLVMInt8Type (), 0);
 	/* Scalars */
-	for (i = 0; i < 21; ++i)
+	for (i = 0; i < FILE_INFO_NUM_SCALAR_FIELDS; ++i)
 		eltypes [tindex ++] = LLVMInt32Type ();
 	/* Arrays */
 	eltypes [tindex ++] = LLVMArrayType (LLVMInt32Type (), MONO_AOT_TABLE_NUM);
-	for (i = 0; i < 4; ++i)
+	for (i = 0; i < FILE_INFO_NUM_ARRAY_FIELDS - 1; ++i)
 		eltypes [tindex ++] = LLVMArrayType (LLVMInt32Type (), MONO_AOT_TRAMP_NUM);
 	eltypes [tindex ++] = LLVMArrayType (LLVMInt8Type (), 16);
 	g_assert (tindex == nfields);
@@ -10159,12 +10176,13 @@ emit_aot_file_info (MonoLLVMModule *module)
 	}
 
 	for (i = 0; i < MONO_AOT_FILE_INFO_NUM_SYMBOLS; ++i) {
-		g_assert (fields [2 + i]);
-		fields [2 + i] = LLVMConstBitCast (fields [2 + i], eltype);
+		g_assert (fields [FILE_INFO_NUM_HEADER_FIELDS + i]);
+		fields [FILE_INFO_NUM_HEADER_FIELDS + i] = LLVMConstBitCast (fields [FILE_INFO_NUM_HEADER_FIELDS + i], eltype);
 	}
 
 	/* Scalars */
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->plt_got_offset_base, FALSE);
+	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->plt_got_info_offset_base, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->got_size, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->plt_size, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->nmethods, FALSE);

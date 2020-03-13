@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks Condition="'$(TargetsUnix)' == 'true'">true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-OSX;(NetCoreAppCurrent)-iOS;</TargetFrameworks>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <Choose>

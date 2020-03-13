@@ -92,6 +92,7 @@
 ################################################################################
 
 import argparse
+import datetime
 import glob
 import json
 import hashlib
@@ -526,6 +527,12 @@ def crossgen_corelib(args):
     ni_corelib_dirname, debugging_files_dirname = create_output_folders()
     ni_corelib_filename = os.path.join(ni_corelib_dirname, assembly_name)
     platform_assemblies_paths = [os.path.dirname(il_corelib_filename)]
+
+    # Validate the paths are correct.
+    if not os.path.exists(il_corelib_filename):
+        print("IL Corelib path does not exist.")
+        sys.exit(1)
+
     crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
     shutil.rmtree(ni_corelib_dirname, ignore_errors=True)
     save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
@@ -688,6 +695,13 @@ def compare_results(args):
 ################################################################################
 
 if __name__ == '__main__':
+    start = datetime.datetime.now()
+
     parser = build_argument_parser()
     args = parser.parse_args()
     func = args.func(args)
+
+    end = datetime.datetime.now()
+    elapsed = end - start
+
+    print("Elapsed time: {}".format(elapsed.total_seconds()))

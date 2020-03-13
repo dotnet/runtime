@@ -42,6 +42,8 @@ typedef enum {
 typedef enum {
 	LLVM_ATOMICRMW_OP_XCHG = 0,
 	LLVM_ATOMICRMW_OP_ADD = 1,
+	LLVM_ATOMICRMW_OP_AND = 2,
+	LLVM_ATOMICRMW_OP_OR = 3,
 } AtomicRMWOp;
 
 typedef enum {

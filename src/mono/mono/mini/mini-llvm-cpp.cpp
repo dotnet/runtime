@@ -174,6 +174,12 @@ mono_llvm_build_atomic_rmw (LLVMBuilderRef builder, AtomicRMWOp op, LLVMValueRef
 	case LLVM_ATOMICRMW_OP_ADD:
 		aop = AtomicRMWInst::Add;
 		break;
+	case LLVM_ATOMICRMW_OP_AND:
+		aop = AtomicRMWInst::And;
+		break;
+	case LLVM_ATOMICRMW_OP_OR:
+		aop = AtomicRMWInst::Or;
+		break;
 	default:
 		g_assert_not_reached ();
 		break;

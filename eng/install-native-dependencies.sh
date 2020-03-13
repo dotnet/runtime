@@ -11,6 +11,7 @@ if [ "$1" = "linux" ]; then
     fi
 elif [ "$1" = "osx" ]; then
     brew update
+    brew upgrade
     if [ "$?" != "0" ]; then
         exit 1;
     fi

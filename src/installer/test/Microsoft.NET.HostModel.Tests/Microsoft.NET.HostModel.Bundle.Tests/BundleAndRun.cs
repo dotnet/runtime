@@ -41,7 +41,8 @@ namespace Microsoft.NET.HostModel.Tests
             RunTheApp(Path.Combine(publishDir, hostName));
 
             // Bundle to a single-file
-            Bundler bundler = new Bundler(hostName, singleFileDir);
+            // Bundle all content, until the host can handle other scenarios.
+            Bundler bundler = new Bundler(hostName, singleFileDir, BundleOptions.BundleAllContent);
             string singleFile = bundler.GenerateBundle(publishDir);
 
             // Run the extracted app
@@ -90,6 +91,7 @@ namespace Microsoft.NET.HostModel.Tests
         public class SharedTestState : IDisposable
         {
             public TestProjectFixture TestFixture { get; set; }
+            public TestProjectFixture LegacyFixture { get; set; }
             public RepoDirectoriesProvider RepoDirectories { get; set; }
 
             public SharedTestState()
@@ -98,7 +100,6 @@ namespace Microsoft.NET.HostModel.Tests
 
                 TestFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
                 BundleHelper.AddLongNameContentToAppWithSubDirs(TestFixture);
-
                 TestFixture
                     .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
                     .PublishProject(runtime: TestFixture.CurrentRid,

@@ -44,7 +44,7 @@ StatusCode runner_t::extract()
 
         // Read the bundle header
         reader.set_offset(marker_t::header_offset());
-        header_t header = header_t::read(reader);
+        header_t header = header_t::read(reader, /* need_exact_version: */ true);
 
         // Read the bundle manifest
         // Reader is at the correct offset
