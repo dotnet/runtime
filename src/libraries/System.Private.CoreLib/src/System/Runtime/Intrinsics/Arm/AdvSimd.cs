@@ -2017,6 +2017,90 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> AbsoluteDifference(Vector128<uint> left, Vector128<uint> right) => AbsoluteDifference(left, right);
 
         /// <summary>
+        /// uint8x8_t vaba_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
+        ///   A32: VABA.U8 Dd, Dn, Dm
+        ///   A64: UABA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> AbsoluteDifferenceAdd(Vector64<byte> addend, Vector64<byte> left, Vector64<byte> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int16x4_t vaba_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VABA.S16 Dd, Dn, Dm
+        ///   A64: SABA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> AbsoluteDifferenceAdd(Vector64<short> addend, Vector64<short> left, Vector64<short> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int32x2_t vaba_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VABA.S32 Dd, Dn, Dm
+        ///   A64: SABA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> AbsoluteDifferenceAdd(Vector64<int> addend, Vector64<int> left, Vector64<int> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int8x8_t vaba_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
+        ///   A32: VABA.S8 Dd, Dn, Dm
+        ///   A64: SABA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> AbsoluteDifferenceAdd(Vector64<sbyte> addend, Vector64<sbyte> left, Vector64<sbyte> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// uint16x4_t vaba_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
+        ///   A32: VABA.U16 Dd, Dn, Dm
+        ///   A64: UABA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> AbsoluteDifferenceAdd(Vector64<ushort> addend, Vector64<ushort> left, Vector64<ushort> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// uint32x2_t vaba_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
+        ///   A32: VABA.U32 Dd, Dn, Dm
+        ///   A64: UABA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> AbsoluteDifferenceAdd(Vector64<uint> addend, Vector64<uint> left, Vector64<uint> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// uint8x16_t vabaq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
+        ///   A32: VABA.U8 Qd, Qn, Qm
+        ///   A64: UABA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> AbsoluteDifferenceAdd(Vector128<byte> addend, Vector128<byte> left, Vector128<byte> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int16x8_t vabaq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
+        ///   A32: VABA.S16 Qd, Qn, Qm
+        ///   A64: SABA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> AbsoluteDifferenceAdd(Vector128<short> addend, Vector128<short> left, Vector128<short> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int32x4_t vabaq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
+        ///   A32: VABA.S32 Qd, Qn, Qm
+        ///   A64: SABA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> AbsoluteDifferenceAdd(Vector128<int> addend, Vector128<int> left, Vector128<int> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// int8x16_t vabaq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
+        ///   A32: VABA.S8 Qd, Qn, Qm
+        ///   A64: SABA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> AbsoluteDifferenceAdd(Vector128<sbyte> addend, Vector128<sbyte> left, Vector128<sbyte> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// uint16x8_t vabaq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
+        ///   A32: VABA.U16 Qd, Qn, Qm
+        ///   A64: UABA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> AbsoluteDifferenceAdd(Vector128<ushort> addend, Vector128<ushort> left, Vector128<ushort> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
+        /// uint32x4_t vabaq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
+        ///   A32: VABA.U32 Qd, Qn, Qm
+        ///   A64: UABA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> AbsoluteDifferenceAdd(Vector128<uint> addend, Vector128<uint> left, Vector128<uint> right) => AbsoluteDifferenceAdd(addend, left, right);
+
+        /// <summary>
         /// uint8x8_t vadd_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VADD.I8 Dd, Dn, Dm
         ///   A64: ADD Vd.8B, Vn.8B, Vm.8B
