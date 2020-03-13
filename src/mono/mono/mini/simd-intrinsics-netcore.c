@@ -808,7 +808,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_ConvertScalarToVector128Double},
 	{SN_ConvertScalarToVector128Int32},
 	{SN_ConvertScalarToVector128Int64},
-	{SN_ConvertScalarToVector128Single},
+	{SN_ConvertScalarToVector128Single, OP_XOP_X_X_X, SIMD_OP_SSE_CVTSD2SS},
 	{SN_ConvertScalarToVector128UInt32},
 	{SN_ConvertScalarToVector128UInt64},
 	{SN_ConvertToInt32},
@@ -1055,8 +1055,6 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			else
 				g_assert_not_reached ();
 			break;
-		case SN_ConvertScalarToVector128Single:
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_CVTSD2SS, 0, fsig, args);
 		case SN_ConvertScalarToVector128Double:
 			if (fsig->params [1]->type == MONO_TYPE_I4)
 				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I4, SIMD_OP_SSE_CVTSI2SD, 0, fsig, args);
