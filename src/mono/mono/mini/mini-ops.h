@@ -958,12 +958,11 @@ MINI_OP(OP_EXTRACT_I8, "extract_i8", LREG, XREG, NONE)
 
 /* Used by LLVM */
 MINI_OP(OP_INSERT_I1, "insert_i1", XREG, XREG, IREG)
+MINI_OP(OP_INSERT_I2, "insert_i2", XREG, XREG, IREG)
 MINI_OP(OP_INSERT_I4, "insert_i4", XREG, XREG, IREG)
 MINI_OP(OP_INSERT_I8, "insert_i8", XREG, XREG, LREG)
 MINI_OP(OP_INSERT_R4, "insert_r4", XREG, XREG, FREG)
 MINI_OP(OP_INSERT_R8, "insert_r8", XREG, XREG, FREG)
-
-MINI_OP(OP_INSERT_I2, "insert_i2", XREG, XREG, IREG)
 
 MINI_OP(OP_EXTRACTX_U2, "extractx_u2", IREG, XREG, NONE)
 
@@ -1045,12 +1044,36 @@ MINI_OP(OP_SSE2_PACKUS, "sse2_packus", XREG, XREG, XREG)
 MINI_OP(OP_SSE2_SRLI, "sse2_srli", XREG, XREG, XREG)
 MINI_OP(OP_SSE2_SHUFFLE, "sse2_shuffle", XREG, XREG, XREG)
 MINI_OP(OP_SSE2_ADDS, "sse2_adds", XREG, XREG, XREG)
-MINI_OP(OP_SSE2_ADDSD, "sse2_addsd", XREG, XREG, XREG)
 MINI_OP(OP_SSE2_CMPSD, "sse2_cmpsd", XREG, XREG, XREG)
 MINI_OP(OP_SSE2_COMIEQ_SD, "sse2_comieq_sd", XREG, XREG, XREG)
+MINI_OP(OP_SSE2_COMISD, "sse2_comisd", IREG, XREG, XREG)
+MINI_OP(OP_SSE2_UCOMISD, "sse2_ucomisd", IREG, XREG, XREG)
+MINI_OP(OP_SSE2_ADDSD, "sse2_addsd", XREG, XREG, XREG)
+MINI_OP(OP_SSE2_SUBSD, "sse2_subsd", XREG, XREG, XREG)
+MINI_OP(OP_SSE2_DIVSD, "sse2_divsd", XREG, XREG, XREG)
+MINI_OP(OP_SSE2_MULSD, "sse2_mulsd", XREG, XREG, XREG)
+MINI_OP(OP_SSE_MOVSD, "sse_movsd", XREG, IREG, NONE)
+MINI_OP(OP_SSE2_PSLLDQ, "sse2_pslldq", XREG, XREG, IREG)
+MINI_OP(OP_SSE2_PSRLDQ, "sse2_psrldq", XREG, XREG, IREG)
+MINI_OP(OP_SSE2_PSRAW_IMM, "sse2_psraw_imm", XREG, XREG, IREG)
+MINI_OP(OP_SSE2_PSRAD_IMM, "sse2_psrad_imm", XREG, XREG, IREG)
+MINI_OP(OP_SSE2_PSRLW_IMM, "sse2_psrlw_imm", XREG, XREG, IREG)
+MINI_OP(OP_SSE2_PSRLD_IMM, "sse2_psrld_imm", XREG, XREG, IREG)
+MINI_OP(OP_SSE2_PSRLQ_IMM, "sse2_psrlq_imm", XREG, XREG, IREG)
+MINI_OP(OP_SSE2_PSHUFD, "sse2_pshufd", XREG, XREG, IREG)
+MINI_OP(OP_SSE2_PSHUFHW, "sse2_pshufhw", XREG, XREG, IREG)
+MINI_OP(OP_SSE2_PSHUFLW, "sse2_pshuflw", XREG, XREG, IREG)
+MINI_OP3(OP_SSE2_SHUFPD, "sse2_shufpd", XREG, XREG, XREG, IREG)
+MINI_OP(OP_SSE2_MOVHPD_LOAD, "sse2_movhpd_load", XREG, XREG, IREG)
+MINI_OP(OP_SSE2_MOVLPD_LOAD, "sse2_movlpd_load", XREG, XREG, IREG)
+MINI_OP(OP_SSE2_MOVHPD_STORE, "sse2_movhpd_store", NONE, IREG, XREG)
+MINI_OP(OP_SSE2_MOVLPD_STORE, "sse2_movlpd_store", NONE, IREG, XREG)
 
 /* sse 3 */
 MINI_OP(OP_SSE3_MOVDDUP, "sse3_movddup", XREG, XREG, NONE)
+MINI_OP(OP_SSE3_MOVSHDUP, "sse3_movshdup", XREG, XREG, NONE)
+MINI_OP(OP_SSE3_MOVSLDUP, "sse3_movsldup", XREG, XREG, NONE)
+MINI_OP(OP_SSE3_MOVDDUP_MEM, "sse3_movddup_mem", XREG, IREG, NONE)
 
 /* ssse 3 */
 MINI_OP(OP_SSSE3_SHUFFLE, "ssse3_shuffle", XREG, XREG, XREG)
@@ -1472,12 +1495,14 @@ MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
 /* inst_c0 contains a SimdOp, inst_c1 might contain additional data */
 MINI_OP(OP_XOP, "xop", NONE, NONE, NONE)
+MINI_OP(OP_XOP_X_I, "xop_x_i", XREG, IREG, NONE)
 MINI_OP(OP_XOP_X_X, "xop_x_x", XREG, XREG, NONE)
 MINI_OP(OP_XOP_I4_X, "xop_i4_x", IREG, XREG, NONE)
 MINI_OP(OP_XOP_I8_X, "xop_i8_x", LREG, XREG, NONE)
 MINI_OP(OP_XOP_X_X_X, "xop_x_x_x", XREG, XREG, XREG)
 MINI_OP(OP_XOP_X_X_I4, "xop_x_x_i4", XREG, XREG, IREG)
 MINI_OP(OP_XOP_X_X_I8, "xop_x_x_i8", XREG, XREG, LREG)
+MINI_OP3(OP_XOP_X_X_X_I, "xop_x_x_x_i", XREG, XREG, XREG, IREG)
 
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
 /* Extract element of vector */
@@ -1488,6 +1513,15 @@ MINI_OP(OP_XEXTRACT_I64, "xextract_i64", LREG, XREG, IREG)
 MINI_OP(OP_XEXTRACT_R8, "xextract_r8", FREG, XREG, IREG)
 /* Return an R4 */
 MINI_OP(OP_XEXTRACT_R4, "xextract_r4", FREG, XREG, IREG)
+
+/* Insert element into a vector */
+/* sreg1 is the vector, sreg2 is the value, sreg3 is the index */
+MINI_OP3(OP_XINSERT_I1, "xinsert_i1", XREG, XREG, IREG, IREG)
+MINI_OP3(OP_XINSERT_I2, "xinsert_i2", XREG, XREG, IREG, IREG)
+MINI_OP3(OP_XINSERT_I4, "xinsert_i4", XREG, XREG, IREG, IREG)
+MINI_OP3(OP_XINSERT_I8, "xinsert_i8", XREG, XREG, LREG, IREG)
+MINI_OP3(OP_XINSERT_R4, "xinsert_r4", XREG, XREG, FREG, IREG)
+MINI_OP3(OP_XINSERT_R8, "xinsert_r8", XREG, XREG, FREG, IREG)
 
 MINI_OP(OP_LZCNT32, "lzcnt32", IREG, IREG, NONE)
 MINI_OP(OP_LZCNT64, "lzcnt64", LREG, LREG, NONE)
