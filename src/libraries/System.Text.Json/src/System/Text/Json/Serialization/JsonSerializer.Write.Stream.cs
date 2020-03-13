@@ -19,6 +19,13 @@ namespace System.Text.Json
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="utf8Json"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// </exception>
         public static Task SerializeAsync<TValue>(Stream utf8Json, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
@@ -36,6 +43,16 @@ namespace System.Text.Json
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="inputType"/> is not compatible with <paramref name="value"/>.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="utf8Json"/> or <paramref name="inputType"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="inputType"/>  or its serializable members.
+        /// </exception>
         public static Task SerializeAsync(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
