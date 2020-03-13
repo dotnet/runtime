@@ -171,6 +171,9 @@ namespace System.Diagnostics.CodeAnalysis
         /// The list of field and property members that are promised to be not-null.
         /// </param>
         public MemberNotNullWhenAttribute(bool returnValue, params string[] members)
-            => (this.ReturnValue, this.Members) = (returnValue, members);
+        {
+            this.ReturnValue = returnValue;
+            this.Members = members;
+        }
     }
 }
