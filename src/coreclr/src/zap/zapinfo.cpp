@@ -482,6 +482,15 @@ void ZapInfo::CompileMethod()
     }
 #endif
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    if (GetCompileInfo()->IsNativeCallableMethod(m_currentMethodHandle))
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun:  Methods with NativeCallableAttribute not implemented\n"));
+        ThrowHR(E_NOTIMPL);
+    }
+#endif // (TARGET_X86) && defined(TARGET_WINDOWS)
+
     if (m_pImage->m_stats)
     {
         m_pImage->m_stats->m_methods++;
@@ -2275,7 +2284,7 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
     if (GetCompileInfo()->IsNativeCallableMethod(pResult->hMethod))
     {
         if (m_zapper->m_pOpt->m_verbose)
-            m_zapper->Warning(W("ReadyToRun: References to methods with NativeCallableAttribute not supported\n"));
+            m_zapper->Warning(W("ReadyToRun: References to methods with NativeCallableAttribute not implemented\n"));
         ThrowHR(E_NOTIMPL);
     }
 #endif // (TARGET_X86) && defined(TARGET_WINDOWS)
