@@ -65,7 +65,7 @@ bool TryWriteNumberLittleEndian(uint8_t *&bufferCursor, uint32_t &bufferLen, con
     if (bufferLen < sizeof(value))
         return false;
 
-    for (int i = 0; i < sizeof(value); i++)
+    for (uint32_t i = 0; i < sizeof(value); i++)
     {
         *bufferCursor++ = (value >> (i * 8)) & 0xFF;
         bufferLen -= 1;
