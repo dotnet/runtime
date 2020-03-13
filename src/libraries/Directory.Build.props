@@ -29,7 +29,7 @@
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
     <!-- TargetOS can be removed after renaming the property in arcade repo-->
     <BuildOS>$(TargetOS)</BuildOS>
-    <AdditionalBuildTargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(AdditionalBuildTargetFrameworks);$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-netbsd;$(NetCoreAppCurrent)-freebsd</AdditionalBuildTargetFrameworks>  
+    <AdditionalBuildTargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(AdditionalBuildTargetFrameworks);$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-netbsd;$(NetCoreAppCurrent)-freebsd</AdditionalBuildTargetFrameworks>
     <!-- Remove once is fixed: https://github.com/dotnet/roslyn/issues/42344 -->
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
   </PropertyGroup>
@@ -62,7 +62,7 @@
     <TargetsFreeBSD Condition="'$(TargetFrameworkSuffix)' == 'freebsd'">true</TargetsFreeBSD>
     <TargetsLinux Condition="'$(TargetFrameworkSuffix)' == 'linux' or '$(TargetsWebAssembly)' == 'true'">true</TargetsLinux>
     <TargetsNetBSD Condition="'$(TargetFrameworkSuffix)' == 'netbsd'">true</TargetsNetBSD>
-    <TargetsiOS Condition="'$(TargetFrameworkSuffic)' == 'ios'">true</TargetsiOS>
+    <TargetsiOS Condition="'$(TargetFrameworkSuffix)' == 'ios'">true</TargetsiOS>
     <TargetsOSX Condition="'$(TargetFrameworkSuffix)' == 'osx'">true</TargetsOSX>
     <TargetsWindows Condition="'$(TargetFrameworkSuffix)' == 'win'">true</TargetsWindows>
     <TargetsUnix Condition="'$(TargetFrameworkSuffix)' == 'unix' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true' or '$(TargetsiOS)' == 'true'">true</TargetsUnix>

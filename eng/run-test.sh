@@ -15,7 +15,7 @@ wait_on_pids()
 
 usage()
 {
-    echo "Runs .NET CoreFX tests on FreeBSD, NetBS or Linux"
+    echo "Runs .NET CoreFX tests on FreeBSD, NetBSD or Linux"
     echo "usage: run-test [options]"
     echo
     echo "Input sources:"
@@ -256,7 +256,7 @@ fi
 
 if [ ! "$OS" == "freebsd" ] && [ ! "$OS" == "netbsd" ] && [ ! "$OS" == "linux" ]
 then
-    echo "error: OS should be FreeBSD, NetBS or Linux"
+    echo "error: OS should be FreeBSD, NetBSD or Linux"
     exit 1
 fi
 
@@ -285,7 +285,7 @@ if [ $RunTestSequential -eq 1 ]
 then
     maxProcesses=1;
 else
-    if [ `uname` = "NetBS" ] || [ `uname` = "FreeBSD" ]; then
+    if [ `uname` = "NetBSD" ] || [ `uname` = "FreeBSD" ]; then
       maxProcesses=$(($(getconf NPROCESSORS_ONLN)+1))
     else
       maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))

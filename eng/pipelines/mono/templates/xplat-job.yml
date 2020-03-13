@@ -59,7 +59,7 @@ jobs:
     ${{ if eq(parameters.osGroup, 'osx') }}:
       agentOs: MacOS
     ${{ if eq(parameters.osGroup, 'Win') }}:
-      agentOs: win
+      agentOs: Windows_NT
 
     # Setting this results in the arcade job template including a step
     # that gathers asset manifests and publishes them to pipeline

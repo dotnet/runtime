@@ -106,7 +106,7 @@ jobs:
         env:
           TeamName: $(_TeamName)
         continueOnError: ${{ parameters.continueOnError }}
-        condition: and(succeeded(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'win'))
+        condition: and(succeeded(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'Windows_NT'))
 
     - task: NuGetAuthenticate@0
 
@@ -125,7 +125,7 @@ jobs:
     - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - task: MicroBuildCleanup@1
         displayName: Execute Microbuild cleanup tasks  
-        condition: and(always(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'win'))
+        condition: and(always(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'Windows_NT'))
         continueOnError: ${{ parameters.continueOnError }}
         env:
           TeamName: $(_TeamName)

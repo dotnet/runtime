@@ -59,7 +59,7 @@ steps:
       HelixBaseUri: ${{ parameters.HelixBaseUri }}
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'win'))
+    condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'Windows_NT'))
     continueOnError: ${{ parameters.continueOnError }}
   - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/eng/common/helixpublish.proj /restore /t:Test /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Unix)
@@ -90,5 +90,5 @@ steps:
       HelixBaseUri: ${{ parameters.HelixBaseUri }}
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    condition: and(${{ parameters.condition }}, ne(variables['Agent.Os'], 'win'))
+    condition: and(${{ parameters.condition }}, ne(variables['Agent.Os'], 'Windows_NT'))
     continueOnError: ${{ parameters.continueOnError }}

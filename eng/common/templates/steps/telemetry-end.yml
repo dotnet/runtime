@@ -57,7 +57,7 @@ steps:
     Helix_WorkItemId: $(Helix_WorkItemId)
     MaxRetries: ${{ parameters.maxRetries }}
     RetryDelay: ${{ parameters.retryDelay }}
-  condition: and(always(), ne(variables['Agent.Os'], 'win'))
+  condition: and(always(), ne(variables['Agent.Os'], 'Windows_NT'))
 - powershell: |
     if (($env:Agent_JobStatus -eq 'Succeeded') -or ($env:Agent_JobStatus -eq 'PartiallySucceeded')) {
       $ErrorCount = 0
@@ -99,4 +99,4 @@ steps:
     Helix_WorkItemId: $(Helix_WorkItemId)
     MaxRetries: ${{ parameters.maxRetries }}
     RetryDelay: ${{ parameters.retryDelay }}
-  condition: and(always(),eq(variables['Agent.Os'], 'win'))
+  condition: and(always(),eq(variables['Agent.Os'], 'Windows_NT'))

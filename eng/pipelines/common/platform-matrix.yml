@@ -18,7 +18,7 @@ parameters:
   # for the given platform and helixQueueGroup.
   helixQueuesTemplate: ''
   stagedBuild: false
-  # When set to false, suppresses reuse of osx managed build artifacts (for pipelines without an osx obj)
+  # When set to false, suppresses reuse of OSX managed build artifacts (for pipelines without an osx obj)
   managedOsxBuild: true
   # When set to true, passes the 'platforms' value as a job parameter also named 'platforms'.
   # Handled as an opt-in parameter to avoid excessive yaml.
@@ -179,9 +179,9 @@ jobs:
           platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# FeeBSD
+# FreeBSD
 
-# FeeBSD machines are currently offline. Re-enable in the official build when
+# FreeBSD machines are currently offline. Re-enable in the official build when
 # the machines are healthy.
 
 # - template: xplat-setup.yml

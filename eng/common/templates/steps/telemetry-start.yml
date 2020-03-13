@@ -93,7 +93,7 @@ steps:
     Configuration: ${{ parameters.buildConfig }}
     MaxRetries: ${{ parameters.maxRetries }}
     RetryDelay: ${{ parameters.retryDelay }}
-  condition: and(always(), ne(variables['Agent.Os'], 'win'))
+  condition: and(always(), ne(variables['Agent.Os'], 'Windows_NT'))
 - bash: |
     curlStatus=1
     retryCount=0
@@ -142,7 +142,7 @@ steps:
     Helix_JobToken: $(Helix_JobToken)
     MaxRetries: ${{ parameters.maxRetries }}
     RetryDelay: ${{ parameters.retryDelay }}
-  condition: and(always(), ne(variables['Agent.Os'], 'win'))
+  condition: and(always(), ne(variables['Agent.Os'], 'Windows_NT'))
 
 - powershell: |
     $jobInfo = [pscustomobject]@{
@@ -200,7 +200,7 @@ steps:
     Configuration: ${{ parameters.buildConfig }}
     MaxRetries: ${{ parameters.maxRetries }}
     RetryDelay: ${{ parameters.retryDelay }}
-  condition: and(always(), eq(variables['Agent.Os'], 'win'))
+  condition: and(always(), eq(variables['Agent.Os'], 'Windows_NT'))
   displayName: Send Windows Job Start Telemetry
 - powershell: |
     # Basic retry loop to harden against server flakiness
@@ -238,4 +238,4 @@ steps:
     Helix_JobToken: $(Helix_JobToken)
     MaxRetries: ${{ parameters.maxRetries }}
     RetryDelay: ${{ parameters.retryDelay }}
-  condition: and(always(), eq(variables['Agent.Os'], 'win'))
+  condition: and(always(), eq(variables['Agent.Os'], 'Windows_NT'))

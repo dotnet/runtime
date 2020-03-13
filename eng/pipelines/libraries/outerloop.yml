@@ -25,7 +25,7 @@ jobs:
       - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
         - win_x64
         - win_x86
-      - ${{ if eq(variables['includelinuxOuterloop'], true) }}:
+      - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
         - linux_x64
         - linux_musl_x64
         - ${{ if eq(variables['isFullMatrix'], true) }}:
@@ -48,7 +48,7 @@ jobs:
         - win_x86
         - ${{ if eq(variables['isFullMatrix'], true) }}:
           - win_x64
-      - ${{ if eq(variables['includelinuxOuterloop'], true) }}:
+      - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
         - ${{ if eq(variables['isFullMatrix'], true) }}:
           - linux_x64
           - linux_arm

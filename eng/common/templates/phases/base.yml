@@ -92,7 +92,7 @@ phases:
         env:
           TeamName: $(_TeamName)
         continueOnError: false
-        condition: and(succeeded(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'win'))
+        condition: and(succeeded(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'Windows_NT'))
 
   # Run provided build steps
   - ${{ parameters.steps }}
@@ -102,7 +102,7 @@ phases:
     - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - task: MicroBuildCleanup@1
         displayName: Execute Microbuild cleanup tasks  
-        condition: and(always(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'win'))
+        condition: and(always(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'Windows_NT'))
         env:
           TeamName: $(_TeamName)
 

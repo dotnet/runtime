@@ -57,11 +57,11 @@ jobs:
     ${{ if eq(parameters.osGroup, 'linux') }}:
       agentOs: Ubuntu
     ${{ if eq(parameters.osGroup, 'freebsd') }}:
-      agentOs: freebsd
+      agentOs: FreeBSD
     ${{ if eq(parameters.osGroup, 'osx') }}:
       agentOs: MacOS
     ${{ if eq(parameters.osGroup, 'win') }}:
-      agentOs: win
+      agentOs: Windows_NT
 
     # Setting this results in the arcade job template including a step
     # that gathers asset manifests and publishes them to pipeline
