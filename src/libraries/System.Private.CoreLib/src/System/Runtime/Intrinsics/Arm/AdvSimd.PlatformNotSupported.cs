@@ -1051,6 +1051,18 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<float> ReciprocalEstimateScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64_t vrecpxd_f64 (float64_t a)
+            ///   A64: FRECPX Dd, Dn
+            /// </summary>
+            public static Vector64<double> ReciprocalExponentScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vrecpxs_f32 (float32_t a)
+            ///   A64: FRECPX Sd, Sn
+            /// </summary>
+            public static Vector64<float> ReciprocalExponentScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vrecpsq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FRECPS Vd.2D, Vn.2D, Vm.2D
             /// </summary>
