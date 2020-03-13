@@ -1017,19 +1017,16 @@ namespace System.Net.WebSockets
             Debug.Assert(_thisLock != null, "'_thisLock' MUST NOT be NULL.");
             Debug.Assert(SessionHandle != null, "'SessionHandle' MUST NOT be NULL.");
 
-            if (thisLockTaken || sessionHandleLockTaken)
+            if (thisLockTaken)
             {
-                if (thisLockTaken)
-                {
-                    Monitor.Exit(_thisLock);
-                    thisLockTaken = false;
-                }
+                Monitor.Exit(_thisLock);
+                thisLockTaken = false;
+            }
 
-                if (sessionHandleLockTaken)
-                {
-                    Monitor.Exit(SessionHandle);
-                    sessionHandleLockTaken = false;
-                }
+            if (sessionHandleLockTaken)
+            {
+                Monitor.Exit(SessionHandle);
+                sessionHandleLockTaken = false;
             }
         }
 
@@ -1096,14 +1093,8 @@ namespace System.Net.WebSockets
             Debug.Assert(lockObject != null, "'lockObject' MUST NOT be NULL.");
             if (lockTaken)
             {
-                try
-                {
-                }
-                finally
-                {
-                    Monitor.Exit(lockObject);
-                    lockTaken = false;
-                }
+                Monitor.Exit(lockObject);
+                lockTaken = false;
             }
         }
 
