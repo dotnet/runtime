@@ -94,7 +94,7 @@ namespace System.Text.Json
                 WriteStack state = default;
                 state.Initialize(inputType, options, supportContinuation: true);
 
-                JsonConverter converterBase = state.Current.JsonClassInfo!.PolicyProperty!.ConverterBase;
+                JsonConverter converterBase = state.Current.JsonClassInfo!.PropertyInfoForClassInfo.ConverterBase;
 
                 bool isFinalBlock;
 
