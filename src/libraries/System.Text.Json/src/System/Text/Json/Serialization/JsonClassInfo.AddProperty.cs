@@ -58,9 +58,9 @@ namespace System.Text.Json
 
         /// <summary>
         /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
-        /// See <seealso cref="JsonClassInfo.TypeProperty"/>.
+        /// See <seealso cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
         /// </summary>
-        internal static JsonPropertyInfo CreateTypeProperty(
+        internal static JsonPropertyInfo CreatePropertyInfoForClassInfo(
             Type declaredPropertyType,
             Type runtimePropertyType,
             JsonConverter converter,

@@ -122,7 +122,7 @@ namespace System.Text.Json
                 Options);
 
             ClassType = converter.ClassType;
-            TypeProperty = CreateTypeProperty(Type, runtimeType, converter, Options);
+            PropertyInfoForClassInfo = CreatePropertyInfoForClassInfo(Type, runtimeType, converter, Options);
 
             switch (ClassType)
             {
@@ -392,14 +392,22 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// The "type property" for the current JsonClassInfo.
-        /// A "type property" is not a real property on a type; instead it represents a collection element type,
-        /// a generic type parameter, or the root type passed into the root serialization APIs.
-        /// The "type property" is used to obtain the converter for the given type.
-        /// For example, for a property returning <see cref="Collections.Generic.List{T}"/> where T is a string,
-        /// a JsonClassInfo will be created with .Type=typeof(string) and .TypeProperty=JsonPropertyInfo{string}.
+        /// The JsonPropertyInfo for this JsonClassInfo. It is used to obtain the converter for the ClassInfo.
         /// </summary>
-        public JsonPropertyInfo TypeProperty { get; private set; }
+        /// <remarks>
+        /// The returned JsonPropertyInfo does not represent a real property; instead it represents either:
+        /// a collection element type,
+        /// a generic type parameter,
+        /// a property type (if pushed to a new stack frame),
+        /// or the root type passed into the root serialization APIs.
+        /// For example, for a property returning <see cref="Collections.Generic.List{T}"/> where T is a string,
+        /// a JsonClassInfo will be created with .Type=typeof(string) and .PropertyInfoForClassInfo=JsonPropertyInfo{string}.
+        /// Without this property, a "Converter" property would need to be added to JsonClassInfo and there would be several more
+        /// `if` statements to obtain the converter from either the actual JsonPropertyInfo (for a real property) or from the
+        /// ClassInfo (for the cases mentioned above). In addition, methods that have a JsonPropertyInfo argument would also likely
+        /// need to add an argument for JsonClassInfo.
+        /// </remarks>
+        public JsonPropertyInfo PropertyInfoForClassInfo { get; private set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryIsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key, [NotNullWhen(true)] ref JsonPropertyInfo? info)
