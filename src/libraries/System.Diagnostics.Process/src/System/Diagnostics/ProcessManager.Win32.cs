@@ -173,7 +173,7 @@ namespace System.Diagnostics
 
                         module.ModuleName = new string(chars, 0, length);
 
-                        for (; ; )
+                        while (true)
                         {
                             length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
                             if (length == chars.Length)
