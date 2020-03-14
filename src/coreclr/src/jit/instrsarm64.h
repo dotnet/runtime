@@ -87,65 +87,81 @@ INST6(sub,     "sub",    0, 0, IF_EN6A,   0x4B000000,  0x4B000000,  0x4B200000, 
 
 //    enum     name     FP LD/ST            LS_2D        LS_3F        LS_2E        LS_2F        LS_3G        LS_2G
 INST6(ld1,     "ld1",   0, LD, IF_EN6B,   0x0C407000,  0x0CC07000,  0x0CDF7000,  0x0D400000,  0x0DC00000,  0x0DDF0000)
+                                   // C7.2.170 LD1 (multiple structures, one register variant)
                                    //  ld1     {Vt},[Xn]            LS_2D  0Q00110001000000 0111ssnnnnnttttt   0C40 7000   base register
                                    //  ld1     {Vt},[Xn],Xm         LS_3F  0Q001100110mmmmm 0111ssnnnnnttttt   0CC0 7000   post-indexed by a register
                                    //  ld1     {Vt},[Xn],#imm       LS_2E  0Q00110011011111 0111ssnnnnnttttt   0CDF 7000   post-indexed by an immediate
+                                   // C7.2.171 LD1 (single structure)
                                    //  ld1     {Vt}[],[Xn]          LS_2F  0Q00110101000000 xx0Sssnnnnnttttt   0D40 0000   base register
                                    //  ld1     {Vt}[],[Xn],Xm       LS_3G  0Q001101110mmmmm xx0Sssnnnnnttttt   0DC0 0000   post-indexed by a register
                                    //  ld1     {Vt}[],[Xn],#imm     LS_2G  0Q00110111011111 xx0Sssnnnnnttttt   0DDF 0000   post-indexed by an immediate
 
 INST6(ld2,     "ld2",   0, LD, IF_EN6B,   0x0C408000,  0x0CC08000,  0x0CDF8000,  0x0D600000,  0x0DE00000,  0x0DFF0000)
+                                   // C7.2.173 LD2 (multiple structures)
                                    //  ld2     {Vt,Vt2},[Xn]        LS_2D  0Q00110001000000 1000ssnnnnnttttt   0C40 8000   base register
                                    //  ld2     {Vt,Vt2},[Xn],Xm     LS_3F  0Q001100110mmmmm 1000ssnnnnnttttt   0CC0 8000   post-indexed by a register
                                    //  ld2     {Vt,Vt2},[Xn],#imm   LS_2E  0Q001100110mmmmm 1000ssnnnnnttttt   0CDF 8000   post-indexed by an immediate
+                                   // C7.2.174 LD2 (single structure)
                                    //  ld2     {Vt,Vt2}[],[Xn]      LS_2F  0Q00110101100000 xx0Sssnnnnnttttt   0D60 0000   base register
                                    //  ld2     {Vt,Vt2}[],[Xn],Xm   LS_3G  0Q001101111mmmmm xx0Sssnnnnnttttt   0DE0 0000   post-indexed by a register
                                    //  ld2     {Vt,Vt2}[],[Xn],#imm LS_2G  0Q00110111111111 xx0Sssnnnnnttttt   0DFF 0000   post-indexed by an immediate
 
 INST6(ld3,     "ld3",   0, LD, IF_EN6B,   0x0C404000,  0x0CC04000,  0x0CDF4000,  0x0D402000,  0x0DC02000,  0x0DDF2000)
+                                   // C7.2.176 LD3 (multiple structures)
                                    //  ld3     {Vt-Vt3},[Xn]        LS_2D  0Q00110001000000 0100ssnnnnnttttt   0C40 4000   base register
                                    //  ld3     {Vt-Vt3},[Xn],Xm     LS_3F  0Q001100110mmmmm 0100ssnnnnnttttt   0CC0 4000   post-indexed by a register
                                    //  ld3     {Vt-Vt3},[Xn],#imm   LS_2E  0Q001100110mmmmm 0100ssnnnnnttttt   0CDF 4000   post-indexed by an immediate
+                                   // C7.2.177 LD3 (single structure)
                                    //  ld3     {Vt-Vt3}[],[Xn]      LS_2F  0Q00110101000000 xx1Sssnnnnnttttt   0D40 2000   base register
                                    //  ld3     {Vt-Vt3}[],[Xn],Xm   LS_3G  0Q001101110mmmmm xx1Sssnnnnnttttt   0DC0 2000   post-indexed by a register
                                    //  ld3     {Vt-Vt3}[],[Xn],#imm LS_2G  0Q00110111011111 xx1Sssnnnnnttttt   0DDF 2000   post-indexed by an immediate
 
 INST6(ld4,     "ld4",   0, LD, IF_EN6B,   0x0C400000,  0x0CC00000,  0x0CDF0000,  0x0D602000,  0x0DE02000,  0x0DFF2000)
+                                   // C7.2.179 LD4 (multiple structures)
                                    //  ld4     {Vt-Vt4},[Xn]        LS_2D  0Q00110001000000 0000ssnnnnnttttt   0C40 0000   base register
                                    //  ld4     {Vt-Vt4},[Xn],Xm     LS_3F  0Q001100110mmmmm 0000ssnnnnnttttt   0CC0 0000   post-indexed by a register
                                    //  ld4     {Vt-Vt4},[Xn],#imm   LS_2E  0Q00110011011111 0000ssnnnnnttttt   0CDF 0000   post-indexed by an immediate
+                                   // C7.2.180 LD4 (single structure)
                                    //  ld4     {Vt-Vt4}[],[Xn]      LS_2F  0Q00110101100000 xx1Sssnnnnnttttt   0D60 2000   base register
                                    //  ld4     {Vt-Vt4}[],[Xn],Xm   LS_3G  0Q001101111mmmmm xx1Sssnnnnnttttt   0DE0 2000   post-indexed by a register
                                    //  ld4     {Vt-Vt4}[],[Xn],#imm LS_2G  0Q00110111111111 xx1Sssnnnnnttttt   0DFF 2000   post-indexed by an immediate
 
 INST6(st1,     "st1",   0, LD, IF_EN6B,   0x0C007000,  0x0C807000,  0x0C9F7000,  0x0D000000,  0x0D800000,  0x0D9F0000)
+                                   // C7.2.313 ST1 (multiple structures, one register variant)
                                    //  st1     {Vt},[Xn]            LS_2D  0Q00110000000000 0111ssnnnnnttttt   0C00 7000   base register
                                    //  st1     {Vt},[Xn],Xm         LS_3F  0Q001100100mmmmm 0111ssnnnnnttttt   0C80 7000   post-indexed by a register
                                    //  st1     {Vt},[Xn],#imm       LS_2E  0Q00110010011111 0111ssnnnnnttttt   0C9F 7000   post-indexed by an immediate
+                                   // C7.2.314 ST1 (single structure)
                                    //  st1     {Vt}[],[Xn]          LS_2F  0Q00110100000000 xx0Sssnnnnnttttt   0D00 0000   base register
                                    //  st1     {Vt}[],[Xn],Xm       LS_3G  0Q001101100mmmmm xx0Sssnnnnnttttt   0D80 0000   post-indexed by a register
                                    //  st1     {Vt}[],[Xn],#imm     LS_2G  0Q00110110011111 xx0Sssnnnnnttttt   0D9F 0000   post-indexed by an immediate
 
 INST6(st2,     "st2",   0, ST, IF_EN6B,   0x0C008000,  0x0C808000,  0x0C9F8000,  0x0D200000,  0x0DA00000,  0x0DBF0000)
+                                   // C7.2.315 ST2 (multiple structures)
                                    //  st2     {Vt,Vt2},[Xn]        LS_2D  0Q00110000000000 1000ssnnnnnttttt   0C00 8000   base register
                                    //  st2     {Vt,Vt2},[Xn],Xm     LS_3F  0Q001100100mmmmm 1000ssnnnnnttttt   0C80 8000   post-indexed by a register
                                    //  st2     {Vt,Vt2},[Xn],#imm   LS_2E  0Q00110010011111 1000ssnnnnnttttt   0C9F 8000   post-indexed by an immediate
+                                   // C7.2.316 ST2 (single structure)
                                    //  st2     {Vt,Vt2}[],[Xn]      LS_2F  0Q00110100100000 xx0Sssnnnnnttttt   0D20 0000   base register
                                    //  st2     {Vt,Vt2}[],[Xn],Xm   LS_3G  0Q001101101mmmmm xx0Sssnnnnnttttt   0DA0 0000   post-indexed by a register
                                    //  st2     {Vt,Vt2}[],[Xn],#imm LS_2G  0Q00110110111111 xx0Sssnnnnnttttt   0DBF 0000   post-indexed by an immediate
 
 INST6(st3,     "st3",   0, ST, IF_EN6B,   0x0C004000,  0x0C804000,  0x0C9F4000,  0x0D002000,  0x0D802000,  0x0D9F2000)
+                                   // C7.2.317 ST3 (multiple structures)
                                    //  st3     {Vt-Vt3},[Xn]        LS_2D  0Q00110000000000 0100ssnnnnnttttt   0C00 4000   base register
                                    //  st3     {Vt-Vt3},[Xn],Xm     LS_3F  0Q001100100mmmmm 0100ssnnnnnttttt   0C80 4000   post-indexed by a register
                                    //  st3     {Vt-Vt3},[Xn],#imm   LS_2E  0Q00110010011111 0100ssnnnnnttttt   0C9F 4000   post-indexed by an immediate
+                                   // C7.2.318 ST3 (single structure)
                                    //  st3     {Vt-Vt3}[],[Xn]      LS_2F  0Q00110100000000 xx1Sssnnnnnttttt   0D00 2000   base register
                                    //  st3     {Vt-Vt3}[],[Xn],Xm   LS_3G  0Q001101100mmmmm xx1Sssnnnnnttttt   0D80 2000   post-indexed by a register
                                    //  st3     {Vt-Vt3}[],[Xn],#imm LS_2G  0Q00110110011111 xx1Sssnnnnnttttt   0D9F 2000   post-indexed by an immediate
 
 INST6(st4,     "st4",   0, ST, IF_EN6B,   0x0C000000,  0x0C800000,  0x0C9F0000,  0x0D202000,  0x0DA02000,  0x0DBF2000)
+                                   // C7.2.319 ST4 (multiple structures)
                                    //  st4     {Vt-Vt4},[Xn]        LS_2D  0Q00110000000000 0000ssnnnnnttttt   0C00 0000   base register
                                    //  st4     {Vt-Vt4},[Xn],Xm     LS_3F  0Q001100100mmmmm 0000ssnnnnnttttt   0C80 0000   post-indexed by a register
                                    //  st4     {Vt-Vt4},[Xn],#imm   LS_2E  0Q00110010011111 0000ssnnnnnttttt   0C9F 0000   post-indexed by an immediate
+                                   // C7.2.320 ST4 (single structure)
                                    //  st4     {Vt-Vt4}[],[Xn]      LS_2F  0Q00110100100000 xx1Sssnnnnnttttt   0D20 2000   base register
                                    //  st4     {Vt-Vt4}[],[Xn],Xm   LS_3G  0Q001101101mmmmm xx1Sssnnnnnttttt   0DA0 2000   post-indexed by a register
                                    //  st4     {Vt-Vt4}[],[Xn],#imm LS_2G  0Q00110110111111 xx1Sssnnnnnttttt   0DBF 2000   post-indexed by an immediate
@@ -438,51 +454,61 @@ INST3(mvn,     "mvn",    0, 0, IF_EN3I,   0x2A2003E0,  0x2A2003E0,  0x2E205800)
 
 //    enum     name     FP LD/ST            LS_2D        LS_3F        LS_2E
 INST3(ld1_2regs,"ld1",   0,LD, IF_EN3J,   0x0C40A000,  0x0CC0A000,  0x0CDFA000)
+                                   // C7.2.170 LD1 (multiple structures, two registers variant)
                                    //  ld1     {Vt,Vt2},[Xn]        LS_2D  0Q00110001000000 1010ssnnnnnttttt   0C40 A000   base register
                                    //  ld1     {Vt,Vt2},[Xn],Xm     LS_3F  0Q001100110mmmmm 1010ssnnnnnttttt   0CC0 A000   post-indexed by a register
                                    //  ld1     {Vt,Vt2},[Xn],#imm   LS_2E  0Q00110011011111 1010ssnnnnnttttt   0CDF A000   post-indexed by an immediate
 
 INST3(ld1_3regs,"ld1",   0,LD, IF_EN3J,   0x0C406000,  0x0CC06000,  0x0CDF6000)
+                                   // C7.2.170 LD1 (multiple structures, three registers variant)
                                    //  ld1     {Vt-Vt3},[Xn]        LS_2D  0Q00110001000000 0110ssnnnnnttttt   0C40 6000   base register
                                    //  ld1     {Vt-Vt3},[Xn],Xm     LS_3F  0Q001100110mmmmm 0110ssnnnnnttttt   0CC0 6000   post-indexed by a register
                                    //  ld1     {Vt-Vt3},[Xn],#imm   LS_2E  0Q00110011011111 0110ssnnnnnttttt   0CDF 6000   post-indexed by an immediate
 
 INST3(ld1_4regs,"ld1",   0,LD, IF_EN3J,   0x0C402000,  0x0CC02000,  0x0CDF2000)
+                                   // C7.2.170 LD1 (multiple structures, four registers variant)
                                    //  ld1     {Vt-Vt4},[Xn]        LS_2D  0Q00110001000000 0010ssnnnnnttttt   0C40 2000   base register
                                    //  ld1     {Vt-Vt4},[Xn],Xm     LS_3F  0Q001100110mmmmm 0010ssnnnnnttttt   0CC0 2000   post-indexed by a register
                                    //  ld1     {Vt-Vt4},[Xn],#imm   LS_2E  0Q00110011011111 0010ssnnnnnttttt   0CDF 2000   post-indexed by an immediate
 
 INST3(st1_2regs,"st1",   0,ST, IF_EN3J,   0x0C00A000,  0x0C80A000,  0x0C9FA000)
+                                   // C7.2.313 ST1 (multiple structures, two registers variant)
                                    //  st1     {Vt,Vt2},[Xn]        LS_2D  0Q00110000000000 1010ssnnnnnttttt   0C00 A000   base register
                                    //  st1     {Vt,Vt2},[Xn],Xm     LS_3F  0Q001100100mmmmm 1010ssnnnnnttttt   0C80 A000   post-indexed by a register
                                    //  st1     {Vt,Vt2},[Xn],#imm   LS_2E  0Q00110010011111 1010ssnnnnnttttt   0C9F A000   post-indexed by an immediate
 
 INST3(st1_3regs,"st1",   0,ST, IF_EN3J,   0x0C006000,  0x0C806000,  0x0C9F6000)
+                                   // C7.2.313 ST1 (multiple structures, three registers variant)
                                    //  st1     {Vt-Vt3},[Xn]        LS_2D  0Q00110000000000 0110ssnnnnnttttt   0C00 6000   base register
                                    //  st1     {Vt-Vt3},[Xn],Xm     LS_3F  0Q001100100mmmmm 0110XXnnnnnttttt   0C80 6000   post-indexed by a register
                                    //  st1     {Vt-Vt3},[Xn],#imm   LS_2E  0Q00110010011111 0110XXnnnnnttttt   0C9F 6000   post-indexed by an immediate
 
 INST3(st1_4regs,"st1",   0,ST, IF_EN3J,   0x0C002000,  0x0C802000,  0x0C9F2000)
+                                   // C7.2.313 ST1 (multiple structures, four registers variant)
                                    //  st1     {Vt-Vt4},[Xn]        LS_2D  0Q00110000000000 0010XXnnnnnttttt   0C00 2000   base register
                                    //  st1     {Vt-Vt4},[Xn],Xm     LS_3F  0Q001100100mmmmm 0010XXnnnnnttttt   0C80 2000   post-indexed by a register
                                    //  st1     {Vt-Vt4},[Xn],#imm   LS_2E  0Q00110010011111 0010XXnnnnnttttt   0C9F 2000   post-indexed by an immediate
 
 INST3(ld1r,    "ld1r",   0,LD, IF_EN3J,   0x0D40C000,  0x0DC0C000,  0x0DDFC000)
+                                   // C7.2.172 LD1R
                                    //  ld1r    {Vt},[Xn]            LS_2D  0Q00110101000000 1100ssnnnnnttttt   0D40 C000   base register
                                    //  ld1r    {Vt},[Xn],Xm         LS_3F  0Q001101110mmmmm 1100ssnnnnnttttt   0DC0 C000   post-indexed by a register
                                    //  ld1r    {Vt},[Xn],#1         LS_2E  0Q00110111011111 1100ssnnnnnttttt   0DDF C000   post-indexed by an immediate
 
 INST3(ld2r,    "ld2r",   0,LD, IF_EN3J,   0x0D60C000,  0x0DE0C000,  0x0DFFC000)
+                                   // C7.2.175 LD2R
                                    //  ld2r    {Vt,Vt2},[Xn]        LS_2D  0Q00110101100000 1100ssnnnnnttttt   0D60 C000   base register
                                    //  ld2r    {Vt,Vt2},[Xn],Xm     LS_3F  0Q001101111mmmmm 1100ssnnnnnttttt   0DE0 C000   post-indexed by a register
                                    //  ld2r    {Vt,Vt2},[Xn],#2     LS_2E  0Q00110111111111 1100ssnnnnnttttt   0DFF C000   post-indexed by an immediate
 
 INST3(ld3r,    "ld3r",   0,LD, IF_EN3J,   0x0D40E000,  0x0DC0E000,  0x0DDFE000)
+                                   // C7.2.178 LD3R
                                    //  ld3r    {Vt-Vt3},[Xn]        LS_2D  0Q00110101000000 1110ssnnnnnttttt   0D40 E000   base register
                                    //  ld3r    {Vt-Vt3},[Xn],Xm     LS_3F  0Q001101110mmmmm 1110ssnnnnnttttt   0DC0 E000   post-indexed by a register
                                    //  ld3r    {Vt-Vt3},[Xn],#4     LS_2E  0Q00110111011111 1110ssnnnnnttttt   0DDF E000   post-indexed by an immediate
 
 INST3(ld4r,    "ld4r",   0,LD, IF_EN3J,   0x0D60E000,  0x0DE0E000,  0x0DFFE000)
+                                   // C7.2.181 LD4R
                                    //  ld4r    {Vt-Vt4},[Xn]        LS_2D  0Q00110101100000 1110ssnnnnnttttt   0D60 E000   base register
                                    //  ld4r    {Vt-Vt4},[Xn],Xm     LS_3F  0Q001101111mmmmm 1110ssnnnnnttttt   0DE0 E000   post-indexed by a register
                                    //  ld4r    {Vt-Vt4},[Xn],#8     LS_2E  0Q00110111111111 1110ssnnnnnttttt   0DFF E000   post-indexed by an immediate
