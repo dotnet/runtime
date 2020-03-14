@@ -10,7 +10,6 @@
 #ifndef CODE_VERSION_H
 #define CODE_VERSION_H
 
-class NativeCodeVersion;
 class ILCodeVersion;
 typedef DWORD NativeCodeVersionId;
 
@@ -593,7 +592,11 @@ public:
     HRESULT AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ReJITID rejitId, ILCodeVersion* pILCodeVersion);
     HRESULT AddNativeCodeVersion(ILCodeVersion ilCodeVersion, MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion,
         PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
-    PCODE PublishVersionableCodeIfNecessary(MethodDesc* pMethodDesc, bool *doBackpatchRef, bool *doFullBackpatchRef);
+    PCODE PublishVersionableCodeIfNecessary(
+        MethodDesc* pMethodDesc,
+        CallerGCMode callerGCMode,
+        bool *doBackpatchRef,
+        bool *doFullBackpatchRef);
     HRESULT PublishNativeCodeVersion(MethodDesc* pMethodDesc, NativeCodeVersion nativeCodeVersion);
     HRESULT GetOrCreateMethodDescVersioningState(MethodDesc* pMethod, MethodDescVersioningState** ppMethodDescVersioningState);
     HRESULT GetOrCreateILCodeVersioningState(Module* pModule, mdMethodDef methodDef, ILCodeVersioningState** ppILCodeVersioningState);

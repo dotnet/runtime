@@ -43,63 +43,21 @@ namespace System.Globalization
             }
         }
 
-        internal static unsafe int IndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            Debug.Assert(source != null);
-            Debug.Assert(value != null);
-
-            if (value.Length == 0)
-            {
-                return startIndex;
-            }
-
-            if (count < value.Length)
-            {
-                return -1;
-            }
-
-            if (ignoreCase)
-            {
-                fixed (char* pSource = source)
-                {
-                    int index = Interop.Globalization.IndexOfOrdinalIgnoreCase(value, value.Length, pSource + startIndex, count, findLast: false);
-                    return index != -1 ?
-                        startIndex + index :
-                        -1;
-                }
-            }
-
-            int endIndex = startIndex + (count - value.Length);
-            for (int i = startIndex; i <= endIndex; i++)
-            {
-                int valueIndex, sourceIndex;
-
-                for (valueIndex = 0, sourceIndex = i;
-                     valueIndex < value.Length && source[sourceIndex] == value[valueIndex];
-                     valueIndex++, sourceIndex++) ;
-
-                if (valueIndex == value.Length)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
         internal static unsafe int IndexOfOrdinalCore(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!value.IsEmpty);
 
-            Debug.Assert(source.Length != 0);
-            Debug.Assert(value.Length != 0);
+            // Ordinal (non-linguistic) comparisons require the length of the target string to be no greater
+            // than the length of the search space. Since our caller already checked for empty target strings,
+            // the below check also handles the case of empty search space strings.
 
             if (source.Length < value.Length)
             {
                 return -1;
             }
+
+            Debug.Assert(!source.IsEmpty);
 
             if (ignoreCase)
             {
@@ -199,9 +157,14 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
+            Debug.Assert(count1 > 0);
+            Debug.Assert(count2 > 0);
+
             fixed (char* char1 = &string1)
             fixed (char* char2 = &string2)
             {
+                Debug.Assert(char1 != null);
+                Debug.Assert(char2 != null);
                 return Interop.Globalization.CompareStringOrdinalIgnoreCase(char1, count1, char2, count2);
             }
         }
@@ -215,6 +178,9 @@ namespace System.Globalization
             Debug.Assert(string2 != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
+            // Unlike NLS, ICU (ucol_getSortKey) allows passing nullptr for either of the source arguments
+            // as long as the corresponding length parameter is 0.
+
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &string2.GetRawStringData())
             {
@@ -226,6 +192,9 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+            // Unlike NLS, ICU (ucol_getSortKey) allows passing nullptr for either of the source arguments
+            // as long as the corresponding length parameter is 0.
 
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
@@ -540,7 +509,6 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            Debug.Assert(!source.IsEmpty);
             Debug.Assert(!prefix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
@@ -553,7 +521,7 @@ namespace System.Globalization
             }
             else
             {
-                fixed (char* pSource = &MemoryMarshal.GetReference(source))
+                fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
                 fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
                 {
                     return Interop.Globalization.StartsWith(_sortHandle, pPrefix, prefix.Length, pSource, source.Length, options);
@@ -565,13 +533,12 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            Debug.Assert(!source.IsEmpty);
             Debug.Assert(!prefix.IsEmpty);
             Debug.Assert(_isAsciiEqualityOrdinal);
 
             int length = Math.Min(source.Length, prefix.Length);
 
-            fixed (char* ap = &MemoryMarshal.GetReference(source))
+            fixed (char* ap = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
             fixed (char* bp = &MemoryMarshal.GetReference(prefix))
             {
                 char* a = ap;
@@ -636,13 +603,12 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            Debug.Assert(!source.IsEmpty);
             Debug.Assert(!prefix.IsEmpty);
             Debug.Assert(_isAsciiEqualityOrdinal);
 
             int length = Math.Min(source.Length, prefix.Length);
 
-            fixed (char* ap = &MemoryMarshal.GetReference(source))
+            fixed (char* ap = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
             fixed (char* bp = &MemoryMarshal.GetReference(prefix))
             {
                 char* a = ap;
@@ -696,7 +662,6 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            Debug.Assert(!source.IsEmpty);
             Debug.Assert(!suffix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
@@ -709,7 +674,7 @@ namespace System.Globalization
             }
             else
             {
-                fixed (char* pSource = &MemoryMarshal.GetReference(source))
+                fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
                 fixed (char* pSuffix = &MemoryMarshal.GetReference(suffix))
                 {
                     return Interop.Globalization.EndsWith(_sortHandle, pSuffix, suffix.Length, pSource, source.Length, options);
@@ -721,13 +686,12 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            Debug.Assert(!source.IsEmpty);
             Debug.Assert(!suffix.IsEmpty);
             Debug.Assert(_isAsciiEqualityOrdinal);
 
             int length = Math.Min(source.Length, suffix.Length);
 
-            fixed (char* ap = &MemoryMarshal.GetReference(source))
+            fixed (char* ap = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
             fixed (char* bp = &MemoryMarshal.GetReference(suffix))
             {
                 char* a = ap + source.Length - 1;
@@ -773,13 +737,12 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            Debug.Assert(!source.IsEmpty);
             Debug.Assert(!suffix.IsEmpty);
             Debug.Assert(_isAsciiEqualityOrdinal);
 
             int length = Math.Min(source.Length, suffix.Length);
 
-            fixed (char* ap = &MemoryMarshal.GetReference(source))
+            fixed (char* ap = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
             fixed (char* bp = &MemoryMarshal.GetReference(suffix))
             {
                 char* a = ap + source.Length - 1;
@@ -836,7 +799,7 @@ namespace System.Globalization
                 }
             }
 
-            return new SortKey(Name, source, options, keyData);
+            return new SortKey(this, source, options, keyData);
         }
 
         private static unsafe bool IsSortable(char *text, int length)

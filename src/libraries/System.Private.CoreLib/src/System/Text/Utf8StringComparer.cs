@@ -57,8 +57,13 @@ namespace System.Text
 
         private sealed class CultureAwareComparer : Utf8StringComparer
         {
+#if SYSTEM_PRIVATE_CORELIB
             internal static readonly CultureAwareComparer Invariant = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.None);
             internal static readonly CultureAwareComparer InvariantIgnoreCase = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.IgnoreCase);
+#else
+            internal static readonly CultureAwareComparer Invariant = new CultureAwareComparer(CultureInfo.InvariantCulture.CompareInfo, CompareOptions.None);
+            internal static readonly CultureAwareComparer InvariantIgnoreCase = new CultureAwareComparer(CultureInfo.InvariantCulture.CompareInfo, CompareOptions.IgnoreCase);
+#endif
 
             private readonly CompareInfo _compareInfo;
             private readonly CompareOptions _options;

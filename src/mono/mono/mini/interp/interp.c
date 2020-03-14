@@ -6796,6 +6796,13 @@ call_newobj:
 			ip += 4;
 			goto exit_frame;
 		}
+		MINT_IN_CASE(MINT_PROF_COVERAGE_STORE) {
+			++ip;
+			guint32 *p = (guint32*)GINT_TO_POINTER (READ64 (ip));
+			*p = 1;
+			ip += 4;
+			MINT_IN_BREAK;
+		}
 
 		MINT_IN_CASE(MINT_LDARGA)
 			sp->data.p = &frame->stack_args [ip [1]];

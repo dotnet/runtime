@@ -5,6 +5,8 @@
   <Import Project="..\..\Directory.Build.props" />
 
   <ItemGroup>
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.*\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileSystemGlobbing\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\**\*csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.AspNetCore.Testing\**\*.csproj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\ref\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
@@ -16,7 +18,7 @@
     <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <!-- Temporarily ignore nit warning/errors (e.g. extra whitespace) from Extensions projects -->
-    <NoWarn Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">$(NoWarn);SA1129;SA1028;SA1027;SA1121;CA1200</NoWarn>
+    <NoWarn Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">$(NoWarn);SA1129;SA1028;SA1027;SA1121;CA1200;SA1000;CA1507;CA1802;CA1825</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>

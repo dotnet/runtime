@@ -12,6 +12,10 @@ namespace System.Text.Json
         /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
         /// and <see cref="SerializeAsync"/>.
@@ -28,6 +32,13 @@ namespace System.Text.Json
         /// <param name="value">The value to convert.</param>
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="inputType"/> is not compatible with <paramref name="value"/>.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="inputType"/>  or its serializable members.
+        /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
         /// and <see cref="SerializeAsync"/>.
