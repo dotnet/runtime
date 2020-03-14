@@ -572,66 +572,6 @@ DEBUG_NOINLINE void EELeaveCriticalSection(CRITSEC_COOKIE cookie)
     pCrst->Leave();
 }
 
-LPVOID EETlsGetValue(DWORD slot)
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    //
-    // @todo: we don't want TlsGetValue to throw, but CheckThreadState throws right now. Either modify
-    // CheckThreadState to not throw, or catch any exception and just return NULL.
-    //
-    //CONTRACT_VIOLATION(ThrowsViolation);
-    SCAN_IGNORE_THROW;
-
-    void **pTlsData = CExecutionEngine::CheckThreadState(slot, FALSE);
-
-    if (pTlsData)
-        return pTlsData[slot];
-    else
-        return NULL;
-}
-
-BOOL EETlsCheckValue(DWORD slot, LPVOID * pValue)
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_MODE_ANY;
-
-    //
-    // @todo: we don't want TlsGetValue to throw, but CheckThreadState throws right now. Either modify
-    // CheckThreadState to not throw, or catch any exception and just return NULL.
-    //
-    //CONTRACT_VIOLATION(ThrowsViolation);
-    SCAN_IGNORE_THROW;
-
-    void **pTlsData = CExecutionEngine::CheckThreadState(slot, FALSE);
-
-    if (pTlsData)
-    {
-        *pValue = pTlsData[slot];
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-VOID EETlsSetValue(DWORD slot, LPVOID pData)
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    void **pTlsData = CExecutionEngine::CheckThreadState(slot);
-
-    if (pTlsData)  // Yes, CheckThreadState(slot, TRUE) can return NULL now.
-    {
-        pTlsData[slot] = pData;
-    }
-}
-
 BOOL EEAllocationDisallowed()
 {
     WRAPPER_NO_CONTRACT;

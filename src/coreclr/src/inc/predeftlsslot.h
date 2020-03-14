@@ -13,28 +13,11 @@
 // See: https://github.com/dotnet/diagnostics/blob/master/src/inc/predeftlsslot.h
 // ******************************************************************************
 
-// And here are the predefined slots for accessing TLS from various DLLs of the CLR.
-// Note that we want to support combinations of Debug and Retail DLLs for testing
-// purposes, so we burn the slots into the retail EE even if a debug CLR dll needs
-// them.
+// The historic location of ThreadType slot kept for compatibility with SOS
+// TODO: Introduce DAC API to make this hack unnecessary
 enum PredefinedTlsSlots
 {
-    TlsIdx_Unused0,
-    TlsIdx_Unused1,
-    TlsIdx_Unused2,
-    TlsIdx_Unused3,
-    TlsIdx_Unused4,
-    TlsIdx_Unused5,
-    TlsIdx_Unused6,
-    TlsIdx_Unused7,
-    TlsIdx_Unused8,
-    TlsIdx_Unused9,
-    TlsIdx_Unused10,
-
-    // Add more indices here.
-    TlsIdx_ThreadType, // bit flags to indicate special thread's type
-
-    MAX_PREDEFINED_TLS_SLOT
+    TlsIdx_ThreadType = 11 // bit flags to indicate special thread's type
 };
 
 enum TlsThreadTypeFlag // flag used for thread type in Tls data
@@ -56,8 +39,6 @@ enum TlsThreadTypeFlag // flag used for thread type in Tls data
     ThreadType_ETWRundownThread         = 0x00010000,
     ThreadType_GenericInstantiationCompare= 0x00020000, // Used to indicate that the thread is determining if a generic instantiation in an ngen image matches a lookup.
 };
-
-static_assert(TlsIdx_ThreadType == 11, "SOS in diagnostics repo has a dependency on this value.");
 
 #endif
 

@@ -712,7 +712,8 @@ Thread* SetupThread(BOOL fInternal)
 
     Holder<Thread*,DoNothing<Thread*>,DeleteThread> threadHolder(pThread);
 
-    CExecutionEngine::SetupTLSForThread(pThread);
+    // Make sure ThreadType can be seen by SOS
+    ClrFlsSetThreadType((TlsThreadTypeFlag)0);
 
     // A host can deny a thread entering runtime by returning a NULL IHostTask.
     // But we do want threads used by threadpool.
@@ -1131,8 +1132,6 @@ void InitThreadManager()
     if (g_debuggerWordTLSIndex == TLS_OUT_OF_INDEXES)
         COMPlusThrowWin32();
 #endif
-
-    __ClrFlsGetBlock = CExecutionEngine::GetTlsData;
 
     IfFailThrow(Thread::CLRSetThreadStackGuarantee(Thread::STSGuarantee_Force));
 
@@ -1757,7 +1756,9 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
         //
         // Initialization must happen in the following order - hosts like SQL Server depend on this.
         //
-        CExecutionEngine::SetupTLSForThread(this);
+
+        // Make sure ThreadType can be seen by SOS
+        ClrFlsSetThreadType((TlsThreadTypeFlag)0);
 
         fCanCleanupCOMState = TRUE;
         res = PrepareApartmentAndContext();

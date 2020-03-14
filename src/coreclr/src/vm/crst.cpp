@@ -124,8 +124,7 @@ void CrstBase::ReleaseAndBlockForShutdownIfNotSpecialThread()
     }
     CONTRACTL_END;
 
-    if (
-        (((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & (ThreadType_Finalizer|ThreadType_DbgHelper|ThreadType_Shutdown|ThreadType_GC)) == 0)
+    if ((t_ThreadType & (ThreadType_Finalizer|ThreadType_DbgHelper|ThreadType_Shutdown|ThreadType_GC)) == 0)
     {
         // The process is shutting down. Release the lock and just block forever.
         this->Leave();

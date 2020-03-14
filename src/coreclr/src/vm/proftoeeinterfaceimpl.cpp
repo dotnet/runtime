@@ -9870,18 +9870,10 @@ HRESULT ProfToEEInterfaceImpl::InitializeCurrentThread()
             LL_INFO10,
             "**PROF: InitializeCurrentThread.\n"));
 
-    HRESULT hr = S_OK;
+    // Make sure ThreadType can be seen by SOS
+    ClrFlsSetThreadType((TlsThreadTypeFlag)0);
 
-    EX_TRY
-    {
-        CExecutionEngine::SetupTLSForThread(GetThread());
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (FAILED(hr))
-        return hr;
-
-     return S_OK;
+    return S_OK;
 }
 
 struct InternalProfilerModuleEnum : public ProfilerModuleEnum

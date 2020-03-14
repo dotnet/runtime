@@ -950,12 +950,12 @@ typedef DWORD (*AppropriateWaitFunc) (void *args, DWORD timeout, DWORD option);
 // of that physical thread.
 
 // FEATURE_MULTIREG_RETURN is set for platforms where a struct return value
-// [GcInfo v2 only]        can be returned in multiple registers
+//                ]        can be returned in multiple registers
 //                         ex: Windows/Unix ARM/ARM64, Unix-AMD64.
 //
 //
 // UNIX_AMD64_ABI is a specific kind of FEATURE_MULTIREG_RETURN
-// [GcInfo v1 and v2]       specified by SystemV ABI for AMD64
+//                         specified by SystemV ABI for AMD64
 //
 
 #ifdef FEATURE_HIJACK                                                    // Hijack function returning
@@ -4566,7 +4566,7 @@ public:
 #endif // FEATURE_COMINTEROP
 
 private:
-    // This duplicates the ThreadType_GC bit stored in TLS (TlsIdx_ThreadType). It exists
+    // This duplicates the ThreadType_GC bit stored in TLS (t_ThreadType). It exists
     // so that any thread can query whether any other thread is a "GC Special" thread.
     // (In contrast, ::IsGCSpecialThread() only gives this info about the currently
     // executing thread.) The Profiling API uses this to determine whether it should

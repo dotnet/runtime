@@ -1336,7 +1336,7 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
 #ifdef TARGET_WINDOWS
     *pTLSIndex = _tls_index;
     *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo.m_pThread);
-    *pTLSIsSpecialOffset = TlsIdx_ThreadType;
+    *pTLSIsSpecialOffset = Thread::GetOffsetOfThreadStatic(&t_ThreadType);
     *pTLSCantStopOffset = Thread::GetOffsetOfThreadStatic(&t_CantStopCount);
 #else
     *pTLSIndex = (SIZE_T)-1;

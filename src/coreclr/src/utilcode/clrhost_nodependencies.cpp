@@ -626,22 +626,6 @@ void SetExecutionEngine(IExecutionEngine *pExecutionEngine)
     }
 }
 
-void ClrFlsAssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
-{
-    WRAPPER_NO_CONTRACT;
-
-    GetExecutionEngine()->TLS_AssociateCallback(slot, callback);
-}
-
-LPVOID *ClrFlsGetBlockGeneric()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return (LPVOID *) GetExecutionEngine()->TLS_GetDataBlock();
-}
-
-CLRFLSGETBLOCK __ClrFlsGetBlock = ClrFlsGetBlockGeneric;
-
 CRITSEC_COOKIE ClrCreateCriticalSection(CrstType crstType, CrstFlags flags)
 {
     WRAPPER_NO_CONTRACT;

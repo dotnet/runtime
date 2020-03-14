@@ -53,12 +53,5 @@ void EELeaveCriticalSection(CRITSEC_COOKIE cookie);
 
 DWORD EESleepEx(DWORD dwMilliseconds, BOOL bAlertable);
 
-// TLS functions
-LPVOID EETlsGetValue(DWORD slot);
-BOOL EETlsCheckValue(DWORD slot, LPVOID * pValue);
-VOID EETlsSetValue(DWORD slot, LPVOID pData);
-
-
-
 #endif
 
