@@ -1,8 +1,8 @@
 # URLs host uses to point to download of .NET Core
 
-When an application fails to start because the right .NET Core components are not available the host includes a URL in the error message which should provide good UX to acquire the necessary installers to make the app work.
+When an application fails to start because the right .NET Core components are not available, the host includes a URL in the error message which should provide good UX to acquire the necessary installers to make the app work.
 
-The host uses different URLs for different scenarios, these are described in this document.
+The host uses different URLs for different scenarios. These different URLs are described in this document.
 
 ## General install link
 > https://aka.ms/dotnet-download
@@ -64,4 +64,3 @@ The website should ideally offer the right runtime installer for the app:
 * If the framework name is `Microsoft.AspNetCore.App` - this means that some runtime of a matching version is installed but it doesn't have ASP.NET in it. Offer the ASP.NET runtime installer - of the requested version
 * If the framework name is `Microsoft.WindowsDesktop.App` - this means that some runtime of a matching version is installed but it doesn't have Windows Desktop in it. offer the Windows Desktop runtime installer - of the requested version
 * If the framework name is `Microsoft.NETCore.App` - in this case it probably means that there's no matching install of .NET Core (for example 3.1 app running on a machine with 3.0 only). The website can use the `gui=true` to determine if it should offer Windows Desktop runtime of the right version. In case it's not a GUI app it could be an ASP.NET app or not. If we offer just the core runtime (no ASP.NET), the app may fail again after it's installed, but this time it would denote a missing `Microsoft.AspNetCore.App` framework.
-
