@@ -123,10 +123,6 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
                     spaceAdded = TRUE;
                     destPattern[index++] = ' ';
                 }
-                else
-                {
-                    assert(FALSE);
-                }
                 break;
 
             case UCHAR_MINUS:
@@ -200,8 +196,7 @@ static int GetNumericPattern(const UNumberFormat* pNumberFormat,
         }
     }
 
-    // TODO: https://github.com/dotnet/runtime/issues/946
-    // assert(FALSE); // should have found a valid pattern
+    assert(FALSE); // should have found a valid pattern
 
     free(normalizedPattern);
     return INVALID_FORMAT;
@@ -220,6 +215,7 @@ static int GetCurrencyNegativePattern(const char* locale)
     static const char* Patterns[] = {"(Cn)",
                                      "-Cn",
                                      "C-n",
+                                     "C- n",
                                      "Cn-",
                                      "(nC)",
                                      "-nC",
