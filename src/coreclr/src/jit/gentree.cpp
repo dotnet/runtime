@@ -16220,6 +16220,55 @@ bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree,
 }
 
 //------------------------------------------------------------------------
+// IsImplicitByrefParameterValue: determine if this tree is the entire
+//     value of a local implicit byref parameter
+//
+// Arguments:
+//    compiler -- compiler instance
+//
+// Return Value:
+//    GenTreeLclVar node for the local, or nullptr.
+//
+GenTreeLclVar* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+
+    GenTreeLclVar* lcl = nullptr;
+
+    if (OperIs(GT_LCL_VAR))
+    {
+        lcl = AsLclVar();
+    }
+    else if (OperIs(GT_OBJ))
+    {
+        GenTree* addr = AsIndir()->Addr();
+
+        if (addr->OperIs(GT_LCL_VAR))
+        {
+            lcl = addr->AsLclVar();
+        }
+        else if (addr->OperIs(GT_ADDR))
+        {
+            GenTree* base = addr->AsOp()->gtOp1;
+
+            if (base->OperIs(GT_LCL_VAR))
+            {
+                lcl = base->AsLclVar();
+            }
+        }
+    }
+
+    if ((lcl != nullptr) && compiler->lvaIsImplicitByRefLocal(lcl->GetLclNum()))
+    {
+        return lcl;
+    }
+
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // IsLclVarUpdateTree: Determine whether this is an assignment tree of the
 //                     form Vn = Vn 'oper' 'otherTree' where Vn is a lclVar
 //

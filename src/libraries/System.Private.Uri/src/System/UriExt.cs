@@ -411,7 +411,7 @@ namespace System
 
             fixed (char* str = _string)
             {
-                ushort idx = 0;
+                int idx = 0;
                 //
                 // For a relative Uri we only care about escaping and backslashes
                 //
@@ -422,7 +422,7 @@ namespace System
                     {
                         return false;
                     }
-                    return (CheckCanonical(str, ref idx, (ushort)_string.Length, c_EOL)
+                    return (CheckCanonical(str, ref idx, _string.Length, c_EOL)
                             & (Check.BackslashInPath | Check.EscapedCanonical)) == Check.EscapedCanonical;
                 }
 
@@ -471,7 +471,7 @@ namespace System
                 // checking on scheme:\\ or file:////
                 if (InFact(Flags.AuthorityFound))
                 {
-                    idx = (ushort)(_info.Offset.Scheme + _syntax.SchemeName.Length + 2);
+                    idx = _info.Offset.Scheme + _syntax.SchemeName.Length + 2;
                     if (idx >= _info.Offset.User || _string[idx - 1] == '\\' || _string[idx] == '\\')
                         return false;
 
@@ -510,7 +510,7 @@ namespace System
                 if ((_flags & Flags.CanonicalDnsHost) == 0 && HostType != Flags.IPv6HostType)
                 {
                     idx = _info.Offset.User;
-                    Check result = CheckCanonical(str, ref idx, (ushort)_info.Offset.Path, '/');
+                    Check result = CheckCanonical(str, ref idx, _info.Offset.Path, '/');
                     if (((result & (Check.ReservedFound | Check.BackslashInPath | Check.EscapedCanonical))
                         != Check.EscapedCanonical)
                         && (!_iriParsing || (_iriParsing
@@ -525,7 +525,7 @@ namespace System
                 if ((_flags & (Flags.SchemeNotCanonical | Flags.AuthorityFound))
                     == (Flags.SchemeNotCanonical | Flags.AuthorityFound))
                 {
-                    idx = (ushort)_syntax.SchemeName.Length;
+                    idx = _syntax.SchemeName.Length;
                     while (str[idx++] != ':');
                     if (idx + 1 >= _string.Length || str[idx] != '/' || str[idx + 1] != '/')
                         return false;
@@ -884,7 +884,7 @@ namespace System
                 {
                     fixed (char* otherPtr = other)
                     {
-                        return UriHelper.TestForSubPath(selfPtr, (ushort)self.Length, otherPtr, (ushort)other.Length,
+                        return UriHelper.TestForSubPath(selfPtr, self.Length, otherPtr, other.Length,
                             IsUncOrDosPath || uriLink.IsUncOrDosPath);
                     }
                 }

@@ -2967,9 +2967,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             if (m_State & TS_DebugSuspendPending)
                 UnmarkForSuspension(~TS_DebugSuspendPending);
 
-            // CoreCLR does not support user-requested thread suspension
-            _ASSERTE(!(m_State & TS_UserSuspendPending));
-
             if (CurrentThreadID == ThisThreadID && IsAbortRequested())
             {
                 UnmarkThreadForAbort(Thread::TAR_ALL);
@@ -5767,9 +5764,6 @@ Retry:
         // GC, instead of counting each interesting thread.
         if (cur->m_State & Thread::TS_DebugSuspendPending)
             cntReturn++;
-
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(cur->m_State & Thread::TS_UserSuspendPending));
 
         if (cur->m_TraceCallCount > 0)
             cntReturn++;

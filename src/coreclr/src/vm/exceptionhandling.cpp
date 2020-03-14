@@ -4655,13 +4655,26 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             }
             else
             {
-                // TODO: This needs to implemented. Make it fail for now.
                 UNREACHABLE();
             }
         }
         else
         {
             controlPc = Thread::VirtualUnwindLeafCallFrame(frameContext);
+        }
+
+        GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+
+        if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
+        {
+            // Propagating exception from a method marked by NativeCallable attribute is prohibited on Unix
+            if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+            {
+                LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
+                _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
+            }
+            TerminateProcess(GetCurrentProcess(), 1);
+            UNREACHABLE();
         }
 
         // Check whether we are crossing managed-to-native boundary

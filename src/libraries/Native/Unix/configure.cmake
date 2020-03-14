@@ -15,6 +15,8 @@ elseif (CLR_CMAKE_TARGET_DARWIN)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
+elseif (CLR_CMAKE_TARGET_IOS)
+    set(PAL_UNIX_NAME \"IOS\")
 elseif (CLR_CMAKE_TARGET_FREEBSD)
     set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM /usr/local/include)
@@ -442,37 +444,69 @@ if (CLR_CMAKE_TARGET_LINUX)
     set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 1)
 endif ()
 
-check_c_source_runs(
-    "
-    #include <stdlib.h>
-    #include <time.h>
-    #include <sys/time.h>
-    int main(void)
-    {
-        int ret;
-        struct timespec ts;
-        ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-        exit(ret);
-        return 0;
-    }
-    "
-    HAVE_CLOCK_MONOTONIC)
+if(CLR_CMAKE_TARGET_IOS)
+    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
+    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
+    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+else()
+    check_c_source_runs(
+        "
+        #include <sys/mman.h>
+        #include <fcntl.h>
+        #include <unistd.h>
 
-check_c_source_runs(
-    "
-    #include <stdlib.h>
-    #include <time.h>
-    #include <sys/time.h>
-    int main(void)
-    {
-        int ret;
-        struct timespec ts;
-        ret = clock_gettime(CLOCK_REALTIME, &ts);
-        exit(ret);
-        return 0;
-    }
-    "
-    HAVE_CLOCK_REALTIME)
+        int main(void)
+        {
+            int fd = shm_open(\"/corefx_configure_shm_open\", O_CREAT | O_RDWR, 0777);
+            if (fd == -1)
+                return -1;
+
+            shm_unlink(\"/corefx_configure_shm_open\");
+
+            // NOTE: PROT_EXEC and MAP_PRIVATE don't work well with shm_open
+            //       on at least the current version of Mac OS X
+
+            if (mmap(NULL, 1, PROT_EXEC, MAP_PRIVATE, fd, 0) == MAP_FAILED)
+                return -1;
+
+            return 0;
+        }
+        "
+        HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+
+    check_c_source_runs(
+        "
+        #include <stdlib.h>
+        #include <time.h>
+        #include <sys/time.h>
+        int main(void)
+        {
+            int ret;
+            struct timespec ts;
+            ret = clock_gettime(CLOCK_MONOTONIC, &ts);
+            exit(ret);
+            return 0;
+        }
+        "
+        HAVE_CLOCK_MONOTONIC)
+
+    check_c_source_runs(
+        "
+        #include <stdlib.h>
+        #include <time.h>
+        #include <sys/time.h>
+        int main(void)
+        {
+            int ret;
+            struct timespec ts;
+            ret = clock_gettime(CLOCK_REALTIME, &ts);
+            exit(ret);
+            return 0;
+        }
+        "
+        HAVE_CLOCK_REALTIME)
+endif()
 
 check_symbol_exists(
     mach_absolute_time
@@ -550,31 +584,6 @@ check_c_source_compiles(
 
 set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
-check_c_source_runs(
-    "
-    #include <sys/mman.h>
-    #include <fcntl.h>
-    #include <unistd.h>
-
-    int main(void)
-    {
-        int fd = shm_open(\"/corefx_configure_shm_open\", O_CREAT | O_RDWR, 0777);
-        if (fd == -1)
-            return -1;
-
-        shm_unlink(\"/corefx_configure_shm_open\");
-
-        // NOTE: PROT_EXEC and MAP_PRIVATE don't work well with shm_open
-        //       on at least the current version of Mac OS X
-
-        if (mmap(NULL, 1, PROT_EXEC, MAP_PRIVATE, fd, 0) == MAP_FAILED)
-            return -1;
-
-        return 0;
-    }
-    "
-    HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
-
 check_prototype_definition(
     getpriority
     "int getpriority(int which, int who)"
@@ -630,7 +639,49 @@ check_c_source_compiles(
     #include <netinet/tcp_var.h>
     int main(void) { return 0; }
     "
-    HAVE_TCP_VAR_H
+    HAVE_NETINET_TCP_VAR_H
+)
+
+check_c_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <sys/socketvar.h>
+    #include <sys/queue.h>
+    #include <netinet/in.h>
+    #include <netinet/ip.h>
+    #include <netinet/ip_var.h>
+    #include <netinet/udp.h>
+    #include <netinet/udp_var.h>
+    int main(void) { return 0; }
+    "
+    HAVE_NETINET_UDP_VAR_H
+)
+
+check_c_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <sys/socketvar.h>
+    #include <sys/queue.h>
+    #include <netinet/in.h>
+    #include <netinet/ip.h>
+    #include <netinet/ip_var.h>
+    int main(void) { return 0; }
+    "
+    HAVE_NETINET_IP_VAR_H
+)
+
+check_c_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <sys/socketvar.h>
+    #include <sys/queue.h>
+    #include <netinet/in.h>
+    #include <netinet/ip.h>
+    #include <netinet/ip_icmp.h>
+    #include <netinet/icmp_var.h>
+    int main(void) { return 0; }
+    "
+    HAVE_NETINET_ICMP_VAR_H
 )
 
 check_include_files(
@@ -662,7 +713,14 @@ check_symbol_exists(
     HAVE_TCP_FSM_H
 )
 
-set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h sys/socket.h net/route.h)
+if(CLR_CMAKE_TARGET_IOS)
+    set(HAVE_IOS_NET_ROUTE_H 1)
+    set(NET_ROUTE_H_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
+else()
+    set(NET_ROUTE_H_INCLUDE net/route.h)
+endif()
+
+set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h ${NET_ROUTE_H_INCLUDE})
 check_type_size(
     "struct rt_msghdr"
      HAVE_RT_MSGHDR
@@ -672,6 +730,8 @@ check_type_size(
      HAVE_RT_MSGHDR2
      BUILTIN_TYPES_ONLY)
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
+
+set(CMAKE_EXTRA_INCLUDE_FILES net/if.h)
 check_type_size(
     "struct if_msghdr2"
      HAVE_IF_MSGHDR2

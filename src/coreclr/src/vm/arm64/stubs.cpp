@@ -2109,6 +2109,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
+
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
@@ -2117,6 +2119,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
     pArgs->signature = pLookup->signature;
     pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
+
+    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
 
     // It's available only via the run-time helper function
     if (pLookup->indirections == CORINFO_USEHELPER)
@@ -2135,7 +2139,15 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     {
         int indirectionsCodeSize = 0;
         int indirectionsDataSize = 0;
-        for (WORD i = 0; i < pLookup->indirections; i++) {
+        if (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+        {
+            indirectionsCodeSize += (pLookup->sizeOffset > 32760 ? 8 : 4);
+            indirectionsDataSize += (pLookup->sizeOffset > 32760 ? 4 : 0);
+            indirectionsCodeSize += 12;
+        }
+
+        for (WORD i = 0; i < pLookup->indirections; i++)
+        {
             indirectionsCodeSize += (pLookup->offsets[i] > 32760 ? 8 : 4); // if( > 32760) (8 code bytes) else 4 bytes for instruction with offset encoded in instruction
             indirectionsDataSize += (pLookup->offsets[i] > 32760 ? 4 : 0); // 4 bytes for storing indirection offset values
         }
@@ -2143,8 +2155,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         int codeSize = indirectionsCodeSize;
         if(pLookup->testForNull)
         {
-            codeSize += 4; // mov
-            codeSize += 12; // cbz-ret-mov
+            codeSize += 16; // mov-cbz-ret-mov
             //padding for 8-byte align (required by EmitHelperWithArg)
             if((codeSize & 0x7) == 0)
                 codeSize += 4;
@@ -2159,17 +2170,53 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
         BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
 
-        if (pLookup->testForNull)
+        if (pLookup->testForNull || pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
         {
             // mov x9, x0
             *(DWORD*)p = 0x91000009;
             p += 4;
         }
 
+        BYTE* pBLECall = NULL;
+
         // moving offset value wrt PC. Currently points to first indirection offset data.
         uint dataOffset = codeSize - indirectionsDataSize - (pLookup->testForNull ? 4 : 0);
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            {
+                _ASSERTE(pLookup->testForNull && i > 0);
+
+                if (pLookup->sizeOffset > 32760)
+                {
+                    // ldr w10, [PC, #dataOffset]
+                    *(DWORD*)p = 0x1800000a | ((dataOffset >> 2) << 5); p += 4;
+                    // ldr x11, [x0, x10]
+                    *(DWORD*)p = 0xf86a680b; p += 4;
+
+                    // move to next indirection offset data
+                    dataOffset = dataOffset - 8 + 4; // subtract 8 as we have moved PC by 8 and add 4 as next data is at 4 bytes from previous data
+                }
+                else
+                {
+                    // ldr x11, [x0, #(pLookup->sizeOffset)]
+                    *(DWORD*)p = 0xf940000b | (((UINT32)pLookup->sizeOffset >> 3) << 10); p += 4;
+                    dataOffset -= 4; // subtract 4 as we have moved PC by 4
+                }
+
+                // mov x10,slotOffset
+                *(DWORD*)p = 0xd280000a | ((UINT32)slotOffset << 5); p += 4;
+                dataOffset -= 4;
+
+                // cmp x9,x10
+                *(DWORD*)p = 0xeb0a017f; p += 4;
+                dataOffset -= 4;
+
+                // ble 'CALL HELPER'
+                pBLECall = p;       // Offset filled later
+                *(DWORD*)p = 0x5400000d; p += 4;
+                dataOffset -= 4;
+            }
             if(pLookup->offsets[i] > 32760)
             {
                 // ldr w10, [PC, #dataOffset]
@@ -2197,19 +2244,25 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         // No null test required
         if (!pLookup->testForNull)
         {
+            _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
+
             // ret lr
             *(DWORD*)p = 0xd65f03c0;
             p += 4;
         }
         else
         {
-            // cbz x0, nullvaluelabel
+            // cbz x0, 'CALL HELPER'
             *(DWORD*)p = 0xb4000040;
             p += 4;
             // ret lr
             *(DWORD*)p = 0xd65f03c0;
             p += 4;
-            // nullvaluelabel:
+
+            // CALL HELPER:
+            if(pBLECall != NULL)
+                *(DWORD*)pBLECall |= (((UINT32)(p - pBLECall) >> 2) << 5);
+
             // mov x0, x9
             *(DWORD*)p = 0x91000120;
             p += 4;
@@ -2222,9 +2275,13 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         // datalabel:
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
-            if(pLookup->offsets[i] > 32760)
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK && pLookup->sizeOffset > 32760)
             {
-                _ASSERTE((pLookup->offsets[i] & 0xffffffff00000000) == 0);
+                *(UINT32*)p = (UINT32)pLookup->sizeOffset;
+                p += 4;
+            }
+            if (pLookup->offsets[i] > 32760)
+            {
                 *(UINT32*)p = (UINT32)pLookup->offsets[i];
                 p += 4;
             }

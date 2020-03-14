@@ -5221,6 +5221,726 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     //
+    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    //
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // ld1 {Vt}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_ld1, EA_8BYTE, REG_V0, REG_R1, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_ld1, EA_16BYTE, REG_V2, REG_R3, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_ld1, EA_8BYTE, REG_V4, REG_R5, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_ld1, EA_16BYTE, REG_V6, REG_R7, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_ld1, EA_8BYTE, REG_V8, REG_R9, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_ld1, EA_16BYTE, REG_V10, REG_R11, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_ld1, EA_8BYTE, REG_V12, REG_R13, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_ld1, EA_16BYTE, REG_V14, REG_R15, INS_OPTS_2D);
+
+    // ld1 {Vt, Vt2}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_ld1_2regs, EA_8BYTE, REG_V0, REG_R2, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_ld1_2regs, EA_16BYTE, REG_V3, REG_R5, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_ld1_2regs, EA_8BYTE, REG_V6, REG_R8, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_ld1_2regs, EA_16BYTE, REG_V9, REG_R11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_ld1_2regs, EA_8BYTE, REG_V12, REG_R14, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_ld1_2regs, EA_16BYTE, REG_V15, REG_R17, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_ld1_2regs, EA_8BYTE, REG_V18, REG_R20, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_ld1_2regs, EA_16BYTE, REG_V21, REG_R23, INS_OPTS_2D);
+
+    // ld1 {Vt, Vt2, Vt3}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_ld1_3regs, EA_8BYTE, REG_V0, REG_R3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_ld1_3regs, EA_16BYTE, REG_V4, REG_R7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_ld1_3regs, EA_8BYTE, REG_V8, REG_R11, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_ld1_3regs, EA_16BYTE, REG_V12, REG_R15, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_ld1_3regs, EA_8BYTE, REG_V16, REG_R19, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_ld1_3regs, EA_16BYTE, REG_V20, REG_R23, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_ld1_3regs, EA_8BYTE, REG_V24, REG_R27, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_ld1_3regs, EA_16BYTE, REG_V28, REG_SP, INS_OPTS_2D);
+
+    // ld1 {Vt, Vt2, Vt3, Vt4}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_ld1_4regs, EA_8BYTE, REG_V0, REG_R4, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_ld1_4regs, EA_16BYTE, REG_V5, REG_R9, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_ld1_4regs, EA_8BYTE, REG_V10, REG_R14, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_ld1_4regs, EA_16BYTE, REG_V15, REG_R19, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_ld1_4regs, EA_8BYTE, REG_V20, REG_R24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_ld1_4regs, EA_16BYTE, REG_V25, REG_R29, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_ld1_4regs, EA_8BYTE, REG_V30, REG_R2, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_ld1_4regs, EA_16BYTE, REG_V3, REG_R7, INS_OPTS_2D);
+
+    // ld2 {Vt, Vt2}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_ld2, EA_8BYTE, REG_V0, REG_R2, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_ld2, EA_16BYTE, REG_V3, REG_R5, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_ld2, EA_8BYTE, REG_V6, REG_R8, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_ld2, EA_16BYTE, REG_V9, REG_R11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_ld2, EA_8BYTE, REG_V12, REG_R14, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_ld2, EA_16BYTE, REG_V15, REG_R17, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_ld2, EA_16BYTE, REG_V18, REG_R20, INS_OPTS_2D);
+
+    // ld3 {Vt, Vt2, Vt3}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_ld3, EA_8BYTE, REG_V0, REG_R3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_ld3, EA_16BYTE, REG_V4, REG_R7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_ld3, EA_8BYTE, REG_V8, REG_R11, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_ld3, EA_16BYTE, REG_V12, REG_R15, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_ld3, EA_8BYTE, REG_V16, REG_R19, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_ld3, EA_16BYTE, REG_V20, REG_R23, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_ld3, EA_16BYTE, REG_V24, REG_R27, INS_OPTS_2D);
+
+    // ld4 {Vt, Vt2, Vt3, Vt4}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_ld4, EA_8BYTE, REG_V0, REG_R4, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_ld4, EA_16BYTE, REG_V5, REG_R9, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_ld4, EA_8BYTE, REG_V10, REG_R14, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_ld4, EA_16BYTE, REG_V15, REG_R19, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_ld4, EA_8BYTE, REG_V20, REG_R24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_ld4, EA_16BYTE, REG_V25, REG_R29, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_ld4, EA_16BYTE, REG_V30, REG_R2, INS_OPTS_2D);
+
+    // st1 {Vt}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_st1, EA_8BYTE, REG_V0, REG_R1, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_st1, EA_16BYTE, REG_V2, REG_R3, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_st1, EA_8BYTE, REG_V4, REG_R5, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_st1, EA_16BYTE, REG_V6, REG_R7, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_st1, EA_8BYTE, REG_V8, REG_R9, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_st1, EA_16BYTE, REG_V10, REG_R11, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_st1, EA_8BYTE, REG_V12, REG_R13, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_st1, EA_16BYTE, REG_V14, REG_R15, INS_OPTS_2D);
+
+    // st1 {Vt, Vt2}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_st1_2regs, EA_8BYTE, REG_V0, REG_R2, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_st1_2regs, EA_16BYTE, REG_V3, REG_R5, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_st1_2regs, EA_8BYTE, REG_V6, REG_R8, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_st1_2regs, EA_16BYTE, REG_V9, REG_R11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_st1_2regs, EA_8BYTE, REG_V12, REG_R14, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_st1_2regs, EA_16BYTE, REG_V15, REG_R17, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_st1_2regs, EA_8BYTE, REG_V18, REG_R20, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_st1_2regs, EA_16BYTE, REG_V21, REG_R23, INS_OPTS_2D);
+
+    // st1 {Vt, Vt2, Vt3}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_st1_3regs, EA_8BYTE, REG_V0, REG_R3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_st1_3regs, EA_16BYTE, REG_V4, REG_R7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_st1_3regs, EA_8BYTE, REG_V8, REG_R11, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_st1_3regs, EA_16BYTE, REG_V12, REG_R15, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_st1_3regs, EA_8BYTE, REG_V16, REG_R19, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_st1_3regs, EA_16BYTE, REG_V20, REG_R23, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_st1_3regs, EA_8BYTE, REG_V24, REG_R27, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_st1_3regs, EA_16BYTE, REG_V28, REG_SP, INS_OPTS_2D);
+
+    // st1 {Vt, Vt2, Vt3, Vt4}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_st1_4regs, EA_8BYTE, REG_V0, REG_R4, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_st1_4regs, EA_16BYTE, REG_V5, REG_R9, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_st1_4regs, EA_8BYTE, REG_V10, REG_R14, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_st1_4regs, EA_16BYTE, REG_V15, REG_R19, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_st1_4regs, EA_8BYTE, REG_V20, REG_R24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_st1_4regs, EA_16BYTE, REG_V25, REG_R29, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_st1_4regs, EA_8BYTE, REG_V30, REG_R2, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_st1_4regs, EA_16BYTE, REG_V3, REG_R7, INS_OPTS_2D);
+
+    // st2 {Vt, Vt2}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_st2, EA_8BYTE, REG_V0, REG_R2, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_st2, EA_16BYTE, REG_V3, REG_R5, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_st2, EA_8BYTE, REG_V6, REG_R8, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_st2, EA_16BYTE, REG_V9, REG_R11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_st2, EA_8BYTE, REG_V12, REG_R14, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_st2, EA_16BYTE, REG_V15, REG_R17, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_st2, EA_16BYTE, REG_V18, REG_R20, INS_OPTS_2D);
+
+    // st3 {Vt, Vt2, Vt3}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_st3, EA_8BYTE, REG_V0, REG_R3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_st3, EA_16BYTE, REG_V4, REG_R7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_st3, EA_8BYTE, REG_V8, REG_R11, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_st3, EA_16BYTE, REG_V12, REG_R15, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_st3, EA_8BYTE, REG_V16, REG_R19, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_st3, EA_16BYTE, REG_V20, REG_R23, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_st3, EA_16BYTE, REG_V24, REG_R27, INS_OPTS_2D);
+
+    // st4 {Vt, Vt2, Vt3, Vt4}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_st4, EA_8BYTE, REG_V0, REG_R4, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_st4, EA_16BYTE, REG_V5, REG_R9, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_st4, EA_8BYTE, REG_V10, REG_R14, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_st4, EA_16BYTE, REG_V15, REG_R19, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_st4, EA_8BYTE, REG_V20, REG_R24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_st4, EA_16BYTE, REG_V25, REG_R29, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_st4, EA_16BYTE, REG_V30, REG_R2, INS_OPTS_2D);
+
+    // ld1r {Vt}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_ld1r, EA_8BYTE, REG_V0, REG_R1, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_ld1r, EA_16BYTE, REG_V2, REG_R3, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_ld1r, EA_8BYTE, REG_V4, REG_R5, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_ld1r, EA_16BYTE, REG_V6, REG_R7, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_ld1r, EA_8BYTE, REG_V8, REG_R9, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_ld1r, EA_16BYTE, REG_V10, REG_R11, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_ld1r, EA_8BYTE, REG_V12, REG_R13, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_ld1r, EA_16BYTE, REG_V14, REG_R15, INS_OPTS_2D);
+
+    // ld2r {Vt, Vt2}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_ld2r, EA_8BYTE, REG_V0, REG_R2, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_ld2r, EA_16BYTE, REG_V3, REG_R5, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_ld2r, EA_8BYTE, REG_V6, REG_R8, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_ld2r, EA_16BYTE, REG_V9, REG_R11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_ld2r, EA_8BYTE, REG_V12, REG_R14, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_ld2r, EA_16BYTE, REG_V15, REG_R17, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_ld2r, EA_8BYTE, REG_V18, REG_R20, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_ld2r, EA_16BYTE, REG_V21, REG_R23, INS_OPTS_2D);
+
+    // ld3r {Vt, Vt2, Vt3}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_ld3r, EA_8BYTE, REG_V0, REG_R3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_ld3r, EA_16BYTE, REG_V4, REG_R7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_ld3r, EA_8BYTE, REG_V8, REG_R11, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_ld3r, EA_16BYTE, REG_V12, REG_R15, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_ld3r, EA_8BYTE, REG_V16, REG_R19, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_ld3r, EA_16BYTE, REG_V20, REG_R23, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_ld3r, EA_8BYTE, REG_V24, REG_R27, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_ld3r, EA_16BYTE, REG_V28, REG_SP, INS_OPTS_2D);
+
+    // ld4r {Vt, Vt2, Vt3, Vt4}, [Xn|SP]
+    theEmitter->emitIns_R_R(INS_ld4r, EA_8BYTE, REG_V0, REG_R4, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_ld4r, EA_16BYTE, REG_V5, REG_R9, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_ld4r, EA_8BYTE, REG_V10, REG_R14, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_ld4r, EA_16BYTE, REG_V15, REG_R19, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_ld4r, EA_8BYTE, REG_V20, REG_R24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_ld4r, EA_16BYTE, REG_V25, REG_R29, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_ld4r, EA_8BYTE, REG_V30, REG_R2, INS_OPTS_1D);
+    theEmitter->emitIns_R_R(INS_ld4r, EA_16BYTE, REG_V3, REG_R7, INS_OPTS_2D);
+
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+    //
+    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    //
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // ld1 {Vt}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_ld1, EA_8BYTE, REG_V0, REG_R1, REG_R2, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_ld1, EA_16BYTE, REG_V3, REG_R4, REG_R5, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_ld1, EA_8BYTE, REG_V6, REG_R7, REG_R8, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_ld1, EA_16BYTE, REG_V9, REG_R10, REG_R11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_ld1, EA_8BYTE, REG_V12, REG_R13, REG_R14, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_ld1, EA_16BYTE, REG_V15, REG_R16, REG_R17, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_ld1, EA_8BYTE, REG_V18, REG_R19, REG_R20, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_ld1, EA_16BYTE, REG_V21, REG_R22, REG_R23, INS_OPTS_2D);
+
+    // ld1 {Vt, Vt2}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_ld1_2regs, EA_8BYTE, REG_V0, REG_R2, REG_R3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_ld1_2regs, EA_16BYTE, REG_V4, REG_R6, REG_R7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_ld1_2regs, EA_8BYTE, REG_V8, REG_R10, REG_R11, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_ld1_2regs, EA_16BYTE, REG_V12, REG_R14, REG_R15, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_ld1_2regs, EA_8BYTE, REG_V16, REG_R18, REG_R19, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_ld1_2regs, EA_16BYTE, REG_V20, REG_R22, REG_R23, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_ld1_2regs, EA_8BYTE, REG_V24, REG_R26, REG_R27, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_ld1_2regs, EA_16BYTE, REG_V28, REG_SP, REG_R30, INS_OPTS_2D);
+
+    // ld1 {Vt, Vt2, Vt3}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_ld1_3regs, EA_8BYTE, REG_V0, REG_R3, REG_R4, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_ld1_3regs, EA_16BYTE, REG_V5, REG_R8, REG_R9, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_ld1_3regs, EA_8BYTE, REG_V10, REG_R13, REG_R14, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_ld1_3regs, EA_16BYTE, REG_V15, REG_R18, REG_R19, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_ld1_3regs, EA_8BYTE, REG_V20, REG_R23, REG_R24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_ld1_3regs, EA_16BYTE, REG_V25, REG_R28, REG_R29, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_ld1_3regs, EA_8BYTE, REG_V30, REG_R0, REG_R1, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_ld1_3regs, EA_16BYTE, REG_V2, REG_R5, REG_R6, INS_OPTS_2D);
+
+    // ld1 {Vt, Vt2, Vt3, Vt4}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_ld1_4regs, EA_8BYTE, REG_V0, REG_R4, REG_R5, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_ld1_4regs, EA_16BYTE, REG_V6, REG_R10, REG_R11, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_ld1_4regs, EA_8BYTE, REG_V12, REG_R16, REG_R17, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_ld1_4regs, EA_16BYTE, REG_V18, REG_R22, REG_R23, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_ld1_4regs, EA_8BYTE, REG_V24, REG_R28, REG_R29, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_ld1_4regs, EA_16BYTE, REG_V30, REG_R2, REG_R3, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_ld1_4regs, EA_8BYTE, REG_V4, REG_R8, REG_R9, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_ld1_4regs, EA_16BYTE, REG_V10, REG_R14, REG_R15, INS_OPTS_2D);
+
+    // ld2 {Vt, Vt2}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_ld2, EA_8BYTE, REG_V0, REG_R2, REG_R3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_ld2, EA_16BYTE, REG_V4, REG_R6, REG_R7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_ld2, EA_8BYTE, REG_V8, REG_R10, REG_R11, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_ld2, EA_16BYTE, REG_V12, REG_R14, REG_R15, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_ld2, EA_8BYTE, REG_V16, REG_R18, REG_R19, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_ld2, EA_16BYTE, REG_V20, REG_R22, REG_R23, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_ld2, EA_16BYTE, REG_V24, REG_R26, REG_R27, INS_OPTS_2D);
+
+    // ld3 {Vt, Vt2, Vt3}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_ld3, EA_8BYTE, REG_V0, REG_R3, REG_R4, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_ld3, EA_16BYTE, REG_V5, REG_R8, REG_R9, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_ld3, EA_8BYTE, REG_V10, REG_R13, REG_R14, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_ld3, EA_16BYTE, REG_V15, REG_R18, REG_R19, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_ld3, EA_8BYTE, REG_V20, REG_R23, REG_R24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_ld3, EA_16BYTE, REG_V25, REG_R28, REG_R29, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_ld3, EA_16BYTE, REG_V30, REG_R0, REG_R1, INS_OPTS_2D);
+
+    // ld4 {Vt, Vt2, Vt3, Vt4}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_ld4, EA_8BYTE, REG_V0, REG_R4, REG_R5, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_ld4, EA_16BYTE, REG_V6, REG_R10, REG_R11, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_ld4, EA_8BYTE, REG_V12, REG_R16, REG_R17, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_ld4, EA_16BYTE, REG_V18, REG_R22, REG_R23, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_ld4, EA_8BYTE, REG_V24, REG_R28, REG_R29, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_ld4, EA_16BYTE, REG_V30, REG_R2, REG_R3, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_ld4, EA_16BYTE, REG_V4, REG_R8, REG_R9, INS_OPTS_2D);
+
+    // st1 {Vt}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_st1, EA_8BYTE, REG_V0, REG_R1, REG_R2, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_st1, EA_16BYTE, REG_V3, REG_R4, REG_R5, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_st1, EA_8BYTE, REG_V6, REG_R7, REG_R8, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_st1, EA_16BYTE, REG_V9, REG_R10, REG_R11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_st1, EA_8BYTE, REG_V12, REG_R13, REG_R14, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_st1, EA_16BYTE, REG_V15, REG_R16, REG_R17, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_st1, EA_8BYTE, REG_V18, REG_R19, REG_R20, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_st1, EA_16BYTE, REG_V21, REG_R22, REG_R23, INS_OPTS_2D);
+
+    // st1 {Vt, Vt2}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_st1_2regs, EA_8BYTE, REG_V0, REG_R2, REG_R3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_st1_2regs, EA_16BYTE, REG_V4, REG_R6, REG_R7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_st1_2regs, EA_8BYTE, REG_V8, REG_R10, REG_R11, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_st1_2regs, EA_16BYTE, REG_V12, REG_R14, REG_R15, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_st1_2regs, EA_8BYTE, REG_V16, REG_R18, REG_R19, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_st1_2regs, EA_16BYTE, REG_V20, REG_R22, REG_R23, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_st1_2regs, EA_8BYTE, REG_V24, REG_R26, REG_R27, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_st1_2regs, EA_16BYTE, REG_V28, REG_SP, REG_R30, INS_OPTS_2D);
+
+    // st1 {Vt, Vt2, Vt3}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_st1_3regs, EA_8BYTE, REG_V0, REG_R3, REG_R4, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_st1_3regs, EA_16BYTE, REG_V5, REG_R8, REG_R9, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_st1_3regs, EA_8BYTE, REG_V10, REG_R13, REG_R14, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_st1_3regs, EA_16BYTE, REG_V15, REG_R18, REG_R19, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_st1_3regs, EA_8BYTE, REG_V20, REG_R23, REG_R24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_st1_3regs, EA_16BYTE, REG_V25, REG_R28, REG_R29, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_st1_3regs, EA_8BYTE, REG_V30, REG_R0, REG_R1, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_st1_3regs, EA_16BYTE, REG_V2, REG_R5, REG_R6, INS_OPTS_2D);
+
+    // st1 {Vt, Vt2, Vt3, Vt4}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_st1_4regs, EA_8BYTE, REG_V0, REG_R4, REG_R5, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_st1_4regs, EA_16BYTE, REG_V6, REG_R10, REG_R11, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_st1_4regs, EA_8BYTE, REG_V12, REG_R16, REG_R17, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_st1_4regs, EA_16BYTE, REG_V18, REG_R22, REG_R23, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_st1_4regs, EA_8BYTE, REG_V24, REG_R28, REG_R29, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_st1_4regs, EA_16BYTE, REG_V30, REG_R2, REG_R3, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_st1_4regs, EA_8BYTE, REG_V4, REG_R8, REG_R9, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_st1_4regs, EA_16BYTE, REG_V10, REG_R14, REG_R15, INS_OPTS_2D);
+
+    // st2 {Vt, Vt2}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_st2, EA_8BYTE, REG_V0, REG_R2, REG_R3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_st2, EA_16BYTE, REG_V4, REG_R6, REG_R7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_st2, EA_8BYTE, REG_V8, REG_R10, REG_R11, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_st2, EA_16BYTE, REG_V12, REG_R14, REG_R15, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_st2, EA_8BYTE, REG_V16, REG_R18, REG_R19, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_st2, EA_16BYTE, REG_V20, REG_R22, REG_R23, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_st2, EA_16BYTE, REG_V24, REG_R26, REG_R27, INS_OPTS_2D);
+
+    // st3 {Vt, Vt2, Vt3}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_st3, EA_8BYTE, REG_V0, REG_R3, REG_R4, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_st3, EA_16BYTE, REG_V5, REG_R8, REG_R9, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_st3, EA_8BYTE, REG_V10, REG_R13, REG_R14, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_st3, EA_16BYTE, REG_V15, REG_R18, REG_R19, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_st3, EA_8BYTE, REG_V20, REG_R23, REG_R24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_st3, EA_16BYTE, REG_V25, REG_R28, REG_R29, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_st3, EA_16BYTE, REG_V30, REG_R0, REG_R1, INS_OPTS_2D);
+
+    // st4 {Vt, Vt2, Vt3, Vt4}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_st4, EA_8BYTE, REG_V0, REG_R4, REG_R5, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_st4, EA_16BYTE, REG_V6, REG_R10, REG_R11, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_st4, EA_8BYTE, REG_V12, REG_R16, REG_R17, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_st4, EA_16BYTE, REG_V18, REG_R22, REG_R23, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_st4, EA_8BYTE, REG_V24, REG_R28, REG_R29, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_st4, EA_16BYTE, REG_V30, REG_R2, REG_R3, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_st4, EA_16BYTE, REG_V4, REG_R8, REG_R9, INS_OPTS_2D);
+
+    // ld1r {Vt}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_ld1r, EA_8BYTE, REG_V0, REG_R1, REG_R2, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_ld1r, EA_16BYTE, REG_V3, REG_R4, REG_R5, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_ld1r, EA_8BYTE, REG_V6, REG_R7, REG_R8, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_ld1r, EA_16BYTE, REG_V9, REG_R10, REG_R11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_ld1r, EA_8BYTE, REG_V12, REG_R13, REG_R14, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_ld1r, EA_16BYTE, REG_V15, REG_R16, REG_R17, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_ld1r, EA_8BYTE, REG_V18, REG_R19, REG_R20, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_ld1r, EA_16BYTE, REG_V21, REG_R22, REG_R23, INS_OPTS_2D);
+
+    // ld2r {Vt, Vt2}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_ld2r, EA_8BYTE, REG_V0, REG_R2, REG_R3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_ld2r, EA_16BYTE, REG_V4, REG_R6, REG_R7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_ld2r, EA_8BYTE, REG_V8, REG_R10, REG_R11, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_ld2r, EA_16BYTE, REG_V12, REG_R14, REG_R15, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_ld2r, EA_8BYTE, REG_V16, REG_R18, REG_R19, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_ld2r, EA_16BYTE, REG_V20, REG_R22, REG_R23, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_ld2r, EA_8BYTE, REG_V24, REG_R26, REG_R27, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_ld2r, EA_16BYTE, REG_V28, REG_SP, REG_R30, INS_OPTS_2D);
+
+    // ld3r {Vt, Vt2, Vt3}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_ld3r, EA_8BYTE, REG_V0, REG_R3, REG_R4, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_ld3r, EA_16BYTE, REG_V5, REG_R8, REG_R9, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_ld3r, EA_8BYTE, REG_V10, REG_R13, REG_R14, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_ld3r, EA_16BYTE, REG_V15, REG_R18, REG_R19, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_ld3r, EA_8BYTE, REG_V20, REG_R23, REG_R24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_ld3r, EA_16BYTE, REG_V25, REG_R28, REG_R29, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_ld3r, EA_8BYTE, REG_V30, REG_R0, REG_R1, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_ld3r, EA_16BYTE, REG_V2, REG_R5, REG_R6, INS_OPTS_2D);
+
+    // ld4r {Vt, Vt2, Vt3, Vt4}, [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R(INS_ld4r, EA_8BYTE, REG_V0, REG_R4, REG_R5, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_R(INS_ld4r, EA_16BYTE, REG_V6, REG_R10, REG_R11, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R(INS_ld4r, EA_8BYTE, REG_V12, REG_R16, REG_R17, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_R(INS_ld4r, EA_16BYTE, REG_V18, REG_R22, REG_R23, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_R(INS_ld4r, EA_8BYTE, REG_V24, REG_R28, REG_R29, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_R(INS_ld4r, EA_16BYTE, REG_V30, REG_R2, REG_R3, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_ld4r, EA_8BYTE, REG_V4, REG_R8, REG_R9, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_R(INS_ld4r, EA_16BYTE, REG_V10, REG_R14, REG_R15, INS_OPTS_2D);
+
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+    //
+    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    //
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // ld1 {Vt}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_8BYTE, REG_V0, REG_R1, 8, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_16BYTE, REG_V2, REG_R3, 16, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_8BYTE, REG_V4, REG_R5, 8, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_16BYTE, REG_V6, REG_R7, 16, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_8BYTE, REG_V8, REG_R9, 8, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_16BYTE, REG_V10, REG_R11, 16, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_8BYTE, REG_V12, REG_R13, 8, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_16BYTE, REG_V14, REG_R15, 16, INS_OPTS_2D);
+
+    // ld1 {Vt, Vt2}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_ld1_2regs, EA_8BYTE, REG_V0, REG_R2, 16, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_ld1_2regs, EA_16BYTE, REG_V3, REG_R5, 32, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_ld1_2regs, EA_8BYTE, REG_V6, REG_R8, 16, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_ld1_2regs, EA_16BYTE, REG_V9, REG_R11, 32, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_ld1_2regs, EA_8BYTE, REG_V12, REG_R14, 16, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_ld1_2regs, EA_16BYTE, REG_V15, REG_R17, 32, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_ld1_2regs, EA_8BYTE, REG_V18, REG_R20, 16, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_ld1_2regs, EA_16BYTE, REG_V21, REG_R23, 32, INS_OPTS_2D);
+
+    // ld1 {Vt, Vt2, Vt3}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_ld1_3regs, EA_8BYTE, REG_V0, REG_R3, 24, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_ld1_3regs, EA_16BYTE, REG_V4, REG_R7, 48, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_ld1_3regs, EA_8BYTE, REG_V8, REG_R11, 24, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_ld1_3regs, EA_16BYTE, REG_V12, REG_R15, 48, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_ld1_3regs, EA_8BYTE, REG_V16, REG_R19, 24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_ld1_3regs, EA_16BYTE, REG_V20, REG_R23, 48, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_ld1_3regs, EA_8BYTE, REG_V24, REG_R27, 24, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_ld1_3regs, EA_16BYTE, REG_V28, REG_SP, 48, INS_OPTS_2D);
+
+    // ld1 {Vt, Vt2, Vt3, Vt4}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_ld1_4regs, EA_8BYTE, REG_V0, REG_R4, 32, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_ld1_4regs, EA_16BYTE, REG_V5, REG_R9, 64, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_ld1_4regs, EA_8BYTE, REG_V10, REG_R14, 32, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_ld1_4regs, EA_16BYTE, REG_V15, REG_R19, 64, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_ld1_4regs, EA_8BYTE, REG_V20, REG_R24, 32, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_ld1_4regs, EA_16BYTE, REG_V25, REG_R29, 64, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_ld1_4regs, EA_8BYTE, REG_V30, REG_R2, 32, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_ld1_4regs, EA_16BYTE, REG_V3, REG_R7, 64, INS_OPTS_2D);
+
+    // ld2 {Vt, Vt2}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_ld2, EA_8BYTE, REG_V0, REG_R2, 16, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_ld2, EA_16BYTE, REG_V3, REG_R5, 32, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_ld2, EA_8BYTE, REG_V6, REG_R8, 16, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_ld2, EA_16BYTE, REG_V9, REG_R11, 32, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_ld2, EA_8BYTE, REG_V12, REG_R14, 16, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_ld2, EA_16BYTE, REG_V15, REG_R17, 32, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_ld2, EA_16BYTE, REG_V18, REG_R20, 32, INS_OPTS_2D);
+
+    // ld3 {Vt, Vt2, Vt3}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_ld3, EA_8BYTE, REG_V0, REG_R3, 24, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_ld3, EA_16BYTE, REG_V4, REG_R7, 48, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_ld3, EA_8BYTE, REG_V8, REG_R11, 24, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_ld3, EA_16BYTE, REG_V12, REG_R15, 48, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_ld3, EA_8BYTE, REG_V16, REG_R19, 24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_ld3, EA_16BYTE, REG_V20, REG_R23, 48, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_ld3, EA_16BYTE, REG_V24, REG_R27, 48, INS_OPTS_2D);
+
+    // ld4 {Vt, Vt2, Vt3, Vt4}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_ld4, EA_8BYTE, REG_V0, REG_R4, 32, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_ld4, EA_16BYTE, REG_V5, REG_R9, 64, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_ld4, EA_8BYTE, REG_V10, REG_R14, 32, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_ld4, EA_16BYTE, REG_V15, REG_R19, 64, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_ld4, EA_8BYTE, REG_V20, REG_R24, 32, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_ld4, EA_16BYTE, REG_V25, REG_R29, 64, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_ld4, EA_16BYTE, REG_V30, REG_R2, 64, INS_OPTS_2D);
+
+    // st1 {Vt}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_st1, EA_8BYTE, REG_V0, REG_R1, 8, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_st1, EA_16BYTE, REG_V2, REG_R3, 16, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_st1, EA_8BYTE, REG_V4, REG_R5, 8, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_st1, EA_16BYTE, REG_V6, REG_R7, 16, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_st1, EA_8BYTE, REG_V8, REG_R9, 8, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_st1, EA_16BYTE, REG_V10, REG_R11, 16, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_st1, EA_8BYTE, REG_V12, REG_R13, 8, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_st1, EA_16BYTE, REG_V14, REG_R15, 16, INS_OPTS_2D);
+
+    // st1 {Vt, Vt2}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_st1_2regs, EA_8BYTE, REG_V0, REG_R2, 16, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_st1_2regs, EA_16BYTE, REG_V3, REG_R5, 32, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_st1_2regs, EA_8BYTE, REG_V6, REG_R8, 16, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_st1_2regs, EA_16BYTE, REG_V9, REG_R11, 32, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_st1_2regs, EA_8BYTE, REG_V12, REG_R14, 16, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_st1_2regs, EA_16BYTE, REG_V15, REG_R17, 32, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_st1_2regs, EA_8BYTE, REG_V18, REG_R20, 16, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_st1_2regs, EA_16BYTE, REG_V21, REG_R23, 32, INS_OPTS_2D);
+
+    // st1 {Vt, Vt2, Vt3}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_st1_3regs, EA_8BYTE, REG_V0, REG_R3, 24, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_st1_3regs, EA_16BYTE, REG_V4, REG_R7, 48, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_st1_3regs, EA_8BYTE, REG_V8, REG_R11, 24, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_st1_3regs, EA_16BYTE, REG_V12, REG_R15, 48, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_st1_3regs, EA_8BYTE, REG_V16, REG_R19, 24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_st1_3regs, EA_16BYTE, REG_V20, REG_R23, 48, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_st1_3regs, EA_8BYTE, REG_V24, REG_R27, 24, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_st1_3regs, EA_16BYTE, REG_V28, REG_SP, 48, INS_OPTS_2D);
+
+    // st1 {Vt, Vt2, Vt3, Vt4}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_st1_4regs, EA_8BYTE, REG_V0, REG_R4, 32, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_st1_4regs, EA_16BYTE, REG_V5, REG_R9, 64, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_st1_4regs, EA_8BYTE, REG_V10, REG_R14, 32, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_st1_4regs, EA_16BYTE, REG_V15, REG_R19, 64, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_st1_4regs, EA_8BYTE, REG_V20, REG_R24, 32, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_st1_4regs, EA_16BYTE, REG_V25, REG_R29, 64, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_st1_4regs, EA_8BYTE, REG_V30, REG_R2, 32, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_st1_4regs, EA_16BYTE, REG_V3, REG_R7, 64, INS_OPTS_2D);
+
+    // st2 {Vt, Vt2}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_st2, EA_8BYTE, REG_V0, REG_R2, 16, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_st2, EA_16BYTE, REG_V3, REG_R5, 32, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_st2, EA_8BYTE, REG_V6, REG_R8, 16, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_st2, EA_16BYTE, REG_V9, REG_R11, 32, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_st2, EA_8BYTE, REG_V12, REG_R14, 16, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_st2, EA_16BYTE, REG_V15, REG_R17, 32, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_st2, EA_16BYTE, REG_V18, REG_R20, 32, INS_OPTS_2D);
+
+    // st3 {Vt, Vt2, Vt3}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_st3, EA_8BYTE, REG_V0, REG_R3, 24, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_st3, EA_16BYTE, REG_V4, REG_R7, 48, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_st3, EA_8BYTE, REG_V8, REG_R11, 24, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_st3, EA_16BYTE, REG_V12, REG_R15, 48, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_st3, EA_8BYTE, REG_V16, REG_R19, 24, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_st3, EA_16BYTE, REG_V20, REG_R23, 48, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_st3, EA_16BYTE, REG_V24, REG_R27, 48, INS_OPTS_2D);
+
+    // st4 {Vt, Vt2, Vt3, Vt4}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_st4, EA_8BYTE, REG_V0, REG_R4, 32, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_st4, EA_16BYTE, REG_V5, REG_R9, 64, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_st4, EA_8BYTE, REG_V10, REG_R14, 32, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_st4, EA_16BYTE, REG_V15, REG_R19, 64, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_st4, EA_8BYTE, REG_V20, REG_R24, 32, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_st4, EA_16BYTE, REG_V25, REG_R29, 64, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_st4, EA_16BYTE, REG_V30, REG_R2, 64, INS_OPTS_2D);
+
+    // ld1r {Vt}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_ld1r, EA_8BYTE, REG_V0, REG_R1, 1, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_ld1r, EA_16BYTE, REG_V2, REG_R3, 1, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_ld1r, EA_8BYTE, REG_V4, REG_R5, 2, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_ld1r, EA_16BYTE, REG_V6, REG_R7, 2, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_ld1r, EA_8BYTE, REG_V8, REG_R9, 4, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_ld1r, EA_16BYTE, REG_V10, REG_R11, 4, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_ld1r, EA_8BYTE, REG_V12, REG_R13, 8, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_ld1r, EA_16BYTE, REG_V14, REG_R15, 8, INS_OPTS_2D);
+
+    // ld2r {Vt, Vt2}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_ld2r, EA_8BYTE, REG_V0, REG_R2, 2, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_ld2r, EA_16BYTE, REG_V3, REG_R5, 2, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_ld2r, EA_8BYTE, REG_V6, REG_R8, 4, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_ld2r, EA_16BYTE, REG_V9, REG_R11, 4, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_ld2r, EA_8BYTE, REG_V12, REG_R14, 8, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_ld2r, EA_16BYTE, REG_V15, REG_R17, 8, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_ld2r, EA_8BYTE, REG_V18, REG_R20, 16, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_ld2r, EA_16BYTE, REG_V21, REG_R23, 16, INS_OPTS_2D);
+
+    // ld3r {Vt, Vt2, Vt3}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_ld3r, EA_8BYTE, REG_V0, REG_R3, 3, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_ld3r, EA_16BYTE, REG_V4, REG_R7, 3, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_ld3r, EA_8BYTE, REG_V8, REG_R11, 6, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_ld3r, EA_16BYTE, REG_V12, REG_R15, 6, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_ld3r, EA_8BYTE, REG_V16, REG_R19, 12, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_ld3r, EA_16BYTE, REG_V20, REG_R23, 12, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_ld3r, EA_8BYTE, REG_V24, REG_R27, 24, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_ld3r, EA_16BYTE, REG_V28, REG_SP, 24, INS_OPTS_2D);
+
+    // ld4r {Vt, Vt2, Vt3, Vt4}, [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I(INS_ld4r, EA_8BYTE, REG_V0, REG_R4, 4, INS_OPTS_8B);
+    theEmitter->emitIns_R_R_I(INS_ld4r, EA_16BYTE, REG_V5, REG_R9, 4, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_I(INS_ld4r, EA_8BYTE, REG_V10, REG_R14, 8, INS_OPTS_4H);
+    theEmitter->emitIns_R_R_I(INS_ld4r, EA_16BYTE, REG_V15, REG_R19, 8, INS_OPTS_8H);
+    theEmitter->emitIns_R_R_I(INS_ld4r, EA_8BYTE, REG_V20, REG_R24, 16, INS_OPTS_2S);
+    theEmitter->emitIns_R_R_I(INS_ld4r, EA_16BYTE, REG_V25, REG_R29, 16, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_I(INS_ld4r, EA_8BYTE, REG_V30, REG_R2, 32, INS_OPTS_1D);
+    theEmitter->emitIns_R_R_I(INS_ld4r, EA_16BYTE, REG_V3, REG_R7, 32, INS_OPTS_2D);
+
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+    //
+    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    //
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // ld1 {Vt}[#index], [Xn|SP]
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_1BYTE, REG_V0, REG_R1, 3);
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_2BYTE, REG_V2, REG_R3, 2);
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_4BYTE, REG_V4, REG_R5, 1);
+    theEmitter->emitIns_R_R_I(INS_ld1, EA_8BYTE, REG_V6, REG_R7, 0);
+
+    // ld2 {Vt, Vt2}[#index], [Xn|SP]
+    theEmitter->emitIns_R_R_I(INS_ld2, EA_1BYTE, REG_V0, REG_R2, 4);
+    theEmitter->emitIns_R_R_I(INS_ld2, EA_2BYTE, REG_V3, REG_R5, 3);
+    theEmitter->emitIns_R_R_I(INS_ld2, EA_4BYTE, REG_V6, REG_R8, 2);
+    theEmitter->emitIns_R_R_I(INS_ld2, EA_8BYTE, REG_V9, REG_R11, 1);
+
+    // ld3 {Vt, Vt2, Vt3}[#index], [Xn|SP]
+    theEmitter->emitIns_R_R_I(INS_ld3, EA_1BYTE, REG_V0, REG_R3, 5);
+    theEmitter->emitIns_R_R_I(INS_ld3, EA_2BYTE, REG_V4, REG_R7, 4);
+    theEmitter->emitIns_R_R_I(INS_ld3, EA_4BYTE, REG_V8, REG_R11, 3);
+    theEmitter->emitIns_R_R_I(INS_ld3, EA_8BYTE, REG_V12, REG_R15, 0);
+
+    // ld4 {Vt, Vt2, Vt3, Vt4}[#index], [Xn|SP]
+    theEmitter->emitIns_R_R_I(INS_ld4, EA_1BYTE, REG_V0, REG_R4, 6);
+    theEmitter->emitIns_R_R_I(INS_ld4, EA_2BYTE, REG_V5, REG_R9, 5);
+    theEmitter->emitIns_R_R_I(INS_ld4, EA_4BYTE, REG_V10, REG_R14, 0);
+    theEmitter->emitIns_R_R_I(INS_ld4, EA_8BYTE, REG_V15, REG_R19, 1);
+
+    // st1 {Vt}[#index], [Xn|SP]
+    theEmitter->emitIns_R_R_I(INS_st1, EA_1BYTE, REG_V0, REG_R1, 7);
+    theEmitter->emitIns_R_R_I(INS_st1, EA_2BYTE, REG_V2, REG_R3, 6);
+    theEmitter->emitIns_R_R_I(INS_st1, EA_4BYTE, REG_V4, REG_R5, 1);
+    theEmitter->emitIns_R_R_I(INS_st1, EA_8BYTE, REG_V6, REG_R7, 0);
+
+    // st2 {Vt, Vt2}[#index], [Xn|SP]
+    theEmitter->emitIns_R_R_I(INS_st2, EA_1BYTE, REG_V0, REG_R2, 8);
+    theEmitter->emitIns_R_R_I(INS_st2, EA_2BYTE, REG_V3, REG_R5, 7);
+    theEmitter->emitIns_R_R_I(INS_st2, EA_4BYTE, REG_V6, REG_R8, 2);
+    theEmitter->emitIns_R_R_I(INS_st2, EA_8BYTE, REG_V9, REG_R11, 1);
+
+    // st3 {Vt, Vt2, Vt3}[#index], [Xn|SP]
+    theEmitter->emitIns_R_R_I(INS_st3, EA_1BYTE, REG_V0, REG_R3, 9);
+    theEmitter->emitIns_R_R_I(INS_st3, EA_2BYTE, REG_V4, REG_R7, 0);
+    theEmitter->emitIns_R_R_I(INS_st3, EA_4BYTE, REG_V8, REG_R11, 3);
+    theEmitter->emitIns_R_R_I(INS_st3, EA_8BYTE, REG_V12, REG_R15, 0);
+
+    // st4 {Vt, Vt2, Vt3, Vt4}[#index], [Xn|SP]
+    theEmitter->emitIns_R_R_I(INS_st4, EA_1BYTE, REG_V0, REG_R4, 10);
+    theEmitter->emitIns_R_R_I(INS_st4, EA_2BYTE, REG_V5, REG_R9, 1);
+    theEmitter->emitIns_R_R_I(INS_st4, EA_4BYTE, REG_V10, REG_R14, 0);
+    theEmitter->emitIns_R_R_I(INS_st4, EA_8BYTE, REG_V15, REG_R19, 1);
+
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+    //
+    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    //
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // ld1 {Vt}[#index], [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R_I(INS_ld1, EA_1BYTE, REG_V0, REG_R1, REG_R2, 3, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld1, EA_2BYTE, REG_V3, REG_R4, REG_R5, 2, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld1, EA_4BYTE, REG_V6, REG_R7, REG_R8, 1, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld1, EA_8BYTE, REG_V9, REG_R10, REG_R11, 0, INS_OPTS_POST_INDEX);
+
+    // ld2 {Vt, Vt2}[#index], [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R_I(INS_ld2, EA_1BYTE, REG_V0, REG_R2, REG_R3, 4, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld2, EA_2BYTE, REG_V4, REG_R6, REG_R7, 3, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld2, EA_4BYTE, REG_V8, REG_R10, REG_R11, 2, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld2, EA_8BYTE, REG_V12, REG_R14, REG_R15, 1, INS_OPTS_POST_INDEX);
+
+    // ld3 {Vt, Vt2, Vt3}[#index], [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R_I(INS_ld3, EA_1BYTE, REG_V0, REG_R3, REG_R4, 5, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld3, EA_2BYTE, REG_V5, REG_R8, REG_R9, 4, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld3, EA_4BYTE, REG_V10, REG_R13, REG_R14, 3, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld3, EA_8BYTE, REG_V15, REG_R18, REG_R19, 0, INS_OPTS_POST_INDEX);
+
+    // ld4 {Vt, Vt2, Vt3, Vt4}[#index], [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R_I(INS_ld4, EA_1BYTE, REG_V0, REG_R4, REG_R5, 6, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld4, EA_2BYTE, REG_V6, REG_R10, REG_R11, 5, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld4, EA_4BYTE, REG_V12, REG_R16, REG_R17, 0, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_ld4, EA_8BYTE, REG_V18, REG_R22, REG_R23, 1, INS_OPTS_POST_INDEX);
+
+    // st1 {Vt}[#index], [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R_I(INS_st1, EA_1BYTE, REG_V0, REG_R1, REG_R2, 7, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st1, EA_2BYTE, REG_V3, REG_R4, REG_R5, 6, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st1, EA_4BYTE, REG_V6, REG_R7, REG_R8, 1, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st1, EA_8BYTE, REG_V9, REG_R10, REG_R11, 0, INS_OPTS_POST_INDEX);
+
+    // st2 {Vt, Vt2}[#index], [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R_I(INS_st2, EA_1BYTE, REG_V0, REG_R2, REG_R3, 8, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st2, EA_2BYTE, REG_V4, REG_R6, REG_R7, 7, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st2, EA_4BYTE, REG_V8, REG_R10, REG_R11, 2, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st2, EA_8BYTE, REG_V12, REG_R14, REG_R15, 1, INS_OPTS_POST_INDEX);
+
+    // st3 {Vt, Vt2, Vt3}[#index], [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R_I(INS_st3, EA_1BYTE, REG_V0, REG_R3, REG_R4, 9, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st3, EA_2BYTE, REG_V5, REG_R8, REG_R9, 0, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st3, EA_4BYTE, REG_V10, REG_R13, REG_R14, 3, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st3, EA_8BYTE, REG_V15, REG_R18, REG_R19, 0, INS_OPTS_POST_INDEX);
+
+    // st4 {Vt, Vt2, Vt3, Vt4}[#index], [Xn|SP], Xm
+    theEmitter->emitIns_R_R_R_I(INS_st4, EA_1BYTE, REG_V0, REG_R4, REG_R5, 10, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st4, EA_2BYTE, REG_V6, REG_R10, REG_R11, 1, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st4, EA_4BYTE, REG_V12, REG_R16, REG_R17, 0, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_R_I(INS_st4, EA_8BYTE, REG_V18, REG_R22, REG_R23, 1, INS_OPTS_POST_INDEX);
+
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+    //
+    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    //
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // ld1 {Vt}[#index], [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I_I(INS_ld1, EA_1BYTE, REG_V0, REG_R1, 3, 1, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld1, EA_2BYTE, REG_V2, REG_R3, 2, 2, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld1, EA_4BYTE, REG_V4, REG_R5, 1, 4, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld1, EA_8BYTE, REG_V6, REG_R7, 0, 8, INS_OPTS_POST_INDEX);
+
+    // ld2 {Vt, Vt2}[#index], [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I_I(INS_ld2, EA_1BYTE, REG_V0, REG_R2, 4, 2, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld2, EA_2BYTE, REG_V3, REG_R5, 3, 4, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld2, EA_4BYTE, REG_V6, REG_R8, 2, 8, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld2, EA_8BYTE, REG_V9, REG_R11, 1, 16, INS_OPTS_POST_INDEX);
+
+    // ld3 {Vt, Vt2, Vt3}[#index], [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I_I(INS_ld3, EA_1BYTE, REG_V0, REG_R3, 5, 3, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld3, EA_2BYTE, REG_V4, REG_R7, 4, 6, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld3, EA_4BYTE, REG_V8, REG_R11, 3, 12, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld3, EA_8BYTE, REG_V12, REG_R15, 0, 24, INS_OPTS_POST_INDEX);
+
+    // ld4 {Vt, Vt2, Vt3, Vt4}[#index], [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I_I(INS_ld4, EA_1BYTE, REG_V0, REG_R4, 6, 4, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld4, EA_2BYTE, REG_V5, REG_R9, 5, 8, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld4, EA_4BYTE, REG_V10, REG_R14, 0, 16, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_ld4, EA_8BYTE, REG_V15, REG_R19, 1, 32, INS_OPTS_POST_INDEX);
+
+    // st1 {Vt}[#index], [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I_I(INS_st1, EA_1BYTE, REG_V0, REG_R1, 3, 1, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st1, EA_2BYTE, REG_V2, REG_R3, 2, 2, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st1, EA_4BYTE, REG_V4, REG_R5, 1, 4, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st1, EA_8BYTE, REG_V6, REG_R7, 0, 8, INS_OPTS_POST_INDEX);
+
+    // st2 {Vt, Vt2}[#index], [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I_I(INS_st2, EA_1BYTE, REG_V0, REG_R2, 4, 2, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st2, EA_2BYTE, REG_V3, REG_R5, 3, 4, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st2, EA_4BYTE, REG_V6, REG_R8, 2, 8, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st2, EA_8BYTE, REG_V9, REG_R11, 1, 16, INS_OPTS_POST_INDEX);
+
+    // st3 {Vt, Vt2, Vt3}[#index], [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I_I(INS_st3, EA_1BYTE, REG_V0, REG_R3, 5, 3, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st3, EA_2BYTE, REG_V4, REG_R7, 4, 6, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st3, EA_4BYTE, REG_V8, REG_R11, 3, 12, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st3, EA_8BYTE, REG_V12, REG_R15, 0, 24, INS_OPTS_POST_INDEX);
+
+    // st4 {Vt, Vt2, Vt3, Vt4}[#index], [Xn|SP], #imm
+    theEmitter->emitIns_R_R_I_I(INS_st4, EA_1BYTE, REG_V0, REG_R4, 6, 4, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st4, EA_2BYTE, REG_V5, REG_R9, 5, 8, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st4, EA_4BYTE, REG_V10, REG_R14, 0, 16, INS_OPTS_POST_INDEX);
+    theEmitter->emitIns_R_R_I_I(INS_st4, EA_8BYTE, REG_V15, REG_R19, 1, 32, INS_OPTS_POST_INDEX);
+
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS
+
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS
+    //
     // Compares
     //
 

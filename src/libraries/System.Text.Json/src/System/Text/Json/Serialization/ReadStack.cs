@@ -78,7 +78,7 @@ namespace System.Text.Json
             Current.JsonClassInfo = jsonClassInfo;
 
             // The initial JsonPropertyInfo will be used to obtain the converter.
-            Current.JsonPropertyInfo = jsonClassInfo.PolicyProperty;
+            Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
 
             if (options.ReferenceHandling.ShouldReadPreservedReferences())
             {
@@ -114,7 +114,7 @@ namespace System.Text.Json
                     Current.Reset();
 
                     Current.JsonClassInfo = jsonClassInfo;
-                    Current.JsonPropertyInfo = jsonClassInfo.PolicyProperty;
+                    Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
                 }
             }
             else if (_continuationCount == 1)

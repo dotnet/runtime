@@ -30,6 +30,10 @@
 #ifndef DISABLE_REMOTING
 #define DISABLE_REMOTING 1
 #endif
+#ifndef DISABLE_SIMD
+// FIXME: disable SIMD support for Windows, see https://github.com/dotnet/runtime/issues/1933
+#define DISABLE_SIMD 1
+#endif
 #ifndef DISABLE_REFLECTION_EMIT_SAVE
 #define DISABLE_REFLECTION_EMIT_SAVE 1
 #endif

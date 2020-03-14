@@ -31,6 +31,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Unsigned integer encoding https://tools.ietf.org/html/rfc7049#section-2.1
         private void WriteUnsignedInteger(CborMajorType type, ulong value)
         {
+            EnsureCanWriteNewDataItem();
+
             if (value < 24)
             {
                 EnsureWriteCapacity(1);
@@ -64,6 +66,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(_offset + 1), value);
                 _offset += 9;
             }
+
+            _remainingDataItems--;
         }
     }
 }

@@ -109,6 +109,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [ConditionalFact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33558")]        
         public void Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
             RemoteExecutor.Invoke(async (useVersionString) =>

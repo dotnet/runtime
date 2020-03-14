@@ -19,11 +19,12 @@ namespace bundle
 
     enum file_type_t : uint8_t
     {
+        unknown,
         assembly,
-        ready2run,
+        native_binary,
         deps_json,
         runtime_config_json,
-        extract,
+        symbols,
         __last
     };
 }

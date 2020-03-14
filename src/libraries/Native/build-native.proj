@@ -8,7 +8,7 @@
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="'$(TargetOS)' != 'Windows_NT'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
-    <_BuildNativeArgs>$(ArchGroup) $(Configuration) outconfig $(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup)</_BuildNativeArgs>
+    <_BuildNativeArgs>$(ArchGroup) $(Configuration) outconfig $(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup) -os $(TargetOS)</_BuildNativeArgs>
   </PropertyGroup>
 
   <Target Name="BuildNativeUnix"
@@ -20,7 +20,7 @@
         then we should consider calling Environment.ProcessorCount
       -->
       <_ProcessorCountArg> -numproc $(MSBuildNodeCount)</_ProcessorCountArg>
-      <_StripSymbolsArg Condition="'$(BuildNativeStripSymbols)' == 'true' and '$(TargetOS)' != 'WebAssembly'"> -stripsymbols</_StripSymbolsArg>
+      <_StripSymbolsArg Condition="'$(BuildNativeStripSymbols)' == 'true' and '$(TargetOS)' != 'WebAssembly' and '$(TargetOS)' != 'iOS'"> -stripsymbols</_StripSymbolsArg>
       <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
       <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
       <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> $(CMakeArgs)</_CMakeArgs>

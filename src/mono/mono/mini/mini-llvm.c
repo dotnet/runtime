@@ -276,6 +276,8 @@ static LLVMRealPredicate fpcond_to_llvm_cond [] = {
 	LLVMRealUGE,
 	LLVMRealULT,
 	LLVMRealUGT,
+	LLVMRealORD,
+	LLVMRealUNO
 };
 
 static MonoLLVMModule aot_module;
@@ -306,7 +308,7 @@ set_failure (EmitContext *ctx, const char *message)
 }
 
 static LLVMValueRef
-ConstInt32 (int v)
+const_int32 (int v)
 {
 	return LLVMConstInt (LLVMInt32Type (), v, FALSE);
 }
@@ -2133,6 +2135,20 @@ set_nonnull_load_flag (LLVMValueRef v)
 	flag_name = "nonnull";
 	md_kind = LLVMGetMDKindID (flag_name, strlen (flag_name));
 	md_arg = LLVMMDString ("<index>", strlen ("<index>"));
+	LLVMSetMetadata (v, md_kind, LLVMMDNode (&md_arg, 1));
+}
+
+static void
+set_nontemporal_flag (LLVMValueRef v)
+{
+	LLVMValueRef md_arg;
+	int md_kind;
+	const char *flag_name;
+
+	// FIXME: Cache this
+	flag_name = "nontemporal";
+	md_kind = LLVMGetMDKindID (flag_name, strlen (flag_name));
+	md_arg = const_int32 (1);
 	LLVMSetMetadata (v, md_kind, LLVMMDNode (&md_arg, 1));
 }
 
@@ -5701,7 +5717,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			v = mono_llvm_build_alloca (builder, LLVMInt8Type (), LLVMConstInt (LLVMInt32Type (), size, FALSE), MONO_ARCH_FRAME_ALIGNMENT, "");
 
 			if (ins->flags & MONO_INST_INIT)
-				emit_memset (ctx, builder, v, ConstInt32 (size), MONO_ARCH_FRAME_ALIGNMENT);
+				emit_memset (ctx, builder, v, const_int32 (size), MONO_ARCH_FRAME_ALIGNMENT);
 
 			values [ins->dreg] = v;
 			break;
@@ -6299,11 +6315,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_ADD_I4:
-		case OP_ATOMIC_ADD_I8: {
+		case OP_ATOMIC_ADD_I8:
+		case OP_ATOMIC_AND_I4:
+		case OP_ATOMIC_AND_I8:
+		case OP_ATOMIC_OR_I4:
+		case OP_ATOMIC_OR_I8: {
 			LLVMValueRef args [2];
 			LLVMTypeRef t;
-				
-			if (ins->opcode == OP_ATOMIC_ADD_I4)
+
+			if (ins->type == STACK_I4)
 				t = LLVMInt32Type ();
 			else
 				t = LLVMInt64Type ();
@@ -6313,7 +6333,16 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [0] = convert (ctx, lhs, LLVMPointerType (t, 0));
 			args [1] = convert (ctx, rhs, t);
 			ARM64_ATOMIC_FENCE_FIX;
-			values [ins->dreg] = LLVMBuildAdd (builder, mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_ADD, args [0], args [1]), args [1], dname);
+			if (ins->opcode == OP_ATOMIC_ADD_I4 || ins->opcode == OP_ATOMIC_ADD_I8)
+				// Interlocked.Add returns new value (that's why we emit additional Add here)
+				// see https://github.com/dotnet/runtime/pull/33102
+				values [ins->dreg] = LLVMBuildAdd (builder, mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_ADD, args [0], args [1]), args [1], dname);
+			else if (ins->opcode == OP_ATOMIC_AND_I4 || ins->opcode == OP_ATOMIC_AND_I8)
+				values [ins->dreg] = mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_AND, args [0], args [1]);
+			else if (ins->opcode == OP_ATOMIC_OR_I4 || ins->opcode == OP_ATOMIC_OR_I8)
+				values [ins->dreg] = mono_llvm_build_atomic_rmw (builder, LLVM_ATOMICRMW_OP_OR, args [0], args [1]);
+			else
+				g_assert_not_reached ();
 			ARM64_ATOMIC_FENCE_FIX;
 			break;
 		}
@@ -6559,7 +6588,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (!addresses [ins->dreg])
 				addresses [ins->dreg] = build_alloca (ctx, m_class_get_byval_arg (klass));
 			LLVMValueRef ptr = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), "");
-			emit_memset (ctx, builder, ptr, ConstInt32 (mono_class_value_size (klass, NULL)), 0);
+			emit_memset (ctx, builder, ptr, const_int32 (mono_class_value_size (klass, NULL)), 0);
 			break;
 		}
 		case OP_DUMMY_VZERO:
@@ -6860,6 +6889,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildSelect (builder, cmp, lhs, rhs, "");
 			break;
 		}
+		case OP_PMAXW: {
+			LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntSGT, lhs, rhs, "");
+			values [ins->dreg] = LLVMBuildSelect (builder, cmp, lhs, rhs, "");
+			break;
+		}
 		case OP_MINPD:
 		case OP_MINPS:
 		case OP_MAXPD:
@@ -7025,7 +7059,46 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_INSERT_R8:
 			values [ins->dreg] = LLVMBuildInsertElement (builder, values [ins->sreg1], convert (ctx, values [ins->sreg2], LLVMDoubleType ()), LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE), dname);
 			break;
+		case OP_XINSERT_I2: {
+			LLVMBasicBlockRef bbs [64];
+			LLVMValueRef switch_ins;
+			LLVMValueRef vector = lhs;
+			LLVMValueRef value = rhs;
+			LLVMValueRef index = values [ins->sreg3];
+			LLVMValueRef phi_values [64];
+			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			int i;
 
+			/*
+			 * Many SIMD opcodes require an immediate operand, but can be called with a non-immediate.
+			 * To handle these cases, generate a switch statement with one case for all possible
+			 * values of the immediate.
+			 * switch (index) {
+			 * case i:
+			 *   res = <op> (val, i)
+			 *   break;
+			 * }
+			 */
+			g_assert (nelems <= 64);
+			for (i = 0; i < nelems; ++i)
+				bbs [i] = gen_bb (ctx, "XINSERT_CASE_BB");
+			cbb = gen_bb (ctx, "XINSERT_COND_BB");
+
+			switch_ins = LLVMBuildSwitch (builder, LLVMBuildAnd (builder, index, const_int32 (0xf), ""), bbs [0], 0);
+			for (i = 0; i < nelems; ++i) {
+				LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
+				LLVMPositionBuilderAtEnd (builder, bbs [i]);
+				phi_values [i] = LLVMBuildInsertElement (builder, vector, convert (ctx, value, LLVMGetElementType (LLVMTypeOf (vector))), LLVMConstInt (LLVMInt32Type (), i, FALSE), "");
+				LLVMBuildBr (builder, cbb);
+			}
+
+			LLVMPositionBuilderAtEnd (builder, cbb);
+			values [ins->dreg] = LLVMBuildPhi (builder, LLVMTypeOf (phi_values [0]), "");
+			LLVMAddIncoming (values [ins->dreg], phi_values, bbs, nelems);
+
+			ctx->bblocks [bb->block_num].end_bblock = cbb;
+			break;
+		}
 		case OP_CVTDQ2PD: {
 			LLVMValueRef indexes [16];
 
@@ -7034,6 +7107,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef mask = LLVMConstVector (indexes, 2);
 			LLVMValueRef shuffle = LLVMBuildShuffleVector (builder, lhs, LLVMConstNull (LLVMTypeOf (lhs)), mask, "");
 			values [ins->dreg] = LLVMBuildSIToFP (builder, shuffle, LLVMVectorType (LLVMDoubleType (), 2), dname);
+			break;
+		}
+		case OP_CVTSD2SD: {
+			LLVMValueRef rhs_elem = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			LLVMValueRef fpext = LLVMBuildFPExt (builder, rhs_elem, LLVMDoubleType (), dname);
+			values [ins->dreg] = LLVMBuildInsertElement (builder, lhs, fpext, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
 			break;
 		}
 		case OP_CVTPS2PD: {
@@ -7456,6 +7535,78 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = mono_llvm_build_aligned_load (builder, dst_vec, "", FALSE, ins->inst_c0); // inst_c0 is alignment
 			break;
 		}
+		case OP_SSE_MOVSS: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMFloatType (), 0));
+			LLVMValueRef val = mono_llvm_build_load (builder, addr, "", FALSE);
+			values [ins->dreg] = LLVMBuildInsertElement (builder, LLVMConstNull (type_to_sse_type (ins->inst_c1)), val, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			break;
+		}
+		case OP_SSE_MOVSS_STORE: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMFloatType (), 0));
+			LLVMValueRef val = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			mono_llvm_build_store (builder, val, addr, FALSE, LLVM_BARRIER_NONE);
+			break;
+		}
+		case OP_SSE_MOVSD: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMDoubleType (), 0));
+			LLVMValueRef val = mono_llvm_build_load (builder, addr, "", FALSE);
+			values [ins->dreg] = LLVMBuildInsertElement (builder, LLVMConstNull (type_to_sse_type (ins->inst_c1)), val, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			break;
+		}
+
+		case OP_SSE_MOVLPS_LOAD:
+		case OP_SSE_MOVHPS_LOAD: {
+			LLVMTypeRef t = LLVMFloatType ();
+			int size = 4;
+			gboolean high = ins->opcode == OP_SSE_MOVHPS_LOAD;
+			/* Load two floats from rhs and store them in the low/high part of lhs */
+			LLVMValueRef addr = rhs;
+			LLVMValueRef addr1 = convert (ctx, addr, LLVMPointerType (t, 0));
+			LLVMValueRef addr2 = convert (ctx, LLVMBuildAdd (builder, convert (ctx, addr, IntPtrType ()), convert (ctx, LLVMConstInt (LLVMInt32Type (), size, FALSE), IntPtrType ()), ""), LLVMPointerType (t, 0));
+			LLVMValueRef val1 = mono_llvm_build_load (builder, addr1, "", FALSE);
+			LLVMValueRef val2 = mono_llvm_build_load (builder, addr2, "", FALSE);
+			int index1, index2;
+
+			index1 = high ? 2: 0;
+			index2 = high ? 3 : 1;
+			values [ins->dreg] = LLVMBuildInsertElement (builder, LLVMBuildInsertElement (builder, lhs, val1, LLVMConstInt (LLVMInt32Type (), index1, FALSE), ""), val2, LLVMConstInt (LLVMInt32Type (), index2, FALSE), "");
+			break;
+		}
+
+		case OP_SSE2_MOVLPD_LOAD:
+		case OP_SSE2_MOVHPD_LOAD: {
+			LLVMTypeRef t = LLVMDoubleType ();
+			LLVMValueRef addr = convert (ctx, rhs, LLVMPointerType (t, 0));
+			LLVMValueRef val = mono_llvm_build_load (builder, addr, "", FALSE);
+			int index = ins->opcode == OP_SSE2_MOVHPD_LOAD ? 1 : 0;
+			values [ins->dreg] = LLVMBuildInsertElement (builder, lhs, val, const_int32 (index), "");
+			break;
+		}
+
+		case OP_SSE_MOVLPS_STORE:
+		case OP_SSE_MOVHPS_STORE: {
+			/* Store two floats from the low/hight part of rhs into lhs */
+			LLVMValueRef addr = lhs;
+			LLVMValueRef addr1 = convert (ctx, addr, LLVMPointerType (LLVMFloatType (), 0));
+			LLVMValueRef addr2 = convert (ctx, LLVMBuildAdd (builder, convert (ctx, addr, IntPtrType ()), convert (ctx, LLVMConstInt (LLVMInt32Type (), 4, FALSE), IntPtrType ()), ""), LLVMPointerType (LLVMFloatType (), 0));
+			int index1 = ins->opcode == OP_SSE_MOVLPS_STORE ? 0 : 2;
+			int index2 = ins->opcode == OP_SSE_MOVLPS_STORE ? 1 : 3;
+			LLVMValueRef val1 = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), index1, FALSE), "");
+			LLVMValueRef val2 = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), index2, FALSE), "");
+			mono_llvm_build_store (builder, val1, addr1, FALSE, LLVM_BARRIER_NONE);
+			mono_llvm_build_store (builder, val2, addr2, FALSE, LLVM_BARRIER_NONE);
+			break;
+		}
+
+		case OP_SSE2_MOVLPD_STORE:
+		case OP_SSE2_MOVHPD_STORE: {
+			LLVMTypeRef t = LLVMDoubleType ();
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (t, 0));
+			int index = ins->opcode == OP_SSE2_MOVHPD_STORE ? 1 : 0;
+			LLVMValueRef val = LLVMBuildExtractElement (builder, rhs, const_int32 (index), "");
+			mono_llvm_build_store (builder, val, addr, FALSE, LLVM_BARRIER_NONE);
+			break;
+		}
 
 		case OP_SSE_STORE: {
 			LLVMValueRef dst_vec = convert (ctx, lhs, LLVMPointerType (LLVMTypeOf (rhs), 0));
@@ -7467,6 +7618,35 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef first_elem = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
 			LLVMValueRef dst = convert (ctx, lhs, LLVMPointerType (LLVMTypeOf (first_elem), 0));
 			mono_llvm_build_aligned_store (builder, first_elem, dst, FALSE, 1);
+			break;
+		}
+		case OP_SSE_MOVNTPS: {
+			LLVMValueRef store = mono_llvm_build_aligned_store (builder, rhs, lhs, FALSE, ins->inst_c0);
+			set_nontemporal_flag (store);
+			break;
+		}
+		case OP_SSE_PREFETCHT0: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMInt8Type (), 0));
+			LLVMValueRef args [] = { addr, const_int32 (0), const_int32 (3), const_int32 (1) };
+			call_intrins (ctx, INTRINS_PREFETCH, args, "");
+			break;
+		}
+		case OP_SSE_PREFETCHT1: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMInt8Type (), 0));
+			LLVMValueRef args [] = { addr, const_int32 (0), const_int32 (2), const_int32 (1) };
+			call_intrins (ctx, INTRINS_PREFETCH, args, "");
+			break;
+		}
+		case OP_SSE_PREFETCHT2: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMInt8Type (), 0));
+			LLVMValueRef args [] = { addr, const_int32 (0), const_int32 (1), const_int32 (1) };
+			call_intrins (ctx, INTRINS_PREFETCH, args, "");
+			break;
+		}
+		case OP_SSE_PREFETCHNTA: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMInt8Type (), 0));
+			LLVMValueRef args [] = { addr, const_int32 (0), const_int32 (0), const_int32 (1) };
+			call_intrins (ctx, INTRINS_PREFETCH, args, "");
 			break;
 		}
 
@@ -7536,24 +7716,261 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE2_ADDS: {
-			gint32 intrinsic = 0;
-			if (ins->inst_c1 == MONO_TYPE_I1)
-				intrinsic = INTRINS_SSE_SADD_SATI8;
-			else if (ins->inst_c1 == MONO_TYPE_U1)
-				intrinsic = INTRINS_SSE_UADD_SATI8;
-			else if (ins->inst_c1 == MONO_TYPE_I2)
-				intrinsic = INTRINS_SSE_SADD_SATI16;
-			else if (ins->inst_c1 == MONO_TYPE_U2)
-				intrinsic = INTRINS_SSE_UADD_SATI16;
-			else
+		case OP_SSE_ADDSS:
+		case OP_SSE_SUBSS:
+		case OP_SSE_DIVSS:
+		case OP_SSE_MULSS:
+		case OP_SSE2_ADDSD:
+		case OP_SSE2_SUBSD:
+		case OP_SSE2_DIVSD:
+		case OP_SSE2_MULSD: {
+			LLVMValueRef v1 = LLVMBuildExtractElement (builder, lhs, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			LLVMValueRef v2 = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+
+			LLVMValueRef v = NULL;
+			switch (ins->opcode) {
+			case OP_SSE_ADDSS:
+			case OP_SSE2_ADDSD:
+				v = LLVMBuildFAdd (builder, v1, v2, "");
+				break;
+			case OP_SSE_SUBSS:
+			case OP_SSE2_SUBSD:
+				v = LLVMBuildFSub (builder, v1, v2, "");
+				break;
+			case OP_SSE_DIVSS:
+			case OP_SSE2_DIVSD:
+				v = LLVMBuildFDiv (builder, v1, v2, "");
+				break;
+			case OP_SSE_MULSS:
+			case OP_SSE2_MULSD:
+				v = LLVMBuildFMul (builder, v1, v2, "");
+				break;
+			default:
 				g_assert_not_reached ();
+			}
+			values [ins->dreg] = LLVMBuildInsertElement (builder, lhs, v, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			break;
+		}
+
+		case OP_SSE_CMPSS:
+		case OP_SSE2_CMPSD: {
+			int imm = -1;
+			switch (ins->inst_c0) {
+			case CMP_EQ: imm = 0; break;
+			case CMP_GT: imm = 6; break;
+			case CMP_GE: imm = 5; break;
+			case CMP_LT: imm = 1; break;
+			case CMP_LE: imm = 2; break;
+			case CMP_NE: imm = 4; break;
+			case CMP_ORD: imm = 7; break;
+			case CMP_UNORD: imm = 3; break;
+			default: g_assert_not_reached (); break;
+			}
+			LLVMValueRef cmp = LLVMConstInt (LLVMInt8Type (), imm, FALSE);
+			LLVMValueRef args [] = { lhs, rhs, cmp };
+			switch (ins->opcode) {
+			case OP_SSE_CMPSS:
+				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_CMPSS, args, "");
+				break;
+			case OP_SSE2_CMPSD:
+				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_CMPSD, args, "");
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_SSE_COMISS: {
+			LLVMValueRef args [] = { lhs, rhs };
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case CMP_EQ: id = INTRINS_SSE_COMIEQ_SS; break;
+			case CMP_GT: id = INTRINS_SSE_COMIGT_SS; break;
+			case CMP_GE: id = INTRINS_SSE_COMIGE_SS; break;
+			case CMP_LT: id = INTRINS_SSE_COMILT_SS; break;
+			case CMP_LE: id = INTRINS_SSE_COMILE_SS; break;
+			case CMP_NE: id = INTRINS_SSE_COMINEQ_SS; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+		case OP_SSE_UCOMISS: {
+			LLVMValueRef args [] = { lhs, rhs };
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case CMP_EQ: id = INTRINS_SSE_UCOMIEQ_SS; break;
+			case CMP_GT: id = INTRINS_SSE_UCOMIGT_SS; break;
+			case CMP_GE: id = INTRINS_SSE_UCOMIGE_SS; break;
+			case CMP_LT: id = INTRINS_SSE_UCOMILT_SS; break;
+			case CMP_LE: id = INTRINS_SSE_UCOMILE_SS; break;
+			case CMP_NE: id = INTRINS_SSE_UCOMINEQ_SS; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+		case OP_SSE2_COMISD: {
+			LLVMValueRef args [] = { lhs, rhs };
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case CMP_EQ: id = INTRINS_SSE_COMIEQ_SD; break;
+			case CMP_GT: id = INTRINS_SSE_COMIGT_SD; break;
+			case CMP_GE: id = INTRINS_SSE_COMIGE_SD; break;
+			case CMP_LT: id = INTRINS_SSE_COMILT_SD; break;
+			case CMP_LE: id = INTRINS_SSE_COMILE_SD; break;
+			case CMP_NE: id = INTRINS_SSE_COMINEQ_SD; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+		case OP_SSE2_UCOMISD: {
+			LLVMValueRef args [] = { lhs, rhs };
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case CMP_EQ: id = INTRINS_SSE_UCOMIEQ_SD; break;
+			case CMP_GT: id = INTRINS_SSE_UCOMIGT_SD; break;
+			case CMP_GE: id = INTRINS_SSE_UCOMIGE_SD; break;
+			case CMP_LT: id = INTRINS_SSE_UCOMILT_SD; break;
+			case CMP_LE: id = INTRINS_SSE_UCOMILE_SD; break;
+			case CMP_NE: id = INTRINS_SSE_UCOMINEQ_SD; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+		case OP_XOP: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_SSE_LFENCE: id = INTRINS_SSE_LFENCE; break;
+			case SIMD_OP_SSE_SFENCE: id = INTRINS_SSE_SFENCE; break;
+			case SIMD_OP_SSE_MFENCE: id = INTRINS_SSE_MFENCE; break;
+			default: g_assert_not_reached (); break;
+			}
+			call_intrins (ctx, id, NULL, "");
+			break;
+		}
+		case OP_XOP_X_I:
+		case OP_XOP_X_X: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_SSE_SQRTPS: id = INTRINS_SSE_SQRT_PS; break;
+			case SIMD_OP_SSE_RCPPS: id = INTRINS_SSE_RCP_PS; break;
+			case SIMD_OP_SSE_RSQRTPS: id = INTRINS_SSE_RSQRT_PS; break;
+			case SIMD_OP_SSE_SQRTSS: id = INTRINS_SSE_SQRT_SS; break;
+			case SIMD_OP_SSE_RCPSS: id = INTRINS_SSE_RCP_SS; break;
+			case SIMD_OP_SSE_RSQRTSS: id = INTRINS_SSE_RSQRT_SS; break;
+			case SIMD_OP_SSE_SQRTPD: id = INTRINS_SSE_SQRT_PD; break;
+			case SIMD_OP_SSE_SQRTSD: id = INTRINS_SSE_SQRT_SD; break;
+			case SIMD_OP_SSE_LDDQU: id = INTRINS_SSE_LDU_DQ; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
+			break;
+		}
+		case OP_XOP_I4_X:
+		case OP_XOP_I8_X: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_SSE_CVTSS2SI: id = INTRINS_SSE_CVTSS2SI; break;
+			case SIMD_OP_SSE_CVTTSS2SI: id = INTRINS_SSE_CVTTSS2SI; break;
+			case SIMD_OP_SSE_CVTSS2SI64: id = INTRINS_SSE_CVTSS2SI64; break;
+			case SIMD_OP_SSE_CVTTSS2SI64: id = INTRINS_SSE_CVTTSS2SI64; break;
+			case SIMD_OP_SSE_CVTSD2SI: id = INTRINS_SSE_CVTSD2SI; break;
+			case SIMD_OP_SSE_CVTTSD2SI: id = INTRINS_SSE_CVTTSD2SI; break;
+			case SIMD_OP_SSE_CVTSD2SI64: id = INTRINS_SSE_CVTSD2SI64; break;
+			case SIMD_OP_SSE_CVTTSD2SI64: id = INTRINS_SSE_CVTTSD2SI64; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
+			break;
+		}
+		case OP_XOP_X_X_X:
+		case OP_XOP_X_X_I4:
+		case OP_XOP_X_X_I8: {
+			LLVMValueRef args [] = { lhs, rhs };
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_SSE_CVTSI2SS: id = INTRINS_SSE_CVTSI2SS; break;
+			case SIMD_OP_SSE_CVTSI2SS64: id = INTRINS_SSE_CVTSI2SS64; break;
+			case SIMD_OP_SSE_CVTSI2SD: id = INTRINS_SSE_CVTSI2SD; break;
+			case SIMD_OP_SSE_CVTSI2SD64: id = INTRINS_SSE_CVTSI2SD64; break;
+			case SIMD_OP_SSE_CVTSD2SS: id = INTRINS_SSE_CVTSD2SS; break; 
+			case SIMD_OP_SSE_MAXPS: id = INTRINS_SSE_MAXPS; break;
+			case SIMD_OP_SSE_MAXSS: id = INTRINS_SSE_MAXSS; break;
+			case SIMD_OP_SSE_MINPS: id = INTRINS_SSE_MINPS; break;
+			case SIMD_OP_SSE_MINSS: id = INTRINS_SSE_MINSS; break;
+			case SIMD_OP_SSE_MAXPD: id = INTRINS_SSE_MAXPD; break;
+			case SIMD_OP_SSE_MAXSD: id = INTRINS_SSE_MAXSD; break;
+			case SIMD_OP_SSE_MINPD: id = INTRINS_SSE_MINPD; break;
+			case SIMD_OP_SSE_MINSD: id = INTRINS_SSE_MINSD; break;
+			case SIMD_OP_SSE_PMADDWD: id = INTRINS_SSE_PMADDWD; break;
+			case SIMD_OP_SSE_PMULHW: id = INTRINS_SSE_PMULHW; break;
+			case SIMD_OP_SSE_PMULHUW: id = INTRINS_SSE_PMULHUW; break;
+			case SIMD_OP_SSE_PMULUDQ: id = INTRINS_SSE_PMULUDQ; break;
+			case SIMD_OP_SSE_PACKSSWB: id = INTRINS_SSE_PACKSSWB; break;
+			case SIMD_OP_SSE_PACKSSDW: id = INTRINS_SSE_PACKSSDW; break;
+			case SIMD_OP_SSE_PSRLW_IMM: id = INTRINS_SSE_PSRLI_W; break;
+			case SIMD_OP_SSE_PSRLD_IMM: id = INTRINS_SSE_PSRLI_D; break;
+			case SIMD_OP_SSE_PSRLQ_IMM: id = INTRINS_SSE_PSRLI_Q; break;
+			case SIMD_OP_SSE_PSRLW: id = INTRINS_SSE_PSRL_W; break;
+			case SIMD_OP_SSE_PSRLD: id = INTRINS_SSE_PSRL_D; break;
+			case SIMD_OP_SSE_PSRLQ: id = INTRINS_SSE_PSRL_Q; break;
+			case SIMD_OP_SSE_PSLLW_IMM: id = INTRINS_SSE_PSLLI_W; break;
+			case SIMD_OP_SSE_PSLLD_IMM: id = INTRINS_SSE_PSLLI_D; break;
+			case SIMD_OP_SSE_PSLLQ_IMM: id = INTRINS_SSE_PSLLI_Q; break;
+			case SIMD_OP_SSE_PSLLW: id = INTRINS_SSE_PSLL_W; break;
+			case SIMD_OP_SSE_PSLLD: id = INTRINS_SSE_PSLL_D; break;
+			case SIMD_OP_SSE_PSLLQ: id = INTRINS_SSE_PSLL_Q; break;
+			case SIMD_OP_SSE_PSRAW_IMM: id = INTRINS_SSE_PSRAI_W; break;
+			case SIMD_OP_SSE_PSRAD_IMM: id = INTRINS_SSE_PSRAI_D; break;
+			case SIMD_OP_SSE_PSRAW: id = INTRINS_SSE_PSRA_W; break;
+			case SIMD_OP_SSE_PSRAD: id = INTRINS_SSE_PSRA_D; break;
+			case SIMD_OP_SSE_PSUBSB: id = INTRINS_SSE_PSUBSB; break;
+			case SIMD_OP_SSE_PSUBSW: id = INTRINS_SSE_PSUBSW; break;
+			case SIMD_OP_SSE_PSUBUSB: id = INTRINS_SSE_PSUBUSB; break;
+			case SIMD_OP_SSE_PSUBUSW: id = INTRINS_SSE_PSUBUSW; break;
+			case SIMD_OP_SSE_PSADBW: id = INTRINS_SSE_PSADBW; break;
+			case SIMD_OP_SSE_ADDSUBPS: id = INTRINS_SSE_ADDSUBPS; break;
+			case SIMD_OP_SSE_ADDSUBPD: id = INTRINS_SSE_ADDSUBPD; break;
+			case SIMD_OP_SSE_HADDPS: id = INTRINS_SSE_HADDPS; break;
+			case SIMD_OP_SSE_HADDPD: id = INTRINS_SSE_HADDPD; break;
+			case SIMD_OP_SSE_HSUBPS: id = INTRINS_SSE_HSUBPS; break;
+			case SIMD_OP_SSE_HSUBPD: id = INTRINS_SSE_HSUBPD; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+
+		case OP_XOP_X_X_X_I: {
+			LLVMValueRef args[] = { lhs, rhs, values [ins->sreg3] };
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_SSE_MASKMOVDQU: id = INTRINS_SSE_MASKMOVDQU; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+
+		case OP_SSE2_ADDS: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c1) {
+			case MONO_TYPE_I1: id = INTRINS_SSE_SADD_SATI8; break;
+			case MONO_TYPE_U1: id = INTRINS_SSE_UADD_SATI8; break;
+			case MONO_TYPE_I2: id = INTRINS_SSE_SADD_SATI16; break;
+			case MONO_TYPE_U2: id = INTRINS_SSE_UADD_SATI16; break;
+			default: g_assert_not_reached (); break;
+			}
 
 			LLVMValueRef args [2];
 			args [0] = convert (ctx, lhs, type_to_sse_type (ins->inst_c1));
 			args [1] = convert (ctx, rhs, type_to_sse_type (ins->inst_c1));
 			values [ins->dreg] = convert (ctx, 
-				call_intrins (ctx, intrinsic, args, dname),
+				call_intrins (ctx, id, args, dname),
 				type_to_sse_type (ins->inst_c1));
 			break;
 		}
@@ -7576,16 +7993,212 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSSE3_SHUFFLE: {
-			LLVMValueRef args [] = { lhs, rhs };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PSHUFB, args, dname);
+		case OP_SSE2_PSLLDQ:
+		case OP_SSE2_PSRLDQ: {
+			LLVMBasicBlockRef bbs [16 + 1];
+			LLVMValueRef switch_ins;
+			LLVMValueRef value = lhs;
+			LLVMValueRef index = rhs;
+			LLVMValueRef phi_values [16 + 1];
+			LLVMTypeRef t = sse_i1_t;
+			int nelems = 16;
+			int i;
+			gboolean shift_right = (ins->opcode == OP_SSE2_PSRLDQ);
+
+			value = convert (ctx, value, t);
+
+			// No corresponding LLVM intrinsics
+			// FIXME: Optimize const count
+			for (i = 0; i < nelems; ++i)
+				bbs [i] = gen_bb (ctx, "PSLLDQ_CASE_BB");
+			bbs [nelems] = gen_bb (ctx, "PSLLDQ_DEF_BB");
+			cbb = gen_bb (ctx, "PSLLDQ_COND_BB");
+
+			switch_ins = LLVMBuildSwitch (builder, index, bbs [nelems], 0);
+			for (i = 0; i < nelems; ++i) {
+				LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
+				LLVMPositionBuilderAtEnd (builder, bbs [i]);
+
+				int mask_values [16];
+				// Implement shift using a shuffle
+				if (shift_right) {
+					for (int j = 0; j < nelems - i; ++j)
+						mask_values [j] = i + j;
+					for (int j = nelems -i ; j < nelems; ++j)
+						mask_values [j] = nelems;
+				} else {
+					for (int j = 0; j < i; ++j)
+						mask_values [j] = nelems;
+					for (int j = 0; j < nelems - i; ++j)
+						mask_values [j + i] = j;
+				}
+				phi_values [i] = LLVMBuildShuffleVector (builder, value, LLVMGetUndef (t), create_const_vector_i32 (mask_values, nelems), "");
+				LLVMBuildBr (builder, cbb);
+			}
+			/* Default case */
+			LLVMPositionBuilderAtEnd (builder, bbs [nelems]);
+			phi_values [nelems] = LLVMConstNull (t);
+			LLVMBuildBr (builder, cbb);
+
+			LLVMPositionBuilderAtEnd (builder, cbb);
+			values [ins->dreg] = LLVMBuildPhi (builder, LLVMTypeOf (phi_values [0]), "");
+			LLVMAddIncoming (values [ins->dreg], phi_values, bbs, nelems + 1);
+			values [ins->dreg] = convert (ctx, values [ins->dreg], type_to_sse_type (ins->inst_c1));
+
+			ctx->bblocks [bb->block_num].end_bblock = cbb;
+			break;
+		}
+
+		case OP_SSE2_PSRAW_IMM:
+		case OP_SSE2_PSRAD_IMM:
+		case OP_SSE2_PSRLW_IMM:
+		case OP_SSE2_PSRLD_IMM:
+		case OP_SSE2_PSRLQ_IMM: {
+			LLVMValueRef value = lhs;
+			LLVMValueRef index = rhs;
+			IntrinsicId id;
+
+			// FIXME: Optimize const index case
+
+			/* Use the non-immediate version */
+			switch (ins->opcode) {
+			case OP_SSE2_PSRAW_IMM: id = INTRINS_SSE_PSRA_W; break;
+			case OP_SSE2_PSRAD_IMM: id = INTRINS_SSE_PSRA_D; break;
+			case OP_SSE2_PSRLW_IMM: id = INTRINS_SSE_PSRL_W; break;
+			case OP_SSE2_PSRLD_IMM: id = INTRINS_SSE_PSRL_D; break;
+			case OP_SSE2_PSRLQ_IMM: id = INTRINS_SSE_PSRL_Q; break;
+			default: g_assert_not_reached (); break;
+			}
+
+			LLVMTypeRef t = LLVMTypeOf (value);
+			LLVMValueRef index_vect = LLVMBuildInsertElement (builder, LLVMConstNull (t), convert (ctx, index, LLVMGetElementType (t)), const_int32 (0), "");
+			LLVMValueRef args [] = { value, index_vect };
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+
+		case OP_SSE2_SHUFPD:
+		case OP_SSE2_PSHUFD:
+		case OP_SSE2_PSHUFHW:
+		case OP_SSE2_PSHUFLW: {
+			LLVMBasicBlockRef bbs [256 + 1];
+			LLVMValueRef switch_ins;
+			LLVMValueRef v1, v2, mask;
+			LLVMValueRef phi_values [256 + 1];
+			int ncases;
+
+			// FIXME: Optimize constant shuffle mask
+
+			if (ins->opcode == OP_SSE2_SHUFPD) {
+				/* 3 parameter version */
+				v1 = lhs;
+				v2 = rhs;
+				mask = values [ins->sreg3];
+				ncases = 4;
+			} else {
+				/* 2 parameter version */
+				v1 = v2 = lhs;
+				mask = rhs;
+				ncases = 256;
+			}
+
+			for (int i = 0; i < ncases; ++i)
+				bbs [i] = gen_bb (ctx, "PSHUFHW_CASE_BB");
+			cbb = gen_bb (ctx, "PSHUFHW_COND_BB");
+			/* No default case */
+			switch_ins = LLVMBuildSwitch (builder, mask, bbs [0], 0);
+			for (int i = 0; i < ncases; ++i) {
+				LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
+				LLVMPositionBuilderAtEnd (builder, bbs [i]);
+
+				/* Convert the x86 shuffle mask to LLVM's */
+				guint32 imask = i;
+				int mask_values [8];
+				int mask_len = 0;
+				switch (ins->opcode) {
+				case OP_SSE2_SHUFPD:
+					/* Bit 0 selects v1[0] or v1[1], bit 1 selects v2[0] or v2[1] */
+					mask_len = 2;
+					mask_values [0] = ((imask >> 0) & 1);
+					mask_values [1] = ((imask >> 1) & 1) + 2;
+					break;
+				case OP_SSE2_PSHUFD:
+					/*
+					 * Each 2 bits in mask selects 1 dword from the the source and copies it to the
+					 * destination.
+					 */
+					mask_len = 4;
+					for (int j = 0; j < 4; ++j) {
+						int windex = (imask >> (j * 2)) & 0x3;
+						mask_values [j] = windex;
+					}
+					break;
+				case OP_SSE2_PSHUFHW:
+					/*
+					 * Each 2 bits in mask selects 1 word from the high quadword of the source and copies it to the
+					 * high quadword of the destination.
+					 */
+					mask_len = 8;
+					/* The low quadword stays the same */
+					for (int j = 0; j < 4; ++j)
+						mask_values [j] = j;
+					for (int j = 0; j < 4; ++j) {
+						int windex = (imask >> (j * 2)) & 0x3;
+						mask_values [j + 4] = 4 + windex;
+					}
+					break;
+				case OP_SSE2_PSHUFLW:
+					mask_len = 8;
+					/* The high quadword stays the same */
+					for (int j = 0; j < 4; ++j)
+						mask_values [j + 4] = j + 4;
+					for (int j = 0; j < 4; ++j) {
+						int windex = (imask >> (j * 2)) & 0x3;
+						mask_values [j] = windex;
+					}
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+				phi_values [i] = LLVMBuildShuffleVector (builder, v1, v2, create_const_vector_i32 (mask_values, mask_len), "");
+				LLVMBuildBr (builder, cbb);
+			}
+
+			LLVMPositionBuilderAtEnd (builder, cbb);
+			values [ins->dreg] = LLVMBuildPhi (builder, LLVMTypeOf (phi_values [0]), "");
+			LLVMAddIncoming (values [ins->dreg], phi_values, bbs, ncases);
 			break;
 		}
 
 		case OP_SSE3_MOVDDUP: {
+			int mask [] = { 0, 0 };
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs,
-				LLVMGetUndef (LLVMVectorType (LLVMDoubleType (), 2)), 
-				LLVMConstNull (LLVMVectorType (LLVMInt32Type (), 2)), "");
+				LLVMGetUndef (LLVMTypeOf (lhs)),
+				create_const_vector_i32 (mask, 2), "");
+			break;
+		}
+		case OP_SSE3_MOVDDUP_MEM: {
+			int mask [] = { 0, 0 };
+			LLVMTypeRef t = type_to_sse_type (ins->inst_c1);
+			LLVMValueRef value = mono_llvm_build_load (builder, convert (ctx, lhs, LLVMPointerType (t, 0)), "", FALSE);
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, value, LLVMGetUndef (LLVMTypeOf (value)), create_const_vector_i32 (mask, 2), "");
+			break;
+		}
+		case OP_SSE3_MOVSHDUP: {
+			int mask [] = { 1, 1, 3, 3 };
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMConstNull (LLVMTypeOf (lhs)), create_const_vector_i32 (mask, 4), "");
+			break;
+		}
+		case OP_SSE3_MOVSLDUP: {
+			int mask [] = { 0, 0, 2, 2 };
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMConstNull (LLVMTypeOf (lhs)), create_const_vector_i32 (mask, 4), "");
+			break;
+		}
+
+		case OP_SSSE3_SHUFFLE: {
+			LLVMValueRef args [] = { lhs, rhs };
+			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PSHUFB, args, dname);
 			break;
 		}
 
@@ -7825,7 +8438,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				bbs [i] = gen_bb (ctx, "XEXTRACT_CASE_BB");
 			cbb = gen_bb (ctx, "XEXTRACT_COND_BB");
 
-			switch_ins = LLVMBuildSwitch (builder, rhs, bbs [0], 0);
+			switch_ins = LLVMBuildSwitch (builder, LLVMBuildAnd (builder, rhs, const_int32 (0xf), ""), bbs [0], 0);
 			for (i = 0; i < nelems; ++i) {
 				LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
 				LLVMPositionBuilderAtEnd (builder, bbs [i]);
@@ -9763,7 +10376,11 @@ AddJitGlobal (MonoLLVMModule *module, LLVMTypeRef type, const char *name)
 	g_free (s);
 	return v;
 }
-#define FILE_INFO_NFIELDS (2 + MONO_AOT_FILE_INFO_NUM_SYMBOLS + 22 + 5)
+#define FILE_INFO_NUM_HEADER_FIELDS 2
+#define FILE_INFO_NUM_SCALAR_FIELDS 22
+#define FILE_INFO_NUM_ARRAY_FIELDS 5
+#define FILE_INFO_NUM_AOTID_FIELDS 1
+#define FILE_INFO_NFIELDS (FILE_INFO_NUM_HEADER_FIELDS + MONO_AOT_FILE_INFO_NUM_SYMBOLS + FILE_INFO_NUM_SCALAR_FIELDS + FILE_INFO_NUM_ARRAY_FIELDS + FILE_INFO_NUM_AOTID_FIELDS)
 
 static void
 create_aot_info_var (MonoLLVMModule *module)
@@ -9784,11 +10401,11 @@ create_aot_info_var (MonoLLVMModule *module)
 	for (i = 0; i < MONO_AOT_FILE_INFO_NUM_SYMBOLS; ++i)
 		eltypes [tindex ++] = LLVMPointerType (LLVMInt8Type (), 0);
 	/* Scalars */
-	for (i = 0; i < 21; ++i)
+	for (i = 0; i < FILE_INFO_NUM_SCALAR_FIELDS; ++i)
 		eltypes [tindex ++] = LLVMInt32Type ();
 	/* Arrays */
 	eltypes [tindex ++] = LLVMArrayType (LLVMInt32Type (), MONO_AOT_TABLE_NUM);
-	for (i = 0; i < 4; ++i)
+	for (i = 0; i < FILE_INFO_NUM_ARRAY_FIELDS - 1; ++i)
 		eltypes [tindex ++] = LLVMArrayType (LLVMInt32Type (), MONO_AOT_TRAMP_NUM);
 	eltypes [tindex ++] = LLVMArrayType (LLVMInt8Type (), 16);
 	g_assert (tindex == nfields);
@@ -9928,12 +10545,13 @@ emit_aot_file_info (MonoLLVMModule *module)
 	}
 
 	for (i = 0; i < MONO_AOT_FILE_INFO_NUM_SYMBOLS; ++i) {
-		g_assert (fields [2 + i]);
-		fields [2 + i] = LLVMConstBitCast (fields [2 + i], eltype);
+		g_assert (fields [FILE_INFO_NUM_HEADER_FIELDS + i]);
+		fields [FILE_INFO_NUM_HEADER_FIELDS + i] = LLVMConstBitCast (fields [FILE_INFO_NUM_HEADER_FIELDS + i], eltype);
 	}
 
 	/* Scalars */
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->plt_got_offset_base, FALSE);
+	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->plt_got_info_offset_base, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->got_size, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->plt_size, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->nmethods, FALSE);

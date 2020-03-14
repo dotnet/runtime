@@ -45,7 +45,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 Expression.Equal(parameter, Expression.Constant(null)),
                 Expression.Constant(IntPtr.Zero),
                 Expression.Call(
-                    ComRuntimeHelpers.GetGetIDispatchForObjectMethod(),
+                    typeof(Marshal).GetMethod(nameof(System.Runtime.InteropServices.Marshal.GetIDispatchForObject)),
                     parameter
                 )
             );

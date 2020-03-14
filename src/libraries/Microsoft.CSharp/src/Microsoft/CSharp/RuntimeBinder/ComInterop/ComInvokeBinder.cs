@@ -506,7 +506,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 Expression.Assign(
                     DispatchPointerVariable,
                     Expression.Call(
-                        ComRuntimeHelpers.GetGetIDispatchForObjectMethod(),
+                        typeof(Marshal).GetMethod(nameof(Marshal.GetIDispatchForObject)),
                         DispatchObjectVariable
                     )
                 )
