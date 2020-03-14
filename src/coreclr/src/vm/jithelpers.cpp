@@ -5041,6 +5041,59 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
+// Forward declaration
+EXTERN_C void STDCALL ReversePInvokeBadTransition();
+
+// This is a slower version of the reverse PInvoke enter function.
+NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame)
+{
+    _ASSERTE(frame != NULL);
+
+    Thread* thread = GetThreadNULLOk();
+    if (thread == NULL)
+        CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
+
+    // Verify the current thread isn't in COOP mode.
+    if (thread->PreemptiveGCDisabled())
+        ReversePInvokeBadTransition();
+
+    thread->DisablePreemptiveGC();
+    frame->currentThread = thread;
+}
+
+EXTERN_C void JIT_ReversePInvokeEnter(ReversePInvokeFrame* frame)
+{
+    _ASSERTE(frame != NULL);
+    Thread* thread = GetThreadNULLOk();
+
+    // If a thread instance exists and is in the
+    // correct GC mode attempt a quick transition.
+    if (thread != NULL
+        && !thread->PreemptiveGCDisabled())
+    {
+        // Manually inline the fast path in Thread::DisablePreemptiveGC().
+        thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+        if (g_TrapReturningThreads.LoadWithoutBarrier() == 0)
+        {
+            frame->currentThread = thread;
+            return;
+        }
+    }
+
+    JIT_ReversePInvokeEnterRare(frame);
+}
+
+EXTERN_C void JIT_ReversePInvokeExit(ReversePInvokeFrame* frame)
+{
+    _ASSERTE(frame != NULL);
+    _ASSERTE(frame->currentThread == GetThread());
+
+    // Manually inline the fast path in Thread::EnablePreemptiveGC().
+    // This is a trade off with GC suspend performance. We are opting
+    // to make this exit faster.
+    frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
+}
+
 //========================================================================
 //
 //      JIT HELPERS INITIALIZATION

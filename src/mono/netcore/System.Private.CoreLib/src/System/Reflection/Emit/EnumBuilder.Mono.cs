@@ -57,7 +57,7 @@ namespace System.Reflection.Emit {
 				typeof(Enum), null, PackingSize.Unspecified, 0, null);
 			_underlyingType = underlyingType;
 			_underlyingField = _tb.DefineField ("value__", underlyingType,
-				(FieldAttributes.SpecialName | FieldAttributes.Private | FieldAttributes.RTSpecialName));
+				FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName);
 			setup_enum_type (_tb);
 		}
 

@@ -141,6 +141,8 @@ typedef struct
 	GPtrArray *relocs;
 	gboolean verbose_level;
 	GArray *line_numbers;
+	gboolean prof_coverage;
+	MonoProfilerCoverageInfo *coverage_info;
 } TransformData;
 
 #define STACK_TYPE_I4 0

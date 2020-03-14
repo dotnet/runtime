@@ -39,22 +39,23 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/")]
         [InlineData("///")]
         [InlineData("/\\/")]
         [InlineData("\\/\\/")]
+        // Testing Windows specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetFileInfoReturnsPhysicalFileInfoForValidPathsWithLeadingSlashes_Windows(string path)
         {
             GetFileInfoReturnsPhysicalFileInfoForValidPathsWithLeadingSlashes(path);
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Windows, SkipReason = "Testing Unix specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/")]
         [InlineData("///")]
+        // Testing Unix specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void GetFileInfoReturnsPhysicalFileInfoForValidPathsWithLeadingSlashes_Unix(string path)
         {
             GetFileInfoReturnsPhysicalFileInfoForValidPathsWithLeadingSlashes(path);
@@ -69,19 +70,20 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/C:\\Windows\\System32")]
         [InlineData("/\0/")]
+        // Testing Windows specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes_Windows(string path)
         {
             GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes(path);
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Windows, SkipReason = "Testing Unix specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/\0/")]
+        // Testing Unix specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes_Unix(string path)
         {
             GetFileInfoReturnsNotFoundFileInfoForIllegalPathWithLeadingSlashes(path);
@@ -122,9 +124,9 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalFact]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Paths starting with / are considered relative.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Paths starting with / are considered relative.")]
+        [Fact]
+        // Paths starting with / are considered relative.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetFileInfoReturnsNotFoundFileInfoForAbsolutePath()
         {
             using (var provider = new PhysicalFileProvider(Path.GetTempPath()))
@@ -193,9 +195,9 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalFact]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Hidden and system files only make sense on Windows.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Hidden and system files only make sense on Windows.")]
+        [Fact]
+        // Hidden and system files only make sense on Windows.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetFileInfoReturnsNotFoundFileInfoForHiddenFile()
         {
             using (var root = new DisposableFileSystem())
@@ -215,9 +217,9 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalFact]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Hidden and system files only make sense on Windows.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Hidden and system files only make sense on Windows.")]
+        [Fact]
+        // Hidden and system files only make sense on Windows.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetFileInfoReturnsNotFoundFileInfoForSystemFile()
         {
             using (var root = new DisposableFileSystem())
@@ -447,22 +449,21 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         // On Unix the minimum invalid file path characters are / and \0
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Linux)]
-        [OSSkipCondition(OperatingSystems.MacOSX)]
+        [Theory]
         [InlineData("/test:test")]
         [InlineData("/dir/name\"")]
         [InlineData("/dir>/name")]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void InvalidPath_DoesNotThrowWindows_GetFileInfo(string path)
         {
             InvalidPath_DoesNotThrowGeneric_GetFileInfo(path);
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Windows)]
+        [Theory]
         [InlineData("/test:test\0")]
         [InlineData("/dir/\0name\"")]
         [InlineData("/dir>/name\0")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void InvalidPath_DoesNotThrowUnix_GetFileInfo(string path)
         {
             InvalidPath_DoesNotThrowGeneric_GetFileInfo(path);
@@ -478,22 +479,21 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Linux)]
-        [OSSkipCondition(OperatingSystems.MacOSX)]
+        [Theory]
         [InlineData("/test:test")]
         [InlineData("/dir/name\"")]
         [InlineData("/dir>/name")]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void InvalidPath_DoesNotThrowWindows_GetDirectoryContents(string path)
         {
             InvalidPath_DoesNotThrowGeneric_GetDirectoryContents(path);
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Windows)]
+        [Theory]
         [InlineData("/test:test\0")]
         [InlineData("/dir/\0name\"")]
         [InlineData("/dir>/name\0")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void InvalidPath_DoesNotThrowUnix_GetDirectoryContents(string path)
         {
             InvalidPath_DoesNotThrowGeneric_GetDirectoryContents(path);
@@ -519,22 +519,23 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/")]
         [InlineData("///")]
         [InlineData("/\\/")]
         [InlineData("\\/\\/")]
+        // Testing Windows specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetDirectoryContentsReturnsEnumerableDirectoryContentsForValidPathWithLeadingSlashes_Windows(string path)
         {
             GetDirectoryContentsReturnsEnumerableDirectoryContentsForValidPathWithLeadingSlashes(path);
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Windows, SkipReason = "Testing Unix specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/")]
         [InlineData("///")]
+        // Testing Unix specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void GetDirectoryContentsReturnsEnumerableDirectoryContentsForValidPathWithLeadingSlashes_Unix(string path)
         {
             GetDirectoryContentsReturnsEnumerableDirectoryContentsForValidPathWithLeadingSlashes(path);
@@ -549,23 +550,24 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/C:\\Windows\\System32")]
         [InlineData("/\0/")]
         [MemberData(nameof(InvalidPaths))]
+        // Testing Windows specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetDirectoryContentsReturnsNotFoundDirectoryContentsForInvalidPath_Windows(string path)
         {
             GetDirectoryContentsReturnsNotFoundDirectoryContentsForInvalidPath(path);
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Windows, SkipReason = "Testing Unix specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/\0/")]
         [InlineData("/\\/")]
         [InlineData("\\/\\/")]
         [MemberData(nameof(InvalidPaths))]
+        // Testing Unix specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void GetDirectoryContentsReturnsNotFoundDirectoryContentsForInvalidPath_Unix(string path)
         {
             GetDirectoryContentsReturnsNotFoundDirectoryContentsForInvalidPath(path);
@@ -633,9 +635,9 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalFact]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Hidden and system files only make sense on Windows.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Hidden and system files only make sense on Windows.")]
+        [Fact]
+        // Hidden and system files only make sense on Windows.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetDirectoryContentsDoesNotReturnFileInfoForHiddenFile()
         {
             using (var root = new DisposableFileSystem())
@@ -658,9 +660,9 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalFact]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Hidden and system files only make sense on Windows.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Hidden and system files only make sense on Windows.")]
+        [Fact]
+        // Hidden and system files only make sense on Windows.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetDirectoryContentsDoesNotReturnFileInfoForSystemFile()
         {
             using (var root = new DisposableFileSystem())
@@ -892,11 +894,9 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalFact]
-        [OSSkipCondition(OperatingSystems.Linux,
-            SkipReason = "We treat forward slash differently so rooted path can happen only on windows.")]
-        [OSSkipCondition(OperatingSystems.MacOSX,
-            SkipReason = "We treat forward slash differently so rooted path can happen only on windows.")]
+        [Fact]
+        // We treat forward slash differently so rooted path can happen only on windows.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void NoopChangeTokenForAbsolutePathFilters()
         {
             using (var root = new DisposableFileSystem())
@@ -996,22 +996,23 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/")]
         [InlineData("///")]
         [InlineData("/\\/")]
         [InlineData("\\/\\/")]
+        // Testing Windows specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task TokenFiredForRelativePathStartingWithSlash_Windows(string slashes)
         {
             await TokenFiredForRelativePathStartingWithSlash(slashes);
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Windows, SkipReason = "Testing Unix specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/")]
         [InlineData("///")]
+        // Testing Unix specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task TokenFiredForRelativePathStartingWithSlash_Unix(string slashes)
         {
             await TokenFiredForRelativePathStartingWithSlash(slashes);
@@ -1040,19 +1041,20 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Testing Windows specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/C:\\Windows\\System32")]
         [InlineData("/\0/")]
+        // Testing Windows specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task TokenNotFiredForInvalidPathStartingWithSlash_Windows(string slashes)
         {
             await TokenNotFiredForInvalidPathStartingWithSlash(slashes);
         }
 
-        [ConditionalTheory]
-        [OSSkipCondition(OperatingSystems.Windows, SkipReason = "Testing Unix specific behaviour on leading slashes.")]
+        [Theory]
         [InlineData("/\0/")]
+        // Testing Unix specific behaviour on leading slashes.
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task TokenNotFiredForInvalidPathStartingWithSlash_Unix(string slashes)
         {
             await TokenNotFiredForInvalidPathStartingWithSlash(slashes);
@@ -1253,9 +1255,9 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalFact]
-        [OSSkipCondition(OperatingSystems.Linux, SkipReason = "Hidden and system files only make sense on Windows.")]
-        [OSSkipCondition(OperatingSystems.MacOSX, SkipReason = "Hidden and system files only make sense on Windows.")]
+        [Fact]
+        // Hidden and system files only make sense on Windows.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task TokensNotFiredForHiddenAndSystemFiles()
         {
             using (var root = new DisposableFileSystem())

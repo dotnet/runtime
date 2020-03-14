@@ -327,9 +327,15 @@ if (CLR_CMAKE_HOST_UNIX)
     # may not generate the same object layout as MSVC.
     add_compile_options(-Wno-incompatible-ms-struct)
   else()
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
     add_compile_options(-Wno-unused-but-set-variable)
     add_compile_options(-Wno-unknown-pragmas)
+    add_compile_options(-Wno-uninitialized)
+    add_compile_options(-Wno-strict-aliasing)
+    add_compile_options(-Wno-array-bounds)
+    check_cxx_compiler_flag(-Wclass-memaccess COMPILER_SUPPORTS_W_CLASS_MEMACCESS)
+    if (COMPILER_SUPPORTS_W_CLASS_MEMACCESS)
+      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
+    endif()
     check_cxx_compiler_flag(-faligned-new COMPILER_SUPPORTS_F_ALIGNED_NEW)
     if (COMPILER_SUPPORTS_F_ALIGNED_NEW)
       add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-faligned-new>)
@@ -423,7 +429,40 @@ if (MSVC)
   add_compile_options(/MP) # Build with Multiple Processes (number of processes equal to the number of processors)
   add_compile_options(/GS) # Buffer Security Check
   add_compile_options(/Zm200) # Specify Precompiled Header Memory Allocation Limit of 150MB
+
   add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
+
+  # Disable Warnings:
+  # 4291: Delete not defined for new, c++ exception may cause leak.
+  # 4302: Truncation from '%$S' to '%$S'.
+  # 4311: Pointer truncation from '%$S' to '%$S'.
+  # 4312: '<function-style-cast>' : conversion from '%$S' to '%$S' of greater size.
+  # 4477: Format string '%$S' requires an argument of type '%$S', but variadic argument %d has type '%$S'.
+  add_compile_options(/wd4291 /wd4302 /wd4311 /wd4312 /wd4477)
+
+  # Treat Warnings as Errors:
+  # 4007: 'main' : must be __cdecl.
+  # 4013: 'function' undefined - assuming extern returning int.
+  # 4102: "'%$S' : unreferenced label".
+  # 4551: Function call missing argument list.
+  # 4700: Local used w/o being initialized.
+  # 4806: Unsafe operation involving type 'bool'.
+  add_compile_options(/we4007 /we4013 /we4102 /we4551 /we4700 /we4806)
+
+  # Set Warning Level 3:
+  # 4092: Sizeof returns 'unsigned long'.
+  # 4121: Structure is sensitive to alignment.
+  # 4125: Decimal digit in octal sequence.
+  # 4130: Logical operation on address of string constant.
+  # 4132: Const object should be initialized.
+  # 4212: Function declaration used ellipsis.
+  # 4530: C++ exception handler used, but unwind semantics are not enabled. Specify -GX.
+  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530)
+
+  # Set Warning Level 4:
+  # 4177: Pragma data_seg s/b at global scope.
+  add_compile_options(/w44177)
+
   add_compile_options(/Zi) # enable debugging information
   add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler processed source files.
   add_compile_options(/source-charset:utf-8) # Force MSVC to compile source as UTF-8.
