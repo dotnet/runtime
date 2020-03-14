@@ -178,10 +178,10 @@ namespace System.Diagnostics
                             length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
                             if (length == chars.Length)
                             {
+                                minimumLength = chars.Length * 2;
                                 char[] toReturn = chars;
                                 chars = null;
                                 ArrayPool<char>.Shared.Return(toReturn);
-                                minimumLength = Math.Min(minimumLength * 2, short.MaxValue);
                                 chars = ArrayPool<char>.Shared.Rent(minimumLength);
                                 continue;
                             }
