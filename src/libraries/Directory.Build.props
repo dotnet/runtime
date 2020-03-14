@@ -23,7 +23,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.AspNetCore.Testing\**\*.csproj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\ref\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\src\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.Extensions.*.Tests.csproj" Exclude="@(PortedExtensionsProject)" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\Microsoft.Extensions.*.Tests.csproj" Exclude="@(PortedExtensionsProject)" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\FunctionalTests\Microsoft.Extensions.Configuration.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\Common\test\Microsoft.Extensions.Logging.Testing.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\FunctionalTests\Microsoft.Extensions.Hosting.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\TestApp\Microsoft.Extensions.Hosting.TestApp.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\Common\Microsoft.Extensions.Logging.Tests.csproj" />
   </ItemGroup>
 
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
