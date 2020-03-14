@@ -7519,7 +7519,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             // not need epilogue.
             compCurBB->bbJumpKind = BBJ_THROW;
         }
-      
+
         if (isRootReplaced)
         {
             // We have replaced the root node of this stmt and deleted the rest,
@@ -7549,14 +7549,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                 callType = origCallType;
             }
             GenTree* zero = gtNewZeroConNode(callType);
-            result = fgMorphTree(zero);
+            result        = fgMorphTree(zero);
         }
         else
         {
             result = call;
         }
     }
-  
+
     return result;
 }
 
@@ -7655,7 +7655,9 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
                 // Generic context is last arg
                 GenTreeCall::Use** lastArgSlot = &call->gtCallArgs;
                 while ((*lastArgSlot)->GetNext() != nullptr)
+                {
                     lastArgSlot = &(*lastArgSlot)->NextRef();
+                }
 
                 *lastArgSlot = nullptr;
             }
