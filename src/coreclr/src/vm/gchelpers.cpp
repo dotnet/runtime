@@ -311,7 +311,7 @@ inline void LogAlloc(Object* object)
 
 // signals completion of the object to GC and sends events if necessary
 template <class TObj>
-void PublishObjectAndNotify(TObj* orObject, GC_ALLOC_FLAGS flags)
+void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
 {
     _ASSERTE(orObject->HasEmptySyncBlockInfo());
 
@@ -428,7 +428,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     if (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP))
     {
         orArray = (ArrayBase*)Alloc(totalSize, flags);
-        orArray->SetArrayMethodTableForLargeObject(pArrayMT);
+        orArray->SetMethodTableForUOHObject(pArrayMT);
     }
     else
     {
@@ -485,7 +485,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
 #endif
             orArray = (ArrayBase*)Alloc(totalSize, flags);
         }
-        orArray->SetArrayMethodTable(pArrayMT);
+        orArray->SetMethodTable(pArrayMT);
     }
 
     // Initialize Object
@@ -656,11 +656,11 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     if (pArrayMT->ContainsPointers())
         flags |= GC_ALLOC_CONTAINS_REF;
 
-    ArrayBase * orArray = NULL;
+    ArrayBase* orArray = NULL;
     if (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP))
     {
         orArray = (ArrayBase*)Alloc(totalSize, flags);
-        orArray->SetArrayMethodTableForLargeObject(pArrayMT);
+        orArray->SetMethodTableForUOHObject(pArrayMT);
     }
     else
     {
@@ -678,7 +678,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         }
 #endif
         orArray = (ArrayBase*)Alloc(totalSize, flags);
-        orArray->SetArrayMethodTable(pArrayMT);
+        orArray->SetMethodTable(pArrayMT);
     }
 
     // Initialize Object
@@ -1025,7 +1025,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
 
         if (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP))
         {
-            orObject->SetMethodTableForLargeObject(pMT);
+            orObject->SetMethodTableForUOHObject(pMT);
         }
         else
         {
@@ -1366,7 +1366,7 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-        BYTE *refObject = *(BYTE **)((MethodTable*)ref)->GetLoaderAllocatorObjectHandle();
+        BYTE *refObject = *(BYTE **)ref->GetLoaderAllocatorObjectHandle();
         if((BYTE*) refObject >= g_ephemeral_low && (BYTE*) refObject < g_ephemeral_high)
         {
             // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered

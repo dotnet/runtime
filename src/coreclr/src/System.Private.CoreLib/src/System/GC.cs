@@ -661,8 +661,11 @@ namespace System
         /// <summary>
         /// Skips zero-initialization of the array if possible.
         /// If T contains object references, the array is always zero-initialized.
-        /// When pinned is true, the object's location in memory will not change.
-        /// pinned also requires that T does not contain object references.
+        /// 
+        /// pinned: true means you want to pin this object that you are allocating
+        /// otherwise it's not pinned.
+        /// 
+        /// pinned requires that T does not contain object references.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
         public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
@@ -703,8 +706,10 @@ namespace System
         }
 
         /// <summary>
-        /// When pinned is true, the object's location in memory will not change.
-        /// pinned also requires that T does not contain object references.
+        /// pinned: true means you want to pin this object that you are allocating
+        /// otherwise it's not pinned.
+        /// 
+        /// pinned requires that T does not contain object references.
         /// </summary>
         public static T[] AllocateArray<T>(int length, bool pinned = false)
         {
