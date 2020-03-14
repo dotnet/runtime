@@ -172,7 +172,7 @@ private:
     {
         assert((block->bbFlags & BBF_PATCHPOINT) == 0);
 
-        int initialCounterValue = JitConfig.JitPatchpointInitialCounter();
+        int initialCounterValue = JitConfig.TC_OnStackReplacement_InitialCounter();
 
         if (initialCounterValue < 0)
         {

@@ -498,7 +498,7 @@ void Compiler::fgEnsureFirstBBisScratch()
 }
 
 //------------------------------------------------------------------------
-// fgIsFirstBBScratch: Check if fgFirstBB is a scratch block
+// fgFirstBBisScratch: Check if fgFirstBB is a scratch block
 //
 // Returns:
 //   true if fgFirstBB is a scratch block.
@@ -5990,8 +5990,7 @@ void Compiler::fgFindBasicBlocks()
     }
 
     // If we are doing OSR, add an entry block that simply branches to the right IL offset.
-    // Might need to do something special if we're entering try regions?
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    if (opts.IsOSR())
     {
         // Remember the original entry block in case this method is tail recursive.
         fgEntryBB = fgLookupBB(0);

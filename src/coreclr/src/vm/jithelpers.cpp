@@ -5232,7 +5232,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         // Invoke the helper to build the OSR method
         osrMethodCode = HCCALL3(JIT_Patchpoint_Framed, pMD, codeInfo, ilOffset);
         
-        // If that failed, mark the patchpoint as invaild.
+        // If that failed, mark the patchpoint as invalid.
         if (osrMethodCode == NULL)
         {
             // Unexpected, but not fatal

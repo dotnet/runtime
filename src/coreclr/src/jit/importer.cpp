@@ -10535,7 +10535,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     if (compHasBackwardJump)
     {
         // Are patchpoints enabled?
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.JitPatchpoint() > 0))
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
         {
             // We don't inline at Tier0, if we do, we may need rethink our approach.
             // Could probably support inlines that don't introduce flow.
