@@ -13,7 +13,7 @@ namespace System.Net.Http
 {
     public abstract class DelegatingHandler : HttpMessageHandler
     {
-        private HttpMessageHandler? _innerHandler = null!;
+        private HttpMessageHandler? _innerHandler;
         private volatile bool _operationStarted = false;
         private volatile bool _disposed = false;
 

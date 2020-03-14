@@ -94,8 +94,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentNullException(nameof(values));
             }
 
-            bool addToStore;
-            PrepareHeaderInfoForAdd(descriptor, out HeaderStoreItemInfo info, out addToStore);
+            PrepareHeaderInfoForAdd(descriptor, out HeaderStoreItemInfo info, out bool addToStore);
 
             try
             {
