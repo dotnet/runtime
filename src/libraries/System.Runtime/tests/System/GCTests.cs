@@ -896,6 +896,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private static void AllocateUninitializedArray()
         {
             // allocate a bunch of SOH byte arrays and touch them.
@@ -949,6 +950,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private static void AllocateArray()
         {
             // allocate a bunch of SOH byte arrays and touch them.
@@ -1003,6 +1005,7 @@ namespace System.Tests
 
         [Theory]
         [InlineData(-1)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private static void AllocateArrayNegativeSize(int negValue)
         {
             Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1));
@@ -1012,6 +1015,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private static void AllocateArrayTooLarge()
         {
             Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue));
@@ -1019,6 +1023,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private static void AllocateArrayRefType()
         {
             GC.AllocateUninitializedArray<string>(100);
@@ -1026,6 +1031,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private unsafe static void AllocateArrayCheckPinning()
         {
             var list = new List<long[]>();
