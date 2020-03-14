@@ -64,11 +64,15 @@ jobs:
       value: ''
     - name: gccArg
       value: ''
+    - name: publishLogsArtifactPrefix
+      value: 'BuildLogs_CoreCLR'
     - ${{ if eq(parameters.useGCC, true) }}:
       - name: gccArg
         value: '-gcc'
       - name: clangArg
         value: ''
+      - name: publishLogsArtifactPrefix
+        value: 'BuildLogs_CoreCLR_GCC'
       # workaround for gcc directory not in PATH
       - name: CLR_CC
         value: /opt/rh/devtoolset-7/root/usr/bin/gcc
@@ -211,6 +215,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: '$(publishLogsArtifactPrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()
