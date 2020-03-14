@@ -277,7 +277,7 @@ namespace System
             "($#)", "-$#", "$-#", "$#-",
             "(#$)", "-#$", "#-$", "#$-",
             "-# $", "-$ #", "# $-", "$ #-",
-            "$ -#", "#- $", "($ #)", "(# $)"
+            "$ -#", "#- $", "($ #)", "(# $)", "$- #"
         };
 
         private static readonly string[] s_posPercentFormats =
@@ -2169,7 +2169,7 @@ namespace System
             {
                 if (groupDigits != null)
                 {
-                    Debug.Assert(sGroup != null, "Must be nulll when groupDigits != null");
+                    Debug.Assert(sGroup != null, "Must be null when groupDigits != null");
                     int groupSizeIndex = 0;                             // Index into the groupDigits array.
                     int bufferSize = digPos;                            // The length of the result buffer string.
                     int groupSize = 0;                                  // The current group size.

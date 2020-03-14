@@ -215,7 +215,6 @@ static int GetCurrencyNegativePattern(const char* locale)
     static const char* Patterns[] = {"(Cn)",
                                      "-Cn",
                                      "C-n",
-                                     "C- n",
                                      "Cn-",
                                      "(nC)",
                                      "-nC",
@@ -228,7 +227,8 @@ static int GetCurrencyNegativePattern(const char* locale)
                                      "C -n",
                                      "n- C",
                                      "(C n)",
-                                     "(n C)"};
+                                     "(n C)",
+                                     "C- n" };
     UErrorCode status = U_ZERO_ERROR;
 
     UNumberFormat* pFormat = unum_open(UNUM_CURRENCY, NULL, 0, locale, NULL, &status);
