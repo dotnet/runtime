@@ -744,12 +744,12 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_ReciprocalScalar, 0, SIMD_OP_SSE_RCPSS},
 	{SN_ReciprocalSqrt, OP_XOP_X_X, SIMD_OP_SSE_RSQRTPS},
 	{SN_ReciprocalSqrtScalar, 0, SIMD_OP_SSE_RSQRTSS},
+	{SN_Shuffle},
 	{SN_Sqrt, OP_XOP_X_X, SIMD_OP_SSE_SQRTPS},
 	{SN_SqrtScalar, 0, SIMD_OP_SSE_SQRTSS},
-	{SN_Shuffle},
 	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
 	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
-	{SN_StoreAlignedNonTemporal, OP_SSE_MOVNTPS},
+	{SN_StoreAlignedNonTemporal, OP_SSE_MOVNTPS, 16 /* alignment */},
 	{SN_StoreFence, OP_XOP, SIMD_OP_SSE_SFENCE},
 	{SN_StoreHigh, OP_SSE_MOVHPS_STORE},
 	{SN_StoreLow, OP_SSE_MOVLPS_STORE},
@@ -808,6 +808,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_ConvertScalarToVector128Double},
 	{SN_ConvertScalarToVector128Int32},
 	{SN_ConvertScalarToVector128Int64},
+	{SN_ConvertScalarToVector128Single, OP_XOP_X_X_X, SIMD_OP_SSE_CVTSD2SS},
 	{SN_ConvertScalarToVector128UInt32},
 	{SN_ConvertScalarToVector128UInt64},
 	{SN_ConvertToInt32},
@@ -858,10 +859,10 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_SqrtScalar, 0, SIMD_OP_SSE_SQRTSD},
 	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
 	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
-	{SN_StoreAlignedNonTemporal}, // FIXME:
+	{SN_StoreAlignedNonTemporal, OP_SSE_MOVNTPS, 16 /* alignment */},
 	{SN_StoreHigh, OP_SSE2_MOVHPD_STORE},
 	{SN_StoreLow, OP_SSE2_MOVLPD_STORE},
-	{SN_StoreNonTemporal}, // FIXME:
+	{SN_StoreNonTemporal, OP_SSE_MOVNTPS, 1 /* alignment */},
 	{SN_StoreScalar, OP_SSE_STORES},
 	{SN_Subtract},
 	{SN_SubtractSaturate},
@@ -997,7 +998,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		int id = info->id;
 
 		// Some intrinsics are missing
-		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE2) != 0 && is_corlib;
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE2) != 0;
 
 		/* Common case */
 		if (info->op != 0)
@@ -1059,9 +1060,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I4, SIMD_OP_SSE_CVTSI2SD, 0, fsig, args);
 			else if (fsig->params [1]->type == MONO_TYPE_I8)
 				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I8, SIMD_OP_SSE_CVTSI2SD64, 0, fsig, args);
-			else
-				return NULL;
-			break;
+			return emit_simd_ins_for_sig (cfg, klass, OP_CVTSD2SD, 0, arg0_type, fsig, args);
 		case SN_ConvertScalarToVector128Int32:
 		case SN_ConvertScalarToVector128Int64:
 		case SN_ConvertScalarToVector128UInt32:
@@ -1158,48 +1157,62 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_Insert:
 			g_assert (arg0_type == MONO_TYPE_I2 || arg0_type == MONO_TYPE_U2);
 			return emit_simd_ins_for_sig (cfg, klass, OP_XINSERT_I2, 0, arg0_type, fsig, args);
-		case SN_ShiftRightLogical:
-			if (fsig->params [1]->type == MONO_TYPE_U1) {
-				if (arg0_type == MONO_TYPE_I2 || arg0_type == MONO_TYPE_U2)
-					return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSRLW_IMM, -1, arg0_type, fsig, args);
-				if (arg0_type == MONO_TYPE_I4 || arg0_type == MONO_TYPE_U4)
-					return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSRLD_IMM, -1, arg0_type, fsig, args);
-				if (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8)
-					return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSRLQ_IMM, -1, arg0_type, fsig, args);
-				else {
-					g_assert_not_reached ();
-					break;
-				}
-			} else {
-				// FIXME:
-				return NULL;
+		case SN_ShiftRightLogical: {
+			gboolean is_imm = fsig->params [1]->type == MONO_TYPE_U1;
+			SimdOp op = (SimdOp)0;
+			switch (arg0_type) {
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2: 
+				op = is_imm ? SIMD_OP_SSE_PSRLW_IMM : SIMD_OP_SSE_PSRLW; 
+				break;
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4: 
+				op = is_imm ? SIMD_OP_SSE_PSRLD_IMM : SIMD_OP_SSE_PSRLD; 
+				break;
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8: 
+				op = is_imm ? SIMD_OP_SSE_PSRLQ_IMM : SIMD_OP_SSE_PSRLQ; 
+				break;
+			default: g_assert_not_reached (); break;
 			}
-		case SN_ShiftRightArithmetic:
-			if (fsig->params [1]->type == MONO_TYPE_U1) {
-				if (arg0_type == MONO_TYPE_I2)
-					return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSRAW_IMM, -1, arg0_type, fsig, args);
-				else if (arg0_type == MONO_TYPE_I4)
-					return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSRAD_IMM, -1, arg0_type, fsig, args);
-			} else {
-				// FIXME:
-				return NULL;
+			return emit_simd_ins_for_sig (cfg, klass, is_imm ? OP_XOP_X_X_I4 : OP_XOP_X_X_X, op, arg0_type, fsig, args);
+		}
+		case SN_ShiftRightArithmetic: {
+			gboolean is_imm = fsig->params [1]->type == MONO_TYPE_U1;
+			SimdOp op = (SimdOp)0;
+			switch (arg0_type) {
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2: 
+				op = is_imm ? SIMD_OP_SSE_PSRAW_IMM : SIMD_OP_SSE_PSRAW; 
+				break;
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4: 
+				op = is_imm ? SIMD_OP_SSE_PSRAD_IMM : SIMD_OP_SSE_PSRAD; 
+				break;
+			default: g_assert_not_reached (); break;
 			}
-		case SN_ShiftLeftLogical:
-			if (fsig->params [1]->type == MONO_TYPE_U1) {
-				SimdOp op = (SimdOp)0;
-				switch (arg0_type) {
-				case MONO_TYPE_I2: op = SIMD_OP_SSE_PSLLW_IMM; break;
-				case MONO_TYPE_U2: op = SIMD_OP_SSE_PSLLW_IMM; break;
-				case MONO_TYPE_I4: op = SIMD_OP_SSE_PSLLD_IMM; break;
-				case MONO_TYPE_U4: op = SIMD_OP_SSE_PSLLD_IMM; break;
-				case MONO_TYPE_I8: op = SIMD_OP_SSE_PSLLQ_IMM; break;
-				case MONO_TYPE_U8: op = SIMD_OP_SSE_PSLLQ_IMM; break;
-				default: g_assert_not_reached (); break;
-				}
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I4, op, arg0_type, fsig, args);
-			} else {
-				return NULL;
+			return emit_simd_ins_for_sig (cfg, klass, is_imm ? OP_XOP_X_X_I4 : OP_XOP_X_X_X, op, arg0_type, fsig, args);
+		}
+		case SN_ShiftLeftLogical: {
+			gboolean is_imm = fsig->params [1]->type == MONO_TYPE_U1;
+			SimdOp op = (SimdOp)0;
+			switch (arg0_type) {
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2: 
+				op = is_imm ? SIMD_OP_SSE_PSLLW_IMM : SIMD_OP_SSE_PSLLW; 
+				break;
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4: 
+				op = is_imm ? SIMD_OP_SSE_PSLLD_IMM : SIMD_OP_SSE_PSLLD; 
+				break;
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8: 
+				op = is_imm ? SIMD_OP_SSE_PSLLQ_IMM : SIMD_OP_SSE_PSLLQ; 
+				break;
+			default: g_assert_not_reached (); break;
 			}
+			return emit_simd_ins_for_sig (cfg, klass, is_imm ? OP_XOP_X_X_I4 : OP_XOP_X_X_X, op, arg0_type, fsig, args);
+		}
 		case SN_ShiftLeftLogical128BitLane:
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSLLDQ, 0, arg0_type, fsig, args);
 		case SN_ShiftRightLogical128BitLane:
