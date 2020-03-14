@@ -8226,14 +8226,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 		
 		case OP_SSSE3_ALIGNR: {
-			const int nelem = 16;
-			LLVMValueRef mask_values [nelem];
-			for (int i = 0; i < nelem; i++)
+			LLVMValueRef mask_values [16];
+			for (int i = 0; i < 16; i++)
 				mask_values [i] = LLVMConstInt (LLVMInt8Type (), i + ins->inst_c0, FALSE);
 			LLVMValueRef shuffled = LLVMBuildShuffleVector (builder, 
 				convert (ctx, rhs, sse_i1_t),
 				convert (ctx, lhs, sse_i1_t),
-				LLVMConstVector (mask_values, nelem), "");
+				LLVMConstVector (mask_values, 16), "");
 			values [ins->dreg] = convert (ctx, shuffled, type_to_sse_type (ins->inst_c1));
 			break;
 		}
