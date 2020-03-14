@@ -342,7 +342,7 @@ namespace System
             // initial counting step and the transcoding step below.
 
             status = Utf8.FromUtf16(value, newBuffer.AsSpan(0, newBuffer.Length - 1), out _, out int bytesWritten, replaceInvalidSequences: false);
-            if (status != OperationStatus.Done || bytesWritten != newBuffer.Length)
+            if (status != OperationStatus.Done || bytesWritten != newBuffer.Length - 1)
             {
                 // Did somebody mutate our input buffer? Shouldn't be any other way this could happen.
 

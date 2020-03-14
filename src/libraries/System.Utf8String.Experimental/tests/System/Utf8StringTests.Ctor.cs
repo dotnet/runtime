@@ -241,6 +241,13 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Ctor_String_Long_ReturnsOriginalContents()
+        {
+            string longString = new string('a', 500);
+            Assert.Equal(u8(longString), new Utf8String(longString));
+        }
+
+        [Fact]
         public static void Ctor_String_InvalidData_Throws()
         {
             Assert.Throws<ArgumentException>(() => new Utf8String("He\uD800lo"));
