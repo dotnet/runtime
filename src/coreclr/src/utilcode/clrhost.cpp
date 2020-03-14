@@ -10,7 +10,6 @@
 #include "clrhost.h"
 #include "utilcode.h"
 #include "ex.h"
-#include "hostimpl.h"
 #include "clrnt.h"
 #include "contract.h"
 

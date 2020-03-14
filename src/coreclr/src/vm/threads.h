@@ -1020,8 +1020,9 @@ class Thread
     friend class DacDbiInterfaceImpl;       // DacDbiInterfaceImpl::GetThreadHandle(HANDLE * phThread);
 #endif // DACCESS_COMPILE
     friend class ProfToEEInterfaceImpl;     // HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *phThread);
+
     friend void SetupTLSForThread(Thread* pThread);
-    friend class UnC;
+
     friend class CheckAsmOffsets;
 
     friend class ExceptionTracker;

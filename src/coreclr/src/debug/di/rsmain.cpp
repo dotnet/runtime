@@ -1435,7 +1435,6 @@ HRESULT Cordb::SetTargetCLR(HMODULE hmodTargetCLR)
 
     CoreClrCallbacks cccallbacks;
     cccallbacks.m_hmodCoreCLR               = hmodTargetCLR;
-    cccallbacks.m_pfnIEE                    = NULL;
     cccallbacks.m_pfnGetCORSystemDirectory  = NULL;
     InitUtilcode(cccallbacks);
 

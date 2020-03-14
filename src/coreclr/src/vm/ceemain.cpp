@@ -1948,7 +1948,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
     if (dwReason == DLL_THREAD_DETACH || dwReason == DLL_PROCESS_DETACH)
     {
-        CExecutionEngine::ThreadDetaching();
+        ThreadDetaching();
     }
     return TRUE;
 }

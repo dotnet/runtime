@@ -36,8 +36,6 @@ HINSTANCE g_hThisInst;  // This library.
 
 #include <shlwapi.h>
 
-extern "C" IExecutionEngine* IEE();
-
 #ifdef TARGET_WINDOWS
 
 #include <process.h> // for __security_init_cookie()
@@ -68,7 +66,6 @@ extern "C" BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpRe
 
             CoreClrCallbacks cccallbacks;
             cccallbacks.m_hmodCoreCLR               = (HINSTANCE)hInstance;
-            cccallbacks.m_pfnIEE                    = IEE;
             cccallbacks.m_pfnGetCORSystemDirectory  = GetCORSystemDirectoryInternaL;
             InitUtilcode(cccallbacks);
 
@@ -121,7 +118,6 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
             CoreClrCallbacks cccallbacks;
             cccallbacks.m_hmodCoreCLR = (HINSTANCE)hInstance;
-            cccallbacks.m_pfnIEE = IEE;
             cccallbacks.m_pfnGetCORSystemDirectory = GetCORSystemDirectoryInternaL;
             InitUtilcode(cccallbacks);
 #endif

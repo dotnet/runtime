@@ -5618,7 +5618,6 @@ ClrDataAccess::Initialize(void)
     // Initialize UtilCode for SxS scenarios
     CoreClrCallbacks cccallbacks;
     cccallbacks.m_hmodCoreCLR               = (HINSTANCE)m_globalBase; // Base address of the runtime in the target process
-    cccallbacks.m_pfnIEE                    = NULL;
     cccallbacks.m_pfnGetCORSystemDirectory  = NULL;
     InitUtilcode(cccallbacks);
 

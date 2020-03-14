@@ -472,7 +472,6 @@ set(VM_HEADERS_WKS
     gcenv.ee.h
     gcenv.os.h
     gchelpers.h
-    hosting.h
     ibclogger.h
     ilmarshalers.h
     interopconverter.h
