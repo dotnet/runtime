@@ -8455,7 +8455,7 @@ DONE:
                 // checks in morph. For explicit tailcalls we need more
                 // information in morph in case it turns out to be a
                 // helper-based tailcall.
-                if (explicitTailCall)
+                if (isExplicitTailCall)
                 {
                     assert(call->AsCall()->tailCallInfo == nullptr);
                     call->AsCall()->tailCallInfo = new (this, CMK_CorTailCallInfo) TailCallSiteInfo;
