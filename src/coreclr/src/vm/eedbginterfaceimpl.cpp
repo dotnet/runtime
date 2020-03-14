@@ -1327,7 +1327,6 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
                                            DWORD  *pEEThreadSteppingStateMask,
                                            DWORD  *pEEMaxFrameValue,
                                            SIZE_T *pEEThreadDebuggerFilterContextOffset,
-                                           SIZE_T *pEEThreadCantStopOffset,
                                            SIZE_T *pEEFrameNextOffset,
                                            DWORD  *pEEIsManagedExceptionStateMask)
 {
@@ -1351,7 +1350,6 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
     *pEEThreadFrameOffset = Thread::GetOffsetOfCurrentFrame();
     *pEEThreadMaxNeededSize = sizeof(Thread);
     *pEEThreadDebuggerFilterContextOffset = Thread::GetOffsetOfDebuggerFilterContext();
-    *pEEThreadCantStopOffset = Thread::GetOffsetOfCantStop();
     *pEEThreadSteppingStateMask = Thread::TSNC_DebuggerIsStepping;
     *pEEMaxFrameValue = (DWORD)(size_t)FRAME_TOP; // <TODO> should this be size_t for 64bit?</TODO>
     *pEEFrameNextOffset = Frame::GetOffsetOfNextLink();

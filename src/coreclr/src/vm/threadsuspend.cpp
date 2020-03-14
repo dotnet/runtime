@@ -2250,7 +2250,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
         // we're doing managed/unmanaged debugging. Calling SetDebugCantStop(true) on the current thread helps us
         // remember that.
         if (pCurThread)
-            pCurThread->SetDebugCantStop(true);
+            IncCantStopCount();
 
         // This is used to avoid thread starvation if non-GC threads are competing for
         // the thread store lock when there is a real GC-thread waiting to get in.
@@ -2335,7 +2335,7 @@ void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSP
 
         // We're out of the critical area for managed/unmanaged debugging.
         if (!bThreadDestroyed && pCurThread)
-            pCurThread->SetDebugCantStop(false);
+            DecCantStopCount();
     }
 #ifdef _DEBUG
     else

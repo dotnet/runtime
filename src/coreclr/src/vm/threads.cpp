@@ -1358,7 +1358,6 @@ Thread::Thread()
     m_ltoIsUnhandled = FALSE;
 
     m_debuggerFilterContext = NULL;
-    m_debuggerCantStop = 0;
     m_fInteropDebuggingHijacked = FALSE;
     m_profilerCallbackState = 0;
 #if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
@@ -7128,34 +7127,6 @@ T_CONTEXT *Thread::GetFilterContext(void)
 }
 
 #ifndef DACCESS_COMPILE
-
-// @todo - eventually complete remove the CantStop count on the thread and use
-// the one in the PreDef block. For now, we increment both our thread counter,
-// and the FLS counter. Eventually we can remove our thread counter and only use
-// the FLS counter.
-void Thread::SetDebugCantStop(bool fCantStop)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (fCantStop)
-    {
-        IncCantStopCount();
-        m_debuggerCantStop++;
-    }
-    else
-    {
-        DecCantStopCount();
-        m_debuggerCantStop--;
-    }
-}
-
-// @todo - remove this, we only read this from oop.
-bool Thread::GetDebugCantStop(void)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_debuggerCantStop != 0;
-}
 
 void Thread::InitContext()
 {

@@ -3302,46 +3302,6 @@ void CordbUnmanagedThread::GetEEState(bool *threadStepping, bool *specialManaged
     return;
 }
 
-// Currently, the EE manually tracks its "can't-stop" regions. This retrieves that manual tracking value.
-// @todo - This should eventually become deprecated since the Entire EE will be a can't-stop region.
-bool CordbUnmanagedThread::GetEEThreadCantStopHelper()
-{
-    // Note: any failure to read memory is okay for this method. We simply say that the thread is not is a can't stop
-    // state, and that's okay.
-
-    REMOTE_PTR pEEThread;
-
-    HRESULT hr = GetEEThreadPtr(&pEEThread);
-
-    _ASSERTE(SUCCEEDED(hr));
-    _ASSERTE(pEEThread != NULL);
-
-    // Compute the address of the thread's debugger word #1
-    DebuggerIPCRuntimeOffsets *pRO = &(GetProcess()->m_runtimeOffsets);
-    void *pEEThreadCantStop = (BYTE*) pEEThread + pRO->m_EEThreadCantStopOffset;
-
-    // Grab the debugger word #1 out of the EE Thread.
-    DWORD EEThreadCantStop;
-    hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(pEEThreadCantStop), &EEThreadCantStop);
-
-    if (FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CUT::GEETS: failed to read thread cant stop: 0x%08x + 0x%x = 0x%08x, err=%d\n",
-             pEEThread, pRO->m_EEThreadCantStopOffset, pEEThreadCantStop, GetLastError()));
-
-        return false;
-    }
-
-    LOG((LF_CORDB, LL_INFO1000000, "CUT::GEETS: EE Thread cant stop is 0x%08x\n", EEThreadCantStop));
-
-    // Looks like we've got it.
-    if (EEThreadCantStop != 0)
-        return true;
-    else
-        return false;
-}
-
-
 // Is the thread in a "can't stop" region?
 // "Can't-Stop" regions include anything that's "inside" the runtime; ie, the runtime has some
 // synchronization mechanism that will halt this thread, and so we don't need to suspend it.
@@ -3456,9 +3416,9 @@ bool CordbUnmanagedThread::IsCantStop()
 
     // This checks for an explicit "can't" stop region.
     // Eventually, these explicit regions should become a complete subset of the other checks.
-    if (GetEEThreadCantStopHelper())
+    REMOTE_PTR count = GetPreDefTlsSlot(GetProcess()->m_runtimeOffsets.m_TLSCantStopOffset);
+    if (count > 0)
         return true;
-
 
     // If we're in cooperative mode (either managed code or parts inside the runtime), then don't stop.
     // Note we could remove this since the check is made in side of the DAC request below,

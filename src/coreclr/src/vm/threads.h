@@ -2162,15 +2162,6 @@ public:
     }
 
     //---------------------------------------------------------------
-    // Expose offset of the debugger cant stop count for the debugger
-    //---------------------------------------------------------------
-    static SIZE_T GetOffsetOfCantStop()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (SIZE_T)(offsetof(class Thread, m_debuggerCantStop));
-    }
-
-    //---------------------------------------------------------------
     // Expose offset of m_StateNC
     //---------------------------------------------------------------
     static SIZE_T GetOffsetOfStateNC()
@@ -3690,11 +3681,6 @@ private:
     // return addresses on the stack)
     //---------------------------------------------------------------
     Volatile<LONG> m_hijackLock;
-    //---------------------------------------------------------------
-    // m_debuggerCantStop holds a count of entries into "can't stop"
-    // areas that the Interop Debugging Services must know about.
-    //---------------------------------------------------------------
-    DWORD m_debuggerCantStop;
 
     //---------------------------------------------------------------
     // The current custom notification data object (or NULL if none
@@ -3957,9 +3943,6 @@ public:
 
         ResetThreadState(TS_GCSuspendPending);
     }
-
-    void SetDebugCantStop(bool fCantStop);
-    bool GetDebugCantStop(void);
 
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);
     TADDR GetStaticFieldAddrNoCreate(FieldDesc *pFD);

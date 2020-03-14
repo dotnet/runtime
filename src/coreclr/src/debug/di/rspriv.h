@@ -10608,7 +10608,6 @@ private:
 #endif
 
     HRESULT EnableSSAfterBP();
-    bool GetEEThreadCantStopHelper();
 
     HRESULT GetTlsSlot(DWORD slot, REMOTE_PTR *pValue);
     HRESULT SetTlsSlot(DWORD slot, REMOTE_PTR value);

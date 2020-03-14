@@ -555,7 +555,6 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
                                       &pDebuggerRuntimeOffsets->m_EEThreadSteppingStateMask,
                                       &pDebuggerRuntimeOffsets->m_EEMaxFrameValue,
                                       &pDebuggerRuntimeOffsets->m_EEThreadDebuggerFilterContextOffset,
-                                      &pDebuggerRuntimeOffsets->m_EEThreadCantStopOffset,
                                       &pDebuggerRuntimeOffsets->m_EEFrameNextOffset,
                                       &pDebuggerRuntimeOffsets->m_EEIsManagedExceptionStateMask);
 

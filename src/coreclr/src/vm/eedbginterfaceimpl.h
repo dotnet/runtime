@@ -283,7 +283,6 @@ public:
                            DWORD  *pEEThreadSteppingStateMask,
                            DWORD  *pEEMaxFrameValue,
                            SIZE_T *pEEThreadDebuggerFilterContextOffset,
-                           SIZE_T *pEEThreadCantStopOffset,
                            SIZE_T *pEEFrameNextOffset,
                            DWORD  *pEEIsManagedExceptionStateMask);
 

@@ -144,7 +144,6 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     DWORD   m_EEThreadSteppingStateMask;                // Mask for Thread::TSNC_DebuggerIsStepping
     DWORD   m_EEMaxFrameValue;                          // The max Frame value
     SIZE_T  m_EEThreadDebuggerFilterContextOffset;      // Offset of debugger's filter context within a Thread Object.
-    SIZE_T  m_EEThreadCantStopOffset;                   // Offset of the can't stop count in a Thread
     SIZE_T  m_EEFrameNextOffset;                        // Offset of the next ptr in a Frame
     DWORD   m_EEIsManagedExceptionStateMask;            // Mask for Thread::TSNC_DebuggerIsManagedException
     void   *m_pPatches;                                 // Addr of patch table

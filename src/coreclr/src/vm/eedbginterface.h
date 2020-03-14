@@ -291,7 +291,6 @@ public:
                                   DWORD  *pEEThreadSteppingStateMask,
                                   DWORD  *pEEMaxFrameValue,
                                   SIZE_T *pEEThreadDebuggerFilterContextOffset,
-                                  SIZE_T *pEEThreadCantStopMask,
                                   SIZE_T *pEEFrameNextOffset,
                                   DWORD  *pEEIsManagedExceptionStateMask) = 0;
 
