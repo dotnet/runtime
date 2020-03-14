@@ -908,6 +908,12 @@ static SimdIntrinsic sse41_methods [] = {
 	{SN_get_IsSupported}
 };
 
+static SimdIntrinsic sse42_methods [] = {
+	{SN_CompareGreaterThan, OP_XCOMPARE, CMP_GT},
+	{SN_Crc32},
+	{SN_get_IsSupported}
+};
+
 static SimdIntrinsic popcnt_methods [] = {
 	{SN_PopCount},
 	{SN_get_IsSupported}
@@ -1315,7 +1321,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (info->op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 
-		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSSE3) != 0 && is_corlib; // We only support the subset used by corelib
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSSE3) != 0;
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -1375,6 +1381,38 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 				return NULL;
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_INSERT, -1, arg0_type, fsig, args);
+		default:
+			g_assert_not_reached ();
+			break;
+		}
+	}
+
+	if (is_hw_intrinsics_class (klass, "Sse42", &is_64bit)) {
+		if (!COMPILE_LLVM (cfg))
+			return NULL;
+		info = lookup_intrins_info (sse42_methods, sizeof (sse42_methods), cmethod);
+		if (!info)
+			return NULL;
+		int id = info->id;
+
+		/* Common case */
+		if (info->op != 0)
+			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
+
+		// FIXME: remove is_corlib check once Sse41 is implemented
+		supported = COMPILE_LLVM (cfg) && (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE42) != 0 && is_corlib; 
+
+		switch (id) {
+		case SN_get_IsSupported:
+			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+			ins->type = STACK_I4;
+			return ins;
+		case SN_Crc32: {
+			MonoTypeEnum arg1_type = get_underlying_type (fsig->params [1]);
+			return emit_simd_ins_for_sig (cfg, klass, 
+				arg1_type == MONO_TYPE_U8 ? OP_SSE42_CRC64 : OP_SSE42_CRC32, 
+				arg1_type, arg0_type, fsig, args);
+		}
 		default:
 			g_assert_not_reached ();
 			break;

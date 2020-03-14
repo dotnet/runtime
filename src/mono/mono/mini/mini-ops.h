@@ -1088,6 +1088,10 @@ MINI_OP(OP_SSE41_ROUNDSS, "roundss", XREG, XREG, NONE)
 MINI_OP3(OP_SSE41_INSERT, "sse41_insert", XREG, XREG, XREG, IREG)
 MINI_OP(OP_SSE41_PTESTZ, "sse41_ptestz", IREG, XREG, XREG)
 
+/* sse 4.2 */
+MINI_OP(OP_SSE42_CRC32, "sse42_crc32", IREG, IREG, IREG)
+MINI_OP(OP_SSE42_CRC64, "sse42_crc64", LREG, LREG, LREG)
+
 /* Intel BMI1 */
 /* Count trailing zeroes, return 32/64 if the input is 0 */
 MINI_OP(OP_CTTZ32, "cttz32", IREG, IREG, NONE)

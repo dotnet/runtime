@@ -192,3 +192,5 @@ METHOD(Sign)
 // Sse41
 METHOD(Insert)
 METHOD(TestZ)
+// Sse42
+METHOD(Crc32)
