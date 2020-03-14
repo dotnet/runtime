@@ -131,8 +131,7 @@ namespace System.Diagnostics
 
                 var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : modulesCount);
 
-                const int MaxShortPath = 260;
-                int minimumLength = MaxShortPath;
+                int minimumLength = Interop.Kernel32.MAX_PATH;
                 char[]? chars = ArrayPool<char>.Shared.Rent(minimumLength);
                 try
                 {
