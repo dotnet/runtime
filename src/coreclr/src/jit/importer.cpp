@@ -10531,7 +10531,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     impBeginTreeList();
 
-    // Are there any plausible patchpoint locations in this method?
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+    // Are there any places in the method where we might add a patchpoint?
     if (compHasBackwardJump)
     {
         // Are patchpoints enabled?
@@ -10541,8 +10543,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             // Could probably support inlines that don't introduce flow.
             assert(!compIsForInlining());
 
-            // Is this block a patchpoint?
-            // Current strategy is stack-empty backwards branch targets
+            // Is the start of this block a suitable patchpoint?
+            // Current strategy is blocks that are stack-empty and backwards branch targets
             if (block->bbFlags & BBF_BACKWARD_JUMP_TARGET && (verCurrentState.esStackDepth == 0))
             {
                 block->bbFlags |= BBF_PATCHPOINT;
@@ -10555,6 +10557,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         // Should not see backward branch targets w/o backwards branches
         assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
     }
+
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
     /* Walk the opcodes that comprise the basic block */
 
