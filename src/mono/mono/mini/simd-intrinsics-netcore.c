@@ -1248,7 +1248,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			g_assert (fsig->param_count == 2);
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFHW, 0, arg0_type, fsig, args);
 		case SN_ShuffleLow:
-			g_assert (fsig->param_count == 2); 
+			g_assert (fsig->param_count == 2);
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFLW, 0, arg0_type, fsig, args);
 		case SN_SqrtScalar:
 			if (fsig->param_count == 1)
