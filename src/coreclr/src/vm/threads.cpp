@@ -1063,6 +1063,16 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
 
 extern "C" void *JIT_WriteBarrier_Loc;
 
+#ifndef TARGET_UNIX
+// g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
+#pragma optimize("", off)
+static void SetIlsIndex(DWORD tlsIndex)
+{
+    g_TlsIndex = tlsIndex;
+}
+#pragma optimize("", on)
+#endif
+
 //---------------------------------------------------------------------------
 // One-time initialization. Called during Dll initialization. So
 // be careful what you do in here!
@@ -1122,7 +1132,7 @@ void InitThreadManager()
     _ASSERTE(_tls_index < 0x10000);
 
     // Save gCurrentThreadInfo location for debugger
-    g_TlsIndex = (DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000);
+    SetIlsIndex((DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000));
 
     _ASSERTE(g_TrapReturningThreads == 0);
 #endif // !TARGET_UNIX
