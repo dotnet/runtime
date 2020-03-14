@@ -1117,6 +1117,21 @@ namespace System.Globalization
             Debug.Assert((uint)startIndex <= (uint)source.Length);
             Debug.Assert((uint)count <= (uint)(source.Length - startIndex));
 
+            // For ordinal (non-linguistic) comparisons, an empty target string is always
+            // found at the beginning of the search space, and a non-empty target string
+            // can never be found within an empty search space. This assumption is not
+            // valid for linguistic comparisons, including InvariantCulture comparisons.
+
+            if (value.Length == 0)
+            {
+                return startIndex;
+            }
+
+            if (count == 0)
+            {
+                return -1;
+            }
+
             int result;
 
             if (!ignoreCase)
