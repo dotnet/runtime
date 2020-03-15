@@ -145,6 +145,10 @@ jobs:
       - name: timeoutPerTestInMinutes
         value: 90
 
+    - ${{ if eq(parameters.compositeBuildMode, true) }}:
+      - name: crossgenArg
+        value: 'composite'
+
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - group: DotNet-HelixApi-Access
 
