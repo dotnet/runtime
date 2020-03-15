@@ -15,6 +15,7 @@ using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 using X509IssuerSerial = System.Security.Cryptography.Xml.X509IssuerSerial;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Internal.Cryptography
 {
@@ -36,7 +37,7 @@ namespace Internal.Cryptography
             return GetDigestAlgorithm(oid.Value);
         }
 
-        internal static HashAlgorithmName GetDigestAlgorithm(string oidValue, bool forVerification = false)
+        internal static HashAlgorithmName GetDigestAlgorithm(string? oidValue, bool forVerification = false)
         {
             switch (oidValue)
             {
@@ -120,7 +121,7 @@ namespace Internal.Cryptography
 
         public static AttributeAsn[] NormalizeAttributeSet(
             AttributeAsn[] setItems,
-            Action<byte[]> encodedValueProcessor = null)
+            Action<byte[]>? encodedValueProcessor = null)
         {
             byte[] normalizedValue;
 
@@ -227,7 +228,7 @@ namespace Internal.Cryptography
         /// <summary>
         /// .NET Framework compat: We do not complain about multiple matches. Just take the first one and ignore the rest.
         /// </summary>
-        public static X509Certificate2 TryFindMatchingCertificate(this X509Certificate2Collection certs, SubjectIdentifier recipientIdentifier)
+        public static X509Certificate2? TryFindMatchingCertificate(this X509Certificate2Collection certs, SubjectIdentifier recipientIdentifier)
         {
             //
             // Note: SubjectIdentifier has no public constructor so the only one that can construct this type is this assembly.
@@ -239,7 +240,7 @@ namespace Internal.Cryptography
             {
                 case SubjectIdentifierType.IssuerAndSerialNumber:
                     {
-                        X509IssuerSerial issuerSerial = (X509IssuerSerial)(recipientIdentifier.Value);
+                        X509IssuerSerial issuerSerial = (X509IssuerSerial)(recipientIdentifier.Value!);
                         byte[] serialNumber = issuerSerial.SerialNumber.ToSerialBytes();
                         string issuer = issuerSerial.IssuerName;
                         foreach (X509Certificate2 candidate in certs)
@@ -253,7 +254,7 @@ namespace Internal.Cryptography
 
                 case SubjectIdentifierType.SubjectKeyIdentifier:
                     {
-                        string skiString = (string)(recipientIdentifier.Value);
+                        string skiString = (string)(recipientIdentifier.Value!);
                         byte[] ski = skiString.ToSkiBytes();
                         foreach (X509Certificate2 cert in certs)
                         {
@@ -480,7 +481,7 @@ namespace Internal.Cryptography
             Span<byte> tmp = stackalloc byte[ArbitraryStackLimit];
             // Use stackalloc 0 so data can later hold a slice of tmp.
             ReadOnlySpan<byte> data = stackalloc byte[0];
-            byte[] poolBytes = null;
+            byte[]? poolBytes = null;
 
             try
             {
@@ -589,8 +590,8 @@ namespace Internal.Cryptography
 
         public static bool TryGetRsaOaepEncryptionPadding(
             ReadOnlyMemory<byte>? parameters,
-            out RSAEncryptionPadding rsaEncryptionPadding,
-            out Exception exception)
+            [NotNullWhen(true)] out RSAEncryptionPadding? rsaEncryptionPadding,
+            [NotNullWhen(false)] out Exception? exception)
         {
             exception = null;
             rsaEncryptionPadding = null;

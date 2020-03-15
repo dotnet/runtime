@@ -1257,14 +1257,7 @@ Thread::UserAbort(ThreadAbortRequester requester,
     EClrOperation operation;
     if (abortType == EEPolicy::TA_Rude)
     {
-        if (HasLockInCurrentDomain())
-        {
-            operation = OPR_ThreadRudeAbortInCriticalRegion;
-        }
-        else
-        {
-            operation = OPR_ThreadRudeAbortInNonCriticalRegion;
-        }
+        operation = OPR_ThreadRudeAbortInCriticalRegion;
     }
     else
     {
@@ -1321,10 +1314,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
         if (abortType != EEPolicy::TA_Rude)
         {
             timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
-        }
-        else if (!HasLockInCurrentDomain())
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInNonCriticalRegion);
         }
         else
         {
@@ -1423,15 +1412,10 @@ LRetry:
                         action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadAbort, this);
                         timeout1 = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
                     }
-                    else if (HasLockInCurrentDomain())
+                    else
                     {
                         action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadRudeAbortInCriticalRegion, this);
                         timeout1 = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
-                    }
-                    else
-                    {
-                        action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadRudeAbortInNonCriticalRegion, this);
-                        timeout1 = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInNonCriticalRegion);
                     }
                 }
                 if (action1 == eNoAction)
@@ -1674,8 +1658,6 @@ LRetry:
         // If Threads is stopped under a managed debugger, it will have both
         // TS_DebugSuspendPending and TS_SyncSuspended, regardless of whether
         // the thread is actually suspended or not.
-        // If it's suspended w/o the debugger (eg, by via Thread.Suspend), it will
-        // also have TS_UserSuspendPending set.
         if (m_State & TS_SyncSuspended)
         {
 #ifndef DISABLE_THREADSUSPEND
@@ -1685,9 +1667,6 @@ LRetry:
 #ifdef _DEBUG
             m_dwAbortPoint = 7;
 #endif
-
-            // CoreCLR does not support user-requested thread suspension
-            _ASSERTE(!(m_State & TS_UserSuspendPending));
 
             //
             // If it's stopped by the debugger, we don't want to throw an exception.
@@ -1876,13 +1855,9 @@ LPrepareRetry:
             {
                 operation1 = OPR_ThreadAbort;
             }
-            else if (HasLockInCurrentDomain())
-            {
-                operation1 = OPR_ThreadRudeAbortInCriticalRegion;
-            }
             else
             {
-                operation1 = OPR_ThreadRudeAbortInNonCriticalRegion;
+                operation1 = OPR_ThreadRudeAbortInCriticalRegion;
             }
             action1 = GetEEPolicy()->GetActionOnTimeout(operation1, this);
             switch (action1)
@@ -2055,10 +2030,6 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
         if (abortType != EEPolicy::TA_Rude)
         {
             timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
-        }
-        else if (!HasLockInCurrentDomain())
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInNonCriticalRegion);
         }
         else
         {
@@ -2480,14 +2451,11 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
-    // CoreCLR does not support user-requested thread suspension
-    _ASSERTE(!(m_State & TS_UserSuspendPending));
-
     // Note IsGCInProgress is also true for say Pause (anywhere SuspendEE happens) and GCThread is the
     // thread that did the Pause. While in Pause if another thread attempts Rev/Pinvoke it should get inside the following and
     // block until resume
     if ((GCHeapUtilities::IsGCInProgress()  && (this != ThreadSuspend::GetSuspensionThread())) ||
-        (m_State & (TS_UserSuspendPending | TS_DebugSuspendPending | TS_StackCrawlNeeded)))
+        (m_State & (TS_DebugSuspendPending | TS_StackCrawlNeeded)))
     {
         if (!ThreadStore::HoldingThreadStore(this))
         {
@@ -2497,9 +2465,6 @@ void Thread::RareDisablePreemptiveGC()
 
             do
             {
-                // CoreCLR does not support user-requested thread suspension
-                _ASSERTE(!(m_State & TS_UserSuspendPending));
-
                 EnablePreemptiveGC();
 
                 // Cannot use GCX_PREEMP_NO_DTOR here because we're inside of the thread
@@ -2590,7 +2555,7 @@ void Thread::RareDisablePreemptiveGC()
                 // debugger to suspend this thread and then release it.
 
             } while ((GCHeapUtilities::IsGCInProgress()  && (this != ThreadSuspend::GetSuspensionThread())) ||
-                     (m_State & (TS_UserSuspendPending | TS_DebugSuspendPending | TS_StackCrawlNeeded)));
+                     (m_State & (TS_DebugSuspendPending | TS_StackCrawlNeeded)));
         }
         STRESS_LOG0(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: leaving\n");
     }
@@ -2620,13 +2585,9 @@ void Thread::HandleThreadAbortTimeout()
     {
         operation = OPR_ThreadAbort;
     }
-    else if (HasLockInCurrentDomain())
-    {
-        operation = OPR_ThreadRudeAbortInCriticalRegion;
-    }
     else
     {
-        operation = OPR_ThreadRudeAbortInNonCriticalRegion;
+        operation = OPR_ThreadRudeAbortInCriticalRegion;
     }
     action = GetEEPolicy()->GetActionOnTimeout(operation, this);
     // We only support escalation to rude abort
@@ -2726,25 +2687,19 @@ void Thread::PreWorkForThreadAbort()
     ResetUserInterrupted();
 
     if (IsRudeAbort()) {
-        if (HasLockInCurrentDomain()) {
-            AppDomain *pDomain = GetAppDomain();
-            // Cannot enable the following assertion.
-            // We may take the lock, but the lock will be released during exception backout.
-            //_ASSERTE(!pDomain->IsDefaultDomain());
-            EPolicyAction action = GetEEPolicy()->GetDefaultAction(OPR_ThreadRudeAbortInCriticalRegion, this);
-            switch (action)
-            {
-            case eExitProcess:
-            case eFastExitProcess:
-            case eRudeExitProcess:
-                    {
-                GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ThreadRudeAbortInCriticalRegion,action);
-                GetEEPolicy()->HandleExitProcessFromEscalation(action,HOST_E_EXITPROCESS_ADUNLOAD);
-                    }
-                break;
-            default:
-                break;
-            }
+        EPolicyAction action = GetEEPolicy()->GetDefaultAction(OPR_ThreadRudeAbortInCriticalRegion, this);
+        switch (action)
+        {
+        case eExitProcess:
+        case eFastExitProcess:
+        case eRudeExitProcess:
+                {
+            GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ThreadRudeAbortInCriticalRegion,action);
+            GetEEPolicy()->HandleExitProcessFromEscalation(action,HOST_E_EXITPROCESS_ADUNLOAD);
+                }
+            break;
+        default:
+            break;
         }
     }
 }
@@ -2861,10 +2816,8 @@ void Thread::RareEnablePreemptiveGC()
         // for GC, the fact that we are leaving the EE means that it no longer needs to
         // suspend us.  But if we are doing a non-GC suspend, we need to block now.
         // Give the debugger precedence over user suspensions:
-        while (m_State & (TS_DebugSuspendPending | TS_UserSuspendPending))
+        while (m_State & TS_DebugSuspendPending)
         {
-            // CoreCLR does not support user-requested thread suspension
-            _ASSERTE(!(m_State & TS_UserSuspendPending));
 
 #ifdef DEBUGGING_SUPPORTED
             // We don't notify the debugger that this thread is now suspended. We'll just
@@ -5239,9 +5192,6 @@ BOOL Thread::WaitSuspendEventsHelper(void)
 
     EX_TRY {
 
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(m_State & TS_UserSuspendPending));
-
         if (m_State & TS_DebugSuspendPending) {
 
             ThreadState oldState = m_State;
@@ -5254,7 +5204,7 @@ BOOL Thread::WaitSuspendEventsHelper(void)
                     result = m_DebugSuspendEvent.Wait(INFINITE,FALSE);
 #if _DEBUG
                     newState = m_State;
-                    _ASSERTE(!(newState & TS_SyncSuspended) || (newState & TS_UserSuspendPending));
+                    _ASSERTE(!(newState & TS_SyncSuspended));
 #endif
                     break;
                 }
@@ -5292,21 +5242,16 @@ void Thread::WaitSuspendEvents(BOOL fDoWait)
 
             ThreadState oldState = m_State;
 
-            // CoreCLR does not support user-requested thread suspension
-            _ASSERTE(!(oldState & TS_UserSuspendPending));
-
             //
             // If all reasons to suspend are off, we think we can exit
             // this loop, but we need to check atomically.
             //
-            if ((oldState & (TS_UserSuspendPending | TS_DebugSuspendPending)) == 0)
+            if ((oldState & TS_DebugSuspendPending) == 0)
             {
                 //
                 // Construct the destination state we desire - all suspension bits turned off.
                 //
-                ThreadState newState = (ThreadState)(oldState & ~(TS_UserSuspendPending |
-                                                                  TS_DebugSuspendPending |
-                                                                  TS_SyncSuspended));
+                ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
 
                 if (FastInterlockCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
                 {

@@ -49,7 +49,7 @@ namespace System.Collections.Generic
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
+    public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IReadOnlySet<T>, ISerializable, IDeserializationCallback
     {
         // store lower 31 bits of hash code
         private const int Lower31BitMask = 0x7FFFFFFF;

@@ -1260,6 +1260,25 @@ inline GenTree* Compiler::gtNewIndir(var_types typ, GenTree* addr)
     return indir;
 }
 
+//------------------------------------------------------------------------------
+// gtNewNullCheck : Helper to create a null check node.
+//
+// Arguments:
+//    addr        -  Address to null check
+//    basicBlock  -  Basic block of the node
+//
+// Return Value:
+//    New GT_NULLCHECK node
+
+inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
+{
+    GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
+    nullCheck->gtFlags |= GTF_EXCEPT;
+    basicBlock->bbFlags |= BBF_HAS_NULLCHECK;
+    optMethodFlags |= OMF_HAS_NULLCHECK;
+    return nullCheck;
+}
+
 /*****************************************************************************
  *
  *  Create (and check for) a "nothing" node, i.e. a node that doesn't produce
@@ -2897,15 +2916,6 @@ inline int getJitStressLevel()
     return JitConfig.JitStress();
 }
 
-/*****************************************************************************
- *  Should we do the strict check for non-virtual call to the virtual method?
- */
-
-inline DWORD StrictCheckForNonVirtualCallToVirtualMethod()
-{
-    return JitConfig.JitStrictCheckForNonVirtualCallToVirtualMethod() == 1;
-}
-
 #endif // DEBUG
 
 /*****************************************************************************/
@@ -4149,7 +4159,13 @@ bool Compiler::fgVarNeedsExplicitZeroInit(LclVarDsc* varDsc, bool bbInALoop, boo
 // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
 // changes, these conditions need to be updated.
 #ifdef TARGET_64BIT
+#if defined(TARGET_AMD64)
+        // We can clear using aligned SIMD so the threshold is lower,
+        // and clears in order which is better for auto-prefetching
+        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
+#else // !defined(TARGET_AMD64)
         if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 8)
+#endif
 #else
         if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
 #endif

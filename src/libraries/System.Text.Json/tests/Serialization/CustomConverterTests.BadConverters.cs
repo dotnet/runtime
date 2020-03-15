@@ -70,6 +70,22 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; set; }
         }
 
+        private class NullConverterAttribute : JsonConverterAttribute
+        {
+            public NullConverterAttribute() : base(null) { }
+
+            public override JsonConverter CreateConverter(Type typeToConvert)
+            {
+                return null;
+            }
+        }
+
+        private class PocoWithNullConverter
+        {
+            [NullConverter]
+            public int MyInt { get; set; }
+        }
+
         [Fact]
         public static void AttributeCreateConverterFail()
         {
@@ -81,6 +97,15 @@ namespace System.Text.Json.Serialization.Tests
 
             ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithInvalidConverter>("{}"));
             Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithInvalidConverter.MyInt'", ex.Message);
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new PocoWithNullConverter()));
+            // Message should be in the form "The converter specified on 'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithNullConverter.MyInt'  is not compatible with the type 'System.Int32'."
+            Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithNullConverter.MyInt'", ex.Message);
+            Assert.Contains("'System.Int32'", ex.Message);
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithNullConverter>("{}"));
+            Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithNullConverter.MyInt'", ex.Message);
+            Assert.Contains("'System.Int32'", ex.Message);
         }
 
         private class InvalidTypeConverterClass
@@ -152,16 +177,16 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new ConverterFactoryThatReturnsNull());
 
-            // A null return value from CreateConverter() will generate a NotSupportedException with the type name.
-            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(0, options));
-            Assert.Contains(typeof(int).ToString(), ex.Message);
+            // A null return value from CreateConverter() will generate a InvalidOperationException with the type name.
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(0, options));
+            Assert.Contains(typeof(ConverterFactoryThatReturnsNull).ToString(), ex.Message);
 
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int>("0", options));
-            Assert.Contains(typeof(int).ToString(), ex.Message);
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<int>("0", options));
+            Assert.Contains(typeof(ConverterFactoryThatReturnsNull).ToString(), ex.Message);
 
             // This will invoke the Nullable converter which should detect a null converter.
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int?>("0", options));
-            Assert.Contains(typeof(int).ToString(), ex.Message);
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<int?>("0", options));
+            Assert.Contains(typeof(ConverterFactoryThatReturnsNull).ToString(), ex.Message);
         }
 
         private class Level1

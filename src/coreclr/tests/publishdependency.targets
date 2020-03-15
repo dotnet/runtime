@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <ProductDestination>$(RootRepoDir)\artifacts\bin\coreclr\$(BuildOS).$(BuildArch).$(BuildType)</ProductDestination>
+    <ProductDestination>$(RootRepoDir)\artifacts\bin\coreclr\$(TargetOS).$(BuildArch).$(BuildType)</ProductDestination>
     <RefDestination>$(ProductDestination)\ref</RefDestination>
   </PropertyGroup>
 

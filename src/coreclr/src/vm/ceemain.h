@@ -20,10 +20,7 @@
 class EEDbgInterfaceImpl;
 
 // Ensure the EE is started up.
-HRESULT EnsureEEStarted(COINITIEE flags);
-
-// Wrapper around EnsureEEStarted which also sets startup mode.
-HRESULT InitializeEE(COINITIEE flags);
+HRESULT EnsureEEStarted();
 
 // Enum to control what happens at the end of EE shutdown. There are two options:
 // 1. Call ::ExitProcess to cause the process to terminate gracefully. This is how

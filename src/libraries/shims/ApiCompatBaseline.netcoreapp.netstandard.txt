@@ -1,8 +1,33 @@
 Compat issues with assembly mscorlib:
 TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.RuntimeTypeHandle.GetModuleHandle()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.SByte)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.SByte)' in the contract but not the implementation.
 TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.TypedReference.MakeTypedReference(System.Object, System.Reflection.FieldInfo[])' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.TypedReference.SetTypedReference(System.TypedReference, System.Object)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt64)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.UInt64)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr..ctor(System.Void*)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.UIntPtr)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.Void*)' in the contract but not the implementation.
@@ -17,8 +42,33 @@ CannotRemoveAttribute : Attribute 'System.Runtime.ConstrainedExecution.PrePrepar
 Compat issues with assembly netstandard:
 TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.RuntimeTypeHandle.GetModuleHandle()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.SByte)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.SByte)' in the contract but not the implementation.
 TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.TypedReference.MakeTypedReference(System.Object, System.Reflection.FieldInfo[])' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.TypedReference.SetTypedReference(System.TypedReference, System.Object)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt64)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.UInt64)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr..ctor(System.Void*)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.UIntPtr)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.Void*)' in the contract but not the implementation.
@@ -30,22 +80,22 @@ CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exi
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerReportsProgress' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerSupportsCancellation' in the contract but not the implementation.
 CannotSealType : Type 'System.ComponentModel.BaseNumberConverter' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.ComponentModel.BaseNumberConverter..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+MembersMustExist : Member 'protected void System.ComponentModel.BaseNumberConverter..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.RunWorkerCompletedEventArgs.UserState' in the contract but not the implementation.
 CannotSealType : Type 'System.Data.Constraint' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Data.Constraint..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ConstraintName' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.Table' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint._DataSet' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ConstraintName.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ConstraintName.set(System.String)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.Table.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ToString()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint._DataSet.get()' is non-virtual in the implementation but is virtual in the contract.
+MembersMustExist : Member 'protected void System.Data.Constraint..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.String System.Data.Constraint.ConstraintName' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Data.DataTable System.Data.Constraint.Table' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'protected System.Data.DataSet System.Data.Constraint._DataSet' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.String System.Data.Constraint.ConstraintName.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public void System.Data.Constraint.ConstraintName.set(System.String)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Data.DataTable System.Data.Constraint.Table.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.String System.Data.Constraint.ToString()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'protected System.Data.DataSet System.Data.Constraint._DataSet.get()' is non-virtual in the implementation but is virtual in the contract.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultPropertyAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.BasePriority' in the contract but not the implementation.
@@ -173,9 +223,9 @@ CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exi
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.SynchronizingObject' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.Error' in the contract but not the implementation.
 CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.AppendChar(System.Char)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.InsertAt(System.Int32, System.Char)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.RemoveAt(System.Int32)' in the contract but not the implementation.
@@ -192,23 +242,23 @@ CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribu
 CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Timers.Timer.SynchronizingObject' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Timers.Timer.Elapsed' in the contract but not the implementation.
 CannotSealType : Type 'System.Xml.Schema.XmlSchemaDatatype' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Xml.Schema.XmlSchemaDatatype..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TokenizedType' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TypeCode' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ValueType' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.Variety' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.IsDerivedFrom(System.Xml.Schema.XmlSchemaDatatype)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ParseValue(System.String, System.Xml.XmlNameTable, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TokenizedType.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TypeCode.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ValueType.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.Variety.get()' is non-virtual in the implementation but is virtual in the contract.
+MembersMustExist : Member 'protected void System.Xml.Schema.XmlSchemaDatatype..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.XmlTokenizedType System.Xml.Schema.XmlSchemaDatatype.TokenizedType' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlTypeCode System.Xml.Schema.XmlSchemaDatatype.TypeCode' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Type System.Xml.Schema.XmlSchemaDatatype.ValueType' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaDatatypeVariety System.Xml.Schema.XmlSchemaDatatype.Variety' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.Xml.Schema.XmlSchemaDatatype.IsDerivedFrom(System.Xml.Schema.XmlSchemaDatatype)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ParseValue(System.String, System.Xml.XmlNameTable, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.XmlTokenizedType System.Xml.Schema.XmlSchemaDatatype.TokenizedType.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlTypeCode System.Xml.Schema.XmlSchemaDatatype.TypeCode.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Type System.Xml.Schema.XmlSchemaDatatype.ValueType.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaDatatypeVariety System.Xml.Schema.XmlSchemaDatatype.Variety.get()' is non-virtual in the implementation but is virtual in the contract.
 CannotSealType : Type 'System.Xml.Schema.XmlSchemaGroupBase' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Xml.Schema.XmlSchemaGroupBase..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaGroupBase.Items' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaGroupBase.Items.get()' is non-virtual in the implementation but is virtual in the contract.
+MembersMustExist : Member 'protected void System.Xml.Schema.XmlSchemaGroupBase..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items.get()' is non-virtual in the implementation but is virtual in the contract.
 Compat issues with assembly System:
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.ComponentModel.BackgroundWorker' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.BackgroundWorker.CancellationPending' in the contract but not the implementation.
@@ -216,11 +266,11 @@ CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exi
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerReportsProgress' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerSupportsCancellation' in the contract but not the implementation.
 CannotSealType : Type 'System.ComponentModel.BaseNumberConverter' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.ComponentModel.BaseNumberConverter..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+MembersMustExist : Member 'protected void System.ComponentModel.BaseNumberConverter..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.RunWorkerCompletedEventArgs.UserState' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultPropertyAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
@@ -366,25 +416,25 @@ CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' 
 CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.RunWorkerCompletedEventArgs.UserState' in the contract but not the implementation.
 Compat issues with assembly System.ComponentModel.TypeConverter:
 CannotSealType : Type 'System.ComponentModel.BaseNumberConverter' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.ComponentModel.BaseNumberConverter..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+MembersMustExist : Member 'protected void System.ComponentModel.BaseNumberConverter..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
 Compat issues with assembly System.Core:
 CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Data:
 CannotSealType : Type 'System.Data.Constraint' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Data.Constraint..ctor()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'protected void System.Data.Constraint..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ConstraintName' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.Table' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Data.Constraint._DataSet' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ConstraintName.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ConstraintName.set(System.String)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.Table.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public void System.Data.Constraint.ConstraintName.set(System.String)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Data.DataTable System.Data.Constraint.Table.get()' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ToString()' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Data.Constraint._DataSet.get()' is non-virtual in the implementation but is virtual in the contract.
 Compat issues with assembly System.Diagnostics.Process:
@@ -516,11 +566,35 @@ CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' 
 CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.Error' in the contract but not the implementation.
 Compat issues with assembly System.Linq.Queryable:
 CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Runtime:
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.RuntimeTypeHandle.GetModuleHandle()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.SByte)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.SByte)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt64)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.UInt64)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr..ctor(System.Void*)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.UIntPtr)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.Void*)' in the contract but not the implementation.
@@ -539,21 +613,21 @@ CannotRemoveAttribute : Attribute 'System.Runtime.ConstrainedExecution.PrePrepar
 CannotRemoveAttribute : Attribute 'System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute' exists on 'System.Threading.SynchronizationContext.WaitHelper(System.IntPtr[], System.Boolean, System.Int32)' in the contract but not the implementation.
 Compat issues with assembly System.Xml:
 CannotSealType : Type 'System.Xml.Schema.XmlSchemaDatatype' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Xml.Schema.XmlSchemaDatatype..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TokenizedType' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TypeCode' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ValueType' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.Variety' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.IsDerivedFrom(System.Xml.Schema.XmlSchemaDatatype)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ParseValue(System.String, System.Xml.XmlNameTable, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TokenizedType.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TypeCode.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ValueType.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.Variety.get()' is non-virtual in the implementation but is virtual in the contract.
+MembersMustExist : Member 'protected void System.Xml.Schema.XmlSchemaDatatype..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.XmlTokenizedType System.Xml.Schema.XmlSchemaDatatype.TokenizedType' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlTypeCode System.Xml.Schema.XmlSchemaDatatype.TypeCode' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Type System.Xml.Schema.XmlSchemaDatatype.ValueType' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaDatatypeVariety System.Xml.Schema.XmlSchemaDatatype.Variety' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.Xml.Schema.XmlSchemaDatatype.IsDerivedFrom(System.Xml.Schema.XmlSchemaDatatype)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ParseValue(System.String, System.Xml.XmlNameTable, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.XmlTokenizedType System.Xml.Schema.XmlSchemaDatatype.TokenizedType.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlTypeCode System.Xml.Schema.XmlSchemaDatatype.TypeCode.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Type System.Xml.Schema.XmlSchemaDatatype.ValueType.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaDatatypeVariety System.Xml.Schema.XmlSchemaDatatype.Variety.get()' is non-virtual in the implementation but is virtual in the contract.
 CannotSealType : Type 'System.Xml.Schema.XmlSchemaGroupBase' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Xml.Schema.XmlSchemaGroupBase..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaGroupBase.Items' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaGroupBase.Items.get()' is non-virtual in the implementation but is virtual in the contract.
-Total Issues: 543
+MembersMustExist : Member 'protected void System.Xml.Schema.XmlSchemaGroupBase..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items.get()' is non-virtual in the implementation but is virtual in the contract.
+Total Issues: 617

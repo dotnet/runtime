@@ -35,16 +35,16 @@
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
   --> 
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
-    <BinPlaceTargetFramework Include="$(BuildConfiguration)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/trimmed</RuntimePath>
+    <BinPlaceTargetFramework Include="$(BuildSettings)">
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
     </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(BuildConfiguration)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/reports</RuntimePath>
+    <BinPlaceTargetFramework Include="$(BuildSettings)">
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
     </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(BuildConfiguration)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/pretrimmed</RuntimePath>
+    <BinPlaceTargetFramework Include="$(BuildSettings)">
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/pretrimmed</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
     </BinPlaceTargetFramework>
   </ItemGroup>

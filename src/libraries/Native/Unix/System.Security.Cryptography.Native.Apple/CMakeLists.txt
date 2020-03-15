@@ -5,21 +5,27 @@ find_library(SECURITY_LIBRARY Security)
 
 set(NATIVECRYPTO_SOURCES
     pal_digest.c
-    pal_ecc.c
     pal_hmac.c
-    pal_keyagree.c
-    pal_keychain.c
     pal_random.c
-    pal_rsa.c
-    pal_sec.c
-    pal_seckey.c
-    pal_signverify.c
-    pal_ssl.c
     pal_symmetric.c
-    pal_trust.c
-    pal_x509.c
-    pal_x509chain.c
 )
+
+if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable more sources
+    set(NATIVECRYPTO_SOURCES
+        ${NATIVECRYPTO_SOURCES}
+        pal_ecc.c
+        pal_keyagree.c
+        pal_keychain.c
+        pal_rsa.c
+        pal_sec.c
+        pal_seckey.c
+        pal_signverify.c
+        pal_ssl.c
+        pal_trust.c
+        pal_x509.c
+        pal_x509chain.c
+    )
+endif()
 
 add_library(System.Security.Cryptography.Native.Apple
     SHARED
@@ -32,11 +38,6 @@ add_library(System.Security.Cryptography.Native.Apple-Static
     ${NATIVECRYPTO_SOURCES}
 )
 
-# Disable the "lib" prefix.
-set_target_properties(System.Security.Cryptography.Native.Apple PROPERTIES PREFIX "")
-
-# Disable the "lib" prefix and override default name
-set_target_properties(System.Security.Cryptography.Native.Apple-Static PROPERTIES PREFIX "")
 set_target_properties(System.Security.Cryptography.Native.Apple-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Apple CLEAN_DIRECT_OUTPUT 1)
 
 target_link_libraries(System.Security.Cryptography.Native.Apple

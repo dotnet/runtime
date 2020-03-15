@@ -353,6 +353,12 @@ protected:
         return (0 != (dwMarshalFlags & MARSHAL_FLAG_RETVAL));
     }
 
+    static inline bool IsInMemberFunction(DWORD dwMarshalFlags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (0 != (dwMarshalFlags & MARSHAL_FLAG_IN_MEMBER_FUNCTION));
+    }
+
     static inline bool IsHiddenLengthParam(DWORD dwMarshalFlags)
     {
         LIMITED_METHOD_CONTRACT;
@@ -699,7 +705,7 @@ public:
         bool byrefNativeReturn = false;
         CorElementType typ = ELEMENT_TYPE_VOID;
         UINT32 nativeSize = 0;
-        bool nativeMethodIsMemberFunction = (CorInfoCallConv)m_pslNDirect->GetStubTargetCallingConv() == CORINFO_CALLCONV_THISCALL;
+        bool nativeMethodIsMemberFunction = IsInMemberFunction(dwMarshalFlags);
 
         // we need to convert value type return types to primitives as
         // JIT does not inline P/Invoke calls that return structures

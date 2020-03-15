@@ -42,7 +42,7 @@
 #define WszMessageBox __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
 
 // Hot cache lines need to be aligned to cache line size to improve performance
-#if defined(HOST_ARM64)
+#if defined(TARGET_ARM64)
 #define MAX_CACHE_LINE_SIZE 128
 #else
 #define MAX_CACHE_LINE_SIZE 64
@@ -584,18 +584,6 @@ public:
         m_FiberPtrId = NULL;
     }
 };
-
-#define CLRHOSTED           0x80000000
-
-GVAL_DECL(DWORD, g_fHostConfig);
-
-
-inline BOOL CLRHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return g_fHostConfig;
-}
 
 #ifndef TARGET_UNIX
 HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);

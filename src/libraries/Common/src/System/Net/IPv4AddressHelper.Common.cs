@@ -86,14 +86,13 @@ namespace System
         {
             for (int i = 0; i < NumberOfLabels; ++i)
             {
-
-                byte b = 0;
+                int b = 0;
                 char ch;
                 for (; (start < end) && (ch = name[start]) != '.' && ch != ':'; ++start)
                 {
-                    b = (byte)(b * 10 + (byte)(ch - '0'));
+                    b = (b * 10) + ch - '0';
                 }
-                numbers[i] = b;
+                numbers[i] = (byte)b;
                 ++start;
             }
             return numbers[0] == 127;

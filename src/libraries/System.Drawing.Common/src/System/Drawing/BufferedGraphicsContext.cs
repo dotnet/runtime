@@ -82,10 +82,10 @@ namespace System.Drawing
         /// <summary>
         /// Returns a BufferedGraphics that is matched for the specified target HDC object.
         /// </summary>
-        private BufferedGraphics AllocBufferInTempManager(Graphics targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
+        private BufferedGraphics AllocBufferInTempManager(Graphics? targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
         {
-            BufferedGraphicsContext tempContext = null;
-            BufferedGraphics tempBuffer = null;
+            BufferedGraphicsContext? tempContext = null;
+            BufferedGraphics? tempBuffer = null;
 
             try
             {

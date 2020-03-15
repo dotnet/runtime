@@ -284,9 +284,6 @@ public:
     void EnablePreemptiveGC() { }
     void DisablePreemptiveGC() { }
 
-    inline void IncLockCount() { }
-    inline void DecLockCount() { }
-
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD) { return NULL; }
 
     PTR_AppDomain GetDomain() { return ::GetAppDomain(); }
@@ -499,9 +496,6 @@ struct Dbg_TrackSync
     virtual void LeaveSync    (UINT_PTR caller, void *pAwareLock) = 0;
 };
 
-EXTERN_C void EnterSyncHelper    (UINT_PTR caller, void *pAwareLock);
-EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock);
-
 #endif  // TRACK_SYNC
 
 //***************************************************************************
@@ -608,6 +602,17 @@ void    DestroyThread(Thread *th);
 DWORD GetRuntimeId();
 
 EXTERN_C Thread* WINAPI CreateThreadBlockThrow();
+
+#define CREATETHREAD_IF_NULL_FAILFAST(__thread, __msg)                  \
+{                                                                       \
+    HRESULT __ctinffhr;                                                 \
+    __thread = SetupThreadNoThrow(&__ctinffhr);                         \
+    if (__thread == NULL)                                               \
+    {                                                                   \
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(__ctinffhr, __msg);    \
+        UNREACHABLE();                                                  \
+    }                                                                   \
+}
 
 //---------------------------------------------------------------------------
 // One-time initialization. Called during Dll initialization.
@@ -1035,19 +1040,12 @@ public:
         if(STSGuarantee_Force == fScope)
             return TRUE;
 
+#ifdef DEBUG
         // For debug, always enable setting thread stack guarantee so that we can print the stack trace
-#ifndef DEBUG
-        //The runtime must be hosted to have escalation policy
-        //If escalation policy is enabled but StackOverflow is not part of the policy
-        //   then we don't use SetThreadStackGuarantee
-        if(!CLRHosted() ||
-            GetEEPolicy()->GetActionOnFailure(FAIL_StackOverflow) == eRudeExitProcess)
-        {
-            //FAIL_StackOverflow is ProcessExit so don't use SetThreadStackGuarantee
-            return FALSE;
-        }
-#endif // DEBUG
         return TRUE;
+#else
+        return FALSE;
+#endif
     }
 
 public:
@@ -1061,8 +1059,7 @@ public:
     StackingAllocator* m_stackLocalAllocator = NULL;
 
     // If we are trying to suspend a thread, we set the appropriate pending bit to
-    // indicate why we want to suspend it (TS_GCSuspendPending, TS_UserSuspendPending,
-    // TS_DebugSuspendPending).
+    // indicate why we want to suspend it (TS_GCSuspendPending or TS_DebugSuspendPending).
     //
     // If instead the thread has blocked itself, via WaitSuspendEvent, we indicate
     // this with TS_SyncSuspended.  However, we need to know whether the synchronous
@@ -1078,7 +1075,6 @@ public:
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
         TS_GCSuspendPending       = 0x00000002,    // waiting to get to safe spot for GC
-        TS_UserSuspendPending     = 0x00000004,    // user suspension at next opportunity
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
@@ -1140,8 +1136,8 @@ public:
         //         enum is changed, we also need to update SOS to reflect this.</TODO>
 
         // We require (and assert) that the following bits are less than 0x100.
-        TS_CatchAtSafePoint = (TS_UserSuspendPending | TS_AbortRequested |
-                               TS_GCSuspendPending | TS_DebugSuspendPending | TS_GCOnTransitions),
+        TS_CatchAtSafePoint = (TS_AbortRequested | TS_GCSuspendPending |
+                               TS_DebugSuspendPending | TS_GCOnTransitions),
     };
 
     // Thread flags that aren't really states in themselves but rather things the thread
@@ -1187,9 +1183,7 @@ public:
         // unused                       = 0x00080000,
         TSNC_RaiseUnloadEvent           = 0x00100000, // Finalize thread is raising managed unload event which
                                                       // may call AppDomain.Unload.
-        TSNC_UnbalancedLocks            = 0x00200000, // Do not rely on lock accounting for this thread:
-                                                      // we left an app domain with a lock count different from
-                                                      // when we entered it
+        // unused                       = 0x00200000,
         // unused                       = 0x00400000,
         TSNC_IgnoreUnhandledExceptions  = 0x00800000, // Set for a managed thread born inside an appdomain created with the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag.
         TSNC_ProcessedUnhandledException = 0x01000000,// Set on a thread on which we have done unhandled exception processing so that
@@ -1504,10 +1498,6 @@ public:
     //-----------------------------------------------------------
     PTR_AppDomain       m_pDomain;
 
-    // Track the number of locks (critical section, spin lock, syncblock lock,
-    // EE Crst, GC lock) held by the current thread.
-    DWORD                m_dwLockCount;
-
     // Unique thread id used for thin locks - kept as small as possible, as we have limited space
     // in the object header to store it.
     DWORD                m_ThreadId;
@@ -1635,12 +1625,7 @@ public:
     // Flags for thread states that have no concurrency issues.
     ThreadStateNoConcurrency m_StateNC;
 
-    inline void IncLockCount();
-    inline void DecLockCount();
-
 private:
-    DWORD m_dwBeginLockCount;  // lock count when the thread enters current domain
-
 #ifdef _DEBUG
     DWORD dbg_m_cSuspendedThreads;
     // Count of suspended threads that we know are not in native code (and therefore cannot hold OS lock which prevents us calling out to host)
@@ -1720,21 +1705,6 @@ private:
     DWORD m_dwHashCodeSeed;
 
 public:
-
-    inline BOOL HasLockInCurrentDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(m_dwLockCount >= m_dwBeginLockCount);
-
-        // Equivalent to (m_dwLockCount != m_dwBeginLockCount ||
-        //                m_dwCriticalRegionCount ! m_dwBeginCriticalRegionCount),
-        // but without branching instructions
-        BOOL fHasLock = (m_dwLockCount ^ m_dwBeginLockCount);
-
-        return fHasLock;
-    }
-
     inline DWORD GetNewHashCode()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3390,10 +3360,6 @@ private:
     {
         WRAPPER_NO_CONTRACT;
 
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(bit & TS_UserSuspendPending));
-
-
         if (bit & TS_DebugSuspendPending) {
             m_DebugSuspendEvent.Reset();
         }
@@ -3410,20 +3376,13 @@ private:
         //
         ThreadState oldState = m_State;
 
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(oldState & TS_UserSuspendPending));
 
-        while ((oldState & (TS_UserSuspendPending | TS_DebugSuspendPending)) == 0)
+        while ((oldState & TS_DebugSuspendPending) == 0)
         {
-            // CoreCLR does not support user-requested thread suspension
-            _ASSERTE(!(oldState & TS_UserSuspendPending));
-
             //
             // Construct the destination state we desire - all suspension bits turned off.
             //
-            ThreadState newState = (ThreadState)(oldState & ~(TS_UserSuspendPending |
-                                                              TS_DebugSuspendPending |
-                                                              TS_SyncSuspended));
+            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
 
             if (FastInterlockCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
             {
@@ -3435,9 +3394,6 @@ private:
             //
             oldState = m_State;
         }
-
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(bit & TS_UserSuspendPending));
 
         if (bit & TS_DebugSuspendPending) {
             m_DebugSuspendEvent.Set();
@@ -4737,8 +4693,6 @@ private:
 
     // By the time a frame is scanned by the runtime, m_pHijackReturnKind always
     // identifies the gc-ness of the return register(s)
-    // If the ReturnKind information is not available from the GcInfo, the runtime
-    // computes it using the return types's class handle.
 
     ReturnKind m_HijackReturnKind;
 

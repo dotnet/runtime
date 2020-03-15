@@ -16,7 +16,6 @@ namespace System
 		IntPtr Type;
 		#endregion
 
-		[CLSCompliant (false)]
 		public static TypedReference MakeTypedReference (object target, FieldInfo[] flds)
 		{
 			if (target == null)
@@ -72,7 +71,6 @@ namespace System
 			throw new NotSupportedException (SR.NotSupported_NYI);
 		}
 
-		[CLSCompliant (false)]
 		public unsafe static object ToObject (TypedReference value)
 		{
 			return InternalToObject (&value);
@@ -87,20 +85,17 @@ namespace System
 			}
 		}
 
-		[CLSCompliant (false)]
 		public static Type GetTargetType (TypedReference value)
 		{
 			return __reftype (value);
 		}
 
-		[CLSCompliant (false)]
 		public static RuntimeTypeHandle TargetTypeToken (TypedReference value)
 		{
 			return __reftype (value).TypeHandle;
 		}
 
-		[CLSCompliant (false)]
-		public unsafe static void SetTypedReference (TypedReference target, Object value)
+		public unsafe static void SetTypedReference (TypedReference target, object? value)
 		{
 			throw new NotSupportedException ();
 		}

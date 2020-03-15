@@ -72,3 +72,4 @@ set_target_properties(coreclrtraceptprovider PROPERTIES LINKER_LANGUAGE CXX)
 _install(TARGETS eventprovider DESTINATION lib)
 # Install the static coreclrtraceptprovider library
 install_clr(TARGETS coreclrtraceptprovider)
+install_clr(TARGETS coreclrtraceptprovider DESTINATION sharedFramework SKIP_STRIP)

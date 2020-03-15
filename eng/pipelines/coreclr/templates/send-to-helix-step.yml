@@ -36,7 +36,7 @@ steps:
       condition: ${{ parameters.condition }}
     env:
       __BuildArch: ${{ parameters.archType }}
-      __BuildOS: ${{ parameters.osGroup }}
+      __TargetOS: ${{ parameters.osGroup }}
       __BuildType: ${{ parameters.buildConfig }}
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}
@@ -75,7 +75,7 @@ steps:
       condition: ${{ parameters.condition }}
     env:
       __BuildArch: ${{ parameters.archType }}
-      __BuildOS: ${{ parameters.osGroup }}
+      __TargetOS: ${{ parameters.osGroup }}
       __BuildType: ${{ parameters.buildConfig }}
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}

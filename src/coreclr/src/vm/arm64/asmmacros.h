@@ -332,16 +332,17 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
 ; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
 ; to improve density, or to reduce distance betweeen the constant pool and its use.
 ;
+    SETALIAS gCurrentThreadInfo, ?gCurrentThreadInfo@@3UThreadLocalInfo@@A
 
     MACRO
         INLINE_GETTHREAD_CONSTANT_POOL
 
-        EXTERN gCurrentThreadInfo
+        EXTERN $gCurrentThreadInfo
 
     ;; Section relocs are 32 bits. Using an extra DCD initialized to zero for 8-byte alignment.
 $__SECTIONREL_gCurrentThreadInfo
-        DCD gCurrentThreadInfo
-        RELOC 8, gCurrentThreadInfo      ;; SECREL
+        DCD $gCurrentThreadInfo
+        RELOC 8, $gCurrentThreadInfo    ;; SECREL
         DCD 0
 
 __SECTIONREL_gCurrentThreadInfo SETS "$__SECTIONREL_gCurrentThreadInfo":CC:"_"

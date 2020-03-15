@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.IO;
 
@@ -12,9 +13,8 @@ namespace System.Net.NetworkInformation
         internal static string ParseDnsSuffixFromResolvConfFile(string data)
         {
             RowConfigReader rcr = new RowConfigReader(data);
-            string dnsSuffix;
 
-            return rcr.TryGetNextValue("search", out dnsSuffix) ? dnsSuffix : string.Empty;
+            return rcr.TryGetNextValue("search", out string? dnsSuffix) ? dnsSuffix : string.Empty;
         }
 
         internal static List<IPAddress> ParseDnsAddressesFromResolvConfFile(string data)
@@ -27,11 +27,9 @@ namespace System.Net.NetworkInformation
             RowConfigReader rcr = new RowConfigReader(data);
             List<IPAddress> addresses = new List<IPAddress>();
 
-            string addressString = null;
-            while (rcr.TryGetNextValue("nameserver", out addressString))
+            while (rcr.TryGetNextValue("nameserver", out string? addressString))
             {
-                IPAddress parsedAddress;
-                if (IPAddress.TryParse(addressString, out parsedAddress))
+                if (IPAddress.TryParse(addressString, out IPAddress? parsedAddress))
                 {
                     addresses.Add(parsedAddress);
                 }

@@ -2,13 +2,14 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
   <Import Project="$(RepositoryEngineeringDir)coverage.props" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(EnableCoverageSupport)' == 'true'">
     <CoverageReportInputPath>$(ArtifactsBinDir)*.Tests/**/coverage.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
-    <SerializeProjects>true</SerializeProjects>
-  </PropertyGroup>
-  <PropertyGroup>
-    <TargetFramework>netcoreapp5.0</TargetFramework> 
+    <SerializeProjects>true</SerializeProjects> 
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
@@ -44,7 +45,7 @@
   <Target Name="BuildAllProjects">
     <MSBuild Targets="Build"
              Projects="@(Project)"
-             Properties="BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration);%(Project.AdditionalProperties)"
+             Properties="BuildAllProjects=true;%(Project.AdditionalProperties)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
 
@@ -59,13 +60,13 @@
     <MSBuild Targets="Test"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)' == 'true' and '%(Identity)' != ''"
-             Properties="TestAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             Properties="TestAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="Test"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)' != 'true'"
-             Properties="TestAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             Properties="TestAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 

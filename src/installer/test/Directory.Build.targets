@@ -79,7 +79,7 @@
       <TestContextVariable Include="TEST_TARGETRID=$(TestTargetRid)" />
       <TestContextVariable Include="BUILDRID=$(OutputRid)" />
       <TestContextVariable Include="BUILD_ARCHITECTURE=$(TargetArchitecture)" />
-      <TestContextVariable Include="BUILD_CONFIGURATION=$(ConfigurationGroup)" />
+      <TestContextVariable Include="BUILD_CONFIGURATION=$(Configuration)" />
       <TestContextVariable Include="MNA_VERSION=$(NETCoreAppRuntimePackageVersion)" />
       <TestContextVariable Include="MNA_TFM=$(NETCoreAppFramework)" />
       <TestContextVariable Include="DOTNET_SDK_PATH=$(DotNetRoot)" />
@@ -129,7 +129,7 @@
       <TestTargetRid Condition="'$(TestTargetRid)' == ''">$(_HostRid)</TestTargetRid>
       <TestsOutputName Condition="'$(TestsOutputName)' == ''">$(MSBuildProjectName)</TestsOutputName>
 
-      <TestsOutputRootDir Condition="'$(TestsOutputRootDir)' == ''">$(ArtifactsDir)tests/$(ConfigurationGroup)/</TestsOutputRootDir>
+      <TestsOutputRootDir Condition="'$(TestsOutputRootDir)' == ''">$(ArtifactsDir)tests/$(Configuration)/</TestsOutputRootDir>
       <TestsOutputDir Condition="'$(TestsOutputDir)' == ''">$(TestsOutputRootDir)$(TestsOutputName)/</TestsOutputDir>
     </PropertyGroup>
   </Target>

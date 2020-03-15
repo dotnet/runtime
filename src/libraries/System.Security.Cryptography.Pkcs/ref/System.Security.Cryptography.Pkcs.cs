@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
     public sealed partial class CryptographicAttributeObject
     {
         public CryptographicAttributeObject(System.Security.Cryptography.Oid oid) { }
-        public CryptographicAttributeObject(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedDataCollection values) { }
+        public CryptographicAttributeObject(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedDataCollection? values) { }
         public System.Security.Cryptography.Oid Oid { get { throw null; } }
         public System.Security.Cryptography.AsnEncodedDataCollection Values { get { throw null; } }
     }
@@ -87,9 +87,9 @@ namespace System.Security.Cryptography.Pkcs
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public CmsSigner(System.Security.Cryptography.CspParameters parameters) { }
         public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType) { }
-        public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
-        public CmsSigner(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
-        public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate { get { throw null; } set { } }
+        public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2? certificate) { }
+        public CmsSigner(System.Security.Cryptography.X509Certificates.X509Certificate2? certificate) { }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2? Certificate { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Certificates { get { throw null; } }
         public System.Security.Cryptography.Oid DigestAlgorithm { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509IncludeOption IncludeOption { get { throw null; } set { } }
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Pkcs
         public override byte[] EncryptedKey { get { throw null; } }
         public override System.Security.Cryptography.Pkcs.AlgorithmIdentifier KeyEncryptionAlgorithm { get { throw null; } }
         public System.Security.Cryptography.Pkcs.SubjectIdentifierOrKey OriginatorIdentifierOrKey { get { throw null; } }
-        public System.Security.Cryptography.CryptographicAttributeObject OtherKeyAttribute { get { throw null; } }
+        public System.Security.Cryptography.CryptographicAttributeObject? OtherKeyAttribute { get { throw null; } }
         public override System.Security.Cryptography.Pkcs.SubjectIdentifier RecipientIdentifier { get { throw null; } }
         public override int Version { get { throw null; } }
     }
@@ -150,7 +150,7 @@ namespace System.Security.Cryptography.Pkcs
         public Pkcs9AttributeObject(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public Pkcs9AttributeObject(System.Security.Cryptography.Oid oid, byte[] encodedData) { }
         public Pkcs9AttributeObject(string oid, byte[] encodedData) { }
-        public new System.Security.Cryptography.Oid Oid { get { throw null; } }
+        public new System.Security.Cryptography.Oid? Oid { get { throw null; } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
     }
     public sealed partial class Pkcs9ContentType : System.Security.Cryptography.Pkcs.Pkcs9AttributeObject
@@ -258,7 +258,7 @@ namespace System.Security.Cryptography.Pkcs
     public sealed partial class SignerInfo
     {
         internal SignerInfo() { }
-        public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2? Certificate { get { throw null; } }
         public System.Security.Cryptography.Pkcs.SignerInfoCollection CounterSignerInfos { get { throw null; } }
         public System.Security.Cryptography.Oid DigestAlgorithm { get { throw null; } }
         public System.Security.Cryptography.CryptographicAttributeObjectCollection SignedAttributes { get { throw null; } }
@@ -298,7 +298,7 @@ namespace System.Security.Cryptography.Pkcs
     {
         internal SubjectIdentifier() { }
         public System.Security.Cryptography.Pkcs.SubjectIdentifierType Type { get { throw null; } }
-        public object Value { get { throw null; } }
+        public object? Value { get { throw null; } }
     }
     public sealed partial class SubjectIdentifierOrKey
     {

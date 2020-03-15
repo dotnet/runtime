@@ -57,9 +57,54 @@ namespace R2RDump
             DiffR2RSections();
             DiffR2RMethods();
 
-            Dictionary<string, ReadyToRunMethod> leftMethods = new Dictionary<string, ReadyToRunMethod>(_leftDumper.Reader.Methods
+            if (!_leftDumper.Reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out ReadyToRunSection leftSection))
+            {
+                leftSection = new ReadyToRunSection();
+            }
+            if (!_rightDumper.Reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out ReadyToRunSection rightSection))
+            {
+                rightSection = new ReadyToRunSection();
+            }
+
+            DiffMethodsForModule(leftSection, rightSection);
+
+            if (_leftDumper.Reader.Composite && _rightDumper.Reader.Composite)
+            {
+                HashSet<string> allComponentAssemblies = new HashSet<string>(_leftDumper.Reader.ManifestReferenceAssemblies.Keys);
+                allComponentAssemblies.UnionWith(_rightDumper.Reader.ManifestReferenceAssemblies.Keys);
+                foreach (string assemblyName in allComponentAssemblies.OrderBy(name => name))
+                {
+                    int leftIndex = _leftDumper.Reader.ManifestReferenceAssemblies[assemblyName];
+                    int rightIndex = _rightDumper.Reader.ManifestReferenceAssemblies[assemblyName];
+
+                    if (leftIndex < 0 ||  !_leftDumper.Reader.ReadyToRunAssemblyHeaders[leftIndex].Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out leftSection))
+                    {
+                        leftSection = new ReadyToRunSection();
+                    }
+                    if (rightIndex < 0 || !_rightDumper.Reader.ReadyToRunAssemblyHeaders[rightIndex].Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out rightSection))
+                    {
+                        rightSection = new ReadyToRunSection();
+                    }
+                    _writer.WriteLine($@"{assemblyName}: component method diff");
+                    DiffMethodsForModule(leftSection, rightSection);
+                }
+            }
+        }
+
+        private void DiffMethodsForModule(ReadyToRunSection leftSection, ReadyToRunSection rightSection)
+        {
+            if (!_leftDumper.Reader.Methods.TryGetValue(leftSection, out List<ReadyToRunMethod> leftSectionMethods))
+            {
+                leftSectionMethods = new List<ReadyToRunMethod>();
+            }
+            if (!_rightDumper.Reader.Methods.TryGetValue(rightSection, out List<ReadyToRunMethod> rightSectionMethods))
+            {
+                rightSectionMethods = new List<ReadyToRunMethod>();
+            }
+
+            Dictionary<string, ReadyToRunMethod> leftMethods = new Dictionary<string, ReadyToRunMethod>(leftSectionMethods
                 .Select(method => new KeyValuePair<string, ReadyToRunMethod>(method.SignatureString, method)));
-            Dictionary<string, ReadyToRunMethod> rightMethods = new Dictionary<string, ReadyToRunMethod>(_rightDumper.Reader.Methods
+            Dictionary<string, ReadyToRunMethod> rightMethods = new Dictionary<string, ReadyToRunMethod>(rightSectionMethods
                 .Select(method => new KeyValuePair<string, ReadyToRunMethod>(method.SignatureString, method)));
             Dictionary<string, MethodPair> commonMethods = new Dictionary<string, MethodPair>(leftMethods
                 .Select(kvp => new KeyValuePair<string, MethodPair>(kvp.Key,
@@ -69,8 +114,8 @@ namespace R2RDump
             {
                 commonMethods = new Dictionary<string, MethodPair>(HideMethodsWithSameDisassembly(commonMethods));
             }
-            DumpCommonMethods(_leftDumper, commonMethods);
-            DumpCommonMethods(_rightDumper, commonMethods);
+            DumpCommonMethods(_leftDumper, leftSection, commonMethods);
+            DumpCommonMethods(_rightDumper, rightSection, commonMethods);
         }
 
         /// <summary>
@@ -104,7 +149,40 @@ namespace R2RDump
         /// </summary>
         private void DiffR2RMethods()
         {
-            ShowDiff(GetR2RMethodMap(_leftDumper.Reader), GetR2RMethodMap(_rightDumper.Reader), "R2R methods");
+            DiffR2RMethodsForHeader(_leftDumper.Reader.ReadyToRunHeader, _rightDumper.Reader.ReadyToRunHeader);
+        }
+
+        private void DiffR2RMethodsForHeader(ReadyToRunCoreHeader leftHeader, ReadyToRunCoreHeader rightHeader)
+        {
+            if (!leftHeader.Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out ReadyToRunSection leftSection))
+            {
+                leftSection = new ReadyToRunSection();
+            }
+            if (!rightHeader.Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out ReadyToRunSection rightSection))
+            {
+                rightSection = new ReadyToRunSection();
+            }
+            ShowDiff(GetR2RMethodMap(_leftDumper.Reader, leftSection), GetR2RMethodMap(_rightDumper.Reader, rightSection), "R2R methods");
+
+            if (_leftDumper.Reader.Composite && _rightDumper.Reader.Composite)
+            {
+                HashSet<string> allComponentAssemblies = new HashSet<string>(_leftDumper.Reader.ManifestReferenceAssemblies.Keys);
+                allComponentAssemblies.UnionWith(_rightDumper.Reader.ManifestReferenceAssemblies.Keys);
+                foreach (string assemblyName in allComponentAssemblies.OrderBy(name => name))
+                {
+                    int leftIndex = _leftDumper.Reader.ManifestReferenceAssemblies[assemblyName];
+                    int rightIndex = _rightDumper.Reader.ManifestReferenceAssemblies[assemblyName];
+                    if (leftIndex < 0 || !_leftDumper.Reader.ReadyToRunAssemblyHeaders[leftIndex].Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out leftSection))
+                    {
+                        leftSection = new ReadyToRunSection();
+                    }
+                    if (rightIndex < 0 || !_rightDumper.Reader.ReadyToRunAssemblyHeaders[rightIndex].Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out rightSection))
+                    {
+                        rightSection = new ReadyToRunSection();
+                    }
+                    ShowDiff(GetR2RMethodMap(_leftDumper.Reader, leftSection), GetR2RMethodMap(_rightDumper.Reader, rightSection), $"{assemblyName}: component R2R methods");
+                }
+            }
         }
 
         /// <summary>
@@ -209,14 +287,17 @@ namespace R2RDump
         /// </summary>
         /// <param name="reader">R2R image to scan</param>
         /// <returns></returns>
-        private Dictionary<string, int> GetR2RMethodMap(ReadyToRunReader reader)
+        private Dictionary<string, int> GetR2RMethodMap(ReadyToRunReader reader, ReadyToRunSection section)
         {
             Dictionary<string, int> methodMap = new Dictionary<string, int>();
 
-            foreach (ReadyToRunMethod method in reader.Methods)
+            if (reader.Methods.TryGetValue(section, out List<ReadyToRunMethod> sectionMethods))
             {
-                int size = method.RuntimeFunctions.Sum(rf => rf.Size);
-                methodMap.Add(method.SignatureString, size);
+                foreach (ReadyToRunMethod method in sectionMethods)
+                {
+                    int size = method.RuntimeFunctions.Sum(rf => rf.Size);
+                    methodMap.Add(method.SignatureString, size);
+                }
             }
 
             return methodMap;
@@ -227,17 +308,18 @@ namespace R2RDump
         /// </summary>
         /// <param name="dumper">Output dumper to use</param>
         /// <param name="signatureFilter">Set of common signatures of methods to dump</param>
-        private void DumpCommonMethods(Dumper dumper, Dictionary<string, MethodPair> signatureFilter)
+        private void DumpCommonMethods(Dumper dumper, ReadyToRunSection section, Dictionary<string, MethodPair> signatureFilter)
         {
-            IEnumerable<ReadyToRunMethod> filteredMethods = dumper
-                .Reader
-                .Methods
-                .Where(method => signatureFilter.ContainsKey(method.SignatureString))
-                .OrderBy(method => method.SignatureString);
-
-            foreach (ReadyToRunMethod method in filteredMethods)
+            if (dumper.Reader.Methods.TryGetValue(section, out List<ReadyToRunMethod> sectionMethods))
             {
-                dumper.DumpMethod(method);
+                IEnumerable<ReadyToRunMethod> filteredMethods = sectionMethods
+                    .Where(method => signatureFilter.ContainsKey(method.SignatureString))
+                    .OrderBy(method => method.SignatureString);
+
+                foreach (ReadyToRunMethod method in filteredMethods)
+                {
+                    dumper.DumpMethod(method);
+                }
             }
         }
 

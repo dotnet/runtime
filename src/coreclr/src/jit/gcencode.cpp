@@ -924,7 +924,7 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         goto DO_RETURN;
     }
 
-    if (GCInfoEncodesReturnKind() && (state->returnKind != header.returnKind))
+    if (state->returnKind != header.returnKind)
     {
         state->returnKind = header.returnKind;
         codeSet           = 2; // Two byte encoding
@@ -973,7 +973,7 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         }
     }
 
-    if (GCInfoEncodesRevPInvokeFrame() && (state->revPInvokeOffset != header.revPInvokeOffset))
+    if (state->revPInvokeOffset != header.revPInvokeOffset)
     {
         assert(state->revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET ||
                state->revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET);
@@ -1575,7 +1575,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->doubleAlign = compiler->genDoubleAlign();
 #endif
 
-    header->security = compiler->opts.compNeedSecurityCheck;
+    header->security = false;
 
     header->handlers = compiler->ehHasCallableHandlers();
     header->localloc = compiler->compLocallocUsed;
@@ -1587,14 +1587,11 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->genericsContextIsMethodDesc =
         header->genericsContext && (compiler->info.compMethodInfo->options & (CORINFO_GENERICS_CTXT_FROM_METHODDESC));
 
-    if (GCInfoEncodesReturnKind())
-    {
-        ReturnKind returnKind = getReturnKind();
-        _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
-        _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
-        _ASSERTE(((int)returnKind < (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
-        header->returnKind = returnKind;
-    }
+    ReturnKind returnKind = getReturnKind();
+    _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
+    _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
+    _ASSERTE(((int)returnKind < (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
+    header->returnKind = returnKind;
 
     header->gsCookieOffset = INVALID_GS_COOKIE_OFFSET;
     if (compiler->getNeedsGSSecurityCookie())
@@ -3919,26 +3916,9 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
                                                        compiler->lvaGSSecurityCookie),
                                                    prologSize, methodSize);
     }
-    else if (compiler->opts.compNeedSecurityCheck || compiler->lvaReportParamTypeArg() ||
-             compiler->lvaKeepAliveAndReportThis())
+    else if (compiler->lvaReportParamTypeArg() || compiler->lvaKeepAliveAndReportThis())
     {
         gcInfoEncoderWithLog->SetPrologSize(prologSize);
-    }
-
-    if (compiler->opts.compNeedSecurityCheck)
-    {
-        assert(compiler->lvaSecurityObject != BAD_VAR_NUM);
-
-        // A VM requirement due to how the decoder works (it ignores partially interruptible frames when
-        // an exception has escaped, but the VM requires the security object to live on).
-        assert(compiler->codeGen->GetInterruptible());
-
-        // The lv offset is FP-relative, and the using code expects caller-sp relative, so translate.
-        // The normal GC lifetime reporting mechanisms will report a proper lifetime to the GC.
-        // The security subsystem can safely assume that anywhere it might walk the stack, it will be
-        // valid (null or a live GC ref).
-        gcInfoEncoderWithLog->SetSecurityObjectStackSlot(
-            compiler->lvaGetCallerSPRelativeOffset(compiler->lvaSecurityObject));
     }
 
 #if defined(FEATURE_EH_FUNCLETS)

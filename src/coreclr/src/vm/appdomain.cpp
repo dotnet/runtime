@@ -27,7 +27,6 @@
 #include "stringliteralmap.h"
 #include "codeman.h"
 #include "comcallablewrapper.h"
-#include "apithreadstress.h"
 #include "eventtrace.h"
 #include "comdelegate.h"
 #include "siginfo.hpp"
@@ -253,6 +252,15 @@ OBJECTREF *LargeHeapHandleBucket::TryAllocateEmbeddedFreeHandle()
 
     m_CurrentEmbeddedFreePos = 0;
     return NULL;
+}
+
+// enumerate the handles in the bucket
+void LargeHeapHandleBucket::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
+{
+    for (int i = 0; i < m_CurrentPos; i++)
+    {
+        fn((Object**)&m_pArrayDataPtr[i], sc, 0);
+    }
 }
 
 
@@ -512,8 +520,14 @@ void LargeHeapHandleTable::ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased)
     m_cEmbeddedFree += nReleased;
 }
 
-
-
+// enumerate the handles in the handle table
+void LargeHeapHandleTable::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
+{
+    for (LargeHeapHandleBucket *pBucket = m_pHead; pBucket != nullptr; pBucket = pBucket->GetNext())
+    {
+        pBucket->EnumStaticGCRefs(fn, sc);
+    }
+}
 
 // Constructor for the ThreadStaticHandleBucket class.
 ThreadStaticHandleBucket::ThreadStaticHandleBucket(ThreadStaticHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
@@ -669,11 +683,7 @@ BaseDomain::BaseDomain()
     m_JITLock.PreInit();
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
-
-#ifdef FEATURE_CODE_VERSIONING
-    m_codeVersionManager.PreInit();
-#endif
-
+    m_NativeTypeLoadLock.PreInit();
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -724,6 +734,7 @@ void BaseDomain::Init()
     m_ClassInitLock.Init(CrstClassInit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
 
     m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY), TRUE);
+    m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
 
     // Large heap handle table CRST.
     m_LargeHeapHandleTableCrst.Init(CrstAppDomainHandleTable);
@@ -1567,10 +1578,11 @@ void SystemDomain::Attach()
     ILStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
-
     ThunkHeapStubManager::Init();
-
     TailCallStubManager::Init();
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCountingStubManager::Init();
+#endif
 
     PerAppDomainTPCountList::InitAppDomainIndexList();
 #endif // CROSSGEN_COMPILE
@@ -1988,13 +2000,6 @@ void SystemDomain::LoadBaseSystemClasses()
 
     g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
 
-    // further loading of nonprimitive types may need casting support.
-    // initialize cast cache here.
-#ifndef CROSSGEN_COMPILE
-    CastCache::Initialize();
-    ECall::PopulateManagedCastHelpers();
-#endif // CROSSGEN_COMPILE
-
     // unfortunately, the following cannot be delay loaded since the jit
     // uses it to compute method attributes within a function that cannot
     // handle Complus exception and the following call goes through a path
@@ -2003,6 +2008,17 @@ void SystemDomain::LoadBaseSystemClasses()
     // guaranteed to be found.
     g_pDelegateClass = MscorlibBinder::GetClass(CLASS__DELEGATE);
     g_pMulticastDelegateClass = MscorlibBinder::GetClass(CLASS__MULTICAST_DELEGATE);
+
+#ifndef CROSSGEN_COMPILE
+    CrossLoaderAllocatorHashSetup::EnsureTypesLoaded();
+#endif
+
+    // further loading of nonprimitive types may need casting support.
+    // initialize cast cache here.
+#ifndef CROSSGEN_COMPILE
+    CastCache::Initialize();
+    ECall::PopulateManagedCastHelpers();
+#endif // CROSSGEN_COMPILE
 
     // used by IsImplicitInterfaceOfSZArray
     MscorlibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
@@ -2018,10 +2034,6 @@ void SystemDomain::LoadBaseSystemClasses()
     // Load Utf8String
     g_pUtf8StringClass = MscorlibBinder::GetClass(CLASS__UTF8_STRING);
 #endif // FEATURE_UTF8STRING
-
-#ifndef CROSSGEN_COMPILE
-    CrossLoaderAllocatorHashSetup::EnsureTypesLoaded();
-#endif
 
 #ifndef CROSSGEN_COMPILE
     ECall::PopulateManagedStringConstructors();
@@ -3597,28 +3609,6 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
     RETURN pAssembly->GetAssembly();
 }
 
-#ifndef CROSSGEN_COMPILE
-// Thread stress
-class LoadDomainAssemblyStress : APIThreadStress
-{
-public:
-    AppDomain *pThis;
-    AssemblySpec* pSpec;
-    PEAssembly *pFile;
-    FileLoadLevel targetLevel;
-
-    LoadDomainAssemblyStress(AppDomain *pThis, AssemblySpec* pSpec, PEAssembly *pFile, FileLoadLevel targetLevel)
-        : pThis(pThis), pSpec(pSpec), pFile(pFile), targetLevel(targetLevel) {LIMITED_METHOD_CONTRACT;}
-
-    void Invoke()
-    {
-        WRAPPER_NO_CONTRACT;
-        SetupThread();
-        pThis->LoadDomainAssembly(pSpec, pFile, targetLevel);
-    }
-};
-#endif // CROSSGEN_COMPILE
-
 extern BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB);
 
 DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
@@ -3701,10 +3691,6 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
 
     DomainAssembly * result;
-
-#ifndef CROSSGEN_COMPILE
-    LoadDomainAssemblyStress ts (this, pIdentity, pFile, targetLevel);
-#endif
 
     // Go into preemptive mode since this may take a while.
     GCX_PREEMP();
@@ -3828,9 +3814,6 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
     }
     CONTRACT_END;
 
-    // Thread stress
-    APIThreadStress::SyncThreadStress();
-
     DomainFile *pFile = pLock->GetDomainFile();
 
     // Make sure we release the lock on exit
@@ -3888,9 +3871,6 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
         // Now loop and do the load incrementally to the target level.
         if (pLock->GetLoadLevel() < immediateTargetLevel)
         {
-            // Thread stress
-            APIThreadStress::SyncThreadStress();
-
             while (pLock->Acquire(immediateTargetLevel))
             {
                 FileLoadLevel workLevel;
@@ -5956,14 +5936,12 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
              GCHeapUtilities::IsServerHeap()   &&
              IsGCSpecialThread());
 
-    AppDomain::AssemblyIterator asmIterator = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-    while (asmIterator.Next(pDomainAssembly.This()))
+#ifndef CROSSGEN_COMPILE
+    if (m_pLargeHeapHandleTable != nullptr)
     {
-        // @TODO: Review when DomainAssemblies get added.
-        _ASSERTE(pDomainAssembly != NULL);
-        pDomainAssembly->EnumStaticGCRefs(fn, sc);
+        m_pLargeHeapHandleTable->EnumStaticGCRefs(fn, sc);
     }
+#endif // CROSSGEN_COMPILE
 
     RETURN;
 }

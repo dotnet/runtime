@@ -57,6 +57,6 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private readonly bool _isNcrypt;
-        private SafeHandle _parentHandle;
+        private SafeHandle? _parentHandle;
     }
 }

@@ -12,7 +12,7 @@ using System.Linq;
 
 namespace System.Net.Test.Common
 {
-    public sealed class Http3LoopbackConnection : GenericLoopbackConnection
+    internal sealed class Http3LoopbackConnection : GenericLoopbackConnection
     {
         public const long H3_NO_ERROR = 0x100;
         public const long H3_GENERAL_PROTOCOL_ERROR = 0x101;

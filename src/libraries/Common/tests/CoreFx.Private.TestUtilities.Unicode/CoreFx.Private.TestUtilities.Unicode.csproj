@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UnicodeUcdVersion>12.1</UnicodeUcdVersion>
+    <UnicodeUcdVersion>13.0</UnicodeUcdVersion>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
@@ -41,7 +41,7 @@
       <Link>UnicodeData\DerivedName.txt</Link>
       <LogicalName>DerivedName.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\emoji\$(UnicodeUcdVersion)\emoji-data.txt">
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\emoji\emoji-data.txt">
       <Link>UnicodeData\emoji-data.txt</Link>
       <LogicalName>emoji-data.txt</LogicalName>
     </EmbeddedResource>

@@ -319,7 +319,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31650", TestRuntimes.Mono)]
         public void LoadFile_NoSuchPath_ThrowsFileNotFoundException()
         {
             string rootedPath = Path.GetFullPath(Guid.NewGuid().ToString("N"));
@@ -348,7 +347,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31649", TestRuntimes.Mono)]
         [InlineData(0)]
         [InlineData(5)]
         [InlineData(50)]

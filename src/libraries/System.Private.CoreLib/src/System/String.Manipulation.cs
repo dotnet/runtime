@@ -15,7 +15,7 @@ namespace System
     {
         private const int StackallocIntBufferSizeLimit = 128;
 
-        private static unsafe void FillStringChecked(string dest, int destPos, string src)
+        private static void FillStringChecked(string dest, int destPos, string src)
         {
             Debug.Assert(dest != null);
             Debug.Assert(src != null);
@@ -24,11 +24,10 @@ namespace System
                 throw new IndexOutOfRangeException();
             }
 
-            fixed (char* pDest = &dest._firstChar)
-            fixed (char* pSrc = &src._firstChar)
-            {
-                wstrcpy(pDest + destPos, pSrc, src.Length);
-            }
+            Buffer.Memmove(
+                destination: ref Unsafe.Add(ref dest._firstChar, destPos),
+                source: ref src._firstChar,
+                elementCount: (uint)src.Length);
         }
 
         public static string Concat(object? arg0) => arg0?.ToString() ?? string.Empty;
@@ -1665,18 +1664,17 @@ namespace System
             return InternalSubString(startIndex, length);
         }
 
-        private unsafe string InternalSubString(int startIndex, int length)
+        private string InternalSubString(int startIndex, int length)
         {
             Debug.Assert(startIndex >= 0 && startIndex <= this.Length, "StartIndex is out of range!");
             Debug.Assert(length >= 0 && startIndex <= this.Length - length, "length is out of range!");
 
             string result = FastAllocateString(length);
 
-            fixed (char* dest = &result._firstChar)
-            fixed (char* src = &_firstChar)
-            {
-                wstrcpy(dest, src + startIndex, length);
-            }
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref Unsafe.Add(ref _firstChar, startIndex));
 
             return result;
         }

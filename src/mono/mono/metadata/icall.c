@@ -120,6 +120,10 @@
 #include "mono/metadata/icall-signatures.h"
 #include "mono/utils/mono-signal-handler.h"
 
+#if _MSC_VER
+#pragma warning(disable:4047) // FIXME differs in levels of indirection
+#endif
+
 //#define MONO_DEBUG_ICALLARRAY
 
 #ifdef MONO_DEBUG_ICALLARRAY
@@ -179,22 +183,7 @@ mono_icall_get_file_path_prefix (const gchar *path)
 }
 #endif /* HOST_WIN32 */
 
-#if MONO_LLVM_LOADED
-
-static
 MonoJitICallInfos mono_jit_icall_info;
-
-MonoJitICallInfos*
-mono_get_jit_icall_info (void)
-{
-	return &mono_jit_icall_info;
-}
-
-#else
-
-MonoJitICallInfos mono_jit_icall_info;
-
-#endif
 
 MonoObjectHandle
 ves_icall_System_Array_GetValueImpl (MonoArrayHandle array, guint32 pos, MonoError *error)
@@ -2465,7 +2454,7 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 	return_if_nok (error);
 
 	gboolean isref = FALSE;
-	uint32_t value_gchandle = 0;
+	MonoGCHandle value_gchandle = 0;
 	gchar *v = NULL;
 	if (!type->byref) {
 		switch (type->type) {
@@ -2512,7 +2501,7 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 				MonoObjectHandle nullable = mono_object_new_handle (mono_domain_get (), nklass, error);
 				return_if_nok (error);
 
-				uint32_t nullable_gchandle = 0;
+				MonoGCHandle nullable_gchandle = 0;
 				guint8 *nval = (guint8*)mono_object_handle_pin_unbox (nullable, &nullable_gchandle);
 				mono_nullable_init_from_handle (nval, value, nklass);
 
@@ -2614,7 +2603,7 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionFieldHandle fi
 	} else if (MONO_TYPE_IS_REFERENCE (f->type)) {
 		mono_copy_value (f->type, (guint8*)obj->value + m_field_get_offset (f) - sizeof (MonoObject), MONO_HANDLE_RAW (value_h), FALSE);
 	} else {
-		guint gchandle = 0;
+		MonoGCHandle gchandle = NULL;
 		g_assert (MONO_HANDLE_RAW (value_h));
 		mono_copy_value (f->type, (guint8*)obj->value + m_field_get_offset (f) - sizeof (MonoObject), mono_object_handle_pin_unbox (value_h, &gchandle), FALSE);
 		mono_gchandle_free_internal (gchandle);
@@ -3350,7 +3339,7 @@ ves_icall_RuntimeTypeHandle_GetGenericTypeDefinition_impl (MonoReflectionTypeHan
 	if (mono_class_is_ginst (klass)) {
 		MonoClass *generic_class = mono_class_get_generic_class (klass)->container_class;
 
-		guint32 ref_info_handle = mono_class_get_ref_info_handle (generic_class);
+		MonoGCHandle ref_info_handle = mono_class_get_ref_info_handle (generic_class);
 		
 		if (m_class_was_typebuilder (generic_class) && ref_info_handle) {
 			MonoObjectHandle tb = mono_gchandle_get_target_handle (ref_info_handle);
@@ -5739,7 +5728,10 @@ add_file_to_modules_array (MonoDomain *domain, MonoArrayHandle dest, int dest_id
 		goto_if_nok (error, leave);
 		if (!m) {
 			const char *filename = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
-			mono_error_set_file_not_found (error, filename, "%s", "");
+			gboolean refonly = FALSE;
+			if (image->assembly)
+				refonly = mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY;
+			mono_error_set_simple_file_not_found (error, filename, refonly);
 			goto leave;
 		}
 		MonoReflectionModuleHandle rm = mono_module_get_object_handle (domain, m, error);
@@ -6041,9 +6033,9 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 
 	if (!image){
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_by_name (error, filename, "Invalid Image");
+			mono_error_set_bad_image_by_name (error, filename, "Invalid Image: %s", filename);
 		else
-			mono_error_set_file_not_found (error, filename, "%s", "");
+			mono_error_set_simple_file_not_found (error, filename, FALSE);
 		g_free (filename);
 		return;
 	}
@@ -6480,7 +6472,7 @@ ves_icall_Mono_Runtime_ExceptionToState (MonoExceptionHandle exc_handle, guint64
 		// FIXME: Push handles down into mini/mini-exceptions.c
 		MonoException *exc = MONO_HANDLE_RAW (exc_handle);
 		MonoThreadSummary out;
-		mono_summarize_timeline_start ();
+		mono_summarize_timeline_start ("ExceptionToState");
 		mono_summarize_timeline_phase_log (MonoSummarySuspendHandshake);
 		mono_summarize_timeline_phase_log (MonoSummaryUnmanagedStacks);
 		mono_get_eh_callbacks ()->mono_summarize_exception (exc, &out);
@@ -6643,7 +6635,7 @@ ves_icall_Mono_Runtime_DumpStateTotal (guint64 *portable_hash, guint64 *unportab
 
 	mono_get_runtime_callbacks ()->install_state_summarizer ();
 
-	mono_summarize_timeline_start ();
+	mono_summarize_timeline_start ("DumpStateTotal");
 
 	gboolean success = mono_threads_summarize (ctx, &out, &hashes, TRUE, FALSE, scratch, MONO_MAX_SUMMARY_LEN_ICALL);
 	mono_summarize_timeline_phase_log (MonoSummaryCleanup);
@@ -7158,7 +7150,7 @@ ves_icall_System_Reflection_RuntimeModule_ResolveSignature (MonoImage *image, gu
 
 	// FIXME MONO_ENTER_NO_SAFEPOINTS instead of pin/gchandle.
 
-	uint32_t h;
+	MonoGCHandle h;
 	gpointer array_base = MONO_ARRAY_HANDLE_PIN (res, guint8, 0, &h);
 	memcpy (array_base, ptr, len);
 	mono_gchandle_free_internal (h);
@@ -8384,6 +8376,115 @@ ves_icall_System_Diagnostics_Debugger_Log (int level, MonoString *volatile* cate
 	if (mono_get_runtime_callbacks ()->debug_log)
 		mono_get_runtime_callbacks ()->debug_log (level, *category, *message);
 }
+
+#ifdef ENABLE_NETCORE
+#define EVENT_PIPE_DUMMY_PROVIDER_ID 1
+#define EVENT_PIPE_DUMMY_SESSION_ID 1
+#define EVENT_PIPE_DUMMY_EVENT_ID 1
+#define EVENT_PIPE_ERROR_SUCCESS 0
+#define EVENT_PIPE_INVALID_WAIT_HANDLE 0
+
+typedef enum _EventPipeSerializationFormat{
+	NetPerf,
+	NetTrace
+} EventPipeSerializationFormat;
+
+typedef struct _EventPipeProviderConfigurationNative {
+    gunichar2 *provider_name;
+    uint64_t keywords;
+    uint32_t logging_level;
+    gunichar2 *filter_data;
+} EventPipeProviderConfigurationNative;
+
+typedef struct _EventProviderEventData {
+    uint64_t ptr;
+    uint32_t size;
+    uint32_t reserved;
+} EventProviderEventData;
+
+typedef struct _EventPipeSessionInfo {
+    int64_t starttime_as_utc_filetime;
+    int64_t start_timestamp;
+    int64_t timestamp_frequency;
+} EventPipeSessionInfo;
+
+typedef struct _EventPipeEventInstanceData {
+    intptr_t provider_id;
+    uint32_t event_id;
+    uint32_t thread_id;
+    int64_t timestamp;
+    uint8_t activity_id[16];
+    uint8_t related_activity_id[16];
+    const uint8_t *payload;
+    uint32_t payload_length;
+} EventPipeEventInstanceData;
+
+gconstpointer
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (MonoStringHandle provider_name, MonoDelegateHandle callback_func, MonoError *error)
+{
+	return EVENT_PIPE_DUMMY_PROVIDER_ID;
+}
+
+intptr_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DefineEvent (intptr_t prov_handle, uint32_t event_id, int64_t keywords, uint32_t event_version, uint32_t level, const uint8_t *metadata, uint32_t metadata_len)
+{
+	return EVENT_PIPE_DUMMY_EVENT_ID;
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DeleteProvider (intptr_t prov_handle)
+{
+	;
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Disable (uint64_t session_id)
+{
+	;
+}
+
+uint64_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (const_gunichar2_ptr output_file, /* EventPipeSerializationFormat */int32_t format, uint32_t circular_buffer_size_mb, /* EventPipeProviderConfigurationNative[] */const void *providers, uint32_t num_providers)
+{
+	return EVENT_PIPE_DUMMY_SESSION_ID;
+}
+
+int32_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_EventActivityIdControl (uint32_t control_code, /* GUID * */uint8_t *activity_id)
+{
+	return EVENT_PIPE_ERROR_SUCCESS;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetNextEvent (uint64_t session_id, /* EventPipeEventInstanceData * */void *instance)
+{
+	return FALSE;
+}
+
+intptr_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetProvider (const_gunichar2_ptr provider_name)
+{
+	return EVENT_PIPE_DUMMY_PROVIDER_ID;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (uint64_t session_id, /* EventPipeSessionInfo * */void *session_info)
+{
+	return FALSE;
+}
+
+intptr_t
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id)
+{
+	return EVENT_PIPE_INVALID_WAIT_HANDLE;
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData (intptr_t event_handle, /* EventProviderEventData[] */const void *event_data, uint32_t data_count, /* GUID * */const uint8_t *activity_id, /* GUID * */const uint8_t *related_activity_id)
+{
+	;
+}
+#endif /* ENABLE_NETCORE */
 
 #ifndef HOST_WIN32
 static inline void
@@ -9617,6 +9718,7 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 	return mono_cpu_count ();
 }
 
+#if !defined(ENABLE_NETCORE)
 #if defined(ENABLE_MONODROID)
 
 G_EXTERN_C gpointer CreateNLSocket (void);
@@ -9641,6 +9743,7 @@ ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CloseNLSocket (gpoint
 	return CloseNLSocket (sock);
 }
 
+#endif
 #endif
 
 // Generate wrappers.

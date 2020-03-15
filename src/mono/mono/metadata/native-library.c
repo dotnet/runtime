@@ -275,6 +275,8 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 {
 #ifndef DISABLE_DLLMAP
 	mono_dllmap_insert_internal (assembly, dll, func, tdll, tfunc);
+#else
+	g_assert_not_reached ();
 #endif
 }
 
@@ -1445,6 +1447,7 @@ leave:
 
 leave_nolock:
 	ERROR_LOCAL_END (local_error);
+	g_free (symbol_name);
 
 	return symbol;
 }
@@ -1495,6 +1498,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadByName (MonoStringHan
 
 leave:
 	ERROR_LOCAL_END (local_error);
+	g_free (lib_name);
 
 	return handle;
 }
@@ -1528,6 +1532,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadFromPath (MonoStringH
 
 leave:
 	ERROR_LOCAL_END (local_error);
+	g_free (lib_path);
 
 	return handle;
 }

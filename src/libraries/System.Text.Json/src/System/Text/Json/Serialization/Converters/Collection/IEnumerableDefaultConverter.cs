@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected static JsonConverter<TElement> GetElementConverter(ref ReadStack state)
         {
-            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.JsonClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo.ConverterBase;
             Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
 
             return converter;
@@ -125,7 +125,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
-                        value = default!;
+                        value = default;
                         return false;
                     }
                 }
@@ -143,7 +143,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
                     }
 
-                    state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PolicyProperty!;
+                    state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
                 }
 
@@ -160,7 +160,7 @@ namespace System.Text.Json.Serialization.Converters
 
                             if (!SingleValueReadWithReadAhead(elementConverter.ClassType, ref reader, ref state))
                             {
-                                value = default!;
+                                value = default;
                                 return false;
                             }
                         }
@@ -180,7 +180,7 @@ namespace System.Text.Json.Serialization.Converters
                             // Get the value from the converter and add it.
                             if (!elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement element))
                             {
-                                value = default!;
+                                value = default;
                                 return false;
                             }
 
@@ -203,7 +203,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         if (!reader.Read())
                         {
-                            value = default!;
+                            value = default;
                             return false;
                         }
 
@@ -268,7 +268,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.MetadataPropertyName = metadata;
                     }
 
-                    state.Current.DeclaredJsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PolicyProperty!;
+                    state.Current.DeclaredJsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
                 }
 
                 success = OnWriteResume(writer, value, options, ref state);

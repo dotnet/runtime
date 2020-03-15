@@ -124,7 +124,7 @@ namespace System.Text.Json
             }
             else
             {
-                state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty;
+                state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
                 success = Converter.TryWriteDataExtensionProperty(writer, value, Options, ref state);
             }
 
@@ -139,8 +139,8 @@ namespace System.Text.Json
             {
                 if (!IgnoreNullValues)
                 {
-                    TTypeToConvert value = default!;
-                    Set!(obj, value);
+                    TTypeToConvert value = default;
+                    Set!(obj, value!);
                 }
 
                 success = true;

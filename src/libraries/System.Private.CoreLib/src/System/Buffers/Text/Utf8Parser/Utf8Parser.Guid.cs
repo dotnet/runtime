@@ -29,19 +29,25 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static bool TryParse(ReadOnlySpan<byte> source, out Guid value, out int bytesConsumed, char standardFormat = default)
         {
+        FastPath:
+            if (standardFormat == default)
+            {
+                return TryParseGuidCore(source, out value, out bytesConsumed, ends: 0);
+            }
+
             switch (standardFormat)
             {
-                case default(char):
                 case 'D':
-                    return TryParseGuidCore(source, false, ' ', ' ', out value, out bytesConsumed);
+                    standardFormat = default;
+                    goto FastPath;
                 case 'B':
-                    return TryParseGuidCore(source, true, '{', '}', out value, out bytesConsumed);
+                    return TryParseGuidCore(source, out value, out bytesConsumed, ends: '{' | ('}' << 8));
                 case 'P':
-                    return TryParseGuidCore(source, true, '(', ')', out value, out bytesConsumed);
+                    return TryParseGuidCore(source, out value, out bytesConsumed, ends: '(' | (')' << 8));
                 case 'N':
                     return TryParseGuidN(source, out value, out bytesConsumed);
                 default:
-                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(source, out value, out bytesConsumed);
             }
         }
 
@@ -97,9 +103,9 @@ namespace System.Buffers.Text
         }
 
         // {8-4-4-4-12}, where number is the number of hex digits, and {/} are ends.
-        private static bool TryParseGuidCore(ReadOnlySpan<byte> source, bool ends, char begin, char end, out Guid value, out int bytesConsumed)
+        private static bool TryParseGuidCore(ReadOnlySpan<byte> source, out Guid value, out int bytesConsumed, int ends)
         {
-            int expectedCodingUnits = 36 + (ends ? 2 : 0); // 32 hex digits + 4 delimiters + 2 optional ends
+            int expectedCodingUnits = 36 + ((ends != 0) ? 2 : 0); // 32 hex digits + 4 delimiters + 2 optional ends
 
             if (source.Length < expectedCodingUnits)
             {
@@ -108,9 +114,16 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            if (ends)
+            // The 'ends' parameter is a 16-bit value where the byte denoting the starting
+            // brace is at byte position 0 and the byte denoting the closing brace is at
+            // byte position 1. If no braces are expected, has value 0.
+            // Default: ends = 0
+            //  Braces: ends = "}{"
+            //  Parens: ends = ")("
+
+            if (ends != 0)
             {
-                if (source[0] != begin)
+                if (source[0] != (byte)ends)
                 {
                     value = default;
                     bytesConsumed = 0;
@@ -118,6 +131,7 @@ namespace System.Buffers.Text
                 }
 
                 source = source.Slice(1); // skip beginning
+                ends >>= 8; // shift the closing brace to byte position 0
             }
 
             if (!TryParseUInt32X(source, out uint i1, out int justConsumed))
@@ -226,7 +240,7 @@ namespace System.Buffers.Text
                 return false; // 12 digits
             }
 
-            if (ends && source[justConsumed] != end)
+            if (ends != 0 && source[justConsumed] != (byte)ends)
             {
                 value = default;
                 bytesConsumed = 0;

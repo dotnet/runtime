@@ -356,10 +356,20 @@ static MonoAssembly *corlib;
 
 static char* unquote (const char *str);
 
-/* This protects loaded_assemblies and image->references */
-#define mono_assemblies_lock() mono_os_mutex_lock (&assemblies_mutex)
-#define mono_assemblies_unlock() mono_os_mutex_unlock (&assemblies_mutex)
+// This protects loaded_assemblies
 static mono_mutex_t assemblies_mutex;
+
+static inline void
+mono_assemblies_lock ()
+{
+	mono_os_mutex_lock (&assemblies_mutex);
+}
+
+static inline void
+mono_assemblies_unlock ()
+{
+	mono_os_mutex_unlock (&assemblies_mutex);
+}
 
 /* If defined, points to the bundled assembly information */
 static const MonoBundledAssembly **bundles;
@@ -1783,7 +1793,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	 * image->references is shared between threads, so we need to access
 	 * it inside a critical section.
 	 */
-	mono_assemblies_lock ();
+	mono_image_lock (image);
 	if (!image->references) {
 		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 	
@@ -1791,7 +1801,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		image->nreferences = t->rows;
 	}
 	reference = image->references [index];
-	mono_assemblies_unlock ();
+	mono_image_unlock (image);
 	if (reference)
 		return;
 
@@ -1874,7 +1884,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	}
 
 commit_reference:
-	mono_assemblies_lock ();
+	mono_image_lock (image);
 	if (reference == NULL) {
 		/* Flag as not found */
 		reference = (MonoAssembly *)REFERENCE_MISSING;
@@ -1894,7 +1904,7 @@ commit_reference:
 		
 		image->references [index] = reference;
 	}
-	mono_assemblies_unlock ();
+	mono_image_unlock (image);
 
 	if (image->references [index] != reference) {
 		/* Somebody loaded it before us */

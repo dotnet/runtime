@@ -53,11 +53,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // T this[int index] { get }
         internal T Indexer_Get_Variance<T>(int index) where T : class
         {
-            bool fUseString;
             Delegate target = System.StubHelpers.StubHelpers.GetTargetForAmbiguousVariantCall(
                 this,
                 typeof(IReadOnlyList<T>).TypeHandle.Value,
-                out fUseString);
+                out bool fUseString);
 
             if (target != null)
             {

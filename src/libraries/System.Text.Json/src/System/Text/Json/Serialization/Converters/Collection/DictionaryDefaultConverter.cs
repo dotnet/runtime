@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected static JsonConverter<TValue> GetElementConverter(ref ReadStack state)
         {
-            JsonConverter<TValue> converter = (JsonConverter<TValue>)state.Current.JsonClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+            JsonConverter<TValue> converter = (JsonConverter<TValue>)state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo.ConverterBase;
             Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
 
             return converter;
@@ -164,7 +164,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
-                        value = default!;
+                        value = default;
                         return false;
                     }
                 }
@@ -199,7 +199,7 @@ namespace System.Text.Json.Serialization.Converters
                         // Read the key name.
                         if (!reader.Read())
                         {
-                            value = default!;
+                            value = default;
                             return false;
                         }
                     }
@@ -238,7 +238,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (!SingleValueReadWithReadAhead(elementConverter.ClassType, ref reader, ref state))
                         {
-                            value = default!;
+                            value = default;
                             return false;
                         }
                     }
@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Converters
                         bool success = elementConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue element);
                         if (!success)
                         {
-                            value = default!;
+                            value = default;
                             return false;
                         }
 
@@ -289,7 +289,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                 }
 
-                state.Current.DeclaredJsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PolicyProperty!;
+                state.Current.DeclaredJsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
             }
 
             bool success = OnWriteResume(writer, dictionary, options, ref state);

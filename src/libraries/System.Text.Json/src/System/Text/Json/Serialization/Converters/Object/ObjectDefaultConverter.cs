@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Default base class implementation of <cref>JsonObjectConverter{T}</cref>.
     /// </summary>
-    internal sealed class ObjectDefaultConverter<T> : JsonObjectConverter<T>
+    internal sealed class ObjectDefaultConverter<T> : JsonObjectConverter<T> where T : notnull
     {
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
@@ -110,7 +110,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
                         else
                         {
-                            value = default!;
+                            value = default;
                             return false;
                         }
                     }
@@ -155,7 +155,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             // The read-ahead functionality will do the Read().
                             state.Current.ReturnValue = obj;
-                            value = default!;
+                            value = default;
                             return false;
                         }
                     }
@@ -199,7 +199,7 @@ namespace System.Text.Json.Serialization.Converters
                             if (!reader.TrySkip())
                             {
                                 state.Current.ReturnValue = obj;
-                                value = default!;
+                                value = default;
                                 return false;
                             }
 
@@ -215,7 +215,7 @@ namespace System.Text.Json.Serialization.Converters
                             if (!SingleValueReadWithReadAhead(jsonPropertyInfo.ConverterBase.ClassType, ref reader, ref state))
                             {
                                 state.Current.ReturnValue = obj;
-                                value = default!;
+                                value = default;
                                 return false;
                             }
                         }
@@ -225,7 +225,7 @@ namespace System.Text.Json.Serialization.Converters
                             if (!SingleValueReadWithReadAhead(ClassType.Value, ref reader, ref state))
                             {
                                 state.Current.ReturnValue = obj;
-                                value = default!;
+                                value = default;
                                 return false;
                             }
                         }
@@ -239,7 +239,7 @@ namespace System.Text.Json.Serialization.Converters
                             if (!jsonPropertyInfo.ReadJsonAndSetMember(obj, ref state, ref reader))
                             {
                                 state.Current.ReturnValue = obj;
-                                value = default!;
+                                value = default;
                                 return false;
                             }
                         }
@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Converters
                             {
                                 // No need to set 'value' here since JsonElement must be read in full.
                                 state.Current.ReturnValue = obj;
-                                value = default!;
+                                value = default;
                                 return false;
                             }
                         }
@@ -273,16 +273,10 @@ namespace System.Text.Json.Serialization.Converters
         internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
             // Minimize boxing for structs by only boxing once here
-            object? objectValue = value;
+            object objectValue = value!;
 
             if (!state.SupportContinuation)
             {
-                if (objectValue == null)
-                {
-                    writer.WriteNullValue();
-                    return true;
-                }
-
                 writer.WriteStartObject();
 
                 if (options.ReferenceHandling.ShouldWritePreservedReferences())
@@ -338,12 +332,6 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (!state.Current.ProcessedStartToken)
                 {
-                    if (objectValue == null)
-                    {
-                        writer.WriteNullValue();
-                        return true;
-                    }
-
                     writer.WriteStartObject();
 
                     if (options.ReferenceHandling.ShouldWritePreservedReferences())

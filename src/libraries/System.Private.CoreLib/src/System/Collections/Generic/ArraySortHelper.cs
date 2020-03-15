@@ -538,7 +538,7 @@ namespace System.Collections.Generic
             int hi = keys.Length - 1;
 
             int n = hi - lo + 1;
-            for (int i = n / 2; i >= 1; i = i - 1)
+            for (int i = n / 2; i >= 1; i--)
             {
                 DownHeap(keys, i, n, lo);
             }

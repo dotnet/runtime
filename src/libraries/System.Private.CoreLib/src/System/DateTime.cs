@@ -751,8 +751,7 @@ namespace System
                     // Because the ticks conversion between UTC and local is lossy, we need to capture whether the
                     // time is in a repeated hour so that it can be passed to the DateTime constructor.
                     DateTime utcDt = new DateTime(ticks, DateTimeKind.Utc);
-                    bool isDaylightSavings = false;
-                    offsetTicks = TimeZoneInfo.GetUtcOffsetFromUtc(utcDt, TimeZoneInfo.Local, out isDaylightSavings, out isAmbiguousLocalDst).Ticks;
+                    offsetTicks = TimeZoneInfo.GetUtcOffsetFromUtc(utcDt, TimeZoneInfo.Local, out bool isDaylightSavings, out isAmbiguousLocalDst).Ticks;
                 }
                 ticks += offsetTicks;
                 // Another behaviour of parsing is to cause small times to wrap around, so that they can be used
@@ -1079,8 +1078,7 @@ namespace System
             get
             {
                 DateTime utc = UtcNow;
-                bool isAmbiguousLocalDst;
-                long offset = TimeZoneInfo.GetDateTimeNowUtcOffsetFromUtc(utc, out isAmbiguousLocalDst).Ticks;
+                long offset = TimeZoneInfo.GetDateTimeNowUtcOffsetFromUtc(utc, out bool isAmbiguousLocalDst).Ticks;
                 long tick = utc.Ticks + offset;
                 if (tick > DateTime.MaxTicks)
                 {
@@ -1290,9 +1288,7 @@ namespace System
             {
                 return this;
             }
-            bool isDaylightSavings = false;
-            bool isAmbiguousLocalDst = false;
-            long offset = TimeZoneInfo.GetUtcOffsetFromUtc(this, TimeZoneInfo.Local, out isDaylightSavings, out isAmbiguousLocalDst).Ticks;
+            long offset = TimeZoneInfo.GetUtcOffsetFromUtc(this, TimeZoneInfo.Local, out bool isDaylightSavings, out bool isAmbiguousLocalDst).Ticks;
             long tick = Ticks + offset;
             if (tick > DateTime.MaxTicks)
             {

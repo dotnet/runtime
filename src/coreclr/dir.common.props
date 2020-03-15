@@ -11,28 +11,24 @@
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
     <BuildArch>$(__BuildArch)</BuildArch>
-    <BuildArch Condition="'$(__BuildArch)'==''">x64</BuildArch>
-    <BuildArch Condition="'$(__BuildArch)' == 'amd64'">x64</BuildArch>
+    <BuildArch Condition="'$(BuildArch)' == ''">$(TargetArchitecture)</BuildArch>
+    <BuildArch Condition="'$(BuildArch)'==''">x64</BuildArch>
+    <BuildArch Condition="'$(BuildArch)' == 'amd64'">x64</BuildArch>
 
     <BuildType>$(__BuildType)</BuildType>
-    <BuildType Condition="'$(__BuildType)'==''">Debug</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'debug'">Debug</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'release'">Release</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'checked'">Checked</BuildType>
+    <BuildType Condition="'$(BuildType)'==''">Debug</BuildType>
+    <BuildType Condition="'$(BuildType)' == 'debug'">Debug</BuildType>
+    <BuildType Condition="'$(BuildType)' == 'release'">Release</BuildType>
+    <BuildType Condition="'$(BuildType)' == 'checked'">Checked</BuildType>
 
-    <BuildOS>$(__BuildOS)</BuildOS>
-    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</BuildOS>
-    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</BuildOS>
-    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</BuildOS>
-
-    <!-- TODO: converge on one property for BuildOS and __BuildOS (and similar), and remove these extra lines. -->
-    <__BuildOS>$(BuildOS)</__BuildOS>
+    <!-- TODO: converge on one property for TargetOS and __TargetOS (and similar), and remove these extra lines. -->
+    <__TargetOS>$(TargetOS)</__TargetOS>
     <__BuildArch>$(BuildArch)</__BuildArch>
 
     <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
 
-    <PlatformConfigPathPart>$(BuildOS).$(BuildArch).$(BuildType)</PlatformConfigPathPart>
+    <PlatformConfigPathPart>$(TargetOS).$(BuildArch).$(BuildType)</PlatformConfigPathPart>
   </PropertyGroup>
 
   <!-- Common properties -->
@@ -65,11 +61,11 @@
 
   <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
-    <TargetsFreeBSD Condition="'$(BuildOS)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <TargetsLinux Condition="'$(BuildOS)' == 'Linux'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(BuildOS)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(BuildOS)' == 'OSX'">true</TargetsOSX>
-    <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsLinux Condition="'$(TargetOS)' == 'Linux'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
+    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
 
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
 

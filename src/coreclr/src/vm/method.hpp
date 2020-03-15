@@ -16,7 +16,6 @@
 #include "cor.h"
 #include "util.hpp"
 #include "clsload.hpp"
-#include "codeman.h"
 #include "class.h"
 #include "siginfo.hpp"
 #include "methodimpl.h"
@@ -24,7 +23,6 @@
 #include <stddef.h>
 #include "eeconfig.h"
 #include "precode.h"
-#include "codeversion.h"
 
 #ifndef FEATURE_PREJIT
 #include "fixuppointer.h"
@@ -44,7 +42,6 @@ class DynamicMethodDesc;
 class ReJitManager;
 class CodeVersionManager;
 class PrepareCodeConfig;
-class CallCounter;
 
 typedef DPTR(FCallMethodDesc)        PTR_FCallMethodDesc;
 typedef DPTR(ArrayMethodDesc)        PTR_ArrayMethodDesc;
@@ -509,9 +506,6 @@ public:
 
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager* GetCodeVersionManager();
-#endif
-#ifdef FEATURE_TIERED_COMPILATION
-    CallCounter* GetCallCounter();
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -1346,7 +1340,7 @@ private:
     PCODE GetEntryPointToBackpatch_Locked()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
         // At the moment this is the only case, see MayHaveEntryPointSlotsToBackpatch()
@@ -1359,7 +1353,7 @@ private:
     void SetEntryPointToBackpatch_Locked(PCODE entryPoint)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
         _ASSERTE(entryPoint != NULL);
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
@@ -1792,7 +1786,7 @@ public:
     //
     PCODE DoBackpatch(MethodTable * pMT, MethodTable * pDispatchingMT, BOOL fFullBackPatch);
 
-    PCODE DoPrestub(MethodTable *pDispatchingMT);
+    PCODE DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode = CallerGCMode::Unknown);
 
     VOID GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
     VOID GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
@@ -2004,7 +1998,7 @@ public:
 
 #ifndef DACCESS_COMPILE
 public:
-    PCODE PrepareInitialCode();
+    PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
 
 private:
@@ -2048,6 +2042,8 @@ public:
     BOOL ReadyToRunRejectedPrecompiledCode();
     void SetProfilerRejectedPrecompiledCode();
     void SetReadyToRunRejectedPrecompiledCode();
+    CallerGCMode GetCallerGCMode();
+    void SetCallerGCMode(CallerGCMode mode);
 
 #ifdef FEATURE_CODE_VERSIONING
 public:
@@ -2169,6 +2165,7 @@ protected:
     BOOL m_mayUsePrecompiledCode;
     BOOL m_ProfilerRejectedPrecompiledCode;
     BOOL m_ReadyToRunRejectedPrecompiledCode;
+    CallerGCMode m_callerGCMode;
 
 #ifdef FEATURE_CODE_VERSIONING
 private:
@@ -2199,7 +2196,6 @@ public:
     VersionedPrepareCodeConfig(NativeCodeVersion codeVersion);
     HRESULT FinishConfiguration();
     virtual PCODE IsJitCancellationRequested();
-    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
 private:
@@ -3145,9 +3141,10 @@ public:
     //
     LPVOID FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const;
 
+#ifdef TARGET_WINDOWS
 private:
     FARPROC FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName) const;
-
+#endif
 public:
 
     void SetStackArgumentSize(WORD cbDstBuffer, CorPinvokeMap unmgdCallConv)
@@ -3469,6 +3466,9 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+        // No lock needed here. In the case of a generic dictionary expansion, the values of the old dictionary
+        // slots are copied to the newly allocated dictionary, and the old dictionary is kept around. Whether we
+        // return the old or new dictionary here, the values of the instantiation arguments will always be the same.
         return Instantiation(IMD_GetMethodDictionary()->GetInstantiation(), m_wNumGenericArgs);
     }
 
@@ -3574,11 +3574,24 @@ public:
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
             return pIMD->m_pDictLayout.GetValueMaybeNull();
         }
-        else
-        if (IMD_IsSharedByGenericMethodInstantiations())
+        else if (IMD_IsSharedByGenericMethodInstantiations())
             return m_pDictLayout.GetValueMaybeNull();
         else
             return NULL;
+    }
+
+    void IMD_SetDictionaryLayout(DictionaryLayout* pNewLayout)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
+        {
+            InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
+            pIMD->m_pDictLayout.SetValueMaybeNull(pNewLayout);
+        }
+        else if (IMD_IsSharedByGenericMethodInstantiations())
+        {
+            m_pDictLayout.SetValueMaybeNull(pNewLayout);
+        }
     }
 #endif // !DACCESS_COMPILE
 

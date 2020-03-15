@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.FileSystemGlobbing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="**\*.cs" />
+  </ItemGroup>
+
+</Project>
