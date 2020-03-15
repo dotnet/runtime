@@ -487,9 +487,13 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(typeof(WrapperForIEnumerablePrivateConstructor), @"[""1""]")]
+        [InlineData(typeof(WrapperForIEnumerableInternalConstructor), @"[""1""]")]
         [InlineData(typeof(WrapperForICollectionPrivateConstructor), @"[""1""]")]
+        [InlineData(typeof(WrapperForICollectionInternalConstructor), @"[""1""]")]
         [InlineData(typeof(WrapperForIListPrivateConstructor), @"[""1""]")]
+        [InlineData(typeof(WrapperForIListInternalConstructor), @"[""1""]")]
         [InlineData(typeof(WrapperForIDictionaryPrivateConstructor), @"{""Key"":""Value""}")]
+        [InlineData(typeof(WrapperForIDictionaryInternalConstructor), @"{""Key"":""Value""}")]
         public static void Read_NonGeneric_NoPublicConstructor_Throws(Type type, string json)
         {
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));

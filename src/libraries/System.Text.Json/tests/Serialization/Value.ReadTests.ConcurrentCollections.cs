@@ -40,7 +40,9 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(typeof(GenericConcurrentQueuePrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericConcurrentQueueInternalConstructor<string>), @"[""1""]")]
         [InlineData(typeof(GenericConcurrentStackPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericConcurrentStackInternalConstructor<string>), @"[""1""]")]
         public static void Read_ConcurrentCollection_NoPublicConstructor_Throws(Type type, string json)
         {
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));

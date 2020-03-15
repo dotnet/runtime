@@ -11,8 +11,18 @@ namespace System.Text.Json.Serialization.Tests
         private GenericConcurrentQueuePrivateConstructor() { }
     }
 
+    public class GenericConcurrentQueueInternalConstructor<T> : ConcurrentQueue<T>
+    {
+        internal GenericConcurrentQueueInternalConstructor() { }
+    }
+
     public class GenericConcurrentStackPrivateConstructor<T> : ConcurrentStack<T>
     {
         private GenericConcurrentStackPrivateConstructor() { }
+    }
+
+    public class GenericConcurrentStackInternalConstructor<T> : ConcurrentStack<T>
+    {
+        internal GenericConcurrentStackInternalConstructor() { }
     }
 }

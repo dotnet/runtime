@@ -154,6 +154,11 @@ namespace System.Text.Json.Serialization.Tests
         private WrapperForIEnumerablePrivateConstructor() { }
     }
 
+    public class WrapperForIEnumerableInternalConstructor : WrapperForIEnumerable
+    {
+        internal WrapperForIEnumerableInternalConstructor() { }
+    }
+
     public class WrapperForICollection : ICollection
     {
         private readonly List<object> _list = new List<object>();
@@ -188,6 +193,11 @@ namespace System.Text.Json.Serialization.Tests
     public class WrapperForICollectionPrivateConstructor : WrapperForICollection
     {
         private WrapperForICollectionPrivateConstructor() { }
+    }
+
+    public class WrapperForICollectionInternalConstructor : WrapperForICollection
+    {
+        internal WrapperForICollectionInternalConstructor() { }
     }
 
     public class ReadOnlyWrapperForIList : WrapperForIList
@@ -261,6 +271,10 @@ namespace System.Text.Json.Serialization.Tests
     {
         private WrapperForIListPrivateConstructor() { }
     }
+    public class WrapperForIListInternalConstructor : WrapperForIList
+    {
+        internal WrapperForIListInternalConstructor() { }
+    }
 
     public class WrapperForIDictionary : IDictionary
     {
@@ -321,6 +335,11 @@ namespace System.Text.Json.Serialization.Tests
     public class WrapperForIDictionaryPrivateConstructor : WrapperForIDictionary
     {
         private WrapperForIDictionaryPrivateConstructor() { }
+    }
+
+    public class WrapperForIDictionaryInternalConstructor : WrapperForIDictionary
+    {
+        internal WrapperForIDictionaryInternalConstructor() { }
     }
 
     public class StackWrapper : Stack

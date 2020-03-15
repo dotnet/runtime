@@ -1196,15 +1196,25 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(typeof(GenericIEnumerableWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericIEnumerableWrapperInternalConstructor<string>), @"[""1""]")]
         [InlineData(typeof(GenericICollectionWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericICollectionWrapperInternalConstructor<string>), @"[""1""]")]
         [InlineData(typeof(GenericIListWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericIListWrapperInternalConstructor<string>), @"[""1""]")]
         [InlineData(typeof(GenericISetWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericISetWrapperInternalConstructor<string>), @"[""1""]")]
         [InlineData(typeof(GenericIDictionaryWrapperPrivateConstructor<string, string>), @"{""Key"":""Value""}")]
+        [InlineData(typeof(GenericIDictionaryWrapperInternalConstructor<string, string>), @"{""Key"":""Value""}")]
         [InlineData(typeof(StringToStringIReadOnlyDictionaryWrapperPrivateConstructor), @"{""Key"":""Value""}")]
+        [InlineData(typeof(StringToStringIReadOnlyDictionaryWrapperInternalConstructor), @"{""Key"":""Value""}")]
         [InlineData(typeof(GenericListWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericListWrapperInternalConstructor<string>), @"[""1""]")]
         [InlineData(typeof(GenericQueueWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericQueueWrapperInternalConstructor<string>), @"[""1""]")]
         [InlineData(typeof(GenericStackWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericStackWrapperInternalConstructor<string>), @"[""1""]")]
         [InlineData(typeof(StringToGenericDictionaryWrapperPrivateConstructor<string>), @"{""Key"":""Value""}")]
+        [InlineData(typeof(StringToGenericDictionaryWrapperInternalConstructor<string>), @"{""Key"":""Value""}")]
         public static void Read_Generic_NoPublicConstructor_Throws(Type type, string json)
         {
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
