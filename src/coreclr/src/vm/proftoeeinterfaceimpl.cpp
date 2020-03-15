@@ -9870,8 +9870,7 @@ HRESULT ProfToEEInterfaceImpl::InitializeCurrentThread()
             LL_INFO10,
             "**PROF: InitializeCurrentThread.\n"));
 
-    // Make sure ThreadType can be seen by SOS
-    ClrFlsSetThreadType((TlsThreadTypeFlag)0);
+    SetupTLSForThread(GetThread());
 
     return S_OK;
 }

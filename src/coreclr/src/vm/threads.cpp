@@ -712,8 +712,7 @@ Thread* SetupThread(BOOL fInternal)
 
     Holder<Thread*,DoNothing<Thread*>,DeleteThread> threadHolder(pThread);
 
-    // Make sure ThreadType can be seen by SOS
-    ClrFlsSetThreadType((TlsThreadTypeFlag)0);
+    SetupTLSForThread(pThread);
 
     // A host can deny a thread entering runtime by returning a NULL IHostTask.
     // But we do want threads used by threadpool.
@@ -1766,8 +1765,7 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
         // Initialization must happen in the following order - hosts like SQL Server depend on this.
         //
 
-        // Make sure ThreadType can be seen by SOS
-        ClrFlsSetThreadType((TlsThreadTypeFlag)0);
+        SetupTLSForThread(this);
 
         fCanCleanupCOMState = TRUE;
         res = PrepareApartmentAndContext();

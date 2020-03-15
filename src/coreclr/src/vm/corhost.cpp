@@ -1248,6 +1248,35 @@ ULONG STDMETHODCALLTYPE CExecutionEngine::Release()
     return 1;
 }
 
+// Note: Sampling profilers also use this function to initialize TLS for a unmanaged
+// sampling thread so that initialization can be done in advance to avoid deadlocks.
+// See ProfToEEInterfaceImpl::InitializeCurrentThread for more details.
+void SetupTLSForThread(Thread* pThread)
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_MODE_ANY;
+
+#ifdef STRESS_LOG
+    if (StressLog::StressLogOn(~0u, 0))
+    {
+        StressLog::CreateThreadStressLog();
+    }
+#endif
+
+    // Make sure ThreadType can be seen by SOS
+    ClrFlsSetThreadType((TlsThreadTypeFlag)0);
+
+#ifdef ENABLE_CONTRACTS
+    // Profilers need the side effect of GetClrDebugState() to perform initialization
+    // in advance to avoid deadlocks. Refer to ProfToEEInterfaceImpl::InitializeCurrentThread
+    ClrDebugState* pDebugState = ::GetClrDebugState();
+
+    if (pThread)
+        pThread->m_pClrDebugState = pDebugState;
+#endif
+}
+
 #ifdef ENABLE_CONTRACTS_IMPL
 // Fls callback to deallocate ClrDebugState when our FLS block goes away.
 void FreeClrDebugState(LPVOID pTlsData);

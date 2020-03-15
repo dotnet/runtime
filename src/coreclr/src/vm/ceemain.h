@@ -40,6 +40,9 @@ enum ShutdownCompleteAction
 // Force shutdown of the EE
 void ForceEEShutdown(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete);
 
+// Setup thread statics, including ClrDebugState and StressLog.
+void SetupTLSForThread(Thread* pThread);
+
 // We have an internal class that can be used to expose EE functionality to other CLR
 // DLLs, via the deliberately obscure IEE DLL exports from the shim and the EE
 // NOTE:  This class must not ever contain any instance variables.  The reason for
