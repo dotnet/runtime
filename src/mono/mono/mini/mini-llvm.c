@@ -7937,8 +7937,19 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_ADDSUBPD: id = INTRINS_SSE_ADDSUBPD; break;
 			case SIMD_OP_SSE_HADDPS: id = INTRINS_SSE_HADDPS; break;
 			case SIMD_OP_SSE_HADDPD: id = INTRINS_SSE_HADDPD; break;
+			case SIMD_OP_SSE_PHADDW: id = INTRINS_SSE_PHADDW; break;
+			case SIMD_OP_SSE_PHADDD: id = INTRINS_SSE_PHADDD; break;
+			case SIMD_OP_SSE_PHSUBW: id = INTRINS_SSE_PHSUBW; break;
+			case SIMD_OP_SSE_PHSUBD: id = INTRINS_SSE_PHSUBD; break;
 			case SIMD_OP_SSE_HSUBPS: id = INTRINS_SSE_HSUBPS; break;
 			case SIMD_OP_SSE_HSUBPD: id = INTRINS_SSE_HSUBPD; break;
+			case SIMD_OP_SSE_PHADDSW: id = INTRINS_SSE_PHADDSW; break;
+			case SIMD_OP_SSE_PHSUBSW: id = INTRINS_SSE_PHSUBSW; break;
+			case SIMD_OP_SSE_PSIGNB: id = INTRINS_SSE_PSIGNB; break;
+			case SIMD_OP_SSE_PSIGNW: id = INTRINS_SSE_PSIGNW; break;
+			case SIMD_OP_SSE_PSIGND: id = INTRINS_SSE_PSIGND; break;
+			case SIMD_OP_SSE_PMADDUBSW: id = INTRINS_SSE_PMADDUBSW; break;
+			case SIMD_OP_SSE_PMULHRSW: id = INTRINS_SSE_PMULHRSW; break;
 			default: g_assert_not_reached (); break;
 			}
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
@@ -8202,6 +8213,30 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_SSSE3_ABS: {
+			// %sub = sub <16 x i8> zeroinitializer, %arg
+			// %cmp = icmp sgt <16 x i8> %arg, zeroinitializer
+			// %abs = select <16 x i1> %cmp, <16 x i8> %arg, <16 x i8> %sub
+			LLVMTypeRef typ = type_to_sse_type (ins->inst_c1);
+			LLVMValueRef sub = LLVMBuildSub(builder, LLVMConstNull(typ), lhs, "");
+			LLVMValueRef cmp = LLVMBuildICmp(builder, LLVMIntSGT, lhs, LLVMConstNull(typ), "");
+			LLVMValueRef abs = LLVMBuildSelect (builder, cmp, lhs, sub, "");
+			values [ins->dreg] = convert (ctx, abs, typ);
+			break;
+		}
+		
+		case OP_SSSE3_ALIGNR: {
+			LLVMValueRef mask_values [16];
+			for (int i = 0; i < 16; i++)
+				mask_values [i] = LLVMConstInt (LLVMInt8Type (), i + ins->inst_c0, FALSE);
+			LLVMValueRef shuffled = LLVMBuildShuffleVector (builder, 
+				convert (ctx, rhs, sse_i1_t),
+				convert (ctx, lhs, sse_i1_t),
+				LLVMConstVector (mask_values, 16), "");
+			values [ins->dreg] = convert (ctx, shuffled, type_to_sse_type (ins->inst_c1));
+			break;
+		}
+
 		case OP_CREATE_SCALAR:
 		case OP_CREATE_SCALAR_UNSAFE: {
 			LLVMTypeRef type = type_to_sse_type (ins->inst_c1);
@@ -8259,6 +8294,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef call = call_intrins (ctx, INTRINS_SSE_PTESTZ, args, dname);
 			LLVMValueRef cmp_zero = LLVMBuildICmp (builder, LLVMIntNE, call, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
 			values [ins->dreg] = LLVMBuildZExt (builder, cmp_zero, LLVMInt8Type (), "");
+			break;
+		}
+
+		case OP_SSE42_CRC32:
+		case OP_SSE42_CRC64: {
+			LLVMValueRef args [2];
+			args [0] = lhs;
+			args [1] = convert (ctx, rhs, primitive_type_to_llvm_type (ins->inst_c0));
+			IntrinsicId id;
+			switch (ins->inst_c0) {
+			case MONO_TYPE_U1: id = INTRINS_SSE_CRC32_32_8; break;
+			case MONO_TYPE_U2: id = INTRINS_SSE_CRC32_32_16; break;
+			case MONO_TYPE_U4: id = INTRINS_SSE_CRC32_32_32; break;
+			case MONO_TYPE_U8: id = INTRINS_SSE_CRC32_64_64; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 #endif
