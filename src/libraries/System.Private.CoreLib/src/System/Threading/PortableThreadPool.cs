@@ -195,7 +195,7 @@ namespace System.Threading
         public int ThreadCount => ThreadCounts.VolatileReadCounts(ref _separated.counts).numExistingThreads;
         public long CompletedWorkItemCount => _completionCounter.Count;
 
-        internal bool NotifyWorkItemComplete()
+        internal void NotifyWorkItemProgress()
         {
             _completionCounter.Increment();
             Volatile.Write(ref _separated.lastDequeueTime, Environment.TickCount);
@@ -211,7 +211,11 @@ namespace System.Threading
                     _hillClimbingThreadAdjustmentLock.Release();
                 }
             }
+        }
 
+        internal bool NotifyWorkItemComplete()
+        {
+            NotifyWorkItemProgress();
             return !WorkerThread.ShouldStopProcessingWorkNow();
         }
 

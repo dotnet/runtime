@@ -4492,6 +4492,7 @@ BOOL ThreadpoolMgr::CreateTimerQueueTimer(PHANDLE phNewTimer,
             if (!params.setupSucceeded)
             {
                 CloseHandle(TimerThreadHandle);
+                *phNewTimer = NULL;
                 return FALSE;
             }
 
@@ -4503,8 +4504,6 @@ BOOL ThreadpoolMgr::CreateTimerQueueTimer(PHANDLE phNewTimer,
 
     NewHolder<TimerInfo> timerInfoHolder;
     TimerInfo * timerInfo = new (nothrow) TimerInfo;
-    *phNewTimer = (HANDLE) timerInfo;
-
     if (NULL == timerInfo)
         ThrowOutOfMemory();
 
@@ -4519,9 +4518,12 @@ BOOL ThreadpoolMgr::CreateTimerQueueTimer(PHANDLE phNewTimer,
     timerInfo->ExternalCompletionEvent = INVALID_HANDLE;
     timerInfo->ExternalEventSafeHandle = NULL;
 
+    *phNewTimer = (HANDLE)timerInfo;
+
     BOOL status = QueueUserAPC((PAPCFUNC)InsertNewTimer,TimerThread,(size_t)timerInfo);
     if (FALSE == status)
     {
+        *phNewTimer = NULL;
         return FALSE;
     }
 
@@ -4706,9 +4708,19 @@ DWORD ThreadpoolMgr::FireTimers()
 
                 InterlockedIncrement(&timerInfo->refCount);
 
-                QueueUserWorkItem(AsyncTimerCallbackCompletion,
-                                  timerInfo,
-                                  QUEUE_ONLY /* TimerInfo take care of deleting*/);
+                if (UsePortableThreadPool())
+                {
+                    GCX_COOP();
+
+                    ARG_SLOT args[] = { PtrToArgSlot(AsyncTimerCallbackCompletion), PtrToArgSlot(timerInfo) };
+                    MethodDescCallSite(METHOD__THREAD_POOL__UNSAFE_QUEUE_UNMANAGED_WORK_ITEM).Call(args);
+                }
+                else
+                {
+                    QueueUserWorkItem(AsyncTimerCallbackCompletion,
+                                      timerInfo,
+                                      QUEUE_ONLY /* TimerInfo take care of deleting*/);
+                }
 
                 if (timerInfo->Period != 0 && timerInfo->Period != (ULONG)-1)
                 {

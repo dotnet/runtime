@@ -25,8 +25,8 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
+        internal const bool SupportsTimeSensitiveWorkItems = true;
         internal const bool EnableWorkerTracking = false;
-
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
@@ -90,14 +90,9 @@ namespace System.Threading
             PortableThreadPool.ThreadPoolInstance.RequestWorker();
         }
 
-        internal static bool KeepDispatching(int startTickCount)
-        {
-            return true;
-        }
-
         internal static void NotifyWorkItemProgress()
         {
-            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();
+            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
         }
 
         internal static bool NotifyWorkItemComplete()

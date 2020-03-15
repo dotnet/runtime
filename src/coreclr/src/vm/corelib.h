@@ -905,6 +905,9 @@ DEFINE_METHOD(TP_WAIT_CALLBACK,        PERFORM_WAIT_CALLBACK,               Perf
 DEFINE_CLASS(TIMER_QUEUE,           Threading,                TimerQueue)
 DEFINE_METHOD(TIMER_QUEUE,          APPDOMAIN_TIMER_CALLBACK, AppDomainTimerCallback,   SM_Int_RetVoid)
 
+DEFINE_CLASS(THREAD_POOL,           Threading,                          ThreadPool)
+DEFINE_METHOD(THREAD_POOL,          UNSAFE_QUEUE_UNMANAGED_WORK_ITEM,   UnsafeQueueUnmanagedWorkItem,   SM_IntPtr_IntPtr_RetVoid)
+
 DEFINE_CLASS(TIMESPAN,              System,                 TimeSpan)
 
 

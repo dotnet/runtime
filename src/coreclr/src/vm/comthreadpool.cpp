@@ -613,6 +613,18 @@ FCIMPLEND
 
 /********************************************************************************************************************/
 
+void QCALLTYPE ThreadPoolNative::ExecuteUnmanagedThreadPoolWorkItem(LPTHREAD_START_ROUTINE callback, LPVOID state)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(ThreadpoolMgr::UsePortableThreadPool());
+    callback(state);
+
+    END_QCALL;
+}
+
 /********************************************************************************************************************/
 
 struct BindIoCompletion_Args

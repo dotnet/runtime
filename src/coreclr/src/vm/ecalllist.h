@@ -656,10 +656,13 @@ FCFuncStart(gTimerFuncs)
     QCFuncElement("DeleteAppDomainTimer", AppDomainTimerNative::DeleteAppDomainTimer)
 FCFuncEnd()
 
-
 FCFuncStart(gRegisteredWaitHandleFuncs)
     FCFuncElement("UnregisterWaitNative", ThreadPoolNative::CorUnregisterWait)
     FCFuncElement("WaitHandleCleanupNative", ThreadPoolNative::CorWaitHandleCleanupNative)
+FCFuncEnd()
+
+FCFuncStart(gUnmanagedThreadPoolWorkItemFuncs)
+    QCFuncElement("ExecuteUnmanagedThreadPoolWorkItem", ThreadPoolNative::ExecuteUnmanagedThreadPoolWorkItem)
 FCFuncEnd()
 
 FCFuncStart(gWaitHandleFuncs)
@@ -1214,6 +1217,7 @@ FCClassElement("TypeBuilder", "System.Reflection.Emit", gCOMClassWriter)
 FCClassElement("TypeLoadException", "System", gTypeLoadExceptionFuncs)
 FCClassElement("TypeNameParser", "System", gTypeNameParser)
 FCClassElement("TypedReference", "System", gTypedReferenceFuncs)
+FCClassElement("UnmanagedThreadPoolWorkItem", "System.Threading", gUnmanagedThreadPoolWorkItemFuncs)
 #ifdef FEATURE_UTF8STRING
 FCClassElement("Utf8String", "System", gUtf8StringFuncs)
 #endif // FEATURE_UTF8STRING

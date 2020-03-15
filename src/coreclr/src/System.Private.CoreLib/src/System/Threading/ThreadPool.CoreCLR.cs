@@ -134,27 +134,30 @@ namespace System.Threading
         private static extern bool UnregisterWaitNative(IntPtr handle, SafeHandle? waitObject);
     }
 
+    internal sealed class UnmanagedThreadPoolWorkItem : IThreadPoolWorkItem
+    {
+        private readonly IntPtr _callback;
+        private readonly IntPtr _state;
+
+        public UnmanagedThreadPoolWorkItem(IntPtr callback, IntPtr state)
+        {
+            _callback = callback;
+            _state = state;
+        }
+
+        void IThreadPoolWorkItem.Execute() => ExecuteUnmanagedThreadPoolWorkItem(_callback, _state);
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void ExecuteUnmanagedThreadPoolWorkItem(IntPtr callback, IntPtr state);
+    }
+
     public static partial class ThreadPool
     {
-        // Time in ms for which ThreadPoolWorkQueue.Dispatch keeps executing work items before returning to the OS
-        private const uint DispatchQuantum = 30;
-
         internal static readonly bool UsePortableThreadPool = InitializeConfigAndDetermineUsePortableThreadPool();
+        internal static bool SupportsTimeSensitiveWorkItems => UsePortableThreadPool;
 
         internal static readonly bool EnableWorkerTracking = GetEnableWorkerTracking();
 
-        internal static bool KeepDispatching(int startTickCount)
-        {
-            if (UsePortableThreadPool)
-            {
-                return true;
-            }
-
-            // Note: this function may incorrectly return false due to TickCount overflow
-            // if work item execution took around a multiple of 2^32 milliseconds (~49.7 days),
-            // which is improbable.
-            return (uint)(Environment.TickCount - startTickCount) < DispatchQuantum;
-        }
 
         private static unsafe bool InitializeConfigAndDetermineUsePortableThreadPool()
         {
@@ -346,6 +349,13 @@ namespace System.Threading
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             PostQueuedCompletionStatus(overlapped);
 
+        // Entry point from unmanaged code
+        private static void UnsafeQueueUnmanagedWorkItem(IntPtr callback, IntPtr state)
+        {
+            Debug.Assert(SupportsTimeSensitiveWorkItems);
+            UnsafeQueueTimeSensitiveWorkItemInternal(new UnmanagedThreadPoolWorkItem(callback, state));
+        }
+
         // Native methods:
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -394,7 +404,7 @@ namespace System.Threading
         {
             if (UsePortableThreadPool)
             {
-                PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();
+                PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
                 return;
             }
 
@@ -446,4 +456,5 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool BindIOCompletionCallbackNative(IntPtr fileHandle);
     }
+
 }
