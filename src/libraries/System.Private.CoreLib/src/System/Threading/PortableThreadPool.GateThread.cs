@@ -133,7 +133,9 @@ namespace System.Threading
             private static void CreateGateThread()
             {
                 Thread gateThread = new Thread(GateThreadStart);
+                gateThread.IsThreadPoolThread = true;
                 gateThread.IsBackground = true;
+                gateThread.Name = ".NET ThreadPool Gate";
                 gateThread.Start();
             }
         }

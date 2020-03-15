@@ -169,7 +169,9 @@ namespace System.Threading
             {
                 _waitHandles[0] = _changeHandlesEvent.SafeWaitHandle;
                 Thread waitThread = new Thread(WaitThreadStart);
+                waitThread.IsThreadPoolThread = true;
                 waitThread.IsBackground = true;
+                waitThread.Name = ".NET ThreadPool Wait";
                 waitThread.Start();
             }
 

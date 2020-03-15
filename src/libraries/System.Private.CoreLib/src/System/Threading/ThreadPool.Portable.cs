@@ -9,6 +9,21 @@ namespace System.Threading
     // Portable implementation of ThreadPool
     //
 
+    public sealed partial class Thread
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ResetThreadPoolThread()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(IsThreadPoolThread);
+
+            if (_mayNeedResetForThreadPool)
+            {
+                ResetThreadPoolThreadSlow();
+            }
+        }
+    }
+
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
         /// <summary>

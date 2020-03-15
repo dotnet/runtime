@@ -144,6 +144,11 @@ namespace System.Threading
         private int _managedThreadId; // INT32
 #pragma warning restore CA1823, 169
 
+        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
+        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
+        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
+        private bool _mayNeedResetForThreadPool;
+
         private Thread() { }
 
         private void Create(ThreadStart start) =>
@@ -340,7 +345,14 @@ namespace System.Threading
         public bool IsBackground
         {
             get => IsBackgroundNative();
-            set => SetBackgroundNative(value);
+            set
+            {
+                SetBackgroundNative(value);
+                if (!value && !_mayNeedResetForThreadPool)
+                {
+                    _mayNeedResetForThreadPool = value;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -362,7 +374,14 @@ namespace System.Threading
         public ThreadPriority Priority
         {
             get => (ThreadPriority)GetPriorityNative();
-            set => SetPriorityNative((int)value);
+            set
+            {
+                SetPriorityNative((int)value);
+                if (value != ThreadPriority.Normal && !_mayNeedResetForThreadPool)
+                {
+                    _mayNeedResetForThreadPool = true;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -511,8 +530,20 @@ namespace System.Threading
 #pragma warning disable CA1822 // Mark members as static
         internal void ResetThreadPoolThread()
         {
-            // Currently implemented in unmanaged method Thread::InternalReset and
-            // called internally from the ThreadPool in NotifyWorkItemComplete.
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(IsThreadPoolThread);
+
+            if (!ThreadPool.UsePortableThreadPool)
+            {
+                // Currently implemented in unmanaged method Thread::InternalReset and
+                // called internally from the ThreadPool in NotifyWorkItemComplete.
+                return;
+            }
+
+            if (_mayNeedResetForThreadPool)
+            {
+                ResetThreadPoolThreadSlow();
+            }
         }
 #pragma warning restore CA1822
     } // End of class Thread

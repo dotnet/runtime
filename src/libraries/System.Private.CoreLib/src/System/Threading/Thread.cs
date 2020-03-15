@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Principal;
 using System.Runtime.Versioning;
@@ -171,9 +172,51 @@ namespace System.Threading
                     }
 
                     _name = value;
-
                     ThreadNameChanged(value);
+                    if (value != null && !_mayNeedResetForThreadPool)
+                    {
+                        _mayNeedResetForThreadPool = true;
+                    }
                 }
+            }
+        }
+
+        internal void SetThreadPoolWorkerThreadName()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(IsThreadPoolThread);
+
+            lock (this)
+            {
+                // Bypass the exception from setting the property
+                _name = ThreadPool.WorkerThreadName;
+                ThreadNameChanged(ThreadPool.WorkerThreadName);
+                _name = null;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void ResetThreadPoolThreadSlow()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(IsThreadPoolThread);
+            Debug.Assert(_mayNeedResetForThreadPool);
+
+            _mayNeedResetForThreadPool = false;
+
+            if (_name != null)
+            {
+                SetThreadPoolWorkerThreadName();
+            }
+
+            if (!IsBackground)
+            {
+                IsBackground = true;
+            }
+
+            if (Priority != ThreadPriority.Normal)
+            {
+                Priority = ThreadPriority.Normal;
             }
         }
 

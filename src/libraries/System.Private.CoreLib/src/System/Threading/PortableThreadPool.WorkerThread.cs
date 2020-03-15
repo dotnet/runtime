@@ -25,6 +25,8 @@ namespace System.Threading
 
             private static void WorkerThreadStart()
             {
+                Thread.CurrentThread.SetThreadPoolWorkerThreadName();
+
                 PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
                 if (log.IsEnabled())
                 {

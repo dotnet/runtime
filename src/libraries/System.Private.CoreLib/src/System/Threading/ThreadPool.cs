@@ -672,13 +672,15 @@ namespace System.Threading
                         Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
                     }
 
-                    currentThread.ResetThreadPoolThread();
-
                     // Release refs
                     workItem = null;
 
-                    // Return to clean ExecutionContext and SynchronizationContext
+                    // Return to clean ExecutionContext and SynchronizationContext. This may call user code (AsyncLocal value
+                    // change notifications).
                     ExecutionContext.ResetThreadPoolThread(currentThread);
+
+                    // Reset thread state after all user code for the work item has completed
+                    currentThread.ResetThreadPoolThread();
 
                     //
                     // Notify the VM that we executed this workitem.  This is also our opportunity to ask whether Hill Climbing wants
@@ -1244,6 +1246,8 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
+        internal const string WorkerThreadName = ".NET ThreadPool Worker";
+
         internal static readonly ThreadPoolWorkQueue s_workQueue = new ThreadPoolWorkQueue();
 
         /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
