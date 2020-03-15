@@ -26,9 +26,7 @@ namespace System.Text.Json
             new NullableConverterFactory(),
             new EnumConverterFactory(),
             new KeyValuePairConverterFactory(),
-            // IEnumerable should always be last since they can convert any IEnumerable.
             new IEnumerableConverterFactory(),
-            // Object should always be last since it converts any type.
             new ObjectConverterFactory()
         };
 
