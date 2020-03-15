@@ -16,6 +16,7 @@ parameters:
   timeoutPerTestInMinutes: ''
   runCrossGen: ''
   runCrossGen2: ''
+  compositeBuildMode: false
   helixProjectArguments: ''
   runInUnloadableContext: ''
   longRunningGcTests: ''
@@ -47,6 +48,7 @@ steps:
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
       _RunCrossGen2: ${{ parameters.runCrossGen2 }}
+      _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
@@ -86,6 +88,7 @@ steps:
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
       _RunCrossGen2: ${{ parameters.runCrossGen2 }}
+      _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}

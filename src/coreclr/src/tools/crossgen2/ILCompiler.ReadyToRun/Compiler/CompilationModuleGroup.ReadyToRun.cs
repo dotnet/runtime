@@ -82,6 +82,12 @@ namespace ILCompiler
         /// </summary>
         public abstract bool IsInputBubble { get; }
 
+        /// Returns true when compiling in library output mode (e.g. when compiling the shared framework
+        /// or a 3rd party package into a composite R2R executable). When set to false, we're compiling a runnable
+        /// executable.
+        /// </summary>
+        public abstract bool IsLibraryBuildMode { get; }
+
         /// <summary>
         /// List of input modules to use for the compilation.
         /// </summary>

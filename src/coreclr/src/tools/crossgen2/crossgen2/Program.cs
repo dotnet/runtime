@@ -313,6 +313,7 @@ namespace ILCompiler
                     List<EcmaModule> inputModules = new List<EcmaModule>();
                     List<EcmaModule> rootingModules = new List<EcmaModule>();
                     HashSet<ModuleDesc> versionBubbleModulesHash = new HashSet<ModuleDesc>();
+                    bool isLibraryBuildMode = true;
 
                     foreach (var inputFile in inputFilePaths)
                     {
@@ -320,6 +321,10 @@ namespace ILCompiler
                         inputModules.Add(module);
                         rootingModules.Add(module);
                         versionBubbleModulesHash.Add(module);
+                        if (module.EntryPoint != null)
+                        {
+                            isLibraryBuildMode = false;
+                        }
 
                         if (!_commandLineOptions.CompositeOrInputBubble)
                         {
@@ -332,6 +337,10 @@ namespace ILCompiler
                         EcmaModule module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
                         inputModules.Add(module);
                         versionBubbleModulesHash.Add(module);
+                        if (module.EntryPoint != null)
+                        {
+                            isLibraryBuildMode = false;
+                        }
                     }
 
                     string systemModuleName = _commandLineOptions.SystemModule ?? DefaultSystemModule;
@@ -394,6 +403,7 @@ namespace ILCompiler
                             typeSystemContext,
                             _commandLineOptions.Composite,
                             _commandLineOptions.InputBubble,
+                            isLibraryBuildMode,
                             inputModules,
                             versionBubbleModules,
                             _commandLineOptions.CompileBubbleGenerics,
@@ -407,6 +417,8 @@ namespace ILCompiler
                             typeSystemContext,
                             _commandLineOptions.Composite,
                             _commandLineOptions.InputBubble,
+                            isCompositeBuildMode: _commandLineOptions.Composite,
+                            isLibraryBuildMode: isLibraryBuildMode,
                             inputModules,
                             versionBubbleModules,
                             _commandLineOptions.CompileBubbleGenerics);
@@ -436,7 +448,8 @@ namespace ILCompiler
                             compilationRoots.Add(new ReadyToRunRootProvider(
                                 module,
                                 profileDataManager,
-                                profileDrivenPartialNGen: _commandLineOptions.Partial));
+                                profileDrivenPartialNGen: _commandLineOptions.Partial,
+                                isLibraryBuildMode: isLibraryBuildMode));
 
                             if (!_commandLineOptions.CompositeOrInputBubble)
                             {

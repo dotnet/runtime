@@ -21,6 +21,7 @@ namespace ILCompiler
             TypeSystemContext context,
             bool isCompositeBuildMode,
             bool isInputBubble,
+            bool isLibraryBuildMode,
             IEnumerable<EcmaModule> compilationModuleSet,
             IEnumerable<ModuleDesc> versionBubbleModuleSet,
             bool compileGenericDependenciesFromVersionBubbleModuleSet,
@@ -28,6 +29,8 @@ namespace ILCompiler
                 base(context,
                      isCompositeBuildMode,
                      isInputBubble,
+                     isCompositeBuildMode: isCompositeBuildMode,
+                     isLibraryBuildMode: isLibraryBuildMode,
                      compilationModuleSet,
                      versionBubbleModuleSet,
                      compileGenericDependenciesFromVersionBubbleModuleSet)

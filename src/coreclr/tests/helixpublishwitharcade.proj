@@ -27,6 +27,7 @@
         PublishTestResults=$(_PublishTestResults);
         RunCrossGen=$(_RunCrossGen);
         RunCrossGen2=$(_RunCrossGen2);
+        CompositeBuildMode=$(_CompositeBuildMode);
         LongRunningGCTests=$(_LongRunningGCTests);
         GcSimulatorTests=$(_GcSimulatorTests);
         RunInUnloadableContext=$(_RunInUnloadableContext);
@@ -194,6 +195,7 @@
     <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB" />
     <HelixPreCommand Include="set RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
     <HelixPreCommand Include="set RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
+    <HelixPreCommand Include="set CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="set RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="set RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="set RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
@@ -209,6 +211,7 @@
     <HelixPreCommand Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
     <HelixPreCommand Include="export RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
     <HelixPreCommand Include="export RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
+    <HelixPreCommand Include="export CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="export RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="export RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="export RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />

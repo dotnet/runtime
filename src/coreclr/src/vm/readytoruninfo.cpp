@@ -707,9 +707,9 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     }
 
     // For format version 4.1 and later, there is an optional inlining table
-    if (IsImageVersionAtLeast(4, 1))
+    if (pModule != NULL && IsImageVersionAtLeast(4, 1))
     {
-        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::InliningInfo2);
+        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo2);
         if (pInlineTrackingInfoDir != NULL)
         {
             const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
@@ -719,9 +719,9 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     }
 
     // For format version 2.1 and later, there is an optional inlining table
-    if (m_pPersistentInlineTrackingMap == nullptr && IsImageVersionAtLeast(2, 1))
+    if (pModule != NULL && m_pPersistentInlineTrackingMap == nullptr && IsImageVersionAtLeast(2, 1))
     {
-        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::InliningInfo);
+        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo);
         if (pInlineTrackingInfoDir != NULL)
         {
             const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
@@ -731,7 +731,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     }
 
     // For format version 2.2 and later, there is an optional profile-data section
-    if (IsImageVersionAtLeast(2, 2))
+    if (pModule != NULL && IsImageVersionAtLeast(2, 2))
     {
         IMAGE_DATA_DIRECTORY * pProfileDataInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::ProfileDataInfo);
         if (pProfileDataInfoDir != NULL)
@@ -744,16 +744,19 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     }
 
     // For format version 3.1 and later, there is an optional attributes section
-    IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = m_component.FindSection(ReadyToRunSectionType::AttributePresence);
-    if (attributesPresenceDataInfoDir != NULL)
+    if (pModule != NULL)
     {
-        NativeCuckooFilter newFilter(
-            (BYTE *)m_pComposite->GetLayout()->GetBase(),
-            m_pComposite->GetLayout()->GetVirtualSize(),
-            attributesPresenceDataInfoDir->VirtualAddress,
-            attributesPresenceDataInfoDir->Size);
-
-        m_attributesPresence = newFilter;
+        IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = m_component.FindSection(ReadyToRunSectionType::AttributePresence);
+        if (attributesPresenceDataInfoDir != NULL)
+        {
+            NativeCuckooFilter newFilter(
+                (BYTE *)m_pComposite->GetLayout()->GetBase(),
+                m_pComposite->GetLayout()->GetVirtualSize(),
+                attributesPresenceDataInfoDir->VirtualAddress,
+                attributesPresenceDataInfoDir->Size);
+    
+            m_attributesPresence = newFilter;
+        }
     }
 }
 

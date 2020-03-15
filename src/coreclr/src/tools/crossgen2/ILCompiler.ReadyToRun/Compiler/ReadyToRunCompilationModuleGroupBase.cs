@@ -21,6 +21,7 @@ namespace ILCompiler
         private readonly bool _compileGenericDependenciesFromVersionBubbleModuleSet;
         private readonly bool _isCompositeBuildMode;
         private readonly bool _isInputBubble;
+        private readonly bool _isLibraryBuildMode;
         private readonly ConcurrentDictionary<TypeDesc, bool> _containsTypeLayoutCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
@@ -29,6 +30,7 @@ namespace ILCompiler
             TypeSystemContext context,
             bool isCompositeBuildMode,
             bool isInputBubble,
+            bool isLibraryBuildMode,
             IEnumerable<EcmaModule> compilationModuleSet,
             IEnumerable<ModuleDesc> versionBubbleModuleSet,
             bool compileGenericDependenciesFromVersionBubbleModuleSet)
@@ -36,6 +38,7 @@ namespace ILCompiler
             _compilationModuleSet = new HashSet<EcmaModule>(compilationModuleSet);
             _isCompositeBuildMode = isCompositeBuildMode;
             _isInputBubble = isInputBubble;
+            _isLibraryBuildMode = isLibraryBuildMode;
 
             Debug.Assert(_isCompositeBuildMode || _compilationModuleSet.Count == 1);
 
@@ -212,6 +215,8 @@ namespace ILCompiler
         public sealed override bool IsCompositeBuildMode => _isCompositeBuildMode;
 
         public sealed override bool IsInputBubble => _isInputBubble;
+
+        public sealed override bool IsLibraryBuildMode => _isLibraryBuildMode;
 
         public sealed override IEnumerable<EcmaModule> CompilationModuleSet => _compilationModuleSet;
 
