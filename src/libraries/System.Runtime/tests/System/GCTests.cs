@@ -896,6 +896,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [OuterLoop]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private static void AllocateUninitializedArray()
         {
@@ -950,6 +951,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [OuterLoop]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
         private static void AllocateArray()
         {
