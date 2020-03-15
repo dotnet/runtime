@@ -352,8 +352,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(BuildOS)' == 'Windows_NT'" />
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(BuildOS)' != 'Windows_NT'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetOS)' == 'Windows_NT'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(TargetOS)' != 'Windows_NT'" />
     </ItemGroup>
   </Target>
 

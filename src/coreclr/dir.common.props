@@ -21,20 +21,14 @@
     <BuildType Condition="'$(BuildType)' == 'release'">Release</BuildType>
     <BuildType Condition="'$(BuildType)' == 'checked'">Checked</BuildType>
 
-    <BuildOS>$(__BuildOS)</BuildOS>
-    <BuildOS Condition="'$(BuildOS)' == ''">$(OSGroup)</BuildOS>
-    <BuildOS Condition="'$(BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</BuildOS>
-    <BuildOS Condition="'$(BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</BuildOS>
-    <BuildOS Condition="'$(BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</BuildOS>
-
-    <!-- TODO: converge on one property for BuildOS and __BuildOS (and similar), and remove these extra lines. -->
-    <__BuildOS>$(BuildOS)</__BuildOS>
+    <!-- TODO: converge on one property for TargetOS and __TargetOS (and similar), and remove these extra lines. -->
+    <__TargetOS>$(TargetOS)</__TargetOS>
     <__BuildArch>$(BuildArch)</__BuildArch>
 
     <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
 
-    <PlatformConfigPathPart>$(BuildOS).$(BuildArch).$(BuildType)</PlatformConfigPathPart>
+    <PlatformConfigPathPart>$(TargetOS).$(BuildArch).$(BuildType)</PlatformConfigPathPart>
   </PropertyGroup>
 
   <!-- Common properties -->
@@ -67,11 +61,11 @@
 
   <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
-    <TargetsFreeBSD Condition="'$(BuildOS)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <TargetsLinux Condition="'$(BuildOS)' == 'Linux'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(BuildOS)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(BuildOS)' == 'OSX'">true</TargetsOSX>
-    <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsLinux Condition="'$(TargetOS)' == 'Linux'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
+    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
 
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
 

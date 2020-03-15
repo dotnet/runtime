@@ -294,22 +294,16 @@ bool Thread::DetectHandleILStubsForDebugger()
     return false;
 }
 
-extern "C" {
-#ifndef __GNUC__
-__declspec(thread)
-#else // !__GNUC__
-__thread
-#endif // !__GNUC__
-ThreadLocalInfo gCurrentThreadInfo =
-                                              {
-                                                  NULL,    // m_pThread
-                                                  NULL,    // m_pAppDomain
-                                                  NULL,    // m_EETlsData
-                                              };
-} // extern "C"
+#ifndef _MSC_VER
+__thread ThreadLocalInfo gCurrentThreadInfo;
+#endif
 
 // index into TLS Array. Definition added by compiler
 EXTERN_C UINT32 _tls_index;
+
+#ifndef HOST_WINDOWS
+UINT32 _tls_index;
+#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -1202,31 +1196,6 @@ struct Dbg_TrackSyncStack : public Dbg_TrackSync
         LIMITED_METHOD_CONTRACT;
     }
 };
-
-// ensure that registers are preserved across this call
-#ifdef _MSC_VER
-#pragma optimize("", off)
-#endif
-// A pain to do all this from ASM, but watch out for trashed registers
-EXTERN_C void EnterSyncHelper    (UINT_PTR caller, void *pAwareLock)
-{
-    BEGIN_ENTRYPOINT_THROWS;
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_pTrackSync->EnterSync(caller, pAwareLock);
-    END_ENTRYPOINT_THROWS;
-
-}
-EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock)
-{
-    BEGIN_ENTRYPOINT_THROWS;
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_pTrackSync->LeaveSync(caller, pAwareLock);
-    END_ENTRYPOINT_THROWS;
-
-}
-#ifdef _MSC_VER
-#pragma optimize("", on)
-#endif
 
 void Dbg_TrackSyncStack::EnterSync(UINT_PTR caller, void *pAwareLock)
 {
@@ -2997,9 +2966,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             // lock is held by the GC thread.
             if (m_State & TS_DebugSuspendPending)
                 UnmarkForSuspension(~TS_DebugSuspendPending);
-
-            // CoreCLR does not support user-requested thread suspension
-            _ASSERTE(!(m_State & TS_UserSuspendPending));
 
             if (CurrentThreadID == ThisThreadID && IsAbortRequested())
             {
@@ -5799,9 +5765,6 @@ Retry:
         if (cur->m_State & Thread::TS_DebugSuspendPending)
             cntReturn++;
 
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(cur->m_State & Thread::TS_UserSuspendPending));
-
         if (cur->m_TraceCallCount > 0)
             cntReturn++;
 
@@ -6475,7 +6438,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         // -additionally, we need to provide some region to hosts to allow for lock acquisition in a hosted scenario
         //
         EXTRA_PAGES = 3;
-        INDEBUG(EXTRA_PAGES += 3);
+        INDEBUG(EXTRA_PAGES += 1);
 
         int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages);
         if (ThreadGuardPages == 0)
@@ -6489,7 +6452,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
 
 #else // HOST_64BIT
 #ifdef _DEBUG
-        uGuardSize += (3 * GetOsPageSize());    // three extra pages for debug infrastructure
+        uGuardSize += (1 * GetOsPageSize());    // one extra page for debug infrastructure
 #endif // _DEBUG
 #endif // HOST_64BIT
 

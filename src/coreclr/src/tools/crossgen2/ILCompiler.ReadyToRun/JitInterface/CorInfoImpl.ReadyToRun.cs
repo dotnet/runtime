@@ -608,6 +608,14 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GCPoll;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
+                    id = ReadyToRunHelper.ReversePInvokeEnter;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
+                    id = ReadyToRunHelper.ReversePInvokeExit;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
@@ -616,8 +624,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
                 default:
@@ -1145,6 +1151,25 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
             }
 
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0
+                && originalMethod.IsNativeCallable)
+            {
+                if (!originalMethod.Signature.IsStatic) // Must be a static method
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, originalMethod);
+                }
+
+                if (originalMethod.HasInstantiation || originalMethod.OwningType.HasInstantiation) // No generics involved
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, originalMethod);
+                }
+
+                if (Marshaller.IsMarshallingRequired(originalMethod.Signature, Array.Empty<ParameterMetadata>())) // Only blittable arguments
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, originalMethod);
+                }
+            }
+
             exactType = type;
 
             constrainedType = null;
@@ -1496,7 +1521,7 @@ namespace Internal.JitInterface
                 }
                 else if (_TARGET_ARM64_)
                 {
-                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.Arm.Arm64");
+                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.Arm");
                 }
 
                 fIsHWIntrinsic = fIsPlatformHWIntrinsic || (namespaceName == "System.Runtime.Intrinsics");
@@ -1634,6 +1659,14 @@ namespace Internal.JitInterface
                 out useInstantiatingStub);
 
             pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, methodToCall);
+
+            var targetDetails = _compilation.TypeSystemContext.Target;
+            if (targetDetails.Architecture == TargetArchitecture.X86
+                && targetDetails.OperatingSystem == TargetOS.Windows
+                && targetMethod.IsNativeCallable)
+            {
+                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with NativeCallableAttribute not implemented");
+            }
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
@@ -2297,6 +2330,7 @@ namespace Internal.JitInterface
         }
 
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
+        private int SizeOfReversePInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
 
         private void setEHcount(uint cEH)
         {

@@ -5085,6 +5085,22 @@ void CEEInfo::getCallInfo(
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, W("?")));
     }
 
+    // If this call is for a LDFTN and the target method has the NativeCallableAttribute,
+    // then validate it adheres to the limitations.
+    if ((flags & CORINFO_CALLINFO_LDFTN) && pMD->HasNativeCallableAttribute())
+    {
+        if (!pMD->IsStatic())
+            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonStaticMethod")));
+
+        // No generic methods
+        if (pMD->HasClassOrMethodInstantiation())
+            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
+
+        // Arguments
+        if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
+            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
+    }
+
     TypeHandle exactType = TypeHandle(pResolvedToken->hClass);
 
     TypeHandle constrainedType;
@@ -9192,18 +9208,25 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
 
     pResult->accessType = IAT_VALUE;
 
-
-#ifndef CROSSGEN_COMPILE
-    // If LDFTN target has [NativeCallable] attribute , then create a UMEntryThunk.
+// Also see GetBaseCompileFlags() below for an additional check.
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS) && !defined(CROSSGEN_COMPILE)
+    // Deferring X86 support until a need is observed or
+    // time permits investigation into all the potential issues.
     if (pMD->HasNativeCallableAttribute())
     {
         pResult->addr = (void*)COMDelegate::ConvertToCallback(pMD);
     }
     else
-#endif //CROSSGEN_COMPILE
     {
-        pResult->addr = (void *)pMD->GetMultiCallableAddrOfCode();
+        pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
     }
+
+#else
+
+    pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
+
+#endif // !(TARGET_X86 && TARGET_WINDOWS) || CROSSGEN_COMPILE
+
     EE_TO_JIT_TRANSITION();
 }
 
@@ -10081,7 +10104,8 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     // Wrapper delegate offsets
     pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
 
-    pEEInfoOut->sizeOfReversePInvokeFrame  = (DWORD)-1;
+    pEEInfoOut->sizeOfReversePInvokeFrame = TARGET_POINTER_SIZE * READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits;
+    _ASSERTE(sizeof(ReversePInvokeFrame) <= pEEInfoOut->sizeOfReversePInvokeFrame);
 
     pEEInfoOut->osPageSize = GetOsPageSize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
@@ -12362,6 +12386,11 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
          }
     }
 
+#if !defined(TARGET_X86) || !defined(TARGET_WINDOWS)
+    if (ftn->HasNativeCallableAttribute())
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+#endif // !TARGET_X86 || !TARGET_WINDOWS
+
     return flags;
 }
 
@@ -12521,6 +12550,7 @@ BOOL g_fAllowRel32 = TRUE;
 #endif
 
 
+#ifndef CROSSGEN_COMPILE
 // ********************************************************************
 //                  README!!
 // ********************************************************************
@@ -12534,12 +12564,14 @@ BOOL g_fAllowRel32 = TRUE;
 //
 // Calls to this method that occur to check if inlining can occur on x86,
 // are OK since they discard the return value of this method.
-
-PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS flags,
+PCODE UnsafeJitFunction(PrepareCodeConfig* config,
+                        COR_ILMETHOD_DECODER* ILHeader,
+                        CORJIT_FLAGS flags,
                         ULONG * pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
 
+    NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
 
     PCODE ret = NULL;
@@ -12571,7 +12603,6 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
 
 #endif // FEATURE_PREJIT
 
-#ifndef CROSSGEN_COMPILE
     EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
     if (!jitMgr->LoadJIT())
     {
@@ -12591,7 +12622,6 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load JIT compiler"));
 #endif // ALLOW_SXS_JIT
     }
-#endif // CROSSGEN_COMPILE
 
 #ifdef _DEBUG
     // This is here so we can see the name and class easily in the debugger
@@ -12648,6 +12678,21 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
 
     flags = GetCompileFlags(ftn, flags, &methodInfo);
 
+    // If the reverse P/Invoke flag is used, we aren't going to support
+    // any tiered compilation.
+    if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE))
+    {
+        _ASSERTE(config->GetCallerGCMode() != CallerGCMode::Coop);
+
+        // Clear all possible states.
+        flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+        flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+
+#ifdef FEATURE_TIERED_COMPILATION
+        config->SetJitSwitchedToOptimized();
+#endif // FEATURE_TIERED_COMPILATION
+    }
+
 #ifdef _DEBUG
     if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION))
     {
@@ -12678,17 +12723,10 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
 
     for (;;)
     {
-#ifndef CROSSGEN_COMPILE
         CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY),
             !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
-#else
-        // This path should be only ever used for verification in crossgen and so we should not need EEJitManager
-        _ASSERTE(flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY));
-        CEEInfo jitInfo(ftn, true);
-        EEJitManager *jitMgr = NULL;
-#endif
 
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64)) && !defined(CROSSGEN_COMPILE)
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 #ifdef TARGET_AMD64
         if (fForceJumpStubOverflow)
             jitInfo.SetJumpStubOverflow(fAllowRel32);
@@ -12804,10 +12842,7 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
 
         if (!SUCCEEDED(res))
         {
-#ifndef CROSSGEN_COMPILE
             jitInfo.BackoutJitData(jitMgr);
-#endif
-
             ThrowExceptionForJit(res);
         }
 
@@ -12820,7 +12855,7 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
         if (!nativeEntry)
             COMPlusThrow(kInvalidProgramException);
 
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64)) && !defined(CROSSGEN_COMPILE)
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
         if (jitInfo.IsJumpStubOverflow())
         {
             // Backout and try again with fAllowRel32 == FALSE.
@@ -12839,7 +12874,7 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
             reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
             continue;
         }
-#endif // (TARGET_AMD64 || TARGET_ARM64) && !CROSSGEN_COMPILE
+#endif // (TARGET_AMD64 || TARGET_ARM64)
 
         LOG((LF_JIT, LL_INFO10000,
             "Jitted Entry at" FMT_ADDR "method %s::%s %s\n", DBG_ADDR(nativeEntry),
@@ -12887,6 +12922,7 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
     COOPERATIVE_TRANSITION_END();
     return ret;
 }
+#endif // CROSSGEN_COMPILE
 
 extern "C" unsigned __stdcall PartialNGenStressPercentage()
 {
@@ -13293,9 +13329,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-        // ENCODE_METHOD_NATIVECALLABLE_HANDLE is same as ENCODE_METHOD_ENTRY_DEF_TOKEN
-        // except for AddrOfCode
-    case ENCODE_METHOD_NATIVE_ENTRY:
     case ENCODE_METHOD_ENTRY_DEF_TOKEN:
         {
             mdToken MethodDef = TokenFromRid(CorSigUncompressData(pBlob), mdtMethodDef);
@@ -13351,14 +13384,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
         MethodEntry:
-            if (kind == ENCODE_METHOD_NATIVE_ENTRY)
-            {
-                result = COMDelegate::ConvertToCallback(pMD);
-            }
-            else
-            {
-                result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
-            }
+            result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
 
         #ifndef TARGET_ARM
             if (CORCOMPILE_IS_PCODE_TAGGED(result))

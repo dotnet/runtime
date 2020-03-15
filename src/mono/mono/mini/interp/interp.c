@@ -3593,6 +3593,7 @@ main_loop:
 				MonoException *ex = mono_error_convert_to_exception (error);
 				if (ex)
 					THROW_EX (ex, ip);
+				EXCEPTION_CHECKPOINT;
 			}
 			ip += 2;
 			const gboolean realloc_frame = new_method->alloca_size > frame->imethod->alloca_size;
@@ -3614,6 +3615,76 @@ main_loop:
 			locals = vt_sp + frame->imethod->vt_stack_size;
 			ip = frame->imethod->code;
 			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CALL_DELEGATE) {
+			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [1]];
+			is_void = csignature->ret->type == MONO_TYPE_VOID;
+			int param_count = csignature->param_count;
+			MonoDelegate *del = (MonoDelegate*) sp [-param_count - 1].data.o;
+			gboolean is_multicast = del->method == NULL;
+			InterpMethod *del_imethod = (InterpMethod*)del->interp_invoke_impl;
+
+			frame->ip = ip;
+			if (!del_imethod) {
+				if (is_multicast) {
+					error_init_reuse (error);
+					MonoMethod *invoke = mono_get_delegate_invoke_internal (del->object.vtable->klass);
+					del_imethod = mono_interp_get_imethod (del->object.vtable->domain, mono_marshal_get_delegate_invoke (invoke, del), error);
+					del->interp_invoke_impl = del_imethod;
+					mono_error_assert_ok (error);
+				} else if (!del->interp_method) {
+					// Not created from interpreted code
+					error_init_reuse (error);
+					g_assert (del->method);
+					del_imethod = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);
+					del->interp_method = del_imethod;
+					del->interp_invoke_impl = del_imethod;
+					mono_error_assert_ok (error);
+				} else {
+					del_imethod = (InterpMethod*)del->interp_method;
+					if (del_imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+						error_init_reuse (error);
+						del_imethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (del_imethod->method, FALSE, FALSE), error);
+						mono_error_assert_ok (error);
+						del->interp_invoke_impl = del_imethod;
+					} else if (del_imethod->method->flags & METHOD_ATTRIBUTE_VIRTUAL && !del->target) {
+						// 'this' is passed dynamically, we need to recompute the target method
+						// with each call
+						del_imethod = get_virtual_method (del_imethod, sp [-param_count].data.o->vtable);
+					} else {
+						del->interp_invoke_impl = del_imethod;
+					}
+				}
+			}
+			cmethod = del_imethod;
+			retval = sp;
+			sp->data.p = vt_sp;
+			sp -= param_count + 1;
+			if (!is_multicast) {
+				if (cmethod->param_count == param_count + 1) {
+					// Target method is static but the delegate has a target object. We handle
+					// this separately from the case below, because, for these calls, the instance
+					// is allowed to be null.
+					sp [0].data.o = del->target;
+				} else if (del->target) {
+					MonoObject *this_arg = del->target;
+
+					// replace the MonoDelegate* on the stack with 'this' pointer
+					if (m_class_is_valuetype (this_arg->vtable->klass)) {
+						gpointer unboxed = mono_object_unbox_internal (this_arg);
+						sp [0].data.p = unboxed;
+					} else {
+						sp [0].data.o = this_arg;
+					}
+				} else {
+					// skip the delegate pointer for static calls
+					// FIXME we could avoid memmove
+					memmove (sp, sp + 1, param_count * sizeof (stackval));
+				}
+			}
+			ip += 2;
+
+			goto call;
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			MonoMethodSignature *csignature;
@@ -6725,6 +6796,13 @@ call_newobj:
 			ip += 4;
 			goto exit_frame;
 		}
+		MINT_IN_CASE(MINT_PROF_COVERAGE_STORE) {
+			++ip;
+			guint32 *p = (guint32*)GINT_TO_POINTER (READ64 (ip));
+			*p = 1;
+			ip += 4;
+			MINT_IN_BREAK;
+		}
 
 		MINT_IN_CASE(MINT_LDARGA)
 			sp->data.p = &frame->stack_args [ip [1]];
@@ -6936,6 +7014,11 @@ call_newobj:
 	sp [-1].data.f = mathfunc (sp [-1].data.f); \
 	++ip;
 
+#define MATH_BINOP(mathfunc) \
+	sp--; \
+	sp [-1].data.f = mathfunc (sp [-1].data.f, sp [0].data.f); \
+	++ip;
+
 		MINT_IN_CASE(MINT_ABS) MATH_UNOP(fabs); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ASIN) MATH_UNOP(asin); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ASINH) MATH_UNOP(asinh); MINT_IN_BREAK;
@@ -6943,14 +7026,102 @@ call_newobj:
 		MINT_IN_CASE(MINT_ACOSH) MATH_UNOP(acosh); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ATAN) MATH_UNOP(atan); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ATANH) MATH_UNOP(atanh); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CEILING) MATH_UNOP(ceil); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_COS) MATH_UNOP(cos); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CBRT) MATH_UNOP(cbrt); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_COSH) MATH_UNOP(cosh); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_EXP) MATH_UNOP(exp); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_FLOOR) MATH_UNOP(floor); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG) MATH_UNOP(log); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG2) MATH_UNOP(log2); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG10) MATH_UNOP(log10); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SIN) MATH_UNOP(sin); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SQRT) MATH_UNOP(sqrt); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SINH) MATH_UNOP(sinh); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TAN) MATH_UNOP(tan); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANH) MATH_UNOP(tanh); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_ATAN2) MATH_BINOP(atan2); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_POW) MATH_BINOP(pow); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_FMA)
+			sp -= 2;
+			sp [-1].data.f = fma (sp [-1].data.f, sp [0].data.f, sp [1].data.f);
+			ip++;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SCALEB)
+			sp--;
+			sp [-1].data.f = scalbn (sp [-1].data.f, sp [0].data.i);
+			ip++;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ILOGB) {
+			int result;
+			double x = sp [-1].data.f;
+			if (FP_ILOGB0 != INT_MIN && x == 0.0)
+				result = INT_MIN;
+			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
+				result = INT_MAX;
+			else
+				result = ilogb (x);
+			sp [-1].data.i = result;
+			ip++;
+			MINT_IN_BREAK;
+		}
+
+#define MATH_UNOPF(mathfunc) \
+	sp [-1].data.f_r4 = mathfunc (sp [-1].data.f_r4); \
+	++ip;
+
+#define MATH_BINOPF(mathfunc) \
+	sp--; \
+	sp [-1].data.f_r4 = mathfunc (sp [-1].data.f_r4, sp [0].data.f_r4); \
+	++ip;
+		MINT_IN_CASE(MINT_ABSF) MATH_UNOPF(fabsf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ASINF) MATH_UNOPF(asinf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ASINHF) MATH_UNOPF(asinhf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ACOSF) MATH_UNOPF(acosf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ACOSHF) MATH_UNOPF(acoshf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ATANF) MATH_UNOPF(atanf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ATANHF) MATH_UNOPF(atanhf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CEILINGF) MATH_UNOPF(ceilf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_COSF) MATH_UNOPF(cosf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CBRTF) MATH_UNOPF(cbrtf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_COSHF) MATH_UNOPF(coshf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_EXPF) MATH_UNOPF(expf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_FLOORF) MATH_UNOPF(floorf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOGF) MATH_UNOPF(logf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG2F) MATH_UNOPF(log2f); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG10F) MATH_UNOPF(log10f); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SINF) MATH_UNOPF(sinf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SQRTF) MATH_UNOPF(sqrtf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SINHF) MATH_UNOPF(sinhf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_TANF) MATH_UNOPF(tanf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_TANHF) MATH_UNOPF(tanhf); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_ATAN2F) MATH_BINOPF(atan2f); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_POWF) MATH_BINOPF(powf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_FMAF)
+			sp -= 2;
+			sp [-1].data.f_r4 = fmaf (sp [-1].data.f_r4, sp [0].data.f_r4, sp [1].data.f_r4);
+			ip++;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SCALEBF)
+			sp--;
+			sp [-1].data.f_r4 = scalbnf (sp [-1].data.f_r4, sp [0].data.i);
+			ip++;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ILOGBF) {
+			int result;
+			float x = sp [-1].data.f_r4;
+			if (FP_ILOGB0 != INT_MIN && x == 0.0)
+				result = INT_MIN;
+			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
+				result = INT_MAX;
+			else
+				result = ilogbf (x);
+			sp [-1].data.i = result;
+			ip++;
+			MINT_IN_BREAK;
+		}
 
 		MINT_IN_CASE(MINT_INTRINS_ENUM_HASFLAG) {
 			MonoClass *klass = (MonoClass*)frame->imethod->data_items[ip [1]];

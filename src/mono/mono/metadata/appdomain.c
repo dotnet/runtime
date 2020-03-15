@@ -1415,6 +1415,7 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 	HANDLE_FUNCTION_ENTER ();
 	MonoAssembly *ret = NULL;
 	MonoDomain *domain = mono_alc_domain (alc);
+	char *filename = NULL;
 
 	if (mono_runtime_get_no_exec ())
 		goto leave;
@@ -1454,7 +1455,8 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 
 	if (ret && !refonly && mono_asmctx_get_kind (&ret->context) == MONO_ASMCTX_REFONLY) {
 		/* .NET Framework throws System.IO.FileNotFoundException in this case */
-		mono_error_set_file_not_found (error, NULL, "AssemblyResolveEvent handlers cannot return Assemblies loaded for reflection only");
+		filename = mono_string_handle_to_utf8 (fname, error);
+		mono_error_set_file_not_found (error, filename, "AssemblyResolveEvent handlers cannot return Assemblies loaded for reflection only: %s", filename);
 		ret = NULL;
 		goto leave;
 	}
@@ -1489,6 +1491,7 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 #endif
 
 leave:
+	g_free (filename);
 	HANDLE_FUNCTION_RETURN_VAL (ret);
 }
 
@@ -2655,9 +2658,9 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoole
 	
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_by_name (error, name, "Invalid Image");
+			mono_error_set_bad_image_by_name (error, name, "Invalid Image: %s", name);
 		else
-			mono_error_set_file_not_found (error, name, "Invalid Image");
+			mono_error_set_simple_file_not_found (error, name, refOnly);
 		goto leave;
 	}
 
@@ -2696,9 +2699,9 @@ mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAs
 	ass = mono_assembly_request_open (filename, &req, &status);
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_by_name (error, filename, "Invalid Image");
+			mono_error_set_bad_image_by_name (error, filename, "Invalid Image: %s", filename);
 		else
-			mono_error_set_file_not_found (error, filename, "Invalid Image");
+			mono_error_set_simple_file_not_found (error, filename, asmctx == MONO_ASMCTX_REFONLY);
 	}
 
 leave:
@@ -3264,7 +3267,9 @@ unload_thread_main (void *arg)
 	 */
 	for (i = 0; i < domain->class_vtable_array->len; ++i)
 		zero_static_data ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
+#if !HAVE_BOEHM_GC
 	mono_gc_collect (0);
+#endif
 	for (i = 0; i < domain->class_vtable_array->len; ++i)
 		clear_cached_vtable ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
 	deregister_reflection_info_roots (domain);
@@ -3282,8 +3287,6 @@ unload_thread_main (void *arg)
 	mono_gchandle_free_domain (domain);
 
 	mono_domain_free (domain, FALSE);
-
-	mono_gc_collect (mono_gc_max_generation ());
 
 	result = 0; // success
 exit:

@@ -368,6 +368,11 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 PEReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
             }
+            else
+            {
+                ImmutableArray<byte> content = PEReader.GetEntireImage().GetContent();
+                Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
+            }
 
             if (metadata == null && PEReader.HasMetadata)
             {
@@ -386,14 +391,12 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
                 _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
+                Debug.Assert(!Composite);
             }
             else if (!TryLocateNativeReadyToRunHeader())
             {
                 throw new BadImageFormatException($"ECMA metadata / RTR_HEADER not found in file '{Filename}'");
             }
-
-            ImmutableArray<byte> content = PEReader.GetEntireImage().GetContent();
-            Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
         }
 
         private void EnsureMethods()

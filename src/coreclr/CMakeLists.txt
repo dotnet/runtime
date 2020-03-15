@@ -7,9 +7,6 @@ project(CoreCLR)
 
 include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
 
-# Include cmake functions
-include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
-
 if (CLR_CMAKE_HOST_WIN32)
   message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
   message(STATUS "VS_PLATFORM_NAME is ${CMAKE_VS_PLATFORM_NAME}")
@@ -163,7 +160,6 @@ add_subdirectory(src/tools/crossgen2/jitinterface)
 # All of the compiler options are specified in file compileoptions.cmake
 # Do not add any new options here. They should be added in compileoptions.cmake
 if(CLR_CMAKE_HOST_WIN32)
-  add_compile_options(/FIWarningControl.h) # force include of WarningControl.h
   add_compile_options(/Zl) # omit default library name in .OBJ
 endif(CLR_CMAKE_HOST_WIN32)
 

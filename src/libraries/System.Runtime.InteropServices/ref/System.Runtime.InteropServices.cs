@@ -983,6 +983,49 @@ namespace System.Runtime.InteropServices
         public VariantWrapper(object? obj) { }
         public object? WrappedObject { get { throw null; } }
     }
+    [System.FlagsAttribute]
+    public enum CreateComInterfaceFlags
+    {
+        None = 0,
+        CallerDefinedIUnknown = 1,
+        TrackerSupport = 2,
+    }
+    [System.FlagsAttribute]
+    public enum CreateObjectFlags
+    {
+        None = 0,
+        TrackerObject = 1,
+        UniqueInstance = 2,
+    }
+    [System.CLSCompliantAttribute(false)]
+    public abstract class ComWrappers
+    {
+        public struct ComInterfaceEntry
+        {
+            public System.Guid IID;
+            public System.IntPtr Vtable;
+        }
+        public struct ComInterfaceDispatch
+        {
+            public System.IntPtr Vtable;
+            public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
+        }
+        public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
+        protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
+        public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
+        protected abstract object CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
+        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
+        protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
+        public void RegisterAsGlobalInstance() { }
+        protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
+    public sealed class NativeCallableAttribute : System.Attribute
+    {
+        public NativeCallableAttribute() { }
+        public System.Runtime.InteropServices.CallingConvention CallingConvention;
+        public string? EntryPoint;
+    }
 }
 namespace System.Runtime.InteropServices.ComTypes
 {
@@ -1705,7 +1748,6 @@ namespace System.Security
         public void RemoveAt(int index) { }
         public void SetAt(int index, char c) { }
     }
-    [System.CLSCompliantAttribute(false)]
     public static partial class SecureStringMarshal
     {
         public static System.IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }

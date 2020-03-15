@@ -7333,8 +7333,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool                   exactContextNeedsRuntimeLookup = false;
     bool                   canTailCall                    = true;
     const char*            szCanTailCallFailReason        = nullptr;
-    int                    tailCall                       = prefixFlags & PREFIX_TAILCALL;
-    bool                   readonlyCall                   = (prefixFlags & PREFIX_READONLY) != 0;
+    const int              tailCallFlags                  = (prefixFlags & PREFIX_TAILCALL);
+    const bool             isReadonlyCall                 = (prefixFlags & PREFIX_READONLY) != 0;
 
     CORINFO_RESOLVED_TOKEN* ldftnToken = nullptr;
 
@@ -7523,10 +7523,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         bool isSpecialIntrinsic = false;
         if ((mflags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0)
         {
-            const bool isTail = canTailCall && (tailCall != 0);
+            const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
-            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, readonlyCall, isTail,
-                                pConstrainedResolvedToken, callInfo->thisTransform, &intrinsicID, &isSpecialIntrinsic);
+            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
+                                isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &intrinsicID,
+                                &isSpecialIntrinsic);
 
             if (compDonotInline())
             {
@@ -8147,7 +8148,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 return TYP_UNDEF;
             }
 
-            if ((clsFlags & CORINFO_FLG_ARRAY) && readonlyCall)
+            if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
             {
                 // We indicate "readonly" to the Address operation by using a null
                 // instParam.
@@ -8270,10 +8271,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             // See if we can devirtualize.
 
-            bool       explicitTailCall       = (tailCall & PREFIX_TAILCALL_EXPLICIT) != 0;
+            const bool isExplicitTailCall     = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
             const bool isLateDevirtualization = false;
             impDevirtualizeCall(call->AsCall(), &callInfo->hMethod, &callInfo->methodFlags, &callInfo->contextHandle,
-                                &exactContextHnd, isLateDevirtualization, explicitTailCall);
+                                &exactContextHnd, isLateDevirtualization, isExplicitTailCall);
         }
 
         if (impIsThis(obj))
@@ -8362,8 +8363,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
 DONE:
 
-    if (tailCall)
+    // Final importer checks for calls flagged as tail calls.
+    //
+    if (tailCallFlags != 0)
     {
+        const bool isExplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
+        const bool isImplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_IMPLICIT) != 0;
+
+        // Exactly one of these should be true.
+        assert(isExplicitTailCall != isImplicitTailCall);
+
         // This check cannot be performed for implicit tail calls for the reason
         // that impIsImplicitTailCallCandidate() is not checking whether return
         // types are compatible before marking a call node with PREFIX_TAILCALL_IMPLICIT.
@@ -8378,7 +8387,7 @@ DONE:
         //
         // For implicit tail calls, we perform this check after return types are
         // known to be compatible.
-        if ((tailCall & PREFIX_TAILCALL_EXPLICIT) && (verCurrentState.esStackDepth != 0))
+        if (isExplicitTailCall && (verCurrentState.esStackDepth != 0))
         {
             BADCODE("Stack should be empty after tailcall");
         }
@@ -8396,7 +8405,7 @@ DONE:
         }
 
         // Stack empty check for implicit tail calls.
-        if (canTailCall && (tailCall & PREFIX_TAILCALL_IMPLICIT) && (verCurrentState.esStackDepth != 0))
+        if (canTailCall && isImplicitTailCall && (verCurrentState.esStackDepth != 0))
         {
 #ifdef TARGET_AMD64
             // JIT64 Compatibility:  Opportunistic tail call stack mismatch throws a VerificationException
@@ -8409,39 +8418,29 @@ DONE:
 
         // assert(compCurBB is not a catch, finally or filter block);
         // assert(compCurBB is not a try block protected by a finally block);
+        assert(!isExplicitTailCall || compCurBB->bbJumpKind == BBJ_RETURN);
 
-        // Check for permission to tailcall
-        bool explicitTailCall = (tailCall & PREFIX_TAILCALL_EXPLICIT) != 0;
-
-        assert(!explicitTailCall || compCurBB->bbJumpKind == BBJ_RETURN);
-
+        // Ask VM for permission to tailcall
         if (canTailCall)
         {
             // True virtual or indirect calls, shouldn't pass in a callee handle.
             CORINFO_METHOD_HANDLE exactCalleeHnd =
                 ((call->AsCall()->gtCallType != CT_USER_FUNC) || call->AsCall()->IsVirtual()) ? nullptr : methHnd;
 
-            if (info.compCompHnd->canTailCall(info.compMethodHnd, methHnd, exactCalleeHnd, explicitTailCall))
+            if (info.compCompHnd->canTailCall(info.compMethodHnd, methHnd, exactCalleeHnd, isExplicitTailCall))
             {
-                if (explicitTailCall)
+                if (isExplicitTailCall)
                 {
                     // In case of explicit tail calls, mark it so that it is not considered
                     // for in-lining.
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPLICIT_TAILCALL;
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("\nGTF_CALL_M_EXPLICIT_TAILCALL bit set for call ");
-                        printTreeID(call);
-                        printf("\n");
-                    }
-#endif
+                    JITDUMP("\nGTF_CALL_M_EXPLICIT_TAILCALL set for call [%06u]\n", dspTreeID(call));
                 }
                 else
                 {
 #if FEATURE_TAILCALL_OPT
                     // Must be an implicit tail call.
-                    assert((tailCall & PREFIX_TAILCALL_IMPLICIT) != 0);
+                    assert(isImplicitTailCall);
 
                     // It is possible that a call node is both an inline candidate and marked
                     // for opportunistic tail calling.  In-lining happens before morhphing of
@@ -8450,14 +8449,7 @@ DONE:
                     // transformed into a tail call after performing additional checks.
 
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("\nGTF_CALL_M_IMPLICIT_TAILCALL bit set for call ");
-                        printTreeID(call);
-                        printf("\n");
-                    }
-#endif
+                    JITDUMP("\nGTF_CALL_M_IMPLICIT_TAILCALL set for call [%06u]\n", dspTreeID(call));
 
 #else //! FEATURE_TAILCALL_OPT
                     NYI("Implicit tail call prefix on a target which doesn't support opportunistic tail calls");
@@ -8469,39 +8461,26 @@ DONE:
             }
             else
             {
+                // canTailCall reported its reasons already
                 canTailCall = false;
-// canTailCall reported its reasons already
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\ninfo.compCompHnd->canTailCall returned false for call ");
-                    printTreeID(call);
-                    printf("\n");
-                }
-#endif
+                JITDUMP("\ninfo.compCompHnd->canTailCall returned false for call [%06u]\n", dspTreeID(call));
             }
         }
         else
         {
             // If this assert fires it means that canTailCall was set to false without setting a reason!
             assert(szCanTailCallFailReason != nullptr);
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nRejecting %splicit tail call for call ", explicitTailCall ? "ex" : "im");
-                printTreeID(call);
-                printf(": %s\n", szCanTailCallFailReason);
-            }
-#endif
-            info.compCompHnd->reportTailCallDecision(info.compMethodHnd, methHnd, explicitTailCall, TAILCALL_FAIL,
+            JITDUMP("\nRejecting %splicit tail call for  [%06u]\n", isExplicitTailCall ? "ex" : "im", dspTreeID(call),
+                    szCanTailCallFailReason);
+            info.compCompHnd->reportTailCallDecision(info.compMethodHnd, methHnd, isExplicitTailCall, TAILCALL_FAIL,
                                                      szCanTailCallFailReason);
         }
     }
 
     // A tail recursive call is a potential loop from the current block to the start of the method.
-    if (canTailCall && gtIsRecursiveCall(methHnd))
+    if ((tailCallFlags != 0) && canTailCall && gtIsRecursiveCall(methHnd))
     {
+        assert(verCurrentState.esStackDepth == 0);
         JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
                 " as having a backward branch.\n",
                 fgFirstBB->bbNum, compCurBB->bbNum);
@@ -8588,7 +8567,7 @@ DONE_CALL:
 
         // The CEE_READONLY prefix modifies the verification semantics of an Address
         // operation on an array type.
-        if ((clsFlags & CORINFO_FLG_ARRAY) && readonlyCall && tiRetVal.IsByRef())
+        if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall && tiRetVal.IsByRef())
         {
             tiRetVal.SetIsReadonlyByRef();
         }
@@ -9098,14 +9077,11 @@ REDO_RETURN_NODE:
     {
         GenTree* op1 = op->AsObj()->Addr();
 
-        // We will fold away OBJ/ADDR
-        // except for OBJ/ADDR/INDEX
-        //     as the array type influences the array element's offset
-        //     Later in this method we change op->gtType to info.compRetNativeType
-        //     This is not correct when op is a GT_INDEX as the starting offset
-        //     for the array elements 'elemOffs' is different for an array of
-        //     TYP_REF than an array of TYP_STRUCT (which simply wraps a TYP_REF)
-        //     Also refer to the GTF_INX_REFARR_LAYOUT flag
+        // We will fold away OBJ/ADDR, except for OBJ/ADDR/INDEX
+        //
+        // In the latter case the OBJ type may have a different type
+        // than the array element type, and we need to preserve the
+        // array element type for now.
         //
         if ((op1->gtOper == GT_ADDR) && (op1->AsOp()->gtOp1->gtOper != GT_INDEX))
         {

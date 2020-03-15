@@ -16,7 +16,6 @@
 #include "cor.h"
 #include "util.hpp"
 #include "clsload.hpp"
-#include "codeman.h"
 #include "class.h"
 #include "siginfo.hpp"
 #include "methodimpl.h"
@@ -24,7 +23,6 @@
 #include <stddef.h>
 #include "eeconfig.h"
 #include "precode.h"
-#include "codeversion.h"
 
 #ifndef FEATURE_PREJIT
 #include "fixuppointer.h"
@@ -1788,7 +1786,7 @@ public:
     //
     PCODE DoBackpatch(MethodTable * pMT, MethodTable * pDispatchingMT, BOOL fFullBackPatch);
 
-    PCODE DoPrestub(MethodTable *pDispatchingMT);
+    PCODE DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode = CallerGCMode::Unknown);
 
     VOID GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
     VOID GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
@@ -2000,7 +1998,7 @@ public:
 
 #ifndef DACCESS_COMPILE
 public:
-    PCODE PrepareInitialCode();
+    PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
 
 private:
@@ -2044,6 +2042,8 @@ public:
     BOOL ReadyToRunRejectedPrecompiledCode();
     void SetProfilerRejectedPrecompiledCode();
     void SetReadyToRunRejectedPrecompiledCode();
+    CallerGCMode GetCallerGCMode();
+    void SetCallerGCMode(CallerGCMode mode);
 
 #ifdef FEATURE_CODE_VERSIONING
 public:
@@ -2165,6 +2165,7 @@ protected:
     BOOL m_mayUsePrecompiledCode;
     BOOL m_ProfilerRejectedPrecompiledCode;
     BOOL m_ReadyToRunRejectedPrecompiledCode;
+    CallerGCMode m_callerGCMode;
 
 #ifdef FEATURE_CODE_VERSIONING
 private:
@@ -3140,9 +3141,10 @@ public:
     //
     LPVOID FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const;
 
+#ifdef TARGET_WINDOWS
 private:
     FARPROC FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName) const;
-
+#endif
 public:
 
     void SetStackArgumentSize(WORD cbDstBuffer, CorPinvokeMap unmgdCallConv)

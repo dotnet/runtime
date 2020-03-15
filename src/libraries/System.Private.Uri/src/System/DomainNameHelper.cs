@@ -67,7 +67,7 @@ namespace System
         //           MUST NOT be used unless all input indexes are verified and trusted.
         //
 
-        internal static unsafe bool IsValid(char* name, ushort pos, ref int returnedEnd, ref bool notCanonical, bool notImplicitFile)
+        internal static unsafe bool IsValid(char* name, int pos, ref int returnedEnd, ref bool notCanonical, bool notImplicitFile)
         {
             char* curPos = name + pos;
             char* newPos = curPos;
@@ -124,7 +124,7 @@ namespace System
                 ++curPos;
             } while (curPos < end);
 
-            returnedEnd = (ushort)(end - name);
+            returnedEnd = (int)(end - name);
             return true;
         }
 
@@ -133,7 +133,7 @@ namespace System
         // There are pretty much no restrictions and we effectively return the end of the
         // domain name.
         //
-        internal static unsafe bool IsValidByIri(char* name, ushort pos, ref int returnedEnd, ref bool notCanonical, bool notImplicitFile)
+        internal static unsafe bool IsValidByIri(char* name, int pos, ref int returnedEnd, ref bool notCanonical, bool notImplicitFile)
         {
             char* curPos = name + pos;
             char* newPos = curPos;
@@ -200,7 +200,7 @@ namespace System
                 ++curPos;
             } while (curPos < end);
 
-            returnedEnd = (ushort)(end - name);
+            returnedEnd = (int)(end - name);
             return true;
         }
 

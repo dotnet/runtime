@@ -2875,8 +2875,8 @@
   <data name="NotSupported_FixedSizeCollection" xml:space="preserve">
     <value>Collection was of a fixed size.</value>
   </data>
-  <data name="NotSupported_GenericMethod" xml:space="preserve">
-    <value>Generic methods with NativeCallableAttribute are not supported.</value>
+  <data name="InvalidProgram_GenericMethod" xml:space="preserve">
+    <value>Generic methods with NativeCallableAttribute are invalid.</value>
   </data>
   <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
     <value>This operation is invalid on overlapping buffers.</value>
@@ -2911,14 +2911,14 @@
   <data name="NotSupported_NoCodepageData" xml:space="preserve">
     <value>No data is available for encoding {0}. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
   </data>
-  <data name="NotSupported_NonBlittableTypes" xml:space="preserve">
-    <value>Non-blittable parameter types are not supported for NativeCallable methods.</value>
+  <data name="InvalidProgram_NonBlittableTypes" xml:space="preserve">
+    <value>Non-blittable parameter types are invalid for NativeCallable methods.</value>
   </data>
   <data name="NotSupported_NonReflectedType" xml:space="preserve">
     <value>Not supported in a non-reflected type.</value>
   </data>
-  <data name="NotSupported_NonStaticMethod" xml:space="preserve">
-    <value>Non-static methods with NativeCallableAttribute are not supported.</value>
+  <data name="InvalidProgram_NonStaticMethod" xml:space="preserve">
+    <value>Non-static methods with NativeCallableAttribute are invalid.</value>
   </data>
   <data name="NotSupported_NoParentDefaultConstructor" xml:space="preserve">
     <value>Parent does not have a default constructor. The default constructor must be explicitly defined.</value>
@@ -3651,6 +3651,9 @@
   </data>
   <data name="InvalidOperation_MultipleComUnRegFunctions" xml:space="preserve">
     <value>Type '{0}' has more than one COM unregistration function.</value>
+  </data>
+  <data name="InvalidOperation_ResetGlobalComWrappersInstance" xml:space="preserve">
+    <value>Attempt to update previously set global instance.</value>
   </data>
   <data name="Utf8String_CallbackProvidedMalformedData" xml:space="preserve">
     <value>The callback populated its buffer with ill-formed UTF-8 data. Callbacks are required to populate the buffer only with well-formed UTF-8 data.</value>

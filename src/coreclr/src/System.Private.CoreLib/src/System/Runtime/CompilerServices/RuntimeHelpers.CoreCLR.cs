@@ -264,6 +264,28 @@ namespace System.Runtime.CompilerServices
 
             return (MethodTable *)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
         }
+
+        /// <summary>
+        /// Allocate memory that is associated with the <paramref name="type"/> and
+        /// will be freed if and when the <see cref="System.Type"/> is unloaded.
+        /// </summary>
+        /// <param name="type">Type associated with the allocated memory.</param>
+        /// <param name="size">Amount of memory in bytes to allocate.</param>
+        /// <returns>The allocated memory</returns>
+        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
+        {
+            RuntimeType? rt = type as RuntimeType;
+            if (rt == null)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+
+            if (size < 0)
+                throw new ArgumentOutOfRangeException(nameof(size));
+
+            return AllocateTypeAssociatedMemoryInternal(new QCallTypeHandle(ref rt), (uint)size);
+        }
+
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern IntPtr AllocateTypeAssociatedMemoryInternal(QCallTypeHandle type, uint size);
     }
 
     // Helper class to assist with unsafe pinning of arbitrary objects.

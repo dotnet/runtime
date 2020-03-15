@@ -95,7 +95,26 @@
     </Exec>
 
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard to $(ApiCompatTarget)" />
+ 
+    <PropertyGroup>
+      <PreviousNetCoreApp>netcoreapp3.1</PreviousNetCoreApp>
+      <PreviousNetCoreAppRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(PreviousNetCoreApp)'))</PreviousNetCoreAppRefPath>
+      <_previousNetCoreAppBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.PreviousNetCoreApp.txt</_previousNetCoreAppBaselineFile>
+      <_previousNetCoreAppBaselineParam>--baseline &quot;$(_previousNetCoreAppBaselineFile)&quot;</_previousNetCoreAppBaselineParam>
+      <_previousNetCoreAppBaselineParam Condition="'$(UpdatePreviousNetCoreAppBaseline)' == 'true'">&gt; &quot;$(_previousNetCoreAppBaselineFile)&quot;</_previousNetCoreAppBaselineParam>
+    </PropertyGroup>
+ 
+    <Error Condition="'$(NetCoreAppCurrent)' != 'netcoreapp5.0'" Text="Update value of PreviousNetCoreApp" />
+    <Error Condition="!Exists($(PreviousNetCoreAppRefPath))" Text="Missing reference assemblies for '$(PreviousNetCoreApp)'" />
+    <Exec Command="$(_ApiCompatCommand) &quot;$(PreviousNetCoreAppRefPath.TrimEnd('\/'))&quot;  @&quot;$(ApiCompatResponseFile)&quot; $(_previousNetCoreAppBaselineParam)"
+          CustomErrorRegularExpression="^[a-zA-Z]+ :"
+          StandardOutputImportance="Low"
+          IgnoreExitCode="true"
+    >
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </Exec>
 
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(PreviousNetCoreApp) to $(ApiCompatTarget)" />
   </Target>
 
   <Target Name="Build" DependsOnTargets="RunApiCompat" />

@@ -17,20 +17,12 @@ namespace System.Text.Json
                 return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(propertyInfo, options);
             }
 
-            JsonConverter? converter;
-            ClassType classType = GetClassType(
+            JsonConverter converter = GetConverter(
                 propertyType,
                 parentClassType,
                 propertyInfo,
-                out Type? runtimeType,
-                out Type? _,
-                out converter,
+                out Type runtimeType,
                 options);
-
-            if (converter == null)
-            {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(propertyType, parentClassType, propertyInfo);
-            }
 
             return CreateProperty(
                 declaredPropertyType: propertyType,
@@ -38,7 +30,6 @@ namespace System.Text.Json
                 propertyInfo,
                 parentClassType,
                 converter,
-                classType,
                 options);
         }
 
@@ -48,7 +39,6 @@ namespace System.Text.Json
             PropertyInfo? propertyInfo,
             Type parentClassType,
             JsonConverter converter,
-            ClassType classType,
             JsonSerializerOptions options)
         {
             // Create the JsonPropertyInfo instance.
@@ -58,7 +48,7 @@ namespace System.Text.Json
                 parentClassType,
                 declaredPropertyType,
                 runtimePropertyType,
-                runtimeClassType: classType,
+                runtimeClassType: converter.ClassType,
                 propertyInfo,
                 converter,
                 options);
@@ -68,15 +58,12 @@ namespace System.Text.Json
 
         /// <summary>
         /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
-        /// A policy property is not a real property on a type; instead it leverages the existing converter
-        /// logic and generic support to avoid boxing. It is used with values types, elements from collections and
-        /// dictionaries, and collections themselves. Typically it would represent a CLR type such as System.String.
+        /// See <seealso cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
         /// </summary>
-        internal static JsonPropertyInfo CreatePolicyProperty(
+        internal static JsonPropertyInfo CreatePropertyInfoForClassInfo(
             Type declaredPropertyType,
-            Type? runtimePropertyType,
+            Type runtimePropertyType,
             JsonConverter converter,
-            ClassType classType,
             JsonSerializerOptions options)
         {
             return CreateProperty(
@@ -85,7 +72,6 @@ namespace System.Text.Json
                 propertyInfo: null, // Not a real property so this is null.
                 parentClassType: typeof(object), // a dummy value (not used)
                 converter : converter,
-                classType : classType,
                 options);
         }
     }

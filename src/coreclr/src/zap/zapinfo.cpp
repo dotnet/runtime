@@ -462,7 +462,7 @@ void ZapInfo::CompileMethod()
         const char* namespaceName;
         getMethodNameFromMetadata(m_currentMethodHandle, nullptr, &namespaceName, nullptr);
         if (strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0
-            || strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0
+            || strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0
             || strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
         {
             if (m_zapper->m_pOpt->m_verbose)
@@ -481,6 +481,15 @@ void ZapInfo::CompileMethod()
         m_jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT);
     }
 #endif
+
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    if (GetCompileInfo()->IsNativeCallableMethod(m_currentMethodHandle))
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun:  Methods with NativeCallableAttribute not implemented\n"));
+        ThrowHR(E_NOTIMPL);
+    }
+#endif // (TARGET_X86) && defined(TARGET_WINDOWS)
 
     if (m_pImage->m_stats)
     {
@@ -2121,7 +2130,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0;
 #elif TARGET_ARM64
-        fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0;
+        fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0;
 #endif
 
         fIsHWIntrinsic = fIsPlatformHWIntrinsic || (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
@@ -2268,15 +2277,17 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 m_zapper->Warning(W("ReadyToRun: Runtime method access checks not supported\n"));
             ThrowHR(E_NOTIMPL);
         }
-
-        if (GetCompileInfo()->IsNativeCallableMethod(pResult->hMethod))
-        {
-            if (m_zapper->m_pOpt->m_verbose)
-                m_zapper->Warning(W("ReadyToRun: References to methods with NativeCallableAttribute not supported\n"));
-            ThrowHR(E_NOTIMPL);
-        }
     }
 #endif
+
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    if (GetCompileInfo()->IsNativeCallableMethod(pResult->hMethod))
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Warning(W("ReadyToRun: References to methods with NativeCallableAttribute not implemented\n"));
+        ThrowHR(E_NOTIMPL);
+    }
+#endif // (TARGET_X86) && defined(TARGET_WINDOWS)
 
     if (flags & CORINFO_CALLINFO_KINDONLY)
         return;
