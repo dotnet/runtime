@@ -6083,7 +6083,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
                                NULL
                                );
 
-        if (((UINT_PTR)g_pMSCorEE) != uImageBase)
+        if (((UINT_PTR)g_hThisInst) != uImageBase)
         {
             break;
         }

@@ -18,8 +18,7 @@
 #include <shlwapi.h>
 
 // Globals.
-HINSTANCE       g_hThisInst;            // This library.
-
+extern HINSTANCE g_hThisInst;
 
 #ifdef EMIT_FIXUPS
 
@@ -1981,34 +1980,3 @@ HRESULT CeeFileGenWriter::TestEmitFixups()
 }
 #endif // TEST_EMIT_FIXUPS
 #endif // EMIT_FIXUPS
-
-#ifndef FEATURE_MERGE_JIT_AND_ENGINE
-
-//*****************************************************************************
-// Handle lifetime of loaded library.
-//*****************************************************************************
-extern "C"
-BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
-{
-    switch (dwReason)
-    {
-    case DLL_PROCESS_ATTACH:
-        {   // Save the module handle.
-            g_hThisInst = (HINSTANCE)hInstance;
-            DisableThreadLibraryCalls((HMODULE)hInstance);
-        }
-        break;
-    case DLL_PROCESS_DETACH:
-        break;
-    }
-
-    return (true);
-} // BOOL WINAPI DllMain()
-
-
-HINSTANCE GetModuleInst()
-{
-    return (g_hThisInst);
-} // HINSTANCE GetModuleInst()
-
-#endif //FEATURE_MERGE_JIT_AND_ENGINE

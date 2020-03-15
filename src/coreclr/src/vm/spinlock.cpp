@@ -31,9 +31,6 @@ ULONG	SpinLockProfiler::s_ulSpins [LOCK_TYPE_DEFAULT + 1] = { 0 };
 
 SpinLock::SpinLock()
 {
-    // Global SpinLock variables will cause the constructor to be
-    // called during DllInit, which means we cannot use full contracts
-    // because we have not called InitUtilCode yet.
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 

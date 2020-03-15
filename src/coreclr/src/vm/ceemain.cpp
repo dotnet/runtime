@@ -795,7 +795,7 @@ void EEStartupHelper()
 #ifndef TARGET_UNIX
         {
             // Record mscorwks geometry
-            PEDecoder pe(g_pMSCorEE);
+            PEDecoder pe(g_hThisInst);
 
             g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
             g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
@@ -1867,10 +1867,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 // We cache the SystemInfo for anyone to use throughout the
                 // life of the DLL.
                 GetSystemInfo(&g_SystemInfo);
-
-                // Remember module instance
-                g_pMSCorEE = pParam->hInst;
-
 
                 // Set callbacks so that LoadStringRC knows which language our
                 // threads are in so that it can return the proper localized string.

@@ -91,53 +91,6 @@ void FreeClrDebugState(LPVOID pTlsData)
 #endif //_DEBUG
 }
 
-// This is a drastic shutoff toggle that forces all new threads to fail their CLRInitDebugState calls.
-// We only invoke this if FLS can't allocate its master block, preventing us from tracking the shutoff
-// on a per-thread basis.
-BYTE* GetGlobalContractShutoffFlag()
-{
-#ifdef SELF_NO_HOST
-
-    static BYTE gGlobalContractShutoffFlag = 0;
-    return &gGlobalContractShutoffFlag;
-#else //!SELF_NO_HOST
-    HINSTANCE hmod = GetCLRModule();
-    if (!hmod)
-    {
-        return NULL;
-    }
-    typedef BYTE*(__stdcall * PGETSHUTOFFADDRFUNC)();
-    PGETSHUTOFFADDRFUNC pGetContractShutoffFlagFunc = (PGETSHUTOFFADDRFUNC)GetProcAddress(hmod, "GetAddrOfContractShutoffFlag");
-    if (!pGetContractShutoffFlagFunc)
-    {
-        return NULL;
-    }
-    return pGetContractShutoffFlagFunc();
-#endif //!SELF_NO_HOST
-}
-
-static BOOL AreContractsShutoff()
-{
-    BYTE *pShutoff = GetGlobalContractShutoffFlag();
-    if (!pShutoff)
-    {
-        return FALSE;
-    }
-    else
-    {
-        return 0 != *pShutoff;
-    }
-}
-
-static VOID ShutoffContracts()
-{
-    BYTE *pShutoff = GetGlobalContractShutoffFlag();
-    if (pShutoff)
-    {
-        *pShutoff = 1;
-    }
-}
-
 //=============================================================================================
 // Used to initialize the per-thread ClrDebugState. This is called once per thread (with
 // possible exceptions for OOM scenarios.)
@@ -159,41 +112,34 @@ ClrDebugState *CLRInitDebugState()
     ClrDebugState *pClrDebugState    = NULL;
     DbgStateLockData    *pNewLockData      = NULL;
 
-    if (AreContractsShutoff())
-    {
-        pNewClrDebugState = NULL;
-    }
-    else
-    {
-        // Yuck. We cannot call the hosted allocator for ClrDebugState (it is impossible to maintain a guarantee
-        // that none of code paths, many of them called conditionally, don't themselves trigger a ClrDebugState creation.)
-        // We have to call the OS directly for this.
+    // Yuck. We cannot call the hosted allocator for ClrDebugState (it is impossible to maintain a guarantee
+    // that none of code paths, many of them called conditionally, don't themselves trigger a ClrDebugState creation.)
+    // We have to call the OS directly for this.
 #undef HeapAlloc
 #undef GetProcessHeap
-        pNewClrDebugState = (ClrDebugState*)::HeapAlloc(GetProcessHeap(), 0, sizeof(ClrDebugState));
-        if (pNewClrDebugState != NULL)
-        {
-            // Only allocate a DbgStateLockData if its owning ClrDebugState was successfully allocated
-            pNewLockData  = (DbgStateLockData *)::HeapAlloc(GetProcessHeap(), 0, sizeof(DbgStateLockData));
-        }
+    pNewClrDebugState = (ClrDebugState*)::HeapAlloc(GetProcessHeap(), 0, sizeof(ClrDebugState));
+    if (pNewClrDebugState != NULL)
+    {
+        // Only allocate a DbgStateLockData if its owning ClrDebugState was successfully allocated
+        pNewLockData  = (DbgStateLockData *)::HeapAlloc(GetProcessHeap(), 0, sizeof(DbgStateLockData));
+    }
 #define GetProcessHeap() Dont_Use_GetProcessHeap()
 #define HeapAlloc(hHeap, dwFlags, dwBytes) Dont_Use_HeapAlloc(hHeap, dwFlags, dwBytes)
 
-        if ((pNewClrDebugState != NULL) && (pNewLockData != NULL))
-        {
-            // Both allocations succeeded, so initialize the structures, and have
-            // pNewClrDebugState point to pNewLockData.  If either of the allocations
-            // failed, we'll use gBadClrDebugState for this thread, and free whichever of
-            // pNewClrDebugState or pNewLockData actually did get allocated (if either did).
-            // (See code in this function below, outside this block.)
+    if ((pNewClrDebugState != NULL) && (pNewLockData != NULL))
+    {
+        // Both allocations succeeded, so initialize the structures, and have
+        // pNewClrDebugState point to pNewLockData.  If either of the allocations
+        // failed, we'll use gBadClrDebugState for this thread, and free whichever of
+        // pNewClrDebugState or pNewLockData actually did get allocated (if either did).
+        // (See code in this function below, outside this block.)
 
-            pNewClrDebugState->SetStartingValues();
-            pNewClrDebugState->ViolationMaskSet( CanFreeMe );
-            _ASSERTE(!(pNewClrDebugState->ViolationMask() & BadDebugState));
+        pNewClrDebugState->SetStartingValues();
+        pNewClrDebugState->ViolationMaskSet( CanFreeMe );
+        _ASSERTE(!(pNewClrDebugState->ViolationMask() & BadDebugState));
 
-            pNewLockData->SetStartingValues();
-            pNewClrDebugState->SetDbgStateLockData(pNewLockData);
-        }
+        pNewLockData->SetStartingValues();
+        pNewClrDebugState->SetDbgStateLockData(pNewLockData);
     }
 
 

@@ -256,16 +256,3 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
     }
 }
 #endif // ENABLE_CONTRACTS
-
-
-BYTE* __stdcall GetAddrOfContractShutoffFlag()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Exposed entrypoint where we cannot probe or do anything TLS
-    // related
-    static BYTE gContractShutoffFlag = 0;
-
-    return &gContractShutoffFlag;
-}
-
