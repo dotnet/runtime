@@ -57,7 +57,7 @@ namespace System.Net.Test.Common
 
                     sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).Wait();
 #else
-                    sslStream.AuthenticateAsServerAsync(cert, httpOptions.ClientCertificateRequired, httpOptions.SslProtocols, false).Wait();
+                    sslStream.AuthenticateAsServerAsync(cert, httpOptions.ClientCertificateRequired, httpOptions.SslProtocols, checkCertificateRevocation: false).Wait();
 #endif
                 }
 

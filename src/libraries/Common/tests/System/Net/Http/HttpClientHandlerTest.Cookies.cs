@@ -338,7 +338,6 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    //System.Diagnostics.Debugger.Launch();
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<HttpRequestData> serverTask = server.HandleRequestAsync(
                         HttpStatusCode.OK, new HttpHeaderData[] { new HttpHeaderData("Set-Cookie", GetCookieHeaderValue(cookieName, cookieValue)) }, s_simpleContent);
