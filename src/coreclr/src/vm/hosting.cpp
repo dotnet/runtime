@@ -173,6 +173,8 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
     // Do we have the UEF details?
     if (s_pEndOfUEFSectionBoundary.Load() == NULL)
     {
+        CONTRACT_VIOLATION(ThrowsViolation);
+
         // Get reference to MSCORWKS image in memory...
         PEDecoder pe(g_hThisInst);
 

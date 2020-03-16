@@ -1885,14 +1885,6 @@ public:
 
     bool DetectHandleILStubsForDebugger();
 
-#ifdef ENABLE_CONTRACTS
-    ClrDebugState *GetClrDebugState()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pClrDebugState;
-    }
-#endif
-
     //**************************************************************
     // GC interaction
     //**************************************************************
@@ -2029,29 +2021,33 @@ public:
     void BeginNoTriggerGC(const char *szFile, int lineNum)
     {
         WRAPPER_NO_CONTRACT;
-        m_pClrDebugState->IncrementGCNoTriggerCount();
+
+        ClrDebugState* pClrDebugState = GetClrDebugState();
+        pClrDebugState->IncrementGCNoTriggerCount();
+
         if (PreemptiveGCDisabled())
         {
-            m_pClrDebugState->IncrementGCForbidCount();
+            pClrDebugState->IncrementGCForbidCount();
         }
     }
 
     void EndNoTriggerGC()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(m_pClrDebugState->GetGCNoTriggerCount() != 0 || (m_pClrDebugState->ViolationMask() & BadDebugState));
-        m_pClrDebugState->DecrementGCNoTriggerCount();
+        ClrDebugState* pClrDebugState = GetClrDebugState();
 
-        if (m_pClrDebugState->GetGCForbidCount())
+        _ASSERTE(pClrDebugState->GetGCNoTriggerCount() != 0 || (pClrDebugState->ViolationMask() & BadDebugState));
+        pClrDebugState->DecrementGCNoTriggerCount();
+
+        if (pClrDebugState->GetGCForbidCount())
         {
-            m_pClrDebugState->DecrementGCForbidCount();
+            pClrDebugState->DecrementGCForbidCount();
         }
     }
 
     void BeginForbidGC(const char *szFile, int lineNum)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThread());
 #ifdef PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled()
                  || CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
@@ -2066,7 +2062,6 @@ public:
     void EndForbidGC()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThread());
 #ifdef PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled() ||
                  CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
@@ -2081,43 +2076,45 @@ public:
     BOOL GCNoTrigger()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThread());
-        if ( (GCViolation|BadDebugState) & m_pClrDebugState->ViolationMask() )
+        ClrDebugState* pClrDebugState = GetClrDebugState();
+        if ( (GCViolation|BadDebugState) & pClrDebugState->ViolationMask() )
         {
             return FALSE;
         }
-        return m_pClrDebugState->GetGCNoTriggerCount();
+        return pClrDebugState->GetGCNoTriggerCount();
     }
 
     BOOL GCForbidden()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(this == GetThread());
-        if ( (GCViolation|BadDebugState) & m_pClrDebugState->ViolationMask())
+        ClrDebugState* pClrDebugState = GetClrDebugState();
+        if ( (GCViolation|BadDebugState) & pClrDebugState->ViolationMask())
         {
             return FALSE;
         }
-        return m_pClrDebugState->GetGCForbidCount();
+        return pClrDebugState->GetGCForbidCount();
     }
 
     BOOL RawGCNoTrigger()
     {
         LIMITED_METHOD_CONTRACT;
-        if (m_pClrDebugState->ViolationMask() & BadDebugState)
+        ClrDebugState* pClrDebugState = GetClrDebugState();
+        if (pClrDebugState->ViolationMask() & BadDebugState)
         {
             return 0;
         }
-        return m_pClrDebugState->GetGCNoTriggerCount();
+        return pClrDebugState->GetGCNoTriggerCount();
     }
 
     BOOL RawGCForbidden()
     {
         LIMITED_METHOD_CONTRACT;
-        if (m_pClrDebugState->ViolationMask() & BadDebugState)
+        ClrDebugState* pClrDebugState = GetClrDebugState();
+        if (pClrDebugState->ViolationMask() & BadDebugState)
         {
             return 0;
         }
-        return m_pClrDebugState->GetGCForbidCount();
+        return pClrDebugState->GetGCForbidCount();
     }
 #endif // ENABLE_CONTRACTS_IMPL
 
@@ -3467,8 +3464,6 @@ public:
 
 private:
 #ifdef ENABLE_CONTRACTS_DATA
-    struct ClrDebugState *m_pClrDebugState; // Pointer to ClrDebugState for quick access
-
     ULONG  m_ulEnablePreemptiveGCCount;
 #endif  // _DEBUG
 
@@ -5784,8 +5779,7 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
         m_fConditional = fConditional;
         if (m_fConditional)
         {
-            Thread *pThread = GetThread();
-            m_pClrDebugState = pThread ? pThread->GetClrDebugState() : ::GetClrDebugState();
+            m_pClrDebugState = ::GetClrDebugState();
             m_oldClrDebugState = *m_pClrDebugState;
 
             m_pClrDebugState->ViolationMaskReset( GCViolation );
@@ -5809,8 +5803,7 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
         m_fConditional = TRUE;
 
-        Thread *pThread = GetThread();
-        m_pClrDebugState = pThread ? pThread->GetClrDebugState() : ::GetClrDebugState();
+        m_pClrDebugState = ::GetClrDebugState();
         m_oldClrDebugState = *m_pClrDebugState;
 
         m_pClrDebugState->ViolationMaskReset( GCViolation );
@@ -5869,7 +5862,7 @@ class GCNoTrigger
         if (m_fConditional)
         {
             Thread * pThread = GetThreadNULLOk();
-            m_pClrDebugState = pThread ? pThread->GetClrDebugState() : ::GetClrDebugState();
+            m_pClrDebugState = ::GetClrDebugState();
             m_oldClrDebugState = *m_pClrDebugState;
 
             m_pClrDebugState->ViolationMaskReset( GCViolation );
@@ -5896,7 +5889,7 @@ class GCNoTrigger
         m_fConditional = TRUE;
 
         Thread * pThread = GetThreadNULLOk();
-        m_pClrDebugState = pThread ? pThread->GetClrDebugState() : ::GetClrDebugState();
+        m_pClrDebugState = ::GetClrDebugState();
         m_oldClrDebugState = *m_pClrDebugState;
 
         m_pClrDebugState->ViolationMaskReset( GCViolation );

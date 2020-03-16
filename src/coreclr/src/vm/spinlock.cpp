@@ -37,18 +37,6 @@ SpinLock::SpinLock()
     m_Initialized = UnInitialized;
 }
 
-
-SpinLock::~SpinLock()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-}
-
 void SpinLock::Init(LOCK_TYPE type, bool RequireCoopGC)
 {
     CONTRACTL

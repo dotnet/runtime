@@ -1199,10 +1199,7 @@ void SetupTLSForThread(Thread* pThread)
 #ifdef ENABLE_CONTRACTS
     // Profilers need the side effect of GetClrDebugState() to perform initialization
     // in advance to avoid deadlocks. Refer to ProfToEEInterfaceImpl::InitializeCurrentThread
-    ClrDebugState* pDebugState = ::GetClrDebugState();
-
-    if (pThread)
-        pThread->m_pClrDebugState = pDebugState;
+    ::GetClrDebugState();
 #endif
 }
 

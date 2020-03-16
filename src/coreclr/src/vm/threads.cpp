@@ -970,10 +970,6 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     SetThread(NULL);
     SetAppDomain(NULL);
 
-#ifdef ENABLE_CONTRACTS_DATA
-    m_pClrDebugState = NULL;
-#endif //ENABLE_CONTRACTS_DATA
-
     FastInterlockOr((ULONG*)&m_State, (int) (Thread::TS_Detached | Thread::TS_ReportDead));
     // Do not touch Thread object any more.  It may be destroyed.
 
@@ -1302,7 +1298,6 @@ Thread::Thread()
 #endif
 
 #ifdef ENABLE_CONTRACTS
-    m_pClrDebugState = NULL;
     m_ulEnablePreemptiveGCCount  = 0;
 #endif
 

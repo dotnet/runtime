@@ -175,7 +175,6 @@ private:
 
 public:
     SpinLock ();
-    ~SpinLock ();
 
     //Init method, initialize lock and _DEBUG flags
     void Init(LOCK_TYPE type, bool RequireCoopGC = FALSE);
