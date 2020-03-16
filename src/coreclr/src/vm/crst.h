@@ -262,9 +262,6 @@ public:
 #endif
     }
 
-    CrstBase *GetThreadsOwnedCrsts();
-    void SetThreadsOwnedCrsts(CrstBase *pCrst);
-
     NOINLINE EEThreadId GetHolderThreadId()
     {
         LIMITED_METHOD_CONTRACT;

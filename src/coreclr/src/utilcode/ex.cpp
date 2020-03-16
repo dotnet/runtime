@@ -1214,35 +1214,6 @@ void GenerateTopLevelHRExceptionMessage(HRESULT hresult, SString &result)
     GetHRMsg(hresult, result);
 }
 
-#if !defined(DACCESS_COMPILE)
-
-void GetCurrentExceptionPointers(PEXCEPTION_POINTERS pExceptionInfo DEBUG_ARG(bool checkExceptionRecordLocation))
-{
-    WRAPPER_NO_CONTRACT;
-
-    PEXCEPTION_RECORD pRecord = (PEXCEPTION_RECORD)ClrFlsGetValue(TlsIdx_PEXCEPTION_RECORD);
-    PCONTEXT pContext = (PCONTEXT)ClrFlsGetValue(TlsIdx_PCONTEXT);
-
-    pExceptionInfo->ContextRecord = pContext;
-    pExceptionInfo->ExceptionRecord = pRecord;
-
-#ifdef _DEBUG
-    if (pRecord != NULL && checkExceptionRecordLocation)
-    {
-        _ASSERTE ((PVOID)(pRecord) > (PVOID)(&pRecord));
-    }
-#endif
-}
-#endif // !defined(DACCESS_COMPILE)
-
-DWORD GetCurrentExceptionCode()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC_HOST_ONLY;
-
-    return (DWORD)(size_t)ClrFlsGetValue(TlsIdx_EXCEPTION_CODE);
-}
-
 //===========================================================================================
 // These abstractions hide the difference between legacy desktop CLR's (that don't support
 // side-by-side-inproc and rely on a fixed SEH code to identify managed exceptions) and

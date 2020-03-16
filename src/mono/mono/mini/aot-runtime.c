@@ -324,7 +324,7 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 	}
 
 	if (strcmp (assembly->image->guid, amodule->image_guids [index])) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: module %s is unusable (GUID of dependent assembly %s doesn't match (expected '%s', got '%s')).", amodule->aot_name, amodule->image_names [index].name, amodule->image_guids [index], assembly->image->guid);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: module %s is unusable (GUID of dependent assembly %s doesn't match (expected '%s', got '%s')).", amodule->aot_name, amodule->image_names [index].name, amodule->image_guids [index], assembly->image->guid);
 		mono_error_set_bad_image_by_name (error, amodule->aot_name, "module '%s' is unusable (GUID of dependent assembly %s doesn't match (expected '%s', got '%s')).", amodule->aot_name, amodule->image_names [index].name, amodule->image_guids [index], assembly->image->guid);
 		amodule->out_of_date = TRUE;
 		return NULL;
@@ -1642,11 +1642,11 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 	*aot_name = fname;
 	g_free (tmp2);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: loading from cache: '%s'.", fname);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: loading from cache: '%s'.", fname);
 	module = mono_dl_open (fname, MONO_DL_LAZY, NULL);
 
 	if (module) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: found in cache: '%s'.", fname);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: found in cache: '%s'.", fname);
 		return module;
 	}
 
@@ -1657,7 +1657,7 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 		 */
 		return NULL;
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: not found.");
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: not found.");
 
 	/* Only AOT one assembly per run to avoid slowing down execution too much */
 	if (cache_count > 0)
@@ -2169,7 +2169,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	if (info) {
 		/* Statically linked AOT module */
 		aot_name = g_strdup_printf ("%s", assembly->aname.name);
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Found statically linked AOT module '%s'.", aot_name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "Found statically linked AOT module '%s'.", aot_name);
 		if (!(info->flags & MONO_AOT_FILE_FLAG_LLVM_ONLY)) {
 			globals = (void **)info->globals;
 			g_assert (globals);
@@ -2187,7 +2187,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 			if (sofile) {
 				found_aot_name = g_strdup (aot_name);
 			} else {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
 				g_free (err);
 			}
 			g_free (aot_name);
@@ -2199,7 +2199,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 			g_free (basename);
 			sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
 			if (!sofile) {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
 				g_free (err);
 			}
 			g_free (aot_name);
@@ -2217,7 +2217,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 				if (sofile) {
 					found_aot_name = g_strdup (aot_name);
 				} else {
-					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
+					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
 					g_free (err);
 				}
 				g_free (basename);
@@ -2274,7 +2274,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		if (mono_aot_only) {
 			g_error ("Failed to load AOT module '%s' while running in aot-only mode: %s.\n", found_aot_name, msg);
 		} else {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: module %s is unusable: %s.", found_aot_name, msg);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: module %s is unusable: %s.", found_aot_name, msg);
 		}
 		g_free (msg);
 		g_free (found_aot_name);
@@ -2524,11 +2524,11 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	}
 
 	if (amodule->out_of_date) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: Module %s is unusable because a dependency is out-of-date.", assembly->image->name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: Module %s is unusable because a dependency is out-of-date.", assembly->image->name);
 		if (mono_aot_only)
 			g_error ("Failed to load AOT module '%s' while running in aot-only mode because a dependency cannot be found or it is out of date.\n", found_aot_name);
 	} else {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: image '%s' found.", found_aot_name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' found.", found_aot_name);
 	}
 }
 

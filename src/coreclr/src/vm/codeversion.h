@@ -158,7 +158,6 @@ public:
     bool HasAnyOptimizedNativeCodeVersion(NativeCodeVersion tier0NativeCodeVersion) const;
 #endif
     PTR_COR_ILMETHOD GetIL() const;
-    PTR_COR_ILMETHOD GetILNoThrow() const;
     DWORD GetJitFlags() const;
     const InstrumentedILOffsetMapping* GetInstrumentedILMap() const;
 

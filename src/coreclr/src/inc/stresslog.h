@@ -266,7 +266,7 @@ public:
     static void Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
                     unsigned maxBytesTotal, HMODULE hMod);
     static void Terminate(BOOL fProcessDetach=FALSE);
-    static void ThreadDetach(ThreadStressLog *msgs);         // call at DllMain  THREAD_DETACH if you want to recycle thread logs
+    static void ThreadDetach();         // call at DllMain  THREAD_DETACH if you want to recycle thread logs
     static int NewChunk ()
     {
         return InterlockedIncrement (&theLog.totalChunk);
@@ -302,13 +302,15 @@ public:
     unsigned MaxSizeTotal;               //maximum memory allowed for stress log
     Volatile<LONG> totalChunk;              //current number of total chunks allocated
     Volatile<ThreadStressLog*> logs;        // the list of logs for every thread.
-    Volatile<unsigned> TLSslot;             // Each thread gets a log this is used to fetch each threads log
+    unsigned padding;                       // Preserve the layout for SOS
     Volatile<LONG> deadCount;               // count of dead threads in the log
     CRITSEC_COOKIE lock;                    // lock
     unsigned __int64 tickFrequency;         // number of ticks per second
     unsigned __int64 startTimeStamp;        // start time from when tick counter started
     FILETIME startTime;                     // time the application started
     SIZE_T   moduleOffset;                  // Used to compute format strings.
+
+    static thread_local ThreadStressLog* t_pCurrentThreadLog;
 
 // private:
     static void Enter(CRITSEC_COOKIE dummy = NULL);

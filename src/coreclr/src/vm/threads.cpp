@@ -54,6 +54,10 @@
 #include "eventpipebuffermanager.h"
 #endif // FEATURE_PERFTRACING
 
+#if defined (_DEBUG_IMPL) || defined(_PREFAST_)
+thread_local int t_ForbidGCLoaderUseCount;
+#endif
+
 uint64_t Thread::dead_threads_non_alloc_bytes = 0;
 
 SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
@@ -88,6 +92,20 @@ UINT64 Thread::s_monitorLockContentionCountOverflow = 0;
 
 CrstStatic g_DeadlockAwareCrst;
 
+//
+// A transient thread value that indicates this thread is currently walking its stack
+// or the stack of another thread. This value is useful to help short-circuit
+// some problematic checks in the loader, guarantee that types & assemblies
+// encountered during the walk must already be loaded, and provide information to control
+// assembly loading behavior during stack walks.
+//
+// This value is set around the main portions of the stack walk (as those portions may
+// enter the type & assembly loaders). This is also explicitly cleared while the
+// walking thread calls the stackwalker callback or needs to execute managed code, as
+// such calls may execute arbitrary code unrelated to the actual stack walking, and
+// may never return, in the case of exception stackwalk callbacks.
+//
+thread_local Thread* t_pStackWalkerWalkingThread;
 
 #if defined(_DEBUG)
 BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId )
@@ -298,29 +316,20 @@ bool Thread::DetectHandleILStubsForDebugger()
 __thread ThreadLocalInfo gCurrentThreadInfo;
 #endif
 
-// index into TLS Array. Definition added by compiler
-EXTERN_C UINT32 _tls_index;
-
-#ifndef HOST_WINDOWS
-UINT32 _tls_index;
-#endif
-
 #ifndef DACCESS_COMPILE
 
-BOOL SetThread(Thread* t)
+void SetThread(Thread* t)
 {
     LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pThread = t;
-    return TRUE;
 }
 
-BOOL SetAppDomain(AppDomain* ad)
+void SetAppDomain(AppDomain* ad)
 {
     LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pAppDomain = ad;
-    return TRUE;
 }
 
 BOOL Thread::Alert ()
@@ -703,7 +712,7 @@ Thread* SetupThread(BOOL fInternal)
 
     Holder<Thread*,DoNothing<Thread*>,DeleteThread> threadHolder(pThread);
 
-    CExecutionEngine::SetupTLSForThread(pThread);
+    SetupTLSForThread(pThread);
 
     // A host can deny a thread entering runtime by returning a NULL IHostTask.
     // But we do want threads used by threadpool.
@@ -725,10 +734,8 @@ Thread* SetupThread(BOOL fInternal)
 
     ThreadStore::AddThread(pThread);
 
-    BOOL fOK = SetThread(pThread);
-    _ASSERTE (fOK);
-    fOK = SetAppDomain(pThread->GetDomain());
-    _ASSERTE (fOK);
+    SetThread(pThread);
+    SetAppDomain(pThread->GetDomain());
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Ensure that debugger word slot is allocated
@@ -986,7 +993,11 @@ DWORD GetRuntimeId()
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef HOST_WINDOWS
     return _tls_index;
+#else
+    return 0;
+#endif
 }
 
 //---------------------------------------------------------------------------
@@ -1051,6 +1062,16 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
 
 extern "C" void *JIT_WriteBarrier_Loc;
 
+#ifndef TARGET_UNIX
+// g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
+#pragma optimize("", off)
+static void SetIlsIndex(DWORD tlsIndex)
+{
+    g_TlsIndex = tlsIndex;
+}
+#pragma optimize("", on)
+#endif
+
 //---------------------------------------------------------------------------
 // One-time initialization. Called during Dll initialization. So
 // be careful what you do in here!
@@ -1104,17 +1125,13 @@ void InitThreadManager()
 #ifndef TARGET_UNIX
     _ASSERTE(GetThread() == NULL);
 
-    PTEB Teb = NtCurrentTeb();
-    BYTE** tlsArray = (BYTE**)Teb->ThreadLocalStoragePointer;
-    BYTE* tlsData = (BYTE*)tlsArray[_tls_index];
-
-    size_t offsetOfCurrentThreadInfo = (BYTE*)&gCurrentThreadInfo - tlsData;
+    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo);
 
     _ASSERTE(offsetOfCurrentThreadInfo < 0x8000);
     _ASSERTE(_tls_index < 0x10000);
 
     // Save gCurrentThreadInfo location for debugger
-    g_TlsIndex = (DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000);
+    SetIlsIndex((DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000));
 
     _ASSERTE(g_TrapReturningThreads == 0);
 #endif // !TARGET_UNIX
@@ -1124,8 +1141,6 @@ void InitThreadManager()
     if (g_debuggerWordTLSIndex == TLS_OUT_OF_INDEXES)
         COMPlusThrowWin32();
 #endif
-
-    __ClrFlsGetBlock = CExecutionEngine::GetTlsData;
 
     IfFailThrow(Thread::CLRSetThreadStackGuarantee(Thread::STSGuarantee_Force));
 
@@ -1352,7 +1367,6 @@ Thread::Thread()
     m_ltoIsUnhandled = FALSE;
 
     m_debuggerFilterContext = NULL;
-    m_debuggerCantStop = 0;
     m_fInteropDebuggingHijacked = FALSE;
     m_profilerCallbackState = 0;
 #if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
@@ -1750,7 +1764,8 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
         //
         // Initialization must happen in the following order - hosts like SQL Server depend on this.
         //
-        CExecutionEngine::SetupTLSForThread(this);
+
+        SetupTLSForThread(this);
 
         fCanCleanupCOMState = TRUE;
         res = PrepareApartmentAndContext();
@@ -1761,15 +1776,8 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
 
         InitThread(FALSE);
 
-        if (SetThread(this) == FALSE)
-        {
-            ThrowOutOfMemory();
-        }
-
-        if (SetAppDomain(m_pDomain) == FALSE)
-        {
-            ThrowOutOfMemory();
-        }
+        SetThread(this);
+        SetAppDomain(m_pDomain);
 
         ThreadStore::TransferStartedThread(this, bRequiresTSL);
 
@@ -1813,10 +1821,8 @@ FAILURE:
             {
                 // The thread pointer in TLS may not be set yet, if we had a failure before we set it.
                 // So we'll set it up here (we'll unset it a few lines down).
-                if (SetThread(this) != FALSE)
-                {
-                    CleanupCOMState();
-                }
+                SetThread(this);
+                CleanupCOMState();
             }
 #endif
             FastInterlockDecrement(&ThreadStore::s_pThreadStore->m_PendingThreadCount);
@@ -7129,34 +7135,6 @@ T_CONTEXT *Thread::GetFilterContext(void)
 }
 
 #ifndef DACCESS_COMPILE
-
-// @todo - eventually complete remove the CantStop count on the thread and use
-// the one in the PreDef block. For now, we increment both our thread counter,
-// and the FLS counter. Eventually we can remove our thread counter and only use
-// the FLS counter.
-void Thread::SetDebugCantStop(bool fCantStop)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (fCantStop)
-    {
-        IncCantStopCount();
-        m_debuggerCantStop++;
-    }
-    else
-    {
-        DecCantStopCount();
-        m_debuggerCantStop--;
-    }
-}
-
-// @todo - remove this, we only read this from oop.
-bool Thread::GetDebugCantStop(void)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_debuggerCantStop != 0;
-}
 
 void Thread::InitContext()
 {
