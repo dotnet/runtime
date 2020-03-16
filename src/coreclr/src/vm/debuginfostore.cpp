@@ -493,7 +493,12 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     DWORD cbHeader;
     PVOID pHeader = w.GetBlob(&cbHeader);
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
     S_UINT32 cbFinalSize = S_UINT32(1) + S_UINT32(cbPatchpointInfo) + S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
+#else
+    S_UINT32 cbFinalSize = S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
+#endif
+
     if (cbFinalSize.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
