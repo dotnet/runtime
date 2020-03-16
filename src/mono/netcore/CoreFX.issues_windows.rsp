@@ -90,6 +90,8 @@
 -nomethod System.Globalization.Tests.StringNormalizationAllTests.Normalize
 -nomethod System.Globalization.Tests.StringNormalizationTests.IsNormalized
 -nomethod System.IO.Ports.Tests.GetPortNames.OpenEveryPortName
+-nomethod System.IO.CreateSafeFileHandleTests.*
+-nomethod System.IO.AsWinRTStreamTests.*
 
 # * Assertion at method-to-ir.c:12425, condition `var->opcode == OP_REGOFFSET' not met
 -nomethod System.Runtime.Tests.NullableMetadataTests.ShimsHaveOnlyTypeForwards
