@@ -36,24 +36,21 @@ namespace System.Threading
         private short _maxThreads;
         private readonly LowLevelLock _maxMinThreadLock = new LowLevelLock();
 
-        [StructLayout(LayoutKind.Explicit, Size = CacheLineSize * 5)]
+        [StructLayout(LayoutKind.Explicit, Size = Internal.PaddingHelpers.CACHE_LINE_SIZE * 5)]
         private struct CacheLineSeparated
         {
-#if TARGET_ARM64
-            private const int CacheLineSize = 128;
-#else
-            private const int CacheLineSize = 64;
-#endif
-            [FieldOffset(CacheLineSize * 1)]
+            [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 1)]
             public ThreadCounts counts;
-            [FieldOffset(CacheLineSize * 2)]
+            [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 2)]
             public int lastDequeueTime;
-            [FieldOffset(CacheLineSize * 3)]
+            [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 3)]
             public int priorCompletionCount;
-            [FieldOffset(CacheLineSize * 3 + sizeof(int))]
+            [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 3 + sizeof(int))]
             public int priorCompletedWorkRequestsTime;
-            [FieldOffset(CacheLineSize * 3 + sizeof(int) * 2)]
+            [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 3 + sizeof(int) * 2)]
             public int nextCompletedWorkRequestsTime;
+            [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 4)]
+            public volatile int numRequestedWorkers;
         }
 
         private CacheLineSeparated _separated;
@@ -62,8 +59,6 @@ namespace System.Threading
         private int _threadAdjustmentIntervalMs;
 
         private readonly LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
-
-        private volatile int _numRequestedWorkers;
 
         private PortableThreadPool()
         {
@@ -115,7 +110,7 @@ namespace System.Threading
                             {
                                 counts = newCounts;
 
-                                if (newCounts.numThreadsGoal > oldCounts.numThreadsGoal && _numRequestedWorkers > 0)
+                                if (newCounts.numThreadsGoal > oldCounts.numThreadsGoal && _separated.numRequestedWorkers > 0)
                                 {
                                     WorkerThread.MaybeAddWorkingWorker();
                                 }
@@ -303,7 +298,7 @@ namespace System.Threading
 
         internal void RequestWorker()
         {
-            Interlocked.Increment(ref _numRequestedWorkers);
+            Interlocked.Increment(ref _separated.numRequestedWorkers);
             WorkerThread.MaybeAddWorkingWorker();
             GateThread.EnsureRunning();
         }

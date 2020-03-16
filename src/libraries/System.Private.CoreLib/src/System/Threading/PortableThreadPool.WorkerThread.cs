@@ -129,7 +129,7 @@ namespace System.Threading
                 // but reduced the worker count *after* the request came in.  In this case, we might
                 // miss the notification of a thread request.  So we wake up a thread (maybe this one!)
                 // if there is work to do.
-                if (ThreadPoolInstance._numRequestedWorkers > 0)
+                if (ThreadPoolInstance._separated.numRequestedWorkers > 0)
                 {
                     MaybeAddWorkingWorker();
                 }
@@ -233,10 +233,10 @@ namespace System.Threading
 
             private static bool TakeActiveRequest()
             {
-                int count = ThreadPoolInstance._numRequestedWorkers;
+                int count = ThreadPoolInstance._separated.numRequestedWorkers;
                 while (count > 0)
                 {
-                    int prevCount = Interlocked.CompareExchange(ref ThreadPoolInstance._numRequestedWorkers, count - 1, count);
+                    int prevCount = Interlocked.CompareExchange(ref ThreadPoolInstance._separated.numRequestedWorkers, count - 1, count);
                     if (prevCount == count)
                     {
                         return true;

@@ -39,7 +39,7 @@ namespace System.Threading
 
                         if (!disableStarvationDetection)
                         {
-                            if (ThreadPoolInstance._numRequestedWorkers > 0 && SufficientDelaySinceLastDequeue())
+                            if (ThreadPoolInstance._separated.numRequestedWorkers > 0 && SufficientDelaySinceLastDequeue())
                             {
                                 try
                                 {
@@ -71,7 +71,7 @@ namespace System.Threading
                                 }
                             }
                         }
-                    } while (ThreadPoolInstance._numRequestedWorkers > 0 || Interlocked.Decrement(ref s_runningState) > GetRunningStateForNumRuns(0));
+                    } while (ThreadPoolInstance._separated.numRequestedWorkers > 0 || Interlocked.Decrement(ref s_runningState) > GetRunningStateForNumRuns(0));
                 }
             }
 
