@@ -1074,15 +1074,7 @@ namespace System
                 }
 
                 Pow10(exponent, out BigInteger poweredValue);
-
-                if (poweredValue._length == 1)
-                {
-                    Multiply(poweredValue._blocks[0]);
-                }
-                else
-                {
-                    Multiply(ref poweredValue);
-                }
+                Multiply(ref poweredValue);
             }
 
             public static void SetUInt32(out BigInteger result, uint value)
