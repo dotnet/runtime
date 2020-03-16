@@ -10,7 +10,7 @@ public class MonoPInvokeCallbackAttribute : Attribute
 
 public static class Program
 {
-    // defined in main.m
+    // Defined in main.m
     [DllImport ("__Internal")]
     private extern static void ios_set_text ([MarshalAs (UnmanagedType.LPUTF8Str)] string value);
 
@@ -19,6 +19,7 @@ public static class Program
 
     private static int counter = 0;
 
+    // Called by native code, see main.m
     [MonoPInvokeCallback (typeof (Action))]
     private static async void OnButtonClick ()
     {
@@ -27,6 +28,7 @@ public static class Program
 
     public static async Task Main (string[] args)
     {
+        // Register a managed callback (will be called by UIButton, see main.m)
         ios_register_button_click (OnButtonClick);
 
         const string msg = "Hello World!\n.NET 5.0";
@@ -39,6 +41,6 @@ public static class Program
 
         // TODO: Implement ConsolePal.iOS.cs for TargetsiOS==true.
         // to redirect stdout to NSLog
-        Console.WriteLine("Done!");
+        Console.WriteLine ("Done!");
     }
 }
