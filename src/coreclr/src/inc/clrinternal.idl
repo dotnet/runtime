@@ -128,30 +128,6 @@ typedef VOID (__stdcall *PTLS_CALLBACK_FUNCTION)(PVOID);
 ]
 interface IExecutionEngine : IUnknown
 {
-    // Thread Local Storage is based on logical threads.  The underlying
-    // implementation could be threads, fibers, or something more exotic.
-    // Slot numbers are predefined.  This is not a general extensibility
-    // mechanism.
-
-    // Associate a callback function for releasing TLS on thread/fiber death.
-    // This can be NULL.
-    void TLS_AssociateCallback([in] DWORD slot, [in] PTLS_CALLBACK_FUNCTION callback);
-
-    // Get the TLS block for fast Get/Set operations
-    PVOID* TLS_GetDataBlock();
-
-    // Get the value at a slot
-    PVOID TLS_GetValue([in] DWORD slot);
-
-    // Get the value at a slot, return FALSE if TLS info block doesn't exist
-    BOOL TLS_CheckValue([in] DWORD slot, [out] PVOID * pValue);
-
-    // Set the value at a slot
-    void TLS_SetValue([in] DWORD slot, [in] PVOID pData);
-
-    // Free TLS memory block and make callback
-    void TLS_ThreadDetaching();
-
     // Critical Sections are sometimes exposed to the host and therefore need to be
     // reflected from all CLR DLLs to the EE.
     //

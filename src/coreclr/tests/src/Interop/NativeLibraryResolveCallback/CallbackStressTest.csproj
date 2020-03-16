@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
     <DefineConstants Condition="$(TargetOS) == 'Windows_NT'">WINDOWS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

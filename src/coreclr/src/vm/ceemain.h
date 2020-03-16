@@ -40,6 +40,9 @@ enum ShutdownCompleteAction
 // Force shutdown of the EE
 void ForceEEShutdown(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete);
 
+// Setup thread statics, including ClrDebugState and StressLog.
+void SetupTLSForThread(Thread* pThread);
+
 // We have an internal class that can be used to expose EE functionality to other CLR
 // DLLs, via the deliberately obscure IEE DLL exports from the shim and the EE
 // NOTE:  This class must not ever contain any instance variables.  The reason for
@@ -57,29 +60,9 @@ class CExecutionEngine : public IExecutionEngine, public IEEMemoryManager
 public:
 
     // Notification of a DLL_THREAD_DETACH or a Thread Terminate.
-    static void ThreadDetaching(void **pTlsData);
+    static void ThreadDetaching();
 
-    // Delete on TLS block
-    static void DeleteTLS(void **pTlsData);
-
-    static void **CheckThreadState(DWORD slot, BOOL force = TRUE);
-    static void **CheckThreadStateNoCreate(DWORD slot
-#ifdef _DEBUG
-                                           , BOOL fForDestruction = FALSE
-#endif // _DEBUG
-                                           );
-
-    // Setup FLS simulation block, including ClrDebugState and StressLog.
-    static void SetupTLSForThread(Thread *pThread);
-
-    static LPVOID* GetTlsData();
-    static BOOL SetTlsData (void** ppTlsInfo);
-
-    //***************************************************************************
-    // private implementation:
-    //***************************************************************************
 private:
-    static PTLS_CALLBACK_FUNCTION Callbacks[MAX_PREDEFINED_TLS_SLOT];
 
     //***************************************************************************
     // IUnknown methods
@@ -92,30 +75,6 @@ private:
     ULONG STDMETHODCALLTYPE AddRef();
 
     ULONG STDMETHODCALLTYPE Release();
-
-    //***************************************************************************
-    // IExecutionEngine methods for TLS
-    //***************************************************************************
-
-    // Associate a callback for cleanup with a TLS slot
-    VOID  STDMETHODCALLTYPE TLS_AssociateCallback(
-            DWORD slot,
-            PTLS_CALLBACK_FUNCTION callback);
-
-    // Get the TLS block for fast Get/Set operations
-    LPVOID* STDMETHODCALLTYPE TLS_GetDataBlock();
-
-    // Get the value at a slot
-    LPVOID STDMETHODCALLTYPE TLS_GetValue(DWORD slot);
-
-    // Get the value at a slot, return FALSE if TLS info block doesn't exist
-    BOOL STDMETHODCALLTYPE TLS_CheckValue(DWORD slot, LPVOID * pValue);
-
-    // Set the value at a slot
-    VOID STDMETHODCALLTYPE TLS_SetValue(DWORD slot, LPVOID pData);
-
-    // Free TLS memory block and make callback
-    VOID STDMETHODCALLTYPE TLS_ThreadDetaching();
 
     //***************************************************************************
     // IExecutionEngine methods for locking

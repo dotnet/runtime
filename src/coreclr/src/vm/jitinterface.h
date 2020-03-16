@@ -70,8 +70,12 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 void InitJITHelpers1();
 void InitJITHelpers2();
 
-PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODER* header,
-                        CORJIT_FLAGS flags, ULONG* sizeOfCode = NULL);
+#ifndef CROSSGEN_COMPILE
+PCODE UnsafeJitFunction(PrepareCodeConfig* config,
+                        COR_ILMETHOD_DECODER* header,
+                        CORJIT_FLAGS flags,
+                        ULONG* sizeOfCode = NULL);
+#endif // CROSSGEN_COMPILE
 
 void getMethodInfoHelper(MethodDesc * ftn,
                          CORINFO_METHOD_HANDLE ftnHnd,

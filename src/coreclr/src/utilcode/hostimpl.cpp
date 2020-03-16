@@ -16,78 +16,17 @@
 #include "mscoree.h"
 #include "clrinternal.h"
 #include "hostimpl.h"
-#include "predeftlsslot.h"
 
 // to avoid to include clrhost.h in this file
 #ifdef FAILPOINTS_ENABLED
 extern int RFS_HashStack();
 #endif
 
-#ifndef __GNUC__
-static __declspec(thread) void** t_pBlock;
-#else  // !__GNUC__
-static thread_local void** t_pBlock;
-#endif // !__GNUC__
-
-static PTLS_CALLBACK_FUNCTION Callbacks[MAX_PREDEFINED_TLS_SLOT];
-
 #ifdef SELF_NO_HOST
 HANDLE (*g_fnGetExecutableHeapHandle)();
 #endif
 
-extern LPVOID* (*__ClrFlsGetBlock)();
-
-//
-// FLS getter to avoid unnecessary indirection via execution engine.
-//
-LPVOID* ClrFlsGetBlockDirect()
-{
-    return t_pBlock;
-}
-
-//
-// utility functions for tls functionality
-//
-static void **CheckThreadState(DWORD slot, BOOL force = TRUE)
-{
-    // Treat as a runtime assertion, since the invariant spans many DLLs.
-    _ASSERTE(slot < MAX_PREDEFINED_TLS_SLOT);
-
-    if (__ClrFlsGetBlock != ClrFlsGetBlockDirect)
-    {
-        // Switch to faster TLS getter now that the TLS slot is initialized
-        __ClrFlsGetBlock = ClrFlsGetBlockDirect;
-    }
-
-    void **pTlsData = t_pBlock;
-
-    if (pTlsData == 0 && force) {
-
-        // !!! Contract uses our TLS support.  Contract may be used before our host support is set up.
-        // !!! To better support contract, we call into OS for memory allocation.
-        pTlsData = (void**) ::HeapAlloc(GetProcessHeap(),0,MAX_PREDEFINED_TLS_SLOT*sizeof(void*));
-
-
-        if (pTlsData == NULL)
-        {
-            // workaround! We don't want exceptions being thrown during ClrInitDebugState. Just return NULL out of TlsSetValue.
-            // ClrInitDebugState will do a confirming FlsGet to see if the value stuck.
-
-            // If this is for the stack probe, and we failed to allocate memory for it, we won't
-            // put in a guard page.
-            if (slot == TlsIdx_ClrDebugState)
-            {
-                return NULL;
-            }
-            RaiseException(STATUS_NO_MEMORY, 0, 0, NULL);
-        }
-        for (int i=0; i<MAX_PREDEFINED_TLS_SLOT; i++)
-            pTlsData[i] = 0;
-        t_pBlock = pTlsData;
-    }
-
-    return pTlsData;
-} // CheckThreadState
+thread_local size_t t_ThreadType;
 
 HRESULT STDMETHODCALLTYPE UtilExecutionEngine::QueryInterface(REFIID id, void **pInterface)
 {
@@ -120,69 +59,6 @@ ULONG STDMETHODCALLTYPE UtilExecutionEngine::AddRef()
 ULONG STDMETHODCALLTYPE UtilExecutionEngine::Release()
 {
     return 1;
-}
-
-VOID  STDMETHODCALLTYPE UtilExecutionEngine::TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
-{
-    CheckThreadState(slot);
-
-    // They can toggle between a callback and no callback.  But anything else looks like
-    // confusion on their part.
-    //
-    // (TlsIdx_ClrDebugState associates its callback from utilcode.lib - which can be replicated. But
-    // all the callbacks are equally good.)
-    _ASSERTE(slot == TlsIdx_ClrDebugState || Callbacks[slot] == 0 || Callbacks[slot] == callback || callback == 0);
-    Callbacks[slot] = callback;
-}
-
-LPVOID* STDMETHODCALLTYPE UtilExecutionEngine::TLS_GetDataBlock()
-{
-    return t_pBlock;
-}
-
-LPVOID STDMETHODCALLTYPE UtilExecutionEngine::TLS_GetValue(DWORD slot)
-{
-    void **pTlsData = CheckThreadState(slot, FALSE);
-    if (pTlsData)
-        return pTlsData[slot];
-    else
-        return NULL;
-}
-
-BOOL STDMETHODCALLTYPE UtilExecutionEngine::TLS_CheckValue(DWORD slot, LPVOID * pValue)
-{
-    void **pTlsData = CheckThreadState(slot, FALSE);
-    if (pTlsData)
-    {
-        *pValue = pTlsData[slot];
-        return TRUE;
-    }
-    return FALSE;
-}
-
-VOID STDMETHODCALLTYPE UtilExecutionEngine::TLS_SetValue(DWORD slot, LPVOID pData)
-{
-    void **pTlsData = CheckThreadState(slot);
-    if (pTlsData)  // Yes, CheckThreadState(slot, TRUE) can return NULL now.
-    {
-        pTlsData[slot] = pData;
-    }
-}
-
-VOID STDMETHODCALLTYPE UtilExecutionEngine::TLS_ThreadDetaching()
-{
-    void **pTlsData = CheckThreadState(0, FALSE);
-    if (pTlsData)
-    {
-        for (int i=0; i<MAX_PREDEFINED_TLS_SLOT; i++)
-        {
-            // If we have some data and a callback, issue it.
-            if (Callbacks[i] != 0 && pTlsData[i] != 0)
-                (*Callbacks[i])(pTlsData[i]);
-        }
-        ::HeapFree (GetProcessHeap(),0,pTlsData);
-
-    }
 }
 
 CRITSEC_COOKIE STDMETHODCALLTYPE UtilExecutionEngine::CreateLock(LPCSTR szTag, LPCSTR level, CrstFlags flags)

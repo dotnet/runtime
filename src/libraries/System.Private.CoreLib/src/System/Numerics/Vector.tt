@@ -1405,6 +1405,128 @@ namespace System.Numerics
                 }
             }
         }
+
+        [Intrinsic]
+        internal static unsafe Vector<T> Ceiling(Vector<T> value)
+        {
+            if (Vector.IsHardwareAccelerated)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    float* dataPtr = stackalloc float[Count];
+                    for (int g = 0; g < Count; g++)
+                    {
+                        dataPtr[g] = MathF.Ceiling((float)(object)value[g]);
+                    }
+                    return new Vector<T>(dataPtr);
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    double* dataPtr = stackalloc double[Count];
+                    for (int g = 0; g < Count; g++)
+                    {
+                        dataPtr[g] = Math.Ceiling((double)(object)value[g]);
+                    }
+                    return new Vector<T>(dataPtr);
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                }
+            }
+            else
+            {
+                if (typeof(T) == typeof(float))
+                {
+<#
+    for (int g = 0; g < GetNumFields(typeof(float), totalSize); g++)
+    {
+#>
+                    value.<#=GetRegisterFieldName(typeof(float), g)#> = MathF.Ceiling(value.<#=GetRegisterFieldName(typeof(float), g)#>);
+<#
+    }
+#>
+                    return value;
+                }
+                else if (typeof(T) == typeof(double))
+                {
+<#
+    for (int g = 0; g < GetNumFields(typeof(double), totalSize); g++)
+    {
+#>
+                    value.<#=GetRegisterFieldName(typeof(double), g)#> = Math.Ceiling(value.<#=GetRegisterFieldName(typeof(double), g)#>);
+<#
+    }
+#>
+                    return value;
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                }
+            }
+        }
+
+        [Intrinsic]
+        internal static unsafe Vector<T> Floor(Vector<T> value)
+        {
+            if (Vector.IsHardwareAccelerated)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    float* dataPtr = stackalloc float[Count];
+                    for (int g = 0; g < Count; g++)
+                    {
+                        dataPtr[g] = MathF.Floor((float)(object)value[g]);
+                    }
+                    return new Vector<T>(dataPtr);
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    double* dataPtr = stackalloc double[Count];
+                    for (int g = 0; g < Count; g++)
+                    {
+                        dataPtr[g] = Math.Floor((double)(object)value[g]);
+                    }
+                    return new Vector<T>(dataPtr);
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                }
+            }
+            else
+            {
+                if (typeof(T) == typeof(float))
+                {
+<#
+    for (int g = 0; g < GetNumFields(typeof(float), totalSize); g++)
+    {
+#>
+                    value.<#=GetRegisterFieldName(typeof(float), g)#> = MathF.Floor(value.<#=GetRegisterFieldName(typeof(float), g)#>);
+<#
+    }
+#>
+                    return value;
+                }
+                else if (typeof(T) == typeof(double))
+                {
+<#
+    for (int g = 0; g < GetNumFields(typeof(double), totalSize); g++)
+    {
+#>
+                    value.<#=GetRegisterFieldName(typeof(double), g)#> = Math.Floor(value.<#=GetRegisterFieldName(typeof(double), g)#>);
+<#
+    }
+#>
+                    return value;
+                }
+                else
+                {
+                    throw new NotSupportedException(SR.Arg_TypeNotSupported);
+                }
+            }
+        }
         #endregion Internal Math Methods
 
         #region Helper Methods

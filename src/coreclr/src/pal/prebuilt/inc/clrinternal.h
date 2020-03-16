@@ -165,25 +165,6 @@ EXTERN_C const IID IID_IExecutionEngine;
     IExecutionEngine : public IUnknown
     {
     public:
-        virtual void STDMETHODCALLTYPE TLS_AssociateCallback( 
-            /* [in] */ DWORD slot,
-            /* [in] */ PTLS_CALLBACK_FUNCTION callback) = 0;
-        
-        virtual PVOID *STDMETHODCALLTYPE TLS_GetDataBlock( void) = 0;
-        
-        virtual PVOID STDMETHODCALLTYPE TLS_GetValue( 
-            /* [in] */ DWORD slot) = 0;
-        
-        virtual BOOL STDMETHODCALLTYPE TLS_CheckValue( 
-            /* [in] */ DWORD slot,
-            /* [out] */ PVOID *pValue) = 0;
-        
-        virtual void STDMETHODCALLTYPE TLS_SetValue( 
-            /* [in] */ DWORD slot,
-            /* [in] */ PVOID pData) = 0;
-        
-        virtual void STDMETHODCALLTYPE TLS_ThreadDetaching( void) = 0;
-        
         virtual CRITSEC_COOKIE STDMETHODCALLTYPE CreateLock( 
             /* [in] */ LPCSTR szTag,
             /* [in] */ LPCSTR level,
@@ -283,31 +264,6 @@ EXTERN_C const IID IID_IExecutionEngine;
             IExecutionEngine * This);
         
         ULONG ( STDMETHODCALLTYPE *Release )( 
-            IExecutionEngine * This);
-        
-        void ( STDMETHODCALLTYPE *TLS_AssociateCallback )( 
-            IExecutionEngine * This,
-            /* [in] */ DWORD slot,
-            /* [in] */ PTLS_CALLBACK_FUNCTION callback);
-        
-        PVOID *( STDMETHODCALLTYPE *TLS_GetDataBlock )( 
-            IExecutionEngine * This);
-        
-        PVOID ( STDMETHODCALLTYPE *TLS_GetValue )( 
-            IExecutionEngine * This,
-            /* [in] */ DWORD slot);
-        
-        BOOL ( STDMETHODCALLTYPE *TLS_CheckValue )( 
-            IExecutionEngine * This,
-            /* [in] */ DWORD slot,
-            /* [out] */ PVOID *pValue);
-        
-        void ( STDMETHODCALLTYPE *TLS_SetValue )( 
-            IExecutionEngine * This,
-            /* [in] */ DWORD slot,
-            /* [in] */ PVOID pData);
-        
-        void ( STDMETHODCALLTYPE *TLS_ThreadDetaching )( 
             IExecutionEngine * This);
         
         CRITSEC_COOKIE ( STDMETHODCALLTYPE *CreateLock )( 
@@ -433,25 +389,6 @@ EXTERN_C const IID IID_IExecutionEngine;
 
 #define IExecutionEngine_Release(This)	\
     ( (This)->lpVtbl -> Release(This) ) 
-
-
-#define IExecutionEngine_TLS_AssociateCallback(This,slot,callback)	\
-    ( (This)->lpVtbl -> TLS_AssociateCallback(This,slot,callback) ) 
-
-#define IExecutionEngine_TLS_GetDataBlock(This)	\
-    ( (This)->lpVtbl -> TLS_GetDataBlock(This) ) 
-
-#define IExecutionEngine_TLS_GetValue(This,slot)	\
-    ( (This)->lpVtbl -> TLS_GetValue(This,slot) ) 
-
-#define IExecutionEngine_TLS_CheckValue(This,slot,pValue)	\
-    ( (This)->lpVtbl -> TLS_CheckValue(This,slot,pValue) ) 
-
-#define IExecutionEngine_TLS_SetValue(This,slot,pData)	\
-    ( (This)->lpVtbl -> TLS_SetValue(This,slot,pData) ) 
-
-#define IExecutionEngine_TLS_ThreadDetaching(This)	\
-    ( (This)->lpVtbl -> TLS_ThreadDetaching(This) ) 
 
 #define IExecutionEngine_CreateLock(This,szTag,level,flags)	\
     ( (This)->lpVtbl -> CreateLock(This,szTag,level,flags) ) 

@@ -65,6 +65,8 @@ static void RealCLRThrowsExceptionWorker(__in_z const char *szFunction,
 
 #if defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS_IMPL)
 
+thread_local ClrDebugState* t_pClrDebugState;
+
 // Fls callback to deallocate ClrDebugState when our FLS block goes away.
 void FreeClrDebugState(LPVOID pTlsData)
 {
@@ -147,25 +149,6 @@ static VOID ShutoffContracts()
 //=============================================================================================
 ClrDebugState *CLRInitDebugState()
 {
-    // workaround!
-    //
-    // The existing Fls apis didn't provide the support we need and adding support cleanly is
-    // messy because of the brittleness of IExecutionEngine.
-    //
-    // To understand this function, you need to know that the Fls routines have special semantics
-    // for the TlsIdx_ClrDebugState slot:
-    //
-    //  - FlsSetValue will never throw. If it fails due to OOM on creation of the slot storage,
-    //    it will silently bail. Thus, we must do a confirming FlsGetValue before we can conclude
-    //    that the SetValue succeeded.
-    //
-    //  - FlsAssociateCallback will not complain about multiple sets of the callback.
-    //
-    //  - The mscorwks implemention of FlsAssociateCallback will ignore the passed in value
-    //    and use the version of FreeClrDebugState compiled into mscorwks. This is needed to
-    //    avoid dangling pointer races on shutdown.
-
-
     // This is our global "bad" debug state that thread use when they OOM on CLRInitDebugState.
     // We really only need to initialize it once but initializing each time is convenient
     // and has low perf impact.
@@ -176,12 +159,6 @@ ClrDebugState *CLRInitDebugState()
     ClrDebugState *pNewClrDebugState = NULL;
     ClrDebugState *pClrDebugState    = NULL;
     DbgStateLockData    *pNewLockData      = NULL;
-
-    // We call this first partly to force a CheckThreadState. We've hopefully chased out all the
-    // recursive contract calls inside here but if we haven't, it's best to get them out of the way
-    // early.
-    ClrFlsAssociateCallback(TlsIdx_ClrDebugState, FreeClrDebugState);
-
 
     if (AreContractsShutoff())
     {
@@ -227,7 +204,7 @@ ClrDebugState *CLRInitDebugState()
     //
     // So we must make one last check to see if the ClrDebugState still needs creating.
     //
-    ClrDebugState *pTmp = (ClrDebugState*)(ClrFlsGetValue(TlsIdx_ClrDebugState));
+    ClrDebugState *pTmp = t_pClrDebugState;
     if (pTmp != NULL)
     {
         // Recursive call set up ClrDebugState for us
@@ -251,27 +228,7 @@ ClrDebugState *CLRInitDebugState()
 
     _ASSERTE(pClrDebugState != NULL);
 
-
-    ClrFlsSetValue(TlsIdx_ClrDebugState, (LPVOID)pClrDebugState);
-
-    // For the ClrDebugState index, ClrFlsSetValue does *not* throw on OOM.
-    // Instead, it silently throws away the value. So we must now do a confirming
-    // FlsGet to learn if our Set succeeded.
-    if (ClrFlsGetValue(TlsIdx_ClrDebugState) == NULL)
-    {
-        // Our FlsSet didn't work. That means it couldn't allocate the master FLS block for our thread.
-        // Now we're a bad state because not only can't we succeed, we can't record that we didn't succeed.
-        // And it's invalid to return a BadClrDebugState here only to return a good debug state later.
-        //
-        // So we now take the drastic step of forcing all future ClrInitDebugState calls to return the OOM state.
-        ShutoffContracts();
-        pClrDebugState = &gBadClrDebugState;
-
-        // Try once more time to set the FLS (if it doesn't work, the next call will keep cycling through here
-        // until it does succeed.)
-        ClrFlsSetValue(TlsIdx_ClrDebugState, &gBadClrDebugState);
-    }
-
+    t_pClrDebugState = pClrDebugState;
 
 #if defined(_DEBUG)
     // The ClrDebugState we allocated above made it into FLS iff
@@ -668,22 +625,6 @@ void SetExecutionEngine(IExecutionEngine *pExecutionEngine)
         g_pExecutionEngine->AddRef();
     }
 }
-
-void ClrFlsAssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
-{
-    WRAPPER_NO_CONTRACT;
-
-    GetExecutionEngine()->TLS_AssociateCallback(slot, callback);
-}
-
-LPVOID *ClrFlsGetBlockGeneric()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return (LPVOID *) GetExecutionEngine()->TLS_GetDataBlock();
-}
-
-CLRFLSGETBLOCK __ClrFlsGetBlock = ClrFlsGetBlockGeneric;
 
 CRITSEC_COOKIE ClrCreateCriticalSection(CrstType crstType, CrstFlags flags)
 {

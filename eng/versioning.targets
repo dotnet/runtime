@@ -69,6 +69,7 @@
   <!-- Note: ReferenceAssemblies.targets still uses @(AssemblyInfoLines) as well. So if you remove this, those need to migrate too. -->
   <Target Name="_WriteNonStringAssemblyInfoAttributes"
           AfterTargets="CoreGenerateAssemblyInfo"
+          BeforeTargets="BeforeCompile;CoreCompile"
           Inputs="$(MSBuildProjectFile)"
           Outputs="$(AssemblyInfoFile)">
 
