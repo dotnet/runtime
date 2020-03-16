@@ -111,7 +111,7 @@ jobs:
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - _stripSymbolsArg: -stripSymbols
+            - _stripSymbolsArg: ' -stripSymbols'
 
         - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
