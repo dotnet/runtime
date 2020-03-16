@@ -3,12 +3,14 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="HttpClientJsonExtensionsTests.cs" />
-    <Compile Include="HttpContentJsonExtensionsTests.cs" />
-    <Compile Include="JsonContentTests.cs" />
+    <!--<Compile Include="HttpClientJsonExtensionsTests.cs" />-->
+    <!--<Compile Include="HttpContentJsonExtensionsTests.cs" />-->
+    <!--<Compile Include="JsonContentTests.cs" />-->
     <Compile Include="Person.cs" />
+    <Compile Include="TranscodingReadStreamTests.cs" />
+    <Compile Include="TranscodingWriteStreamTests.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs">
       <Link>Common\System\Net\Capability.Security.cs</Link>
     </Compile>
@@ -36,5 +38,10 @@
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <DefaultReferenceExclusions Include="System.Net.Http.Json" />
+    <ReferenceFromRuntime Include="System.Net.Http.Json" />
   </ItemGroup>
 </Project>
