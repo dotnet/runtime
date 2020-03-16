@@ -193,7 +193,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
 #if NETCOREAPP
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
     public sealed class PlatformHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
     {
         protected override Version UseVersion => HttpVersion20.Value;
@@ -313,6 +313,7 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_SchSendAuxRecordHttp_Http2_Test(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
     public sealed class PlatformHandler_HttpClientHandler_Http2_Test : HttpClientHandlerTest
     {
         protected override Version UseVersion => HttpVersion20.Value;
