@@ -24,23 +24,23 @@ class MathPowTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static T ToVar<T>(T arg) => arg;
 
-    public static void AssertEquals(double a, double b, [CallerLineNumber] int line = 0)
+    public static void AssertEquals(double arg, double a, double b, [CallerLineNumber] int line = 0)
     {
         if (BitConverter.DoubleToInt64Bits(a) !=
             BitConverter.DoubleToInt64Bits(b))
         {
             returnCode++;
-            Console.WriteLine($"Failed: {a} != {b}, ({BitConverter.DoubleToInt64Bits(a)} != {BitConverter.DoubleToInt64Bits(b)}, line:{line}");
+            Console.WriteLine($"Failed: {a} != {b}, ({BitConverter.DoubleToInt64Bits(a):X} != {BitConverter.DoubleToInt64Bits(b):X}), arg={arg} ({BitConverter.DoubleToInt64Bits(arg):X}) line:{line}");
         }
     }
 
-    public static void AssertEquals(float a, float b, [CallerLineNumber] int line = 0)
+    public static void AssertEquals(float arg, float a, float b, [CallerLineNumber] int line = 0)
     {
         if (BitConverter.SingleToInt32Bits(a) !=
             BitConverter.SingleToInt32Bits(b))
         {
             returnCode++;
-            Console.WriteLine($"Failed: {a} != {b}, ({BitConverter.SingleToInt32Bits(a)} != {BitConverter.SingleToInt32Bits(b)}, line:{line}");
+            Console.WriteLine($"Failed: {a} != {b}, ({BitConverter.SingleToInt32Bits(a):X} != {BitConverter.SingleToInt32Bits(b):X}), arg={arg} ({BitConverter.SingleToInt32Bits(arg):X}) line:{line}");
         }
     }
 
@@ -56,13 +56,13 @@ class MathPowTests
     {
         foreach (double testValue in testDblValues)
         {
-            AssertEquals(Math.Pow(testValue, 0.0), Math.Pow(testValue, ToVar(0.0)));
-            AssertEquals(Math.Pow(testValue, -0.0), Math.Pow(testValue, ToVar(-0.0)));
-            AssertEquals(Math.Pow(testValue, 1.0), Math.Pow(testValue, ToVar(1.0)));
-            AssertEquals(Math.Pow(testValue, -1.0), Math.Pow(testValue, ToVar(-1.0)));
-            AssertEquals(Math.Pow(testValue, 2.0), Math.Pow(testValue, ToVar(2.0)));
-            AssertEquals(Math.Pow(testValue, 3.0), Math.Pow(testValue, ToVar(3.0)));
-            AssertEquals(Math.Pow(testValue, 4.0), Math.Pow(testValue, ToVar(4.0)));
+            AssertEquals(testValue, Math.Pow(testValue, 0.0), Math.Pow(testValue, ToVar(0.0)));
+            AssertEquals(testValue, Math.Pow(testValue, -0.0), Math.Pow(testValue, ToVar(-0.0)));
+            AssertEquals(testValue, Math.Pow(testValue, 1.0), Math.Pow(testValue, ToVar(1.0)));
+            AssertEquals(testValue, Math.Pow(testValue, -1.0), Math.Pow(testValue, ToVar(-1.0)));
+            AssertEquals(testValue, Math.Pow(testValue, 2.0), Math.Pow(testValue, ToVar(2.0)));
+            AssertEquals(testValue, Math.Pow(testValue, 3.0), Math.Pow(testValue, ToVar(3.0)));
+            AssertEquals(testValue, Math.Pow(testValue, 4.0), Math.Pow(testValue, ToVar(4.0)));
         }
     }
 
@@ -78,13 +78,13 @@ class MathPowTests
     {
         foreach (float testValue in testFltValues)
         {
-            AssertEquals(MathF.Pow(testValue, 0.0f), MathF.Pow(testValue, ToVar(0.0f)));
-            AssertEquals(MathF.Pow(testValue, -0.0f), MathF.Pow(testValue, ToVar(-0.0f)));
-            AssertEquals(MathF.Pow(testValue, 1.0f), MathF.Pow(testValue, ToVar(1.0f)));
-            AssertEquals(MathF.Pow(testValue, -1.0f), MathF.Pow(testValue, ToVar(-1.0f)));
-            AssertEquals(MathF.Pow(testValue, 2.0f), MathF.Pow(testValue, ToVar(2.0f)));
-            AssertEquals(MathF.Pow(testValue, 3.0f), MathF.Pow(testValue, ToVar(3.0f)));
-            AssertEquals(MathF.Pow(testValue, 4.0f), MathF.Pow(testValue, ToVar(4.0f)));
+            AssertEquals(testValue, MathF.Pow(testValue, 0.0f), MathF.Pow(testValue, ToVar(0.0f)));
+            AssertEquals(testValue, MathF.Pow(testValue, -0.0f), MathF.Pow(testValue, ToVar(-0.0f)));
+            AssertEquals(testValue, MathF.Pow(testValue, 1.0f), MathF.Pow(testValue, ToVar(1.0f)));
+            AssertEquals(testValue, MathF.Pow(testValue, -1.0f), MathF.Pow(testValue, ToVar(-1.0f)));
+            AssertEquals(testValue, MathF.Pow(testValue, 2.0f), MathF.Pow(testValue, ToVar(2.0f)));
+            AssertEquals(testValue, MathF.Pow(testValue, 3.0f), MathF.Pow(testValue, ToVar(3.0f)));
+            AssertEquals(testValue, MathF.Pow(testValue, 4.0f), MathF.Pow(testValue, ToVar(4.0f)));
         }
     }
 
@@ -95,7 +95,7 @@ class MathPowTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public void TestFieldArg()
     {
-        AssertEquals(MathF.Pow(testField1, 2.0f), MathF.Pow(testField2, ToVar(2.0f)));
+        AssertEquals(testField1, MathF.Pow(testField1, 2.0f), MathF.Pow(testField2, ToVar(2.0f)));
     }
 
 
@@ -115,7 +115,7 @@ class MathPowTests
     public void TestCallArg1()
     {
         sideeffects = 0;
-        AssertEquals(Math.Pow(TestCall1(), 1.0), Math.Pow(TestCall2(), ToVar(1.0)));
+        AssertEquals(Math.PI, Math.Pow(TestCall1(), 1.0), Math.Pow(TestCall2(), ToVar(1.0)));
         if (sideeffects != 1)
             returnCode++;
     }
@@ -124,7 +124,7 @@ class MathPowTests
     public void TestCallArgN1()
     {
         sideeffects = 0;
-        AssertEquals(Math.Pow(TestCall1(), -1.0), Math.Pow(TestCall2(), ToVar(-1.0)));
+        AssertEquals(Math.PI, Math.Pow(TestCall1(), -1.0), Math.Pow(TestCall2(), ToVar(-1.0)));
         if (sideeffects != 1)
             returnCode++;
     }
@@ -133,7 +133,7 @@ class MathPowTests
     public void TestCallArg2()
     {
         sideeffects = 0;
-        AssertEquals(Math.Pow(TestCall1(), 2.0), Math.Pow(TestCall2(), ToVar(2.0)));
+        AssertEquals(Math.PI, Math.Pow(TestCall1(), 2.0), Math.Pow(TestCall2(), ToVar(2.0)));
         // make sure it's not optimized into
         // `TestCall1() * TestCall1()`:
         if (sideeffects != 1)
@@ -144,7 +144,7 @@ class MathPowTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public void TestRefArgs(ref float x, ref float y)
     {
-        AssertEquals(Math.Pow(x, 2.0), Math.Pow(y, ToVar(2.0)));
+        AssertEquals(x, Math.Pow(x, 2.0), Math.Pow(y, ToVar(2.0)));
     }
 
 
