@@ -37,7 +37,7 @@ namespace System.Net.Sockets
             _wsaBufferArray = new byte[sizeof(WSABuffer)];
 
             bool ipv4, ipv6;
-            Socket.GetIPProtocolInformation(((Socket)AsyncObject).AddressFamily, socketAddress, out ipv4, out ipv6);
+            Socket.GetIPProtocolInformation(((Socket)AsyncObject!).AddressFamily, socketAddress, out ipv4, out ipv6);
 
             // Prepare control buffer.
             if (ipv4)

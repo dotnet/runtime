@@ -6,19 +6,19 @@ namespace System.Net
 {
     public class Authorization
     {
-        private string[] _protectionRealm;
+        private string[]? _protectionRealm;
         private bool _mutualAuth;
 
-        public Authorization(string token) :
+        public Authorization(string? token) :
             this(token, true) { }
 
-        public Authorization(string token, bool finished) :
+        public Authorization(string? token, bool finished) :
             this(token, finished, null) { }
 
-        public Authorization(string token, bool finished, string connectionGroupId) :
+        public Authorization(string? token, bool finished, string? connectionGroupId) :
             this(token, finished, connectionGroupId, false) { }
 
-        internal Authorization(string token, bool finished, string connectionGroupId, bool mutualAuth)
+        internal Authorization(string? token, bool finished, string? connectionGroupId, bool mutualAuth)
         {
             Message = string.IsNullOrEmpty(token) ? null : token;
             ConnectionGroupId = string.IsNullOrEmpty(connectionGroupId) ? null : connectionGroupId;
@@ -26,13 +26,13 @@ namespace System.Net
             _mutualAuth = mutualAuth;
         }
 
-        public string Message { get; }
+        public string? Message { get; }
 
-        public string ConnectionGroupId { get; }
+        public string? ConnectionGroupId { get; }
 
         public bool Complete { get; internal set; }
 
-        public string[] ProtectionRealm
+        public string[]? ProtectionRealm
         {
             get { return _protectionRealm; }
             set { _protectionRealm = value != null && value.Length != 0 ? value : null; }
