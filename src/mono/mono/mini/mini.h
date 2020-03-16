@@ -1447,6 +1447,7 @@ typedef struct {
 	guint            use_current_cpu : 1;
 	guint            self_init : 1;
 	guint            domainvar_inited : 1;
+	guint            code_exec_only : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
