@@ -1181,8 +1181,6 @@ HRESULT CorHost2::GetCLRControl(ICLRControl** pCLRControl)
 static BYTE g_CEEInstance[sizeof(CExecutionEngine)];
 static Volatile<IExecutionEngine*> g_pCEE = NULL;
 
-PTLS_CALLBACK_FUNCTION CExecutionEngine::Callbacks[MAX_PREDEFINED_TLS_SLOT];
-
 extern "C" IExecutionEngine * __stdcall IEE()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1250,140 +1248,10 @@ ULONG STDMETHODCALLTYPE CExecutionEngine::Release()
     return 1;
 }
 
-struct ClrTlsInfo
-{
-    void* data[MAX_PREDEFINED_TLS_SLOT];
-};
-
-#define DataToClrTlsInfo(a) ((ClrTlsInfo*)a)
-
-void** CExecutionEngine::GetTlsData()
-{
-    LIMITED_METHOD_CONTRACT;
-
-   return gCurrentThreadInfo.m_EETlsData;
-}
-
-BOOL CExecutionEngine::SetTlsData (void** ppTlsInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    gCurrentThreadInfo.m_EETlsData = ppTlsInfo;
-    return TRUE;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Returns the current logical thread's data block (ClrTlsInfo::data).
-//
-// Arguments:
-//    slot - Index of the slot that is about to be requested
-//    force - If the data block does not exist yet, create it as a side-effect
-//
-// Return Value:
-//    NULL, if the data block did not exist yet for the current thread and force was FALSE.
-//    A pointer to the data block, otherwise.
-//
-// Notes:
-//    If the underlying OS does not support fiber mode, the data block is stored in TLS.
-//    If the underlying OS does support fiber mode, it is primarily stored in FLS,
-//    and cached in TLS so that we can use our generated optimized TLS accessors.
-//
-// TLS support for the other DLLs of the CLR operates quite differently in hosted
-// and unhosted scenarios.
-
-void **CExecutionEngine::CheckThreadState(DWORD slot, BOOL force)
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    //<TODO> @TODO: Decide on an exception strategy for all the DLLs of the CLR, and then
-    // enable all the exceptions out of this method.</TODO>
-
-    // Treat as a runtime assertion, since the invariant spans many DLLs.
-    _ASSERTE(slot < MAX_PREDEFINED_TLS_SLOT);
-//    if (slot >= MAX_PREDEFINED_TLS_SLOT)
-//        COMPlusThrow(kArgumentOutOfRangeException);
-
-    void** pTlsData = CExecutionEngine::GetTlsData();
-    BOOL fInTls = (pTlsData != NULL);
-
-    ClrTlsInfo *pTlsInfo = DataToClrTlsInfo(pTlsData);
-    if (pTlsInfo == 0 && force)
-    {
-#undef HeapAlloc
-#undef GetProcessHeap
-        // !!! Contract uses our TLS support.  Contract may be used before our host support is set up.
-        // !!! To better support contract, we call into OS for memory allocation.
-        pTlsInfo = (ClrTlsInfo*) ::HeapAlloc(GetProcessHeap(),0,sizeof(ClrTlsInfo));
-#define GetProcessHeap() Dont_Use_GetProcessHeap()
-#define HeapAlloc(hHeap, dwFlags, dwBytes) Dont_Use_HeapAlloc(hHeap, dwFlags, dwBytes)
-        if (pTlsInfo == NULL)
-        {
-            goto LError;
-        }
-        memset (pTlsInfo, 0, sizeof(ClrTlsInfo));
-    }
-
-    if (!fInTls && pTlsInfo)
-    {
-        if (!CExecutionEngine::SetTlsData(pTlsInfo->data))
-        {
-            goto LError;
-        }
-    }
-
-    return pTlsInfo?pTlsInfo->data:NULL;
-
-LError:
-    if (pTlsInfo)
-    {
-#undef HeapFree
-#undef GetProcessHeap
-        ::HeapFree(GetProcessHeap(), 0, pTlsInfo);
-#define GetProcessHeap() Dont_Use_GetProcessHeap()
-#define HeapFree(hHeap, dwFlags, lpMem) Dont_Use_HeapFree(hHeap, dwFlags, lpMem)
-    }
-    // If this is for the stack probe, and we failed to allocate memory for it, we won't
-    // put in a guard page.
-    if (slot == TlsIdx_ClrDebugState)
-        return NULL;
-
-    ThrowOutOfMemory();
-}
-
-
-void **CExecutionEngine::CheckThreadStateNoCreate(DWORD slot
-#ifdef _DEBUG
-                                                  , BOOL fForDestruction
-#endif // _DEBUG
-                                                  )
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_MODE_ANY;
-
-    // !!! This function is called during Thread::SwitchIn and SwitchOut
-    // !!! It is extremely important that while executing this function, we will not
-    // !!! cause fiber switch.  This means we can not allocate memory, lock, etc...
-
-
-    // Treat as a runtime assertion, since the invariant spans many DLLs.
-    _ASSERTE(slot < MAX_PREDEFINED_TLS_SLOT);
-
-    void **pTlsData = CExecutionEngine::GetTlsData();
-
-    ClrTlsInfo *pTlsInfo = DataToClrTlsInfo(pTlsData);
-
-    return pTlsInfo?pTlsInfo->data:NULL;
-}
-
 // Note: Sampling profilers also use this function to initialize TLS for a unmanaged
 // sampling thread so that initialization can be done in advance to avoid deadlocks.
 // See ProfToEEInterfaceImpl::InitializeCurrentThread for more details.
-void CExecutionEngine::SetupTLSForThread(Thread *pThread)
+void SetupTLSForThread(Thread* pThread)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -1395,35 +1263,27 @@ void CExecutionEngine::SetupTLSForThread(Thread *pThread)
         StressLog::CreateThreadStressLog();
     }
 #endif
-    void **pTlsData;
-    pTlsData = CheckThreadState(0);
 
-    PREFIX_ASSUME(pTlsData != NULL);
+    // Make sure ThreadType can be seen by SOS
+    ClrFlsSetThreadType((TlsThreadTypeFlag)0);
 
 #ifdef ENABLE_CONTRACTS
     // Profilers need the side effect of GetClrDebugState() to perform initialization
     // in advance to avoid deadlocks. Refer to ProfToEEInterfaceImpl::InitializeCurrentThread
-    ClrDebugState *pDebugState = ::GetClrDebugState();
+    ClrDebugState* pDebugState = ::GetClrDebugState();
 
     if (pThread)
         pThread->m_pClrDebugState = pDebugState;
 #endif
 }
 
-static void ThreadDetachingHelper(PTLS_CALLBACK_FUNCTION callback, void* pData)
-{
-    // Do not use contract.  We are freeing TLS blocks.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
+#ifdef ENABLE_CONTRACTS_IMPL
+// Fls callback to deallocate ClrDebugState when our FLS block goes away.
+void FreeClrDebugState(LPVOID pTlsData);
+#endif
 
-    callback(pData);
-}
-
-// Called here from a thread detach or from destruction of a Thread object.  In
-// the detach case, we get our info from TLS.  In the destruct case, it comes from
-// the object we are destructing.
-void CExecutionEngine::ThreadDetaching(void ** pTlsData)
+// Called here from a thread detach or from destruction of a Thread object. 
+void CExecutionEngine::ThreadDetaching()
 {
     // Can not cause memory allocation during thread detach, so no real contracts.
     STATIC_CONTRACT_NOTHROW;
@@ -1435,150 +1295,24 @@ void CExecutionEngine::ThreadDetaching(void ** pTlsData)
     // 2. When a fiber is destroyed, or OS calls FlsCallback after DLL_THREAD_DETACH process.
     // We will null the FLS and TLS entry if it matches the deleted one.
 
-    if (pTlsData)
-    {
-        DeleteTLS (pTlsData);
-    }
-}
-
-void CExecutionEngine::DeleteTLS(void ** pTlsData)
-{
-    // Can not cause memory allocation during thread detach, so no real contracts.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    if (CExecutionEngine::GetTlsData() == NULL)
-    {
-        // We have not allocated TlsData yet.
-        return;
-    }
-
-    PREFIX_ASSUME(pTlsData != NULL);
-
-    ClrTlsInfo *pTlsInfo = DataToClrTlsInfo(pTlsData);
-    BOOL fNeed;
-    do
-    {
-        fNeed = FALSE;
-        for (int i=0; i<MAX_PREDEFINED_TLS_SLOT; i++)
-        {
-            if (i == TlsIdx_ClrDebugState ||
-                i == TlsIdx_StressLog)
-            {
-                // StressLog and DebugState may be needed during callback.
-                continue;
-            }
-            // If we have some data and a callback, issue it.
-            if (Callbacks[i] != 0 && pTlsInfo->data[i] != 0)
-            {
-                void* pData = pTlsInfo->data[i];
-                pTlsInfo->data[i] = 0;
-                ThreadDetachingHelper(Callbacks[i], pData);
-                fNeed = TRUE;
-            }
-        }
-    } while (fNeed);
-
-    if (pTlsInfo->data[TlsIdx_StressLog] != 0)
+    if (StressLog::t_pCurrentThreadLog != NULL)
     {
 #ifdef STRESS_LOG
-        StressLog::ThreadDetach((ThreadStressLog *)pTlsInfo->data[TlsIdx_StressLog]);
+        StressLog::ThreadDetach();
 #else
         _ASSERTE (!"should not have StressLog");
 #endif
     }
 
-    if (Callbacks[TlsIdx_ClrDebugState] != 0 && pTlsInfo->data[TlsIdx_ClrDebugState] != 0)
-    {
-        void* pData = pTlsInfo->data[TlsIdx_ClrDebugState];
-        pTlsInfo->data[TlsIdx_ClrDebugState] = 0;
-        ThreadDetachingHelper(Callbacks[TlsIdx_ClrDebugState], pData);
-    }
-
-    // NULL TLS and FLS entry so that we don't double free.
-    // We may get two callback here on thread death
-    // 1. From EEDllMain
-    // 2. From OS callback on FLS destruction
-    if (CExecutionEngine::GetTlsData() == pTlsData)
-    {
-        CExecutionEngine::SetTlsData(0);
-    }
-
-#undef HeapFree
-#undef GetProcessHeap
-    ::HeapFree (GetProcessHeap(),0,pTlsInfo);
-#define HeapFree(hHeap, dwFlags, lpMem) Dont_Use_HeapFree(hHeap, dwFlags, lpMem)
-#define GetProcessHeap() Dont_Use_GetProcessHeap()
-
-}
-
 #ifdef ENABLE_CONTRACTS_IMPL
-// Fls callback to deallocate ClrDebugState when our FLS block goes away.
-void FreeClrDebugState(LPVOID pTlsData);
-#endif
-
-VOID STDMETHODCALLTYPE CExecutionEngine::TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
-{
-    WRAPPER_NO_CONTRACT;
-
-    CheckThreadState(slot);
-
-    // They can toggle between a callback and no callback.  But anything else looks like
-    // confusion on their part.
-    //
-    // (TlsIdx_ClrDebugState associates its callback from utilcode.lib - which can be replicated. But
-    // all the callbacks are equally good.)
-    _ASSERTE(slot == TlsIdx_ClrDebugState || Callbacks[slot] == 0 || Callbacks[slot] == callback || callback == 0);
-    if (slot == TlsIdx_ClrDebugState)
+    if (t_pClrDebugState != NULL)
     {
-#ifdef ENABLE_CONTRACTS_IMPL
-        // ClrDebugState is shared among many dlls.  Some dll, like perfcounter.dll, may be unloaded.
-        // We force the callback function to be in mscorwks.dll.
-        Callbacks[slot] = FreeClrDebugState;
-#else
-        _ASSERTE (!"should not get here");
-#endif
+        void* pData = t_pClrDebugState;
+        t_pClrDebugState = 0;
+        FreeClrDebugState(pData);
     }
-    else
-        Callbacks[slot] = callback;
+#endif // ENABLE_CONTRACTS_IMPL
 }
-
-LPVOID* STDMETHODCALLTYPE CExecutionEngine::TLS_GetDataBlock()
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    return CExecutionEngine::GetTlsData();
-}
-
-LPVOID STDMETHODCALLTYPE CExecutionEngine::TLS_GetValue(DWORD slot)
-{
-    WRAPPER_NO_CONTRACT;
-    return EETlsGetValue(slot);
-}
-
-BOOL STDMETHODCALLTYPE CExecutionEngine::TLS_CheckValue(DWORD slot, LPVOID * pValue)
-{
-    WRAPPER_NO_CONTRACT;
-    return EETlsCheckValue(slot, pValue);
-}
-
-VOID STDMETHODCALLTYPE CExecutionEngine::TLS_SetValue(DWORD slot, LPVOID pData)
-{
-    WRAPPER_NO_CONTRACT;
-    EETlsSetValue(slot,pData);
-}
-
-
-VOID STDMETHODCALLTYPE CExecutionEngine::TLS_ThreadDetaching()
-{
-    WRAPPER_NO_CONTRACT;
-    CExecutionEngine::ThreadDetaching(NULL);
-}
-
 
 CRITSEC_COOKIE STDMETHODCALLTYPE CExecutionEngine::CreateLock(LPCSTR szTag, LPCSTR level, CrstFlags flags)
 {
