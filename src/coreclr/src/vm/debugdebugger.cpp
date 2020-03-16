@@ -882,41 +882,31 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
         Thread *pThread = pData->TargetThread->GetInternal();
         _ASSERTE (pThread != NULL);
 
-        // Here's the timeline for the TS_UserSuspendPending and TS_SyncSuspended bits.
-        // 0) Neither TS_UserSuspendPending nor TS_SyncSuspended set.
+        // Here's the timeline for the TS_SyncSuspended bit.
+        // 0) TS_SyncSuspended is not set.
         // 1) The suspending thread grabs the thread store lock
-        //       then sets TS_UserSuspendPending
-        //       then puts in place trip wires for the suspendee (if it is in managed code)
+        //    then puts in place trip wires for the suspendee (if it is in managed code)
         //    and releases the thread store lock.
         // 2) The suspending thread waits for the "SafeEvent".
         // 3) The suspendee continues execution until it tries to enter preemptive mode.
         //    If it trips over the wires put in place by the suspending thread,
         //    it will try to enter preemptive mode.
         // 4) The suspendee sets TS_SyncSuspended and the "SafeEvent".
-        //    Then it waits for m_UserSuspendEvent.
         // 5) AT THIS POINT, IT IS SAFE TO WALK THE SUSPENDEE'S STACK.
-        // 6) Now, some thread wants to resume the suspendee.
-        //    The resuming thread takes the thread store lock
-        //       then clears the TS_UserSuspendPending flag
-        //       then sets m_UserSuspendEvent
-        //    and releases the thread store lock.
-        // 7) The suspendee clears the TS_SyncSuspended flag.
+        // 6) The suspendee clears the TS_SyncSuspended flag.
         //
         // In other words, it is safe to trace the thread's stack IF we're holding the
-        // thread store lock AND TS_UserSuspendPending is set AND TS_SyncSuspended is set.
+        // thread store lock AND TS_SyncSuspended is set.
         //
         // This is because:
         // - If we were not holding the thread store lock, the thread could be resumed
         //   underneath us.
-        // - As long as only TS_UserSuspendPending is set (and the thread is in cooperative
-        //   mode), the thread can still be executing managed code until it trips.
-        // - When only TS_SyncSuspended is set, we race against it resuming execution.
+        // - When TS_SyncSuspended is set, we race against it resuming execution.
 
         ThreadStoreLockHolder tsl;
 
         // We erect a barrier so that if the thread tries to disable preemptive GC,
-        // it will look at the TS_UserSuspendPending flag.  Otherwise, it could resume
-        // execution of managed code during our stack walk.
+        // it could resume execution of managed code during our stack walk.
         TSSuspendHolder shTrap;
 
         Thread::ThreadState state = pThread->GetSnapshotState();
@@ -924,9 +914,6 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
         {
             goto LSafeToTrace;
         }
-
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(state & Thread::TS_UserSuspendPending));
 
         COMPlusThrow(kThreadStateException, IDS_EE_THREAD_BAD_STATE);
 

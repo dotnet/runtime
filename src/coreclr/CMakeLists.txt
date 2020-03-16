@@ -160,7 +160,6 @@ add_subdirectory(src/tools/crossgen2/jitinterface)
 # All of the compiler options are specified in file compileoptions.cmake
 # Do not add any new options here. They should be added in compileoptions.cmake
 if(CLR_CMAKE_HOST_WIN32)
-  add_compile_options(/FIWarningControl.h) # force include of WarningControl.h
   add_compile_options(/Zl) # omit default library name in .OBJ
 endif(CLR_CMAKE_HOST_WIN32)
 

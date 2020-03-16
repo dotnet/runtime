@@ -3914,7 +3914,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		for (i = 0; i < ji->data.table->table_size; i++)
 			table [i] = (gpointer)(gssize)decode_value (p, &p);
 		break;
-	case MONO_PATCH_INFO_R4: {
+	case MONO_PATCH_INFO_R4:
+	case MONO_PATCH_INFO_R4_GOT: {
 		guint32 val;
 		
 		ji->data.target = mono_domain_alloc0 (mono_domain_get (), sizeof (float));
@@ -3922,10 +3923,12 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		*(float*)ji->data.target = *(float*)&val;
 		break;
 	}
-	case MONO_PATCH_INFO_R8: {
+	case MONO_PATCH_INFO_R8:
+	case MONO_PATCH_INFO_R8_GOT: {
 		guint32 val [2];
 		guint64 v;
 
+		// FIXME: Align to 16 bytes ?
 		ji->data.target = mono_domain_alloc0 (mono_domain_get (), sizeof (double));
 
 		val [0] = decode_value (p, &p);

@@ -397,6 +397,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [PlatformSpecific(~TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33558")]
         public void HttpClientUsesSslCertEnvironmentVariables()
         {
             // We set SSL_CERT_DIR and SSL_CERT_FILE to empty locations.

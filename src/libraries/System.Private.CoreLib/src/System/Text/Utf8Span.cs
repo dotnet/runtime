@@ -8,17 +8,25 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
+
+#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
+#endif
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Utf8Span.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#if SYSTEM_PRIVATE_CORELIB
 #if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
 #else
 using nint = System.Int32;
 using nuint = System.UInt32;
+#endif
+#else
+using nint = System.Int64; // https://github.com/dotnet/runtime/issues/33575 - use long/ulong outside of corelib until the compiler supports it
+using nuint = System.UInt64;
 #endif
 
 namespace System.Text
@@ -84,7 +92,11 @@ namespace System.Text
                     Utf8String.ThrowImproperStringSplit();
                 }
 
+#if SYSTEM_PRIVATE_CORELIB
                 return UnsafeCreateWithoutValidation(new ReadOnlySpan<byte>(ref newRef, length));
+#else
+                return UnsafeCreateWithoutValidation(Bytes.Slice(offset, length));
+#endif
             }
         }
 
@@ -117,7 +129,11 @@ namespace System.Text
             // Allow retrieving references to just past the end of the span (but shouldn't dereference this).
 
             Debug.Assert(index <= (uint)Length, "Caller should've performed bounds checking.");
+#if SYSTEM_PRIVATE_CORELIB
             return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), index);
+#else
+            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (IntPtr)index);
+#endif
         }
 
         public bool IsEmptyOrWhiteSpace() => (Utf8Utility.GetIndexOfFirstNonWhiteSpaceChar(Bytes) == Length);
@@ -156,7 +172,11 @@ namespace System.Text
             // UTF-8 textual data, not over arbitrary binary sequences.
 
             ulong seed = Marvin.DefaultSeed;
+#if SYSTEM_PRIVATE_CORELIB
             return Marvin.ComputeHash32(ref MemoryMarshal.GetReference(Bytes), (uint)Length /* in bytes */, (uint)seed, (uint)(seed >> 32));
+#else
+            return Marvin.ComputeHash32(Bytes, seed);
+#endif
         }
 
         public int GetHashCode(StringComparison comparison)
@@ -225,7 +245,22 @@ namespace System.Text
             // TODO_UTF8STRING: Since we know the underlying data is immutable, well-formed UTF-8,
             // we can perform transcoding using an optimized code path that skips all safety checks.
 
+#if !NETSTANDARD2_0
             return Encoding.UTF8.GetString(Bytes);
+#else
+            if (IsEmpty)
+            {
+                return string.Empty;
+            }
+
+            unsafe
+            {
+                fixed (byte* pBytes = Bytes)
+                {
+                    return Encoding.UTF8.GetString(pBytes, Length);
+                }
+            }
+#endif
         }
 
         /// <summary>
@@ -253,13 +288,28 @@ namespace System.Text
                 int utf16CharCount = Length + utf16CodeUnitCountAdjustment;
                 Debug.Assert(utf16CharCount <= Length && utf16CharCount >= 0);
 
+#if !NETSTANDARD2_0
                 // TODO_UTF8STRING: Can we call string.FastAllocate directly?
-
                 return string.Create(utf16CharCount, (pbData: (IntPtr)pData, cbData: Length), (chars, state) =>
                 {
                     OperationStatus status = Utf8.ToUtf16(new ReadOnlySpan<byte>((byte*)state.pbData, state.cbData), chars, out _, out _, replaceInvalidSequences: false);
                     Debug.Assert(status == OperationStatus.Done, "Did somebody mutate this Utf8String instance unexpectedly?");
                 });
+#else
+                char[] buffer = ArrayPool<char>.Shared.Rent(utf16CharCount);
+                try
+                {
+                    fixed (char* pBuffer = buffer)
+                    {
+                        Encoding.UTF8.GetChars(pData, Length, pBuffer, utf16CharCount);
+                        return new string(pBuffer, 0, utf16CharCount);
+                    }
+                }
+                finally
+                {
+                    ArrayPool<char>.Shared.Return(buffer);
+                }
+#endif
             }
         }
 

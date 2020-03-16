@@ -35,7 +35,7 @@ namespace AppHost.Bundle.Tests
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
             var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
-            string singleFile = bundler.GenerateBundle(publishPath);
+            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
 
             // Compute bundled files
             var bundledFiles = bundler.BundleManifest.Files.Select(file => file.RelativePath).ToList();
@@ -77,7 +77,7 @@ namespace AppHost.Bundle.Tests
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
             var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
-            string singleFile = bundler.GenerateBundle(publishPath);
+            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractDir(fixture);
@@ -130,7 +130,7 @@ namespace AppHost.Bundle.Tests
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
             var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
-            string singleFile = bundler.GenerateBundle(publishPath);
+            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
 
             // Compute bundled files
             List<string> bundledFiles = bundler.BundleManifest.Files.Select(file => file.RelativePath).ToList();

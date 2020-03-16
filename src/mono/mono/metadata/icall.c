@@ -9718,6 +9718,7 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 	return mono_cpu_count ();
 }
 
+#if !defined(ENABLE_NETCORE)
 #if defined(ENABLE_MONODROID)
 
 G_EXTERN_C gpointer CreateNLSocket (void);
@@ -9742,6 +9743,7 @@ ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CloseNLSocket (gpoint
 	return CloseNLSocket (sock);
 }
 
+#endif
 #endif
 
 // Generate wrappers.

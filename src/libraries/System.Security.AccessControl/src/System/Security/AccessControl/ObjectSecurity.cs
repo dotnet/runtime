@@ -598,7 +598,7 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(includeSections));
+                    nameof(includeSections));
             }
 
             WriteLock();
@@ -647,7 +647,7 @@ nameof(includeSections));
             {
                 throw new ArgumentException(
                     SR.Arg_EnumAtLeastOneFlag,
-nameof(includeSections));
+                    nameof(includeSections));
             }
 
             WriteLock();
@@ -680,7 +680,7 @@ nameof(includeSections));
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAccessRuleType,
-nameof(rule));
+                    nameof(rule));
             }
 
             WriteLock();
@@ -706,7 +706,7 @@ nameof(rule));
             {
                 throw new ArgumentException(
                     SR.AccessControl_InvalidAuditRuleType,
-nameof(rule));
+                    nameof(rule));
             }
 
             WriteLock();
