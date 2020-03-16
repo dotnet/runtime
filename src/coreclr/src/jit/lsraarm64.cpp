@@ -810,6 +810,8 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicConvertToInt64:
         case SIMDIntrinsicWidenLo:
         case SIMDIntrinsicWidenHi:
+        case SIMDIntrinsicCeil:
+        case SIMDIntrinsicFloor:
             // No special handling required.
             break;
 
