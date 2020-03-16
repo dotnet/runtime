@@ -32,7 +32,7 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_current_bp_id (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_enum_frames (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_var_info (int scope, int* pos, int len);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_setup_single_step (int kind);
+EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_object_properties (int object_id);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id);
 
@@ -349,7 +349,7 @@ mono_wasm_enable_debugging (void)
 	debugger_enabled = TRUE;
 }
 
-EMSCRIPTEN_KEEPALIVE void
+EMSCRIPTEN_KEEPALIVE int
 mono_wasm_setup_single_step (int kind)
 {
 	int nmodifiers = 1;
@@ -388,6 +388,20 @@ mono_wasm_setup_single_step (int kind)
 		DEBUG_PRINTF (1, "[dbg] Failed to setup single step request");
 	}
 	DEBUG_PRINTF (1, "[dbg] single step is in place, now what?\n");
+	SingleStepReq *ss_req = req->info;
+	int isBPOnNativeCode = 0;
+	if (ss_req && ss_req->bps) {
+		GSList *l;
+
+		for (l = ss_req->bps; l; l = l->next) {
+			if (((MonoBreakpoint *)l->data)->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
+				isBPOnNativeCode = 1;
+		}
+	}
+	if (!isBPOnNativeCode) {
+		mono_de_cancel_ss ();
+	}
+	return isBPOnNativeCode;
 }
 
 EMSCRIPTEN_KEEPALIVE void

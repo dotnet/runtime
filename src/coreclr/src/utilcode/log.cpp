@@ -391,66 +391,30 @@ VOID LogSpew(DWORD facility, DWORD level, const char *fmt, ... )
 {
     STATIC_CONTRACT_WRAPPER;
 
-#ifdef SELF_NO_HOST
-    if (TRUE)
-#else //!SELF_NO_HOST
-    if (CanThisThreadCallIntoHost())
-#endif //!SELF_NO_HOST
-    {
-        va_list     args;
-        va_start(args, fmt);
-        LogSpewValist (facility, level, fmt, args);
-        va_end(args);
-    }
-    else
-    {
-        // Cannot acquire the required lock, as this would call back
-        // into the host.  Eat the log message.
-    }
+    va_list     args;
+    va_start(args, fmt);
+    LogSpewValist (facility, level, fmt, args);
+    va_end(args);
 }
 
 VOID LogSpew2(DWORD facility2, DWORD level, const char *fmt, ... )
 {
     STATIC_CONTRACT_WRAPPER;
 
-#ifdef SELF_NO_HOST
-    if (TRUE)
-#else //!SELF_NO_HOST
-    if (CanThisThreadCallIntoHost())
-#endif //!SELF_NO_HOST
-    {
-        va_list     args;
-        va_start(args, fmt);
-        LogSpew2Valist(facility2, level, fmt, args);
-        va_end(args);
-    }
-    else
-    {
-        // Cannot acquire the required lock, as this would call back
-        // into the host.  Eat the log message.
-    }
+    va_list     args;
+    va_start(args, fmt);
+    LogSpew2Valist(facility2, level, fmt, args);
+    va_end(args);
 }
 
 VOID LogSpewAlways (const char *fmt, ... )
 {
     STATIC_CONTRACT_WRAPPER;
 
-#ifdef SELF_NO_HOST
-    if (TRUE)
-#else //!SELF_NO_HOST
-    if (CanThisThreadCallIntoHost())
-#endif //!SELF_NO_HOST
-    {
-        va_list     args;
-        va_start(args, fmt);
-        LogSpewValist (LF_ALWAYS, LL_ALWAYS, fmt, args);
-        va_end(args);
-    }
-    else
-    {
-        // Cannot acquire the required lock, as this would call back
-        // into the host.  Eat the log message.
-    }
+    va_list     args;
+    va_start(args, fmt);
+    LogSpewValist (LF_ALWAYS, LL_ALWAYS, fmt, args);
+    va_end(args);
 }
 
 #endif // LOGGING

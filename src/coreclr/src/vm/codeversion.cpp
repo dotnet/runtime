@@ -869,22 +869,6 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     return pIL;
 }
 
-PTR_COR_ILMETHOD ILCodeVersion::GetILNoThrow() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    PTR_COR_ILMETHOD ret;
-    EX_TRY
-    {
-        ret = GetIL();
-    }
-    EX_CATCH
-    {
-        ret = NULL;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-    return ret;
-}
-
 DWORD ILCodeVersion::GetJitFlags() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -1611,6 +1595,7 @@ HRESULT CodeVersionManager::AddNativeCodeVersion(
 
 PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
     MethodDesc* pMethodDesc,
+    CallerGCMode callerGCMode,
     bool *doBackpatchRef,
     bool *doFullBackpatchRef)
 {
@@ -1655,7 +1640,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         _ASSERTE(hr == E_OUTOFMEMORY);
         ReportCodePublishError(pMethodDesc, hr);
         *doBackpatchRef = false;
-        return pCode != NULL ? pCode : pMethodDesc->PrepareInitialCode();
+        return pCode != NULL ? pCode : pMethodDesc->PrepareInitialCode(callerGCMode);
     } while (false);
 
     while (true)
@@ -1670,6 +1655,9 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         {
             PrepareCodeConfigBuffer configBuffer(activeVersion);
             PrepareCodeConfig *config = configBuffer.GetConfig();
+
+            // Record the caller's GC mode.
+            config->SetCallerGCMode(callerGCMode);
             pCode = pMethodDesc->PrepareCode(config);
 
         #ifdef FEATURE_CODE_VERSIONING

@@ -21,7 +21,7 @@ namespace System.Text.Json
 
             WriteStack state = default;
             state.Initialize(inputType, options, supportContinuation: false);
-            JsonConverter jsonConverter = state.Current.JsonClassInfo!.PolicyProperty!.ConverterBase;
+            JsonConverter jsonConverter = state.Current.JsonClassInfo!.PropertyInfoForClassInfo.ConverterBase;
 
             bool success = WriteCore(jsonConverter, writer, value, options, ref state);
             Debug.Assert(success);

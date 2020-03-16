@@ -672,6 +672,7 @@ public:
         return HashToken(tkObject);
     }
 
+    DAC_ALIGNAS(CMiniMdTemplate<CMiniMdRW>) // Align the first member to the alignment of the base class
     CMemberRefHash *m_pMemberRefHash;
 
     // Hash table for Methods and Fields

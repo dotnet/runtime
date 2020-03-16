@@ -66,6 +66,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/object-internals.h>
 
 #include <mono/mini/jit.h>
 
@@ -79,11 +80,16 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-publib.h>
 
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 3
+
 // Statistics for profiler events.
 static gint32 coverage_methods_ctr,
               coverage_statements_ctr,
               coverage_classes_ctr,
               coverage_assemblies_ctr;
+
+typedef struct ProfilerConfig ProfilerConfig;
 
 struct _MonoProfiler {
 	MonoProfilerHandle handle;
@@ -107,14 +113,19 @@ struct _MonoProfiler {
 	MonoConcurrentHashTable *methods;
 	MonoConcurrentHashTable *assemblies;
 	GHashTable *deferred_assemblies;
+	GHashTable *images;
 
 	MonoConcurrentHashTable *class_to_methods;
 	MonoConcurrentHashTable *image_to_methods;
 
 	GHashTable *uncovered_methods;
+	gboolean done, dumped;
+
+	ProfilerConfig *config;
+	GString *s;
 };
 
-typedef struct {
+struct ProfilerConfig {
 	//Where to compress the output file
 	gboolean use_zip;
 
@@ -123,7 +134,12 @@ typedef struct {
 
 	//Filter files used by the code coverage mode
 	GPtrArray *cov_filter_files;
-} ProfilerConfig;
+
+	MonoMethodDesc *write_at;
+	MonoMethodDesc *send_to;
+	char *send_to_arg;
+	char *send_to_str;
+};
 
 static ProfilerConfig coverage_config;
 static MonoProfiler coverage_profiler;
@@ -268,6 +284,7 @@ dump_method (gpointer key, gpointer value, gpointer userdata)
 	char *class_name, *escaped_image_name, *escaped_class_name, *escaped_method_name, *escaped_method_signature, *escaped_method_filename;
 	const char *image_name, *method_name, *method_signature, *method_filename;
 	guint i;
+	GString *s = coverage_profiler.s;
 
 	coverage_profiler.previous_offset = 0;
 	coverage_profiler.data = g_ptr_array_new ();
@@ -298,7 +315,7 @@ dump_method (gpointer key, gpointer value, gpointer userdata)
 	escaped_method_signature = escape_string_for_xml (method_signature);
 	escaped_method_filename = escape_string_for_xml (method_filename);
 
-	fprintf (coverage_profiler.file, "\t<method assembly=\"%s\" class=\"%s\" name=\"%s (%s)\" filename=\"%s\" token=\"%d\">\n",
+	g_string_append_printf (s, "\t<method assembly=\"%s\" class=\"%s\" name=\"%s (%s)\" filename=\"%s\" token=\"%d\">\n",
 		escaped_image_name, escaped_class_name, escaped_method_name, escaped_method_signature, escaped_method_filename, mono_method_get_token (method));
 
 	g_free (escaped_image_name);
@@ -310,11 +327,11 @@ dump_method (gpointer key, gpointer value, gpointer userdata)
 	for (i = 0; i < coverage_profiler.data->len; i++) {
 		CoverageEntry *entry = (CoverageEntry *)coverage_profiler.data->pdata[i];
 
-		fprintf (coverage_profiler.file, "\t\t<statement offset=\"%d\" counter=\"%d\" line=\"%d\" column=\"%d\"/>\n",
+		g_string_append_printf (s, "\t\t<statement offset=\"%d\" counter=\"%d\" line=\"%d\" column=\"%d\"/>\n",
 			entry->offset, entry->counter, entry->line, entry->column);
 	}
 
-	fprintf (coverage_profiler.file, "\t</method>\n");
+	g_string_append_printf (s, "\t</method>\n");
 
 	g_free (class_name);
 
@@ -347,6 +364,7 @@ dump_classes_for_image (gpointer key, gpointer value, gpointer userdata)
 	const char *image_name;
 	int number_of_methods, partially_covered;
 	guint fully_covered;
+	GString *s = coverage_profiler.s;
 
 	image = mono_class_get_image (klass);
 	image_name = mono_image_get_name (image);
@@ -386,8 +404,8 @@ dump_classes_for_image (gpointer key, gpointer value, gpointer userdata)
 
 	escaped_class_name = escape_string_for_xml (class_name);
 
-	fprintf (coverage_profiler.file, "\t<class name=\"%s\" method-count=\"%d\" full=\"%d\" partial=\"%d\"/>\n",
-		escaped_class_name, number_of_methods, fully_covered, partially_covered);
+	g_string_append_printf (s, "\t<class name=\"%s\" method-count=\"%d\" full=\"%d\" partial=\"%d\"/>\n",
+					 escaped_class_name, number_of_methods, fully_covered, partially_covered);
 
 	g_free (escaped_class_name);
 
@@ -419,6 +437,7 @@ dump_assembly (gpointer key, gpointer value, gpointer userdata)
 	char *escaped_image_name, *escaped_image_filename;
 	int number_of_methods = 0, partially_covered = 0;
 	guint fully_covered = 0;
+	GString *s = coverage_profiler.s;
 
 	image_name = mono_image_get_name (image);
 	image_guid = mono_image_get_guid (image);
@@ -433,7 +452,7 @@ dump_assembly (gpointer key, gpointer value, gpointer userdata)
 	escaped_image_name = escape_string_for_xml (image_name);
 	escaped_image_filename = escape_string_for_xml (image_filename);
 
-	fprintf (coverage_profiler.file, "\t<assembly name=\"%s\" guid=\"%s\" filename=\"%s\" method-count=\"%d\" full=\"%d\" partial=\"%d\"/>\n",
+	g_string_append_printf (s, "\t<assembly name=\"%s\" guid=\"%s\" filename=\"%s\" method-count=\"%d\" full=\"%d\" partial=\"%d\"/>\n",
 		escaped_image_name, image_guid, escaped_image_filename, number_of_methods, fully_covered, partially_covered);
 
 	g_free (escaped_image_name);
@@ -443,10 +462,18 @@ dump_assembly (gpointer key, gpointer value, gpointer userdata)
 }
 
 static void
-dump_coverage (void)
+dump_coverage (MonoProfiler *prof)
 {
-	fprintf (coverage_profiler.file, "<?xml version=\"1.0\"?>\n");
-	fprintf (coverage_profiler.file, "<coverage version=\"0.3\">\n");
+	GString *s;
+
+	if (prof->dumped)
+		return;
+	prof->dumped = TRUE;
+
+	s = g_string_new ("");
+	prof->s = s;
+	g_string_append_printf (s, "<?xml version=\"1.0\"?>\n");
+	g_string_append_printf (s, "<coverage version=\"%d.%d\">\n", VERSION_MAJOR, VERSION_MINOR);
 
 	mono_os_mutex_lock (&coverage_profiler.mutex);
 	mono_conc_hashtable_foreach (coverage_profiler.assemblies, dump_assembly, NULL);
@@ -454,7 +481,56 @@ dump_coverage (void)
 	g_hash_table_foreach (coverage_profiler.uncovered_methods, dump_method, NULL);
 	mono_os_mutex_unlock (&coverage_profiler.mutex);
 
-	fprintf (coverage_profiler.file, "</coverage>\n");
+	g_string_append_printf (s, "</coverage>\n");
+
+	if (prof->config->send_to) {
+		GHashTableIter iter;
+		gpointer id;
+		MonoImage *image;
+		MonoMethod *send_method = NULL;
+		MonoMethodSignature *sig;
+		ERROR_DECL (error);
+
+		g_hash_table_iter_init (&iter, prof->images);
+		while (g_hash_table_iter_next (&iter, (void**)&image, (void**)&id)) {
+			send_method = mono_method_desc_search_in_image (prof->config->send_to, image);
+			if (send_method)
+				break;
+		}
+		if (!send_method) {
+			mono_profiler_printf_err ("Cannot find method in loaded assemblies: '%s'.", prof->config->send_to_str);
+			exit (1);
+		}
+
+		sig = mono_method_signature_checked (send_method, error);
+		mono_error_assert_ok (error);
+		if (sig->param_count != 2 || sig->params [0]->type != MONO_TYPE_STRING || sig->params [1]->type != MONO_TYPE_STRING) {
+			mono_profiler_printf_err ("Method '%s' should have signature void (string,string).", prof->config->send_to_str);
+			exit (1);
+		}
+
+		MonoString *extra_arg = NULL;
+		if (prof->config->send_to_arg) {
+			extra_arg = mono_string_new_checked (mono_domain_get (), prof->config->send_to_arg, error);
+			mono_error_assert_ok (error);
+		}
+
+		MonoString *data = mono_string_new_checked (mono_domain_get (), s->str, error);
+		mono_error_assert_ok (error);
+
+		MonoObject *exc;
+		gpointer args [3];
+		args [0] = data;
+		args [1] = extra_arg;
+
+		printf ("coverage-profiler | Passing data to '%s': %s\n", mono_method_full_name (send_method, 1), prof->config->send_to_arg ? prof->config->send_to_arg : "(null)");
+		mono_runtime_try_invoke (send_method, NULL, args, &exc, error);
+		mono_error_assert_ok (error);
+		g_assert (exc == NULL);
+	} else {
+		fprintf (coverage_profiler.file, "%s", s->str);
+	}
+	g_string_free (s, TRUE);
 }
 
 static MonoLockFreeQueueNode *
@@ -565,6 +641,9 @@ register_image (MonoImage *image)
 		mono_conc_hashtable_insert (coverage_profiler.image_to_methods, image, image_methods);
 
 		MonoAssembly *assembly = mono_image_get_assembly (image);
+
+		// FIXME: Locking
+		g_hash_table_add (coverage_profiler.images, image);
 
 		/*
 		 * We have to keep all the assemblies we reference metadata in alive,
@@ -691,6 +770,15 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 {
 	guint32 iflags, flags;
 
+	if (prof->done)
+		return FALSE;
+	if (prof->config->write_at && mono_method_desc_match (prof->config->write_at, method)) {
+		printf ("coverage-profiler | Writing data at: '%s'.\n", mono_method_full_name (method, 1));
+		dump_coverage (prof);
+		prof->done = TRUE;
+		return FALSE;
+	}
+
 	if (method->wrapper_type)
 		return FALSE;
 
@@ -729,8 +817,9 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 
 		MonoLockFreeQueueNode *class_methods_node = create_method_node (method);
 		mono_lock_free_queue_enqueue (class_methods, class_methods_node);
-	} else
+	} else {
 		mono_os_mutex_unlock (&coverage_profiler.mutex);
+	}
 
 	return TRUE;
 }
@@ -856,7 +945,7 @@ cov_shutdown (MonoProfiler *prof)
 {
 	mono_atomic_store_i32 (&coverage_profiler.in_shutdown, TRUE);
 
-	dump_coverage ();
+	dump_coverage (prof);
 
 	mono_os_mutex_lock (&coverage_profiler.mutex);
 	mono_conc_hashtable_foreach (coverage_profiler.assemblies, unref_coverage_assemblies, NULL);
@@ -940,6 +1029,21 @@ parse_arg (const char *arg)
 		if (coverage_config.cov_filter_files == NULL)
 			coverage_config.cov_filter_files = g_ptr_array_new ();
 		g_ptr_array_add (coverage_config.cov_filter_files, g_strdup (val));
+	} else if (match_option (arg, "write-at-method", &val)) {
+		coverage_config.write_at = mono_method_desc_new (val, TRUE);
+		if (!coverage_config.write_at) {
+			mono_profiler_printf_err ("Could not parse method description: %s", val);
+			exit (1);
+		}
+	} else if (match_option (arg, "send-to-method", &val)) {
+		coverage_config.send_to = mono_method_desc_new (val, TRUE);
+		if (!coverage_config.send_to) {
+			mono_profiler_printf_err ("Could not parse method description: %s", val);
+			exit (1);
+		}
+		coverage_config.send_to_str = strdup (val);
+	} else if (match_option (arg, "send-to-arg", &val)) {
+		coverage_config.send_to_arg = strdup (val);
 	} else {
 		mono_profiler_printf_err ("Could not parse argument: %s", arg);
 	}
@@ -1016,6 +1120,9 @@ usage (void)
 	mono_profiler_printf ("\toutput=+FILENAME     write the data to file FILENAME.pid (the file is always overwritten)");
 	mono_profiler_printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM");
 	mono_profiler_printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM");
+	mono_profiler_printf ("\twrite-at-method=METHOD       write the data when METHOD is compiled.");
+	mono_profiler_printf ("\tsend-to-method=METHOD       call METHOD with the collected data.");
+	mono_profiler_printf ("\tsend-to-arg=STR      extra argument to pass to METHOD.");
 	// mono_profiler_printf ("\tzip                  compress the output data");
 
 	exit (0);
@@ -1046,6 +1153,7 @@ mono_profiler_init_coverage (const char *desc)
 	}
 
 	coverage_profiler.args = g_strdup (desc);
+	coverage_profiler.config = &coverage_config;
 
 	//If coverage_config.output_filename begin with +, append the pid at the end
 	if (!coverage_config.output_filename)
@@ -1053,12 +1161,17 @@ mono_profiler_init_coverage (const char *desc)
 	else if (*coverage_config.output_filename == '+')
 		coverage_config.output_filename = g_strdup_printf ("%s.%d", coverage_config.output_filename + 1, getpid ());
 
-	if (*coverage_config.output_filename == '|')
+	if (*coverage_config.output_filename == '|') {
+#ifdef HAVE_POPEN
 		coverage_profiler.file = popen (coverage_config.output_filename + 1, "w");
-	else if (*coverage_config.output_filename == '#')
+#else
+		g_assert_not_reached ();
+#endif
+	} else if (*coverage_config.output_filename == '#') {
 		coverage_profiler.file = fdopen (strtol (coverage_config.output_filename + 1, NULL, 10), "a");
-	else
+	} else {
 		coverage_profiler.file = fopen (coverage_config.output_filename, "w");
+	}
 
 	if (!coverage_profiler.file) {
 		mono_profiler_printf_err ("Could not create coverage profiler output file '%s': %s", coverage_config.output_filename, g_strerror (errno));
@@ -1071,6 +1184,7 @@ mono_profiler_init_coverage (const char *desc)
 	coverage_profiler.filtered_classes = mono_conc_hashtable_new (NULL, NULL);
 	init_suppressed_assemblies ();
 
+	coverage_profiler.images = g_hash_table_new (NULL, NULL);
 	coverage_profiler.methods = mono_conc_hashtable_new (NULL, NULL);
 	coverage_profiler.assemblies = mono_conc_hashtable_new (NULL, NULL);
 	coverage_profiler.deferred_assemblies = g_hash_table_new (NULL, NULL);

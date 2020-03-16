@@ -175,7 +175,7 @@ mono_alc_invoke_resolve_using_load_nofail (MonoAssemblyLoadContext *alc, MonoAss
 
 	result = mono_alc_invoke_resolve_using_load (alc, aname, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Error while invoking ALC Load(\"%s\") method: '%s'", aname->name, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Error while invoking ALC Load(\"%s\") method: '%s'", aname->name, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 
@@ -208,7 +208,7 @@ mono_alc_invoke_resolve_using_resolving_event_nofail (MonoAssemblyLoadContext *a
 
 	result = mono_alc_invoke_resolve_using_resolving_event (alc, aname, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Error while invoking ALC Resolving(\"%s\") event: '%s'", aname->name, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Error while invoking ALC Resolving(\"%s\") event: '%s'", aname->name, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 
@@ -241,7 +241,7 @@ mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext 
 
 	result = mono_alc_invoke_resolve_using_resolve_satellite (alc, aname, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Error while invoking ALC ResolveSatelliteAssembly(\"%s\") method: '%s'", aname->name, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Error while invoking ALC ResolveSatelliteAssembly(\"%s\") method: '%s'", aname->name, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 

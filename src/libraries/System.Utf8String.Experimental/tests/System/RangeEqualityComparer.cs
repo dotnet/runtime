@@ -32,7 +32,11 @@ namespace System.Tests
         public int GetHashCode(Range obj)
         {
             (int offset, int length) = obj.GetOffsetAndLength(_length);
+#if NETCOREAPP
             return HashCode.Combine(offset, length);
+#else
+            return Tuple.Create(offset, length).GetHashCode();
+#endif
         }
     }
 }

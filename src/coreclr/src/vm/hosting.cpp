@@ -226,7 +226,7 @@ LPVOID EEHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)
             && GetExecutionEngine ()
            // If we have not created StressLog ring buffer, we should not try to use it.
            // StressLog is going to do a memory allocation.  We may enter an endless loop.
-           && ClrFlsGetValue(TlsIdx_StressLog) != NULL )
+           && StressLog::t_pCurrentThreadLog != NULL )
         {
             STRESS_LOG_OOM_STACK(dwBytes);
         }
@@ -570,66 +570,6 @@ DEBUG_NOINLINE void EELeaveCriticalSection(CRITSEC_COOKIE cookie)
     _ASSERTE(pCrst);
 
     pCrst->Leave();
-}
-
-LPVOID EETlsGetValue(DWORD slot)
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    //
-    // @todo: we don't want TlsGetValue to throw, but CheckThreadState throws right now. Either modify
-    // CheckThreadState to not throw, or catch any exception and just return NULL.
-    //
-    //CONTRACT_VIOLATION(ThrowsViolation);
-    SCAN_IGNORE_THROW;
-
-    void **pTlsData = CExecutionEngine::CheckThreadState(slot, FALSE);
-
-    if (pTlsData)
-        return pTlsData[slot];
-    else
-        return NULL;
-}
-
-BOOL EETlsCheckValue(DWORD slot, LPVOID * pValue)
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_MODE_ANY;
-
-    //
-    // @todo: we don't want TlsGetValue to throw, but CheckThreadState throws right now. Either modify
-    // CheckThreadState to not throw, or catch any exception and just return NULL.
-    //
-    //CONTRACT_VIOLATION(ThrowsViolation);
-    SCAN_IGNORE_THROW;
-
-    void **pTlsData = CExecutionEngine::CheckThreadState(slot, FALSE);
-
-    if (pTlsData)
-    {
-        *pValue = pTlsData[slot];
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-VOID EETlsSetValue(DWORD slot, LPVOID pData)
-{
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    void **pTlsData = CExecutionEngine::CheckThreadState(slot);
-
-    if (pTlsData)  // Yes, CheckThreadState(slot, TRUE) can return NULL now.
-    {
-        pTlsData[slot] = pData;
-    }
 }
 
 BOOL EEAllocationDisallowed()

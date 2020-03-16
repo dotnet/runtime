@@ -246,7 +246,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
         case DLL_THREAD_DETACH:
         {
 #ifdef STRESS_LOG
-            StressLog::ThreadDetach((ThreadStressLog*) ClrFlsGetValue(TlsIdx_StressLog));
+            StressLog::ThreadDetach();
 #endif
 
 #ifdef RSCONTRACTS
