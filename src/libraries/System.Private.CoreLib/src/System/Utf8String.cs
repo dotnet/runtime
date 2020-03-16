@@ -8,15 +8,23 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Unicode;
+
+#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
+#endif
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#if SYSTEM_PRIVATE_CORELIB
 #if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
 #else
 using nint = System.Int32;
 using nuint = System.UInt32;
+#endif
+#else
+using nint = System.Int64; // https://github.com/dotnet/runtime/issues/33575 - use long/ulong outside of corelib until the compiler supports it
+using nuint = System.UInt64;
 #endif
 
 namespace System
@@ -122,7 +130,11 @@ namespace System
             // Allow retrieving references to the null terminator.
 
             Debug.Assert(index <= (uint)Length, "Caller should've performed bounds checking.");
+#if SYSTEM_PRIVATE_CORELIB
             return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), index);
+#else
+            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (IntPtr)index);
+#endif
         }
 
         /// <summary>
@@ -149,7 +161,11 @@ namespace System
 
             return !(value is null)
                 && this.Length == value.Length
+#if SYSTEM_PRIVATE_CORELIB
                 && SpanHelpers.SequenceEqual(ref this.DangerousGetMutableReference(), ref value.DangerousGetMutableReference(), (uint)Length);
+#else
+                && this.GetSpan().SequenceEqual(value.GetSpan());
+#endif
         }
 
         /// <summary>
@@ -174,7 +190,11 @@ namespace System
             return !(left is null)
                 && !(right is null)
                 && left.Length == right.Length
+#if SYSTEM_PRIVATE_CORELIB
                 && SpanHelpers.SequenceEqual(ref left.DangerousGetMutableReference(), ref right.DangerousGetMutableReference(), (uint)left.Length);
+#else
+                && left.GetSpan().SequenceEqual(right.GetSpan());
+#endif
         }
 
         /// <summary>
@@ -196,7 +216,11 @@ namespace System
             // TODO_UTF8STRING: Consider whether this should use a different seed than String.GetHashCode.
 
             ulong seed = Marvin.DefaultSeed;
+#if SYSTEM_PRIVATE_CORELIB
             return Marvin.ComputeHash32(ref DangerousGetMutableReference(), (uint)_length /* in bytes */, (uint)seed, (uint)(seed >> 32));
+#else
+            return Marvin.ComputeHash32(_bytes, seed);
+#endif
         }
 
         /// <summary>
@@ -250,44 +274,22 @@ namespace System
         {
             // TODO_UTF8STRING: Optimize the call below, potentially by avoiding the two-pass.
 
+#if !NETSTANDARD2_0
             return Encoding.UTF8.GetString(this.AsBytesSkipNullCheck());
-        }
-
-        /// <summary>
-        /// Converts this <see cref="Utf8String"/> instance to a <see cref="string"/>.
-        /// </summary>
-        /// <remarks>
-        /// This routine throws <see cref="InvalidOperationException"/> if the underlying instance
-        /// contains invalid UTF-8 data.
-        /// </remarks>
-        internal unsafe string ToStringNoReplacement()
-        {
-            // TODO_UTF8STRING: Optimize the call below, potentially by avoiding the two-pass.
-
-            int utf16CharCount;
-
-            fixed (byte* pData = &_firstByte)
+#else
+            if (Length == 0)
             {
-                byte* pFirstInvalidByte = Utf8Utility.GetPointerToFirstInvalidByte(pData, this.Length, out int utf16CodeUnitCountAdjustment, out _);
-                if (pFirstInvalidByte != pData + (uint)this.Length)
-                {
-                    // Saw bad UTF-8 data.
-                    // TODO_UTF8STRING: Throw a better exception below?
-
-                    ThrowHelper.ThrowInvalidOperationException();
-                }
-
-                utf16CharCount = this.Length + utf16CodeUnitCountAdjustment;
-                Debug.Assert(utf16CharCount <= this.Length && utf16CharCount >= 0);
+                return string.Empty;
             }
 
-            // TODO_UTF8STRING: Can we call string.FastAllocate directly?
-
-            return string.Create(utf16CharCount, this, (chars, thisObj) =>
+            unsafe
             {
-                OperationStatus status = Utf8.ToUtf16(thisObj.AsBytes(), chars, out _, out _, replaceInvalidSequences: false);
-                Debug.Assert(status == OperationStatus.Done, "Did somebody mutate this Utf8String instance unexpectedly?");
-            });
+                fixed (byte* pBytes = this.AsBytesSkipNullCheck())
+                {
+                    return Encoding.UTF8.GetString(pBytes, Length);
+                }
+            }
+#endif
         }
     }
 }

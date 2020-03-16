@@ -80,10 +80,12 @@
     <Compile Include="Serialization\ReferenceHandlingTests.Deserialize.cs" />
     <Compile Include="Serialization\ReferenceHandlingTests.Serialize.cs" />
     <Compile Include="Serialization\SampleTestData.OrderPayload.cs" />
+    <Compile Include="Serialization\SerializationWrapper.cs" />
     <Compile Include="Serialization\SpanTests.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
     <Compile Include="Serialization\TestClasses.cs" />
+    <Compile Include="Serialization\TestClasses.ConcurrentCollections.cs" />
     <Compile Include="Serialization\TestClasses.GenericCollections.cs" />
     <Compile Include="Serialization\TestClasses.ImmutableCollections.cs" />
     <Compile Include="Serialization\TestClasses.NonGenericCollections.cs" />

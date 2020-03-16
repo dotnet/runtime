@@ -174,14 +174,5 @@ namespace Microsoft.NET.HostModel.AppHost
             // Copy file to destination path so it inherits the same attributes/permissions.
             File.Copy(sourcePath, destinationPath, overwrite: true);
         }
-
-        // The SDK calls into BinaryUtils.GetWindowsGraphicalUserInterfaceBit()
-        // Keep this method until the HostModel changes reach SDK repo, and the code there
-        // is updated to use PEUtils.GetWindowsGraphicalUserInterfaceBit()
-        public static unsafe UInt16 GetWindowsGraphicalUserInterfaceBit(string filePath)
-        {
-            return PEUtils.GetWindowsGraphicalUserInterfaceBit(filePath);
-        }
-
     }
 }

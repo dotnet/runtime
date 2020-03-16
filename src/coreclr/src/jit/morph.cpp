@@ -7448,7 +7448,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
     Statement* nextMorphStmt = fgMorphStmt->GetNextStmt();
-    // Remove all stmts after the call.
+    JITDUMP("Remove all stmts after the call.\n");
     while (nextMorphStmt != nullptr)
     {
         Statement* stmtToRemove = nextMorphStmt;
@@ -7456,7 +7456,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         fgRemoveStmt(compCurBB, stmtToRemove);
     }
 
-    fgMorphStmt->SetRootNode(call);
+    bool     isRootReplaced = false;
+    GenTree* root           = fgMorphStmt->GetRootNode();
+
+    if (root != call)
+    {
+        JITDUMP("Replace root node [%06d] with [%06d] tail call node.\n", dspTreeID(root), dspTreeID(call));
+        isRootReplaced = true;
+        fgMorphStmt->SetRootNode(call);
+    }
 
     // Tail call via helper: The VM can't use return address hijacking if we're
     // not going to return and the helper doesn't have enough info to safely poll,
@@ -7501,41 +7509,41 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         compCurBB->bbJumpKind = BBJ_THROW;
     }
 
-    // For non-void calls, we return a place holder which will be
-    // used by the parent GT_RETURN node of this call.
-
-    GenTree* result = call;
-    if (origCallType != TYP_VOID && info.compRetType != TYP_VOID)
+    if (isRootReplaced)
     {
-        var_types nodeTy = origCallType;
-#ifdef FEATURE_HFA
-        // Return a dummy node, as the return is already removed.
-        if (nodeTy == TYP_STRUCT)
+        // We have replaced the root node of this stmt and deleted the rest,
+        // but we still have the deleted, dead nodes on the `fgMorph*` stack
+        // if the root node was an `ASG`, `RET` or `CAST`.
+        // Return a zero con node to exit morphing of the old trees without asserts
+        // and forbid POST_ORDER morphing doing something wrong with our call.
+        var_types callType;
+        if (varTypeIsStruct(origCallType))
         {
-            // This is a HFA, use float 0.
-            nodeTy = TYP_FLOAT;
+            CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
+            Compiler::structPassingKind howToReturnStruct;
+            callType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+            assert((howToReturnStruct != SPK_Unknown) && (howToReturnStruct != SPK_ByReference));
+            if (howToReturnStruct == SPK_ByValue)
+            {
+                callType = TYP_I_IMPL;
+            }
+            else if (howToReturnStruct == SPK_ByValueAsHfa)
+            {
+                callType = TYP_FLOAT;
+            }
+            assert((callType != TYP_UNKNOWN) && (callType != TYP_STRUCT));
         }
-#elif defined(UNIX_AMD64_ABI)
-        // Return a dummy node, as the return is already removed.
-        if (varTypeIsStruct(nodeTy))
+        else
         {
-            // This is a register-returned struct. Return a 0.
-            // The actual return registers are hacked in lower and the register allocator.
-            nodeTy = TYP_INT;
+            callType = origCallType;
         }
-#endif
-#ifdef FEATURE_SIMD
-        // Return a dummy node, as the return is already removed.
-        if (varTypeIsSIMD(nodeTy))
-        {
-            nodeTy = TYP_DOUBLE;
-        }
-#endif
-        result = gtNewZeroConNode(genActualType(nodeTy));
-        result = fgMorphTree(result);
+        GenTree* zero = gtNewZeroConNode(callType);
+        return fgMorphTree(zero);
     }
-
-    return result;
+    else
+    {
+        return call;
+    }
 }
 
 /*****************************************************************************

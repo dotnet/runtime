@@ -1,12 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>Microsoft.Extensions.FileSystemGlobbing</RootNamespace>
-    <TargetFrameworks>$(DefaultNetCoreTargetFramework);net472</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.FileSystemGlobbing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="**\*.cs" />
   </ItemGroup>
 
 </Project>
