@@ -82,9 +82,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>d0bb63d2ec7060714e63ee4082fac48f2e57f3e2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.6.0-preview-20200305-01">
+    <Dependency Name="Microsoft.NET.Test.Sdk" Version="16.6.0-preview-20200316-01">
       <Uri>https://github.com/microsoft/vstest</Uri>
-      <Sha>53da99a8a1ed39d1df63429fc2d61011fb57fb23</Sha>
+      <Sha>1f9234279752d90f9c094f85164e0a61dec7ec3b</Sha>
     </Dependency>
     <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="5.0.0-beta.20162.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
@@ -118,21 +118,21 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>9f99c474432904fadab3bcda4a65b20c1e990a6c</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20152.1">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20166.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>60293630cb227f866a1726076adbe72398953dbc</Sha>
+      <Sha>320a29dabaa22634342c359fc1cace5c1b1f0e20</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="6.0.1-alpha.1.20152.1">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="6.0.1-alpha.1.20166.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>60293630cb227f866a1726076adbe72398953dbc</Sha>
+      <Sha>320a29dabaa22634342c359fc1cace5c1b1f0e20</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20152.1">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20166.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>60293630cb227f866a1726076adbe72398953dbc</Sha>
+      <Sha>320a29dabaa22634342c359fc1cace5c1b1f0e20</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="6.0.1-alpha.1.20152.1">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="6.0.1-alpha.1.20166.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>60293630cb227f866a1726076adbe72398953dbc</Sha>
+      <Sha>320a29dabaa22634342c359fc1cace5c1b1f0e20</Sha>
     </Dependency>
     <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20152.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
@@ -166,9 +166,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>e793fcc19797f407a1b7e98d5f81b04e25a551c3</Sha>
     </Dependency>
-    <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.20160.1">
+    <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.20166.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>1798652e6b6b26c5dd3b374c6a9ca700c5adb15a</Sha>
+      <Sha>b6ff22367395cc62130bafcfb7a0023e7c5d6722</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
