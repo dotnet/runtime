@@ -9,7 +9,7 @@ SYSROOT := $(shell xcrun --sdk iphoneos --show-sdk-path)
 # once a new library is added here (e.g. System.Console.dll) it should also be 
 # added in mono_ios_register_modules() (runtime.m) and both lib.dll and lib.dll.o 
 # should be added to xcodeproj 
-all: prepare bin/Program.dll
+all: prepare
 	make aot-lib LIB=$(ARTIFACTS_MONO)/System.Private.CoreLib.dll
 	make aot-lib LIB=$(ARTIFACTS_BCL)/System.Runtime.dll
 	make aot-lib LIB=$(ARTIFACTS_BCL)/System.Runtime.Extensions.dll
@@ -23,10 +23,10 @@ all: prepare bin/Program.dll
 	make aot-lib LIB=$(ARTIFACTS_BCL)/System.Text.Encoding.Extensions.dll
 	make aot-lib LIB=$(ARTIFACTS_BCL)/Microsoft.Win32.Primitives.dll
 	make aot-lib LIB=$(ARTIFACTS_BCL)/System.Console.dll
-	make aot-program
+	make Program.dll.o
 
-# recompile Program.cs
-aot-program:
+# recompile Program.cs AOT
+Program.dll.o: bin/Program.dll
 	make aot-lib LIB=bin/Program.dll
 
 # we need to copy some BCL libs to ARTIFACTS_MONO
@@ -40,6 +40,7 @@ prepare:
 	cp $(ARTIFACTS_BCL)/System.Runtime.InteropServices.dll $(ARTIFACTS_MONO)
 	cp $(ARTIFACTS_BCL)/System.Text.Encoding.Extensions.dll $(ARTIFACTS_MONO)
 	cp $(ARTIFACTS_BCL)/Microsoft.Win32.Primitives.dll $(ARTIFACTS_MONO)
+	cp $(ARTIFACTS_BCL)/System.Console.dll $(ARTIFACTS_MONO)
 
 bin/Program.dll: Program.cs
 	$(DOTNET) build -c Debug Program.csproj

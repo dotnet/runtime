@@ -26,6 +26,7 @@
 @end
 
 UILabel *label;
+void (*clickHandlerPtr)();
 
 @implementation ViewController
 
@@ -38,21 +39,32 @@ UILabel *label;
     label.numberOfLines = 2;
     label.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:label];
+    
+    UIButton *button = [UIButton buttonWithType:UIButtonTypeInfoDark];
+    [button addTarget:self action:@selector(buttonClicked:) forControlEvents:UIControlEventTouchUpInside];
+    [button setFrame:CGRectMake(50, 300, 200, 50)];
+    [button setTitle:@"Click me" forState:UIControlStateNormal];
+    [button setExclusiveTouch:YES];
+    [self.view addSubview:button];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        [self startRuntime];
+        mono_ios_runtime_init ();
     });
 }
-
-- (void)startRuntime {
-    mono_ios_runtime_init ();
-}
-
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
+-(void) buttonClicked:(UIButton*)sender
+{
+    if (clickHandlerPtr)
+        clickHandlerPtr();
 }
 
 @end
+
+// called from C# sample
+void
+ios_register_button_click (void* ptr)
+{
+    clickHandlerPtr = ptr;
+}
 
 // called from C# sample
 void
