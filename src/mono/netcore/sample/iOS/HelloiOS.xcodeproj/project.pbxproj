@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		78A08F1D241D7932003F6545 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 78A08F1C241D7932003F6545 /* Assets.xcassets */; };
 		78A08F23241D7932003F6545 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 78A08F22241D7932003F6545 /* main.m */; };
 		78A08F2B241D79E1003F6545 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78A08F2A241D79E1003F6545 /* Foundation.framework */; };
 		78A08F2D241D79E7003F6545 /* GSS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78A08F2C241D79E7003F6545 /* GSS.framework */; };
@@ -38,7 +37,6 @@
 
 /* Begin PBXFileReference section */
 		78A08F0D241D7931003F6545 /* HelloiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelloiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		78A08F1C241D7932003F6545 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		78A08F21241D7932003F6545 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		78A08F22241D7932003F6545 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		78A08F2A241D79E1003F6545 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -134,7 +132,6 @@
 				78ED86FD241FC221006205F8 /* System.Threading.dll.o */,
 				78ED86F4241FC221006205F8 /* System.Threading.Tasks.dll */,
 				78ED86FE241FC221006205F8 /* System.Threading.Tasks.dll.o */,
-				78A08F1C241D7932003F6545 /* Assets.xcassets */,
 				78A08F21241D7932003F6545 /* Info.plist */,
 				78A08F22241D7932003F6545 /* main.m */,
 				78A08F52241E4046003F6545 /* runtime.h */,
@@ -219,7 +216,6 @@
 				78ED8714241FC222006205F8 /* System.Threading.dll in Resources */,
 				78ED870A241FC222006205F8 /* System.Private.CoreLib.dll in Resources */,
 				78ED8715241FC222006205F8 /* System.Runtime.Extensions.dll in Resources */,
-				78A08F1D241D7932003F6545 /* Assets.xcassets in Resources */,
 				78ED8708241FC222006205F8 /* System.Threading.Tasks.dll in Resources */,
 				78ED870C241FC222006205F8 /* System.Runtime.dll in Resources */,
 			);
@@ -374,7 +370,7 @@
 					"-u",
 					_xamarin_timezone_get_names,
 					"-force_load",
-					"../../../../../artifacts/bin/mono/iOS.arm64.Debug/libmono.a",
+					../../../../../artifacts/bin/mono/iOS.arm64.Debug/libmono.a,
 					"-force_load",
 					"../../../../../artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.IO.Compression.Native.a",
 					"-force_load",
