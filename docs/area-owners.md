@@ -14,7 +14,7 @@ Below table shows the combined area owners on this repository:
 | area-HostModel | @vitek-karas @swaroop-sridhar | |
 | area-ILTools-coreclr | @BruceForstall @dotnet/jit-contrib | |
 | area-Infrastructure-coreclr | @jeffschwMSFT @jashook @trylek | |
-| area-Infrastructure-installer | @dleeapho @dagood | |
+| area-Infrastructure-installer | @dleeapho @NikolaMilosavljevic | |
 | area-Infrastructure-libraries | @ViktorHofer @ericstj @safern @Anipik | Covers:<ul><li>Packaging</li><li>Build and test infra for libraries in dotnet/runtime repo</li><li>VS integration</li></ul><br/> |
 | area-Infrastructure | @ViktorHofer @jeffschwMSFT @dleeapho | |
 | area-Interop-coreclr | @jeffschwMSFT @AaronRobinsonMSFT | |
@@ -22,7 +22,7 @@ Below table shows the combined area owners on this repository:
 | area-PAL-coreclr | @janvorli | |
 | area-R2RDump-coreclr | @nattress | |
 | area-ReadyToRun-coreclr | @nattress | |
-| area-Setup | @dagood @dleeapho | Distro-specific (Linux, Mac and Windows) setup packages and msi files  |
+| area-Setup | @NikolaMilosavljevic @dleeapho | Distro-specific (Linux, Mac and Windows) setup packages and msi files  |
 | area-Single-File | @swaroop-sridhar | |
 | area-SDK | @janvorli | General development issues and overlap with the SDK and CLI |
 | area-Serialization | @StephenMolloy @HongGit | Packages:<ul><li>System.Runtime.Serialization.Xml</li><li>System.Runtime.Serialization.Json</li><li>System.Private.DataContractSerialization</li><li>System.Xml.XmlSerializer</li></ul> Excluded:<ul><li>System.Runtime.Serialization.Formatters</li></ul> |
