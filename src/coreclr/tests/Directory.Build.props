@@ -4,11 +4,6 @@
   <Import Project="dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
 
   <PropertyGroup>
-    <LangVersion>8.0</LangVersion>
-    <UseSharedCompilation>true</UseSharedCompilation>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core') And ('$(OS)'!='Windows_NT')">true</RunningOnUnix>
   </PropertyGroup>
 
