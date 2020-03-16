@@ -147,28 +147,12 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public JsonPropertyInfo GetProperty(ReadOnlySpan<byte> propertyName, ref ReadStackFrame frame)
         {
-            if (!TryGetPropertyFromFastCache(propertyName, ref frame, out JsonPropertyInfo? jsonPropertyInfo))
-            {
-                jsonPropertyInfo = GetPropertyFromSlowCache(propertyName, ref frame);
-            }
-
-            Debug.Assert(jsonPropertyInfo != null);
-            return jsonPropertyInfo;
-        }
-
-        // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetPropertyFromFastCache(
-            ReadOnlySpan<byte> unescapedPropertyName,
-            ref ReadStackFrame frame,
-            out JsonPropertyInfo? jsonPropertyInfo)
-        {
-            ulong unescapedPropertyNameKey = JsonClassInfo.GetKey(unescapedPropertyName);
-
             JsonPropertyInfo? info = null;
 
             // Keep a local copy of the cache in case it changes by another thread.
             PropertyRef[]? localPropertyRefsSorted = _propertyRefsSorted;
+
+            ulong key = GetKey(propertyName);
 
             // If there is an existing cache, then use it.
             if (localPropertyRefsSorted != null)
@@ -185,10 +169,9 @@ namespace System.Text.Json
                     if (iForward < count)
                     {
                         PropertyRef propertyRef = localPropertyRefsSorted[iForward];
-                        if (TryIsPropertyRefEqual(propertyRef, unescapedPropertyName, unescapedPropertyNameKey, ref info))
+                        if (TryIsPropertyRefEqual(propertyRef, propertyName, key, ref info))
                         {
-                            jsonPropertyInfo = info;
-                            return true;
+                            return info;
                         }
 
                         ++iForward;
@@ -196,10 +179,9 @@ namespace System.Text.Json
                         if (iBackward >= 0)
                         {
                             propertyRef = localPropertyRefsSorted[iBackward];
-                            if (TryIsPropertyRefEqual(propertyRef, unescapedPropertyName, unescapedPropertyNameKey, ref info))
+                            if (TryIsPropertyRefEqual(propertyRef, propertyName, key, ref info))
                             {
-                                jsonPropertyInfo = info;
-                                return true;
+                                return info;
                             }
 
                             --iBackward;
@@ -208,10 +190,9 @@ namespace System.Text.Json
                     else if (iBackward >= 0)
                     {
                         PropertyRef propertyRef = localPropertyRefsSorted[iBackward];
-                        if (TryIsPropertyRefEqual(propertyRef, unescapedPropertyName, unescapedPropertyNameKey, ref info))
+                        if (TryIsPropertyRefEqual(propertyRef, propertyName, key, ref info))
                         {
-                            jsonPropertyInfo = info;
-                            return true;
+                            return info;
                         }
 
                         --iBackward;
@@ -224,28 +205,13 @@ namespace System.Text.Json
                 }
             }
 
-            jsonPropertyInfo = null;
-            return false;
-        }
+            // No cached item was found. Try the main list which has all of the properties.
 
-        // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public JsonPropertyInfo GetPropertyFromSlowCache(
-            ReadOnlySpan<byte> unescapedPropertyName,
-            ref ReadStackFrame frame,
-            string? unescapedPropertyNameAsString = null)
-        {
-            if (unescapedPropertyNameAsString == null)
-            {
-                unescapedPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
-            }
-
-            // Keep a local copy of the cache in case it changes by another thread.
-            PropertyRef[]? localPropertyRefsSorted = _propertyRefsSorted;
+            string stringPropertyName = JsonHelpers.Utf8GetString(propertyName);
 
             Debug.Assert(PropertyCache != null);
 
-            if (!PropertyCache.TryGetValue(unescapedPropertyNameAsString, out JsonPropertyInfo? info))
+            if (!PropertyCache.TryGetValue(stringPropertyName, out info))
             {
                 info = JsonPropertyInfo.s_missingProperty;
             }
@@ -256,10 +222,7 @@ namespace System.Text.Json
             // 1) info == s_missingProperty. Property not found.
             // 2) key == info.PropertyNameKey. Exact match found.
             // 3) key != info.PropertyNameKey. Match found due to case insensitivity.
-            Debug.Assert(
-                info == JsonPropertyInfo.s_missingProperty ||
-                GetKey(unescapedPropertyName) == info.PropertyNameKey ||
-                Options.PropertyNameCaseInsensitive);
+            Debug.Assert(info == JsonPropertyInfo.s_missingProperty || key == info.PropertyNameKey || Options.PropertyNameCaseInsensitive);
 
             // Check if we should add this to the cache.
             // Only cache up to a threshold length and then just use the dictionary when an item is not found in the cache.
@@ -286,7 +249,7 @@ namespace System.Text.Json
                         frame.PropertyRefCache = new List<PropertyRef>();
                     }
 
-                    PropertyRef propertyRef = new PropertyRef(GetKey(unescapedPropertyName), info);
+                    PropertyRef propertyRef = new PropertyRef(key, info);
                     frame.PropertyRefCache.Add(propertyRef);
                 }
             }
@@ -296,23 +259,23 @@ namespace System.Text.Json
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetParameterFromFastCache(
-            ReadOnlySpan<byte> unescapedPropertyName,
+        public bool TryGetParameter(
+            ReadOnlySpan<byte> propertyName,
             ref ReadStackFrame frame,
             out JsonParameterInfo? jsonParameterInfo)
         {
-            ulong unescapedPropertyNameKey = GetKey(unescapedPropertyName);
-
             JsonParameterInfo? info = null;
 
             // Keep a local copy of the cache in case it changes by another thread.
             ParameterRef[]? localParameterRefsSorted = _parameterRefsSorted;
 
+            ulong key = GetKey(propertyName);
+
             // If there is an existing cache, then use it.
             if (localParameterRefsSorted != null)
             {
                 // Start with the current parameter index, and then go forwards\backwards.
-                int parameterIndex = frame.CtorArgumentState.ParameterIndex;
+                int parameterIndex = frame.CtorArgumentState!.ParameterIndex;
 
                 int count = localParameterRefsSorted.Length;
                 int iForward = Math.Min(parameterIndex, count);
@@ -323,7 +286,7 @@ namespace System.Text.Json
                     if (iForward < count)
                     {
                         ParameterRef parameterRef = localParameterRefsSorted[iForward];
-                        if (TryIsParameterRefEqual(parameterRef, unescapedPropertyName, unescapedPropertyNameKey, ref info))
+                        if (TryIsParameterRefEqual(parameterRef, propertyName, key, ref info))
                         {
                             jsonParameterInfo = info;
                             return true;
@@ -334,7 +297,7 @@ namespace System.Text.Json
                         if (iBackward >= 0)
                         {
                             parameterRef = localParameterRefsSorted[iBackward];
-                            if (TryIsParameterRefEqual(parameterRef, unescapedPropertyName, unescapedPropertyNameKey, ref info))
+                            if (TryIsParameterRefEqual(parameterRef, propertyName, key, ref info))
                             {
                                 jsonParameterInfo = info;
                                 return true;
@@ -346,7 +309,7 @@ namespace System.Text.Json
                     else if (iBackward >= 0)
                     {
                         ParameterRef parameterRef = localParameterRefsSorted[iBackward];
-                        if (TryIsParameterRefEqual(parameterRef, unescapedPropertyName, unescapedPropertyNameKey, ref info))
+                        if (TryIsParameterRefEqual(parameterRef, propertyName, key, ref info))
                         {
                             jsonParameterInfo = info;
                             return true;
@@ -362,23 +325,11 @@ namespace System.Text.Json
                 }
             }
 
-            jsonParameterInfo = null;
-            return false;
-        }
-
-        // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetParameterFromSlowCache(
-            ReadOnlySpan<byte> propertyName,
-            ref ReadStackFrame frame,
-            out string propertyNameAsString,
-            out JsonParameterInfo? jsonParameterInfo)
-        {
-            propertyNameAsString = JsonHelpers.Utf8GetString(propertyName);
+            string propertyNameAsString = JsonHelpers.Utf8GetString(propertyName);
 
             Debug.Assert(ParameterCache != null);
 
-            if (!ParameterCache.TryGetValue(propertyNameAsString, out JsonParameterInfo? info))
+            if (!ParameterCache.TryGetValue(propertyNameAsString, out info))
             {
                 // Constructor parameter not found. We'll check if it's a property next.
                 jsonParameterInfo = null;
@@ -392,11 +343,8 @@ namespace System.Text.Json
             // 1) key == info.PropertyNameKey. Exact match found.
             // 2) key != info.PropertyNameKey. Match found due to case insensitivity.
             // TODO: recheck these conditions
-            Debug.Assert(JsonClassInfo.GetKey(propertyName) == info.ParameterNameKey ||
+            Debug.Assert(key == info.ParameterNameKey ||
                 propertyNameAsString.Equals(info.NameAsString, StringComparison.OrdinalIgnoreCase));
-
-            // Keep a local copy of the cache in case it changes by another thread.
-            ParameterRef[]? localParameterRefsSorted = _parameterRefsSorted;
 
             // Check if we should add this to the cache.
             // Only cache up to a threshold length and then just use the dictionary when an item is not found in the cache.
@@ -410,7 +358,7 @@ namespace System.Text.Json
             if (cacheCount < ParameterNameCountCacheThreshold)
             {
                 // Do a slower check for the warm-up case.
-                if (frame.CtorArgumentState.ParameterRefCache != null)
+                if (frame.CtorArgumentState!.ParameterRefCache != null)
                 {
                     cacheCount += frame.CtorArgumentState.ParameterRefCache.Count;
                 }
@@ -423,7 +371,7 @@ namespace System.Text.Json
                         frame.CtorArgumentState.ParameterRefCache = new List<ParameterRef>();
                     }
 
-                    ParameterRef parameterRef = new ParameterRef(JsonClassInfo.GetKey(propertyName), jsonParameterInfo);
+                    ParameterRef parameterRef = new ParameterRef(key, jsonParameterInfo);
                     frame.CtorArgumentState.ParameterRefCache.Add(parameterRef);
                 }
             }
@@ -595,7 +543,7 @@ namespace System.Text.Json
 
         public void UpdateSortedParameterCache(ref ReadStackFrame frame)
         {
-            Debug.Assert(frame.CtorArgumentState.ParameterRefCache != null);
+            Debug.Assert(frame.CtorArgumentState!.ParameterRefCache != null);
 
             // frame.PropertyRefCache is only read\written by a single thread -- the thread performing
             // the deserialization for a given object instance.

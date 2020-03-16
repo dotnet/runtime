@@ -1712,52 +1712,6 @@ namespace System.Text.Json.Serialization.Tests
         public SimpleClassWithParameterizedCtor_GenericDictionary_ObjectExt(int x) { }
     }
 
-    public class SimpleClassWithParameterizedCtor_GenericIDictionary_JsonElementExt
-    {
-        public int X { get; }
-
-        [JsonExtensionData]
-        public IDictionary<string, JsonElement> ExtensionData { get; set; }
-
-        [JsonConstructor]
-        public SimpleClassWithParameterizedCtor_GenericIDictionary_JsonElementExt(int x) { }
-    }
-
-    public class SimpleClassWithParameterizedCtor_GenericIDictionary_ObjectExt
-    {
-        public int X { get; }
-
-        [JsonExtensionData]
-        public IDictionary<string, object> ExtensionData { get; set; }
-
-        [JsonConstructor]
-        public SimpleClassWithParameterizedCtor_GenericIDictionary_ObjectExt(int x) { }
-    }
-
-    public class SimpleClassWithParameterizedCtor_Derived_GenericDictionary_JsonElementExt
-    {
-        public int X { get; }
-
-        [JsonExtensionData]
-        public DerivedGenericDictionary_JsonElementExt ExtensionData { get; set; }
-
-        [JsonConstructor]
-        public SimpleClassWithParameterizedCtor_Derived_GenericDictionary_JsonElementExt(int x) { }
-    }
-
-    public class DerivedGenericDictionary_JsonElementExt : Dictionary<string, JsonElement> { }
-
-    public class SimpleClassWithParameterizedCtor_Derived_GenericDictionary_ObjectExt
-    {
-        public int X { get; }
-
-        [JsonExtensionData]
-        public StringToGenericDictionaryWrapper<object> ExtensionData { get; set; }
-
-        [JsonConstructor]
-        public SimpleClassWithParameterizedCtor_Derived_GenericDictionary_ObjectExt(int x) { }
-    }
-
     public class SimpleClassWithParameterizedCtor_Derived_GenericIDictionary_JsonElementExt
     {
         public int X { get; }
@@ -2213,6 +2167,80 @@ namespace System.Text.Json.Serialization.Tests
             X = x;
             Y = y;
             Z = 0;
+        }
+    }
+
+    public class MyEventsListerViewModel
+    {
+        public List<MyEventsListerItem> CurrentEvents { get; set; } = new List<MyEventsListerItem>();
+        public List<MyEventsListerItem> FutureEvents { get; set; } = new List<MyEventsListerItem>();
+        public List<MyEventsListerItem> PastEvents { get; set; } = new List<MyEventsListerItem>();
+
+        public static MyEventsListerViewModel Instance
+            = new MyEventsListerViewModel
+            {
+                CurrentEvents = Enumerable.Repeat(MyEventsListerItem.Instance, 3).ToList(),
+                FutureEvents = Enumerable.Repeat(MyEventsListerItem.Instance, 9).ToList(),
+                PastEvents = Enumerable.Repeat(MyEventsListerItem.Instance, 60).ToList() // usually  there is a lot of historical data
+            };
+
+
+    }
+
+    public class MyEventsListerItem
+    {
+        public int EventId { get; set; }
+        public string EventName { get; set; }
+        public DateTimeOffset StartDate { get; set; }
+        public DateTimeOffset EndDate { get; set; }
+        public string TimeZone { get; set; }
+        public string Campaign { get; set; }
+        public string Organization { get; set; }
+        public int VolunteerCount { get; set; }
+
+        public List<MyEventsListerItemTask> Tasks { get; set; } = new List<MyEventsListerItemTask>();
+
+        public static MyEventsListerItem Instance
+            = new MyEventsListerItem
+            {
+                Campaign = "A very nice campaing",
+                EndDate = DateTime.UtcNow.AddDays(7),
+                EventId = 321,
+                EventName = "wonderful name",
+                Organization = "Local Animal Shelter",
+                StartDate = DateTime.UtcNow.AddDays(-7),
+                TimeZone = TimeZoneInfo.Utc.DisplayName,
+                VolunteerCount = 15,
+                Tasks = Enumerable.Repeat(
+                    new MyEventsListerItemTask
+                    {
+                        StartDate = DateTime.UtcNow,
+                        EndDate = DateTime.UtcNow.AddDays(1),
+                        Name = "A very nice task to have"
+                    }, 4).ToList()
+            };
+    }
+
+    public class MyEventsListerItemTask
+    {
+        public string Name { get; set; }
+        public DateTimeOffset? StartDate { get; set; }
+        public DateTimeOffset? EndDate { get; set; }
+
+        public string FormattedDate
+        {
+            get
+            {
+                if (!StartDate.HasValue || !EndDate.HasValue)
+                {
+                    return null;
+                }
+
+                var startDateString = string.Format("{0:g}", StartDate.Value);
+                var endDateString = string.Format("{0:g}", EndDate.Value);
+
+                return string.Format($"From {startDateString} to {endDateString}");
+            }
         }
     }
 }

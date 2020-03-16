@@ -6,131 +6,155 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class ConstructorTests
+    public abstract partial class ConstructorTests
     {
-        [Theory]
-        [InlineData(typeof(PrivateParameterlessCtor))]
-        [InlineData(typeof(InternalParameterlessCtor))]
-        [InlineData(typeof(ProtectedParameterlessCtor))]
-        [InlineData(typeof(PrivateParameterizedCtor))]
-        [InlineData(typeof(InternalParameterizedCtor))]
-        [InlineData(typeof(ProtectedParameterizedCtor))]
-        [InlineData(typeof(PrivateParameterizedCtor_WithAttribute))]
-        [InlineData(typeof(InternalParameterizedCtor_WithAttribute))]
-        [InlineData(typeof(ProtectedParameterizedCtor_WithAttribute))]
-        public static void NonPublicCtors_NotSupported(Type type)
+        [Fact]
+        public void NonPublicCtors_NotSupported()
         {
-            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("{}", type));
-            Assert.Contains("JsonConstructorAttribute", ex.ToString());
+            void RunTest<T>()
+            {
+                NotSupportedException ex = Assert.Throws<NotSupportedException>(() => Serializer.Deserialize<T>("{}"));
+                Assert.Contains("JsonConstructorAttribute", ex.ToString());
+            }
+
+            RunTest<PrivateParameterlessCtor>();
+            RunTest<InternalParameterlessCtor>();
+            RunTest<ProtectedParameterlessCtor>();
+            RunTest<PrivateParameterizedCtor>();
+            RunTest<InternalParameterizedCtor>();
+            RunTest<ProtectedParameterizedCtor>();
+            RunTest<PrivateParameterizedCtor_WithAttribute>();
+            RunTest<InternalParameterizedCtor_WithAttribute>();
+            RunTest<ProtectedParameterizedCtor_WithAttribute>();
         }
 
         [Fact]
-        public static void SinglePublicParameterizedCtor_SingleParameterlessCtor_NoAttribute_Supported_UseParameterlessCtor()
+        public void SinglePublicParameterizedCtor_SingleParameterlessCtor_NoAttribute_Supported_UseParameterlessCtor()
         {
-            var obj1 = JsonSerializer.Deserialize<SinglePublicParameterizedCtor>(@"{""MyInt"":1,""MyString"":""1""}");
+            var obj1 = Serializer.Deserialize<SinglePublicParameterizedCtor>(@"{""MyInt"":1,""MyString"":""1""}");
             Assert.Equal(@"{""MyInt"":0,""MyString"":null}", JsonSerializer.Serialize(obj1));
         }
 
-        [Theory]
-        [InlineData(typeof(SingleParameterlessCtor_MultiplePublicParameterizedCtor))]
-        [InlineData(typeof(SingleParameterlessCtor_MultiplePublicParameterizedCtor_Struct))]
-        public static void MultiplePublicParameterizedCtors_SingleParameterlessCtor_NoAttribute_Supported_UseParameterlessCtor(Type type)
+        [Fact]
+        public void MultiplePublicParameterizedCtors_SingleParameterlessCtor_NoAttribute_Supported_UseParameterlessCtor()
         {
-            var obj1 = JsonSerializer.Deserialize(@"{""MyInt"":1,""MyString"":""1""}", type);
-            Assert.Equal(@"{""MyInt"":0,""MyString"":null}", JsonSerializer.Serialize(obj1));
-        }
+            void RunTest<T>()
+            {
+                var obj1 = Serializer.Deserialize<T>(@"{""MyInt"":1,""MyString"":""1""}");
+                Assert.Equal(@"{""MyInt"":0,""MyString"":null}", JsonSerializer.Serialize(obj1));
+            }
 
-        [Theory]
-        [InlineData(typeof(PublicParameterizedCtor))]
-        [InlineData(typeof(PrivateParameterlessConstructor_PublicParameterizedCtor))]
-        public static void SinglePublicParameterizedCtor_NoPublicParameterlessCtor_NoAttribute_Supported(Type type)
-        {
-            var obj1 = JsonSerializer.Deserialize(@"{""MyInt"":1}", type);
-            Assert.Equal(@"{""MyInt"":1}", JsonSerializer.Serialize(obj1));
-        }
-
-        [Theory]
-        [InlineData(typeof(PublicParameterizedCtor_WithAttribute))]
-        [InlineData(typeof(Struct_PublicParameterizedConstructor_WithAttribute))]
-        [InlineData(typeof(PrivateParameterlessConstructor_PublicParameterizedCtor_WithAttribute))]
-        public static void SinglePublicParameterizedCtor_NoPublicParameterlessCtor_WithAttribute_Supported(Type type)
-        {
-            var obj1 = JsonSerializer.Deserialize(@"{""MyInt"":1}", type);
-            Assert.Equal(@"{""MyInt"":1}", JsonSerializer.Serialize(obj1));
+            RunTest<SingleParameterlessCtor_MultiplePublicParameterizedCtor>();
+            RunTest<SingleParameterlessCtor_MultiplePublicParameterizedCtor_Struct>();
         }
 
         [Fact]
-        public static void Class_MultiplePublicParameterizedCtors_NoPublicParameterlessCtor_NoAttribute_NotSupported()
+        public void SinglePublicParameterizedCtor_NoPublicParameterlessCtor_NoAttribute_Supported()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MultiplePublicParameterizedCtor>(@"{""MyInt"":1,""MyString"":""1""}"));
+            void RunTest<T>()
+            {
+                var obj1 = Serializer.Deserialize<T>(@"{""MyInt"":1}");
+                Assert.Equal(@"{""MyInt"":1}", JsonSerializer.Serialize(obj1));
+            }
+
+            RunTest<PublicParameterizedCtor>();
+            RunTest<PrivateParameterlessConstructor_PublicParameterizedCtor>();
         }
 
         [Fact]
-        public static void Struct_MultiplePublicParameterizedCtors_NoPublicParameterlessCtor_NoAttribute_Supported_UseParameterlessCtor()
+        public void SinglePublicParameterizedCtor_NoPublicParameterlessCtor_WithAttribute_Supported()
         {
-            var obj = JsonSerializer.Deserialize<MultiplePublicParameterizedCtor_Struct>(@"{""myInt"":1,""myString"":""1""}");
+            void RunTest<T>()
+            {
+                var obj1 = Serializer.Deserialize<T>(@"{""MyInt"":1}");
+                Assert.Equal(@"{""MyInt"":1}", JsonSerializer.Serialize(obj1));
+            }
+
+            RunTest<PublicParameterizedCtor_WithAttribute>();
+            RunTest<Struct_PublicParameterizedConstructor_WithAttribute>();
+            RunTest<PrivateParameterlessConstructor_PublicParameterizedCtor_WithAttribute>();
+        }
+
+        [Fact]
+        public void Class_MultiplePublicParameterizedCtors_NoPublicParameterlessCtor_NoAttribute_NotSupported()
+        {
+            Assert.Throws<NotSupportedException>(() => Serializer.Deserialize<MultiplePublicParameterizedCtor>(@"{""MyInt"":1,""MyString"":""1""}"));
+        }
+
+        [Fact]
+        public void Struct_MultiplePublicParameterizedCtors_NoPublicParameterlessCtor_NoAttribute_Supported_UseParameterlessCtor()
+        {
+            var obj = Serializer.Deserialize<MultiplePublicParameterizedCtor_Struct>(@"{""myInt"":1,""myString"":""1""}");
             Assert.Equal(0, obj.MyInt);
             Assert.Null(obj.MyString);
             Assert.Equal(@"{""MyInt"":0,""MyString"":null}", JsonSerializer.Serialize(obj));
         }
 
         [Fact]
-        public static void NoPublicParameterlessCtor_MultiplePublicParameterizedCtors_WithAttribute_Supported()
+        public void NoPublicParameterlessCtor_MultiplePublicParameterizedCtors_WithAttribute_Supported()
         {
-            var obj1 = JsonSerializer.Deserialize<MultiplePublicParameterizedCtor_WithAttribute>(@"{""MyInt"":1,""MyString"":""1""}");
+            var obj1 = Serializer.Deserialize<MultiplePublicParameterizedCtor_WithAttribute>(@"{""MyInt"":1,""MyString"":""1""}");
             Assert.Equal(1, obj1.MyInt);
             Assert.Null(obj1.MyString);
             Assert.Equal(@"{""MyInt"":1,""MyString"":null}", JsonSerializer.Serialize(obj1));
 
-            var obj2 = JsonSerializer.Deserialize<MultiplePublicParameterizedCtor_WithAttribute_Struct>(@"{""MyInt"":1,""MyString"":""1""}");
+            var obj2 = Serializer.Deserialize<MultiplePublicParameterizedCtor_WithAttribute_Struct>(@"{""MyInt"":1,""MyString"":""1""}");
             Assert.Equal(1, obj2.MyInt);
             Assert.Equal("1", obj2.MyString);
             Assert.Equal(@"{""MyInt"":1,""MyString"":""1""}", JsonSerializer.Serialize(obj2));
         }
 
         [Fact]
-        public static void PublicParameterlessCtor_MultiplePublicParameterizedCtors_WithAttribute_Supported()
+        public void PublicParameterlessCtor_MultiplePublicParameterizedCtors_WithAttribute_Supported()
         {
-            var obj = JsonSerializer.Deserialize<ParameterlessCtor_MultiplePublicParameterizedCtor_WithAttribute>(@"{""MyInt"":1,""MyString"":""1""}");
+            var obj = Serializer.Deserialize<ParameterlessCtor_MultiplePublicParameterizedCtor_WithAttribute>(@"{""MyInt"":1,""MyString"":""1""}");
             Assert.Equal(1, obj.MyInt);
             Assert.Null(obj.MyString);
             Assert.Equal(@"{""MyInt"":1,""MyString"":null}", JsonSerializer.Serialize(obj));
         }
 
-        [Theory]
-        [InlineData(typeof(MultiplePublicParameterizedCtor_WithMultipleAttributes))]
-        [InlineData(typeof(PublicParameterlessConstructor_PublicParameterizedCtor_WithMultipleAttributes))]
-        [InlineData(typeof(PrivateParameterlessCtor_InternalParameterizedCtor_WithMultipleAttributes))]
-        [InlineData(typeof(ProtectedParameterlessCtor_PrivateParameterizedCtor_WithMultipleAttributes))]
-        [InlineData(typeof(PublicParameterlessCtor_PrivateParameterizedCtor_WithMultipleAttributes))]
-        [InlineData(typeof(PublicParameterizedCtor_PublicParameterizedCtor_WithMultipleAttributes))]
-        [InlineData(typeof(Struct_PublicParameterizedCtor_PrivateParameterizedCtor_WithMultipleAttributes))]
-        [InlineData(typeof(Point_2D_Struct_WithMultipleAttributes))]
-        [InlineData(typeof(Point_2D_Struct_WithMultipleAttributes_OneNonPublic))]
-        public static void MultipleAttributes_NotSupported(Type type)
+        [Fact]
+        public void MultipleAttributes_NotSupported()
         {
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", type));
-        }
+            void RunTest<T>()
+            {
+                Assert.Throws<InvalidOperationException>(() => Serializer.Deserialize<T>("{}"));
+            }
 
-        [Theory]
-        [InlineData(typeof(Parameterized_StackWrapper))]
-        [InlineData(typeof(Parameterized_WrapperForICollection))]
-        public static void AttributeIgnoredOnIEnumerable(Type type)
-        {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("[]", type));
+            RunTest<MultiplePublicParameterizedCtor_WithMultipleAttributes>();
+            RunTest<PublicParameterlessConstructor_PublicParameterizedCtor_WithMultipleAttributes>();
+            RunTest<PrivateParameterlessCtor_InternalParameterizedCtor_WithMultipleAttributes>();
+            RunTest<ProtectedParameterlessCtor_PrivateParameterizedCtor_WithMultipleAttributes>();
+            RunTest<PublicParameterlessCtor_PrivateParameterizedCtor_WithMultipleAttributes>();
+            RunTest<PublicParameterizedCtor_PublicParameterizedCtor_WithMultipleAttributes>();
+            RunTest<Struct_PublicParameterizedCtor_PrivateParameterizedCtor_WithMultipleAttributes>();
+            RunTest<Point_2D_Struct_WithMultipleAttributes>();
+            RunTest<Point_2D_Struct_WithMultipleAttributes_OneNonPublic>();
         }
 
         [Fact]
-        public static void Struct_Use_DefaultCtor_ByDefault()
+        public void AttributeIgnoredOnIEnumerable()
+        {
+            void RunTest<T>()
+            {
+                Assert.Throws<NotSupportedException>(() => Serializer.Deserialize<T>("[]"));
+            }
+
+            RunTest<Parameterized_StackWrapper>();
+            RunTest<Parameterized_WrapperForICollection>();
+        }
+
+        [Fact]
+        public void Struct_Use_DefaultCtor_ByDefault()
         {
             string json = @"{""X"":1,""Y"":2}";
 
             // By default, serializer uses default ctor to deserializer structs
-            var point1 = JsonSerializer.Deserialize<Point_2D_Struct>(json);
+            var point1 = Serializer.Deserialize<Point_2D_Struct>(json);
             Assert.Equal(0, point1.X);
             Assert.Equal(0, point1.Y);
 
-            var point2 = JsonSerializer.Deserialize<Point_2D_Struct_WithAttribute>(json);
+            var point2 = Serializer.Deserialize<Point_2D_Struct_WithAttribute>(json);
             Assert.Equal(1, point2.X);
             Assert.Equal(2, point2.Y);
         }

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Collections.Generic;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -20,27 +19,27 @@ namespace System.Text.Json.Serialization.Converters
             _createObject = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo)!;
         }
 
-        protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo, JsonSerializerOptions options)
+        protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
-            bool success = jsonParameterInfo.ReadJson(ref state, ref reader, options, out object? arg0);
+            bool success = jsonParameterInfo.ReadJson(ref state, ref reader, out object? arg0);
 
             if (success)
             {
-                ((object[])state.Current.CtorArgumentState.Arguments!)[jsonParameterInfo.Position] = arg0!;
+                ((object[])state.Current.CtorArgumentState!.Arguments!)[jsonParameterInfo.Position] = arg0!;
             }
 
             return success;
         }
 
-        protected override object CreateObject(ref ReadStack state)
+        protected override object CreateObject(ref ReadStackFrame frame)
         {
+            object[] arguments = (object[])frame.CtorArgumentState!.Arguments!;
+
             if (_createObject == null)
             {
                 // This means this constructor has more than 64 parameters.
                 ThrowHelper.ThrowNotSupportedException_ConstructorMaxOf64Parameters(ConstructorInfo, TypeToConvert);
             }
-
-            object[] arguments = (object[])state.Current.CtorArgumentState.Arguments!;
 
             object obj = _createObject(arguments)!;
 
@@ -50,19 +49,8 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
-            // Clear state from previous deserialization.
-            state.Current.CtorArgumentState.Reset();
-
-            int paramCount = state.Current.JsonClassInfo.ParameterCount;
-            Dictionary<string, JsonParameterInfo>.ValueCollection parameterCacheValues = state.Current.JsonClassInfo.ParameterCache!.Values;
-
-            if (paramCount != parameterCacheValues.Count)
-            {
-                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(ConstructorInfo, TypeToConvert);
-            }
-
-            object[] arguments = ArrayPool<object>.Shared.Rent(paramCount);
-            foreach (JsonParameterInfo jsonParameterInfo in parameterCacheValues)
+            object[] arguments = ArrayPool<object>.Shared.Rent(state.Current.JsonClassInfo.ParameterCount);
+            foreach (JsonParameterInfo jsonParameterInfo in state.Current.JsonClassInfo.ParameterCache!.Values)
             {
                 if (jsonParameterInfo.ShouldDeserialize)
                 {
@@ -70,7 +58,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            state.Current.CtorArgumentState.Arguments = arguments;
+            state.Current.CtorArgumentState!.Arguments = arguments;
         }
     }
 }

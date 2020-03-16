@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -229,45 +228,29 @@ namespace System.Text.Json
 
         public abstract bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader);
 
-        public bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out JsonElement value)
-        {
-            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)
-                state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+        public abstract bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value);
 
+        public bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        {
+            Debug.Assert(this == state.Current.JsonClassInfo.DataExtensionProperty);
+
+            if (RuntimeClassInfo.ElementType == typeof(object) && reader.TokenType == JsonTokenType.Null)
+            {
+                value = null;
+                return true;
+            }
+
+            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverter(typeof(JsonElement));
             if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement jsonElement))
             {
                 // JsonElement is a struct that must be read in full.
-                value = default;
+                value = null;
                 return false;
             }
 
             value = jsonElement;
             return true;
         }
-
-        public bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
-        {
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                value = null;
-                return true;
-            }
-
-            JsonConverter<object> converter = (JsonConverter<object>)
-                state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
-
-            if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out object? obj))
-            {
-                // JsonElement is a struct that must be read in full.
-                value = null;
-                return false;
-            }
-
-            value = obj;
-            return true;
-        }
-
-        public abstract bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value);
 
         public Type ParentClassType { get; private set; } = null!;
 

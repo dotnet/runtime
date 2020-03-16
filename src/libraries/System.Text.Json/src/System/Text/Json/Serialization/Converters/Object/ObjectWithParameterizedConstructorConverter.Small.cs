@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
@@ -20,44 +19,44 @@ namespace System.Text.Json.Serialization.Converters
             _createObject = options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo)!;
         }
 
-        protected override object CreateObject(ref ReadStack state)
+        protected override object CreateObject(ref ReadStackFrame frame)
         {
-            var argCache = (ArgumentCache<TArg0, TArg1, TArg2, TArg3>)state.Current.CtorArgumentState.Arguments!;
-            return _createObject!(argCache.Arg0, argCache.Arg1, argCache.Arg2, argCache.Arg3)!;
+            var arguments = (Arguments<TArg0, TArg1, TArg2, TArg3>)frame.CtorArgumentState!.Arguments!;
+            return _createObject!(arguments.Arg0, arguments.Arg1, arguments.Arg2, arguments.Arg3)!;
         }
 
-        protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo, JsonSerializerOptions options)
+        protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
-            Debug.Assert(state.Current.CtorArgumentState.Arguments != null);
-            var arguments = (ArgumentCache<TArg0, TArg1, TArg2, TArg3>)state.Current.CtorArgumentState.Arguments;
+            Debug.Assert(state.Current.CtorArgumentState!.Arguments != null);
+            var arguments = (Arguments<TArg0, TArg1, TArg2, TArg3>)state.Current.CtorArgumentState.Arguments;
 
             bool success;
 
             switch (jsonParameterInfo.Position)
             {
                 case 0:
-                    success = ((JsonParameterInfo<TArg0>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, options, out TArg0 arg0);
+                    success = ((JsonParameterInfo<TArg0>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg0 arg0);
                     if (success)
                     {
                         arguments.Arg0 = arg0;
                     }
                     break;
                 case 1:
-                    success = ((JsonParameterInfo<TArg1>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, options, out TArg1 arg1);
+                    success = ((JsonParameterInfo<TArg1>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg1 arg1);
                     if (success)
                     {
                         arguments.Arg1 = arg1;
                     }
                     break;
                 case 2:
-                    success = ((JsonParameterInfo<TArg2>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, options, out TArg2 arg2);
+                    success = ((JsonParameterInfo<TArg2>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg2 arg2);
                     if (success)
                     {
                         arguments.Arg2 = arg2;
                     }
                     break;
                 case 3:
-                    success = ((JsonParameterInfo<TArg3>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, options, out TArg3 arg3);
+                    success = ((JsonParameterInfo<TArg3>)jsonParameterInfo).ReadJsonTyped(ref state, ref reader, out TArg3 arg3);
                     if (success)
                     {
                         arguments.Arg3 = arg3;
@@ -73,19 +72,9 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
-            // Clear state from previous deserialization.
-            state.Current.CtorArgumentState.Reset();
+            var arguments = new Arguments<TArg0, TArg1, TArg2, TArg3>();
 
-            Dictionary<string, JsonParameterInfo>.ValueCollection parameterCacheValues = state.Current.JsonClassInfo.ParameterCache!.Values;
-
-            if (state.Current.JsonClassInfo.ParameterCount != parameterCacheValues.Count)
-            {
-                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(ConstructorInfo, TypeToConvert);
-            }
-
-            var arguments = new ArgumentCache<TArg0, TArg1, TArg2, TArg3>();
-
-            foreach (JsonParameterInfo parameterInfo in parameterCacheValues)
+            foreach (JsonParameterInfo parameterInfo in state.Current.JsonClassInfo.ParameterCache!.Values)
             {
                 if (parameterInfo.ShouldDeserialize)
                 {
@@ -112,7 +101,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            state.Current.CtorArgumentState.Arguments = arguments;
+            state.Current.CtorArgumentState!.Arguments = arguments;
         }
     }
 }

@@ -511,6 +511,11 @@ namespace System.Text.Json
             ref Utf8JsonReader reader,
             ref ReadStack state)
         {
+            if (state.Current.JsonClassInfo.PropertyInfoForClassInfo.ConverterBase.ConstructorIsParameterized)
+            {
+                ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotHonored(state.Current.JsonClassInfo.Type);
+            }
+
             MetadataPropertyName name = JsonSerializer.GetMetadataPropertyName(propertyName);
             if (name == MetadataPropertyName.Id)
             {

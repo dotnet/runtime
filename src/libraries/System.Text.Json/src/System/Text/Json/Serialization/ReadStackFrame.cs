@@ -39,11 +39,12 @@ namespace System.Text.Json
         public object? AddMethodDelegate;
 
         // Holds relevant state when deserializing objects with parameterized constructors.
-        public ConstructorArgumentState CtorArgumentState;
+        public int CtorArgumentStateIndex;
+        public ArgumentState? CtorArgumentState;
 
         public void EndConstructorParameter()
         {
-            CtorArgumentState.JsonParameterInfo = null;
+            CtorArgumentState!.JsonParameterInfo = null;
             JsonPropertyName = null;
             PropertyState = StackFramePropertyState.None;
         }
@@ -96,6 +97,8 @@ namespace System.Text.Json
         public void Reset()
         {
             AddMethodDelegate = null;
+            CtorArgumentStateIndex = 0;
+            CtorArgumentState = null;
             JsonClassInfo = null!;
             ObjectState = StackFrameObjectState.None;
             OriginalDepth = 0;
@@ -104,7 +107,6 @@ namespace System.Text.Json
             PropertyRefCache = null;
             ReturnValue = null;
 
-            EndConstructorParameter();
             EndProperty();
         }
     }

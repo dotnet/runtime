@@ -45,6 +45,22 @@ namespace System.Text.Json
         // The bag of preservable references.
         public DefaultReferenceResolver ReferenceResolver;
 
+        // Constructor argument statee.
+        private ArgumentStateCache? _argumentStateCache;
+
+        private ArgumentStateCache ArgumentStateCache
+        {
+            get
+            {
+                if (_argumentStateCache == null)
+                {
+                    _argumentStateCache = new ArgumentStateCache();
+                }
+
+                return _argumentStateCache;
+            }
+        }
+
         /// <summary>
         /// Whether we need to read ahead in the inner read loop.
         /// </summary>
@@ -108,7 +124,7 @@ namespace System.Text.Json
                         }
                         else
                         {
-                            jsonClassInfo = Current.CtorArgumentState.JsonParameterInfo!.RuntimeClassInfo;
+                            jsonClassInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeClassInfo;
                         }
                     }
                     else if ((Current.JsonClassInfo.ClassType & (ClassType.Value | ClassType.NewValue)) != 0)
@@ -148,6 +164,12 @@ namespace System.Text.Json
                 {
                     _count++;
                 }
+            }
+
+            if (Current.JsonClassInfo.ParameterCount > 0)
+            {
+                (Current.CtorArgumentStateIndex, Current.CtorArgumentState) =
+                    ArgumentStateCache.GetState(Current.CtorArgumentStateIndex);
             }
         }
 
@@ -197,6 +219,12 @@ namespace System.Text.Json
             if (_count > 1)
             {
                 Current = _previous[--_count -1];
+            }
+
+            if (Current.JsonClassInfo.ParameterCount > 0)
+            {
+                (Current.CtorArgumentStateIndex, Current.CtorArgumentState) =
+                    ArgumentStateCache.GetState(Current.CtorArgumentStateIndex);
             }
         }
 
@@ -291,7 +319,7 @@ namespace System.Text.Json
                 {
                     // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
                     utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName ??
-                        frame.CtorArgumentState.JsonParameterInfo?.JsonPropertyName;
+                        frame.CtorArgumentState?.JsonParameterInfo?.JsonPropertyName;
                     if (utf8PropertyName == null)
                     {
                         // Attempt to get the JSON property name set manually for dictionary

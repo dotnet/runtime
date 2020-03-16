@@ -74,9 +74,6 @@ namespace System.Text.Json
         /// </remarks>
         public JsonPropertyInfo PropertyInfoForClassInfo { get; private set; }
 
-        // Whether the extension data is typeof(object) or typoef(JsonElement).
-        public bool DataExtensionIsObject;
-
         public JsonClassInfo(Type type, JsonSerializerOptions options)
         {
             Type = type;
@@ -97,7 +94,7 @@ namespace System.Text.Json
                 case ClassType.Object:
                     {
                         // Create the policy property.
-                        PolicyProperty = CreatePolicyProperty(type, runtimeType, converter!, options);
+                        PropertyInfoForClassInfo = CreatePropertyInfoForClassInfo(type, runtimeType, converter!, options);
 
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
 
@@ -274,8 +271,6 @@ namespace System.Text.Json
                 }
 
                 DataExtensionProperty = jsonPropertyInfo;
-                DataExtensionIsObject = typeof(IDictionary<string, object>).IsAssignableFrom(DataExtensionProperty.RuntimeClassInfo.Type);
-
                 return true;
             }
 

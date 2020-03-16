@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class ConstructorTests
+    public abstract partial class ConstructorTests
     {
         [Fact, OuterLoop]
-        public static void MultipleThreadsLooping()
+        public void MultipleThreadsLooping()
         {
             const int Iterations = 100;
 
@@ -23,7 +22,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void MultipleThreads()
+        public void MultipleThreads()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
             var options = new JsonSerializerOptions();
@@ -33,19 +32,19 @@ namespace System.Text.Json.Serialization.Tests
 
             void DeserializeObjectMinimal()
             {
-                var obj = JsonSerializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(@"{""MyDecimal"" : 3.3}", options);
+                var obj = Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(@"{""MyDecimal"" : 3.3}", options);
             };
 
             void DeserializeObjectFlipped()
             {
-                var obj = JsonSerializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(
+                var obj = Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(
                     ClassWithConstructor_SimpleAndComplexParameters.s_json_flipped, options);
                 obj.Verify();
             };
 
             void DeserializeObjectNormal()
             {
-                var obj = JsonSerializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(
+                var obj = Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(
                     ClassWithConstructor_SimpleAndComplexParameters.s_json, options);
                 obj.Verify();
             };
@@ -75,24 +74,24 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void PropertyCacheWithMinInputsFirst()
+        public void PropertyCacheWithMinInputsFirst()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
             var options = new JsonSerializerOptions();
 
             string json = "{}";
-            JsonSerializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
 
             ClassWithConstructor_SimpleAndComplexParameters testObj = ClassWithConstructor_SimpleAndComplexParameters.GetInstance();
             testObj.Verify();
 
             json = JsonSerializer.Serialize(testObj, options);
-            testObj = JsonSerializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            testObj = Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
             testObj.Verify();
         }
 
         [Fact]
-        public static void PropertyCacheWithMinInputsLast()
+        public void PropertyCacheWithMinInputsLast()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
             var options = new JsonSerializerOptions();
@@ -101,64 +100,63 @@ namespace System.Text.Json.Serialization.Tests
             testObj.Verify();
 
             string json = JsonSerializer.Serialize(testObj, options);
-            testObj = JsonSerializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            testObj = Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
             testObj.Verify();
 
             json = "{}";
-            JsonSerializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
         }
 
         // Use a common options instance to encourage additional metadata collisions across types. Also since
         // this options is not the default options instance the tests will not use previously cached metadata.
-        private static JsonSerializerOptions s_options = new JsonSerializerOptions();
+        private JsonSerializerOptions s_options = new JsonSerializerOptions();
 
-        [Theory]
-        [MemberData(nameof(MultipleTypesTestData))]
-        public static void MultipleTypes(ITestClass testObj, object[] args)
+        [Fact]
+        public void MultipleTypes()
         {
-            Type type = testObj.GetType();
-
-            // Get the test json with the default options to avoid cache pollution of Deserialize() below.
-            testObj.Initialize();
-            testObj.Verify();
-            string json = JsonSerializer.Serialize(testObj, type);
-
-            void Serialize()
+            void Serialize<T>(object[] args)
             {
-                ITestClass localTestObj = (ITestClass)Activator.CreateInstance(type, args);
-                localTestObj.Initialize();
-                localTestObj.Verify();
-                string json = JsonSerializer.Serialize(localTestObj, type, s_options);
+                Type type = typeof(T);
+
+                T localTestObj = (T)Activator.CreateInstance(type, args);
+                ((ITestClass)localTestObj).Initialize();
+                ((ITestClass)localTestObj).Verify();
+                string json = JsonSerializer.Serialize(localTestObj, s_options);
             };
 
-            void Deserialize()
+            void Deserialize<T>(string json)
             {
-                ITestClass obj = (ITestClass)JsonSerializer.Deserialize(json, type, s_options);
+                ITestClass obj = (ITestClass)Serializer.Deserialize<T>(json, s_options);
                 obj.Verify();
             };
 
-            const int ThreadCount = 12;
-            const int ConcurrentTestsCount = 2;
-            Task[] tasks = new Task[ThreadCount * ConcurrentTestsCount];
-
-            for (int i = 0; i < tasks.Length; i += ConcurrentTestsCount)
+            void RunTest<T>(T testObj, object[] args)
             {
-                tasks[i + 0] = Task.Run(() => Deserialize());
-                tasks[i + 1] = Task.Run(() => Serialize());
-            };
+                // Get the test json with the default options to avoid cache pollution of Deserialize() below.
+                ((ITestClass)testObj).Initialize();
+                ((ITestClass)testObj).Verify();
+                string json = JsonSerializer.Serialize(testObj);
 
-            Task.WaitAll(tasks);
-        }
+                const int ThreadCount = 12;
+                const int ConcurrentTestsCount = 2;
+                Task[] tasks = new Task[ThreadCount * ConcurrentTestsCount];
 
-        public static IEnumerable<object[]> MultipleTypesTestData()
-        {
-            yield return new object[] { new Point_2D(1, 2), new object[] { 1, 2 } };
-            yield return new object[] { new Point_3D(1, 2, 3), new object[] { 1, 2, 3 } };
-            yield return new object[] { new Point_2D_With_ExtData(1, 2), new object[] { 1, 2 } };
+                for (int i = 0; i < tasks.Length; i += ConcurrentTestsCount)
+                {
+                    tasks[i + 0] = Task.Run(() => Deserialize<T>(json));
+                    tasks[i + 1] = Task.Run(() => Serialize<T>(args));
+                };
+
+                Task.WaitAll(tasks);
+            }
+
+            RunTest<Point_2D>(new Point_2D(1, 2), new object[] { 1, 2 });
+            RunTest(new Point_3D(1, 2, 3), new object[] { 1, 2, 3 });
+            RunTest(new Point_2D_With_ExtData(1, 2), new object[] { 1, 2 });
 
             Guid id = Guid.Parse("270bb22b-4816-4bd9-9acd-8ec5b1a896d3");
-            yield return new object[] { new Parameterized_Person_Simple(id), new object[] { id } };
-            yield return new object[] { new Point_MembersHave_JsonPropertyName(1, 2), new object[] { 1, 2 } };
+            RunTest(new Parameterized_Person_Simple(id), new object[] { id });
+            RunTest(new Point_MembersHave_JsonPropertyName(1, 2), new object[] { 1, 2 });
         }
     }
 }

@@ -103,6 +103,6 @@ namespace System.Text.Json
             return jsonParameterInfo;
         }
 
-        public abstract bool ReadJson(ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options, out object? argument);
+        public abstract bool ReadJson(ref ReadStack state, ref Utf8JsonReader reader, out object? argument);
     }
 }

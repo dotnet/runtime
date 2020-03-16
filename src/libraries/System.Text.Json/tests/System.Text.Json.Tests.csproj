@@ -64,6 +64,7 @@
     <Compile Include="Serialization\CustomConverterTests.ReadAhead.cs" />
     <Compile Include="Serialization\CustomConverterTests.Callback.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
+    <Compile Include="Serialization\DeserializationWrapper.cs" />
     <Compile Include="Serialization\DictionaryTests.cs" />
     <Compile Include="Serialization\DictionaryTests.KeyPolicy.cs" />
     <Compile Include="Serialization\EnumConverterTests.cs" />
