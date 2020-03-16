@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
-  <Import Project="dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <Platform>AnyCPU</Platform>
+
+    <!-- [ARCADE REMOVE] This line should be removed we use the Arcade Sdk. -->
+    <DeterministicSourcePaths>false</DeterministicSourcePaths>
+  </PropertyGroup>
 
   <PropertyGroup>
     <LangVersion>8.0</LangVersion>
@@ -33,7 +40,7 @@
   <PropertyGroup>
     <!-- When not using the SDK, we want to set this property here so
          that BuildVersionFile gets the correct value. -->
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == '' Or '$(UsingMicrosoftNETSdk)' != 'true'">$(RootBinDir)obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">$(RootBinDir)obj\</BaseIntermediateOutputPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(TargetOS).$(BuildArch).$(BuildType)</IntermediateOutputPath>
     <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\coreclr\$(TargetOS).$(BuildArch).$(BuildType)</OutputPath>
   </PropertyGroup>

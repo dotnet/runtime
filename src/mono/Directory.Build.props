@@ -86,10 +86,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)'!='true'">false</SignAssembly>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <CL_MPCount>$(NumberOfCores)</CL_MPCount>
   </PropertyGroup>
   <PropertyGroup>
