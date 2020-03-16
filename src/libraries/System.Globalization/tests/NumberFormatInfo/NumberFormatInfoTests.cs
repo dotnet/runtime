@@ -93,11 +93,11 @@ namespace System.Globalization.Tests
             foreach (CultureInfo ci in CultureInfo.GetCultures(CultureTypes.AllCultures))
             {
                 NumberFormatInfo nfi = ci.NumberFormat;
-                Assert.True(nfi.CurrencyNegativePattern <= 16);
-                Assert.True(nfi.CurrencyPositivePattern <= 3);
-                Assert.True(nfi.PercentNegativePattern <= 11);
-                Assert.True(nfi.PercentPositivePattern <= 3);
-                Assert.True(nfi.NumberNegativePattern <= 4);
+                Assert.InRange(nfi.CurrencyNegativePattern, 0, 16);
+                Assert.InRange(nfi.CurrencyPositivePattern, 0, 3);
+                Assert.InRange(nfi.PercentNegativePattern, 0, 11);
+                Assert.InRange(nfi.PercentPositivePattern, 0, 3);
+                Assert.InRange(nfi.NumberNegativePattern, 0, 4);
             }
         }
 
