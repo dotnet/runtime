@@ -1,0 +1,433 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		78A08F1D241D7932003F6545 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 78A08F1C241D7932003F6545 /* Assets.xcassets */; };
+		78A08F23241D7932003F6545 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 78A08F22241D7932003F6545 /* main.m */; };
+		78A08F2B241D79E1003F6545 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78A08F2A241D79E1003F6545 /* Foundation.framework */; };
+		78A08F2D241D79E7003F6545 /* GSS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78A08F2C241D79E7003F6545 /* GSS.framework */; };
+		78A08F2F241D79F1003F6545 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78A08F2E241D79F1003F6545 /* UIKit.framework */; };
+		78A08F31241D79FF003F6545 /* libicucore.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 78A08F30241D79F7003F6545 /* libicucore.tbd */; };
+		78A08F54241E4067003F6545 /* runtime.m in Sources */ = {isa = PBXBuildFile; fileRef = 78A08F53241E4067003F6545 /* runtime.m */; };
+		78ED8708241FC222006205F8 /* System.Threading.Tasks.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED86F4241FC221006205F8 /* System.Threading.Tasks.dll */; };
+		78ED8709241FC222006205F8 /* System.Private.CoreLib.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78ED86F5241FC221006205F8 /* System.Private.CoreLib.dll.o */; };
+		78ED870A241FC222006205F8 /* System.Private.CoreLib.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED86F6241FC221006205F8 /* System.Private.CoreLib.dll */; };
+		78ED870B241FC222006205F8 /* System.Core.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78ED86F7241FC221006205F8 /* System.Core.dll.o */; };
+		78ED870C241FC222006205F8 /* System.Runtime.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED86F8241FC221006205F8 /* System.Runtime.dll */; };
+		78ED870D241FC222006205F8 /* System.Runtime.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78ED86F9241FC221006205F8 /* System.Runtime.dll.o */; };
+		78ED870E241FC222006205F8 /* System.Runtime.Extensions.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78ED86FA241FC221006205F8 /* System.Runtime.Extensions.dll.o */; };
+		78ED870F241FC222006205F8 /* System.Collections.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED86FB241FC221006205F8 /* System.Collections.dll */; };
+		78ED8710241FC222006205F8 /* System.Linq.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78ED86FC241FC221006205F8 /* System.Linq.dll.o */; };
+		78ED8711241FC222006205F8 /* System.Threading.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78ED86FD241FC221006205F8 /* System.Threading.dll.o */; };
+		78ED8712241FC222006205F8 /* System.Threading.Tasks.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78ED86FE241FC221006205F8 /* System.Threading.Tasks.dll.o */; };
+		78ED8713241FC222006205F8 /* System.Memory.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED86FF241FC221006205F8 /* System.Memory.dll */; };
+		78ED8714241FC222006205F8 /* System.Threading.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED8700241FC221006205F8 /* System.Threading.dll */; };
+		78ED8715241FC222006205F8 /* System.Runtime.Extensions.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED8701241FC221006205F8 /* System.Runtime.Extensions.dll */; };
+		78ED8716241FC222006205F8 /* System.Collections.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78ED8702241FC222006205F8 /* System.Collections.dll.o */; };
+		78ED8717241FC222006205F8 /* Program.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78ED8703241FC222006205F8 /* Program.dll.o */; };
+		78ED8718241FC222006205F8 /* System.Memory.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78ED8704241FC222006205F8 /* System.Memory.dll.o */; };
+		78ED8719241FC222006205F8 /* System.Core.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED8705241FC222006205F8 /* System.Core.dll */; };
+		78ED871A241FC222006205F8 /* Program.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED8706241FC222006205F8 /* Program.dll */; };
+		78ED871B241FC222006205F8 /* System.Linq.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED8707241FC222006205F8 /* System.Linq.dll */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		78A08F0D241D7931003F6545 /* HelloiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelloiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		78A08F1C241D7932003F6545 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		78A08F21241D7932003F6545 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		78A08F22241D7932003F6545 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		78A08F2A241D79E1003F6545 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		78A08F2C241D79E7003F6545 /* GSS.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GSS.framework; path = System/Library/Frameworks/GSS.framework; sourceTree = SDKROOT; };
+		78A08F2E241D79F1003F6545 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		78A08F30241D79F7003F6545 /* libicucore.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libicucore.tbd; path = usr/lib/libicucore.tbd; sourceTree = SDKROOT; };
+		78A08F52241E4046003F6545 /* runtime.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = runtime.h; sourceTree = "<group>"; };
+		78A08F53241E4067003F6545 /* runtime.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = runtime.m; sourceTree = "<group>"; };
+		78ED86F4241FC221006205F8 /* System.Threading.Tasks.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Threading.Tasks.dll; sourceTree = SOURCE_ROOT; };
+		78ED86F5241FC221006205F8 /* System.Private.CoreLib.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Private.CoreLib.dll.o; sourceTree = SOURCE_ROOT; };
+		78ED86F6241FC221006205F8 /* System.Private.CoreLib.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Private.CoreLib.dll; sourceTree = SOURCE_ROOT; };
+		78ED86F7241FC221006205F8 /* System.Core.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Core.dll.o; sourceTree = SOURCE_ROOT; };
+		78ED86F8241FC221006205F8 /* System.Runtime.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Runtime.dll; sourceTree = SOURCE_ROOT; };
+		78ED86F9241FC221006205F8 /* System.Runtime.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Runtime.dll.o; sourceTree = SOURCE_ROOT; };
+		78ED86FA241FC221006205F8 /* System.Runtime.Extensions.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Runtime.Extensions.dll.o; sourceTree = SOURCE_ROOT; };
+		78ED86FB241FC221006205F8 /* System.Collections.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Collections.dll; sourceTree = SOURCE_ROOT; };
+		78ED86FC241FC221006205F8 /* System.Linq.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Linq.dll.o; sourceTree = SOURCE_ROOT; };
+		78ED86FD241FC221006205F8 /* System.Threading.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Threading.dll.o; sourceTree = SOURCE_ROOT; };
+		78ED86FE241FC221006205F8 /* System.Threading.Tasks.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Threading.Tasks.dll.o; sourceTree = SOURCE_ROOT; };
+		78ED86FF241FC221006205F8 /* System.Memory.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Memory.dll; sourceTree = SOURCE_ROOT; };
+		78ED8700241FC221006205F8 /* System.Threading.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Threading.dll; sourceTree = SOURCE_ROOT; };
+		78ED8701241FC221006205F8 /* System.Runtime.Extensions.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Runtime.Extensions.dll; sourceTree = SOURCE_ROOT; };
+		78ED8702241FC222006205F8 /* System.Collections.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Collections.dll.o; sourceTree = SOURCE_ROOT; };
+		78ED8703241FC222006205F8 /* Program.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = Program.dll.o; sourceTree = SOURCE_ROOT; };
+		78ED8704241FC222006205F8 /* System.Memory.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Memory.dll.o; sourceTree = SOURCE_ROOT; };
+		78ED8705241FC222006205F8 /* System.Core.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Core.dll; sourceTree = SOURCE_ROOT; };
+		78ED8706241FC222006205F8 /* Program.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = Program.dll; sourceTree = SOURCE_ROOT; };
+		78ED8707241FC222006205F8 /* System.Linq.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Linq.dll; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		78A08F0A241D7931003F6545 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78ED870D241FC222006205F8 /* System.Runtime.dll.o in Frameworks */,
+				78ED8710241FC222006205F8 /* System.Linq.dll.o in Frameworks */,
+				78ED8718241FC222006205F8 /* System.Memory.dll.o in Frameworks */,
+				78ED8711241FC222006205F8 /* System.Threading.dll.o in Frameworks */,
+				78A08F2D241D79E7003F6545 /* GSS.framework in Frameworks */,
+				78A08F2F241D79F1003F6545 /* UIKit.framework in Frameworks */,
+				78ED870E241FC222006205F8 /* System.Runtime.Extensions.dll.o in Frameworks */,
+				78ED870B241FC222006205F8 /* System.Core.dll.o in Frameworks */,
+				78ED8712241FC222006205F8 /* System.Threading.Tasks.dll.o in Frameworks */,
+				78A08F2B241D79E1003F6545 /* Foundation.framework in Frameworks */,
+				78ED8716241FC222006205F8 /* System.Collections.dll.o in Frameworks */,
+				78ED8717241FC222006205F8 /* Program.dll.o in Frameworks */,
+				78A08F31241D79FF003F6545 /* libicucore.tbd in Frameworks */,
+				78ED8709241FC222006205F8 /* System.Private.CoreLib.dll.o in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		78A08F04241D7931003F6545 = {
+			isa = PBXGroup;
+			children = (
+				78A08F0F241D7931003F6545 /* HelloiOS */,
+				78A08F0E241D7931003F6545 /* Products */,
+				78A08F29241D79E1003F6545 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		78A08F0E241D7931003F6545 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				78A08F0D241D7931003F6545 /* HelloiOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		78A08F0F241D7931003F6545 /* HelloiOS */ = {
+			isa = PBXGroup;
+			children = (
+				78ED8706241FC222006205F8 /* Program.dll */,
+				78ED8703241FC222006205F8 /* Program.dll.o */,
+				78ED86FB241FC221006205F8 /* System.Collections.dll */,
+				78ED8702241FC222006205F8 /* System.Collections.dll.o */,
+				78ED8705241FC222006205F8 /* System.Core.dll */,
+				78ED86F7241FC221006205F8 /* System.Core.dll.o */,
+				78ED8707241FC222006205F8 /* System.Linq.dll */,
+				78ED86FC241FC221006205F8 /* System.Linq.dll.o */,
+				78ED86FF241FC221006205F8 /* System.Memory.dll */,
+				78ED8704241FC222006205F8 /* System.Memory.dll.o */,
+				78ED86F6241FC221006205F8 /* System.Private.CoreLib.dll */,
+				78ED86F5241FC221006205F8 /* System.Private.CoreLib.dll.o */,
+				78ED86F8241FC221006205F8 /* System.Runtime.dll */,
+				78ED86F9241FC221006205F8 /* System.Runtime.dll.o */,
+				78ED8701241FC221006205F8 /* System.Runtime.Extensions.dll */,
+				78ED86FA241FC221006205F8 /* System.Runtime.Extensions.dll.o */,
+				78ED8700241FC221006205F8 /* System.Threading.dll */,
+				78ED86FD241FC221006205F8 /* System.Threading.dll.o */,
+				78ED86F4241FC221006205F8 /* System.Threading.Tasks.dll */,
+				78ED86FE241FC221006205F8 /* System.Threading.Tasks.dll.o */,
+				78A08F1C241D7932003F6545 /* Assets.xcassets */,
+				78A08F21241D7932003F6545 /* Info.plist */,
+				78A08F22241D7932003F6545 /* main.m */,
+				78A08F52241E4046003F6545 /* runtime.h */,
+				78A08F53241E4067003F6545 /* runtime.m */,
+			);
+			path = HelloiOS;
+			sourceTree = "<group>";
+		};
+		78A08F29241D79E1003F6545 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				78A08F30241D79F7003F6545 /* libicucore.tbd */,
+				78A08F2E241D79F1003F6545 /* UIKit.framework */,
+				78A08F2C241D79E7003F6545 /* GSS.framework */,
+				78A08F2A241D79E1003F6545 /* Foundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		78A08F0C241D7931003F6545 /* HelloiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 78A08F26241D7932003F6545 /* Build configuration list for PBXNativeTarget "HelloiOS" */;
+			buildPhases = (
+				78A08F09241D7931003F6545 /* Sources */,
+				78A08F0A241D7931003F6545 /* Frameworks */,
+				78A08F0B241D7931003F6545 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HelloiOS;
+			productName = HelloiOS;
+			productReference = 78A08F0D241D7931003F6545 /* HelloiOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		78A08F05241D7931003F6545 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1130;
+				ORGANIZATIONNAME = Microsoft;
+				TargetAttributes = {
+					78A08F0C241D7931003F6545 = {
+						CreatedOnToolsVersion = 11.3.1;
+					};
+				};
+			};
+			buildConfigurationList = 78A08F08241D7931003F6545 /* Build configuration list for PBXProject "HelloiOS" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 78A08F04241D7931003F6545;
+			productRefGroup = 78A08F0E241D7931003F6545 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				78A08F0C241D7931003F6545 /* HelloiOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		78A08F0B241D7931003F6545 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78ED8719241FC222006205F8 /* System.Core.dll in Resources */,
+				78ED870F241FC222006205F8 /* System.Collections.dll in Resources */,
+				78ED8713241FC222006205F8 /* System.Memory.dll in Resources */,
+				78ED871B241FC222006205F8 /* System.Linq.dll in Resources */,
+				78ED871A241FC222006205F8 /* Program.dll in Resources */,
+				78ED8714241FC222006205F8 /* System.Threading.dll in Resources */,
+				78ED870A241FC222006205F8 /* System.Private.CoreLib.dll in Resources */,
+				78ED8715241FC222006205F8 /* System.Runtime.Extensions.dll in Resources */,
+				78A08F1D241D7932003F6545 /* Assets.xcassets in Resources */,
+				78ED8708241FC222006205F8 /* System.Threading.Tasks.dll in Resources */,
+				78ED870C241FC222006205F8 /* System.Runtime.dll in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		78A08F09241D7931003F6545 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				78A08F54241E4067003F6545 /* runtime.m in Sources */,
+				78A08F23241D7932003F6545 /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		78A08F24241D7932003F6545 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_BITCODE = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		78A08F25241D7932003F6545 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_BITCODE = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		78A08F27241D7932003F6545 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = H6BUBW32QD;
+				HEADER_SEARCH_PATHS = "/Users/egorbo/prj/runtime-hw/artifacts/bin/mono/iOS.arm64.Debug/include/mono-2.0";
+				INFOPLIST_FILE = HelloiOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"OTHER_LDFLAGS[sdk=*]" = (
+					"-liconv",
+					"-lz",
+					"-u",
+					_xamarin_log,
+					"-u",
+					_xamarin_timezone_get_data,
+					"-u",
+					_xamarin_timezone_get_names,
+					"-force_load",
+					"/Users/egorbo/prj/runtime-hw/artifacts/bin/mono/iOS.arm64.Debug/libmono.a",
+					"-force_load",
+					"/Users/egorbo/prj/runtime-hw/artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.IO.Compression.Native.a",
+					"-force_load",
+					"/Users/egorbo/prj/runtime-hw/artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.Native.a",
+					"-force_load",
+					"/Users/egorbo/prj/runtime-hw/artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.Security.Cryptography.Native.Apple.a",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dotnet.HelloiOS;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		78A08F28241D7932003F6545 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = H6BUBW32QD;
+				HEADER_SEARCH_PATHS = "/Users/egorbo/prj/runtime-hw/artifacts/bin/mono/iOS.arm64.Debug/include/mono-2.0";
+				INFOPLIST_FILE = HelloiOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dotnet.HelloiOS;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		78A08F08241D7931003F6545 /* Build configuration list for PBXProject "HelloiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				78A08F24241D7932003F6545 /* Debug */,
+				78A08F25241D7932003F6545 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		78A08F26241D7932003F6545 /* Build configuration list for PBXNativeTarget "HelloiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				78A08F27241D7932003F6545 /* Debug */,
+				78A08F28241D7932003F6545 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 78A08F05241D7931003F6545 /* Project object */;
+}

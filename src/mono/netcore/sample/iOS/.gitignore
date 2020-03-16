@@ -1,0 +1,7 @@
+bin/
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.s
+*.o
+*.dll
