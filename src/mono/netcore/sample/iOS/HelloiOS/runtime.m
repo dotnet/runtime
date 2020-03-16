@@ -220,6 +220,11 @@ extern void *mono_aot_module_System_Threading_info;
 extern void *mono_aot_module_System_Threading_Tasks_info;
 extern void *mono_aot_module_System_Linq_info;
 extern void *mono_aot_module_System_Memory_info;
+extern void *mono_aot_module_System_Runtime_InteropServices_info;
+extern void *mono_aot_module_System_Text_Encoding_Extensions_info;
+extern void *mono_aot_module_Microsoft_Win32_Primitives_info;
+extern void *mono_aot_module_System_Console_info;
+extern void *mono_aot_module_Program_info;
 
 void mono_ios_register_modules (void)
 {
@@ -233,6 +238,11 @@ void mono_ios_register_modules (void)
     mono_aot_register_module (mono_aot_module_System_Threading_Tasks_info);
     mono_aot_register_module (mono_aot_module_System_Linq_info);
     mono_aot_register_module (mono_aot_module_System_Memory_info);
+    mono_aot_register_module (mono_aot_module_System_Runtime_InteropServices_info);
+    mono_aot_register_module (mono_aot_module_System_Text_Encoding_Extensions_info);
+    mono_aot_register_module (mono_aot_module_Microsoft_Win32_Primitives_info);
+    mono_aot_register_module (mono_aot_module_System_Console_info);
+    mono_aot_register_module (mono_aot_module_Program_info);
 }
 
 void mono_ios_setup_execution_mode (void)

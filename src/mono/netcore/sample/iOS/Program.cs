@@ -19,5 +19,9 @@ public static class Program
             ios_set_text (msg.Substring (0, i + 1));
             await Task.Delay (100);
         }
+
+        // TODO: Implement ConsolePal.iOS.cs for TargetsiOS==true.
+        // to redirect stdout to NSLog
+        Console.WriteLine("Done!");
     }
 }

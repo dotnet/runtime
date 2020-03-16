@@ -13,6 +13,14 @@
 		78A08F2F241D79F1003F6545 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78A08F2E241D79F1003F6545 /* UIKit.framework */; };
 		78A08F31241D79FF003F6545 /* libicucore.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 78A08F30241D79F7003F6545 /* libicucore.tbd */; };
 		78A08F54241E4067003F6545 /* runtime.m in Sources */ = {isa = PBXBuildFile; fileRef = 78A08F53241E4067003F6545 /* runtime.m */; };
+		78E6204624201E6800A2220E /* Microsoft.Win32.Primitives.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78E6203E24201E6700A2220E /* Microsoft.Win32.Primitives.dll.o */; };
+		78E6204724201E6800A2220E /* System.Console.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78E6203F24201E6700A2220E /* System.Console.dll */; };
+		78E6204824201E6800A2220E /* System.Console.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78E6204024201E6700A2220E /* System.Console.dll.o */; };
+		78E6204924201E6800A2220E /* Microsoft.Win32.Primitives.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78E6204124201E6700A2220E /* Microsoft.Win32.Primitives.dll */; };
+		78E6204A24201E6800A2220E /* System.Text.Encoding.Extensions.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78E6204224201E6700A2220E /* System.Text.Encoding.Extensions.dll.o */; };
+		78E6204B24201E6800A2220E /* System.Runtime.InteropServices.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78E6204324201E6800A2220E /* System.Runtime.InteropServices.dll.o */; };
+		78E6204C24201E6800A2220E /* System.Text.Encoding.Extensions.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78E6204424201E6800A2220E /* System.Text.Encoding.Extensions.dll */; };
+		78E6204D24201E6800A2220E /* System.Runtime.InteropServices.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78E6204524201E6800A2220E /* System.Runtime.InteropServices.dll */; };
 		78ED8708241FC222006205F8 /* System.Threading.Tasks.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED86F4241FC221006205F8 /* System.Threading.Tasks.dll */; };
 		78ED8709241FC222006205F8 /* System.Private.CoreLib.dll.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 78ED86F5241FC221006205F8 /* System.Private.CoreLib.dll.o */; };
 		78ED870A241FC222006205F8 /* System.Private.CoreLib.dll in Resources */ = {isa = PBXBuildFile; fileRef = 78ED86F6241FC221006205F8 /* System.Private.CoreLib.dll */; };
@@ -45,6 +53,14 @@
 		78A08F30241D79F7003F6545 /* libicucore.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libicucore.tbd; path = usr/lib/libicucore.tbd; sourceTree = SDKROOT; };
 		78A08F52241E4046003F6545 /* runtime.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = runtime.h; sourceTree = "<group>"; };
 		78A08F53241E4067003F6545 /* runtime.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = runtime.m; sourceTree = "<group>"; };
+		78E6203E24201E6700A2220E /* Microsoft.Win32.Primitives.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = Microsoft.Win32.Primitives.dll.o; sourceTree = SOURCE_ROOT; };
+		78E6203F24201E6700A2220E /* System.Console.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Console.dll; sourceTree = SOURCE_ROOT; };
+		78E6204024201E6700A2220E /* System.Console.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Console.dll.o; sourceTree = SOURCE_ROOT; };
+		78E6204124201E6700A2220E /* Microsoft.Win32.Primitives.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = Microsoft.Win32.Primitives.dll; sourceTree = SOURCE_ROOT; };
+		78E6204224201E6700A2220E /* System.Text.Encoding.Extensions.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Text.Encoding.Extensions.dll.o; sourceTree = SOURCE_ROOT; };
+		78E6204324201E6800A2220E /* System.Runtime.InteropServices.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Runtime.InteropServices.dll.o; sourceTree = SOURCE_ROOT; };
+		78E6204424201E6800A2220E /* System.Text.Encoding.Extensions.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Text.Encoding.Extensions.dll; sourceTree = SOURCE_ROOT; };
+		78E6204524201E6800A2220E /* System.Runtime.InteropServices.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Runtime.InteropServices.dll; sourceTree = SOURCE_ROOT; };
 		78ED86F4241FC221006205F8 /* System.Threading.Tasks.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Threading.Tasks.dll; sourceTree = SOURCE_ROOT; };
 		78ED86F5241FC221006205F8 /* System.Private.CoreLib.dll.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = System.Private.CoreLib.dll.o; sourceTree = SOURCE_ROOT; };
 		78ED86F6241FC221006205F8 /* System.Private.CoreLib.dll */ = {isa = PBXFileReference; lastKnownFileType = file; path = System.Private.CoreLib.dll; sourceTree = SOURCE_ROOT; };
@@ -73,10 +89,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				78ED870D241FC222006205F8 /* System.Runtime.dll.o in Frameworks */,
+				78E6204824201E6800A2220E /* System.Console.dll.o in Frameworks */,
+				78E6204A24201E6800A2220E /* System.Text.Encoding.Extensions.dll.o in Frameworks */,
 				78ED8710241FC222006205F8 /* System.Linq.dll.o in Frameworks */,
 				78ED8718241FC222006205F8 /* System.Memory.dll.o in Frameworks */,
 				78ED8711241FC222006205F8 /* System.Threading.dll.o in Frameworks */,
 				78A08F2D241D79E7003F6545 /* GSS.framework in Frameworks */,
+				78E6204B24201E6800A2220E /* System.Runtime.InteropServices.dll.o in Frameworks */,
 				78A08F2F241D79F1003F6545 /* UIKit.framework in Frameworks */,
 				78ED870E241FC222006205F8 /* System.Runtime.Extensions.dll.o in Frameworks */,
 				78ED870B241FC222006205F8 /* System.Core.dll.o in Frameworks */,
@@ -85,6 +104,7 @@
 				78ED8716241FC222006205F8 /* System.Collections.dll.o in Frameworks */,
 				78ED8717241FC222006205F8 /* Program.dll.o in Frameworks */,
 				78A08F31241D79FF003F6545 /* libicucore.tbd in Frameworks */,
+				78E6204624201E6800A2220E /* Microsoft.Win32.Primitives.dll.o in Frameworks */,
 				78ED8709241FC222006205F8 /* System.Private.CoreLib.dll.o in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -112,6 +132,14 @@
 		78A08F0F241D7931003F6545 /* HelloiOS */ = {
 			isa = PBXGroup;
 			children = (
+				78E6204124201E6700A2220E /* Microsoft.Win32.Primitives.dll */,
+				78E6203E24201E6700A2220E /* Microsoft.Win32.Primitives.dll.o */,
+				78E6203F24201E6700A2220E /* System.Console.dll */,
+				78E6204024201E6700A2220E /* System.Console.dll.o */,
+				78E6204524201E6800A2220E /* System.Runtime.InteropServices.dll */,
+				78E6204324201E6800A2220E /* System.Runtime.InteropServices.dll.o */,
+				78E6204424201E6800A2220E /* System.Text.Encoding.Extensions.dll */,
+				78E6204224201E6700A2220E /* System.Text.Encoding.Extensions.dll.o */,
 				78ED8706241FC222006205F8 /* Program.dll */,
 				78ED8703241FC222006205F8 /* Program.dll.o */,
 				78ED86FB241FC221006205F8 /* System.Collections.dll */,
@@ -209,9 +237,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				78ED8719241FC222006205F8 /* System.Core.dll in Resources */,
+				78E6204924201E6800A2220E /* Microsoft.Win32.Primitives.dll in Resources */,
 				78ED870F241FC222006205F8 /* System.Collections.dll in Resources */,
+				78E6204724201E6800A2220E /* System.Console.dll in Resources */,
+				78E6204D24201E6800A2220E /* System.Runtime.InteropServices.dll in Resources */,
 				78ED8713241FC222006205F8 /* System.Memory.dll in Resources */,
 				78ED871B241FC222006205F8 /* System.Linq.dll in Resources */,
+				78E6204C24201E6800A2220E /* System.Text.Encoding.Extensions.dll in Resources */,
 				78ED871A241FC222006205F8 /* Program.dll in Resources */,
 				78ED8714241FC222006205F8 /* System.Threading.dll in Resources */,
 				78ED870A241FC222006205F8 /* System.Private.CoreLib.dll in Resources */,
@@ -351,7 +383,6 @@
 		78A08F27241D7932003F6545 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = H6BUBW32QD;
 				HEADER_SEARCH_PATHS = "../../../../../artifacts/bin/mono/iOS.arm64.Debug/include/mono-2.0";
@@ -387,7 +418,6 @@
 		78A08F28241D7932003F6545 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = H6BUBW32QD;
 				HEADER_SEARCH_PATHS = "../../../../../bin/mono/iOS.arm64.Debug/include/mono-2.0";
