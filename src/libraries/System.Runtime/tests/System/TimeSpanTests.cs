@@ -145,8 +145,8 @@ namespace System.Tests
         [Fact]
         public static void FromMinMaxValue_DoesNotThrow()
         {
-            var maxTimeSpan = TimeSpan.FromDays(TimeSpan.MaxValue.TotalDays);
-            var minTimeSpan = TimeSpan.FromDays(TimeSpan.MinValue.TotalDays);
+            TimeSpan maxTimeSpan = TimeSpan.FromDays(TimeSpan.MaxValue.TotalDays);
+            TimeSpan minTimeSpan = TimeSpan.FromDays(TimeSpan.MinValue.TotalDays);
 
             Assert.Equal(TimeSpan.MaxValue, maxTimeSpan);
             Assert.Equal(TimeSpan.MinValue, minTimeSpan);
