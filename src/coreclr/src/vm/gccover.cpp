@@ -1407,7 +1407,8 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
         // where the call could be coming from a thread unknown to the CLR and
         // we haven't created a thread yet - see PreStubWorker_Preemptive().
         _ASSERTE(pMD->HasNativeCallableAttribute());
-        return (FALSE);
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+        return TRUE;
     }
 
 #if defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX)
