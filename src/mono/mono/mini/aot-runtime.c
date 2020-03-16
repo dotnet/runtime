@@ -1916,11 +1916,6 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 		usable = FALSE;
 	}
 
-	if (!mono_aot_only && (info->simd_opts & ~mono_arch_cpu_enumerate_simd_versions ())) {
-		msg = g_strdup ("compiled with unsupported SIMD extensions");
-		usable = FALSE;
-	}
-
 	if (info->gc_name_index != -1) {
 		char *gc_name = (char*)&blob [info->gc_name_index];
 		const char *current_gc_name = mono_gc_get_gc_name ();

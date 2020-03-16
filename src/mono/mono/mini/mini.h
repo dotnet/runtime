@@ -2783,28 +2783,6 @@ char* mono_get_method_from_ip (void *ip);
 
 /* SIMD support */
 
-/*
-This enum MUST be kept in sync with its managed mirror Mono.Simd.AccelMode.
- */
-enum {
-	SIMD_VERSION_SSE1	= 1 << 0,
-	SIMD_VERSION_SSE2	= 1 << 1,
-	SIMD_VERSION_SSE3	= 1 << 2,
-	SIMD_VERSION_SSSE3	= 1 << 3,
-	SIMD_VERSION_SSE41	= 1 << 4,
-	SIMD_VERSION_SSE42	= 1 << 5,
-	SIMD_VERSION_SSE4a	= 1 << 6,
-	SIMD_VERSION_ALL	= SIMD_VERSION_SSE1 | SIMD_VERSION_SSE2 |
-			  SIMD_VERSION_SSE3 | SIMD_VERSION_SSSE3 |
-			  SIMD_VERSION_SSE41 | SIMD_VERSION_SSE42 |
-			  SIMD_VERSION_SSE4a,
-
-	/* this value marks the end of the bit indexes used in 
-	 * this emum.
-	 */
-	SIMD_VERSION_INDEX_END = 6
-};
-
 typedef enum {
 	/* Used for lazy initialization */
 	MONO_CPU_INITED		= 1 << 0,
@@ -2968,7 +2946,6 @@ typedef enum {
 } SimdOp;
 
 const char *mono_arch_xregname (int reg);
-guint32     mono_arch_cpu_enumerate_simd_versions (void);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS

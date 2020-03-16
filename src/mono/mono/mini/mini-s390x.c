@@ -6723,31 +6723,6 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name	    - mono_arch_cpu_enumerate_simd_versions.                */
-/*                                                                  */
-/* Function - If this CPU supports vector operations then it        */
-/*            supports the equivalent of SSE1-4.                    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-guint32
-mono_arch_cpu_enumerate_simd_versions (void)
-{
-	guint32 sseOpts = 0;
-
-	if (mono_hwcap_s390x_has_vec)
-		sseOpts = (SIMD_VERSION_SSE1  | SIMD_VERSION_SSE2 |
-		           SIMD_VERSION_SSE3  | SIMD_VERSION_SSSE3 |
-		           SIMD_VERSION_SSE41 | SIMD_VERSION_SSE42 |
-			   SIMD_VERSION_SSE4a);
-
-	return (sseOpts);
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name	    - mono_arch_opcode_supported.                           */
 /*                                                                  */
 /* Function - Check if a given op code is supported.                */
