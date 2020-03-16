@@ -33,15 +33,38 @@ namespace System.Net.Http.Json
         private static async Task<T> ReadFromJsonAsyncCore<T>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             Stream contentStream = await GetJsonStreamFromContentAsync(content).ConfigureAwait(false);
-            return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken);
+            return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken).ConfigureAwait(false);
         }
 
-        private static Task<Stream> GetJsonStreamFromContentAsync(HttpContent content)
+        private static async Task<Stream> GetJsonStreamFromContentAsync(HttpContent content)
         {
             ValidateMediaType(content.Headers.ContentType?.MediaType);
             Debug.Assert(content.Headers.ContentType != null);
 
-            string? charset = content.Headers.ContentType.CharSet;
+            Encoding? sourceEncoding = GetEncoding(content.Headers.ContentType.CharSet);
+
+            Stream jsonStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
+
+            // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
+            if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
+            {
+                jsonStream = new TranscodingReadStream(jsonStream, sourceEncoding);
+            }
+
+            return jsonStream;
+        }
+
+        private static void ValidateMediaType(string? mediaType)
+        {
+            if (mediaType != JsonContent.JsonMediaType &&
+                 mediaType != MediaTypeNames.Text.Plain)
+            {
+                throw new NotSupportedException(SR.ContentTypeNotSupported);
+            }
+        }
+
+        private static Encoding? GetEncoding(string charset)
+        {
             Encoding? encoding = null;
 
             if (charset != null)
@@ -62,25 +85,11 @@ namespace System.Net.Http.Json
                 {
                     throw new InvalidOperationException(SR.CharSetInvalid, e);
                 }
+
+                Debug.Assert(encoding != null);
             }
 
-            //TODO: We should allow encodings other than UTF-8 and we should transcode to UTF-8 if we get one.
-            // This would be easier to achieve once https://github.com/dotnet/runtime/issues/30260 is done.
-            if (encoding != null && encoding != Encoding.UTF8)
-            {
-                throw new NotSupportedException(SR.CharSetNotSupported);
-            }
-
-            return content.ReadAsStreamAsync();
-        }
-
-        private static void ValidateMediaType(string? mediaType)
-        {
-            if (mediaType != JsonContent.JsonMediaType &&
-                 mediaType != MediaTypeNames.Text.Plain)
-            {
-                throw new NotSupportedException(SR.ContentTypeNotSupported);
-            }
+            return encoding;
         }
     }
 }

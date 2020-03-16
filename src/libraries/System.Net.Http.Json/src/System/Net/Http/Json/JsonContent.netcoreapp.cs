@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,6 +13,6 @@ namespace System.Net.Http.Json
     public partial class JsonContent
     {
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
-            => JsonSerializer.SerializeAsync(stream, Value, ObjectType, _jsonSerializerOptions, cancellationToken);
+            => JsonSerializer.SerializeAsync(GetStreamToWriteTo(stream), Value, ObjectType, _jsonSerializerOptions, cancellationToken);
     }
 }

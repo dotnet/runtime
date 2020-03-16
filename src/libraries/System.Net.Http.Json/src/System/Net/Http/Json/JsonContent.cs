@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -35,16 +36,6 @@ namespace System.Net.Http.Json
             Value = value;
             ObjectType = inputType;
             Headers.ContentType = mediaType;
-
-            //    // TODO: Support other charsets once https://github.com/dotnet/runtime/issues/30260 is done.
-            //    string charset = mediaType.CharSet;
-            //    if (charset != null && charset != Encoding.UTF8.WebName)
-            //    {
-            //        // Add validations for uppercase, quoted and invalid charsets.
-            //        _encoding = Encoding.GetEncoding(charset);
-            //        //throw new NotSupportedException(SR.CharSetInvalid);
-            //    }
-
             _jsonSerializerOptions = options;
         }
 
@@ -67,13 +58,56 @@ namespace System.Net.Http.Json
 #if !NETSTANDARD2_0
             => SerializeToStreamAsync(stream, context, CancellationToken.None);
 #else
-            => JsonSerializer.SerializeAsync(stream, Value, ObjectType, _jsonSerializerOptions);
+            => JsonSerializer.SerializeAsync(GetStreamToWriteTo(stream), Value, ObjectType, _jsonSerializerOptions);
 #endif
 
         protected override bool TryComputeLength(out long length)
         {
             length = 0;
             return false;
+        }
+
+        private Stream GetStreamToWriteTo(Stream targetStream)
+        {
+            Stream jsonStream = targetStream;
+            Encoding? targetEncoding = GetEncoding(Headers.ContentType.CharSet);
+
+            // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
+            if (targetEncoding != null && targetEncoding != Encoding.UTF8)
+            {
+                jsonStream = new TranscodingWriteStream(jsonStream, targetEncoding);
+            }
+
+            return jsonStream;
+        }
+
+        private static Encoding? GetEncoding(string charset)
+        {
+            Encoding? encoding = null;
+
+            if (charset != null)
+            {
+                try
+                {
+                    // Remove at most a single set of quotes.
+                    if (charset.Length > 2 && charset[0] == '\"' && charset[charset.Length - 1] == '\"')
+                    {
+                        encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
+                    }
+                    else
+                    {
+                        encoding = Encoding.GetEncoding(charset);
+                    }
+                }
+                catch (ArgumentException e)
+                {
+                    throw new InvalidOperationException(SR.CharSetInvalid, e);
+                }
+
+                Debug.Assert(encoding != null);
+            }
+
+            return encoding;
         }
     }
 }
