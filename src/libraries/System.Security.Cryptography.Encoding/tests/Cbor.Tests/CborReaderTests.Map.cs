@@ -174,9 +174,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("a1", 1, 0)]
-        [InlineData("a20102", 2, 1)]
-        [InlineData("a601020304", 6, 2)]
+        [InlineData("a2011907e4", 2, 1)]
+        [InlineData("a6011a01344224031a01344224", 6, 2)]
         public static void ReadMap_IncorrectDefiniteLength_ShouldThrowFormatException(string hexEncoding, int expectedLength, int actualLength)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -195,9 +194,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("a1", 1, 0)]
-        [InlineData("a2018101", 2, 1)]
-        [InlineData("a6018101028102", 6, 2)]
+        [InlineData("a201811907e4", 2, 1)]
+        [InlineData("a61907e4811907e402811907e4", 6, 2)]
         public static void ReadMap_IncorrectDefiniteLength_NestedValues_ShouldThrowFormatException(string hexEncoding, int expectedLength, int actualLength)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -263,14 +261,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("bb7fffffffffffffff", long.MaxValue)]
-        public static void ReadStartMap_LargestSupportedFieldCount_ShouldSucceed(string hexEncoding, ulong expectedLength)
+        [InlineData("b1")]
+        [InlineData("b20101")]
+        [InlineData("bb7fffffffffffffff")] // long.MaxValue
+        public static void ReadStartMap_BufferTooSmall_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
 
-            ulong? actualLength = reader.ReadStartMap();
-            Assert.Equal(expectedLength, actualLength);
+            Assert.Throws<FormatException>(() => reader.ReadStartMap());
         }
 
         [Theory]

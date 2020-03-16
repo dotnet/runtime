@@ -133,9 +133,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("81", 1, 0)]
-        [InlineData("8201", 2, 1)]
-        [InlineData("860102", 6, 2)]
+        [InlineData("821907e4", 2, 1)]
+        [InlineData("861907e41907e4", 6, 2)]
         public static void ReadArray_IncorrectDefiniteLength_ShouldThrowFormatException(string hexEncoding, int expectedLength, int actualLength)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -153,9 +152,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("81", 1, 0)]
         [InlineData("828101", 2, 1)]
-        [InlineData("8681018102", 6, 2)]
+        [InlineData("868101811907e4", 6, 2)]
         public static void ReadArray_IncorrectDefiniteLength_NestedValues_ShouldThrowFormatException(string hexEncoding, int expectedLength, int actualLength)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -211,6 +209,18 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("9a000000")]
         [InlineData("9b00000000000000")]
         public static void ReadStartArray_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            Assert.Throws<FormatException>(() => reader.ReadStartArray());
+        }
+
+        [Theory]
+        [InlineData("81")]
+        [InlineData("830102")]
+        [InlineData("9b7fffffffffffffff")] // long.MaxValue
+        public static void ReadStartArray_BufferTooSmall_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
