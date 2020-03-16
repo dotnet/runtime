@@ -2198,6 +2198,7 @@ void Compiler::compSetProcessor()
 #ifdef TARGET_XARCH
     opts.compSupportsISA         = 0;
     opts.compSupportsISAReported = 0;
+    bool avxSupported = false;
 
     if (JitConfig.EnableHWIntrinsic())
     {

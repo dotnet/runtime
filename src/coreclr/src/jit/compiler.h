@@ -7635,12 +7635,12 @@ private:
     SIMDLevel getSIMDSupportLevel()
     {
 #if defined(TARGET_XARCH)
-        if (compSupportsOptional(InstructionSet_AVX2))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
             return SIMD_AVX2_Supported;
         }
 
-        if (compSupportsOptional(InstructionSet_SSE42))
+        if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
         {
             return SIMD_SSE4_Supported;
         }
@@ -7786,7 +7786,7 @@ private:
                     unreached();
             }
         }
-        assert(emitTypeSize(simdType) <= maxSIMDStructBytes());
+        assert(emitTypeSize(simdType) <= largestEnregisterableStructSize());
         switch (simdBaseType)
         {
             case TYP_FLOAT:
@@ -8039,6 +8039,8 @@ private:
     var_types getSIMDVectorType()
     {
 #if defined(TARGET_XARCH)
+        // Fix the exact level of simd vector support by using compExactlyDependsOn on the Avx2 isa
+        compExactlyDependsOn(InstructionSet_AVX2);
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
             return TYP_SIMD32;
@@ -8085,7 +8087,7 @@ private:
         else
         {
             assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
-            compSupports(InstructionSet_AVX2); // Record that AVX2 isn't supported
+            compExactlyDependsOn(InstructionSet_AVX2); // Record that AVX2 isn't supported
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -8106,7 +8108,7 @@ private:
     unsigned int maxSIMDStructBytes()
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        if (compSupportsOptional(InstructionSet_AVX))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
             return YMM_REGSIZE_BYTES;
         }
@@ -8119,6 +8121,7 @@ private:
         return getSIMDVectorRegisterByteLength();
 #endif
     }
+
     unsigned int minSIMDStructBytes()
     {
         return emitTypeSize(TYP_SIMD8);
@@ -8178,6 +8181,12 @@ public:
     unsigned largestEnregisterableStructSize()
     {
 #ifdef FEATURE_SIMD
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        if (opts.IsReadyToRun())
+        {
+            return YMM_REGSIZE_BYTES;
+        }
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         unsigned vectorRegSize = maxSIMDStructBytes();
         assert(vectorRegSize >= TARGET_POINTER_SIZE);
         return vectorRegSize;
@@ -8263,10 +8272,12 @@ private:
         return false;
     }
 
+#ifdef DEBUG
     // Answer the question: Is a particular ISA supported?
     // Use this api when asking the question so that future
-    // ISA questions can be asked correctly.
-    bool compSupportsNoReporting(CORINFO_InstructionSet isa) const
+    // ISA questions can be asked correctly or when asserting 
+    // support/nonsupport for an instruction set
+    bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (opts.compSupportsISA & (1ULL << isa)) != 0;
@@ -8274,24 +8285,26 @@ private:
         return false;
 #endif
     }
+#endif // DEBUG
 
     void notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
 
     // Answer the question: Is a particular ISA supported?
     // The result of this api call will exactly match the target machine
     // on which the function is executed (except for CoreLib, where there are special rules)
-    bool compSupports(CORINFO_InstructionSet isa) const
+    bool compExactlyDependsOn(CORINFO_InstructionSet isa) const
     {
 
-        uint64_t isaBit = (1ULL << isa);
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+        uint64_t isaBit = (1ULL << isa);
+        bool isaSupported = (opts.compSupportsISA & (1ULL << isa)) != 0;
         if ((opts.compSupportsISAReported & isaBit) == 0)
         {
-            notifyInstructionSetUsage(isa, compSupportsNoReporting(isa));
+            notifyInstructionSetUsage(isa, isaSupported);
             ((Compiler*)this)->opts.compSupportsISAReported |= isaBit;
         }
 
-        return compSupportsNoReporting(isa);
+        return isaSupported;
 #else
         return false;
 #endif
@@ -8300,11 +8313,11 @@ private:
     // Answer the question: Is a particular ISA supported?
     // The result of this api call will match the target machine if the result is true
     // If the result is false, then the target machine may have support for the instruction
-    bool compSupportsOptional(CORINFO_InstructionSet isa) const
+    bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         if ((opts.compSupportsISA & (1ULL << isa)) != 0)
-            return compSupports(isa);
+            return compExactlyDependsOn(isa);
         else
             return false;
 #else
@@ -8315,7 +8328,7 @@ private:
     bool canUseVexEncoding() const
     {
 #ifdef TARGET_XARCH
-        return compSupportsOptional(InstructionSet_AVX);
+        return compOpportunisticallyDependsOn(InstructionSet_AVX);
 #else
         return false;
 #endif
