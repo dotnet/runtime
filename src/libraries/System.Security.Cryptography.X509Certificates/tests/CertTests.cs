@@ -372,6 +372,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void SerializedCertDisposeDoesNotRemoveKeyFile()
+        {
+            using (X509Certificate2 fromPfx = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            {
+                Assert.True(fromPfx.HasPrivateKey, "fromPfx.HasPrivateKey - before");
+
+                byte[] serializedCert = fromPfx.Export(X509ContentType.SerializedCert);
+
+                using (X509Certificate2 fromSerialized = new X509Certificate2(serializedCert))
+                {
+                    Assert.True(fromSerialized.HasPrivateKey, "fromSerialized.HasPrivateKey");
+                }
+
+                using (RSA key = fromPfx.GetRSAPrivateKey())
+                {
+                    key.SignData(serializedCert, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                }
+            }
+        }
+
         public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
     }
 }
