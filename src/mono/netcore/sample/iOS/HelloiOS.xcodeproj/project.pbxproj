@@ -358,7 +358,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = H6BUBW32QD;
-				HEADER_SEARCH_PATHS = "/Users/egorbo/prj/runtime-hw/artifacts/bin/mono/iOS.arm64.Debug/include/mono-2.0";
+				HEADER_SEARCH_PATHS = "../../../../../artifacts/bin/mono/iOS.arm64.Debug/include/mono-2.0";
 				INFOPLIST_FILE = HelloiOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -374,13 +374,13 @@
 					"-u",
 					_xamarin_timezone_get_names,
 					"-force_load",
-					"/Users/egorbo/prj/runtime-hw/artifacts/bin/mono/iOS.arm64.Debug/libmono.a",
+					"../../../../../artifacts/bin/mono/iOS.arm64.Debug/libmono.a",
 					"-force_load",
-					"/Users/egorbo/prj/runtime-hw/artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.IO.Compression.Native.a",
+					"../../../../../artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.IO.Compression.Native.a",
 					"-force_load",
-					"/Users/egorbo/prj/runtime-hw/artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.Native.a",
+					"../../../../../artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.Native.a",
 					"-force_load",
-					"/Users/egorbo/prj/runtime-hw/artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.Security.Cryptography.Native.Apple.a",
+					"../../../../../artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.Security.Cryptography.Native.Apple.a",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dotnet.HelloiOS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -394,7 +394,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = H6BUBW32QD;
-				HEADER_SEARCH_PATHS = "/Users/egorbo/prj/runtime-hw/artifacts/bin/mono/iOS.arm64.Debug/include/mono-2.0";
+				HEADER_SEARCH_PATHS = "../../../../../bin/mono/iOS.arm64.Debug/include/mono-2.0";
 				INFOPLIST_FILE = HelloiOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
