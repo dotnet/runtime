@@ -12,7 +12,7 @@ public static class Program
 
     public static async Task Main (string[] args)
     {
-        const string msg = "Hello world!\n.NET 5.0";
+        const string msg = "Hello World!\n.NET 5.0";
         for (int i = 0; i < msg.Length; i++)
         {
             // a kind of an animation

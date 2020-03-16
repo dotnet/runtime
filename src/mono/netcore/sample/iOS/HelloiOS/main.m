@@ -32,11 +32,11 @@ UILabel *label;
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    label = [[UILabel alloc] init];
-    label.frame = CGRectMake(100, 100, 200, 200);
+    label = [[UILabel alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     label.textColor = [UIColor greenColor];
     label.font = [UIFont boldSystemFontOfSize: 30];
     label.numberOfLines = 2;
+    label.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:label];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
