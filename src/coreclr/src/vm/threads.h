@@ -950,7 +950,7 @@ typedef DWORD (*AppropriateWaitFunc) (void *args, DWORD timeout, DWORD option);
 // of that physical thread.
 
 // FEATURE_MULTIREG_RETURN is set for platforms where a struct return value
-//                ]        can be returned in multiple registers
+//                         can be returned in multiple registers
 //                         ex: Windows/Unix ARM/ARM64, Unix-AMD64.
 //
 //
