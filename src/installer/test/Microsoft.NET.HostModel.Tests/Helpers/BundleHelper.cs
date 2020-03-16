@@ -5,6 +5,7 @@
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.Bundle;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml.Linq;
 
@@ -54,6 +55,27 @@ namespace BundleTests.Helpers
             return Directory.CreateDirectory(Path.Combine(fixture.TestProject.ProjectDirectory, "extract"));
         }
 
+        /// Generate a bundle containind the (embeddable) files in sourceDir
+        public static string GenerateBundle(Bundler bundler, string sourceDir)
+        {
+            // Convert sourceDir to absolute path
+            sourceDir = Path.GetFullPath(sourceDir);
+
+            // Get all files in the source directory and all sub-directories.
+            string[] sources = Directory.GetFiles(sourceDir, searchPattern: "*", searchOption: SearchOption.AllDirectories);
+
+            // Sort the file names to keep the bundle construction deterministic.
+            Array.Sort(sources, StringComparer.Ordinal);
+
+            List<FileSpec> fileSpecs = new List<FileSpec>(sources.Length);
+            foreach (var file in sources)
+            {
+                fileSpecs.Add(new FileSpec(file, Path.GetRelativePath(sourceDir, file)));
+            }
+
+            return bundler.GenerateBundle(fileSpecs);
+        }
+
         // Bundle to a single-file
         // In several tests, the single-file bundle is created explicitly using Bundle API
         // instead of the SDK via /p:PublishSingleFile=true.
@@ -72,7 +94,7 @@ namespace BundleTests.Helpers
             var bundleDir = GetBundleDir(fixture);
 
             var bundler = new Bundler(hostName, bundleDir.FullName, options, targetFrameworkVersion: targetFrameworkVersion);
-            string singleFile = bundler.GenerateBundle(publishPath);
+            string singleFile = GenerateBundle(bundler, publishPath);
             return singleFile;
         }
 

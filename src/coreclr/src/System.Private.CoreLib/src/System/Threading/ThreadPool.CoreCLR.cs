@@ -46,9 +46,6 @@ namespace System.Threading
 
         internal void SetWaitObject(WaitHandle waitObject)
         {
-            // needed for DangerousAddRef
-            RuntimeHelpers.PrepareConstrainedRegions();
-
             m_internalWaitObject = waitObject;
             if (waitObject != null)
             {
@@ -61,8 +58,6 @@ namespace System.Threading
              )
         {
             bool result = false;
-            // needed for DangerousRelease
-            RuntimeHelpers.PrepareConstrainedRegions();
 
             // lock(this) cannot be used reliably in Cer since thin lock could be
             // promoted to syncblock and that is not a guaranteed operation
@@ -383,7 +378,6 @@ namespace System.Threading
 
             bool ret = false;
             bool mustReleaseSafeHandle = false;
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 osHandle.DangerousAddRef(ref mustReleaseSafeHandle);

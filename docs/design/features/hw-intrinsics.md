@@ -2,7 +2,7 @@ Implementation of Hardware Intrinsics in CoreCLR
 ================================================
 This document describes the implementation of hardware intrinsics in CoreCLR.
 For information about how the intrinsic APIs are designed, proposed and approved,
-see https://github.com/dotnet/designs/blob/master/accepted/platform-intrinsics.md.
+see https://github.com/dotnet/designs/blob/master/accepted/2018/platform-intrinsics.md.
 
 In discussing the hardware intrinsics, we refer to the target platform, such as X86 or Arm64, as the "platform" and each set of extensions that are implemented as a unit (e.g. AVX2 on X64 or Simd on Arm64) as an "ISA".
 

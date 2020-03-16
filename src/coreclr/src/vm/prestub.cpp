@@ -314,10 +314,11 @@ void DACNotifyCompilationFinished(MethodDesc *methodDesc, PCODE pCode)
 #endif
 // </TODO>
 
-PCODE MethodDesc::PrepareInitialCode()
+PCODE MethodDesc::PrepareInitialCode(CallerGCMode callerGCMode)
 {
     STANDARD_VM_CONTRACT;
     PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
+    config.SetCallerGCMode(callerGCMode);
     PCODE pCode = PrepareCode(&config);
 
 #if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
@@ -436,18 +437,42 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
         {
             LOG_USING_R2R_CODE(this);
 
+#ifdef FEATURE_TIERED_COMPILATION
+            bool shouldTier = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
+#if !defined(TARGET_X86) || !defined(TARGET_WINDOWS)
+            CallerGCMode callerGcMode = pConfig->GetCallerGCMode();
+            // If the method is eligible for tiering but is being
+            // called from a Preemptive GC Mode thread or the method
+            // has the NativeCallableAttribute then the Tiered Compilation
+            // should be disabled.
+            if (shouldTier
+                && (callerGcMode == CallerGCMode::Preemptive
+                    || (callerGcMode == CallerGCMode::Unknown
+                        && HasNativeCallableAttribute())))
+            {
+                NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
+                if (codeVersion.IsDefaultVersion())
+                {
+                    pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
+                }
+                codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
+                shouldTier = false;
+            }
+#endif  // !TARGET_X86 || !TARGET_WINDOWS
+#endif // FEATURE_TIERED_COMPILATION
+
             if (pConfig->SetNativeCode(pCode, &pCode))
             {
-            #ifdef FEATURE_CODE_VERSIONING
+#ifdef FEATURE_CODE_VERSIONING
                 pConfig->SetGeneratedOrLoadedNewCode();
-            #endif
-            #ifdef FEATURE_TIERED_COMPILATION
-                if (pConfig->GetMethodDesc()->IsEligibleForTieredCompilation())
+#endif
+#ifdef FEATURE_TIERED_COMPILATION
+                if (shouldTier)
                 {
                     _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
                     pConfig->SetShouldCountCalls();
                 }
-            #endif
+#endif
             }
         }
     }
@@ -982,7 +1007,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
         Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
 #endif
 
-        pCode = UnsafeJitFunction(pConfig->GetCodeVersion(), pilHeader, *pFlags, pSizeOfCode);
+        pCode = UnsafeJitFunction(pConfig, pilHeader, *pFlags, pSizeOfCode);
     }
     EX_CATCH
     {
@@ -1048,12 +1073,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
     {
         _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
         _ASSERTE(pConfig->GetMethodDesc()->IsEligibleForTieredCompilation());
-        _ASSERTE(
-            pConfig
-                ->GetMethodDesc()
-                ->GetLoaderAllocator()
-                ->GetCallCountingManager()
-                ->IsCallCountingEnabled(pConfig->GetCodeVersion()));
 
         if (pConfig->JitSwitchedToOptimized())
         {
@@ -1121,6 +1140,7 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_mayUsePrecompiledCode(mayUsePrecompiledCode),
     m_ProfilerRejectedPrecompiledCode(FALSE),
     m_ReadyToRunRejectedPrecompiledCode(FALSE),
+    m_callerGCMode(CallerGCMode::Unknown),
 #ifdef FEATURE_CODE_VERSIONING
     m_profilerMayHaveActivatedNonDefaultCodeVersion(false),
     m_generatedOrLoadedNewCode(false),
@@ -1175,6 +1195,18 @@ void PrepareCodeConfig::SetReadyToRunRejectedPrecompiledCode()
 {
     LIMITED_METHOD_CONTRACT;
     m_ReadyToRunRejectedPrecompiledCode = TRUE;
+}
+
+CallerGCMode PrepareCodeConfig::GetCallerGCMode()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_callerGCMode;
+}
+
+void PrepareCodeConfig::SetCallerGCMode(CallerGCMode mode)
+{
+    LIMITED_METHOD_CONTRACT;
+    m_callerGCMode = mode;
 }
 
 NativeCodeVersion PrepareCodeConfig::GetCodeVersion()
@@ -1766,12 +1798,67 @@ extern "C" MethodDesc * STDCALL PreStubGetMethodDescForCompactEntryPoint (PCODE 
 #endif // defined (HAS_COMPACT_ENTRYPOINTS) && defined (TARGET_ARM)
 
 //=============================================================================
+// This function generates the real code when from Preemptive mode.
+// It is specifically designed to work with the NativeCallableAttribute.
+//=============================================================================
+static PCODE PreStubWorker_Preemptive(
+    _In_ TransitionBlock* pTransitionBlock,
+    _In_ MethodDesc* pMD,
+    _In_opt_ Thread* currentThread)
+{
+    _ASSERTE(pMD->HasNativeCallableAttribute());
+
+    PCODE pbRetVal = NULL;
+
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_PREEMPTIVE;
+
+    // Starting from preemptive mode means the possibility exists
+    // that the thread is new to the runtime so we might have to
+    // create one.
+    if (currentThread == NULL)
+    {
+        // If our attempt to create a thread fails, there is nothing
+        // more we can do except fail fast. The reverse P/Invoke isn't
+        // going to work.
+        CREATETHREAD_IF_NULL_FAILFAST(currentThread, W("Failed to setup new thread during reverse P/Invoke"));
+    }
+
+    MAKE_CURRENT_THREAD_AVAILABLE_EX(currentThread);
+
+    // No GC frame is needed here since there should be no OBJECTREFs involved
+    // in this call due to NativeCallableAttribute semantics.
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    // Make sure the method table is restored, and method instantiation if present
+    pMD->CheckRestore();
+    CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
+
+    pbRetVal = pMD->DoPrestub(NULL, CallerGCMode::Preemptive);
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    {
+        HardwareExceptionHolder;
+
+        // Give debugger opportunity to stop here
+        ThePreStubPatch();
+    }
+
+    return pbRetVal;
+}
+
+//=============================================================================
 // This function generates the real code for a method and installs it into
 // the methoddesc. Usually ***BUT NOT ALWAYS***, this function runs only once
 // per methoddesc. In addition to installing the new code, this function
 // returns a pointer to the new code for the prestub's convenience.
 //=============================================================================
-extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
+extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, MethodDesc* pMD)
 {
     PCODE pbRetVal = NULL;
 
@@ -1779,99 +1866,98 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, Metho
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
+    STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_ENTRY_POINT;
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
-
-#ifdef _DEBUG
-    Thread::ObjectRefFlush(CURRENT_THREAD);
-#endif
-
-    FrameWithCookie<PrestubMethodFrame> frame(pTransitionBlock, pMD);
-    PrestubMethodFrame * pPFrame = &frame;
-
-    pPFrame->Push(CURRENT_THREAD);
-
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-    ETWOnStartup (PrestubWorker_V1,PrestubWorkerEnd_V1);
 
     _ASSERTE(!NingenEnabled() && "You cannot invoke managed code inside the ngen compilation process.");
 
-    // Running the PreStubWorker on a method causes us to access its MethodTable
-    g_IBCLogger.LogMethodDescAccess(pMD);
+    ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
 
-    // Make sure the method table is restored, and method instantiation if present
-    pMD->CheckRestore();
+    MAKE_CURRENT_THREAD_AVAILABLE();
 
-    CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
-
-    // Note this is redundant with the above check but we do it anyway for safety
-    //
-    // This has been disabled so we have a better chance of catching these.  Note that this check is
-    // NOT sufficient for domain neutral and ngen cases.
-    //
-    // pMD->EnsureActive();
-
-    MethodTable *pDispatchingMT = NULL;
-
-    if (pMD->IsVtableMethod())
+    // Attempt to check what GC mode we are running under.
+    if (CURRENT_THREAD == NULL
+        || !CURRENT_THREAD->PreemptiveGCDisabled())
     {
-        OBJECTREF curobj = pPFrame->GetThis();
+        pbRetVal = PreStubWorker_Preemptive(pTransitionBlock, pMD, CURRENT_THREAD);
+    }
+    else
+    {
+        // This is the typical case (i.e. COOP mode).
 
-        if (curobj != NULL) // Check for virtual function called non-virtually on a NULL object
+#ifdef _DEBUG
+        Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+        FrameWithCookie<PrestubMethodFrame> frame(pTransitionBlock, pMD);
+        PrestubMethodFrame* pPFrame = &frame;
+
+        pPFrame->Push(CURRENT_THREAD);
+
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+        // Make sure the method table is restored, and method instantiation if present
+        pMD->CheckRestore();
+        CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
+
+        MethodTable* pDispatchingMT = NULL;
+        if (pMD->IsVtableMethod())
         {
-            pDispatchingMT = curobj->GetMethodTable();
+            OBJECTREF curobj = pPFrame->GetThis();
+
+            if (curobj != NULL) // Check for virtual function called non-virtually on a NULL object
+            {
+                pDispatchingMT = curobj->GetMethodTable();
 
 #ifdef FEATURE_ICASTABLE
-            if (pDispatchingMT->IsICastable())
-            {
-                MethodTable *pMDMT = pMD->GetMethodTable();
-                TypeHandle objectType(pDispatchingMT);
-                TypeHandle methodType(pMDMT);
-
-                GCStress<cfg_any>::MaybeTrigger();
-                INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
-                if (!objectType.CanCastTo(methodType))
+                if (pDispatchingMT->IsICastable())
                 {
-                    // Apparently ICastable magic was involved when we chose this method to be called
-                    // that's why we better stick to the MethodTable it belongs to, otherwise
-                    // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
+                    MethodTable* pMDMT = pMD->GetMethodTable();
+                    TypeHandle objectType(pDispatchingMT);
+                    TypeHandle methodType(pMDMT);
 
-                    pDispatchingMT = pMDMT;
+                    GCStress<cfg_any>::MaybeTrigger();
+                    INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
+                    if (!objectType.CanCastTo(methodType))
+                    {
+                        // Apparently ICastable magic was involved when we chose this method to be called
+                        // that's why we better stick to the MethodTable it belongs to, otherwise
+                        // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
+
+                        pDispatchingMT = pMDMT;
+                    }
                 }
-            }
 #endif // FEATURE_ICASTABLE
 
-            // For value types, the only virtual methods are interface implementations.
-            // Thus pDispatching == pMT because there
-            // is no inheritance in value types.  Note the BoxedEntryPointStubs are shared
-            // between all sharable generic instantiations, so the == test is on
-            // canonical method tables.
+                // For value types, the only virtual methods are interface implementations.
+                // Thus pDispatching == pMT because there
+                // is no inheritance in value types.  Note the BoxedEntryPointStubs are shared
+                // between all sharable generic instantiations, so the == test is on
+                // canonical method tables.
 #ifdef _DEBUG
-            MethodTable *pMDMT = pMD->GetMethodTable(); // put this here to see what the MT is in debug mode
-            _ASSERTE(!pMD->GetMethodTable()->IsValueType() ||
-                     (pMD->IsUnboxingStub() && (pDispatchingMT->GetCanonicalMethodTable() == pMDMT->GetCanonicalMethodTable())));
+                MethodTable* pMDMT = pMD->GetMethodTable(); // put this here to see what the MT is in debug mode
+                _ASSERTE(!pMD->GetMethodTable()->IsValueType() ||
+                (pMD->IsUnboxingStub() && (pDispatchingMT->GetCanonicalMethodTable() == pMDMT->GetCanonicalMethodTable())));
 #endif // _DEBUG
+            }
         }
+
+        GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
+        pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
+
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+        {
+            HardwareExceptionHolder;
+
+            // Give debugger opportunity to stop here
+            ThePreStubPatch();
+        }
+
+        pPFrame->Pop(CURRENT_THREAD);
     }
-
-    GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
-    pbRetVal = pMD->DoPrestub(pDispatchingMT);
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-
-    {
-        HardwareExceptionHolder
-
-        // Give debugger opportunity to stop here
-        ThePreStubPatch();
-    }
-
-    pPFrame->Pop(CURRENT_THREAD);
 
     POSTCONDITION(pbRetVal != NULL);
 
@@ -1926,7 +2012,7 @@ static void TestSEHGuardPageRestore()
 // the case of methods that require stubs to be executed first (e.g., remoted methods
 // that require remoting stubs to be executed first), this stable entrypoint would be a
 // pointer to the stub, and not a pointer directly to the JITted code.
-PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
+PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode)
 {
     CONTRACT(PCODE)
     {
@@ -2031,7 +2117,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     {
         bool doBackpatch = true;
         bool doFullBackpatch = false;
-        pCode = GetCodeVersionManager()->PublishVersionableCodeIfNecessary(this, &doBackpatch, &doFullBackpatch);
+        pCode = GetCodeVersionManager()->PublishVersionableCodeIfNecessary(this, callerGCMode, &doBackpatch, &doFullBackpatch);
 
         if (doBackpatch)
         {
@@ -2072,7 +2158,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
         {
             GetOrCreatePrecode();
         }
-        pCode = PrepareInitialCode();
+        pCode = PrepareInitialCode(callerGCMode);
     } // end else if (IsIL() || IsNoMetadata())
     else if (IsNDirect())
     {

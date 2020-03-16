@@ -861,7 +861,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.Transcoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.Validation.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.WhiteSpace.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.WhiteSpace.CoreLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UnicodeDebug.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UnicodeEncoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UnicodeUtility.cs" />
@@ -1825,6 +1825,7 @@
   <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Char8.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Utf8Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8Extensions.CoreLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Comparison.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Construction.cs" />

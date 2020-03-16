@@ -876,9 +876,6 @@ FCIMPL1(INT32, ThreadNative::GetThreadState, ThreadBaseObject* pThisUNSAFE)
     if (state & Thread::TS_Interruptible)
         res |= ThreadWaitSleepJoin;
 
-    // CoreCLR does not support user-requested thread suspension
-    _ASSERTE(!(state & Thread::TS_UserSuspendPending));
-
     HELPER_METHOD_POLL();
     HELPER_METHOD_FRAME_END();
 

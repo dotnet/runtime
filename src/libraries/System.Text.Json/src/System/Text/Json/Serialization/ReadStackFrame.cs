@@ -61,7 +61,7 @@ namespace System.Text.Json
             JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
 
             // The initial JsonPropertyInfo will be used to obtain the converter.
-            JsonPropertyInfo = jsonClassInfo.PolicyProperty;
+            JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
 
             // Set for exception handling calculation of JsonPath.
             JsonPropertyNameAsString = propertyName;

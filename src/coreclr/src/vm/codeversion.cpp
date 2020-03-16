@@ -1611,6 +1611,7 @@ HRESULT CodeVersionManager::AddNativeCodeVersion(
 
 PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
     MethodDesc* pMethodDesc,
+    CallerGCMode callerGCMode,
     bool *doBackpatchRef,
     bool *doFullBackpatchRef)
 {
@@ -1655,7 +1656,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         _ASSERTE(hr == E_OUTOFMEMORY);
         ReportCodePublishError(pMethodDesc, hr);
         *doBackpatchRef = false;
-        return pCode != NULL ? pCode : pMethodDesc->PrepareInitialCode();
+        return pCode != NULL ? pCode : pMethodDesc->PrepareInitialCode(callerGCMode);
     } while (false);
 
     while (true)
@@ -1670,6 +1671,9 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         {
             PrepareCodeConfigBuffer configBuffer(activeVersion);
             PrepareCodeConfig *config = configBuffer.GetConfig();
+
+            // Record the caller's GC mode.
+            config->SetCallerGCMode(callerGCMode);
             pCode = pMethodDesc->PrepareCode(config);
 
         #ifdef FEATURE_CODE_VERSIONING

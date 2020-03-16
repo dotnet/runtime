@@ -97,7 +97,7 @@ namespace R2RDump
             {
                 leftSectionMethods = new List<ReadyToRunMethod>();
             }
-            if (!_rightDumper.Reader.Methods.TryGetValue(leftSection, out List<ReadyToRunMethod> rightSectionMethods))
+            if (!_rightDumper.Reader.Methods.TryGetValue(rightSection, out List<ReadyToRunMethod> rightSectionMethods))
             {
                 rightSectionMethods = new List<ReadyToRunMethod>();
             }
