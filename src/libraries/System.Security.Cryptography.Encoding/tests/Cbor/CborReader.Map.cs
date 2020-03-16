@@ -16,6 +16,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             AdvanceBuffer(1 + additionalBytes);
             _remainingDataItems--;
 
+            if (arrayLength > long.MaxValue)
+            {
+                throw new OverflowException("Read CBOR map field count exceeds supported size.");
+            }
+
             PushDataItem(CborMajorType.Map, 2 * arrayLength);
             return arrayLength;
         }

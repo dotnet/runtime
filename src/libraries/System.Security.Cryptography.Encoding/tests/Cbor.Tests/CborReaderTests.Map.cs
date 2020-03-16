@@ -261,5 +261,27 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Throws<FormatException>(() => reader.ReadStartMap());
         }
+
+        [Theory]
+        [InlineData("bb7fffffffffffffff", long.MaxValue)]
+        public static void ReadStartMap_LargestSupportedFieldCount_ShouldSucceed(string hexEncoding, ulong expectedLength)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            ulong? actualLength = reader.ReadStartMap();
+            Assert.Equal(expectedLength, actualLength);
+        }
+
+        [Theory]
+        [InlineData("bb8000000000000000")] // long.MaxValue + 1
+        [InlineData("bbffffffffffffffff")] // ulong.MaxValue
+        public static void ReadStartMap_LargeFieldCount_ShouldThrowOverflowException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            Assert.Throws<OverflowException>(() => reader.ReadStartMap());
+        }
     }
 }
