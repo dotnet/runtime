@@ -136,7 +136,7 @@ bool DiagnosticServer::Initialize()
         };
 
         NewArrayHolder<char> address = nullptr;
-        CLRConfigStringHolder wAddress = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsClientModeAddress);
+        CLRConfigStringHolder wAddress = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsMonitorAddress);
         int nCharactersWritten = 0;
         if (wAddress != nullptr)
         {
