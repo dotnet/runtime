@@ -56,7 +56,23 @@ namespace System.Text.Json
 
         public Type Type { get; private set; }
 
-        public JsonPropertyInfo? PolicyProperty { get; private set; }
+        /// <summary>
+        /// The JsonPropertyInfo for this JsonClassInfo. It is used to obtain the converter for the ClassInfo.
+        /// </summary>
+        /// <remarks>
+        /// The returned JsonPropertyInfo does not represent a real property; instead it represents either:
+        /// a collection element type,
+        /// a generic type parameter,
+        /// a property type (if pushed to a new stack frame),
+        /// or the root type passed into the root serialization APIs.
+        /// For example, for a property returning <see cref="Collections.Generic.List{T}"/> where T is a string,
+        /// a JsonClassInfo will be created with .Type=typeof(string) and .PropertyInfoForClassInfo=JsonPropertyInfo{string}.
+        /// Without this property, a "Converter" property would need to be added to JsonClassInfo and there would be several more
+        /// `if` statements to obtain the converter from either the actual JsonPropertyInfo (for a real property) or from the
+        /// ClassInfo (for the cases mentioned above). In addition, methods that have a JsonPropertyInfo argument would also likely
+        /// need to add an argument for JsonClassInfo.
+        /// </remarks>
+        public JsonPropertyInfo PropertyInfoForClassInfo { get; private set; }
 
         // Whether the extension data is typeof(object) or typoef(JsonElement).
         public bool DataExtensionIsObject;
@@ -74,7 +90,7 @@ namespace System.Text.Json
                 Options);
 
             ClassType = converter.ClassType;
-            PolicyProperty = CreatePolicyProperty(Type, runtimeType, converter, Options);
+            PropertyInfoForClassInfo = CreatePropertyInfoForClassInfo(Type, runtimeType, converter, Options);
 
             switch (ClassType)
             {

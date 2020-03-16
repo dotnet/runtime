@@ -1,3 +1,7 @@
+ifeq ($(wildcard ../../../.dotnet),)
+  $(info Downloading local dotnet...)
+endif
+
 DOTNET := $(shell bash init-tools.sh | tail -1)
 # DOTNET_MONO is a copy of DOTNET (local .dotnet) with Mono Runtime bits (see patch-mono-dotnet rule)
 DOTNET_MONO = ../../../.dotnet-mono/dotnet

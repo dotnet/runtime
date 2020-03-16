@@ -272,7 +272,7 @@ namespace System.Security.AccessControl
             if (binaryForm.Length - offset < BinaryLength)
             {
                 throw new ArgumentOutOfRangeException(
-nameof(binaryForm),
+                    nameof(binaryForm),
                     SR.ArgumentOutOfRange_ArrayTooSmall);
             }
 
@@ -497,8 +497,8 @@ nameof(binaryForm),
             if (binaryForm.Length - offset < HeaderLength)
             {
                 throw new ArgumentOutOfRangeException(
-nameof(binaryForm),
-                     SR.ArgumentOutOfRange_ArrayTooSmall);
+                    nameof(binaryForm),
+                    SR.ArgumentOutOfRange_ArrayTooSmall);
             }
 
             //
@@ -536,8 +536,8 @@ nameof(binaryForm),
             if ((flags & ControlFlags.SelfRelative) == 0)
             {
                 throw new ArgumentException(
-                     SR.AccessControl_InvalidSecurityDescriptorSelfRelativeForm,
-nameof(binaryForm));
+                    SR.AccessControl_InvalidSecurityDescriptorSelfRelativeForm,
+                    nameof(binaryForm));
             }
 
             //
@@ -651,8 +651,8 @@ nameof(binaryForm));
                         error == Interop.Errors.ERROR_UNKNOWN_REVISION)
                     {
                         throw new ArgumentException(
-                             SR.ArgumentException_InvalidSDSddlForm,
-nameof(sddlForm));
+                            SR.ArgumentException_InvalidSDSddlForm,
+                            nameof(sddlForm));
                     }
                     else if (error == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
                     {
@@ -661,8 +661,8 @@ nameof(sddlForm));
                     else if (error == Interop.Errors.ERROR_INVALID_SID)
                     {
                         throw new ArgumentException(
-                             SR.AccessControl_InvalidSidInSDDLString,
-nameof(sddlForm));
+                            SR.AccessControl_InvalidSidInSDDLString,
+                            nameof(sddlForm));
                     }
                     else if (error != Interop.Errors.ERROR_SUCCESS)
                     {
@@ -839,20 +839,20 @@ nameof(sddlForm));
                 systemAcl.IsContainer != isContainer)
             {
                 throw new ArgumentException(
-                     isContainer ?
+                    isContainer ?
                         SR.AccessControl_MustSpecifyContainerAcl :
                         SR.AccessControl_MustSpecifyLeafObjectAcl,
-nameof(systemAcl));
+                    nameof(systemAcl));
             }
 
             if (discretionaryAcl != null &&
                 discretionaryAcl.IsContainer != isContainer)
             {
                 throw new ArgumentException(
-                     isContainer ?
+                    isContainer ?
                         SR.AccessControl_MustSpecifyContainerAcl :
                         SR.AccessControl_MustSpecifyLeafObjectAcl,
-nameof(discretionaryAcl));
+                    nameof(discretionaryAcl));
             }
 
             _isContainer = isContainer;
@@ -861,10 +861,10 @@ nameof(discretionaryAcl));
                 systemAcl.IsDS != isDS)
             {
                 throw new ArgumentException(
-                     isDS ?
+                    isDS ?
                         SR.AccessControl_MustSpecifyDirectoryObjectAcl :
                         SR.AccessControl_MustSpecifyNonDirectoryObjectAcl,
-nameof(systemAcl));
+                    nameof(systemAcl));
             }
 
             if (discretionaryAcl != null &&
@@ -874,7 +874,7 @@ nameof(systemAcl));
                     isDS ?
                         SR.AccessControl_MustSpecifyDirectoryObjectAcl :
                         SR.AccessControl_MustSpecifyNonDirectoryObjectAcl,
-nameof(discretionaryAcl));
+                    nameof(discretionaryAcl));
             }
 
             _isDS = isDS;
@@ -1066,10 +1066,10 @@ nameof(discretionaryAcl));
                     if (value.IsContainer != this.IsContainer)
                     {
                         throw new ArgumentException(
-                             this.IsContainer ?
+                            this.IsContainer ?
                                 SR.AccessControl_MustSpecifyContainerAcl :
                                 SR.AccessControl_MustSpecifyLeafObjectAcl,
-nameof(value));
+                            nameof(value));
                     }
 
                     if (value.IsDS != this.IsDS)
@@ -1078,7 +1078,7 @@ nameof(value));
                             this.IsDS ?
                                 SR.AccessControl_MustSpecifyDirectoryObjectAcl :
                                 SR.AccessControl_MustSpecifyNonDirectoryObjectAcl,
-nameof(value));
+                            nameof(value));
                     }
                 }
 
@@ -1115,19 +1115,19 @@ nameof(value));
                     if (value.IsContainer != this.IsContainer)
                     {
                         throw new ArgumentException(
-                             this.IsContainer ?
+                            this.IsContainer ?
                                 SR.AccessControl_MustSpecifyContainerAcl :
                                 SR.AccessControl_MustSpecifyLeafObjectAcl,
-nameof(value));
+                            nameof(value));
                     }
 
                     if (value.IsDS != this.IsDS)
                     {
                         throw new ArgumentException(
-                             this.IsDS ?
+                            this.IsDS ?
                                 SR.AccessControl_MustSpecifyDirectoryObjectAcl :
                                 SR.AccessControl_MustSpecifyNonDirectoryObjectAcl,
-nameof(value));
+                            nameof(value));
                     }
                 }
 

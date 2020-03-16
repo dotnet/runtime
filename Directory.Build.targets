@@ -20,4 +20,15 @@
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GeneratedAssemblyInfoFile>$([System.IO.Path]::Combine('$(IntermediateOutputPath)','$(MSBuildProjectName).AssemblyInfo$(DefaultLanguageSourceExtension)'))</GeneratedAssemblyInfoFile>
+  </PropertyGroup>
+
+  <!--
+    All source inputs to the compiler should be generated before BeforeCompile target. Sdk is not
+    honoring this for GenerateAssemblyInfo target. https://github.com/dotnet/sdk/issues/10614 
+  -->
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <EmbeddedFiles Include="$(GeneratedAssemblyInfoFile)"/>
+  </ItemGroup>
 </Project>

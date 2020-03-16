@@ -44,33 +44,6 @@ namespace System.Globalization
 
         private static unsafe int FindStringOrdinal(
             uint dwFindStringOrdinalFlags,
-            string stringSource,
-            int offset,
-            int cchSource,
-            string value,
-            int cchValue,
-            bool bIgnoreCase)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(stringSource != null);
-            Debug.Assert(value != null);
-
-            fixed (char* pSource = stringSource)
-            fixed (char* pValue = value)
-            {
-                int ret = Interop.Kernel32.FindStringOrdinal(
-                            dwFindStringOrdinalFlags,
-                            pSource + offset,
-                            cchSource,
-                            pValue,
-                            cchValue,
-                            bIgnoreCase ? 1 : 0);
-                return ret < 0 ? ret : ret + offset;
-            }
-        }
-
-        private static unsafe int FindStringOrdinal(
-            uint dwFindStringOrdinalFlags,
             ReadOnlySpan<char> source,
             ReadOnlySpan<char> value,
             bool bIgnoreCase)
@@ -82,25 +55,24 @@ namespace System.Globalization
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pValue = &MemoryMarshal.GetReference(value))
             {
+                Debug.Assert(pSource != null);
+                Debug.Assert(pValue != null);
+
                 int ret = Interop.Kernel32.FindStringOrdinal(
                             dwFindStringOrdinalFlags,
                             pSource,
                             source.Length,
                             pValue,
                             value.Length,
-                            bIgnoreCase ? 1 : 0);
+                            bIgnoreCase ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+
+                Debug.Assert(ret >= -1 && ret <= source.Length);
+
+                // SetLastError is only performed under debug builds.
+                Debug.Assert(ret >= 0 || Marshal.GetLastWin32Error() == Interop.Errors.ERROR_SUCCESS);
+
                 return ret;
             }
-        }
-
-        internal static int IndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            Debug.Assert(source != null);
-            Debug.Assert(value != null);
-
-            return FindStringOrdinal(FIND_FROMSTART, source, startIndex, count, value, value.Length, ignoreCase);
         }
 
         internal static int IndexOfOrdinalCore(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning)
@@ -121,7 +93,13 @@ namespace System.Globalization
             Debug.Assert(source != null);
             Debug.Assert(value != null);
 
-            return FindStringOrdinal(FIND_FROMEND, source, startIndex - count + 1, count, value, value.Length, ignoreCase);
+            int offset = startIndex - count + 1;
+            int result = FindStringOrdinal(FIND_FROMEND, source.AsSpan(offset, count), value, ignoreCase);
+            if (result >= 0)
+            {
+                result += offset;
+            }
+            return result;
         }
 
         private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options)
@@ -192,11 +170,22 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
+            Debug.Assert(count1 > 0);
+            Debug.Assert(count2 > 0);
+
             fixed (char* char1 = &string1)
             fixed (char* char2 = &string2)
             {
+                Debug.Assert(char1 != null);
+                Debug.Assert(char2 != null);
+
                 // Use the OS to compare and then convert the result to expected value by subtracting 2
-                return Interop.Kernel32.CompareStringOrdinal(char1, count1, char2, count2, true) - 2;
+                int result = Interop.Kernel32.CompareStringOrdinal(char1, count1, char2, count2, bIgnoreCase: true);
+                if (result == 0)
+                {
+                    throw new ArgumentException(SR.Arg_ExternalException);
+                }
+                return result - 2;
             }
         }
 
@@ -211,11 +200,22 @@ namespace System.Globalization
 
             string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
+            // CompareStringEx may try to dereference the first character of its input, even if an explicit
+            // length of 0 is specified. To work around potential AVs we'll always ensure zero-length inputs
+            // are normalized to a null-terminated empty string.
+
+            if (string1.IsEmpty)
+            {
+                string1 = string.Empty;
+            }
+
             fixed (char* pLocaleName = localeName)
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
-            fixed (char* pString2 = &string2.GetRawStringData())
+            fixed (char* pString2 = &string2.GetPinnableReference())
             {
-                Debug.Assert(pString1 != null);
+                Debug.Assert(*pString1 >= 0); // assert that we can always dereference this
+                Debug.Assert(*pString2 >= 0); // assert that we can always dereference this
+
                 int result = Interop.Kernel32.CompareStringEx(
                                     pLocaleName,
                                     (uint)GetNativeCompareFlags(options),
@@ -244,12 +244,27 @@ namespace System.Globalization
 
             string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
+            // CompareStringEx may try to dereference the first character of its input, even if an explicit
+            // length of 0 is specified. To work around potential AVs we'll always ensure zero-length inputs
+            // are normalized to a null-terminated empty string.
+
+            if (string1.IsEmpty)
+            {
+                string1 = string.Empty;
+            }
+
+            if (string2.IsEmpty)
+            {
+                string2 = string.Empty;
+            }
+
             fixed (char* pLocaleName = localeName)
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
-                Debug.Assert(pString1 != null);
-                Debug.Assert(pString2 != null);
+                Debug.Assert(*pString1 >= 0); // assert that we can always dereference this
+                Debug.Assert(*pString2 >= 0); // assert that we can always dereference this
+
                 int result = Interop.Kernel32.CompareStringEx(
                                     pLocaleName,
                                     (uint)GetNativeCompareFlags(options),
@@ -278,63 +293,47 @@ namespace System.Globalization
                     int* pcchFound)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!lpStringSource.IsEmpty);
             Debug.Assert(!lpStringValue.IsEmpty);
 
             string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
+
+            // FindNLSStringEx disallows passing an explicit 0 for cchSource or cchValue.
+            // The caller should've already checked that 'lpStringValue' isn't empty,
+            // but it's possible for 'lpStringSource' to be empty. In this case we'll
+            // substitute an empty null-terminated string and pass -1 so that the NLS
+            // function uses the implicit string length.
+
+            int lpStringSourceLength = lpStringSource.Length;
+            if (lpStringSourceLength == 0)
+            {
+                lpStringSource = string.Empty;
+                lpStringSourceLength = -1;
+            }
 
             fixed (char* pLocaleName = localeName)
             fixed (char* pSource = &MemoryMarshal.GetReference(lpStringSource))
             fixed (char* pValue = &MemoryMarshal.GetReference(lpStringValue))
             {
-                return Interop.Kernel32.FindNLSStringEx(
+                Debug.Assert(pSource != null && pValue != null);
+
+                int result = Interop.Kernel32.FindNLSStringEx(
                                     pLocaleName,
                                     dwFindNLSStringFlags,
                                     pSource,
-                                    lpStringSource.Length,
+                                    lpStringSourceLength,
                                     pValue,
                                     lpStringValue.Length,
                                     pcchFound,
                                     null,
                                     null,
                                     _sortHandle);
-            }
-        }
 
-        private unsafe int FindString(
-            uint dwFindNLSStringFlags,
-            string lpStringSource,
-            int startSource,
-            int cchSource,
-            string lpStringValue,
-            int startValue,
-            int cchValue,
-            int* pcchFound)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(lpStringSource != null);
-            Debug.Assert(lpStringValue != null);
+                Debug.Assert(result >= -1 && result <= lpStringSource.Length);
 
-            string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
+                // SetLastError is only performed under debug builds.
+                Debug.Assert(result >= 0 || Marshal.GetLastWin32Error() == Interop.Errors.ERROR_SUCCESS);
 
-            fixed (char* pLocaleName = localeName)
-            fixed (char* pSource = lpStringSource)
-            fixed (char* pValue = lpStringValue)
-            {
-                char* pS = pSource + startSource;
-                char* pV = pValue + startValue;
-
-                return Interop.Kernel32.FindNLSStringEx(
-                                    pLocaleName,
-                                    dwFindNLSStringFlags,
-                                    pS,
-                                    cchSource,
-                                    pV,
-                                    cchValue,
-                                    pcchFound,
-                                    null,
-                                    null,
-                                    _sortHandle);
+                return result;
             }
         }
 
@@ -342,13 +341,11 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            Debug.Assert(source != null);
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
             Debug.Assert((options & CompareOptions.Ordinal) == 0);
 
-            int retValue = FindString(FIND_FROMSTART | (uint)GetNativeCompareFlags(options), source, startIndex, count,
-                                                            target, 0, target.Length, matchLengthPtr);
+            int retValue = FindString(FIND_FROMSTART | (uint)GetNativeCompareFlags(options), source.AsSpan(startIndex, count), target, matchLengthPtr);
             if (retValue >= 0)
             {
                 return retValue + startIndex;
@@ -361,7 +358,6 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            Debug.Assert(source.Length != 0);
             Debug.Assert(target.Length != 0);
             Debug.Assert(options == CompareOptions.None || options == CompareOptions.IgnoreCase);
 
@@ -373,7 +369,6 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
 
@@ -386,8 +381,7 @@ namespace System.Globalization
             }
             else
             {
-                int retValue = FindString(FIND_FROMEND | (uint)GetNativeCompareFlags(options), source, startIndex - count + 1,
-                                                               count, target, 0, target.Length, null);
+                int retValue = FindString(FIND_FROMEND | (uint)GetNativeCompareFlags(options), source.AsSpan(startIndex - count + 1, count), target, null);
 
                 if (retValue >= 0)
                 {
@@ -396,18 +390,6 @@ namespace System.Globalization
             }
 
             return -1;
-        }
-
-        private unsafe bool StartsWith(string source, string prefix, CompareOptions options)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            Debug.Assert(!string.IsNullOrEmpty(source));
-            Debug.Assert(!string.IsNullOrEmpty(prefix));
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            return FindString(FIND_STARTSWITH | (uint)GetNativeCompareFlags(options), source, 0, source.Length,
-                                                   prefix, 0, prefix.Length, null) >= 0;
         }
 
         private unsafe bool StartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
@@ -421,23 +403,10 @@ namespace System.Globalization
             return FindString(FIND_STARTSWITH | (uint)GetNativeCompareFlags(options), source, prefix, null) >= 0;
         }
 
-        private unsafe bool EndsWith(string source, string suffix, CompareOptions options)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            Debug.Assert(!string.IsNullOrEmpty(source));
-            Debug.Assert(!string.IsNullOrEmpty(suffix));
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            return FindString(FIND_ENDSWITH | (uint)GetNativeCompareFlags(options), source, 0, source.Length,
-                                                   suffix, 0, suffix.Length, null) >= 0;
-        }
-
         private unsafe bool EndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            Debug.Assert(!source.IsEmpty);
             Debug.Assert(!suffix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
@@ -549,7 +518,7 @@ namespace System.Globalization
                 }
             }
 
-            return new SortKey(Name, source, options, keyData);
+            return new SortKey(this, source, options, keyData);
         }
 
         private static unsafe bool IsSortable(char* text, int length)

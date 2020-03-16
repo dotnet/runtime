@@ -1989,6 +1989,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 	if (mono_class_get_magic_index (method->klass) >= 0)
 		return FALSE;
 
+	if (td->prof_coverage)
+		return FALSE;
+
 	return TRUE;
 }
 
@@ -3462,6 +3465,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_ins (td, MINT_SDB_INTR_LOC);
 
 			last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
+		}
+
+		if (td->prof_coverage) {
+			guint32 cil_offset = td->ip - header->code;
+			gpointer counter = &td->coverage_info->data [cil_offset].count;
+			td->coverage_info->data [cil_offset].cil_code = (unsigned char*)td->ip;
+
+			interp_add_ins (td, MINT_PROF_COVERAGE_STORE);
+			WRITE64_INS (td->last_ins, 0, &counter);
 		}
 
 		if (!inlining && td->is_bb_start [in_offset]) {
@@ -7421,7 +7433,11 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 	td->gen_sdb_seq_points = mini_debug_options.gen_sdb_seq_points;
 	td->seq_points = g_ptr_array_new ();
 	td->verbose_level = mono_interp_traceopt;
+	td->prof_coverage = mono_profiler_coverage_instrumentation_enabled (method);
 	rtm->data_items = td->data_items;
+
+	if (td->prof_coverage)
+		td->coverage_info = mono_profiler_coverage_alloc (method, header->code_size);
 
 	interp_method_compute_offsets (td, rtm, mono_method_signature_internal (method), header);
 

@@ -14,6 +14,7 @@ parameters:
   pool: ''
   isOfficialBuild: false
   condition: true
+  useGCC: false
 
 ### Product build
 jobs:
@@ -32,8 +33,12 @@ jobs:
     condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters
-    name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('CoreCLR Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    ${{ if eq(parameters.useGCC, true) }}:
+      name: ${{ format('coreclr_gcc_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    ${{ if eq(parameters.useGCC, false) }}:
+      name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('CoreCLR Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -57,7 +62,23 @@ jobs:
         value: '-stripsymbols'
     - name: clangArg
       value: ''
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - name: gccArg
+      value: ''
+    - name: publishLogsArtifactPrefix
+      value: 'BuildLogs_CoreCLR'
+    - ${{ if eq(parameters.useGCC, true) }}:
+      - name: gccArg
+        value: '-gcc'
+      - name: clangArg
+        value: ''
+      - name: publishLogsArtifactPrefix
+        value: 'BuildLogs_CoreCLR_GCC'
+      # workaround for gcc directory not in PATH
+      - name: CLR_CC
+        value: /opt/rh/devtoolset-7/root/usr/bin/gcc
+      - name: CLR_CXX
+        value: /opt/rh/devtoolset-7/root/usr/bin/g++
+    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), not(parameters.useGCC)) }}:
       - name: clangArg
         value: '-clang9'
       # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
@@ -120,7 +141,7 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
+      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(gccArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
@@ -135,7 +156,7 @@ jobs:
       displayName: Build managed product components and packages
 
     # Build native test components
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg) skipgeneratelayout
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg) $(gccArg) skipgeneratelayout
       displayName: Build native test components
 
     # Sign on Windows
@@ -151,27 +172,29 @@ jobs:
         continueOnError: true
         condition: always()
 
-    # Publish product output directory for consumption by tests.
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-        rootFolder: $(buildProductRootFolderPath)
-        includeRootFolder: false
-        archiveType: $(archiveType)
-        tarCompression: $(tarCompression)
-        archiveExtension: $(archiveExtension)
-        artifactName: $(buildProductArtifactName)
-        displayName: 'product build'
+    # We only test on clang binaries.
+    - ${{ if eq(parameters.useGCC, false) }}:
+      # Publish product output directory for consumption by tests.
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(buildProductRootFolderPath)
+          includeRootFolder: false
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          archiveExtension: $(archiveExtension)
+          artifactName: $(buildProductArtifactName)
+          displayName: 'product build'
 
-    # Publish test native components for consumption by test execution.
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-        rootFolder: $(nativeTestArtifactRootFolderPath)
-        includeRootFolder: false
-        archiveType: $(archiveType)
-        tarCompression: $(tarCompression)
-        archiveExtension: $(archiveExtension)
-        artifactName: $(nativeTestArtifactName)
-        displayName: 'native test components'
+      # Publish test native components for consumption by test execution.
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(nativeTestArtifactRootFolderPath)
+          includeRootFolder: false
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          archiveExtension: $(archiveExtension)
+          artifactName: $(nativeTestArtifactName)
+          displayName: 'native test components'
 
     # Get key vault secrets for publishing
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -192,6 +215,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: '$(publishLogsArtifactPrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()
