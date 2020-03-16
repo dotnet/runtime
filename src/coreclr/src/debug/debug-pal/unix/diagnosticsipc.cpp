@@ -7,11 +7,16 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
-#include <sys/poll.h>
 #include <sys/un.h>
 #include <sys/stat.h>
 #include "diagnosticsipc.h"
 #include "processdescriptor.h"
+
+#if __GNUC__
+    #include <poll.h>
+#else
+    #include <sys/poll.h>
+#endif // __GNUC__
 
 IpcStream::DiagnosticsIpc::DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress, ConnectionMode mode) :
     mode(mode),

@@ -144,7 +144,7 @@ namespace DiagnosticsIpc
         uint8_t *bufferCursor = &buf[0];
         uint32_t bufferLen = sizeof(buf);
 
-        for (int i = 0; i < sizeof(AdvertiseMagic_V1); i++)
+        for (uint32_t i = 0; i < sizeof(AdvertiseMagic_V1); i++)
             if (!TryWriteNumberLittleEndian(bufferCursor, bufferLen, AdvertiseMagic_V1[i]))
                 return false;
         
