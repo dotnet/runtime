@@ -313,7 +313,7 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_SchSendAuxRecordHttp_Http2_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
     public sealed class PlatformHandler_HttpClientHandler_Http2_Test : HttpClientHandlerTest
     {
         protected override Version UseVersion => HttpVersion20.Value;
