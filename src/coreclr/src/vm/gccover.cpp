@@ -1404,8 +1404,8 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     {
         // No thread at the moment so we aren't doing coverage for this function.
         // This should only occur for methods with the NativeCallableAttribute,
-        // where the caller could be coming from a thread unknown to the CLR and
-        // we haven't created a thread yet - see PreStubWorker_Premptive().
+        // where the call could be coming from a thread unknown to the CLR and
+        // we haven't created a thread yet - see PreStubWorker_Preemptive().
         _ASSERTE(pMD->HasNativeCallableAttribute());
         return (FALSE);
     }
