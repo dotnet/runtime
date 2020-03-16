@@ -710,12 +710,15 @@ namespace System
         /// </summary>
         public static T[] AllocateArray<T>(int length, bool pinned = false)
         {
-            if (pinned && RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+            GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
 
-            GC_ALLOC_FLAGS flags = pinned ?
-                GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP :
-                GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
+            if (pinned)
+            {
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+
+                flags = GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+            }
 
             return Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, flags));
         }
