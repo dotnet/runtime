@@ -1366,6 +1366,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("GCPOLL");
                     break;
 
+                case ReadyToRunHelper.ReversePInvokeEnter:
+                    builder.Append("REVERSE_PINVOKE_ENTER");
+                    break;
+
+                case ReadyToRunHelper.ReversePInvokeExit:
+                    builder.Append("REVERSE_PINVOKE_EXIT");
+                    break;
+
                 // Get string handle lazily
                 case ReadyToRunHelper.GetString:
                     builder.Append("GET_STRING");

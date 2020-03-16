@@ -9,6 +9,15 @@ internal static partial class Interop
 {
     internal static unsafe partial class Kernel32
     {
+        // Under debug mode only, we'll want to check the error codes
+        // of some of the p/invokes we make.
+
+#if DEBUG
+        private const bool SetLastErrorForDebug = true;
+#else
+        private const bool SetLastErrorForDebug = false;
+#endif
+
         internal const uint LOCALE_ALLOW_NEUTRAL_NAMES  = 0x08000000; // Flag to allow returning neutral names/lcids for name conversion
         internal const uint LOCALE_ILANGUAGE            = 0x00000001;
         internal const uint LOCALE_SUPPLEMENTAL         = 0x00000002;
@@ -52,7 +61,7 @@ internal static partial class Interop
                     void* lpReserved,
                     IntPtr sortHandle);
 
-        [DllImport("kernel32.dll", EntryPoint = "FindNLSStringEx")]
+        [DllImport("kernel32.dll", EntryPoint = "FindNLSStringEx", SetLastError = SetLastErrorForDebug)]
         internal static extern int FindNLSStringEx(
                     char* lpLocaleName,
                     uint dwFindNLSStringFlags,
@@ -85,14 +94,14 @@ internal static partial class Interop
                     int cchCount2,
                     bool bIgnoreCase);
 
-        [DllImport("kernel32.dll", EntryPoint = "FindStringOrdinal")]
+        [DllImport("kernel32.dll", EntryPoint = "FindStringOrdinal", SetLastError = SetLastErrorForDebug)]
         internal static extern int FindStringOrdinal(
                     uint dwFindStringOrdinalFlags,
                     char* lpStringSource,
                     int cchSource,
                     char* lpStringValue,
                     int cchValue,
-                    int bIgnoreCase);
+                    BOOL bIgnoreCase);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern bool IsNLSDefinedString(

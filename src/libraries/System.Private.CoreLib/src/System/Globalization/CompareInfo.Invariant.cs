@@ -243,7 +243,7 @@ namespace System.Globalization
                 }
             }
 
-            return new SortKey(Name, source, options, keyData);
+            return new SortKey(this, source, options, keyData);
         }
 
         private static void InvariantCreateSortKeyOrdinal(ReadOnlySpan<char> source, Span<byte> sortKey)

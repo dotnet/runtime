@@ -114,6 +114,13 @@ namespace System.Text.Json
         /// <returns>
         /// The converter for the given type.
         /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// The configured <see cref="JsonConverter"/> for <paramref name="typeToConvert"/> returned an invalid converter.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="typeToConvert"/> or its serializable members.
+        /// </exception>
         public JsonConverter GetConverter(Type typeToConvert)
         {
             if (_converters.TryGetValue(typeToConvert, out JsonConverter? converter))
