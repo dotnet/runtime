@@ -1313,6 +1313,7 @@ namespace System
         // where the length can exceed 2Gb once scaled by sizeof(T).
         public static bool SequenceEqual(ref byte first, ref byte second, nuint length)
         {
+            bool result;
             // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
             if (length >= sizeof(nuint))
             {
@@ -1323,21 +1324,14 @@ namespace System
             }
 
 #if TARGET_64BIT
-            // On 32-bit, this will never be true since sizeof(nuint) == 4
-            if (length >= sizeof(uint))
-            {
-                nuint offset = length - sizeof(uint);
-                uint differentBits = LoadUInt(ref first) - LoadUInt(ref second);
-                differentBits |= LoadUInt(ref first, offset) - LoadUInt(ref second, offset);
-                return (differentBits == 0);
-            }
+            // On 32-bit, this will always be true since sizeof(nuint) == 4
+            if (length < sizeof(uint))
 #endif
             {
-                nuint offset = 0;
                 uint differentBits = 0;
-                if ((length & 2) != 0)
+                nuint offset = (length & 2);
+                if (offset != 0)
                 {
-                    offset = 2;
                     differentBits = LoadUShort(ref first);
                     differentBits -= LoadUShort(ref second);
                 }
@@ -1345,36 +1339,52 @@ namespace System
                 {
                     differentBits |= (uint)Unsafe.AddByteOffset(ref first, offset) - (uint)Unsafe.AddByteOffset(ref second, offset);
                 }
-                return (differentBits == 0);
+                result = (differentBits == 0);
+                goto Result;
+            }
+#if TARGET_64BIT
+            else
+            {
+                nuint offset = length - sizeof(uint);
+                uint differentBits = LoadUInt(ref first) - LoadUInt(ref second);
+                differentBits |= LoadUInt(ref first, offset) - LoadUInt(ref second, offset);
+                result = (differentBits == 0);
+                goto Result;
+            }
+#endif
+        Longer:
+            // Only check that the ref is the same if buffers are large,
+            // and hence its worth avoiding doing unnecessary comparisons
+            if (!Unsafe.AreSame(ref first, ref second))
+            {
+                // C# compiler inverts this test, making the outer goto the conditional jmp.
+                goto Vector;
             }
 
+            // This becomes a conditional jmp foward to not favor it.
+            goto Equal;
+
+        Result:
+            return result;
         // When the sequence is equal; which is the longest execution, we want it to determine that
         // as fast as possible so we do not want the early outs to be "predicted not taken" branches.
         Equal:
             return true;
 
-        Longer:
-            // Only check that the ref is the same if buffers are large, and hence
-            // its worth avoiding doing unnecessary comparisons
-            if (Unsafe.AreSame(ref first, ref second))
-            {
-                // This becomes a conditional jmp foward to not favor it. (See comment at "Equal:" label)
-                return true;
-            }
-
+        Vector:
             if (Sse2.IsSupported)
             {
                 if (Avx2.IsSupported && length >= (nuint)Vector256<byte>.Count)
                 {
-                    Vector256<byte> result;
+                    Vector256<byte> vecResult;
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)Vector256<byte>.Count;
                     if (lengthToExamine != 0)
                     {
                         do
                         {
-                            result = Avx2.CompareEqual(LoadVector256(ref first, offset), LoadVector256(ref second, offset));
-                            if (Avx2.MoveMask(result) != -1)
+                            vecResult = Avx2.CompareEqual(LoadVector256(ref first, offset), LoadVector256(ref second, offset));
+                            if (Avx2.MoveMask(vecResult) != -1)
                             {
                                 goto NotEqual;
                             }
@@ -1384,19 +1394,21 @@ namespace System
 
                     // Do final compare as Vector256<byte>.Count from end rather than start
                     Debug.Assert(lengthToExamine >= 0);
-                    result = Avx2.CompareEqual(LoadVector256(ref first, lengthToExamine), LoadVector256(ref second, lengthToExamine));
-                    if (Avx2.MoveMask(result) == -1)
+                    vecResult = Avx2.CompareEqual(LoadVector256(ref first, lengthToExamine), LoadVector256(ref second, lengthToExamine));
+                    if (Avx2.MoveMask(vecResult) == -1)
                     {
+                        // C# compiler inverts this test, making the outer goto the conditional jmp.
                         goto Equal;
                     }
 
+                    // This becomes a conditional jmp foward to not favor it.
                     goto NotEqual;
                 }
                 // Use Vector128.Size as Vector128<byte>.Count doesn't inline at R2R time
                 // https://github.com/dotnet/runtime/issues/32714
                 else if (length >= Vector128.Size)
                 {
-                    Vector128<byte> result;
+                    Vector128<byte> vecResult;
                     nuint offset = 0;
                     nuint lengthToExamine = length - Vector128.Size;
                     if (lengthToExamine != 0)
@@ -1405,8 +1417,8 @@ namespace System
                         {
                             // We use instrincs directly as .Equals calls .AsByte() which doesn't inline at R2R time
                             // https://github.com/dotnet/runtime/issues/32714
-                            result = Sse2.CompareEqual(LoadVector128(ref first, offset), LoadVector128(ref second, offset));
-                            if (Sse2.MoveMask(result) != 0xFFFF)
+                            vecResult = Sse2.CompareEqual(LoadVector128(ref first, offset), LoadVector128(ref second, offset));
+                            if (Sse2.MoveMask(vecResult) != 0xFFFF)
                             {
                                 goto NotEqual;
                             }
@@ -1416,12 +1428,14 @@ namespace System
 
                     // Do final compare as Vector128<byte>.Count from end rather than start
                     Debug.Assert(lengthToExamine >= 0);
-                    result = Sse2.CompareEqual(LoadVector128(ref first, lengthToExamine), LoadVector128(ref second, lengthToExamine));
-                    if (Sse2.MoveMask(result) == 0xFFFF)
+                    vecResult = Sse2.CompareEqual(LoadVector128(ref first, lengthToExamine), LoadVector128(ref second, lengthToExamine));
+                    if (Sse2.MoveMask(vecResult) == 0xFFFF)
                     {
+                        // C# compiler inverts this test, making the outer goto the conditional jmp.
                         goto Equal;
                     }
 
+                    // This becomes a conditional jmp foward to not favor it.
                     goto NotEqual;
                 }
             }
@@ -1445,9 +1459,11 @@ namespace System
                 Debug.Assert(lengthToExamine >= 0);
                 if (LoadVector(ref first, lengthToExamine) == LoadVector(ref second, lengthToExamine))
                 {
+                    // C# compiler inverts this test, making the outer goto the conditional jmp.
                     goto Equal;
                 }
 
+                // This becomes a conditional jmp foward to not favor it.
                 goto NotEqual;
             }
 
@@ -1459,7 +1475,8 @@ namespace System
                 nuint offset = length - sizeof(nuint);
                 nuint differentBits = LoadNUInt(ref first) - LoadNUInt(ref second);
                 differentBits |= LoadNUInt(ref first, offset) - LoadNUInt(ref second, offset);
-                return (differentBits == 0);
+                result = (differentBits == 0);
+                goto Result;
             }
             else
 #endif
@@ -1483,10 +1500,8 @@ namespace System
 
                     // Do final compare as sizeof(nuint) from end rather than start
                     Debug.Assert(lengthToExamine >= 0);
-                    if (LoadNUInt(ref first, lengthToExamine) == LoadNUInt(ref second, lengthToExamine))
-                    {
-                        goto Equal;
-                    }
+                    result = (LoadNUInt(ref first, lengthToExamine) == LoadNUInt(ref second, lengthToExamine));
+                    goto Result;
                 }
             }
 
