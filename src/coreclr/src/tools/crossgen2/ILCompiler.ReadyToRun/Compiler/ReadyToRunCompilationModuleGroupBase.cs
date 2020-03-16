@@ -20,8 +20,11 @@ namespace ILCompiler
         private Dictionary<TypeDesc, ModuleToken> _typeRefsInCompilationModuleSet;
         private readonly bool _compileGenericDependenciesFromVersionBubbleModuleSet;
         private readonly bool _isCompositeBuildMode;
+<<<<<<< HEAD
         private readonly bool _isInputBubble;
         private readonly bool _isLibraryBuildMode;
+=======
+>>>>>>> Remove library build mode flag as it's currently not needed
         private readonly ConcurrentDictionary<TypeDesc, bool> _containsTypeLayoutCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
@@ -29,16 +32,22 @@ namespace ILCompiler
         public ReadyToRunCompilationModuleGroupBase(
             TypeSystemContext context,
             bool isCompositeBuildMode,
+<<<<<<< HEAD
             bool isInputBubble,
             bool isLibraryBuildMode,
+=======
+>>>>>>> Remove library build mode flag as it's currently not needed
             IEnumerable<EcmaModule> compilationModuleSet,
             IEnumerable<ModuleDesc> versionBubbleModuleSet,
             bool compileGenericDependenciesFromVersionBubbleModuleSet)
         {
             _compilationModuleSet = new HashSet<EcmaModule>(compilationModuleSet);
             _isCompositeBuildMode = isCompositeBuildMode;
+<<<<<<< HEAD
             _isInputBubble = isInputBubble;
             _isLibraryBuildMode = isLibraryBuildMode;
+=======
+>>>>>>> Remove library build mode flag as it's currently not needed
 
             Debug.Assert(_isCompositeBuildMode || _compilationModuleSet.Count == 1);
 
@@ -215,8 +224,6 @@ namespace ILCompiler
         public sealed override bool IsCompositeBuildMode => _isCompositeBuildMode;
 
         public sealed override bool IsInputBubble => _isInputBubble;
-
-        public sealed override bool IsLibraryBuildMode => _isLibraryBuildMode;
 
         public sealed override IEnumerable<EcmaModule> CompilationModuleSet => _compilationModuleSet;
 

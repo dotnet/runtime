@@ -18,14 +18,12 @@ namespace ILCompiler
         private EcmaModule _module;
         private IEnumerable<MethodDesc> _profileData;
         private readonly bool _profileDrivenPartialNGen;
-        private readonly bool _isLibraryBuildMode;
 
-        public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager, bool profileDrivenPartialNGen, bool isLibraryBuildMode)
+        public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager, bool profileDrivenPartialNGen)
         {
             _module = module;
             _profileData = profileDataManager.GetMethodsForModuleDesc(module);
             _profileDrivenPartialNGen = profileDrivenPartialNGen;
-            _isLibraryBuildMode = isLibraryBuildMode;
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
