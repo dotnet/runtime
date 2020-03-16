@@ -6,6 +6,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.cs">
       <Link>System\PasteArguments.cs</Link>
     </Compile>
