@@ -816,7 +816,7 @@ __out_ecount (cchMaxAssertStackLevelStringLen) CHAR *pszString     // @parm Plac
     {
         sprintf_s(pszString,
                   cchMaxAssertStackLevelStringLen,
-                  "%s! %s + 0x%X (0x" FMT_ADDR_BARE ")",
+                  "%s! %s + 0x%llX (0x" FMT_ADDR_BARE ")",
                   (psi->achModule[0]) ? psi->achModule : "<no module>",
                   (psi->achSymbol[0]) ? psi->achSymbol : "<no symbol>",
                   psi->dwOffset,
