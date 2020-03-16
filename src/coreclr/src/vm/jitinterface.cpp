@@ -12678,9 +12678,10 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     flags = GetCompileFlags(ftn, flags, &methodInfo);
 
-    // If the reverse P/Invoke flag is used, we aren't going to support
-    // any tiered compilation.
-    if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE))
+    // Clearing all tier flags and mark as optimized if the reverse P/Invoke
+    // flag is used and the function is eligible.
+    if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE)
+        && ftn->IsEligibleForTieredCompilation())
     {
         _ASSERTE(config->GetCallerGCMode() != CallerGCMode::Coop);
 
