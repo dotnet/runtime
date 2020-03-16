@@ -14,7 +14,7 @@
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
-#include <glib.h>
+#include <mono-glib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

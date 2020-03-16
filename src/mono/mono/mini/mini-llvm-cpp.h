@@ -11,7 +11,7 @@
 #ifndef __MONO_MINI_LLVM_CPP_H__
 #define __MONO_MINI_LLVM_CPP_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"

@@ -11,7 +11,7 @@
 #ifndef __ARM64_CODEGEN_H__
 #define __ARM64_CODEGEN_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 
 enum {
 	ARMREG_R0 = 0,

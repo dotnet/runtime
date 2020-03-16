@@ -7,7 +7,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <pthread.h>
 #include <string.h>

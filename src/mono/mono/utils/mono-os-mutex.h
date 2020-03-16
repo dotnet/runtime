@@ -14,7 +14,7 @@
 #define __MONO_OS_MUTEX_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <stdlib.h>
 #include <string.h>

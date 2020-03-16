@@ -5,7 +5,7 @@
 #include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "glib.h"
+#include "mono-glib.h"
 
 #include "mono/utils/mono-path.c"
 

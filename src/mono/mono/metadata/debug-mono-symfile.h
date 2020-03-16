@@ -9,7 +9,7 @@
 #ifndef __MONO_DEBUG_MONO_SYMFILE_H__
 #define __MONO_DEBUG_MONO_SYMFILE_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mono-debug.h>

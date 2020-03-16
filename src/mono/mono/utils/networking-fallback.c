@@ -9,7 +9,7 @@
  */
 
 #include <mono/utils/networking.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-compiler.h>
 
 #ifdef HAVE_NETDB_H

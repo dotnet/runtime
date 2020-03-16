@@ -14,7 +14,7 @@
 #include <mono/utils/mono-errno.h>
 
 #ifdef DISABLE_SOCKETS
-#include <glib.h>
+#include <mono-glib.h>
 
 int
 mono_poll_can_add (mono_pollfd *ufds, unsigned int nfds, int fd)

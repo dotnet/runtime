@@ -32,7 +32,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef HAVE_UNISTD_H
 #ifndef __USE_GNU

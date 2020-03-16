@@ -12,7 +12,7 @@
 #define __MONO_UTILS_MERP__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/threads-types.h>
 
 #ifdef TARGET_OSX

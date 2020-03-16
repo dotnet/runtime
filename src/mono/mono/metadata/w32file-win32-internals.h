@@ -7,7 +7,7 @@
 #define _MONO_METADATA_W32FILE_WIN32_INTERNALS_H_
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef HOST_WIN32
 #include "mono/metadata/w32file.h"

@@ -9,7 +9,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef HAVE_NETDB_H
 #include <netdb.h>

@@ -29,7 +29,7 @@
 #include <config.h>
 #include <stdio.h>
 #include <math.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono-hash.h"
 #include "mono-hash-internals.h"

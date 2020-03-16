@@ -12,7 +12,7 @@
 #define __MONO_THREADS_COOP_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "checked-build.h"
 #include "mono-threads.h"

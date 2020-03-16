@@ -12,7 +12,7 @@
 
 #if defined(USE_WINDOWS_BACKEND)
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>

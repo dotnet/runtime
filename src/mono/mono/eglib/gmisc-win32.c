@@ -29,7 +29,7 @@
 #include <config.h>
 
 #include <stdlib.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <windows.h>
 #if _MSC_VER && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)

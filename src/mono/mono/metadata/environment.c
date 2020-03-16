@@ -12,7 +12,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/environment.h>

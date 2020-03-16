@@ -29,7 +29,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #ifndef PSAPI_VERSION
 #define PSAPI_VERSION 2 // Use the Windows 7 or newer version more directly.
 #endif

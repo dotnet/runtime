@@ -33,7 +33,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef _MSC_VER
 /* disable the following warnings 

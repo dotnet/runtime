@@ -6,7 +6,7 @@
 #ifndef __MONO_METADATA_REFLECTION_CACHE_H__
 #define __MONO_METADATA_REFLECTION_CACHE_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/handle.h>
 #include <mono/metadata/mono-hash.h>

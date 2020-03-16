@@ -15,7 +15,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include "mono/metadata/object.h"
 #include "mono/metadata/dynamic-image-internals.h"
 #include "mono/metadata/dynamic-stream-internals.h"

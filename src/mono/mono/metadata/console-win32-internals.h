@@ -7,7 +7,7 @@
 #define __MONO_CONSOLE_WIN32_INTERNALS_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono/metadata/object.h"
 #include "mono/metadata/object-internals.h"

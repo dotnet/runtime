@@ -9,7 +9,7 @@
 #define __MONO_MINI_H__
 
 #include "config.h"
-#include <glib.h>
+#include <mono-glib.h>
 #include <signal.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>

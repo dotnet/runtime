@@ -4,7 +4,7 @@
 
 #include "config.h"
 #include <mono/utils/mono-publib.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 void
 mono_free (void *ptr)

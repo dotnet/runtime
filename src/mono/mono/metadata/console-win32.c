@@ -10,7 +10,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>

@@ -15,7 +15,7 @@
 #define __MONO_HANDLE_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/metadata/handle-decl.h>
 #include <mono/metadata/object.h>

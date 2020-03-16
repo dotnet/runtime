@@ -1,7 +1,7 @@
 #ifndef __DEBUG_INTERNALS_H__
 #define __DEBUG_INTERNALS_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-compiler.h>

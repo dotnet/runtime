@@ -9,7 +9,7 @@
  *
  */
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <errno.h>
 #include <mono/utils/mono-errno.h>
 #include <stdio.h>

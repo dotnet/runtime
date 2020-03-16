@@ -30,8 +30,8 @@
  */
 #include <config.h>
 
-#include <glib.h>
-#include <gmodule.h>
+#include <mono-glib.h>
+#include <mono-gmodule.h>
 
 #if defined(G_OS_UNIX) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>

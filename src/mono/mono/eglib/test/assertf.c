@@ -10,7 +10,7 @@ now:
 	g_assertf(expr, ...);
 */
 
-#include "../glib.h"
+#include "../mono-glib.h"
 
 int main(int argc, char** argv)
 {

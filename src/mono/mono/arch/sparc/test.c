@@ -1,4 +1,4 @@
-#include <glib.h>
+#include <mono-glib.h>
 #include "sparc-codegen.h"
 
 /* don't run the resulting program, it will destroy your computer,

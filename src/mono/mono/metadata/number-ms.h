@@ -5,7 +5,7 @@
 #ifndef __MONO_NUMBER_MS_H__
 #define __MONO_NUMBER_MS_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 
 // Double floating point Bias
 #define MONO_DOUBLE_BIAS 1022

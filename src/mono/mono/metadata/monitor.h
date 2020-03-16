@@ -11,7 +11,7 @@
 #ifndef _MONO_METADATA_MONITOR_H_
 #define _MONO_METADATA_MONITOR_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/object.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-coop-mutex.h>

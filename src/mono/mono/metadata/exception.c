@@ -13,7 +13,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#include <glib.h>
+#include <mono-glib.h> // FIXME Move this after config.h.
 #include <config.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/exception.h>

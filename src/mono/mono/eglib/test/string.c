@@ -1,4 +1,4 @@
-#include <glib.h>
+#include <mono-glib.h>
 #include <string.h>
 #include <stdio.h>
 #include "test.h"

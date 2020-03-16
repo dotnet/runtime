@@ -5,7 +5,7 @@
 #ifndef __MONO_METADATA_BASIC_BLOCK_H__
 #define __MONO_METADATA_BASIC_BLOCK_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/metadata.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-error.h>

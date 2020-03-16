@@ -13,7 +13,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <config.h>
 
 #include "atomic.h"

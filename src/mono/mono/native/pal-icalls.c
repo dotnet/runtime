@@ -9,7 +9,7 @@
 #if !defined (HOST_WATCHOS) && !defined (HOST_TVOS) /* These platforms don't support async suspend and do not need this code for now */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include "mono/utils/mono-threads-api.h"
 #include "mono/utils/atomic.h"
 #include "mono/metadata/icall-internals.h"

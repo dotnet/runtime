@@ -22,7 +22,7 @@
 #include <stdio.h>
 #endif
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>

@@ -18,7 +18,7 @@
 #undef MONO_RT_EXTERNAL_ONLY
 #define MONO_RT_EXTERNAL_ONLY /* nothing */
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/callspec.h>
 #include <mono/metadata/assembly.h>

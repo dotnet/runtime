@@ -13,7 +13,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <string.h>
 #include <signal.h>
 
@@ -93,7 +93,7 @@
 #endif
 
 #if !defined(DISABLE_CRASH_REPORTING)
-#include <gmodule.h>
+#include <mono-gmodule.h>
 #endif
 #include "mono/utils/mono-tls-inline.h"
 

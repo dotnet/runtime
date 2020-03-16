@@ -8,7 +8,7 @@
 #ifndef __MONO_HAZARD_POINTER_H__
 #define __MONO_HAZARD_POINTER_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-publib.h>

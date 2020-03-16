@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifndef G_OS_WIN32
 #include <pthread.h>
@@ -44,7 +44,7 @@
  * rather than free.
  */
 
-/* This is not a macro, because I dont want to put _GNU_SOURCE in the glib.h header */
+/* This is not a macro, because I do not want to put _GNU_SOURCE in the mono-glib.h header */
 gchar *
 g_strndup (const gchar *str, gsize n)
 {

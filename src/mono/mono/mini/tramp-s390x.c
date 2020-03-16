@@ -33,7 +33,7 @@
 /*------------------------------------------------------------------*/
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <string.h>
 
 #include <mono/metadata/abi-details.h>

@@ -6,7 +6,7 @@
 #define __MONO_CIL_COFF_H__
 
 #include <mono/metadata/metadata.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 /*
  * 25.2.1: Method header type values

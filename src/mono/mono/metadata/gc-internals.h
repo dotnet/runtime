@@ -12,7 +12,7 @@
 #ifndef __MONO_METADATA_GC_INTERNAL_H__
 #define __MONO_METADATA_GC_INTERNAL_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/gc_wrapper.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/threads-types.h>

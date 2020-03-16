@@ -7,7 +7,7 @@
 #define __MONO_METADATA_COMINTEROP_WIN32_INTERNALS_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 // On some Windows platforms the implementation of below methods are hosted
 // in separate source files like cominterop-win32-*.c. On other platforms,

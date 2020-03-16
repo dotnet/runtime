@@ -2,7 +2,7 @@
  * \file
  */
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <string.h>
 
 #include "monobitset.h"

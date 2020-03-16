@@ -6,7 +6,7 @@
 #define _MONO_UTILS_OS_EVENT_H_
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/utils/mono-publib.h>
 #include "mono-os-mutex.h"

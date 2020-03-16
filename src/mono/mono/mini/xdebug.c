@@ -25,7 +25,7 @@
  */
 
 #include "config.h"
-#include <glib.h>
+#include <mono-glib.h>
 #include "mini.h"
 #include "mini-runtime.h"
 

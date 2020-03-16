@@ -14,11 +14,10 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-compiler.h>
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
 
-#include <glib.h>
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
 
 #include <mono/metadata/file-mmap.h>
 

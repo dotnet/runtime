@@ -5,7 +5,7 @@
 #ifndef __MONO_MINI_MIPS_H__
 #define __MONO_MINI_MIPS_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/arch/mips/mips-codegen.h>
 #include <mono/utils/mono-context.h>
 

@@ -21,7 +21,7 @@
 #undef THREAD_INFO_TYPE
 #define THREAD_INFO_TYPE SgenThreadInfo
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <stdio.h>
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>

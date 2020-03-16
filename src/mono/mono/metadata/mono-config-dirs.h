@@ -6,7 +6,7 @@
 #define __MONO_CONFIG_INTERNAL_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 const char*
 mono_config_get_assemblies_dir (void);

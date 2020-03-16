@@ -6,7 +6,7 @@
 #define _MONO_METADATA_THREADPOOL_WORKER_H
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifndef ENABLE_NETCORE
 

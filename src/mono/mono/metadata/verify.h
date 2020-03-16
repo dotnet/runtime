@@ -8,7 +8,7 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/loader.h>
-#include <glib.h> /* GSList dep */
+#include <mono-glib.h> /* GSList dep */
 
 MONO_BEGIN_DECLS
 

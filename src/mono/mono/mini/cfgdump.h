@@ -6,7 +6,7 @@
 
 #ifndef __MINI_CFGDUMP_H__
 #define __MINI_CFGDUMP_H__
-#include <glib.h>
+#include <mono-glib.h>
 
 #define CONSTANT_POOL_MAX_SIZE 8000
 

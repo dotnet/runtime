@@ -28,7 +28,7 @@
  */
 #include "config.h"
 #include <stdio.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #define GROW_IF_NECESSARY(s,l) { \
 	if(s->len + l >= s->allocated_len) { \

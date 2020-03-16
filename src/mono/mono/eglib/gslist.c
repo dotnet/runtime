@@ -28,7 +28,7 @@
  */
 #include "config.h"
 #include <stdio.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 GSList*
 g_slist_alloc (void)

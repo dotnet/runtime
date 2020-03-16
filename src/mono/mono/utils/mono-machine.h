@@ -18,7 +18,7 @@
  */
 
 #include "config.h"
-#include <glib.h>
+#include <mono-glib.h>
 
 // __ILP32__ means integer, long, and pointers are 32bits, and nothing about registers.
 // MONO_ARCH_ILP32 means integer, long, and pointers are 32bits, and 64bit registers.

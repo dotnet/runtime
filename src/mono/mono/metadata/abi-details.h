@@ -7,7 +7,7 @@
 #define __MONO_METADATA_ABI_DETAILS_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 /*
  * This file defines macros to compute sizes/alignments/field offsets which depend on

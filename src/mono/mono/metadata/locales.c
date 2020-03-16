@@ -18,7 +18,7 @@
 
 #if !ENABLE_NETCORE
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <string.h>
 
 #include <mono/metadata/class-init.h>

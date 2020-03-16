@@ -9,7 +9,7 @@
 
 #include <mono/arch/arm/arm-codegen.h>
 #include <mono/utils/mono-context.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #if defined(ARM_FPU_NONE)
 #define MONO_ARCH_SOFT_FLOAT_FALLBACK 1

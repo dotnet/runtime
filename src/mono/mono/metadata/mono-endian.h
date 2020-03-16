@@ -5,7 +5,7 @@
 #ifndef _MONO_METADATA_ENDIAN_H_
 #define _MONO_METADATA_ENDIAN_H_ 1
 
-#include <glib.h>
+#include <mono-glib.h>
 
 typedef union {
 	guint32 ival;

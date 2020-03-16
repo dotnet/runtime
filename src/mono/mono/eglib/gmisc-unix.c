@@ -28,7 +28,7 @@
 
 #include <config.h>
 #include <stdlib.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <pthread.h>
 
 #ifdef HAVE_PWD_H

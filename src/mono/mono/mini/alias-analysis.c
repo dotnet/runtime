@@ -13,7 +13,7 @@
 
 #include "mini.h"
 #include "ir-emit.h"
-#include "glib.h"
+#include "mono-glib.h"
 #include <mono/utils/mono-compiler.h>
 
 #ifndef DISABLE_JIT

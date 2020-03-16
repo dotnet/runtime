@@ -10,7 +10,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include "attach.h"
 
 #ifdef HOST_WIN32

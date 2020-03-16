@@ -6,7 +6,7 @@
 #define _MONO_METADATA_W32PROCESS_UNIX_INTERNALS_H_
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 /*
  * FOR EXCLUSIVE USE BY w32process-unix.c

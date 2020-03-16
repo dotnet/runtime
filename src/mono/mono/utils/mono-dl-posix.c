@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <dlfcn.h>
 
 #if !defined (TARGET_MACH)

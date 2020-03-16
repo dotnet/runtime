@@ -1,4 +1,4 @@
-#include <glib.h>
+#include <mono-glib.h>
 #include "test.h"
 
 static RESULT

@@ -2,7 +2,7 @@
 // without any chance of a C++ library dependency.
 // In time it can probably be removed.
 #include "config.h"
-#include "glib.h"
+#include "mono-glib.h"
 #define MONO_MATH_DECLARE_ALL 1
 #include "mono-math.h"
 

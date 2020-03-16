@@ -12,7 +12,7 @@
 #ifndef _MONO_METADATA_SECURITY_H_
 #define _MONO_METADATA_SECURITY_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/utils/mono-compiler.h>

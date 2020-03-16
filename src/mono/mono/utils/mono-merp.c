@@ -10,7 +10,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
 #include "mono-merp.h"

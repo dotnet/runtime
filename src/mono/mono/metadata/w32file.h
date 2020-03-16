@@ -15,7 +15,7 @@
 #define _MONO_METADATA_W32FILE_H_
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/metadata/object-internals.h>
 #include <mono/utils/mono-compiler.h>

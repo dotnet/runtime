@@ -13,7 +13,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "object.h"
 #include "object-internals.h"

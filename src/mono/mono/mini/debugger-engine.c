@@ -14,7 +14,7 @@
 
 #if !defined (DISABLE_SDB) || defined(TARGET_WASM)
 
-#include <glib.h>
+#include <mono-glib.h>
 #include "seq-points.h"
 #include "aot-runtime.h"
 #include "debugger-engine.h"

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include "test.h"
 
 #define do_bad_test(s) do { char *r = markup_test (s); if (r == NULL) return FAILED ("Failed on test " # s); else g_free (r); } while (0)

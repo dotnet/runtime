@@ -5,7 +5,7 @@
 #ifndef __INTERPRETER_MINTOPS_H
 #define __INTERPRETER_MINTOPS_H
 
-#include <glib.h>
+#include <mono-glib.h>
 
 typedef enum
 {

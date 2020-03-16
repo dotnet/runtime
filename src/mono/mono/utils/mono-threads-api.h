@@ -11,7 +11,7 @@
 #ifndef __MONO_THREADS_API_H__
 #define __MONO_THREADS_API_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>
 

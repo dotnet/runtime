@@ -1,5 +1,5 @@
 #include <mono/arch/arm64/arm64-codegen.h>
-#include "glib.h"
+#include "mono-glib.h"
 
 int
 main (int argc, char *argv [])

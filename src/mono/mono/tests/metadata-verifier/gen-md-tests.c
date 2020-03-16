@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/metadata/image.h>
 #include <mono/metadata/metadata.h>

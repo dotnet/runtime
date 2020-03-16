@@ -32,7 +32,7 @@
 // size: Expected 1,2,4 or 8
 // widen: extends from 1 or 2 bytes
 
-#include <glib.h>
+#include <mono-glib.h>
 
 typedef enum {
 	AMD64_RAX = 0,

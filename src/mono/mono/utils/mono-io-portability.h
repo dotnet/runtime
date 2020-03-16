@@ -5,7 +5,7 @@
 #ifndef __MONO_IO_PORTABILITY_H
 #define __MONO_IO_PORTABILITY_H
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-compiler.h>
 #include "config.h"
 

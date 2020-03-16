@@ -7,7 +7,7 @@
 #define __MONO_METADATA_ICALL_TABLE_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-publib.h>
 #include "marshal.h"
 #include "icalls.h"

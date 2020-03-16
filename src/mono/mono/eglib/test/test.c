@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include <glib.h>
+#include <mono-glib.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif

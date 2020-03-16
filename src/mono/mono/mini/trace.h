@@ -4,7 +4,7 @@
 
 #ifndef __MONO_TRACE_H__
 #define __MONO_TRACE_H__
-#include <glib.h>
+#include <mono-glib.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/metadata/icalls.h"
 

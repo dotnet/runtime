@@ -18,7 +18,7 @@
 #ifndef _MONO_PROPERTY_HASH_H_
 #define _MONO_PROPERTY_HASH_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-publib.h>
 
 typedef struct _MonoPropertyHash MonoPropertyHash;

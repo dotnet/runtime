@@ -13,7 +13,7 @@
 
 #ifndef HOST_WIN32
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <string.h>
 #include <errno.h>
 #ifdef HAVE_UNISTD_H

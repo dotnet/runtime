@@ -12,7 +12,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include "w32handle.h"
 #include "utils/atomic.h"
 #include "utils/mono-logger-internals.h"

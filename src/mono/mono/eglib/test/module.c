@@ -1,6 +1,6 @@
 #include <config.h>
-#include <glib.h>
-#include <gmodule.h>
+#include <mono-glib.h>
+#include <mono-gmodule.h>
 #include <string.h>
 #include <stdio.h>
 #ifdef HAVE_UNISTD_H

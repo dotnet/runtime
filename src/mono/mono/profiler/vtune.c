@@ -35,7 +35,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/utils/mono-publib.h>
 #include <string.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #define bool char
 

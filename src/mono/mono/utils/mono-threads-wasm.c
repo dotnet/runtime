@@ -10,7 +10,7 @@
 #include <mono/utils/mono-mmap.h>
 
 #include <emscripten.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
 

@@ -6,7 +6,7 @@
 #define _MONO_METADATA_W32EVENT_H_
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "object.h"
 #include "object-internals.h"

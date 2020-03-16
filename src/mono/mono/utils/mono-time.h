@@ -6,7 +6,7 @@
 #define __UTILS_MONO_TIME_H__
 
 #include <mono/utils/mono-compiler.h>
-#include <glib.h>
+#include <mono-glib.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif

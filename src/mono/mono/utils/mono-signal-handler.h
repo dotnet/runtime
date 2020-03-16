@@ -10,7 +10,7 @@
 #define __MONO_SIGNAL_HANDLER_H__
 
 #include "config.h"
-#include <glib.h>
+#include <mono-glib.h>
 
 /*
  * When a signal is delivered to a thread on a Krait Android device

@@ -12,7 +12,7 @@
 #ifndef __MONO_SGENCONF_H__
 #define __MONO_SGENCONF_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 
 /*Basic defines and static tunables */
 

@@ -10,7 +10,7 @@
 #ifndef __MONO_SGEN_ARRAY_LIST_H__
 #define __MONO_SGEN_ARRAY_LIST_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #define SGEN_ARRAY_LIST_BUCKETS (32)
 #define SGEN_ARRAY_LIST_MIN_BUCKET_BITS (5)

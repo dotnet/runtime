@@ -5,7 +5,7 @@
 #ifndef __MONO_LOGGER_INTERNAL_H__
 #define __MONO_LOGGER_INTERNAL_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-compiler.h>
 #include "mono-logger.h"
 

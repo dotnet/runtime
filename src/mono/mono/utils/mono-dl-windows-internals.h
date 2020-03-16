@@ -6,7 +6,7 @@
 #define __MONO_UTILS_DL_WINDOWS_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef HOST_WIN32
 #include "mono/utils/mono-dl.h"

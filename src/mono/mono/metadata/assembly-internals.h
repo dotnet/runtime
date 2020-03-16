@@ -6,7 +6,7 @@
 #ifndef __MONO_METADATA_ASSEMBLY_INTERNALS_H__
 #define __MONO_METADATA_ASSEMBLY_INTERNALS_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>

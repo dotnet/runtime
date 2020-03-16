@@ -27,7 +27,7 @@
  */
 #include "config.h"
 #include <stdio.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <time.h>
 #include <errno.h>
 #include <sys/time.h>

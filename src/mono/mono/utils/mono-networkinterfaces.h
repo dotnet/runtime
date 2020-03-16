@@ -8,7 +8,7 @@
  * Utility functions to access network information.
  */
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-compiler.h>
 
 /* never remove or reorder these enums values: they are used in corlib/System */

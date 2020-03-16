@@ -14,7 +14,7 @@
 #define __MONO_TLS_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-forward-internal.h>
 #include <mono/utils/mach-support.h>
 

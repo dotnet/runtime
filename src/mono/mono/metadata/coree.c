@@ -13,7 +13,7 @@
 
 #ifdef HOST_WIN32
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <string.h>
 #include <mono/utils/mono-path.h>
 #include "utils/w32api.h"

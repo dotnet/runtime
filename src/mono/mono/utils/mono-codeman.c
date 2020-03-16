@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono-codeman.h"
 #include "mono-mmap.h"

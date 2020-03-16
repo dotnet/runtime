@@ -9,7 +9,7 @@
  */
 
 #include <mono/utils/networking.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 int
 mono_address_size_for_family (int family)

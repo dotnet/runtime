@@ -12,7 +12,7 @@
  */
 
 #include <config.h>
-#include <gmodule.h>
+#include <mono-gmodule.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/class-internals.h>

@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #define _USE_MATH_DEFINES // needed by MSVC to define math constants
 #include <math.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>

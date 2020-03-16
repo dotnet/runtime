@@ -14,7 +14,7 @@
  */
 #include <config.h>
 #include <stdio.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <errno.h>
 #include <time.h>
 #include <string.h>

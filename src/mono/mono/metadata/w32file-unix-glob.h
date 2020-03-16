@@ -39,7 +39,7 @@
 #ifndef __MONO_METADATA_W32FILE_UNIX_GLOB_H__
 #define	__MONO_METADATA_W32FILE_UNIX_GLOB_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 
 struct stat;
 typedef struct {

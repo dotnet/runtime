@@ -5,7 +5,7 @@
 
 #ifndef S390X_H
 #define S390X_H
-#include <glib.h>
+#include <mono-glib.h>
 #include <assert.h>
 #include <limits.h>
 

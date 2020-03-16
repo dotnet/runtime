@@ -12,7 +12,7 @@
 #ifndef __MONO_UTILS_MONO_VALUE_HASH__
 #define __MONO_UTILS_MONO_VALUE_HASH__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include "mono-compiler.h"
 
 /*

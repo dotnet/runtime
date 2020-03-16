@@ -6,7 +6,7 @@
 #ifndef __MONO_METADATA_CLASS_INIT_H__
 #define __MONO_METADATA_CLASS_INIT_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/class-internals.h>
 

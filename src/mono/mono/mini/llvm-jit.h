@@ -11,7 +11,7 @@
 #ifndef __MONO_LLVM_JIT_H__
 #define __MONO_LLVM_JIT_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
