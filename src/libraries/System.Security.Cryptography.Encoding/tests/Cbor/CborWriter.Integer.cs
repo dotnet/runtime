@@ -41,28 +41,28 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             else if (value <= byte.MaxValue)
             {
                 EnsureWriteCapacity(2);
-                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.UnsignedInteger8BitEncoding).InitialByte;
+                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.Unsigned8BitIntegerEncoding).InitialByte;
                 _buffer[_offset + 1] = (byte)value;
                 _offset += 2;
             }
             else if (value <= ushort.MaxValue)
             {
                 EnsureWriteCapacity(3);
-                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.UnsignedInteger16BitEncoding).InitialByte;
+                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.Unsigned16BitIntegerEncoding).InitialByte;
                 BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(_offset + 1), (ushort)value);
                 _offset += 3;
             }
             else if (value <= uint.MaxValue)
             {
                 EnsureWriteCapacity(5);
-                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.UnsignedInteger32BitEncoding).InitialByte;
+                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.Unsigned32BitIntegerEncoding).InitialByte;
                 BinaryPrimitives.WriteUInt32BigEndian(_buffer.AsSpan(_offset + 1), (uint)value);
                 _offset += 5;
             }
             else
             {
                 EnsureWriteCapacity(9);
-                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.UnsignedInteger64BitEncoding).InitialByte;
+                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.Unsigned64BitIntegerEncoding).InitialByte;
                 BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(_offset + 1), value);
                 _offset += 9;
             }
