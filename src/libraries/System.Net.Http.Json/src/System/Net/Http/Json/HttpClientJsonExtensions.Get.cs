@@ -13,7 +13,7 @@ namespace System.Net.Http.Json
     /// </summary>
     public static partial class HttpClientJsonExtensions
     {
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, string requestUri, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, string? requestUri, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -24,7 +24,7 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri requestUri, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -35,7 +35,7 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
-        public static Task<T> GetFromJsonAsync<T>(this HttpClient client, string requestUri, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<TValue> GetFromJsonAsync<TValue>(this HttpClient client, string? requestUri, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -43,10 +43,10 @@ namespace System.Net.Http.Json
             }
 
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            return GetFromJsonAsyncCore<T>(taskResponse, options, cancellationToken);
+            return GetFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
         }
 
-        public static Task<T> GetFromJsonAsync<T>(this HttpClient client, Uri requestUri, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<TValue> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -54,8 +54,20 @@ namespace System.Net.Http.Json
             }
 
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            return GetFromJsonAsyncCore<T>(taskResponse, options, cancellationToken);
+            return GetFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
         }
+
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, string? requestUri, Type type, CancellationToken cancellationToken = default)
+            => client.GetFromJsonAsync(requestUri, type, null, cancellationToken);
+
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, CancellationToken cancellationToken = default)
+            => client.GetFromJsonAsync(requestUri, type, null, cancellationToken);
+
+        public static Task<TValue> GetFromJsonAsync<TValue>(this HttpClient client, string? requestUri, CancellationToken cancellationToken = default)
+            => client.GetFromJsonAsync<TValue>(requestUri, null, cancellationToken);
+
+        public static Task<TValue> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, CancellationToken cancellationToken = default)
+            => client.GetFromJsonAsync<TValue>(requestUri, null, cancellationToken);
 
         private static async Task<object?> GetFromJsonAsyncCore(Task<HttpResponseMessage> taskResponse, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {

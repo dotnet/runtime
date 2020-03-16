@@ -160,5 +160,25 @@ namespace System.Net.Http.Json.Functional.Tests
             request.Content = new JsonContent(typeOfBar, foo, MediaTypeHeaderValue.Parse("application/json; charset=utf-8"));
             await Assert.ThrowsAsync<ArgumentException>(() => client.SendAsync(request));
         }
+
+        [Fact]
+        public static async Task ValidateUtf16IsTranscodedAsync()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Post, uri);
+                        MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("application/json; charset=utf-16");
+                        request.Content = JsonContent.Create(Person.Create(), mediaType: mediaType);
+                        await client.SendAsync(request);
+                    }
+                },
+                async server => {
+                    HttpRequestData req = await server.HandleRequestAsync();
+                    Assert.Equal("application/json; charset=utf-16", req.GetSingleHeaderValue("Content-Type"));
+                });
+        }
     }
 }

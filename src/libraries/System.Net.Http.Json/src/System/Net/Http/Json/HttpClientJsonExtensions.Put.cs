@@ -10,48 +10,32 @@ namespace System.Net.Http.Json
 {
     public static partial class HttpClientJsonExtensions
     {
-        public static Task<HttpResponseMessage> PutAsJsonAsync(this HttpClient client, string requestUri, Type type, object? value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, string? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = new JsonContent(type, value, options);
+            JsonContent content = JsonContent.Create(value, JsonContent.DefaultMediaType, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
-        public static Task<HttpResponseMessage> PutAsJsonAsync(this HttpClient client, Uri requestUri, Type type, object? value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, Uri? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = new JsonContent(type, value, options);
+            JsonContent content = JsonContent.Create(value, JsonContent.DefaultMediaType, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
-        public static Task<HttpResponseMessage> PutAsJsonAsync<T>(this HttpClient client, string requestUri, T value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            if (client == null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
+        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, string? requestUri, TValue value, CancellationToken cancellationToken)
+            => client.PutAsJsonAsync(requestUri, value, null, cancellationToken);
 
-            JsonContent content = JsonContent.Create(value, options);
-            return client.PutAsync(requestUri, content, cancellationToken);
-        }
-
-        public static Task<HttpResponseMessage> PutAsJsonAsync<T>(this HttpClient client, Uri requestUri, T value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            if (client == null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            JsonContent content = JsonContent.Create(value, options);
-            return client.PutAsync(requestUri, content, cancellationToken);
-        }
+        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, Uri? requestUri, TValue value, CancellationToken cancellationToken)
+            => client.PutAsJsonAsync(requestUri, value, null, cancellationToken);
     }
 }

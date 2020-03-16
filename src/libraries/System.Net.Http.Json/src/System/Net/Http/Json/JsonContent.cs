@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -15,55 +14,54 @@ namespace System.Net.Http.Json
     public partial class JsonContent : HttpContent
     {
         internal const string JsonMediaType = "application/json";
+        internal static readonly MediaTypeHeaderValue DefaultMediaType = MediaTypeHeaderValue.Parse(string.Format("{0} {1}", JsonMediaType, Encoding.UTF8.WebName));
+
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
-
-        private static MediaTypeHeaderValue CreateMediaTypeFromString(string mediaTypeAsString)
-        {
-            MediaTypeHeaderValue mediaType = new MediaTypeHeaderValue(mediaTypeAsString);
-            Debug.Assert(mediaType.CharSet == null);
-            mediaType.CharSet = Encoding.UTF8.WebName;
-
-            return mediaType;
-        }
-
         public Type ObjectType { get; }
-
         public object? Value { get; }
 
-        public JsonContent(Type type, object? value, JsonSerializerOptions? options = null)
-            : this(type, value, CreateMediaTypeFromString(JsonMediaType), options) { }
-
-        public JsonContent(Type type, object? value, string mediaType, JsonSerializerOptions? options = null)
-            : this(type, value, CreateMediaTypeFromString(mediaType ?? throw new ArgumentNullException(nameof(mediaType))), options) { }
-
-        public JsonContent(Type type, object? value, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options = null)
+        private JsonContent(object? value, Type inputType, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options)
         {
             if (mediaType == null)
             {
                 throw new ArgumentNullException(nameof(mediaType));
             }
 
-            // TODO: Support other charsets once https://github.com/dotnet/runtime/issues/30260 is done.
-            if (mediaType.CharSet != Encoding.UTF8.WebName)
+            if (inputType == null)
             {
-                throw new NotSupportedException(SR.CharSetInvalid);
+                throw new ArgumentNullException(nameof(inputType));
             }
 
             Value = value;
-            ObjectType = type;
+            ObjectType = inputType;
             Headers.ContentType = mediaType;
-            // TODO: Set DefaultWebOptions if no options were provided.
+
+            //    // TODO: Support other charsets once https://github.com/dotnet/runtime/issues/30260 is done.
+            //    string charset = mediaType.CharSet;
+            //    if (charset != null && charset != Encoding.UTF8.WebName)
+            //    {
+            //        // Add validations for uppercase, quoted and invalid charsets.
+            //        _encoding = Encoding.GetEncoding(charset);
+            //        //throw new NotSupportedException(SR.CharSetInvalid);
+            //    }
+
             _jsonSerializerOptions = options;
         }
 
-        public static JsonContent Create<T>(T value, JsonSerializerOptions? options = null)
-            => Create(value, CreateMediaTypeFromString(JsonMediaType), options);
-
-        public static JsonContent Create<T>(T value, string mediaType, JsonSerializerOptions? options = null)
-            => Create(value, CreateMediaTypeFromString(mediaType ?? throw new ArgumentNullException(nameof(mediaType))), options);
-
         public static JsonContent Create<T>(T value, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options = null)
-            => new JsonContent(typeof(T), value, mediaType);
+        {
+            return Create(value, typeof(T), mediaType, options);
+        }
+
+        public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options = null)
+        {
+            if (mediaType == null)
+            {
+                throw new ArgumentNullException(nameof(mediaType));
+            }
+
+            return new JsonContent(inputValue, inputType, mediaType, options);
+        }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
 #if !NETSTANDARD2_0

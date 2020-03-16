@@ -161,15 +161,18 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                 },
                 async server => {
-                    byte[] nonUtf8Response = Encoding.Unicode.GetBytes(json);
-                    var buffer = new MemoryStream();
-                    buffer.Write(
+                    byte[] utf16Content = Encoding.Unicode.GetBytes(json);
+                    byte[] bytes =
                         Encoding.ASCII.GetBytes(
                             $"HTTP/1.1 200 OK" +
                             $"\r\nContent-Type: text/plain; charset=utf-16\r\n" +
-                            $"Content-Length: {nonUtf8Response.Length}\r\n" +
-                            $"Connection:close\r\n\r\n"));
-                    buffer.Write(nonUtf8Response);
+                            $"Content-Length: {utf16Content.Length}\r\n" +
+                            $"Connection:close\r\n\r\n");
+
+
+                    var buffer = new MemoryStream();
+                    buffer.Write(bytes, 0, bytes.Length);
+                    buffer.Write(utf16Content, bytes.Length - 1, utf16Content.Length);
 
                     for (int i = 0; i < NumRequests; i++)
                     {

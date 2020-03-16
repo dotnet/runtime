@@ -26,26 +26,19 @@ namespace System.Net.Http.Json
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            Stream contentStream = await GetJsonStreamFromContentAsync(content, cancellationToken).ConfigureAwait(false);
+            Stream contentStream = await GetJsonStreamFromContentAsync(content).ConfigureAwait(false);
             return await JsonSerializer.DeserializeAsync(contentStream, type, options, cancellationToken);
         }
 
         private static async Task<T> ReadFromJsonAsyncCore<T>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            Stream contentStream = await GetJsonStreamFromContentAsync(content, cancellationToken).ConfigureAwait(false);
+            Stream contentStream = await GetJsonStreamFromContentAsync(content).ConfigureAwait(false);
             return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken);
         }
 
-        private static async Task<Stream> GetJsonStreamFromContentAsync(HttpContent content, CancellationToken cancellationToken)
+        private static Task<Stream> GetJsonStreamFromContentAsync(HttpContent content)
         {
-            string? mediaType = content.Headers.ContentType?.MediaType;
-
-            if (mediaType != JsonContent.JsonMediaType &&
-                mediaType != MediaTypeNames.Text.Plain)
-            {
-                throw new NotSupportedException(SR.ContentTypeNotSupported);
-            }
-
+            ValidateMediaType(content.Headers.ContentType?.MediaType);
             Debug.Assert(content.Headers.ContentType != null);
 
             string? charset = content.Headers.ContentType.CharSet;
@@ -78,7 +71,16 @@ namespace System.Net.Http.Json
                 throw new NotSupportedException(SR.CharSetNotSupported);
             }
 
-            return await content.ReadAsStreamAsync().ConfigureAwait(false);
+            return content.ReadAsStreamAsync();
+        }
+
+        private static void ValidateMediaType(string? mediaType)
+        {
+            if (mediaType != JsonContent.JsonMediaType &&
+                 mediaType != MediaTypeNames.Text.Plain)
+            {
+                throw new NotSupportedException(SR.ContentTypeNotSupported);
+            }
         }
     }
 }
