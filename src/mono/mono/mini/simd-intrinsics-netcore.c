@@ -887,7 +887,16 @@ static SimdIntrinsic sse3_methods [] = {
 };
 
 static SimdIntrinsic ssse3_methods [] = {
+	{SN_Abs, OP_SSSE3_ABS},
+	{SN_AlignRight},
+	{SN_HorizontalAdd},
+	{SN_HorizontalAddSaturate, OP_XOP_X_X_X, SIMD_OP_SSE_PHADDSW},
+	{SN_HorizontalSubtract},
+	{SN_HorizontalSubtractSaturate, OP_XOP_X_X_X, SIMD_OP_SSE_PHSUBSW},
+	{SN_MultiplyAddAdjacent, OP_XOP_X_X_X, SIMD_OP_SSE_PMADDUBSW},
+	{SN_MultiplyHighRoundScale, OP_XOP_X_X_X, SIMD_OP_SSE_PMULHRSW},
 	{SN_Shuffle, OP_SSSE3_SHUFFLE},
+	{SN_Sign},
 	{SN_get_IsSupported}
 };
 
@@ -896,6 +905,12 @@ static SimdIntrinsic sse41_methods [] = {
 	{SN_Max, OP_XBINOP, OP_IMAX},
 	{SN_Min, OP_XBINOP, OP_IMIN},
 	{SN_TestZ, OP_SSE41_PTESTZ},
+	{SN_get_IsSupported}
+};
+
+static SimdIntrinsic sse42_methods [] = {
+	{SN_CompareGreaterThan, OP_XCOMPARE, CMP_GT},
+	{SN_Crc32},
 	{SN_get_IsSupported}
 };
 
@@ -1235,7 +1250,6 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_ShuffleLow:
 			g_assert (fsig->param_count == 2);
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFLW, 0, arg0_type, fsig, args);
-			return NULL;
 		case SN_SqrtScalar:
 			if (fsig->param_count == 1)
 				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, info->instc0, arg0_type, fsig, args);
@@ -1307,13 +1321,33 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (info->op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 
-		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSSE3) != 0 && is_corlib; // We only support the subset used by corelib
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSSE3) != 0;
 
 		switch (id) {
 		case SN_get_IsSupported:
 			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
 			ins->type = STACK_I4;
 			return ins;
+		case SN_AlignRight:
+			if (args [2]->opcode == OP_ICONST)
+				return emit_simd_ins_for_sig (cfg, klass, OP_SSSE3_ALIGNR, args [2]->inst_c0, arg0_type, fsig, args);
+			else
+				// FIXME: non-constant mask (generate switch)
+				return NULL;
+		case SN_HorizontalAdd:
+			if (arg0_type == MONO_TYPE_I2)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_PHADDW, arg0_type, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_PHADDD, arg0_type, fsig, args);
+		case SN_HorizontalSubtract:
+			if (arg0_type == MONO_TYPE_I2)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_PHSUBW, arg0_type, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_PHSUBD, arg0_type, fsig, args);
+		case SN_Sign:
+			if (arg0_type == MONO_TYPE_I1)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_PSIGNB, arg0_type, fsig, args);
+			if (arg0_type == MONO_TYPE_I2)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_PSIGNW, arg0_type, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_PSIGND, arg0_type, fsig, args);
 		default:
 			g_assert_not_reached ();
 			break;
@@ -1347,6 +1381,38 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 				return NULL;
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_INSERT, -1, arg0_type, fsig, args);
+		default:
+			g_assert_not_reached ();
+			break;
+		}
+	}
+
+	if (is_hw_intrinsics_class (klass, "Sse42", &is_64bit)) {
+		if (!COMPILE_LLVM (cfg))
+			return NULL;
+		info = lookup_intrins_info (sse42_methods, sizeof (sse42_methods), cmethod);
+		if (!info)
+			return NULL;
+		int id = info->id;
+
+		/* Common case */
+		if (info->op != 0)
+			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
+
+		// FIXME: remove is_corlib check once Sse41 is implemented
+		supported = COMPILE_LLVM (cfg) && (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE42) != 0 && is_corlib; 
+
+		switch (id) {
+		case SN_get_IsSupported:
+			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+			ins->type = STACK_I4;
+			return ins;
+		case SN_Crc32: {
+			MonoTypeEnum arg1_type = get_underlying_type (fsig->params [1]);
+			return emit_simd_ins_for_sig (cfg, klass, 
+				arg1_type == MONO_TYPE_U8 ? OP_SSE42_CRC64 : OP_SSE42_CRC32, 
+				arg1_type, arg0_type, fsig, args);
+		}
 		default:
 			g_assert_not_reached ();
 			break;

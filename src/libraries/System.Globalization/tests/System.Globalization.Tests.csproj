@@ -4,7 +4,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <UnicodeUcdVersion>12.1</UnicodeUcdVersion>
+    <UnicodeUcdVersion>13.0</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CompareInfo\CompareInfoTests.cs" />

@@ -80,6 +80,9 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-publib.h>
 
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 3
+
 // Statistics for profiler events.
 static gint32 coverage_methods_ctr,
               coverage_statements_ctr,
@@ -470,7 +473,7 @@ dump_coverage (MonoProfiler *prof)
 	s = g_string_new ("");
 	prof->s = s;
 	g_string_append_printf (s, "<?xml version=\"1.0\"?>\n");
-	g_string_append_printf (s, "<coverage version=\"0.3\">\n");
+	g_string_append_printf (s, "<coverage version=\"%d.%d\">\n", VERSION_MAJOR, VERSION_MINOR);
 
 	mono_os_mutex_lock (&coverage_profiler.mutex);
 	mono_conc_hashtable_foreach (coverage_profiler.assemblies, dump_assembly, NULL);
@@ -520,7 +523,7 @@ dump_coverage (MonoProfiler *prof)
 		args [0] = data;
 		args [1] = extra_arg;
 
-		printf ("aot-profiler | Passing data to '%s': %s\n", mono_method_full_name (send_method, 1), prof->config->send_to_arg ? prof->config->send_to_arg : "(null)");
+		printf ("coverage-profiler | Passing data to '%s': %s\n", mono_method_full_name (send_method, 1), prof->config->send_to_arg ? prof->config->send_to_arg : "(null)");
 		mono_runtime_try_invoke (send_method, NULL, args, &exc, error);
 		mono_error_assert_ok (error);
 		g_assert (exc == NULL);
@@ -1158,12 +1161,17 @@ mono_profiler_init_coverage (const char *desc)
 	else if (*coverage_config.output_filename == '+')
 		coverage_config.output_filename = g_strdup_printf ("%s.%d", coverage_config.output_filename + 1, getpid ());
 
-	if (*coverage_config.output_filename == '|')
+	if (*coverage_config.output_filename == '|') {
+#ifdef HAVE_POPEN
 		coverage_profiler.file = popen (coverage_config.output_filename + 1, "w");
-	else if (*coverage_config.output_filename == '#')
+#else
+		g_assert_not_reached ();
+#endif
+	} else if (*coverage_config.output_filename == '#') {
 		coverage_profiler.file = fdopen (strtol (coverage_config.output_filename + 1, NULL, 10), "a");
-	else
+	} else {
 		coverage_profiler.file = fopen (coverage_config.output_filename, "w");
+	}
 
 	if (!coverage_profiler.file) {
 		mono_profiler_printf_err ("Could not create coverage profiler output file '%s': %s", coverage_config.output_filename, g_strerror (errno));

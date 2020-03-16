@@ -1077,7 +1077,9 @@ MINI_OP(OP_SSE3_MOVSLDUP, "sse3_movsldup", XREG, XREG, NONE)
 MINI_OP(OP_SSE3_MOVDDUP_MEM, "sse3_movddup_mem", XREG, IREG, NONE)
 
 /* ssse 3 */
+MINI_OP(OP_SSSE3_ABS, "ssse3_abs", XREG, XREG, NONE)
 MINI_OP(OP_SSSE3_SHUFFLE, "ssse3_shuffle", XREG, XREG, XREG)
+MINI_OP3(OP_SSSE3_ALIGNR, "ssse3_alignr", XREG, XREG, XREG, IREG)
 
 /* sse 4.1 */
 /* inst_c0 is the rounding mode: 0 = round, 1 = floor, 2 = ceiling */
@@ -1085,6 +1087,10 @@ MINI_OP(OP_SSE41_ROUNDPD, "roundpd", XREG, XREG, NONE)
 MINI_OP(OP_SSE41_ROUNDSS, "roundss", XREG, XREG, NONE)
 MINI_OP3(OP_SSE41_INSERT, "sse41_insert", XREG, XREG, XREG, IREG)
 MINI_OP(OP_SSE41_PTESTZ, "sse41_ptestz", IREG, XREG, XREG)
+
+/* sse 4.2 */
+MINI_OP(OP_SSE42_CRC32, "sse42_crc32", IREG, IREG, IREG)
+MINI_OP(OP_SSE42_CRC64, "sse42_crc64", LREG, LREG, LREG)
 
 /* Intel BMI1 */
 /* Count trailing zeroes, return 32/64 if the input is 0 */

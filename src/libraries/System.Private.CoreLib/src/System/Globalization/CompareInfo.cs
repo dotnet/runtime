@@ -1362,9 +1362,27 @@ namespace System.Globalization
 
         internal static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
+            Debug.Assert(source != null);
+            Debug.Assert(value != null);
+
             if (GlobalizationMode.Invariant)
             {
                 return InvariantLastIndexOf(source, value, startIndex, count, ignoreCase);
+            }
+
+            // For ordinal (non-linguistic) comparisons, an empty target string is always
+            // found at the end of the search space, and a non-empty target string
+            // can never be found within an empty search space. This assumption is not
+            // valid for linguistic comparisons, including InvariantCulture comparisons.
+
+            if (value.Length == 0)
+            {
+                return Math.Max(0, startIndex - count + 1);
+            }
+
+            if (count == 0)
+            {
+                return -1;
             }
 
             return LastIndexOfOrdinalCore(source, value, startIndex, count, ignoreCase);
