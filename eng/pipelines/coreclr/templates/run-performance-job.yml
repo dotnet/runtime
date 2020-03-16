@@ -90,7 +90,7 @@ jobs:
       displayName: Build scenario tools
       env:
         PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
-      condition: and(succeeded(), eq(variables['Agent.Os'], 'win'))
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       # Run perf testing in helix
     - template: /eng/common/templates/steps/perf-send-to-helix.yml
       parameters:
