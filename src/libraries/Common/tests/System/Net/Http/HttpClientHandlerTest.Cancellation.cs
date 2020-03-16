@@ -28,7 +28,11 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalTheory]
+#else
         [Theory]
+#endif
         [InlineData(false, CancellationMode.Token)]
         [InlineData(true, CancellationMode.Token)]
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
@@ -38,6 +42,13 @@ namespace System.Net.Http.Functional.Tests
                 // There is no chunked encoding in HTTP/2 and later
                 return;
             }
+
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value && !PlatformDetection.IsWindows10Version1607OrGreater)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
 
             var serverRelease = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -182,7 +193,11 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalTheory]
+#else
         [Theory]
+#endif
         [MemberData(nameof(ThreeBools))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
@@ -191,6 +206,13 @@ namespace System.Net.Http.Functional.Tests
                 // There is no chunked encoding or connection header in HTTP/2 and later
                 return;
             }
+
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value && !PlatformDetection.IsWindows10Version1607OrGreater)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
 
             using (HttpClient client = CreateHttpClient())
             {
@@ -237,14 +259,23 @@ namespace System.Net.Http.Functional.Tests
                 });
             }
         }
-
+#if WINHTTPHANDLER_TEST
+        [ConditionalTheory]
+#else
         [Theory]
+#endif
         [InlineData(CancellationMode.CancelPendingRequests, false)]
         [InlineData(CancellationMode.DisposeHttpClient, false)]
         [InlineData(CancellationMode.CancelPendingRequests, true)]
         [InlineData(CancellationMode.DisposeHttpClient, true)]
         public async Task GetAsync_CancelPendingRequests_DoesntCancelReadAsyncOnResponseStream(CancellationMode mode, bool copyToAsync)
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value && !PlatformDetection.IsWindows10Version1607OrGreater)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             using (HttpClient client = CreateHttpClient())
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;

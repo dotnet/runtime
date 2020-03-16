@@ -26,9 +26,19 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalFact]
+#else
         [Fact]
+#endif
         public async Task Dispose_HandlerWithProxy_ProxyNotDisposed()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value && !PlatformDetection.IsWindows10Version1607OrGreater)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             var proxy = new TrackDisposalProxy();
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
