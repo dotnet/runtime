@@ -51,6 +51,9 @@
     <Compile Include="$(CommonTestPath)System\Net\TestWebProxies.cs">
       <Link>Common\System\Net\TestWebProxies.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\StreamArrayExtensions.cs">
+      <Link>Common\System\Net\StreamArrayExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\ByteAtATimeContent.cs">
       <Link>Common\System\Net\Http\ByteAtATimeContent.cs</Link>
     </Compile>

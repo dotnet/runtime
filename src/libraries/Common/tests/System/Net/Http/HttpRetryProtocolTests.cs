@@ -131,11 +131,7 @@ namespace System.Net.Http.Functional.Tests
                 _sendingContent.SetResult(true);
                 await _connectionClosed;
                 byte[] bytes = Encoding.UTF8.GetBytes(_longContent);
-#if !NETFRAMEWORK
                 await stream.WriteAsync(bytes);
-#else
-                await stream.WriteAsync(bytes, 0, bytes.Length);
-#endif
             }
 
             protected override bool TryComputeLength(out long length)

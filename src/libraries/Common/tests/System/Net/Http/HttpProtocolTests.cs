@@ -502,11 +502,7 @@ namespace System.Net.Http.Functional.Tests
                         int bytesRemaining = expectedData.Length - bytesSent;
                         int bytesToSend = rand.Next(1, Math.Min(bytesRemaining, maxChunkSize + 1));
                         await connection.Writer.WriteAsync(bytesToSend.ToString("X") + lineEnding);
-#if !NETFRAMEWORK
                         await connection.Stream.WriteAsync(new Memory<byte>(expectedData, bytesSent, bytesToSend));
-#else
-                        await connection.Stream.WriteAsync(expectedData, bytesSent, bytesToSend);
-#endif
                         await connection.Writer.WriteAsync(lineEnding);
                         bytesSent += bytesToSend;
                     }
