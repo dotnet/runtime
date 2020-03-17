@@ -150,7 +150,7 @@ namespace System.Net.Http.Headers
 
             if (GenericHeaderParser.SingleValueWarningParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (WarningHeaderValue)output;
+                parsedValue = (WarningHeaderValue)output!;
                 return true;
             }
             return false;

@@ -104,7 +104,7 @@ namespace System.Net.Http.Headers
 
             if (GenericHeaderParser.RetryConditionParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (RetryConditionHeaderValue)output;
+                parsedValue = (RetryConditionHeaderValue)output!;
                 return true;
             }
             return false;
