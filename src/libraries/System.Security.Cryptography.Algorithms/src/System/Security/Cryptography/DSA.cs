@@ -895,15 +895,22 @@ namespace System.Security.Cryptography
         {
             // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
+            bool returnArray = false;
             try
             {
                 data.CopyTo(array);
-                return HashData(array, 0, data.Length, hashAlgorithm);
+                byte[] ret = HashData(array, 0, data.Length, hashAlgorithm);
+                returnArray = true;
+                return ret;
             }
             finally
             {
                 Array.Clear(array, 0, data.Length);
-                ArrayPool<byte>.Shared.Return(array);
+
+                if (returnArray)
+                {
+                    ArrayPool<byte>.Shared.Return(array);
+                }
             }
         }
 

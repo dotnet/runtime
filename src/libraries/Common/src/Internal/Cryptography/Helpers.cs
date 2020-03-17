@@ -23,17 +23,14 @@ namespace Internal.Cryptography
 
         internal static bool TryCopyToDestination(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            if (source.Length <= destination.Length)
+            if (source.TryCopyTo(destination))
             {
-                source.CopyTo(destination);
                 bytesWritten = source.Length;
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
     }
 }

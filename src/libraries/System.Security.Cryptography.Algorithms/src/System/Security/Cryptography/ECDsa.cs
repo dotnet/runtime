@@ -176,6 +176,7 @@ namespace System.Security.Cryptography
             Span<byte> signature = stackalloc byte[SignatureStackBufSize];
             int maxSignatureSize = GetMaxSignatureSize(signatureFormat);
             byte[]? rented = null;
+            bool returnArray = false;
             int bytesWritten = 0;
 
             if (maxSignatureSize > signature.Length)
@@ -193,14 +194,20 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
-                return signature.Slice(0, bytesWritten).ToArray();
+                byte[] ret = signature.Slice(0, bytesWritten).ToArray();
+                returnArray = true;
+                return ret;
             }
             finally
             {
                 if (rented != null)
                 {
                     CryptographicOperations.ZeroMemory(rented.AsSpan(0, bytesWritten));
-                    ArrayPool<byte>.Shared.Return(rented);
+
+                    if (returnArray)
+                    {
+                        ArrayPool<byte>.Shared.Return(rented);
+                    }
                 }
             }
         }
@@ -335,6 +342,7 @@ namespace System.Security.Cryptography
             Span<byte> signature = stackalloc byte[SignatureStackBufSize];
             int maxSignatureSize = GetMaxSignatureSize(signatureFormat);
             byte[]? rented = null;
+            bool returnArray = false;
             int bytesWritten = 0;
 
             if (maxSignatureSize > signature.Length)
@@ -352,14 +360,20 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
-                return signature.Slice(0, bytesWritten).ToArray();
+                byte[] ret = signature.Slice(0, bytesWritten).ToArray();
+                returnArray = true;
+                return ret;
             }
             finally
             {
                 if (rented != null)
                 {
                     CryptographicOperations.ZeroMemory(rented.AsSpan(0, bytesWritten));
-                    ArrayPool<byte>.Shared.Return(rented);
+
+                    if (returnArray)
+                    {
+                        ArrayPool<byte>.Shared.Return(rented);
+                    }
                 }
             }
         }
@@ -759,10 +773,14 @@ namespace System.Security.Cryptography
         {
             // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
+            bool returnArray = false;
+
             try
             {
                 data.CopyTo(array);
                 byte[] hash = HashData(array, 0, data.Length, hashAlgorithm);
+                returnArray = true;
+
                 if (hash.Length <= destination.Length)
                 {
                     new ReadOnlySpan<byte>(hash).CopyTo(destination);
@@ -778,7 +796,11 @@ namespace System.Security.Cryptography
             finally
             {
                 Array.Clear(array, 0, data.Length);
-                ArrayPool<byte>.Shared.Return(array);
+
+                if (returnArray)
+                {
+                    ArrayPool<byte>.Shared.Return(array);
+                }
             }
         }
 
@@ -961,15 +983,22 @@ namespace System.Security.Cryptography
         {
             // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
+            bool returnArray = false;
             try
             {
                 data.CopyTo(array);
-                return HashData(array, 0, data.Length, hashAlgorithm);
+                byte[] ret = HashData(array, 0, data.Length, hashAlgorithm);
+                returnArray = true;
+                return ret;
             }
             finally
             {
                 Array.Clear(array, 0, data.Length);
-                ArrayPool<byte>.Shared.Return(array);
+
+                if (returnArray)
+                {
+                    ArrayPool<byte>.Shared.Return(array);
+                }
             }
         }
 
