@@ -25,7 +25,7 @@ void GCToCLREventSink::FireDynamicEvent(const char* eventName, void* payload, ui
 
 void GCToCLREventSink::FireGCStart_V2(uint32_t count, uint32_t depth, uint32_t reason, uint32_t type)
 {
-#ifndef TARGET_ANDROID
+#ifdef FEATURE_EVENT_TRACE
     LIMITED_METHOD_CONTRACT;
 
     ETW::GCLog::ETW_GC_INFO gcStartInfo;
