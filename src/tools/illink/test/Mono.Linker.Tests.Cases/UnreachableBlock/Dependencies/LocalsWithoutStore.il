@@ -23,7 +23,7 @@
     IL_0006:  ret
     }
 
-    .method public static hidebysig instance object Method_1() cil managed
+    .method public static hidebysig object Method_1() cil managed
     {
 	.locals init (
 		object	V_0,

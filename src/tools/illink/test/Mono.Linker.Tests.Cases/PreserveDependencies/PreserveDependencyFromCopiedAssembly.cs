@@ -4,7 +4,8 @@ using Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 	[SetupLinkerAction ("copy", "lib")]
-	[SetupCompileBefore ("lib.dll", new [] { "Dependencies/PreserveDependencyInCopyAssembly.cs" })]
+	[SetupCompileBefore ("FakeSystemAssembly.dll", new [] { "Dependencies/PreserveDependencyAttribute.cs" })]
+	[SetupCompileBefore ("lib.dll", new [] { "Dependencies/PreserveDependencyInCopyAssembly.cs" }, new [] { "FakeSystemAssembly.dll" })]
 	[KeptAllTypesAndMembersInAssembly ("lib.dll")]
 	public class PreserveDependencyFromCopiedAssembly
 	{

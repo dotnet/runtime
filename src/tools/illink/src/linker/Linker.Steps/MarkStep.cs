@@ -2443,7 +2443,9 @@ namespace Mono.Linker.Steps {
 				where T : IMemberDefinition
 			{
 #if DEBUG
-				Debug.Assert (_patternAnalysisAttempted, "To correctly report all patterns, when starting to analyze a pattern the AnalyzingPattern must be called first.");
+				if (!_patternAnalysisAttempted)
+					throw new InvalidOperationException ($"Internal error: To correctly report all patterns, when starting to analyze a pattern the AnalyzingPattern must be called first. {MethodCalling} -> {MethodCalled}");
+
 				_patternReported = true;
 #endif
 
@@ -2459,7 +2461,9 @@ namespace Mono.Linker.Steps {
 			public void RecordUnrecognizedPattern (string message)
 			{
 #if DEBUG
-				Debug.Assert (_patternAnalysisAttempted, "To correctly report all patterns, when starting to analyze a pattern the AnalyzingPattern must be called first.");
+				if (!_patternAnalysisAttempted)
+					throw new InvalidOperationException ($"Internal error: To correctly report all patterns, when starting to analyze a pattern the AnalyzingPattern must be called first. {MethodCalling} -> {MethodCalled}");
+
 				_patternReported = true;
 #endif
 
@@ -2469,7 +2473,8 @@ namespace Mono.Linker.Steps {
 			public void Dispose ()
 			{
 #if DEBUG
-				Debug.Assert(!_patternAnalysisAttempted || _patternReported, "A reflection pattern was analyzed, but no result was reported.");
+				if (_patternAnalysisAttempted && !_patternReported)
+					throw new InvalidOperationException ($"Internal error: A reflection pattern was analyzed, but no result was reported. {MethodCalling} -> {MethodCalled}");
 #endif
 			}
 		}
@@ -2912,8 +2917,11 @@ namespace Mono.Linker.Steps {
 										}
 
 										MarkMethodsFromReflectionCall (ref reflectionContext, declaringType, ".ctor", 0, bindingFlags, parametersCount);
-										break;
 									}
+									else {
+										reflectionContext.RecordUnrecognizedPattern ($"Activator call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 1st argument expression which cannot be analyzed");
+									}
+
 								}
 
 								break;

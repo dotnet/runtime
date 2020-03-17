@@ -3,8 +3,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
+	[SetupCSharpCompilerToUse ("csc")]
 	[SetupLinkerAction ("copy", "CoreLibEmulator")]
-	[SetupCompileBefore ("CoreLibEmulator.dll", new string [] { "Dependencies/CoreLibEmulator.cs" }, null, new string [] { "INCLUDE_CORELIB_IMPL" })]
+	[SetupCompileBefore ("CoreLibEmulator.dll", new string [] { "Dependencies/CoreLibEmulator.cs" }, null, new string [] { "INCLUDE_CORELIB_IMPL" }, compilerToUse: "csc")]
 
 	// Validate that calls from one overload of Type.Get* to another overload of the same method don't produce warning
 	[LogDoesNotContain ("Reflection call 'System.Reflection.ConstructorInfo System.Type::GetConstructor\\([^)]*\\)' inside 'System.Reflection.ConstructorInfo System.Type::GetConstructor\\([^)]*\\)' does not use detectable instance type extraction")]

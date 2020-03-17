@@ -5,6 +5,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 	[IgnoreTestCase ("Currently failing")]
+	[SetupCompileBefore ("FakeSystemAssembly.dll", new [] { "Dependencies/PreserveDependencyAttribute.cs" })]
 	[SetupCompileBefore ("base.dll", new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyBase.cs" })]
 	[SetupCompileBefore ("base2.dll", new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyBase2.cs" }, references: new [] { "base.dll" }, addAsReference: false)]
 	[SetupCompileBefore ("reference.dll", new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyChainedLibrary.cs" }, references: new [] { "base.dll" }, addAsReference: false)]

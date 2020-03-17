@@ -6,6 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
+	[SetupCSharpCompilerToUse ("csc")]
 	[Reference ("System.Core.dll")]
 	public class ExpressionCallString
 	{
