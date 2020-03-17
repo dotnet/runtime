@@ -149,10 +149,8 @@ namespace System.Net.Test.Common
 
         public async Task<Frame> ReadFrameAsync(TimeSpan timeout)
         {
-            using (CancellationTokenSource timeoutCts = new CancellationTokenSource(timeout))
-            {
-                return await ReadFrameAsync(timeoutCts.Token).ConfigureAwait(false);
-            }
+            using CancellationTokenSource timeoutCts = new CancellationTokenSource(timeout);
+            return await ReadFrameAsync(timeoutCts.Token).ConfigureAwait(false);
         }
 
         private async Task<Frame> ReadFrameAsync(CancellationToken cancellationToken)
