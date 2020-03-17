@@ -48,7 +48,7 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
     {
         while (!s_shuttingDown)
         {
-            IpcStream *pStream = DiagnosticsIpcFactory::GetNextConnectedStream(s_rgIpcs.Ptr(), (uint32_t)s_rgIpcs.Size(), LoggingCallback);
+            IpcStream *pStream = DiagnosticsIpcFactory::GetNextAvailableStream(s_rgIpcs.Ptr(), (uint32_t)s_rgIpcs.Size(), LoggingCallback);
 
             if (pStream == nullptr)
                 continue;

@@ -187,19 +187,20 @@ IpcStream::~IpcStream()
     }
 }
 
-IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallback callback)
+int32_t IpcStream::Poll(IpcStream **ppStreams, uint32_t nStreams, int32_t timeoutMs, IpcStream **ppStream, ErrorCallback callback)
 {
+    *ppStream = nullptr;
     // load up an array of handles
     HANDLE *pHandles = new HANDLE[nStreams];
     for (uint32_t i = 0; i < nStreams; i++)
     {
-        if (pStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER)
+        if (ppStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER)
         {
-            pHandles[i] = pStreams[i]->_oOverlap.hEvent;
+            pHandles[i] = ppStreams[i]->_oOverlap.hEvent;
         }
         else
         {
-            pHandles[i] = pStreams[i]->_hPipe;
+            pHandles[i] = ppStreams[i]->_hPipe;
         }
     }
 
@@ -208,7 +209,14 @@ IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallb
         nStreams,       // count
         pHandles,       // handles
         false,          // Don't wait all
-        INFINITE);      // wait infinitely
+        timeoutMs);      // wait infinitely
+    
+    if (dwWait == WAIT_TIMEOUT)
+    {
+        // we timed out
+        delete[] pHandles;
+        return 0;
+    }
 
     // determine which of the streams signaled
     DWORD index = dwWait - WAIT_OBJECT_0;
@@ -216,11 +224,11 @@ IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallb
     {
         if (callback != nullptr)
             callback("Failed to select to named pipe.", ::GetLastError());
-        delete pHandles;
-        return nullptr;
+        delete[] pHandles;
+        return -1;
     }
 
-    if (pStreams[index]->_mode == IpcStream::DiagnosticsIpc::ConnectionMode::SERVER)
+    if (ppStreams[index]->_mode == IpcStream::DiagnosticsIpc::ConnectionMode::SERVER)
     {
         // set that stream's mode to blocking
         bool result = SetNamedPipeHandleState(
@@ -232,14 +240,15 @@ IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallb
         {
             if (callback != nullptr)
                 callback("Failed to convert handle to wait mode", ::GetLastError());
-            delete pHandles;
-            return nullptr;
+            delete[] pHandles;
+            return -1;
         }
     }
 
     // cleanup and return that stream
-    delete pHandles;
-    return pStreams[index];
+    *ppStream = ppStreams[index];
+    delete[] pHandles;
+    return 1;
 }
 
 bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead) const

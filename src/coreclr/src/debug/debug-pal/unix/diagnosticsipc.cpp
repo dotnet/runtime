@@ -171,28 +171,29 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
     return new IpcStream(clientSocket, _serverSocket);
 }
 
-IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallback callback)
+int32_t IpcStream::Poll(IpcStream **ppStreams, uint32_t nStreams, int32_t timeoutMs, IpcStream **ppStream, ErrorCallback callback)
 {
+    *ppStream = nullptr;
     pollfd *pollfds = new pollfd[nStreams];
     for (uint32_t i = 0; i < nStreams; i++)
     {
         int fd = -1;
-        if (pStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER && pStreams[i]->_clientSocket == -1)
+        if (ppStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER && ppStreams[i]->_clientSocket == -1)
         {
-            fd = pStreams[i]->_serverSocket;
+            fd = ppStreams[i]->_serverSocket;
         }
         else
         {
-            fd = pStreams[i]->_clientSocket;
+            fd = ppStreams[i]->_clientSocket;
         }
 
         pollfds[i].fd = fd;
         pollfds[i].events = POLLIN;
     }
 
-    int retval = poll(pollfds, nStreams, -1); // -1 = infinite
+    int retval = poll(pollfds, nStreams, timeoutMs);
     
-    if (retval <= 0)
+    if (retval < 0)
     {
         for (uint32_t i = 0; i < nStreams; i++)
         {
@@ -200,56 +201,62 @@ IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallb
                 callback(strerror(errno), errno);
         }
         delete[] pollfds;
-        return nullptr;
+        return -1;
+    }
+    else if (retval == 0)
+    {
+        // we timed out
+        delete[] pollfds;
+        return 0;
     }
 
-    IpcStream *pStream = nullptr;
     for (uint32_t i = 0; i < nStreams; i++)
     {
         if (pollfds[i].revents != 0)
         {
-            bool needToAccept = pStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER && pStreams[i]->_clientSocket == -1;
-            if (pollfds[i].revents & POLLIN)
+            bool needToAccept = ppStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER && ppStreams[i]->_clientSocket == -1;
+            // error check FIRST
+            if (pollfds[i].revents & POLLHUP)
+            {
+                // check for hangup first because a closed socket
+                // will technically meet the requirements for POLLIN
+                // i.e., a call to recv/read won't block
+                *ppStream = ppStreams[i];
+                return -1;
+            }
+            else if ((pollfds[i].revents & (POLLERR|POLLNVAL)))
+            {
+                if (callback != nullptr)
+                    callback("Poll error", (uint32_t)pollfds[i].revents);
+                return -1;
+            }
+            else if (pollfds[i].revents & POLLIN)
             {
                 if (needToAccept)
                 {
                     sockaddr_un from;
                     socklen_t fromlen = sizeof(from);
-                    const int clientSocket = ::accept(pStreams[i]->_serverSocket, (sockaddr *)&from, &fromlen);
+                    const int clientSocket = ::accept(ppStreams[i]->_serverSocket, (sockaddr *)&from, &fromlen);
                     if (clientSocket == -1)
                     {
                         if (callback != nullptr)
                             callback(strerror(errno), errno);
                         delete[] pollfds;
-                        return nullptr;
+                        return -1;
                     }
-                    pStream = new IpcStream(clientSocket, pStreams[i]->_serverSocket, pStreams[i]->_mode);
+                    *ppStream = new IpcStream(clientSocket, ppStreams[i]->_serverSocket, ppStreams[i]->_mode);
                 }
                 else
                 {
-                    pStream = pStreams[i];
+                    *ppStream = ppStreams[i];
                 }
                 break;
             }
         }
-        else
-        {
-            if ((pollfds[i].revents & POLLERR) && callback != nullptr)
-            {
-                callback("POLLERR", POLLERR);
-            }
-            else if ((pollfds[i].revents & POLLNVAL) && callback != nullptr)
-            {
-                callback("POLLNVAL", POLLNVAL);
-            }
-
-            delete[] pollfds;
-            return nullptr;
-        }
     }
 
     delete[] pollfds;
-    return pStream;
+    return 1;
 }
 
 void IpcStream::DiagnosticsIpc::Close(ErrorCallback callback)

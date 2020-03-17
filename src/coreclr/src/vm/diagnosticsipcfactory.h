@@ -14,7 +14,9 @@ class DiagnosticsIpcFactory
 public:
     static IpcStream::DiagnosticsIpc *CreateServer(const char *const pIpcName, ErrorCallback = nullptr);
     static IpcStream::DiagnosticsIpc *CreateClient(const char *const pIpcName, ErrorCallback = nullptr);
-    static IpcStream *GetNextConnectedStream(IpcStream::DiagnosticsIpc **pIpcs, uint32_t nIpcs, ErrorCallback = nullptr);
+    static IpcStream *GetNextAvailableStream(IpcStream::DiagnosticsIpc **ppIpcs, uint32_t nIpcs, ErrorCallback = nullptr);
+private:
+    static IpcStream **s_ppActiveConnections;
 };
 
 #endif // FEATURE_PERFTRACING

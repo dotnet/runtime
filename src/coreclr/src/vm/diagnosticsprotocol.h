@@ -154,6 +154,20 @@ namespace DiagnosticsIpc
         return true;
     }
 
+    inline bool SendIpcAdvertise_V1(IpcStream *pStream)
+    {
+        uint8_t advertiseBuffer[DiagnosticsIpc::AdvertiseSize];
+        if (!DiagnosticsIpc::PopulateIpcAdvertisePayload_V1(advertiseBuffer))
+            return false;
+
+        uint32_t nBytesWritten = 0;
+        if (!pStream->Write(advertiseBuffer, sizeof(advertiseBuffer), nBytesWritten))
+            return false;
+
+        _ASSERTE(nBytesWritten == sizeof(advertiseBuffer));
+        return nBytesWritten == sizeof(advertiseBuffer);
+    }
+
     const IpcHeader GenericSuccessHeader =
     {
         { DotnetIpcMagic_V1 },

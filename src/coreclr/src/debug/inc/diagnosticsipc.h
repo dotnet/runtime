@@ -22,7 +22,17 @@ public:
     bool Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead) const;
     bool Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten) const;
     bool Flush() const;
-    static IpcStream *Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallback callback = nullptr);
+
+    // Poll
+    // Paramters:
+    // - IpcStream **pStreams: Array of pointers to IpcStreams to poll
+    // - uint32_t nStreams: The number of streams to poll
+    // - int32_t timeoutMs: The timeout in milliseconds for the poll (-1 == infinite)
+    // - IpcStream **pStream: OUT PARAMETER nullptr for timeout or error, signalled stream for successful poll
+    // Returns:
+    // int32_t: -1 on error, 0 on timeout, >0 on successful poll
+    // - if ppStream is != nullptr and -1 is returned, that connection was hungup and it shouldn't be treated as an error
+    static int32_t Poll(IpcStream **ppStreams, uint32_t nStreams, int32_t timeoutMs, IpcStream **ppStream, ErrorCallback callback = nullptr);
 
     class DiagnosticsIpc final
     {
