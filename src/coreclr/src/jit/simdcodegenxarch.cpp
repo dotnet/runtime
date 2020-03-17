@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma warning(disable : 4310) // cast truncates constant value - happens for (int8_t)SHUFFLE_ZXXX
 #endif
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 #ifdef FEATURE_SIMD
 
 #include "emit.h"
@@ -36,16 +36,29 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define INSERTPS_TARGET_SELECT(i) ((i) << 4)
 #define INSERTPS_ZERO(i) (1 << (i))
 
+// ROUNDPS/PD:
+// - Bit 0 through 1 - Rounding mode
+//   * 0b00 - Round to nearest (even)
+//   * 0b01 - Round toward Neg. Infinity
+//   * 0b10 - Round toward Pos. Infinity
+//   * 0b11 - Round toward zero (Truncate)
+// - Bit 2 - Source of rounding control, 0b0 for immediate.
+// - Bit 3 - Precision exception, 0b1 to ignore. (We don't raise FP exceptions)
+#define ROUNDPS_TO_NEAREST_IMM 0b1000
+#define ROUNDPS_TOWARD_NEGATIVE_INFINITY_IMM 0b1001
+#define ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM 0b1010
+#define ROUNDPS_TOWARD_ZERO_IMM 0b1011
+
 // getOpForSIMDIntrinsic: return the opcode for the given SIMD Intrinsic
 //
 // Arguments:
 //   intrinsicId    -   SIMD intrinsic Id
 //   baseType       -   Base type of the SIMD vector
-//   immed          -   Out param. Any immediate byte operand that needs to be passed to SSE2 opcode
+//   ival           -   Out param. Any immediate byte operand that needs to be passed to SSE2 opcode
 //
 //
 // Return Value:
-//   Instruction (op) to be used, and immed is set if instruction requires an immediate operand.
+//   Instruction (op) to be used, and ival is set if instruction requires an immediate operand.
 //
 instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival /*=nullptr*/)
 {
@@ -637,6 +650,26 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             result = INS_insertps;
             break;
 
+        case SIMDIntrinsicCeil:
+        case SIMDIntrinsicFloor:
+            if (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported)
+            {
+                if (baseType == TYP_FLOAT)
+                {
+                    result = INS_roundps;
+                }
+                else
+                {
+                    assert(baseType == TYP_DOUBLE);
+                    result = INS_roundpd;
+                }
+
+                assert(ival != nullptr);
+                *ival = (intrinsicId == SIMDIntrinsicCeil) ? ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM
+                                                           : ROUNDPS_TOWARD_NEGATIVE_INFINITY_IMM;
+            }
+            break;
+
         default:
             assert(!"Unsupported SIMD intrinsic");
             unreached();
@@ -765,7 +798,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
 
     instruction ins = INS_invalid;
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     if (op1->OperGet() == GT_LONG)
     {
         assert(varTypeIsLong(baseType));
@@ -825,7 +858,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
         }
     }
     else
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
         if (op1->isContained())
     {
         if (op1->IsIntegralConst(0) || op1->IsFPZero())
@@ -1053,6 +1086,32 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 }
 
 //----------------------------------------------------------------------------------
+// genSIMDIntrinsicUnOpWithImm: Generate code for SIMD Intrinsic unary operations with an imm8, such as Ceil.
+//
+// Arguments:
+//    simdNode - The GT_SIMD node
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genSIMDIntrinsicUnOpWithImm(GenTreeSIMD* simdNode)
+{
+    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCeil || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicFloor);
+
+    GenTree*  op1       = simdNode->gtGetOp1();
+    var_types baseType  = simdNode->gtSIMDBaseType;
+    regNumber targetReg = simdNode->GetRegNum();
+    assert(targetReg != REG_NA);
+    var_types targetType = simdNode->TypeGet();
+
+    regNumber   op1Reg = genConsumeReg(op1);
+    unsigned    ival;
+    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType, &ival);
+    assert((ival >= 0) && (ival <= 255));
+    GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, op1Reg, (int8_t)ival);
+}
+
+//----------------------------------------------------------------------------------
 // genSIMDIntrinsic32BitConvert: Generate code for 32-bit SIMD Convert (int/uint <-> float)
 //
 // Arguments:
@@ -1108,7 +1167,7 @@ void CodeGen::genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode)
         GetEmitter()->emitIns_R_I(INS_psrld, emitActualTypeSize(targetType), tmpReg2, 16);
 
 // prepare mask
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X5300000053000000);
         inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
 #else
@@ -1213,7 +1272,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
     regNumber tmpReg3;
     SIMDLevel level = compiler->getSIMDSupportLevel();
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (baseType == TYP_LONG)
     {
         tmpReg  = simdNode->ExtractTempReg(RBM_ALLFLOAT);
@@ -1271,7 +1330,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
         GetEmitter()->emitIns_R_I(INS_psrlq, emitActualTypeSize(simdType), tmpReg2, 32);
 
 // prepare mask for converting upper 32 bits
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X4530000000000000);
         inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
 #else
@@ -1293,7 +1352,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
         inst_RV_RV(INS_subpd, targetReg, tmpReg, simdType, emitActualTypeSize(simdType));
 
 // prepare mask for converting lower 32 bits
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X4330000000000000);
         inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
 #else
@@ -1319,7 +1378,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
     }
     else if ((intrinsicID == SIMDIntrinsicConvertToDouble) && (baseType == TYP_LONG))
     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         instruction rightShiftIns = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
         instruction leftShiftIns  = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, TYP_SIMD16);
 
@@ -2977,7 +3036,7 @@ void CodeGen::genLoadLclTypeSIMD12(GenTree* treeNode)
     genProduceReg(treeNode);
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 //-----------------------------------------------------------------------------
 // genStoreSIMD12ToStack: store a TYP_SIMD12 (i.e. Vector3) type field to the stack.
@@ -3033,7 +3092,7 @@ void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
     genStoreSIMD12ToStack(operandReg, tmpReg);
 }
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 //-----------------------------------------------------------------------------
 // genSIMDIntrinsicUpperSave: save the upper half of a TYP_SIMD32 vector to
@@ -3231,6 +3290,11 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             genSIMDIntrinsicUpperRestore(simdNode);
             break;
 
+        case SIMDIntrinsicCeil:
+        case SIMDIntrinsicFloor:
+            genSIMDIntrinsicUnOpWithImm(simdNode);
+            break;
+
         default:
             noway_assert(!"Unimplemented SIMD intrinsic.");
             unreached();
@@ -3238,4 +3302,4 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 }
 
 #endif // FEATURE_SIMD
-#endif //_TARGET_XARCH_
+#endif // TARGET_XARCH

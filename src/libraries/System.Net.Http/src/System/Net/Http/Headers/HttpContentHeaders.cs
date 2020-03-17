@@ -8,16 +8,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix",
-        Justification = "This is not a collection")]
     public sealed class HttpContentHeaders : HttpHeaders
     {
         private readonly HttpContent _parent;
         private bool _contentLengthSet;
 
-        private HttpHeaderValueCollection<string> _allow;
-        private HttpHeaderValueCollection<string> _contentEncoding;
-        private HttpHeaderValueCollection<string> _contentLanguage;
+        private HttpHeaderValueCollection<string>? _allow;
+        private HttpHeaderValueCollection<string>? _contentEncoding;
+        private HttpHeaderValueCollection<string>? _contentLanguage;
 
         public ICollection<string> Allow
         {
@@ -32,9 +30,9 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ContentDispositionHeaderValue ContentDisposition
+        public ContentDispositionHeaderValue? ContentDisposition
         {
-            get { return (ContentDispositionHeaderValue)GetParsedValues(KnownHeaders.ContentDisposition.Descriptor); }
+            get { return (ContentDispositionHeaderValue?)GetParsedValues(KnownHeaders.ContentDisposition.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentDisposition.Descriptor, value); }
         }
 
@@ -71,7 +69,7 @@ namespace System.Net.Http.Headers
             get
             {
                 // 'Content-Length' can only hold one value. So either we get 'null' back or a boxed long value.
-                object storedValue = GetParsedValues(KnownHeaders.ContentLength.Descriptor);
+                object? storedValue = GetParsedValues(KnownHeaders.ContentLength.Descriptor);
 
                 // Only try to calculate the length if the user didn't set the value explicitly using the setter.
                 if (!_contentLengthSet && (storedValue == null))
@@ -105,29 +103,27 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public Uri ContentLocation
+        public Uri? ContentLocation
         {
-            get { return (Uri)GetParsedValues(KnownHeaders.ContentLocation.Descriptor); }
+            get { return (Uri?)GetParsedValues(KnownHeaders.ContentLocation.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentLocation.Descriptor, value); }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays",
-            Justification = "In this case the 'value' is the byte array. I.e. the array is treated as a value.")]
-        public byte[] ContentMD5
+        public byte[]? ContentMD5
         {
-            get { return (byte[])GetParsedValues(KnownHeaders.ContentMD5.Descriptor); }
+            get { return (byte[]?)GetParsedValues(KnownHeaders.ContentMD5.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentMD5.Descriptor, value); }
         }
 
-        public ContentRangeHeaderValue ContentRange
+        public ContentRangeHeaderValue? ContentRange
         {
-            get { return (ContentRangeHeaderValue)GetParsedValues(KnownHeaders.ContentRange.Descriptor); }
+            get { return (ContentRangeHeaderValue?)GetParsedValues(KnownHeaders.ContentRange.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentRange.Descriptor, value); }
         }
 
-        public MediaTypeHeaderValue ContentType
+        public MediaTypeHeaderValue? ContentType
         {
-            get { return (MediaTypeHeaderValue)GetParsedValues(KnownHeaders.ContentType.Descriptor); }
+            get { return (MediaTypeHeaderValue?)GetParsedValues(KnownHeaders.ContentType.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentType.Descriptor, value); }
         }
 

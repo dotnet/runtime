@@ -4,4 +4,4 @@
 
 using Xunit;
 
-[assembly: SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/25269", RuntimeStressTestModes.CheckedRuntime)]
+[assembly: SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/12927", RuntimeConfiguration.Checked)]

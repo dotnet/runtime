@@ -20,7 +20,7 @@ PS> .\build-docker-sdk.ps1 -t dotnet-linux-sdk-current
 and for Windows:
 
 ```powershell
-PS> .\build-socker-sdk.ps1 -w -t dotnet-nanoserver-sdk-current
+PS> .\build-docker-sdk.ps1 -w -t dotnet-nanoserver-sdk-current
 ```
 
 To use Debug builds:

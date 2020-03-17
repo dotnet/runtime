@@ -397,7 +397,7 @@ namespace System
             if (!d.BindToMethodInfo(target,
                                     method.GetMethodInfo(),
                                     RuntimeMethodHandle.GetDeclaringType(method.GetMethodInfo()),
-                                    DelegateBindingFlags.RelaxedSignature | DelegateBindingFlags.SkipSecurityChecks))
+                                    DelegateBindingFlags.RelaxedSignature))
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
             return d;
         }
@@ -473,7 +473,6 @@ namespace System
         ClosedDelegateOnly = 0x00000008, // Only allow the creation of delegates closed over the 1st argument
         NeverCloseOverNull = 0x00000010, // A null target will never been considered as a possible null 1st argument
         CaselessMatching = 0x00000020, // Use case insensitive lookup for methods matched by name
-        SkipSecurityChecks = 0x00000040, // Skip security checks (visibility, link demand etc.)
-        RelaxedSignature = 0x00000080, // Allow relaxed signature matching (co/contra variance)
+        RelaxedSignature = 0x00000040, // Allow relaxed signature matching (co/contra variance)
     }
 }

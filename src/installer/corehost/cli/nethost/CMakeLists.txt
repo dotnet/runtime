@@ -13,10 +13,9 @@ include_directories(../fxr)
 set(SOURCES
     nethost.cpp
     ../fxr_resolver.cpp
-    ../fxr/fx_ver.cpp
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         Exports.def)
 endif()

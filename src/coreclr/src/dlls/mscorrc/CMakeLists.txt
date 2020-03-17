@@ -1,5 +1,8 @@
 include_directories("../../pal/prebuilt/corerror")
-if(WIN32)
+
+add_definitions(-DFX_VER_INTERNALNAME_STR=mscorrc.dll)
+
+if(CLR_CMAKE_HOST_WIN32)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NOENTRY")
     # remove /ltcg from resource-only libraries
     string(REPLACE "/LTCG" "" CMAKE_SHARED_LINKER_FLAGS_RELEASE ${CMAKE_SHARED_LINKER_FLAGS_RELEASE})
@@ -7,12 +10,17 @@ if(WIN32)
 
     # remove /guard:cf from resource-only libraries
     string(REPLACE "/guard:cf" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
-endif(WIN32)
 
-add_subdirectory(full)
+    add_library_clr(mscorrc SHARED
+        include.rc
+    )
 
-# Only add the small version of the resources if the platform is Windows.
-if(WIN32)
-    add_subdirectory(small)
-endif(WIN32)
+    install_clr(TARGETS mscorrc)
+    install_clr(TARGETS mscorrc DESTINATION sharedFramework SKIP_STRIP)
+else()
+    build_resources(${CMAKE_CURRENT_SOURCE_DIR}/include.rc mscorrc TARGET_CPP_FILE)
 
+    add_library_clr(mscorrc STATIC
+        ${TARGET_CPP_FILE}
+    )
+endif(CLR_CMAKE_HOST_WIN32)

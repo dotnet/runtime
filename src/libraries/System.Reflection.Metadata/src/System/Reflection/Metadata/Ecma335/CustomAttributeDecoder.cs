@@ -250,7 +250,7 @@ namespace System.Reflection.Metadata.Ecma335
                 info = DecodeNamedArgumentType(ref valueReader);
             }
 
-            // PERF_TODO: https://github.com/dotnet/corefx/issues/6533
+            // PERF_TODO: https://github.com/dotnet/runtime/issues/16551
             //   Cache /reuse common arguments to avoid boxing (small integers, true, false).
             object? value;
             switch (info.TypeCode)

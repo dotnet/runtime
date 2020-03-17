@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Collections.Generic;
@@ -22,32 +23,32 @@ namespace System.Security.Cryptography.Pkcs
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
             {
-                if (usedTags.TryGetValue(tag, out string existing))
+                if (usedTags.TryGetValue(tag, out string? existing))
                 {
                     throw new InvalidOperationException($"Tag '{tag}' is in use by both '{existing}' and '{fieldName}'");
                 }
 
                 usedTags.Add(tag, fieldName);
             };
-            
+
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "SignedAttributes");
         }
 #endif
 
         internal void Encode(AsnWriter writer)
         {
-            bool wroteValue = false; 
-            
+            bool wroteValue = false;
+
             if (SignedAttributes != null)
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
 
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
                 for (int i = 0; i < SignedAttributes.Length; i++)
                 {
-                    SignedAttributes[i].Encode(writer); 
+                    SignedAttributes[i].Encode(writer);
                 }
                 writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
 
@@ -62,22 +63,19 @@ namespace System.Security.Cryptography.Pkcs
 
         internal static SignedAttributesSet Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, out SignedAttributesSet decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, encoded, out SignedAttributesSet decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out SignedAttributesSet decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out SignedAttributesSet decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            AsnReader collectionReader;
-            
+            AsnValueReader collectionReader;
+
             if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
 
@@ -89,7 +87,7 @@ namespace System.Security.Cryptography.Pkcs
 
                     while (collectionReader.HasData)
                     {
-                        System.Security.Cryptography.Asn1.AttributeAsn.Decode(collectionReader, out tmpItem); 
+                        System.Security.Cryptography.Asn1.AttributeAsn.Decode(ref collectionReader, rebind, out tmpItem);
                         tmpList.Add(tmpItem);
                     }
 

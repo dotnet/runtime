@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
     [StructLayout(LayoutKind.Sequential)]  // The [StructLayout] is here to prevent a spurious ApiReviewer alert. We do not actually depend on the layout of this struct.
     public struct CngProperty : IEquatable<CngProperty>
     {
-        public CngProperty(string name, byte[] value, CngPropertyOptions options)
+        public CngProperty(string name, byte[]? value, CngPropertyOptions options)
             : this()
         {
             if (name == null)
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
         ///     Contents of the property
         /// </summary>
         /// <returns></returns>
-        public byte[] GetValue()
+        public byte[]? GetValue()
         {
             return (_value == null) ? null : _value.CloneByteArray();
         }
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public CngPropertyOptions Options { get; private set; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is CngProperty && Equals((CngProperty)obj);
         }
@@ -117,12 +117,12 @@ namespace System.Security.Cryptography
             return !left.Equals(right);
         }
 
-        internal byte[] GetValueWithoutCopying()
+        internal byte[]? GetValueWithoutCopying()
         {
             return _value;
         }
 
-        private readonly byte[] _value;
+        private readonly byte[]? _value;
         private int? _lazyHashCode;
     }
 }

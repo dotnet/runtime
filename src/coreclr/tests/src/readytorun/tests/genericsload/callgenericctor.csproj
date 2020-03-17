@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
-    <DefineConstants>$(DefineConstants);STATIC;CORECLR</DefineConstants>
     <ZapRequire>1</ZapRequire>
     <CLRTestPriority>1</CLRTestPriority>
     <CrossGenTest>false</CrossGenTest>

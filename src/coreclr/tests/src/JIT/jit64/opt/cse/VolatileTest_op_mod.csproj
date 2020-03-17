@@ -6,10 +6,9 @@
   <PropertyGroup>
     <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
     <DebugType>PdbOnly</DebugType>
-    <NoLogo>True</NoLogo>
     <NoStandardLib>True</NoStandardLib>
     <Noconfig>True</Noconfig>
-    <DefineConstants>$(DefineConstants);CORECLR;OP_MOD</DefineConstants>
+    <DefineConstants>$(DefineConstants);OP_MOD</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="VolatileTest.cs" />

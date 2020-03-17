@@ -198,13 +198,6 @@ Exit:;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-HRESULT CLRPrivBinderCoreCLR::GetBinderID(
-        UINT_PTR *pBinderId)
-{
-    *pBinderId = reinterpret_cast<UINT_PTR>(this);
-    return S_OK;
-}
-
 HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
                                                 SString  &sPlatformResourceRoots,
                                                 SString  &sAppPaths,

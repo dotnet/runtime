@@ -16,6 +16,7 @@ using ustring = System.Utf8String;
 
 namespace System.Text.Tests
 {
+    [SkipOnMono("The features from System.Utf8String.Experimental namespace are experimental.")]
     public unsafe partial class Utf8SpanTests
     {
         [Fact]
@@ -286,7 +287,7 @@ namespace System.Text.Tests
             {
                 using BoundedMemory<char> boundedMemory = BoundedMemory.Allocate<char>(i);
                 Assert.Equal(expected.Length, span.ToChars(boundedMemory.Span));
-                Assert.True(boundedMemory.Span.Slice(0, expected.Length).SequenceEqual(expected));
+                Assert.True(boundedMemory.Span.Slice(0, expected.Length).SequenceEqual(expected.AsSpan()));
             }
         }
 

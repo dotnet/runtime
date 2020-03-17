@@ -16,21 +16,21 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     {
         internal System.Security.Cryptography.Pkcs.Asn1.EssCertIdV2[] Certs;
         internal System.Security.Cryptography.Pkcs.Asn1.PolicyInformation[] Policies;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
 
             writer.PushSequence();
             for (int i = 0; i < Certs.Length; i++)
             {
-                Certs[i].Encode(writer); 
+                Certs[i].Encode(writer);
             }
             writer.PopSequence();
 
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 writer.PushSequence();
                 for (int i = 0; i < Policies.Length; i++)
                 {
-                    Policies[i].Encode(writer); 
+                    Policies[i].Encode(writer);
                 }
                 writer.PopSequence();
 
@@ -54,33 +54,27 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static SigningCertificateV2Asn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out SigningCertificateV2Asn decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out SigningCertificateV2Asn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out SigningCertificateV2Asn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out SigningCertificateV2Asn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out SigningCertificateV2Asn decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out SigningCertificateV2Asn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnReader collectionReader;
-            
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            AsnValueReader collectionReader;
+
 
             // Decode SEQUENCE OF for Certs
             {
@@ -90,7 +84,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
                 while (collectionReader.HasData)
                 {
-                    System.Security.Cryptography.Pkcs.Asn1.EssCertIdV2.Decode(collectionReader, out tmpItem); 
+                    System.Security.Cryptography.Pkcs.Asn1.EssCertIdV2.Decode(ref collectionReader, rebind, out tmpItem);
                     tmpList.Add(tmpItem);
                 }
 
@@ -109,7 +103,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
                     while (collectionReader.HasData)
                     {
-                        System.Security.Cryptography.Pkcs.Asn1.PolicyInformation.Decode(collectionReader, out tmpItem); 
+                        System.Security.Cryptography.Pkcs.Asn1.PolicyInformation.Decode(ref collectionReader, rebind, out tmpItem);
                         tmpList.Add(tmpItem);
                     }
 

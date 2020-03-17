@@ -77,111 +77,6 @@ HANDLE ClrGetProcessExecutableHeap();
 extern int RFS_HashStack();
 #endif
 
-
-void ClrFlsAssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback);
-
-typedef LPVOID* (*CLRFLSGETBLOCK)();
-extern CLRFLSGETBLOCK __ClrFlsGetBlock;
-
-// Combining getter/setter into a single call
-inline void ClrFlsIncrementValue(DWORD slot, int increment)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    _ASSERTE(increment != 0);
-
-    void **block = (*__ClrFlsGetBlock)();
-    size_t value;
-
-    if (block != NULL)
-    {
-        value = (size_t) block[slot];
-
-        _ASSERTE((increment > 0) || (value + increment < value));
-        block[slot] = (void *) (value + increment);
-    }
-    else
-    {
-        BEGIN_PRESERVE_LAST_ERROR;
-
-        IExecutionEngine * pEngine = GetExecutionEngine();
-        value = (size_t) pEngine->TLS_GetValue(slot);
-
-        _ASSERTE((increment > 0) || (value + increment < value));
-        pEngine->TLS_SetValue(slot, (void *) (value + increment));
-
-        END_PRESERVE_LAST_ERROR;
-    }
-}
-
-
-inline void * ClrFlsGetValue (DWORD slot)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-	void **block = (*__ClrFlsGetBlock)();
-	if (block != NULL)
-    {
-        return block[slot];
-    }
-    else
-    {
-        void * value = GetExecutionEngine()->TLS_GetValue(slot);
-        return value;
-    }
-}
-
-
-inline BOOL ClrFlsCheckValue(DWORD slot, void ** pValue)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-#ifdef _DEBUG
-    *pValue = ULongToPtr(0xcccccccc);
-#endif //_DEBUG
-	void **block = (*__ClrFlsGetBlock)();
-	if (block != NULL)
-    {
-        *pValue = block[slot];
-        return TRUE;
-    }
-    else
-    {
-        BOOL result = GetExecutionEngine()->TLS_CheckValue(slot, pValue);
-        return result;
-    }
-}
-
-inline void ClrFlsSetValue(DWORD slot, void *pData)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-    void **block = (*__ClrFlsGetBlock)();
-    if (block != NULL)
-    {
-        block[slot] = pData;
-    }
-    else
-    {
-        BEGIN_PRESERVE_LAST_ERROR;
-
-        GetExecutionEngine()->TLS_SetValue(slot, pData);
-
-        END_PRESERVE_LAST_ERROR;
-    }
-}
-
 #ifndef SELF_NO_HOST
 LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes);
 BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem);
@@ -358,8 +253,17 @@ private:
 
 HMODULE GetCLRModule ();
 
-extern void IncCantAllocCount();
-extern void DecCantAllocCount();
+extern thread_local int t_CantAllocCount;
+
+inline void IncCantAllocCount()
+{
+    t_CantAllocCount++;
+}
+
+inline void DecCantAllocCount()
+{
+    t_CantAllocCount--;
+}
 
 class CantAllocHolder
 {
@@ -375,18 +279,13 @@ public:
 };
 
 // At places where want to allocate stress log, we need to first check if we are allowed to do so.
-// If ClrTlsInfo doesn't exist for this thread, we take it as can alloc
 inline bool IsInCantAllocRegion ()
 {
-    size_t count = 0;
-    if (ClrFlsCheckValue(TlsIdx_CantAllocCount, (LPVOID *)&count))
-    {
-        _ASSERTE (count >= 0);
-        return count > 0;
-    }
-    return false;
+    return t_CantAllocCount != 0;
 }
-// for stress log the rule is more restrict, we have to check the global counter too
-extern BOOL IsInCantAllocStressLogRegion();
+inline BOOL IsInCantAllocStressLogRegion()
+{
+    return t_CantAllocCount != 0;
+}
 
 #endif

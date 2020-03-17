@@ -378,7 +378,6 @@ namespace System.ComponentModel
         /// This should be called by your property descriptor implementation
         /// when the property value has changed.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers")]
         protected virtual void OnValueChanged(object component, EventArgs e)
         {
             if (component != null)

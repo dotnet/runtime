@@ -113,6 +113,9 @@ struct sigaction g_previous_activation;
 // Offset of the local variable containing pointer to windows style context in the common_signal_handler function.
 // This offset is relative to the frame pointer.
 int g_common_signal_handler_context_locvar_offset = 0;
+
+// TOP of special stack for handling stack overflow
+volatile void* g_stackOverflowHandlerStack = NULL;
 #endif // !HAVE_MACH_EXCEPTIONS
 
 /* public function definitions ************************************************/
@@ -175,6 +178,26 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         {
             return FALSE;
         }
+
+        // Allocate the minimal stack necessary for handling stack overflow
+        int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 7 * 4096;
+        // Align the size to virtual page size and add one virtual page as a stack guard
+        stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
+        g_stackOverflowHandlerStack = mmap(NULL, stackOverflowStackSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_STACK | MAP_PRIVATE, -1, 0);
+        if (g_stackOverflowHandlerStack == MAP_FAILED)
+        {
+            return FALSE;
+        }
+
+        // create a guard page for the alternate stack
+        int st = mprotect((void*)g_stackOverflowHandlerStack, GetVirtualPageSize(), PROT_NONE);
+        if (st != 0)
+        {
+            munmap((void*)g_stackOverflowHandlerStack, stackOverflowStackSize);
+            return FALSE;
+        }
+
+        g_stackOverflowHandlerStack = (void*)((size_t)g_stackOverflowHandlerStack + stackOverflowStackSize);
     }
 
     /* The default action for SIGPIPE is process termination.
@@ -432,6 +455,41 @@ bool IsRunningOnAlternateStack(void *context)
 
 /*++
 Function :
+    SwitchStackAndExecuteHandler
+
+    Switch to the stack specified by the sp argument
+
+Parameters :
+    POSIX signal handler parameter list ("man sigaction" for details)
+    sp - stack pointer of the stack to execute the handler on.
+         If sp == 0, execute it on the original stack where the signal has occured.
+Return :
+    The return value from the signal handler
+--*/
+static bool SwitchStackAndExecuteHandler(int code, siginfo_t *siginfo, void *context, size_t sp)
+{
+    // Establish a return point in case the common_signal_handler returns
+
+    volatile bool contextInitialization = true;
+
+    void *ptr = alloca(sizeof(SignalHandlerWorkerReturnPoint) + alignof(SignalHandlerWorkerReturnPoint) - 1);
+    SignalHandlerWorkerReturnPoint *pReturnPoint = (SignalHandlerWorkerReturnPoint *)ALIGN_UP(ptr, alignof(SignalHandlerWorkerReturnPoint));
+    RtlCaptureContext(&pReturnPoint->context);
+
+    // When the signal handler worker completes, it uses setcontext to return to this point
+
+    if (contextInitialization)
+    {
+        contextInitialization = false;
+        ExecuteHandlerOnCustomStack(code, siginfo, context, sp, pReturnPoint);
+        _ASSERTE(FALSE); // The ExecuteHandlerOnCustomStack should never return
+    }
+
+    return pReturnPoint->returnFromHandler;
+}
+
+/*++
+Function :
     sigsegv_handler
 
     handle SIGSEGV signal (EXCEPTION_ACCESS_VIOLATION, others)
@@ -453,8 +511,30 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         // we have a stack overflow.
         if ((failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize())
         {
-            (void)write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-            PROCAbort();
+            if (GetCurrentPalThread())
+            {
+                size_t handlerStackTop = __sync_val_compare_and_swap((size_t*)&g_stackOverflowHandlerStack, (size_t)g_stackOverflowHandlerStack, 0);
+                if (handlerStackTop == 0)
+                {
+                    // We have only one stack for handling stack overflow preallocated. We let only the first thread that hits stack overflow to
+                    // run the exception handling code on that stack (which ends up just dumping the stack trace and aborting the process).
+                    // Other threads are held spinning and sleeping here until the process exits.
+                    while (true)
+                    {
+                        sleep(1);
+                    }
+                }
+
+                if (SwitchStackAndExecuteHandler(code, siginfo, context, (size_t)handlerStackTop))
+                {
+                    PROCAbort();
+                }
+            }
+            else
+            {
+                (void)write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+                PROCAbort();
+            }            
         }
 
         // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
@@ -462,24 +542,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
         if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
         {
-            // Establish a return point in case the common_signal_handler returns
-
-            volatile bool contextInitialization = true;
-
-            void *ptr = alloca(sizeof(SignalHandlerWorkerReturnPoint) + alignof(SignalHandlerWorkerReturnPoint) - 1);
-            SignalHandlerWorkerReturnPoint *pReturnPoint = (SignalHandlerWorkerReturnPoint *)ALIGN_UP(ptr, alignof(SignalHandlerWorkerReturnPoint));
-            RtlCaptureContext(&pReturnPoint->context);
-
-            // When the signal handler worker completes, it uses setcontext to return to this point
-
-            if (contextInitialization)
-            {
-                contextInitialization = false;
-                ExecuteHandlerOnOriginalStack(code, siginfo, context, pReturnPoint);
-                _ASSERTE(FALSE); // The ExecuteHandlerOnOriginalStack should never return
-            }
-
-            if (pReturnPoint->returnFromHandler)
+            if (SwitchStackAndExecuteHandler(code, siginfo, context, 0 /* sp */)) // sp == 0 indicates execution on the original stack
             {
                 return;
             }
@@ -692,7 +755,10 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
 {
 #ifdef INJECT_ACTIVATION_SIGNAL
     int status = pthread_kill(pThread->GetPThreadSelf(), INJECT_ACTIVATION_SIGNAL);
-    if (status != 0)
+    // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
+    // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
+    // the process exits.
+    if ((status != 0) && (status != EAGAIN))
     {
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
@@ -791,7 +857,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 
     ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     contextFlags |= CONTEXT_XSTATE;
 #endif
 

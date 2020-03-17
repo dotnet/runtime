@@ -216,20 +216,20 @@ DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
     return S_OK;
 }
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 
 static BOOL DacReadAllAdapter(PVOID address, PVOID buffer, SIZE_T size)
 {
     DAC_INSTANCE* inst = g_dacImpl->m_instances.Find((TADDR)address);
     if (inst == nullptr || inst->size < size)
     {
-        inst = g_dacImpl->m_instances.Alloc((TADDR)address, size, DAC_PAL);
+        inst = g_dacImpl->m_instances.Alloc((TADDR)address, (ULONG32)size, DAC_PAL);
         if (inst == nullptr)
         {
             return FALSE;
         }
         inst->noReport = 0;
-        HRESULT hr = DacReadAll((TADDR)address, inst + 1, size, false);
+        HRESULT hr = DacReadAll((TADDR)address, inst + 1, (ULONG32)size, false);
         if (FAILED(hr))
         {
             g_dacImpl->m_instances.ReturnAlloc(inst);
@@ -246,7 +246,7 @@ static BOOL DacReadAllAdapter(PVOID address, PVOID buffer, SIZE_T size)
 }
 
 HRESULT
-DacVirtualUnwind(DWORD threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
+DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
 {
     if (!g_dacImpl)
     {
@@ -273,7 +273,9 @@ DacVirtualUnwind(DWORD threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POI
 #endif
     {
         SIZE_T baseAddress = DacGlobalBase();
+#ifdef HOST_UNIX
         if (baseAddress == 0 || !PAL_VirtualUnwindOutOfProc(context, contextPointers, baseAddress, DacReadAllAdapter))
+#endif
         {
             hr = E_FAIL;
         }
@@ -282,7 +284,7 @@ DacVirtualUnwind(DWORD threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POI
     return hr;
 }
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 // DacAllocVirtual - Allocate memory from the target process
 // Note: this is only available to clients supporting the legacy
@@ -1451,7 +1453,7 @@ void DacEnumCodeForStackwalk(TADDR taCallEnd)
     //
     DacEnumMemoryRegion(taCallEnd - MAX_INSTRUCTION_LENGTH, MAX_INSTRUCTION_LENGTH * 2, false);
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // If it was an indirect call we also need to save the data indirected through.
     // Note that this only handles absolute indirect calls (ModR/M byte of 0x15), all the other forms of
     // indirect calls are register-relative, and so we'd have to do a much more complicated decoding based
@@ -1469,7 +1471,7 @@ void DacEnumCodeForStackwalk(TADDR taCallEnd)
     {
         DacEnumMemoryRegion(*callInd, sizeof(TADDR), false);
     }
-#endif // #ifdef _TARGET_X86_
+#endif // #ifdef TARGET_X86
 }
 
 // ----------------------------------------------------------------------------

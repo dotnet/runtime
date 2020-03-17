@@ -12,7 +12,6 @@ using System.Text;
 
 namespace System.Linq.Expressions
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     internal sealed class ExpressionStringBuilder : ExpressionVisitor
     {
         private readonly StringBuilder _out;
@@ -143,7 +142,6 @@ namespace System.Linq.Expressions
             Out(close);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected internal override Expression VisitBinary(BinaryExpression node)
         {
             if (node.NodeType == ExpressionType.ArrayIndex)
@@ -257,7 +255,7 @@ namespace System.Linq.Expressions
                         break;
                     case ExpressionType.Power:
                         op = "**";
-                        break; // This was changed in CoreFx from ^ to **
+                        break; // This was changed in .NET Core from ^ to **
                     case ExpressionType.PowerAssign:
                         op = "**=";
                         break;
@@ -611,7 +609,6 @@ namespace System.Linq.Expressions
             return node;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected internal override Expression VisitUnary(UnaryExpression node)
         {
             switch (node.NodeType)
@@ -660,7 +657,7 @@ namespace System.Linq.Expressions
                 case ExpressionType.ConvertChecked:
                     Out(", ");
                     Out(node.Type.Name);
-                    Out(')'); break; // These were changed in CoreFx to add the type name
+                    Out(')'); break; // These were changed in .NET Core to add the type name
                 case ExpressionType.PostIncrementAssign: Out("++"); break;
                 case ExpressionType.PostDecrementAssign: Out("--"); break;
                 default: Out(')'); break;

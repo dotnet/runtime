@@ -9,6 +9,7 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderGUID
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void Guid_TypeCreated_NotEmpty()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);

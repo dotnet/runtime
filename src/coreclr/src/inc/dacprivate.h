@@ -15,10 +15,10 @@
 #include <xclrdata.h>
 #include <sospriv.h>
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // It is unfortunate having to include this header just to get the definition of GenericModeBlock
 #include <msodw.h>
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 //
 // Whenever a structure is marshalled between different platforms, we need to ensure the
@@ -37,7 +37,7 @@
 // want to go changing the layout of, for example, structures defined in OS header files
 // so we explicitly opt-in with this attribute.
 //
-#if defined(__GNUC__) && defined(_X86_)
+#if defined(__GNUC__) && defined(HOST_X86)
 #define MSLAYOUT __attribute__((__ms_struct__))
 #else
 #define MSLAYOUT

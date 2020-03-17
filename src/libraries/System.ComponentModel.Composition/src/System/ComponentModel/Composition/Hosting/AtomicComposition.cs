@@ -35,11 +35,11 @@ namespace System.ComponentModel.Composition.Hosting
     /// </summary>
     public class AtomicComposition : IDisposable
     {
-        private readonly AtomicComposition _outerAtomicComposition;
-        private KeyValuePair<object, object>[] _values;
+        private readonly AtomicComposition? _outerAtomicComposition;
+        private KeyValuePair<object, object?>[]? _values;
         private int _valueCount = 0;
-        private List<Action> _completeActionList;
-        private List<Action> _revertActionList;
+        private List<Action>? _completeActionList;
+        private List<Action>? _revertActionList;
         private bool _isDisposed = false;
         private bool _isCompleted = false;
         private bool _containsInnerAtomicComposition = false;
@@ -49,7 +49,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
         }
 
-        public AtomicComposition(AtomicComposition outerAtomicComposition)
+        public AtomicComposition(AtomicComposition? outerAtomicComposition)
         {
             // Lock the inner atomicComposition so that we can assume nothing changes except on
             // the innermost scope, and thereby optimize the query path
@@ -60,7 +60,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        public void SetValue(object key, object value)
+        public void SetValue(object key, object? value)
         {
             ThrowIfDisposed();
             ThrowIfCompleted();
@@ -71,13 +71,12 @@ namespace System.ComponentModel.Composition.Hosting
             SetValueInternal(key, value);
         }
 
-        public bool TryGetValue<T>(object key, out T value)
+        public bool TryGetValue<T>(object key, [MaybeNullWhen(false)] out T value)
         {
             return TryGetValue(key, false, out value);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters")]
-        public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, out T value)
+        public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, [MaybeNullWhen(false)] out T value)
         {
             ThrowIfDisposed();
             ThrowIfCompleted();
@@ -156,7 +155,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (_revertActionList != null)
                 {
-                    List<Exception> exceptions = null;
+                    List<Exception>? exceptions = null;
 
                     // Execute the revert actions in reverse order to ensure
                     // everything incrementally rollsback its state.
@@ -198,7 +197,7 @@ namespace System.ComponentModel.Composition.Hosting
             // Completeting the outer most scope is easy, just execute all the actions
             if (_completeActionList != null)
             {
-                List<Exception> exceptions = null;
+                List<Exception>? exceptions = null;
 
                 foreach (Action action in _completeActionList)
                 {
@@ -263,7 +262,7 @@ namespace System.ComponentModel.Composition.Hosting
             for (var index = 0; index < _valueCount; index++)
             {
                 _outerAtomicComposition.SetValueInternal(
-                    _values[index].Key, _values[index].Value);
+                    _values![index].Key, _values[index].Value);
             }
         }
 
@@ -279,13 +278,13 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private bool TryGetValueInternal<T>(object key, bool localAtomicCompositionOnly, out T value)
+        private bool TryGetValueInternal<T>(object key, bool localAtomicCompositionOnly, [MaybeNullWhen(false)] out T value)
         {
             for (var index = 0; index < _valueCount; index++)
             {
-                if (_values[index].Key == key)
+                if (_values![index].Key == key)
                 {
-                    value = (T)_values[index].Value;
+                    value = (T)_values[index].Value!;
                     return true;
                 }
             }
@@ -297,18 +296,18 @@ namespace System.ComponentModel.Composition.Hosting
                 return _outerAtomicComposition.TryGetValueInternal<T>(key, localAtomicCompositionOnly, out value);
             }
 
-            value = default(T);
+            value = default(T)!;
             return false;
         }
 
-        private void SetValueInternal(object key, object value)
+        private void SetValueInternal(object key, object? value)
         {
             // Handle overwrites quickly
             for (var index = 0; index < _valueCount; index++)
             {
-                if (_values[index].Key == key)
+                if (_values![index].Key == key)
                 {
-                    _values[index] = new KeyValuePair<object, object>(key, value);
+                    _values[index] = new KeyValuePair<object, object?>(key, value);
                     return;
                 }
             }
@@ -316,7 +315,7 @@ namespace System.ComponentModel.Composition.Hosting
             // Expand storage when needed
             if (_values == null || _valueCount == _values.Length)
             {
-                var newQueries = new KeyValuePair<object, object>[_valueCount == 0 ? 5 : _valueCount * 2];
+                var newQueries = new KeyValuePair<object, object?>[_valueCount == 0 ? 5 : _valueCount * 2];
                 if (_values != null)
                 {
                     Array.Copy(_values, newQueries, _valueCount);
@@ -325,7 +324,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             // Store a new entry
-            _values[_valueCount] = new KeyValuePair<object, object>(key, value);
+            _values[_valueCount] = new KeyValuePair<object, object?>(key, value);
             _valueCount++;
             return;
         }

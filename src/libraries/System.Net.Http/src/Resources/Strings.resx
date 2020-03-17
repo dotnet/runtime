@@ -223,7 +223,7 @@
     <value>The 'q' value is invalid: '{0}'.</value>
   </data>
   <data name="net_http_log_headers_wrong_email_format" xml:space="preserve">
-    <value>Value '{0}' is not a valid email address. Error: {1}</value>
+    <value>Value '{0}' is not a valid email address</value>
   </data>
   <data name="net_http_handler_not_assigned" xml:space="preserve">
     <value>The inner handler has not been assigned.</value>
@@ -323,6 +323,9 @@
   </data>
   <data name="net_http_invalid_response_premature_eof" xml:space="preserve">
     <value>The response ended prematurely.</value>
+  </data>
+  <data name="net_http_invalid_response_missing_frame" xml:space="preserve">
+    <value>The response ended prematurely while waiting for the next frame from the server.</value>
   </data>
   <data name="net_http_invalid_response_premature_eof_bytecount" xml:space="preserve">
     <value>The response ended prematurely, with at least {0} additional bytes expected.</value>
@@ -521,5 +524,35 @@
   </data>
   <data name="net_http_invalid_header_name" xml:space="preserve">
     <value>Received an invalid header name: '{0}'.</value>
+  </data>
+  <data name="net_http_http3_connection_error" xml:space="preserve">
+    <value>The HTTP/3 server sent invalid data on the connection. HTTP/3 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_http_http3_stream_error" xml:space="preserve">
+    <value>The HTTP/3 server sent invalid data on the stream. HTTP/3 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_http_retry_on_older_version" xml:space="preserve">
+    <value>The server is unable to process the request using the current HTTP version and indicates the request should be retried on an older HTTP version.</value>
+  </data>
+  <data name="net_http_content_write_larger_than_content_length" xml:space="preserve">
+    <value>Unable to write content to request stream; content would exceed Content-Length.</value>
+  </data>
+  <data name="net_http_qpack_no_dynamic_table" xml:space="preserve">
+    <value>The HTTP/3 server attempted to reference a dynamic table index that does not exist.</value>
+  </data>
+  <data name="net_http_request_timedout" xml:space="preserve">
+    <value>The request was canceled due to the configured HttpClient.Timeout of {0} seconds elapsing.</value>
+  </data>
+  <data name="net_quic_connectionaborted" xml:space="preserve">
+    <value>Connection aborted by peer ({0}).</value>
+  </data>
+  <data name="net_quic_notsupported" xml:space="preserve">
+    <value>QUIC is not supported on this platform. See http://aka.ms/dotnetquic</value>
+  </data>
+  <data name="net_quic_operationaborted" xml:space="preserve">
+    <value>Operation aborted.</value>
+  </data>
+  <data name="net_quic_streamaborted" xml:space="preserve">
+    <value>Stream aborted by peer ({0}).</value>
   </data>
 </root>

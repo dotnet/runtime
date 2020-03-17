@@ -15,6 +15,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 using Xunit.Sdk;
@@ -1090,7 +1091,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/32780
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/27615
         public void GetProcessesByName_ProcessName_ReturnsExpected()
         {
             // Get the current process using its name
@@ -1111,7 +1112,7 @@ namespace System.Diagnostics.Tests
             Assert.All(processes, process => Assert.Equal(".", process.MachineName));
             return;
 
-            // Outputs a list of active processes in case of failure: https://github.com/dotnet/corefx/issues/35783
+            // Outputs a list of active processes in case of failure: https://github.com/dotnet/runtime/issues/28874
             string PrintProcesses(Process currentProcess)
             {
                 StringBuilder builder = new StringBuilder();
@@ -1244,7 +1245,7 @@ namespace System.Diagnostics.Tests
 
             // .NET Core fixes a bug where Process.StartInfo for a unrelated process would
             // return information about the current process, not the unrelated process.
-            // See https://github.com/dotnet/corefx/issues/1100.
+            // See https://github.com/dotnet/runtime/issues/14329.
             Assert.Throws<InvalidOperationException>(() => process.StartInfo = new ProcessStartInfo());
 
             process.Kill();
@@ -1272,7 +1273,7 @@ namespace System.Diagnostics.Tests
 
             // .NET Core fixes a bug where Process.StartInfo for an unrelated process would
             // return information about the current process, not the unrelated process.
-            // See https://github.com/dotnet/corefx/issues/1100.
+            // See https://github.com/dotnet/runtime/issues/14329.
             Assert.Throws<InvalidOperationException>(() => process.StartInfo);
         }
 
@@ -1316,8 +1317,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.StandardInput);
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "GC has different behavior on Mono")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void CanBeFinalized()
         {
             FinalizingProcess.CreateAndRelease();
@@ -1509,6 +1509,40 @@ namespace System.Diagnostics.Tests
         {
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
+        }
+        
+        [Fact]
+        [OuterLoop]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
+        {
+            const string ExePath = "notepad.exe";
+            Assert.True(IsProgramInstalled(ExePath));
+
+            using (Process process = Process.Start(ExePath))
+            {
+                try
+                {
+                    for (int attempt = 0; attempt < 50; ++attempt)
+                    {
+                        process.Refresh();
+                        if (process.MainWindowHandle != IntPtr.Zero)
+                        {
+                            break;
+                        }
+
+                        Thread.Sleep(100);
+                    }
+
+                    Assert.NotEqual(IntPtr.Zero, process.MainWindowHandle);
+                }
+                finally
+                {
+                    process.Kill();
+                    Assert.True(process.WaitForExit(WaitInMS));
+                }
+            }
         }
 
         [Fact]
@@ -1845,7 +1879,7 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/37054", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29330", TestPlatforms.OSX)]
         [Fact]
         public void LongProcessNamesAreSupported()
         {

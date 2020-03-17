@@ -224,7 +224,7 @@ bool CallUtils::HasRetBuffArg(MethodContext* mc, CORINFO_SIG_INFO args)
         return false;
     }
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     // We don't need a return buffer if:
     //   i) TYP_STRUCT argument that can fit into a single register and
     //  ii) Power of two sized TYP_STRUCT on AMD64.

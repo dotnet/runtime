@@ -23,10 +23,7 @@ namespace System.Buffers.Binary
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static sbyte ReverseEndianness(sbyte value)
-        {
-            return value;
-        }
+        public static sbyte ReverseEndianness(sbyte value) => value;
 
         /// <summary>
         /// Reverses a primitive value - performs an endianness swap
@@ -55,10 +52,7 @@ namespace System.Buffers.Binary
         /// rather than having to skip byte fields.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static byte ReverseEndianness(byte value)
-        {
-            return value;
-        }
+        public static byte ReverseEndianness(byte value) => value;
 
         /// <summary>
         /// Reverses a primitive value - performs an endianness swap

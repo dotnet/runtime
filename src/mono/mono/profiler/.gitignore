@@ -1,0 +1,7 @@
+/Makefile
+/*.a
+/*.la
+/*.lo
+/*.so
+/*.mdb
+/mprof-report

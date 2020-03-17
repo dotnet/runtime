@@ -10,10 +10,13 @@ namespace System.Text.RegularExpressions
     {
         // We need this because time is queried using Environment.TickCount for performance reasons
         // (Environment.TickCount returns milliseconds as an int and cycles):
-        private static readonly TimeSpan s_maximumMatchTimeout = TimeSpan.FromMilliseconds(int.MaxValue - 1);
+        private const ulong MaximumMatchTimeoutTicks = 10_000UL * (int.MaxValue - 1); // TimeSpan.FromMilliseconds(int.MaxValue - 1).Ticks;
 
         // During static initialisation of Regex we check
         private const string DefaultMatchTimeout_ConfigKeyName = "REGEX_DEFAULT_MATCH_TIMEOUT";
+
+        // Number of ticks represented by InfiniteMatchTimeout
+        private const long InfiniteMatchTimeoutTicks = -10_000; // InfiniteMatchTimeout.Ticks
 
         // InfiniteMatchTimeout specifies that match timeout is switched OFF. It allows for faster code paths
         // compared to simply having a very large timeout.
@@ -52,7 +55,7 @@ namespace System.Text.RegularExpressions
             object? defaultMatchTimeoutObj = ad.GetData(DefaultMatchTimeout_ConfigKeyName);
 
             // If no default is specified, use fallback
-            if (defaultMatchTimeoutObj == null)
+            if (defaultMatchTimeoutObj is null)
             {
                 return InfiniteMatchTimeout;
             }

@@ -106,16 +106,16 @@ BOOL __SwitchToThread(DWORD, DWORD)
 
 GPTR_IMPL(IGCHeap,g_pGCHeap);
 
-BOOL g_fEEOtherStartup=FALSE;
-BOOL g_fEEComActivatedStartup=FALSE;
-
-GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
-
 GVAL_IMPL_INIT(GCHeapType, g_heap_type, GC_HEAP_WKS);
 
 HRESULT GetExceptionHResult(OBJECTREF throwable)
 {
     return E_FAIL;
+}
+
+DWORD GetCurrentExceptionCode()
+{
+    return 0;
 }
 
 //---------------------------------------------------------------------------------------
@@ -246,7 +246,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     return 0x321;
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
     LoaderAllocator *pLoaderAllocator /* = NULL */, bool throwOnOutOfMemoryWithinRange /*= true*/)
 {
@@ -304,7 +304,7 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
     return (PCODE)(0x12345);
 }
 
-Assembly * SystemDomain::GetCallersAssembly(StackCrawlMark * stackMark, AppDomain ** ppAppDomain)
+Assembly * SystemDomain::GetCallersAssembly(StackCrawlMark * stackMark)
 {
     return NULL;
 }

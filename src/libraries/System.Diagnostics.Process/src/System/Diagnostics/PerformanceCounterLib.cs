@@ -17,17 +17,17 @@ namespace System.Diagnostics
 {
     internal sealed class PerformanceCounterLib
     {
-        private static string s_computerName;
+        private static string? s_computerName;
 
-        private PerformanceMonitor _performanceMonitor;
+        private PerformanceMonitor? _performanceMonitor;
         private readonly string _machineName;
         private readonly string _perfLcid;
 
-        private static ConcurrentDictionary<(string machineName, string lcidString), PerformanceCounterLib> s_libraryTable;
-        private Dictionary<int, string> _nameTable;
+        private static ConcurrentDictionary<(string machineName, string lcidString), PerformanceCounterLib>? s_libraryTable;
+        private Dictionary<int, string>? _nameTable;
         private readonly object _nameTableLock = new object();
 
-        private static object s_internalSyncObject;
+        private static object? s_internalSyncObject;
 
         internal PerformanceCounterLib(string machineName, string lcid)
         {
@@ -36,7 +36,7 @@ namespace System.Diagnostics
         }
 
         /// <internalonly/>
-        internal static string ComputerName => LazyInitializer.EnsureInitialized(ref s_computerName, ref s_internalSyncObject, () => Interop.Kernel32.GetComputerName());
+        internal static string ComputerName => LazyInitializer.EnsureInitialized<string>(ref s_computerName, ref s_internalSyncObject, () => Interop.Kernel32.GetComputerName() ?? "");
 
         internal Dictionary<int, string> NameTable
         {
@@ -57,7 +57,7 @@ namespace System.Diagnostics
 
         internal string GetCounterName(int index)
         {
-            string result;
+            string? result;
             return NameTable.TryGetValue(index, out result) ? result : "";
         }
 
@@ -74,7 +74,7 @@ namespace System.Diagnostics
             return PerformanceCounterLib.s_libraryTable.GetOrAdd((machineName, lcidString), (key) => new PerformanceCounterLib(key.machineName, key.lcidString));
         }
 
-        internal byte[] GetPerformanceData(string item)
+        internal byte[]? GetPerformanceData(string item)
         {
             if (_performanceMonitor == null)
             {
@@ -85,7 +85,7 @@ namespace System.Diagnostics
                 }
             }
 
-            return _performanceMonitor.GetData(item);
+            return _performanceMonitor.GetData(item)!;
         }
 
         private Dictionary<int, string> GetStringTable(bool isHelp)
@@ -98,7 +98,7 @@ namespace System.Diagnostics
 
             try
             {
-                string[] names = null;
+                string[]? names = null;
                 int waitRetries = 14;   //((2^13)-1)*10ms == approximately 1.4mins
                 int waitSleep = 0;
 
@@ -113,9 +113,9 @@ namespace System.Diagnostics
                     try
                     {
                         if (!isHelp)
-                            names = (string[])libraryKey.GetValue("Counter " + _perfLcid);
+                            names = (string[]?)libraryKey.GetValue("Counter " + _perfLcid);
                         else
-                            names = (string[])libraryKey.GetValue("Explain " + _perfLcid);
+                            names = (string[]?)libraryKey.GetValue("Explain " + _perfLcid);
 
                         if ((names == null) || (names.Length == 0))
                         {
@@ -192,7 +192,7 @@ namespace System.Diagnostics
         internal class PerformanceMonitor
         {
 #if FEATURE_REGISTRY
-            private RegistryKey _perfDataKey = null;
+            private RegistryKey _perfDataKey = null!; // will be initialized by Init() method
 #endif
             private readonly string _machineName;
 
@@ -225,19 +225,19 @@ namespace System.Diagnostics
             // we wait may not be sufficient if the Win32 code keeps running into this deadlock again
             // and again. A condition very rare but possible in theory. We would get back to the user
             // in this case with InvalidOperationException after the wait time expires.
-            internal byte[] GetData(string item)
+            internal byte[]? GetData(string item)
             {
 #if FEATURE_REGISTRY
                 int waitRetries = 17;   //2^16*10ms == approximately 10mins
                 int waitSleep = 0;
-                byte[] data = null;
+                byte[]? data = null;
                 int error = 0;
 
                 while (waitRetries > 0)
                 {
                     try
                     {
-                        data = (byte[])_perfDataKey.GetValue(item);
+                        data = (byte[]?)_perfDataKey.GetValue(item);
                         return data;
                     }
                     catch (IOException e)

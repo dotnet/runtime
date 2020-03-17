@@ -92,7 +92,7 @@ HRESULT ClrDataAccess::GetServerAllocData(unsigned int count, struct DacpGenerat
             {
                 dac_generation generation = *ServerGenerationTableIndex(pHeap, i);
                 data[n].allocData[i].allocBytes = (CLRDATA_ADDRESS)(ULONG_PTR) generation.allocation_context.alloc_bytes;
-                data[n].allocData[i].allocBytesLoh = (CLRDATA_ADDRESS)(ULONG_PTR) generation.allocation_context.alloc_bytes_loh;
+                data[n].allocData[i].allocBytesLoh = (CLRDATA_ADDRESS)(ULONG_PTR) generation.allocation_context.alloc_bytes_uoh;
             }
         }
     }

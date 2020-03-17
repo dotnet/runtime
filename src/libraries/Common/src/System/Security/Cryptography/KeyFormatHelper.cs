@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
@@ -36,9 +38,9 @@ namespace System.Security.Cryptography
             out int bytesRead)
         {
             // X.509 SubjectPublicKeyInfo is described as DER.
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.DER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
             int read = reader.PeekEncodedValue().Length;
-            SubjectPublicKeyInfoAsn.Decode(reader, out SubjectPublicKeyInfoAsn spki);
+            SubjectPublicKeyInfoAsn.Decode(ref reader, source, out SubjectPublicKeyInfoAsn spki);
 
             if (Array.IndexOf(validOids, spki.Algorithm.Algorithm.Value) < 0)
             {
@@ -57,9 +59,9 @@ namespace System.Security.Cryptography
             out TRet ret)
         {
             // X.509 SubjectPublicKeyInfo is described as DER.
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.DER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
             int read = reader.PeekEncodedValue().Length;
-            SubjectPublicKeyInfoAsn.Decode(reader, out SubjectPublicKeyInfoAsn spki);
+            SubjectPublicKeyInfoAsn.Decode(ref reader, source, out SubjectPublicKeyInfoAsn spki);
 
             if (Array.IndexOf(validOids, spki.Algorithm.Algorithm.Value) < 0)
             {
@@ -91,9 +93,9 @@ namespace System.Security.Cryptography
             ReadOnlyMemory<byte> source,
             out int bytesRead)
         {
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
             int read = reader.PeekEncodedValue().Length;
-            PrivateKeyInfoAsn.Decode(reader, out PrivateKeyInfoAsn privateKeyInfo);
+            PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
 
             if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value) < 0)
             {
@@ -111,9 +113,9 @@ namespace System.Security.Cryptography
             out int bytesRead,
             out TRet ret)
         {
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
             int read = reader.PeekEncodedValue().Length;
-            PrivateKeyInfoAsn.Decode(reader, out PrivateKeyInfoAsn privateKeyInfo);
+            PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
 
             if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value) < 0)
             {
@@ -204,9 +206,9 @@ namespace System.Security.Cryptography
             out int bytesRead,
             out TRet ret)
         {
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
             int read = reader.PeekEncodedValue().Length;
-            EncryptedPrivateKeyInfoAsn.Decode(reader, out EncryptedPrivateKeyInfoAsn epki);
+            EncryptedPrivateKeyInfoAsn.Decode(ref reader, source, out EncryptedPrivateKeyInfoAsn epki);
 
             // No supported encryption algorithms produce more bytes of decryption output than there
             // were of decryption input.
@@ -233,7 +235,7 @@ namespace System.Security.Cryptography
 
                 if (innerRead != decryptedMemory.Length)
                 {
-                    ret = default;
+                    ret = default!;
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
@@ -329,9 +331,9 @@ namespace System.Security.Cryptography
                 out string encryptionAlgorithmOid,
                 out bool isPkcs12);
 
-            byte[] encryptedRent = null;
+            byte[]? encryptedRent = null;
             Span<byte> encryptedSpan = default;
-            AsnWriter writer = null;
+            AsnWriter? writer = null;
 
             try
             {
@@ -385,7 +387,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(encryptedSpan);
-                CryptoPool.Return(encryptedRent, clearSize: 0);
+                CryptoPool.Return(encryptedRent!, clearSize: 0);
 
                 writer?.Dispose();
                 cipher.Dispose();
@@ -422,9 +424,9 @@ namespace System.Security.Cryptography
             ReadOnlyMemory<byte> source,
             out int bytesRead)
         {
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
             int localRead = reader.PeekEncodedValue().Length;
-            EncryptedPrivateKeyInfoAsn.Decode(reader, out EncryptedPrivateKeyInfoAsn epki);
+            EncryptedPrivateKeyInfoAsn.Decode(ref reader, source, out EncryptedPrivateKeyInfoAsn epki);
 
             // No supported encryption algorithms produce more bytes of decryption output than there
             // were of decryption input.
@@ -485,7 +487,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(decrypted);
-                CryptoPool.Return(decrypted.Array, clearSize: 0);
+                CryptoPool.Return(decrypted.Array!, clearSize: 0);
             }
         }
 
@@ -524,7 +526,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(decrypted);
-                CryptoPool.Return(decrypted.Array, clearSize: 0);
+                CryptoPool.Return(decrypted.Array!, clearSize: 0);
             }
         }
     }

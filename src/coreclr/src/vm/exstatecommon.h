@@ -452,7 +452,7 @@ private:
 };
 
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // This class is used to track Watson bucketing information for an exception.
 typedef DPTR(class EHWatsonBucketTracker) PTR_EHWatsonBucketTracker;
 class EHWatsonBucketTracker
@@ -519,6 +519,6 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable = NULL)
 PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable, BOOL fCaptureBucketsIfNotPresent,
                                                                          BOOL fStartSearchFromPreviousTracker = FALSE);
 BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #endif // __ExStateCommon_h__

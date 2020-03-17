@@ -1459,7 +1459,7 @@ CHECK PEDecoder::CheckILOnly() const
             CHECK(CheckILOnlyBaseRelocations());
         }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         if (!IsMapped())
         {
             CHECK(CheckILOnlyEntryPoint());
@@ -1511,7 +1511,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
 
     // The only allowed DLL Imports are MscorEE.dll:_CorExeMain,_CorDllMain
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // On win64, when the image is LoadLibrary'd, we whack the import and IAT directories. We have to relax
     // the verification for mapped images. Ideally, we would only do it for a post-LoadLibrary image.
     if (IsMapped() && !HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_IMPORT))
@@ -1604,7 +1604,7 @@ CHECK PEDecoder::CheckILOnlyImportByNameTable(RVA rva) const
     CHECK_OK;
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 // jmp dword ptr ds:[XXXX]
 #define JMP_DWORD_PTR_DS_OPCODE { 0xFF, 0x25 }
 #define JMP_DWORD_PTR_DS_OPCODE_SIZE   2        // Size of opcode
@@ -1678,7 +1678,7 @@ CHECK PEDecoder::CheckILOnlyBaseRelocations() const
     CHECK_OK;
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 CHECK PEDecoder::CheckILOnlyEntryPoint() const
 {
     CONTRACT_CHECK
@@ -1721,7 +1721,7 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
 
     CHECK_OK;
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #ifndef DACCESS_COMPILE
 
@@ -2326,7 +2326,7 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
         PTR_READYTORUN_HEADER pHeader = PTR_READYTORUN_HEADER((TADDR)GetDirectoryData(pDir));
         if (pHeader->Signature == READYTORUN_SIGNATURE)
         {
-            const_cast<PEDecoder *>(this)->m_pReadyToRunHeader = pHeader;
+            const_cast<PEDecoder*>(this)->m_pReadyToRunHeader = pHeader;
             return pHeader;
         }
     }
@@ -2334,6 +2334,41 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
     const_cast<PEDecoder *>(this)->m_flags |= FLAG_HAS_NO_READYTORUN_HEADER;
     return NULL;
 }
+
+#ifndef DACCESS_COMPILE
+void *PEDecoder::GetExport(LPCSTR exportName) const
+{
+    // Get the export directory entry
+    PIMAGE_DATA_DIRECTORY pExportDirectoryEntry = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT);
+    if (pExportDirectoryEntry->VirtualAddress == 0 || pExportDirectoryEntry->Size == 0)
+    {
+        return NULL;
+    }
+    
+    uint8_t *imageBase = (uint8_t *)GetBase();
+    const IMAGE_EXPORT_DIRECTORY *pExportDir = (const IMAGE_EXPORT_DIRECTORY *)GetDirectoryData(pExportDirectoryEntry);
+    
+    uint32_t namePointerCount = VAL32(pExportDir->NumberOfNames);
+    uint32_t addressTableRVA = VAL32(pExportDir->AddressOfFunctions);
+    uint32_t namePointersRVA = VAL32(pExportDir->AddressOfNames);
+
+    for (uint32_t nameIndex = 0; nameIndex < namePointerCount; nameIndex++)
+    {
+        uint32_t namePointerRVA = VAL32(*(const uint32_t *)&imageBase[namePointersRVA + sizeof(uint32_t) * nameIndex]);
+        if (namePointerRVA != 0)
+        {
+            const char *namePointer = (const char *)&imageBase[namePointerRVA];
+            if (!strcmp(namePointer, exportName))
+            {
+                uint32_t exportRVA = VAL32(*(const uint32_t *)&imageBase[addressTableRVA + sizeof(uint32_t) * nameIndex]);
+                return &imageBase[exportRVA];
+            }
+        }
+    }
+
+    return NULL;
+}
+#endif
 
 //
 // code:PEDecoder::CheckILMethod and code:PEDecoder::ComputeILMethodSize really belong to
@@ -2857,13 +2892,13 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
         READYTORUN_HEADER * pHeader = GetReadyToRunHeader();
 
         PTR_READYTORUN_SECTION pSections = dac_cast<PTR_READYTORUN_SECTION>(dac_cast<TADDR>(pHeader) + sizeof(READYTORUN_HEADER));
-        for (DWORD i = 0; i < pHeader->NumberOfSections; i++)
+        for (DWORD i = 0; i < pHeader->CoreHeader.NumberOfSections; i++)
         {
             // Verify that section types are sorted
             _ASSERTE(i == 0 || (pSections[i - 1].Type < pSections[i].Type));
 
             READYTORUN_SECTION * pSection = pSections + i;
-            if (pSection->Type == READYTORUN_SECTION_MANIFEST_METADATA)
+            if (pSection->Type == ReadyToRunSectionType::ManifestMetadata)
             {
                 // Set pDir to the address of the manifest metadata section
                 pDir = &pSection->Section;
@@ -2871,7 +2906,7 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
             }
         }
 
-        // ReadyToRun file without large version bubble support doesn't have the READYTORUN_SECTION_MANIFEST_METADATA
+        // ReadyToRun file without large version bubble support doesn't have the ManifestMetadata
         if (pDir == NULL)
         {
             if (pSize != NULL)
@@ -3102,22 +3137,15 @@ BOOL PEDecoder::GetForceRelocs()
 
 BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 {
-    // Use static contracts to avoid recursion, as the dynamic contracts
-    // do WszLoadLibrary(MSCOREE_SHIM_W).
 #ifdef _DEBUG
 		STATIC_CONTRACT_NOTHROW;                                        \
 		ANNOTATION_DEBUG_ONLY;                                          \
 		STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 #endif
 
-#if defined(DACCESS_COMPILE) || defined(FEATURE_PAL)
+#if defined(DACCESS_COMPILE) || defined(TARGET_UNIX)
     return TRUE;
 #else
-
-    // Contracts in ConfigDWORD do WszLoadLibrary(MSCOREE_SHIM_W).
-    // This check prevents recursion.
-    if (wcsstr(lpFileName, MSCOREE_SHIM_W) != 0)
-        return TRUE;
 
     if (!GetForceRelocs())
         return TRUE;
@@ -3181,7 +3209,7 @@ ErrExit:
 
     return fSuccess;
 
-#endif // DACCESS_COMPILE || FEATURE_PAL
+#endif // DACCESS_COMPILE || TARGET_UNIX
 }
 
 #endif // _DEBUG

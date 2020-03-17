@@ -92,17 +92,17 @@ namespace Microsoft.Win32
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }
 
-        private object InternalGetValueCore(string name, object defaultValue, bool doNotExpand)
+        private object InternalGetValueCore(string? name, object? defaultValue, bool doNotExpand)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }
 
-        private RegistryValueKind GetValueKindCore(string name)
+        private RegistryValueKind GetValueKindCore(string? name)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }
 
-        private void SetValueCore(string name, object value, RegistryValueKind valueKind)
+        private void SetValueCore(string? name, object value, RegistryValueKind valueKind)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }

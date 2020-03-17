@@ -20,7 +20,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(name, attribute.Name);
             Assert.Equal(thisKey, attribute.ThisKey);
             Assert.Equal(otherKey, attribute.OtherKey);
-            if (PlatformDetection.IsFullFramework && thisKey == null)
+            if (PlatformDetection.IsNetFramework && thisKey == null)
             {
                 Assert.Throws<NullReferenceException>(() => attribute.ThisKeyMembers);
             }
@@ -28,7 +28,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             {
                 Assert.Equal(expectedThisKeyMembers, attribute.ThisKeyMembers);
             }
-            if (PlatformDetection.IsFullFramework && otherKey == null)
+            if (PlatformDetection.IsNetFramework && otherKey == null)
             {
                 Assert.Throws<NullReferenceException>(() => attribute.OtherKeyMembers);
             }

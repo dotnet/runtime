@@ -501,8 +501,8 @@ namespace System.Web.Util
                 else
                 {
                     expandedBytes[pos++] = (byte)'%';
-                    expandedBytes[pos++] = (byte)HttpEncoderUtility.IntToHex((b >> 4) & 0xf);
-                    expandedBytes[pos++] = (byte)HttpEncoderUtility.IntToHex(b & 0x0f);
+                    expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b >> 4);
+                    expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b);
                 }
             }
 
@@ -549,8 +549,8 @@ namespace System.Web.Util
                 if (IsNonAsciiByte(b))
                 {
                     expandedBytes[pos++] = (byte)'%';
-                    expandedBytes[pos++] = (byte)HttpEncoderUtility.IntToHex((b >> 4) & 0xf);
-                    expandedBytes[pos++] = (byte)HttpEncoderUtility.IntToHex(b & 0x0f);
+                    expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b >> 4);
+                    expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b);
                 }
                 else
                 {
@@ -590,25 +590,23 @@ namespace System.Web.Util
                     else
                     {
                         sb.Append('%');
-                        sb.Append(HttpEncoderUtility.IntToHex((ch >> 4) & 0xf));
-                        sb.Append(HttpEncoderUtility.IntToHex((ch) & 0xf));
+                        sb.Append(HexConverter.ToCharLower(ch >> 4));
+                        sb.Append(HexConverter.ToCharLower(ch));
                     }
                 }
                 else
                 { // arbitrary Unicode?
                     sb.Append("%u");
-                    sb.Append(HttpEncoderUtility.IntToHex((ch >> 12) & 0xf));
-                    sb.Append(HttpEncoderUtility.IntToHex((ch >> 8) & 0xf));
-                    sb.Append(HttpEncoderUtility.IntToHex((ch >> 4) & 0xf));
-                    sb.Append(HttpEncoderUtility.IntToHex((ch) & 0xf));
+                    sb.Append(HexConverter.ToCharLower(ch >> 12));
+                    sb.Append(HexConverter.ToCharLower(ch >> 8));
+                    sb.Append(HexConverter.ToCharLower(ch >> 4));
+                    sb.Append(HexConverter.ToCharLower(ch));
                 }
             }
 
             return sb.ToString();
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings",
-            Justification = "Does not represent an entire URL, just a portion.")]
         [return: NotNullIfNotNull("value")]
         internal static string? UrlPathEncode(string? value)
         {
@@ -635,8 +633,6 @@ namespace System.Web.Util
         }
 
         // This is the original UrlPathEncode(string)
-        [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings",
-            Justification = "Does not represent an entire URL, just a portion.")]
         private static string UrlPathEncodeImpl(string value)
         {
             if (string.IsNullOrEmpty(value))

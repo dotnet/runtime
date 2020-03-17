@@ -16,16 +16,16 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
         internal byte Version;
         internal System.Security.Cryptography.Asn1.Pkcs7.ContentInfoAsn AuthSafe;
         internal System.Security.Cryptography.Asn1.Pkcs12.MacData? MacData;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             writer.WriteInteger(Version);
             AuthSafe.Encode(writer);
 
@@ -41,44 +41,38 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static PfxAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out PfxAsn decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out PfxAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out PfxAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out PfxAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out PfxAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out PfxAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+
 
             if (!sequenceReader.TryReadUInt8(out decoded.Version))
             {
                 sequenceReader.ThrowIfNotEmpty();
             }
 
-            System.Security.Cryptography.Asn1.Pkcs7.ContentInfoAsn.Decode(sequenceReader, out decoded.AuthSafe);
+            System.Security.Cryptography.Asn1.Pkcs7.ContentInfoAsn.Decode(ref sequenceReader, rebind, out decoded.AuthSafe);
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
             {
                 System.Security.Cryptography.Asn1.Pkcs12.MacData tmpMacData;
-                System.Security.Cryptography.Asn1.Pkcs12.MacData.Decode(sequenceReader, out tmpMacData);
+                System.Security.Cryptography.Asn1.Pkcs12.MacData.Decode(ref sequenceReader, rebind, out tmpMacData);
                 decoded.MacData = tmpMacData;
 
             }

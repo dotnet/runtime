@@ -210,5 +210,45 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(expectedLength, contents.Length);
             Assert.True(Unsafe.AreSame(ref dataBytes[0], ref MemoryMarshal.GetReference(contents.Span)));
         }
+
+        [Fact]
+        public static void PeekEncodedValue_InvalidLength()
+        {
+            byte[] badLength = "04040203".HexToByteArray();
+
+            AsnReader reader = new AsnReader(badLength, AsnEncodingRules.BER);
+
+            Assert.Throws<CryptographicException>(() => reader.PeekEncodedValue());
+            Assert.Throws<CryptographicException>(() => reader.ReadEncodedValue());
+
+            Assert.Throws<CryptographicException>(
+                () =>
+                {
+                    AsnValueReader valueReader = new AsnValueReader(badLength, AsnEncodingRules.BER);
+                    valueReader.PeekEncodedValue();
+                });
+            Assert.Throws<CryptographicException>(
+                () =>
+                {
+                    AsnValueReader valueReader = new AsnValueReader(badLength, AsnEncodingRules.BER);
+                    valueReader.ReadEncodedValue();
+                });
+        }
+
+        [Fact]
+        public static void PeekContentBytes_InvalidLength()
+        {
+            byte[] badLength = "04040203".HexToByteArray();
+
+            AsnReader reader = new AsnReader(badLength, AsnEncodingRules.BER);
+
+            Assert.Throws<CryptographicException>(() => reader.PeekContentBytes());
+            Assert.Throws<CryptographicException>(
+                () =>
+                {
+                    AsnValueReader valueReader = new AsnValueReader(badLength, AsnEncodingRules.BER);
+                    valueReader.PeekContentBytes();
+                });
+        }
     }
 }

@@ -16,7 +16,7 @@ namespace System.Diagnostics
     {
         private bool _haveMainWindow;
         private IntPtr _mainWindowHandle;
-        private string _mainWindowTitle;
+        private string? _mainWindowTitle;
 
         private bool _haveResponding;
         private bool _responding;
@@ -243,7 +243,7 @@ namespace System.Diagnostics
                     EnsureState(State.IsLocal | State.HaveId);
                     _mainWindowHandle = ProcessManager.GetMainWindowHandle(_processId);
 
-                    _haveMainWindow = true;
+                    _haveMainWindow = _mainWindowHandle != IntPtr.Zero;
                 }
                 return _mainWindowHandle;
             }
@@ -349,11 +349,11 @@ namespace System.Diagnostics
         {
             get
             {
-                Interop.NtDll.PROCESS_BASIC_INFORMATION info = default;
-
                 using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION))
                 {
-                    if (Interop.NtDll.NtQueryInformationProcess(handle, Interop.NtDll.PROCESSINFOCLASS.ProcessBasicInformation, &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
+                    Interop.NtDll.PROCESS_BASIC_INFORMATION info;
+
+                    if (Interop.NtDll.NtQueryInformationProcess(handle, Interop.NtDll.ProcessBasicInformation, &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
                         throw new Win32Exception(SR.ProcessInformationUnavailable);
 
                     return (int)info.InheritedFromUniqueProcessId;

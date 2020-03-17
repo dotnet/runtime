@@ -32,7 +32,7 @@ namespace System.Reflection.TypeLoading.Ecma
             return !handles.FindCustomAttributeByName(ns, name, module).IsNil;
         }
 
-        public static CustomAttributeData TryFindCustomAttribute(this CustomAttributeHandleCollection handles, ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, EcmaModule module)
+        public static CustomAttributeData? TryFindCustomAttribute(this CustomAttributeHandleCollection handles, ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, EcmaModule module)
         {
             CustomAttributeHandle handle = handles.FindCustomAttributeByName(ns, name, module);
             if (handle.IsNil)
@@ -120,7 +120,7 @@ namespace System.Reflection.TypeLoading.Ecma
         /// </summary>
         public static CustomAttributeTypedArgument ToApiForm(this CustomAttributeTypedArgument<RoType> catg) => ToApiForm(catg.Type, catg.Value);
 
-        private static CustomAttributeTypedArgument ToApiForm(Type type, object value)
+        private static CustomAttributeTypedArgument ToApiForm(Type type, object? value)
         {
             if (!(value is IList<CustomAttributeTypedArgument<RoType>> catgs))
             {
@@ -151,15 +151,15 @@ namespace System.Reflection.TypeLoading.Ecma
         /// </summary>
         public static CustomAttributeNamedArgument ToApiForm(this CustomAttributeNamedArgument<RoType> cang, Type attributeType)
         {
-            MemberInfo member;
+            MemberInfo? member;
             switch (cang.Kind)
             {
                 case CustomAttributeNamedArgumentKind.Field:
-                    member = attributeType.GetField(cang.Name, BindingFlags.Public | BindingFlags.Instance);
+                    member = attributeType.GetField(cang.Name!, BindingFlags.Public | BindingFlags.Instance);
                     break;
 
                 case CustomAttributeNamedArgumentKind.Property:
-                    member = attributeType.GetProperty(cang.Name, BindingFlags.Public | BindingFlags.Instance);
+                    member = attributeType.GetProperty(cang.Name!, BindingFlags.Public | BindingFlags.Instance);
                     break;
 
                 default:
@@ -167,7 +167,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     throw new BadImageFormatException();
             }
 
-            return new CustomAttributeNamedArgument(member, ToApiForm(cang.Type, cang.Value));
+            return new CustomAttributeNamedArgument(member!, ToApiForm(cang.Type, cang.Value));
         }
 
         //
@@ -209,8 +209,8 @@ namespace System.Reflection.TypeLoading.Ecma
 
                     if (br.RemainingBytes == 0)
                         break;
-                    string udtName = br.ReadSerializedString();
-                    ma.SafeArrayUserDefinedSubType = Helpers.LoadTypeFromAssemblyQualifiedName(udtName, module.GetRoAssembly(), ignoreCase: false, throwOnError: false);
+                    string? udtName = br.ReadSerializedString();
+                    ma.SafeArrayUserDefinedSubType = Helpers.LoadTypeFromAssemblyQualifiedName(udtName!, module.GetRoAssembly(), ignoreCase: false, throwOnError: false);
                     break;
 
                 case UnmanagedType.LPArray:
@@ -239,7 +239,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     if (br.RemainingBytes == 0)
                         break;
                     ma.MarshalType = br.ReadSerializedString();
-                    ma.MarshalTypeRef = Helpers.LoadTypeFromAssemblyQualifiedName(ma.MarshalType, module.GetRoAssembly(), ignoreCase: false, throwOnError: false);
+                    ma.MarshalTypeRef = Helpers.LoadTypeFromAssemblyQualifiedName(ma.MarshalType!, module.GetRoAssembly(), ignoreCase: false, throwOnError: false);
 
                     if (br.RemainingBytes == 0)
                         break;

@@ -52,8 +52,8 @@ namespace System.Management.Tests
         [InlineData(CodeLanguage.VJSharp)]
         public void Throw_On_Unsupported_Languages(CodeLanguage lang)
         {
-            // On full framework JScript is supported and no exception raised
-            if (lang == CodeLanguage.JScript && PlatformDetection.IsFullFramework)
+            // On .NET Framework JScript is supported and no exception raised
+            if (lang == CodeLanguage.JScript && PlatformDetection.IsNetFramework)
                 return;
 
             var tempFilePath = Path.GetTempFileName();

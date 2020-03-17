@@ -6,7 +6,7 @@ namespace System.Reflection.TypeLoading
 {
     internal sealed partial class RoExceptionHandlingClause : ExceptionHandlingClause
     {
-        private readonly Type _catchType;
+        private readonly Type? _catchType;
         private readonly ExceptionHandlingClauseOptions _flags;
         private readonly int _filterOffset;
         private readonly int _tryOffset;
@@ -14,7 +14,7 @@ namespace System.Reflection.TypeLoading
         private readonly int _handlerOffset;
         private readonly int _handlerLength;
 
-        internal RoExceptionHandlingClause(Type catchType, ExceptionHandlingClauseOptions flags, int filterOffset, int tryOffset, int tryLength, int handlerOffset, int handlerLength)
+        internal RoExceptionHandlingClause(Type? catchType, ExceptionHandlingClauseOptions flags, int filterOffset, int tryOffset, int tryLength, int handlerOffset, int handlerLength)
         {
             _catchType = catchType;
             _flags = flags;
@@ -25,7 +25,7 @@ namespace System.Reflection.TypeLoading
             _handlerLength = handlerLength;
         }
 
-        public sealed override Type CatchType => _flags == ExceptionHandlingClauseOptions.Clause ? _catchType : throw new InvalidOperationException(SR.NotAClause);
+        public sealed override Type? CatchType => _flags == ExceptionHandlingClauseOptions.Clause ? _catchType : throw new InvalidOperationException(SR.NotAClause);
         public sealed override ExceptionHandlingClauseOptions Flags => _flags;
         public sealed override int FilterOffset => _flags == ExceptionHandlingClauseOptions.Filter ? _filterOffset : throw new InvalidOperationException(SR.NotAFilter);
         public sealed override int HandlerOffset => _handlerOffset;

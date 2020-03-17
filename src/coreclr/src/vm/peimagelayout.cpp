@@ -10,7 +10,7 @@
 #include "peimagelayout.inl"
 #include "dataimage.h"
 
-#if defined(PLATFORM_WINDOWS) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_WINDOWS) && !defined(CROSSGEN_COMPILE)
 #include "amsi.h"
 #endif
 
@@ -44,7 +44,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThro
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(CROSSGEN_COMPILE) || defined(FEATURE_PAL)
+#if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
     return PEImageLayout::Map(pOwner);
 #else
     PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner,bNTSafeLoad,bThrowOnError));
@@ -58,6 +58,12 @@ PEImageLayout* PEImageLayout::LoadFlat(PEImage* pOwner)
 {
     STANDARD_VM_CONTRACT;
     return new FlatImageLayout(pOwner);
+}
+
+PEImageLayout *PEImageLayout::LoadNative(LPCWSTR fullPath)
+{
+    STANDARD_VM_CONTRACT;
+    return new NativeImageLayout(fullPath);
 }
 
 PEImageLayout* PEImageLayout::Map(PEImage* pOwner)
@@ -89,7 +95,7 @@ PEImageLayout* PEImageLayout::Map(PEImage* pOwner)
     RETURN pAlloc.Extract();
 }
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 DWORD SectionCharacteristicsToPageProtection(UINT characteristics)
 {
     _ASSERTE((characteristics & VAL32(IMAGE_SCN_MEM_READ)) != 0);
@@ -120,7 +126,7 @@ DWORD SectionCharacteristicsToPageProtection(UINT characteristics)
 
     return pageProtection;
 }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 //To force base relocation on Vista (which uses ASLR), unmask IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE
 //(0x40) for OptionalHeader.DllCharacteristics
@@ -205,20 +211,20 @@ void PEImageLayout::ApplyBaseRelocations()
             if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) == 0))
             {
                 DWORD dwNewProtection = PAGE_READWRITE;
-#if defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
                 if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0))
                 {
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
                     dwNewProtection = PAGE_EXECUTE_READWRITE;
                 }
-#endif // FEATURE_PAL && !CROSSGEN_COMPILE
+#endif // TARGET_UNIX && !CROSSGEN_COMPILE
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwNewProtection, &dwOldProtection))
                     ThrowLastError();
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
                 dwOldProtection = SectionCharacteristicsToPageProtection(pSection->Characteristics);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
             }
         }
 
@@ -236,7 +242,7 @@ void PEImageLayout::ApplyBaseRelocations()
                 pEndAddressToFlush = max(pEndAddressToFlush, address + sizeof(TADDR));
                 break;
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
             case IMAGE_REL_BASED_THUMB_MOV32:
                 PutThumb2Mov32((UINT16 *)address, GetThumb2Mov32((UINT16 *)address) + (INT32)delta);
                 pEndAddressToFlush = max(pEndAddressToFlush, address + 8);
@@ -285,9 +291,9 @@ void PEImageLayout::ApplyBaseRelocations()
                                dwOldProtection, &dwOldProtection))
             ThrowLastError();
     }
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     PAL_LOADMarkSectionAsNotNeeded((void*)dir);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 #endif // CROSSGEN_COMPILE
 
     if (pFlushRegion != NULL)
@@ -313,7 +319,7 @@ RawImageLayout::RawImageLayout(const void *flat, COUNT_T size, PEImage* pOwner)
 
     if (size)
     {
-#if defined(PLATFORM_WINDOWS) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_WINDOWS) && !defined(CROSSGEN_COMPILE)
         if (Amsi::IsBlockedByAmsiScan((void*)flat, size))
         {
             // This is required to throw a BadImageFormatException for compatibility, but
@@ -322,7 +328,7 @@ RawImageLayout::RawImageLayout(const void *flat, COUNT_T size, PEImage* pOwner)
             GetHRMsg(HRESULT_FROM_WIN32(ERROR_VIRUS_INFECTED), virusHrString);
             ThrowHR(COR_E_BADIMAGEFORMAT, virusHrString);
         }
-#endif // defined(PLATFORM_WINDOWS) && !defined(CROSSGEN_COMPILE)
+#endif // defined(TARGET_WINDOWS) && !defined(CROSSGEN_COMPILE)
 
         HandleHolder mapping(WszCreateFileMapping(INVALID_HANDLE_VALUE,
                                                   NULL,
@@ -356,14 +362,14 @@ RawImageLayout::RawImageLayout(const void *mapped, PEImage* pOwner, BOOL bTakeOw
 
     if (bTakeOwnership)
     {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         PathString wszDllName;
         WszGetModuleFileName((HMODULE)mapped, wszDllName);
 
         m_LibraryHolder=CLRLoadLibraryEx(wszDllName,NULL,GetLoadWithAlteredSearchPathFlag());
-#else // !FEATURE_PAL
-        _ASSERTE(!"bTakeOwnership Should not be used on FEATURE_PAL");
-#endif // !FEATURE_PAL
+#else // !TARGET_UNIX
+        _ASSERTE(!"bTakeOwnership Should not be used on TARGET_UNIX");
+#endif // !TARGET_UNIX
     }
 
     IfFailThrow(Init((void*)mapped,(bool)(bFixedUp!=FALSE)));
@@ -426,7 +432,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
     // If mapping was requested, try to do SEC_IMAGE mapping
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening OS mapped %S (hFile %p)\n", (LPCWSTR) GetPath(), hFile));
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 
     // Let OS map file for us
@@ -520,7 +526,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
     }
 #endif // _DEBUG
 
-#else //!FEATURE_PAL
+#else //!TARGET_UNIX
 
 #ifndef CROSSGEN_COMPILE
     m_LoadedFile = PAL_LOADLoadPEFile(hFile);
@@ -556,10 +562,10 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
     m_LoadedFile = NULL;
 #endif // !CROSSGEN_COMPILE
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_PAL)
+#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
 LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError)
 {
     CONTRACTL
@@ -591,7 +597,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bTh
 
     LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %S\n", (LPCWSTR) GetPath()));
 }
-#endif // !CROSSGEN_COMPILE && !FEATURE_PAL
+#endif // !CROSSGEN_COMPILE && !TARGET_UNIX
 
 FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 {
@@ -629,10 +635,47 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     Init(m_FileView, size);
 }
 
+NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
+{
+    PVOID loadedImage;
+#if TARGET_UNIX
+    {
+        ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+        HANDLE fileHandle = WszCreateFile(
+            fullPath,
+            GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_DELETE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
 
+        if (fileHandle == INVALID_HANDLE_VALUE)
+        {
+            ThrowLastError();
+        }
+
+        loadedImage = PAL_LOADLoadPEFile(fileHandle);
+    }
+#else
+    loadedImage = CLRLoadLibraryEx(fullPath, NULL, GetLoadWithAlteredSearchPathFlag());
+#endif
+    
+    if (loadedImage == NULL)
+    {
+        ThrowLastError();
+    }
+
+
+#if TARGET_UNIX
+    PEDecoder::Init(loadedImage, /* relocated */ false);
+    ApplyBaseRelocations();
+    SetRelocated();
+#else // TARGET_UNIX
+    PEDecoder::Init(loadedImage, /* relocated */ true);
+#endif // TARGET_UNIX
+}
 #endif // !DACESS_COMPILE
-
-
 
 #ifdef DACCESS_COMPILE
 void

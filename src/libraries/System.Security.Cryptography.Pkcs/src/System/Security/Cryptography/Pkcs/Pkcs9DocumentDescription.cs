@@ -4,7 +4,7 @@
 
 using System;
 using System.Diagnostics;
-
+using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
@@ -55,7 +55,8 @@ namespace System.Security.Cryptography.Pkcs
         // Private methods.
         //
 
-        private static string Decode(byte[] rawData)
+        [return: NotNullIfNotNull("rawData")]
+        private static string? Decode(byte[]? rawData)
         {
             if (rawData == null)
                 return null;
@@ -73,6 +74,6 @@ namespace System.Security.Cryptography.Pkcs
             return PkcsHelpers.EncodeOctetString(octets);
         }
 
-        private volatile string _lazyDocumentDescription = null;
+        private volatile string? _lazyDocumentDescription = null;
     }
 }

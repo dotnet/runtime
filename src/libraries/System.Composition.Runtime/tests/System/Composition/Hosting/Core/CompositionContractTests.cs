@@ -173,7 +173,7 @@ namespace System.Composition.Runtime.Tests
                 false
             };
 
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 yield return new object[]
                 {

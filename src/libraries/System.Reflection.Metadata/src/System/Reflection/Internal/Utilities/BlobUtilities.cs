@@ -170,7 +170,6 @@ namespace System.Reflection
             }
         }
 
-        // TODO: Use UTF8Encoding https://github.com/dotnet/corefx/issues/2217
         public static void WriteUTF8(this byte[] buffer, int start, char* charPtr, int charCount, int byteCount, bool allowUnpairedSurrogates)
         {
             Debug.Assert(byteCount >= charCount);

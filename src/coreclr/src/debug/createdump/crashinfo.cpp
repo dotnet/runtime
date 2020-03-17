@@ -371,15 +371,6 @@ CrashInfo::EnumerateModuleMappings()
 
             if (moduleName != nullptr && *moduleName == '/')
             {
-                if (m_coreclrPath.empty())
-                {
-                    std::string coreclrPath;
-                    coreclrPath.append(moduleName);
-                    size_t last = coreclrPath.rfind(MAKEDLLNAME_A("coreclr"));
-                    if (last != std::string::npos) {
-                        m_coreclrPath = coreclrPath.substr(0, last);
-                    }
-                }
                 m_moduleMappings.insert(memoryRegion);
             }
             else
@@ -424,184 +415,58 @@ CrashInfo::GetDSOInfo()
     int phnum = m_auxvValues[AT_PHNUM];
     assert(m_auxvValues[AT_PHENT] == sizeof(Phdr));
     assert(phnum != PN_XNUM);
-
-    if (phnum <= 0 || phdrAddr == nullptr) {
-        return false;
-    }
-    uint64_t baseAddress = (uint64_t)phdrAddr - sizeof(Ehdr);
-    ElfW(Dyn)* dynamicAddr = nullptr;
-
-    TRACE("DSO: base %" PRIA PRIx64 " phdr %p phnum %d\n", baseAddress, phdrAddr, phnum);
-
-    // Enumerate program headers searching for the PT_DYNAMIC header, etc.
-    if (!EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, &dynamicAddr))
-    {
-        return false;
-    }
-    if (dynamicAddr == nullptr) {
-        return false;
-    }
-
-    // Search for dynamic debug (DT_DEBUG) entry
-    struct r_debug* rdebugAddr = nullptr;
-    for (;;) {
-        ElfW(Dyn) dyn;
-        if (!ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {
-            fprintf(stderr, "ReadMemory(%p, %" PRIx ") dyn FAILED\n", dynamicAddr, sizeof(dyn));
-            return false;
-        }
-        TRACE("DSO: dyn %p tag %" PRId " (%" PRIx ") d_ptr %" PRIxA "\n", dynamicAddr, dyn.d_tag, dyn.d_tag, dyn.d_un.d_ptr);
-        if (dyn.d_tag == DT_DEBUG) {
-            rdebugAddr = reinterpret_cast<struct r_debug*>(dyn.d_un.d_ptr);
-        }
-        else if (dyn.d_tag == DT_NULL) {
-            break;
-        }
-        dynamicAddr++;
-    }
-
-    // Add the DSO r_debug entry
-    TRACE("DSO: rdebugAddr %p\n", rdebugAddr);
-    struct r_debug debugEntry;
-    if (!ReadMemory(rdebugAddr, &debugEntry, sizeof(debugEntry))) {
-        fprintf(stderr, "ReadMemory(%p, %" PRIx ") r_debug FAILED\n", rdebugAddr, sizeof(debugEntry));
-        return false;
-    }
-
-    // Add the DSO link_map entries
-    ArrayHolder<char> moduleName = new char[PATH_MAX];
-    for (struct link_map* linkMapAddr = debugEntry.r_map; linkMapAddr != nullptr;) {
-        struct link_map map;
-        if (!ReadMemory(linkMapAddr, &map, sizeof(map))) {
-            fprintf(stderr, "ReadMemory(%p, %" PRIx ") link_map FAILED\n", linkMapAddr, sizeof(map));
-            return false;
-        }
-        // Read the module's name and make sure the memory is added to the core dump
-        int i = 0;
-        if (map.l_name != nullptr) {
-            for (; i < PATH_MAX; i++)
-            {
-                if (!ReadMemory(map.l_name + i, &moduleName[i], 1)) {
-                    TRACE("DSO: ReadMemory link_map name %p + %d FAILED\n", map.l_name, i);
-                    break;
-                }
-                if (moduleName[i] == '\0') {
-                    break;
-                }
-            }
-        }
-        moduleName[i] = '\0';
-        TRACE("\nDSO: link_map entry %p l_ld %p l_addr (Ehdr) %" PRIx " %s\n", linkMapAddr, map.l_ld, map.l_addr, (char*)moduleName);
-
-        // Read the ELF header and info adding it to the core dump
-        if (!GetELFInfo(map.l_addr)) {
-            return false;
-        }
-        linkMapAddr = map.l_next;
-    }
-
-    return true;
+    return EnumerateElfInfo(phdrAddr, phnum); 
 }
 
 //
 // Add all the necessary ELF headers to the core dump
 //
-bool
-CrashInfo::GetELFInfo(uint64_t baseAddress)
+void
+CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
 {
     if (baseAddress == 0 || baseAddress == m_auxvValues[AT_SYSINFO_EHDR] || baseAddress == m_auxvValues[AT_BASE]) {
-        return true;
+        return;
     }
-    Ehdr ehdr;
-    if (!ReadMemory((void*)baseAddress, &ehdr, sizeof(ehdr))) {
-        TRACE("ReadMemory(%p, %" PRIx ") ehdr FAILED\n", (void*)baseAddress, sizeof(ehdr));
-        return true;
-    }
-    int phnum = ehdr.e_phnum;
-    assert(phnum != PN_XNUM);
-    assert(ehdr.e_phentsize == sizeof(Phdr));
-#ifdef BIT64
-    assert(ehdr.e_ident[EI_CLASS] == ELFCLASS64);
-#else
-    assert(ehdr.e_ident[EI_CLASS] == ELFCLASS32);
-#endif
-    assert(ehdr.e_ident[EI_DATA] == ELFDATA2LSB);
-
-    TRACE("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %" PRIxA " phentsize 0x%02x shnum %d shoff %" PRIxA " shentsize 0x%02x shstrndx %d\n",
-        ehdr.e_type, ehdr.e_machine, ehdr.e_version, ehdr.e_flags, phnum, ehdr.e_phoff, ehdr.e_phentsize, ehdr.e_shnum, ehdr.e_shoff, ehdr.e_shentsize, ehdr.e_shstrndx);
-
-    if (ehdr.e_phoff != 0 && phnum > 0)
+    if (m_coreclrPath.empty())
     {
-        Phdr* phdrAddr = reinterpret_cast<Phdr*>(baseAddress + ehdr.e_phoff);
+        size_t last = moduleName.rfind(MAKEDLLNAME_A("coreclr"));
+        if (last != std::string::npos) {
+            m_coreclrPath = moduleName.substr(0, last);
 
-        if (!EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, nullptr))
-        {
-            return false;
+            // Now populate the elfreader with the runtime module info and
+            // lookup the DAC table symbol to ensure that all the memory
+            // necessary is in the core dump.
+            if (PopulateForSymbolLookup(baseAddress)) {
+                uint64_t symbolOffset;
+                TryLookupSymbol("g_dacTable", &symbolOffset);
+            }
         }
     }
-
-    return true;
+    EnumerateProgramHeaders(baseAddress);
 }
 
 //
-// Enumerate the program headers adding the build id note, unwind frame
+// Called for each program header adding the build id note, unwind frame
 // region and module addresses to the crash info.
 //
-bool
-CrashInfo::EnumerateProgramHeaders(Phdr* phdrAddr, int phnum, uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr)
+void
+CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phdr)
 {
-    uint64_t loadbias = baseAddress;
-
-    for (int i = 0; i < phnum; i++)
+    switch (phdr->p_type)
     {
-        Phdr ph;
-        if (!ReadMemory(phdrAddr + i, &ph, sizeof(ph))) {
-            fprintf(stderr, "ReadMemory(%p, %" PRIx ") phdr FAILED\n", phdrAddr + i, sizeof(ph));
-            return false;
+    case PT_DYNAMIC:
+    case PT_NOTE:
+    case PT_GNU_EH_FRAME:
+        if (phdr->p_vaddr != 0 && phdr->p_memsz != 0) {
+            InsertMemoryRegion(loadbias + phdr->p_vaddr, phdr->p_memsz);
         }
-        if (ph.p_type == PT_LOAD && ph.p_offset == 0)
-        {
-            loadbias -= ph.p_vaddr;
-            TRACE("PHDR: loadbias %" PRIA PRIx64 "\n", loadbias);
-            break;
-        }
+        break;
+
+    case PT_LOAD:
+        MemoryRegion region(0, loadbias + phdr->p_vaddr, loadbias + phdr->p_vaddr + phdr->p_memsz, baseAddress);
+        m_moduleAddresses.insert(region);
+        break;
     }
-
-    for (int i = 0; i < phnum; i++)
-    {
-        Phdr ph;
-        if (!ReadMemory(phdrAddr + i, &ph, sizeof(ph))) {
-            fprintf(stderr, "ReadMemory(%p, %" PRIx ") phdr FAILED\n", phdrAddr + i, sizeof(ph));
-            return false;
-        }
-        TRACE("PHDR: %p type %d (%x) vaddr %" PRIxA " memsz %" PRIxA " paddr %" PRIxA " filesz %" PRIxA " offset %" PRIxA " align %" PRIxA "\n",
-            phdrAddr + i, ph.p_type, ph.p_type, ph.p_vaddr, ph.p_memsz, ph.p_paddr, ph.p_filesz, ph.p_offset, ph.p_align);
-
-        switch (ph.p_type)
-        {
-        case PT_DYNAMIC:
-            if (pdynamicAddr != nullptr)
-            {
-                *pdynamicAddr = reinterpret_cast<ElfW(Dyn)*>(loadbias + ph.p_vaddr);
-                break;
-            }
-            // fall into InsertMemoryRegion
-
-        case PT_NOTE:
-        case PT_GNU_EH_FRAME:
-            if (ph.p_vaddr != 0 && ph.p_memsz != 0) {
-                InsertMemoryRegion(loadbias + ph.p_vaddr, ph.p_memsz);
-            }
-            break;
-
-        case PT_LOAD:
-            MemoryRegion region(0, loadbias + ph.p_vaddr, loadbias + ph.p_vaddr + ph.p_memsz, baseAddress);
-            m_moduleAddresses.insert(region);
-            break;
-        }
-    }
-
-    return true;
 }
 
 //
@@ -1091,4 +956,15 @@ CrashInfo::GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char** name)
     free(line);
     fclose(statusFile);
     return true;
+}
+
+void
+CrashInfo::Trace(const char* format, ...)
+{
+    if (g_diagnostics) {
+        va_list ap;
+        va_start(ap, format);
+        vprintf(format, ap);
+        va_end(ap);
+    }
 }

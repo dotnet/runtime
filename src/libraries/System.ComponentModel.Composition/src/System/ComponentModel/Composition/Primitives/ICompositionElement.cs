@@ -35,7 +35,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <see cref="ICompositionElement"/> originated, or <see langword="null"/>
         ///     if the <see cref="ICompositionElement"/> is the root composition element.
         /// </value>
-        ICompositionElement Origin
+        ICompositionElement? Origin
         {
             get;
         }

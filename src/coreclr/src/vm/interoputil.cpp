@@ -25,6 +25,7 @@
 #include "siginfo.hpp"
 #include "eemessagebox.h"
 #include "finalizerthread.h"
+#include "interoplibinterface.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "cominterfacemarshaler.h"
@@ -1936,6 +1937,12 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     RCW* pRCW = pInteropInfo->GetRawRCW();
     if (pRCW)
         pRCW->MinorCleanup();
+
+#ifdef FEATURE_COMWRAPPERS
+    void* eoc;
+    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
+        ComWrappersNative::MarkExternalComObjectContextCollected(eoc);
+#endif // FEATURE_COMWRAPPERS
 }
 
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
@@ -1976,6 +1983,22 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         pInteropInfo->SetCCW(NULL);
         pCCW->Cleanup();
     }
+
+#ifdef FEATURE_COMWRAPPERS
+    void* mocw;
+    if (pInteropInfo->TryGetManagedObjectComWrapper(&mocw))
+    {
+        (void)pInteropInfo->TrySetManagedObjectComWrapper(NULL, mocw);
+        ComWrappersNative::DestroyManagedObjectComWrapper(mocw);
+    }
+
+    void* eoc;
+    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
+    {
+        (void)pInteropInfo->TrySetExternalComObjectContext(NULL, eoc);
+        ComWrappersNative::DestroyExternalComObjectContext(eoc);
+    }
+#endif // FEATURE_COMWRAPPERS
 }
 
 void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
@@ -2094,11 +2117,11 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
         hr = QueryPathOfRegTypeLib(guid, wVerMajor, wVerMinor, LOCALE_USER_DEFAULT, &wzPath);
         if (SUCCEEDED(hr))
         {
-#ifdef BIT64
+#ifdef HOST_64BIT
             REGKIND rk = (REGKIND)(REGKIND_NONE | LOAD_TLB_AS_64BIT);
 #else
             REGKIND rk = (REGKIND)(REGKIND_NONE | LOAD_TLB_AS_32BIT);
-#endif // BIT64
+#endif // HOST_64BIT
             hr = LoadTypeLibEx(wzPath, rk, pptlib);
         }
     }
@@ -2427,7 +2450,7 @@ void SafeReleaseStream(IStream *pStream)
         LogInterop(logStr);
         if (hr != S_OK)
         {
-            // Reset the stream to the begining
+            // Reset the stream to the beginning
             LARGE_INTEGER li;
             LISet32(li, 0);
             ULARGE_INTEGER li2;
@@ -4944,7 +4967,7 @@ void InitializeComInterop()
 
     InitializeSListHead(&RCW::s_RCWStandbyList);
     ComCall::Init();
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     ComPlusCall::Init();
 #endif
 #ifndef CROSSGEN_COMPILE

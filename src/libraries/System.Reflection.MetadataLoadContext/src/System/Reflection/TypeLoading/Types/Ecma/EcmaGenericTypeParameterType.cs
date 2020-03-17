@@ -19,15 +19,15 @@ namespace System.Reflection.TypeLoading.Ecma
         public sealed override bool IsGenericTypeParameter => true;
         public sealed override bool IsGenericMethodParameter => false;
 
-        protected sealed override RoType ComputeDeclaringType()
+        protected sealed override RoType? ComputeDeclaringType()
         {
             TypeDefinitionHandle declaringTypeHandle = (TypeDefinitionHandle)(GenericParameter.Parent);
             EcmaDefinitionType declaringType = declaringTypeHandle.ResolveTypeDef(GetEcmaModule());
             return declaringType;
         }
 
-        public sealed override MethodBase DeclaringMethod => null;
+        public sealed override MethodBase? DeclaringMethod => null;
 
-        protected sealed override TypeContext TypeContext => ((RoInstantiationProviderType)GetRoDeclaringType()).Instantiation.ToTypeContext();
+        protected sealed override TypeContext TypeContext => ((RoInstantiationProviderType)GetRoDeclaringType()!).Instantiation.ToTypeContext();
     }
 }

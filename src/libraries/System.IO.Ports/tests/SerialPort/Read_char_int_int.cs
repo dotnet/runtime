@@ -797,7 +797,7 @@ namespace System.IO.Ports.Tests
             char c = TCSupport.GenerateRandomCharNonSurrogate();
             byte[] bytesForSingleChar = com1.Encoding.GetBytes(new char[] { c }, 0, 1);
 
-            com2.Write(bytesForSingleChar, 0, bytesForSingleChar.Length); // Write one byte at the begining because we are going to read this to buffer the rest of the data
+            com2.Write(bytesForSingleChar, 0, bytesForSingleChar.Length); // Write one byte at the beginning because we are going to read this to buffer the rest of the data
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
             TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length);

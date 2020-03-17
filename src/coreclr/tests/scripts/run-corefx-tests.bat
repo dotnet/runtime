@@ -27,7 +27,7 @@ echo control, but is easy to implement. This file should be a list of assembly n
 echo without filename extension, one per line, e.g.:
 echo.
 echo     System.Console.Tests
-echo     System.Data.SqlClient.Tests
+echo     System.Data.Common.Tests
 echo     System.Diagnostics.Process.Tests
 echo.
 echo The ^<exclusion rsp file^> is in the form expected by xunit.console.dll as a response file.

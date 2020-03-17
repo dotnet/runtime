@@ -5,7 +5,6 @@
     <Description>Abstractions for reading `.deps` files.</Description>
     <TargetFrameworks>net451;netstandard1.3;netstandard1.6;netstandard2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netstandard1.3;netstandard1.6;netstandard2.0</TargetFrameworks>
-    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,7 +24,7 @@
     -->
     <When Condition="'$(TargetFramework)' == 'netstandard2.0'">
       <ItemGroup>
-        <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+        <PackageReference Include="System.Text.Json" Version="4.7.1" />
       </ItemGroup>
       <ItemGroup>
         <Compile Remove="DependencyContextJsonReader.JsonTextReader.cs" />

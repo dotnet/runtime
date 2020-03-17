@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="common_sources">
+    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\eglib-remap.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\sort.frag.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\glib.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\garray.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gbytearray.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gerror.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\ghashtable.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\giconv.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmem.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\gmodule.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\goutput.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gqsort.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gstr.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gslist.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gstring.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gptrarray.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\glist.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gqueue.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gpath.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gshell.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile-posix.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gpattern.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmarkup.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gutf8.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gunicode.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\unicode-data.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MonoSourceLocation)\mono\eglib\Makefile.am" />
+  </ItemGroup>
+</Project>

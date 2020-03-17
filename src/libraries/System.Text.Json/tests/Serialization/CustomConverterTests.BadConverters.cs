@@ -70,6 +70,22 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; set; }
         }
 
+        private class NullConverterAttribute : JsonConverterAttribute
+        {
+            public NullConverterAttribute() : base(null) { }
+
+            public override JsonConverter CreateConverter(Type typeToConvert)
+            {
+                return null;
+            }
+        }
+
+        private class PocoWithNullConverter
+        {
+            [NullConverter]
+            public int MyInt { get; set; }
+        }
+
         [Fact]
         public static void AttributeCreateConverterFail()
         {
@@ -81,6 +97,15 @@ namespace System.Text.Json.Serialization.Tests
 
             ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithInvalidConverter>("{}"));
             Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithInvalidConverter.MyInt'", ex.Message);
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new PocoWithNullConverter()));
+            // Message should be in the form "The converter specified on 'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithNullConverter.MyInt'  is not compatible with the type 'System.Int32'."
+            Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithNullConverter.MyInt'", ex.Message);
+            Assert.Contains("'System.Int32'", ex.Message);
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithNullConverter>("{}"));
+            Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithNullConverter.MyInt'", ex.Message);
+            Assert.Contains("'System.Int32'", ex.Message);
         }
 
         private class InvalidTypeConverterClass
@@ -132,11 +157,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(expectedSubStr, ex.Message.Substring(pos + expectedSubStr.Length));
         }
 
-        private class ConverterThatReturnsNull : JsonConverterFactory
+        private class ConverterFactoryThatReturnsNull : JsonConverterFactory
         {
             public override bool CanConvert(Type typeToConvert)
             {
-                return true;
+                // To verify the nullable converter, don't convert Nullable.
+                return Nullable.GetUnderlyingType(typeToConvert) == null;
             }
 
             public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
@@ -149,10 +175,18 @@ namespace System.Text.Json.Serialization.Tests
         public static void ConverterThatReturnsNullFail()
         {
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new ConverterThatReturnsNull());
+            options.Converters.Add(new ConverterFactoryThatReturnsNull());
 
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(0, options));
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize<int>("0", options));
+            // A null return value from CreateConverter() will generate a InvalidOperationException with the type name.
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(0, options));
+            Assert.Contains(typeof(ConverterFactoryThatReturnsNull).ToString(), ex.Message);
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<int>("0", options));
+            Assert.Contains(typeof(ConverterFactoryThatReturnsNull).ToString(), ex.Message);
+
+            // This will invoke the Nullable converter which should detect a null converter.
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<int?>("0", options));
+            Assert.Contains(typeof(ConverterFactoryThatReturnsNull).ToString(), ex.Message);
         }
 
         private class Level1
@@ -232,8 +266,8 @@ namespace System.Text.Json.Serialization.Tests
             }
             catch (JsonException ex)
             {
-                Assert.Contains("$.Level2.Level3s[1]", ex.ToString());
-                Assert.Equal("$.Level2.Level3s[1]", ex.Path);
+                Assert.Contains("$.Level2.Level3s[0]", ex.ToString());
+                Assert.Equal("$.Level2.Level3s[0]", ex.Path);
             }
         }
 
@@ -252,8 +286,8 @@ namespace System.Text.Json.Serialization.Tests
             }
             catch (JsonException ex)
             {
-                Assert.Contains("$.Level2.Level3s[1]", ex.ToString());
-                Assert.Equal("$.Level2.Level3s[1]", ex.Path);
+                Assert.Contains("$.Level2.Level3s[0]", ex.ToString());
+                Assert.Equal("$.Level2.Level3s[0]", ex.Path);
             }
         }
 

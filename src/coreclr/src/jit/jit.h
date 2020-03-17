@@ -52,192 +52,162 @@
 #define CHECK_STRUCT_PADDING 0 // Never enable it for non-MSFT compilers
 #endif
 
-#if defined(_X86_)
-#if defined(_ARM_)
-#error Cannot define both _X86_ and _ARM_
+#if defined(HOST_X86)
+#if defined(HOST_ARM)
+#error Cannot define both HOST_X86 and HOST_ARM
 #endif
-#if defined(_AMD64_)
-#error Cannot define both _X86_ and _AMD64_
+#if defined(HOST_AMD64)
+#error Cannot define both HOST_X86 and HOST_AMD64
 #endif
-#if defined(_ARM64_)
-#error Cannot define both _X86_ and _ARM64_
+#if defined(HOST_ARM64)
+#error Cannot define both HOST_X86 and HOST_ARM64
 #endif
-#define _HOST_X86_
-#elif defined(_AMD64_)
-#if defined(_X86_)
-#error Cannot define both _AMD64_ and _X86_
+#elif defined(HOST_AMD64)
+#if defined(HOST_X86)
+#error Cannot define both HOST_AMD64 and HOST_X86
 #endif
-#if defined(_ARM_)
-#error Cannot define both _AMD64_ and _ARM_
+#if defined(HOST_ARM)
+#error Cannot define both HOST_AMD64 and HOST_ARM
 #endif
-#if defined(_ARM64_)
-#error Cannot define both _AMD64_ and _ARM64_
+#if defined(HOST_ARM64)
+#error Cannot define both HOST_AMD64 and HOST_ARM64
 #endif
-#define _HOST_AMD64_
-#elif defined(_ARM_)
-#if defined(_X86_)
-#error Cannot define both _ARM_ and _X86_
+#elif defined(HOST_ARM)
+#if defined(HOST_X86)
+#error Cannot define both HOST_ARM and HOST_X86
 #endif
-#if defined(_AMD64_)
-#error Cannot define both _ARM_ and _AMD64_
+#if defined(HOST_AMD64)
+#error Cannot define both HOST_ARM and HOST_AMD64
 #endif
-#if defined(_ARM64_)
-#error Cannot define both _ARM_ and _ARM64_
+#if defined(HOST_ARM64)
+#error Cannot define both HOST_ARM and HOST_ARM64
 #endif
-#define _HOST_ARM_
-#elif defined(_ARM64_)
-#if defined(_X86_)
-#error Cannot define both _ARM64_ and _X86_
+#elif defined(HOST_ARM64)
+#if defined(HOST_X86)
+#error Cannot define both HOST_ARM64 and HOST_X86
 #endif
-#if defined(_AMD64_)
-#error Cannot define both _ARM64_ and _AMD64_
+#if defined(HOST_AMD64)
+#error Cannot define both HOST_ARM64 and HOST_AMD64
 #endif
-#if defined(_ARM_)
-#error Cannot define both _ARM64_ and _ARM_
+#if defined(HOST_ARM)
+#error Cannot define both HOST_ARM64 and HOST_ARM
 #endif
-#define _HOST_ARM64_
 #else
 #error Unsupported or unset host architecture
 #endif
 
-#if defined(_HOST_AMD64_) || defined(_HOST_ARM64_)
-#define _HOST_64BIT_
+#if defined(TARGET_X86)
+#if defined(TARGET_ARM)
+#error Cannot define both TARGET_X86 and TARGET_ARM
 #endif
-
-#if defined(_TARGET_X86_)
-#if defined(_TARGET_ARM_)
-#error Cannot define both _TARGET_X86_ and _TARGET_ARM_
+#if defined(TARGET_AMD64)
+#error Cannot define both TARGET_X86 and TARGET_AMD64
 #endif
-#if defined(_TARGET_AMD64_)
-#error Cannot define both _TARGET_X86_ and _TARGET_AMD64_
+#if defined(TARGET_ARM64)
+#error Cannot define both TARGET_X86 and TARGET_ARM64
 #endif
-#if defined(_TARGET_ARM64_)
-#error Cannot define both _TARGET_X86_ and _TARGET_ARM64_
-#endif
-#if !defined(_HOST_X86_)
+#if !defined(HOST_X86)
 #define _CROSS_COMPILER_
 #endif
-#elif defined(_TARGET_AMD64_)
-#if defined(_TARGET_X86_)
-#error Cannot define both _TARGET_AMD64_ and _TARGET_X86_
+#elif defined(TARGET_AMD64)
+#if defined(TARGET_X86)
+#error Cannot define both TARGET_AMD64 and TARGET_X86
 #endif
-#if defined(_TARGET_ARM_)
-#error Cannot define both _TARGET_AMD64_ and _TARGET_ARM_
+#if defined(TARGET_ARM)
+#error Cannot define both TARGET_AMD64 and TARGET_ARM
 #endif
-#if defined(_TARGET_ARM64_)
-#error Cannot define both _TARGET_AMD64_ and _TARGET_ARM64_
+#if defined(TARGET_ARM64)
+#error Cannot define both TARGET_AMD64 and TARGET_ARM64
 #endif
-#if !defined(_HOST_AMD64_)
+#if !defined(HOST_AMD64)
 #define _CROSS_COMPILER_
 #endif
-#elif defined(_TARGET_ARM_)
-#if defined(_TARGET_X86_)
-#error Cannot define both _TARGET_ARM_ and _TARGET_X86_
+#elif defined(TARGET_ARM)
+#if defined(TARGET_X86)
+#error Cannot define both TARGET_ARM and TARGET_X86
 #endif
-#if defined(_TARGET_AMD64_)
-#error Cannot define both _TARGET_ARM_ and _TARGET_AMD64_
+#if defined(TARGET_AMD64)
+#error Cannot define both TARGET_ARM and TARGET_AMD64
 #endif
-#if defined(_TARGET_ARM64_)
-#error Cannot define both _TARGET_ARM_ and _TARGET_ARM64_
+#if defined(TARGET_ARM64)
+#error Cannot define both TARGET_ARM and TARGET_ARM64
 #endif
-#if !defined(_HOST_ARM_)
+#if !defined(HOST_ARM)
 #define _CROSS_COMPILER_
 #endif
-#elif defined(_TARGET_ARM64_)
-#if defined(_TARGET_X86_)
-#error Cannot define both _TARGET_ARM64_ and _TARGET_X86_
+#elif defined(TARGET_ARM64)
+#if defined(TARGET_X86)
+#error Cannot define both TARGET_ARM64 and TARGET_X86
 #endif
-#if defined(_TARGET_AMD64_)
-#error Cannot define both _TARGET_ARM64_ and _TARGET_AMD64_
+#if defined(TARGET_AMD64)
+#error Cannot define both TARGET_ARM64 and TARGET_AMD64
 #endif
-#if defined(_TARGET_ARM_)
-#error Cannot define both _TARGET_ARM64_ and _TARGET_ARM_
+#if defined(TARGET_ARM)
+#error Cannot define both TARGET_ARM64 and TARGET_ARM
 #endif
-#if !defined(_HOST_ARM64_)
+#if !defined(HOST_ARM64)
 #define _CROSS_COMPILER_
 #endif
 #else
 #error Unsupported or unset target architecture
 #endif
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
-#ifndef _TARGET_64BIT_
-#define _TARGET_64BIT_
-#endif // _TARGET_64BIT_
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#ifdef TARGET_64BIT
+#ifdef TARGET_X86
+#error Cannot define both TARGET_X86 and TARGET_64BIT
+#endif // TARGET_X86
+#ifdef TARGET_ARM
+#error Cannot define both TARGET_ARM and TARGET_64BIT
+#endif // TARGET_ARM
+#endif // TARGET_64BIT
 
-#ifdef _TARGET_64BIT_
-#ifdef _TARGET_X86_
-#error Cannot define both _TARGET_X86_ and _TARGET_64BIT_
-#endif // _TARGET_X86_
-#ifdef _TARGET_ARM_
-#error Cannot define both _TARGET_ARM_ and _TARGET_64BIT_
-#endif // _TARGET_ARM_
-#endif // _TARGET_64BIT_
-
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-#define _TARGET_XARCH_
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#define TARGET_XARCH
 #endif
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
-#define _TARGET_ARMARCH_
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#define TARGET_ARMARCH
 #endif
 
-// If the UNIX_AMD64_ABI is defined make sure that _TARGET_AMD64_ is also defined.
+// If the UNIX_AMD64_ABI is defined make sure that TARGET_AMD64 is also defined.
 #if defined(UNIX_AMD64_ABI)
-#if !defined(_TARGET_AMD64_)
-#error When UNIX_AMD64_ABI is defined you must define _TARGET_AMD64_ defined as well.
+#if !defined(TARGET_AMD64)
+#error When UNIX_AMD64_ABI is defined you must define TARGET_AMD64 defined as well.
 #endif
 #endif
 
-// If the UNIX_X86_ABI is defined make sure that _TARGET_X86_ is also defined.
+// If the UNIX_X86_ABI is defined make sure that TARGET_X86 is also defined.
 #if defined(UNIX_X86_ABI)
-#if !defined(_TARGET_X86_)
-#error When UNIX_X86_ABI is defined you must define _TARGET_X86_ defined as well.
+#if !defined(TARGET_X86)
+#error When UNIX_X86_ABI is defined you must define TARGET_X86 defined as well.
 #endif
 #endif
 
-#if defined(PLATFORM_UNIX)
-#define _HOST_UNIX_
+#if (defined(ALT_JIT) && (defined(UNIX_AMD64_ABI) || defined(UNIX_X86_ABI)) && !defined(TARGET_UNIX))
+// If we are building an ALT_JIT targeting Unix, override the TARGET_<os> to TARGET_UNIX
+#undef TARGET_WINDOWS
+#define TARGET_UNIX
 #endif
-
-// Are we generating code to target Unix? This is true if we will run on Unix (_HOST_UNIX_ is defined).
-// It's also true if we are building an altjit targetting Unix, which we determine by checking if either
-// UNIX_AMD64_ABI or UNIX_X86_ABI is defined.
-#if defined(_HOST_UNIX_) || ((defined(UNIX_AMD64_ABI) || defined(UNIX_X86_ABI)) && defined(ALT_JIT))
-#define _TARGET_UNIX_
-#endif
-
-#ifndef _TARGET_UNIX_
-#define _TARGET_WINDOWS_
-#endif // !_TARGET_UNIX_
 
 // --------------------------------------------------------------------------------
 // IMAGE_FILE_MACHINE_TARGET
 // --------------------------------------------------------------------------------
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_I386
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_AMD64
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARMNT
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARM64 // 0xAA64
 #else
 #error Unsupported or unset target architecture
 #endif
 
 // Include the AMD64 unwind codes when appropriate.
-#if defined(_TARGET_AMD64_)
-// We need to temporarily set PLATFORM_UNIX, if necessary, to get the Unix-specific unwind codes.
-#if defined(_TARGET_UNIX_) && !defined(_HOST_UNIX_)
-#define PLATFORM_UNIX
-#endif
+#if defined(TARGET_AMD64)
 #include "win64unwind.h"
-#if defined(_TARGET_UNIX_) && !defined(_HOST_UNIX_)
-#undef PLATFORM_UNIX
-#endif
 #endif
 
 #include "corhdr.h"
@@ -276,7 +246,7 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(UNIX_AMD64_ABI) || !defined(_TARGET_64BIT_) || defined(_TARGET_ARM64_)
+#if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64)
 #define FEATURE_PUT_STRUCT_ARG_STK 1
 #define PUT_STRUCT_ARG_STK_ONLY_ARG(x) , x
 #define PUT_STRUCT_ARG_STK_ONLY(x) x
@@ -293,7 +263,7 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(UNIX_AMD64_ABI) || defined(_TARGET_ARM64_)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
 #define MULTIREG_HAS_SECOND_GC_RET 1
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(x) , x
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY(x) x
@@ -306,11 +276,11 @@
 // Arm64 Windows supports FEATURE_ARG_SPLIT, note this is different from
 // the official Arm64 ABI.
 // Case: splitting 16 byte struct between x7 and stack
-#if (defined(_TARGET_ARM_) || (defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)))
+#if (defined(TARGET_ARM) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64)))
 #define FEATURE_ARG_SPLIT 1
 #else
 #define FEATURE_ARG_SPLIT 0
-#endif // (defined(_TARGET_ARM_) || (defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)))
+#endif // (defined(TARGET_ARM) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64)))
 
 // To get rid of warning 4701 : local variable may be used without being initialized
 #define DUMMY_INIT(x) (x)
@@ -499,7 +469,7 @@ typedef ptrdiff_t ssize_t;
 #ifdef DEBUG
 #define MEASURE_CLRAPI_CALLS 0 // No point in measuring DEBUG code.
 #endif
-#if !defined(_HOST_X86_) && !defined(_HOST_AMD64_)
+#if !defined(HOST_X86) && !defined(HOST_AMD64)
 #define MEASURE_CLRAPI_CALLS 0 // Cycle counters only hooked up on x86/x64.
 #endif
 #if !defined(_MSC_VER) && !defined(__GNUC__)
@@ -514,7 +484,7 @@ typedef ptrdiff_t ssize_t;
 /*****************************************************************************/
 /* Portability Defines */
 /*****************************************************************************/
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 #define JIT32_GCENCODER
 #endif
 
@@ -590,7 +560,7 @@ const bool dspGCtbls = true;
  * (frameless method support is now always on)
  */
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 #define DOUBLE_ALIGN 1 // permit the double alignment of ESP in prolog,
                        //  and permit the double alignment of local offsets
 #else
@@ -671,7 +641,7 @@ inline size_t roundDn(size_t size, size_t mult = sizeof(size_t))
     return (size) & ~(mult - 1);
 }
 
-#ifdef _HOST_64BIT_
+#ifdef HOST_64BIT
 inline unsigned int roundUp(unsigned size, unsigned mult)
 {
     return (unsigned int)roundUp((size_t)size, (size_t)mult);
@@ -681,19 +651,19 @@ inline unsigned int roundDn(unsigned size, unsigned mult)
 {
     return (unsigned int)roundDn((size_t)size, (size_t)mult);
 }
-#endif // _HOST_64BIT_
+#endif // HOST_64BIT
 
 inline unsigned int unsigned_abs(int x)
 {
     return ((unsigned int)abs(x));
 }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 inline size_t unsigned_abs(ssize_t x)
 {
     return ((size_t)abs(x));
 }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
 /*****************************************************************************/
 
@@ -737,9 +707,7 @@ private:
 #include "target.h"
 
 #if FEATURE_TAILCALL_OPT
-
-#ifdef FEATURE_CORECLR
-// CoreCLR - enable tail call opt for the following IL pattern
+// Enable tail call opt for the following IL pattern
 //
 //     call someFunc
 //     jmp/jcc RetBlock
@@ -747,14 +715,6 @@ private:
 //  RetBlock:
 //     ret
 #define FEATURE_TAILCALL_OPT_SHARED_RETURN 1
-#else
-// Desktop: Keep this to zero as one of app-compat apps that is using GetCallingAssembly()
-// has an issue turning this ON.
-//
-// Refer to TF: Bug: 824625 and its associated regression TF Bug: 1113265
-#define FEATURE_TAILCALL_OPT_SHARED_RETURN 0
-#endif // FEATURE_CORECLR
-
 #else // !FEATURE_TAILCALL_OPT
 #define FEATURE_TAILCALL_OPT_SHARED_RETURN 0
 #endif // !FEATURE_TAILCALL_OPT
@@ -802,7 +762,7 @@ extern int jitNativeCode(CORINFO_METHOD_HANDLE methodHnd,
                          JitFlags*             compileFlags,
                          void*                 inlineInfoPtr);
 
-#ifdef _HOST_64BIT_
+#ifdef HOST_64BIT
 const size_t INVALID_POINTER_VALUE = 0xFEEDFACEABADF00D;
 #else
 const size_t INVALID_POINTER_VALUE = 0xFEEDFACE;

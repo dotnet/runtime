@@ -23,11 +23,11 @@ namespace BINDER_SPACE
     {
         inline const WCHAR *GetPlatformPathSeparator()
         {
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
             return W("/");
 #else
             return W("\\");
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
         }
     }
 
@@ -49,7 +49,7 @@ namespace BINDER_SPACE
             }
 
             i = urlOrPath.Begin();
-#if !defined(PLATFORM_UNIX)
+#if !defined(TARGET_UNIX)
             if (i[0] == W('/'))
             {
                 // Disk path file:///

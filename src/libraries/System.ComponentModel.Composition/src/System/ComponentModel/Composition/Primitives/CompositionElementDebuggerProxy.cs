@@ -26,12 +26,12 @@ namespace System.ComponentModel.Composition.Primitives
             get { return _element.DisplayName; }
         }
 
-        public ICompositionElement Origin
+        public ICompositionElement? Origin
         {
             get { return _element.Origin; }
         }
 
-        public object UnderlyingObject
+        public object? UnderlyingObject
         {
             get { return _element.UnderlyingObject; }
         }

@@ -45,7 +45,7 @@ namespace System.ComponentModel.Composition.Hosting
                 return _catalogExportProvider.GetComposablePart(_partDefinition, IsSharedPart);
             }
 
-            protected void DisposePartCore(CatalogPart part, object value)
+            protected void DisposePartCore(CatalogPart part, object? value)
             {
                 _catalogExportProvider.DisposePart(value, part, null);
             }
@@ -55,12 +55,11 @@ namespace System.ComponentModel.Composition.Hosting
                 return GetPartCore();
             }
 
-            protected override object GetExportedValueCore()
+            protected override object? GetExportedValueCore()
             {
                 return _catalogExportProvider.GetExportedValue(GetPart(), _definition, IsSharedPart);
             }
 
-            [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
             public static CatalogExport CreateExport(CatalogExportProvider catalogExportProvider,
                 ComposablePartDefinition partDefinition, ExportDefinition definition, CreationPolicy importCreationPolicy)
             {
@@ -120,7 +119,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private sealed class NonSharedCatalogExport : CatalogExport, IDisposable
         {
-            private CatalogPart _part;
+            private CatalogPart? _part;
             private readonly object _lock = new object();
 
             public NonSharedCatalogExport(CatalogExportProvider catalogExportProvider,
@@ -134,7 +133,7 @@ namespace System.ComponentModel.Composition.Hosting
                 // we need to ensure that the part gets created only once, as the export contract requires that the same value be returned on subsequent calls
                 if (_part == null)
                 {
-                    CatalogPart part = GetPartCore();
+                    CatalogPart? part = GetPartCore();
 
                     lock (_lock)
                     {

@@ -8,9 +8,9 @@
 // Allow multiple inclusion.
 
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
 #error this file should only be used on an AMD64 platform
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #include "../../inc/switches.h"
 
@@ -139,17 +139,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 #ifndef CROSSGEN_COMPILE
-#define               OFFSETOF__Thread__m_State                     0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_State
-                    == offsetof(Thread, m_State));
-
-#define               OFFSETOF__Thread__m_dwLockCount               0x20
-ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_dwLockCount
-                    == offsetof(Thread, m_dwLockCount));
-
-#define               OFFSETOF__Thread__m_ThreadId                  0x24
-ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_ThreadId
-                    == offsetof(Thread, m_ThreadId));
 
 #define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x58
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
@@ -496,7 +485,7 @@ ASMCONSTANTS_C_ASSERT(MethodDescClassification__mdcClassification == mdcClassifi
 #define MethodDescClassification__mcInstantiated 0x5
 ASMCONSTANTS_C_ASSERT(MethodDescClassification__mcInstantiated == mcInstantiated);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define OFFSET__TEB__ThreadLocalStoragePointer 0x58
 ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, ThreadLocalStoragePointer));
 #endif

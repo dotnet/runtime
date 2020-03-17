@@ -1,0 +1,70 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  name: ''
+  helixType: '(unspecified)'
+  container: ''
+  liveLibrariesBuildConfig: ''
+  strategy: ''
+  pool: ''
+  llvm: false
+
+  # arcade-specific parameters
+  condition: true
+  continueOnError: false
+  dependsOn: ''
+  displayName: ''
+  timeoutInMinutes: ''
+  enableMicrobuild: ''
+  gatherAssetManifests: false
+
+  variables: {} ## any extra variables to add to the defaults defined below
+
+jobs:
+- template: xplat-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    name: ${{ parameters.name }}
+    helixType: ${{ parameters.helixType }}
+    container: ${{ parameters.container }}
+    strategy: ${{ parameters.strategy }}
+    pool: ${{ parameters.pool }}
+    llvm: ${{ parameters.llvm }}
+
+    # arcade-specific parameters
+    condition: and(succeeded(), ${{ parameters.condition }})
+    continueOnError: ${{ parameters.continueOnError }}
+    dependsOn: ${{ parameters.dependsOn }}
+    displayName: ${{ parameters.displayName }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    enableMicrobuild: ${{ parameters.enableMicrobuild }}
+    gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
+
+    variables:
+    - name: buildProductArtifactName
+      ${{ if ne(parameters.llvm, true) }}:
+        value: 'MonoProduct_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      ${{ if eq(parameters.llvm, true) }}:
+        value: 'MonoProduct_LLVM_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - name: buildProductRootFolderPath
+      value: '$(Build.SourcesDirectory)/artifacts/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)'
+
+    - librariesBuildArtifactName: ''
+    - librariesOverrideArg: ''
+    - librariesDownloadDir: ''
+
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+      - librariesDownloadDir: $(Build.SourcesDirectory)/artifacts
+      - librariesOverrideArg: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{insert}}: ${{ variable }}
+
+    steps: ${{ parameters.steps }}

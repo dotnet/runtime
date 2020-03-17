@@ -2190,7 +2190,7 @@ namespace System.Configuration
             //    that applies to us in it's LockChidlren. We dont need to go further up once we find a section record
             //    as it has the lock mode of all it's parents accumulated
             //
-            //    There is one huge trick though - Location config records are different ( see begining of the func for what a location config record is )
+            //    There is one huge trick though - Location config records are different ( see beginning of the func for what a location config record is )
             //    A location config record is not locked if the config level of the web.config file in which it lives is not locked.
             //    I.e. when we are looking for the effective value for a location config we have two cases
             //      a) There is a section record in our immediate parent ( remember our immediate parent is the config file in which we /as a location tag/ are defined )

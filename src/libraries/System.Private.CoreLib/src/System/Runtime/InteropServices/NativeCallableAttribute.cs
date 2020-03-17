@@ -5,10 +5,16 @@
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Any method marked with NativeCallableAttribute can be directly called from
-    /// native code. The function token can be loaded to a local variable using LDFTN
-    /// and passed as a callback to native method.
+    /// Any method marked with <see cref="System.Runtime.InteropServices.NativeCallableAttribute" /> can be directly called from
+    /// native code. The function token can be loaded to a local variable using the <see href="https://docs.microsoft.com/dotnet/csharp/language-reference/operators/pointer-related-operators#address-of-operator-">address-of</see> operator
+    /// in C# and passed as a callback to a native method.
     /// </summary>
+    /// <remarks>
+    /// Methods marked with this attribute have the following restrictions:
+    ///   * Method must be marked "static".
+    ///   * Must not be called from managed code.
+    ///   * Must only have <see href="https://docs.microsoft.com/dotnet/framework/interop/blittable-and-non-blittable-types">blittable</see> arguments.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class NativeCallableAttribute : Attribute
     {
@@ -17,12 +23,12 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Optional. If omitted, compiler will choose one for you.
+        /// Optional. If omitted, the runtime will use the default platform calling convention.
         /// </summary>
         public CallingConvention CallingConvention;
 
         /// <summary>
-        /// Optional. If omitted, then the method is native callable, but no EAT is emitted.
+        /// Optional. If omitted, then the method is native callable, but no export is emitted during compilation.
         /// </summary>
         public string? EntryPoint;
     }

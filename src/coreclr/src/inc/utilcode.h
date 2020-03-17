@@ -66,7 +66,7 @@ class StringArrayList;
 #define _DEBUG_IMPL 1
 #endif
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
 // Under ARM we generate code only with Thumb encoding. In order to ensure we execute such code in the correct
 // mode we must ensure the low-order bit is set in any code address we'll call as a sub-routine. In C++ this
@@ -102,13 +102,13 @@ inline ResultType ThumbCodeToDataPointer(SourceType pCode)
     return (ResultType)(((UINT_PTR)pCode) & ~THUMB_CODE);
 }
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 // Convert from a PCODE to the corresponding PINSTR.  On many architectures this will be the identity function;
 // on ARM, this will mask off the THUMB bit.
 inline TADDR PCODEToPINSTR(PCODE pc)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     return ThumbCodeToDataPointer<TADDR,PCODE>(pc);
 #else
     return dac_cast<PCODE>(pc);
@@ -119,7 +119,7 @@ inline TADDR PCODEToPINSTR(PCODE pc)
 // on ARM, this will raise the THUMB bit.
 inline PCODE PINSTRToPCODE(TADDR addr)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     return DataPointerToThumbCode<PCODE,TADDR>(addr);
 #else
     return dac_cast<PCODE>(addr);
@@ -490,7 +490,7 @@ inline void *__cdecl operator new(size_t, void *_P)
 /********************************************************************************/
 /* portability helpers */
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define IN_TARGET_64BIT(x)     x
 #define IN_TARGET_32BIT(x)
 #else
@@ -566,14 +566,6 @@ void GetResourceCultureCallbacks(
         FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
         FPGETTHREADUICULTUREID* fpGetThreadUICultureId
 );
-
-#if !defined(DACCESS_COMPILE)
-// Get the MUI ID, on downlevel platforms where MUI is not supported it
-// returns the default system ID.
-extern int GetMUILanguageID(LocaleIDValue* pResult);
-extern HRESULT GetMUILanguageNames(__inout StringArrayList* pCultureNames);
-
-#endif // !defined(DACCESS_COMPILE)
 
 //*****************************************************************************
 // Use this class by privately deriving from noncopyable to disallow copying of
@@ -702,32 +694,17 @@ public:
     {
         // This constructor will be fired up on startup. Make sure it doesn't
         // do anything besides zero-out out values.
-        m_bUseFallback = FALSE;
-
         m_fpGetThreadUICultureId = NULL;
         m_fpGetThreadUICultureNames = NULL;
-
 
         m_pHash = NULL;
         m_nHashSize = 0;
         m_csMap = NULL;
         m_pResourceFile = NULL;
-#ifdef FEATURE_PAL
-        m_pResourceDomain = NULL;
-#endif // FEATURE_PAL
-
     }// CCompRC
 
-    HRESULT Init(LPCWSTR pResourceFile, BOOL bUseFallback = FALSE);
+    HRESULT Init(LPCWSTR pResourceFile);
     void Destroy();
-
-    BOOL ShouldUseFallback()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_bUseFallback;
-    };
-
-    static void SetIsMscoree() {s_bIsMscoree = TRUE;}
 
     HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
     HRESULT LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed);
@@ -742,13 +719,9 @@ public:
         FPGETTHREADUICULTUREID* fpGetThreadUICultureId
     );
 
-    HRESULT LoadMUILibrary(HRESOURCEDLL * pHInst);
-
-    // Get the default resource location (mscorrc.dll for desktop, mscorrc.debug.dll for CoreCLR)
+    // Get the default resource location (mscorrc.dll)
     static CCompRC* GetDefaultResourceDll();
-    // Get the generic messages dll (Silverlight only, mscorrc.dll)
-    static CCompRC* GetFallbackResourceDll();
-    static void ShutdownDefaultResourceDll();
+
     static void GetDefaultCallbacks(
                     FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
                     FPGETTHREADUICULTUREID* fpGetThreadUICultureId)
@@ -771,28 +744,7 @@ public:
         m_DefaultResourceDll.SetResourceCultureCallbacks(
                 fpGetThreadUICultureNames,
                 fpGetThreadUICultureId);
-
-        m_FallbackResourceDll.SetResourceCultureCallbacks(
-                fpGetThreadUICultureNames,
-                fpGetThreadUICultureId);
-
     }
-
-#ifdef USE_FORMATMESSAGE_WRAPPER
-
-DWORD
-PALAPI
-static
-FormatMessage(
-           IN DWORD dwFlags,
-           IN LPCVOID lpSource,
-           IN DWORD dwMessageId,
-           IN DWORD dwLanguageId,
-           OUT LPWSTR lpBuffer,
-           IN DWORD nSize,
-           IN va_list *Arguments);
-#endif // USE_FORMATMESSAGE_WRAPPER
-
 
 private:
     HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
@@ -809,11 +761,6 @@ private:
     static CCompRC  m_DefaultResourceDll;
     static LPCWSTR  m_pDefaultResource;
 
-    // fallback resources if debug pack is not installed
-    static LONG     m_dwFallbackInitialized;
-    static CCompRC  m_FallbackResourceDll;
-    static LPCWSTR  m_pFallbackResource;
-
     // We must map between a thread's int and a dll instance.
     // Since we only expect 1 language almost all of the time, we'll special case
     // that and then use a variable size map for everything else.
@@ -824,12 +771,6 @@ private:
     CRITSEC_COOKIE m_csMap;
 
     LPCWSTR m_pResourceFile;
-#ifdef FEATURE_PAL
-    // Resource domain is an ANSI string identifying a native resources file
-    static LPCSTR  m_pDefaultResourceDomain;
-    static LPCSTR  m_pFallbackResourceDomain;
-    LPCSTR m_pResourceDomain;
-#endif // FEATURE_PAL
 
     // Main accessors for hash
     HRESOURCEDLL LookupNode(LocaleID langId, BOOL &fMissing);
@@ -837,9 +778,6 @@ private:
 
     FPGETTHREADUICULTUREID m_fpGetThreadUICultureId;
     FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
-
-    BOOL m_bUseFallback;
-    static BOOL s_bIsMscoree;
 };
 
 HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResouceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax);
@@ -1089,9 +1027,8 @@ public:
         COR_CONFIG_ENV          = 0x01,
         COR_CONFIG_USER         = 0x02,
         COR_CONFIG_MACHINE      = 0x04,
-        COR_CONFIG_FUSION       = 0x08,
 
-        COR_CONFIG_REGISTRY     = (COR_CONFIG_USER|COR_CONFIG_MACHINE|COR_CONFIG_FUSION),
+        COR_CONFIG_REGISTRY     = (COR_CONFIG_USER|COR_CONFIG_MACHINE),
         COR_CONFIG_ALL          = (COR_CONFIG_ENV|COR_CONFIG_USER|COR_CONFIG_MACHINE),
     };
 
@@ -1145,9 +1082,6 @@ public:
 
 private:
     static LPWSTR EnvGetString(LPCWSTR name, BOOL fPrependCOMPLUS);
-public:
-
-    static BOOL UseRegistry();
 
 private:
 //*****************************************************************************
@@ -1192,8 +1126,6 @@ private:
     static BOOL s_fUseRegCache; // Enable registry cache; if FALSE, CCVNSP
                                  // always returns TRUE.
     static BOOL s_fUseEnvCache; // Enable env cache.
-
-    static BOOL s_fUseRegistry; // Allow lookups in the registry
 
     // Open the .NetFramework keys once and cache the handles
     static HKEY s_hMachineFrameworkKey;
@@ -1311,16 +1243,16 @@ public: 	// functions
 
     static LPVOID VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T size,
                                      DWORD allocType, DWORD prot, DWORD node);
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
     static BOOL GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no);
     static bool GetNumaInfo(PUSHORT total_nodes, DWORD* max_procs_per_node);
-#else // !FEATURE_PAL
+#else // HOST_WINDOWS
     static BOOL GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no);
-#endif // !FEATURE_PAL
+#endif // HOST_WINDOWS
 #endif
 };
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
 
 struct CPU_Group_Info
 {
@@ -1384,7 +1316,7 @@ public:
 
 DWORD_PTR GetCurrentProcessCpuMask();
 
-#endif // !FEATURE_PAL
+#endif // HOST_WINDOWS
 
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
@@ -4327,13 +4259,13 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs);
 class ClrTeb
 {
 public:
-#if defined(FEATURE_PAL)
+#if defined(HOST_UNIX)
 
     // returns pointer that uniquely identifies the fiber
     static void* GetFiberPtrId()
     {
         LIMITED_METHOD_CONTRACT;
-        // not fiber for FEATURE_PAL - use the regular thread ID
+        // not fiber for HOST_UNIX - use the regular thread ID
         return (void *)(size_t)GetCurrentThreadId();
     }
 
@@ -4352,7 +4284,7 @@ public:
         return PAL_GetStackLimit();
     }
 
-#else // !FEATURE_PAL
+#else // HOST_UNIX
 
     // returns pointer that uniquely identifies the fiber
     static void* GetFiberPtrId()
@@ -4401,10 +4333,12 @@ public:
     {
         return (void*) 1;
     }
-#endif // !FEATURE_PAL
+#endif // HOST_UNIX
 };
 
 #if !defined(DACCESS_COMPILE)
+
+extern thread_local size_t t_ThreadType;
 
 // check if current thread is a GC thread (concurrent or server)
 inline BOOL IsGCSpecialThread ()
@@ -4414,7 +4348,7 @@ inline BOOL IsGCSpecialThread ()
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_GC);
+    return !!(t_ThreadType & ThreadType_GC);
 }
 
 // check if current thread is a Gate thread
@@ -4424,7 +4358,7 @@ inline BOOL IsGateSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Gate);
+    return !!(t_ThreadType & ThreadType_Gate);
 }
 
 // check if current thread is a Timer thread
@@ -4434,7 +4368,7 @@ inline BOOL IsTimerSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Timer);
+    return !!(t_ThreadType & ThreadType_Timer);
 }
 
 // check if current thread is a debugger helper thread
@@ -4444,7 +4378,7 @@ inline BOOL IsDbgHelperSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_DbgHelper);
+    return !!(t_ThreadType & ThreadType_DbgHelper);
 }
 
 // check if current thread is a debugger helper thread
@@ -4454,7 +4388,7 @@ inline BOOL IsETWRundownSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_ETWRundownThread);
+    return !!(t_ThreadType & ThreadType_ETWRundownThread);
 }
 
 // check if current thread is a generic instantiation lookup compare thread
@@ -4464,7 +4398,7 @@ inline BOOL IsGenericInstantiationLookupCompareThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_GenericInstantiationCompare);
+    return !!(t_ThreadType & ThreadType_GenericInstantiationCompare);
 }
 
 // check if current thread is a thread which is performing shutdown
@@ -4474,7 +4408,7 @@ inline BOOL IsShutdownSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Shutdown);
+    return !!(t_ThreadType & ThreadType_Shutdown);
 }
 
 inline BOOL IsThreadPoolIOCompletionSpecialThread ()
@@ -4483,7 +4417,7 @@ inline BOOL IsThreadPoolIOCompletionSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Threadpool_IOCompletion);
+    return !!(t_ThreadType & ThreadType_Threadpool_IOCompletion);
 }
 
 inline BOOL IsThreadPoolWorkerSpecialThread ()
@@ -4492,7 +4426,7 @@ inline BOOL IsThreadPoolWorkerSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Threadpool_Worker);
+    return !!(t_ThreadType & ThreadType_Threadpool_Worker);
 }
 
 inline BOOL IsWaitSpecialThread ()
@@ -4501,7 +4435,7 @@ inline BOOL IsWaitSpecialThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Wait);
+    return !!(t_ThreadType & ThreadType_Wait);
 }
 
 // check if current thread is a thread which is performing shutdown
@@ -4511,7 +4445,7 @@ inline BOOL IsSuspendEEThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_DynamicSuspendEE);
+    return !!(t_ThreadType & ThreadType_DynamicSuspendEE);
 }
 
 inline BOOL IsFinalizerThread ()
@@ -4520,7 +4454,7 @@ inline BOOL IsFinalizerThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Finalizer);
+    return !!(t_ThreadType & ThreadType_Finalizer);
 }
 
 inline BOOL IsShutdownHelperThread ()
@@ -4529,7 +4463,7 @@ inline BOOL IsShutdownHelperThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_ShutdownHelper);
+    return !!(t_ThreadType & ThreadType_ShutdownHelper);
 }
 
 inline BOOL IsProfilerAttachThread ()
@@ -4538,54 +4472,16 @@ inline BOOL IsProfilerAttachThread ()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_ProfAPI_Attach);
+    return !!(t_ThreadType & ThreadType_ProfAPI_Attach);
 }
 
-// set specical type for current thread
-inline void ClrFlsSetThreadType (TlsThreadTypeFlag flag)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    ClrFlsSetValue (TlsIdx_ThreadType, (LPVOID)(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) |flag));
-}
-
-// clear specical type for current thread
-inline void ClrFlsClearThreadType (TlsThreadTypeFlag flag)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    ClrFlsSetValue (TlsIdx_ThreadType, (LPVOID)(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ~flag));
-}
+// set special type for current thread
+void ClrFlsSetThreadType(TlsThreadTypeFlag flag);
+void ClrFlsClearThreadType(TlsThreadTypeFlag flag);
 
 #endif //!DACCESS_COMPILE
 
-#ifdef DACCESS_COMPILE
-#define SET_THREAD_TYPE_STACKWALKER(pThread)
-#define CLEAR_THREAD_TYPE_STACKWALKER()
-#else   // DACCESS_COMPILE
-#define SET_THREAD_TYPE_STACKWALKER(pThread)   ClrFlsSetValue(TlsIdx_StackWalkerWalkingThread, pThread)
-#define CLEAR_THREAD_TYPE_STACKWALKER() ClrFlsSetValue(TlsIdx_StackWalkerWalkingThread, NULL)
-#endif  // DACCESS_COMPILE
-
 HRESULT SetThreadName(HANDLE hThread, PCWSTR lpThreadDescription);
-
-inline BOOL IsStackWalkerThread()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-#if defined(DACCESS_COMPILE)
-    return FALSE;
-#else
-    return ClrFlsGetValue (TlsIdx_StackWalkerWalkingThread) != NULL;
-#endif
-}
 
 inline BOOL IsGCThread ()
 {
@@ -4612,11 +4508,11 @@ public:
 
 #ifndef DACCESS_COMPILE
         m_flag = flag;
-        m_fPreviouslySet = (((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & flag);
+        m_fPreviouslySet = (t_ThreadType & flag);
 
         // In debug builds, remember the full group of flags that were set at the time
         // the constructor was called.  This will be used in ASSERTs in the destructor
-        INDEBUG(m_nPreviousFlagGroup = (size_t)ClrFlsGetValue (TlsIdx_ThreadType));
+        INDEBUG(m_nPreviousFlagGroup = t_ThreadType);
 
         if (!m_fPreviouslySet)
         {
@@ -4641,7 +4537,7 @@ public:
         // The expression below says that the only difference between the previous flag
         // group and the current flag group should be m_flag (or no difference at all, if
         // m_flag's state didn't actually change).
-        _ASSERTE(((m_nPreviousFlagGroup ^ (size_t) ClrFlsGetValue(TlsIdx_ThreadType)) | (size_t) m_flag) == (size_t) m_flag);
+        _ASSERTE(((m_nPreviousFlagGroup ^ t_ThreadType) | (size_t) m_flag) == (size_t) m_flag);
 
         if (m_fPreviouslySet)
         {
@@ -4659,81 +4555,6 @@ private:
     BOOL m_fPreviouslySet;
     INDEBUG(size_t m_nPreviousFlagGroup);
 };
-
-class ClrFlsValueSwitch
-{
-public:
-    ClrFlsValueSwitch (PredefinedTlsSlots slot, PVOID value)
-    {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_MODE_ANY;
-
-#ifndef DACCESS_COMPILE
-        m_slot = slot;
-        m_PreviousValue = ClrFlsGetValue(slot);
-        ClrFlsSetValue(slot, value);
-#endif // DACCESS_COMPILE
-    }
-
-    ~ClrFlsValueSwitch ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_MODE_ANY;
-
-#ifndef DACCESS_COMPILE
-        ClrFlsSetValue(m_slot, m_PreviousValue);
-#endif // DACCESS_COMPILE
-    }
-
-private:
-    PVOID m_PreviousValue;
-    PredefinedTlsSlots m_slot;
-};
-
-//*********************************************************************************
-
-// When we're hosted, operations called by the host (such as Thread::YieldTask)
-// may not cause calls back into the host, as the host needs not be reentrant.
-// Use the following holder for code in which calls into the host are forbidden.
-// (If a call into the host is attempted nevertheless, an assert will fire.)
-
-class ForbidCallsIntoHostOnThisThread
-{
-private:
-    static Volatile<PVOID> s_pvOwningFiber;
-
-    FORCEINLINE static BOOL Enter(BOOL)
-    {
-        WRAPPER_NO_CONTRACT;
-        return InterlockedCompareExchangePointer(
-            &s_pvOwningFiber, ClrTeb::GetFiberPtrId(), NULL) == NULL;
-    }
-
-    FORCEINLINE static void Leave(BOOL)
-    {
-        LIMITED_METHOD_CONTRACT;
-        s_pvOwningFiber = NULL;
-    }
-
-public:
-    typedef ConditionalStateHolder<BOOL, ForbidCallsIntoHostOnThisThread::Enter, ForbidCallsIntoHostOnThisThread::Leave> Holder;
-
-    FORCEINLINE static BOOL CanThisThreadCallIntoHost()
-    {
-        WRAPPER_NO_CONTRACT;
-        return s_pvOwningFiber != ClrTeb::GetFiberPtrId();
-    }
-};
-
-typedef ForbidCallsIntoHostOnThisThread::Holder ForbidCallsIntoHostOnThisThreadHolder;
-
-FORCEINLINE BOOL CanThisThreadCallIntoHost()
-{
-    WRAPPER_NO_CONTRACT;
-    return ForbidCallsIntoHostOnThisThread::CanThisThreadCallIntoHost();
-}
 
 //*********************************************************************************
 
@@ -4840,7 +4661,7 @@ namespace util
  * Overloaded operators for the executable heap
  * ------------------------------------------------------------------------ */
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
 
 struct CExecutable { int x; };
 extern const CExecutable executable;
@@ -4864,7 +4685,7 @@ template<class T> void DeleteExecutable(T *p)
     }
 }
 
-#endif // FEATURE_PAL
+#endif // HOST_WINDOWS
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
 
@@ -5138,13 +4959,6 @@ HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt
 // This is a slight variation that can be used for anything else
 typedef void* (__cdecl *LocalizedFileHandler)(LPCWSTR);
 void* FindLocalizedFile(_In_z_ LPCWSTR wzResourceDllName, LocalizedFileHandler lfh, _In_opt_z_ LPCWSTR modulePath=NULL);
-
-
-
-// Helper to support termination due to heap corruption
-// It's not supported on Win2K, so we have to manually delay load it
-void EnableTerminationOnHeapCorruption();
-
 
 
 namespace Clr { namespace Util

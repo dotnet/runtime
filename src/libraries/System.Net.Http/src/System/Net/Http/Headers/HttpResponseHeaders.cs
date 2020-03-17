@@ -7,8 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix",
-        Justification = "This is not a collection")]
     public sealed class HttpResponseHeaders : HttpHeaders
     {
         private const int AcceptRangesSlot = 0;
@@ -18,8 +16,8 @@ namespace System.Net.Http.Headers
         private const int WwwAuthenticateSlot = 4;
         private const int NumCollectionsSlots = 5;
 
-        private object[] _specialCollectionsSlots;
-        private HttpGeneralHeaders _generalHeaders;
+        private object[]? _specialCollectionsSlots;
+        private HttpGeneralHeaders? _generalHeaders;
         private bool _containsTrailingHeaders;
 
         #region Response Headers
@@ -33,7 +31,7 @@ namespace System.Net.Http.Headers
             object result = collections[slot];
             if (result == null)
             {
-                collections[slot] = result = creationFunc(this);
+                collections[slot] = result = creationFunc(this)!;
             }
             return (T)result;
         }
@@ -47,24 +45,24 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(KnownHeaders.Age.Descriptor, value); }
         }
 
-        public EntityTagHeaderValue ETag
+        public EntityTagHeaderValue? ETag
         {
-            get { return (EntityTagHeaderValue)GetParsedValues(KnownHeaders.ETag.Descriptor); }
+            get { return (EntityTagHeaderValue?)GetParsedValues(KnownHeaders.ETag.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ETag.Descriptor, value); }
         }
 
-        public Uri Location
+        public Uri? Location
         {
-            get { return (Uri)GetParsedValues(KnownHeaders.Location.Descriptor); }
+            get { return (Uri?)GetParsedValues(KnownHeaders.Location.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Location.Descriptor, value); }
         }
 
         public HttpHeaderValueCollection<AuthenticationHeaderValue> ProxyAuthenticate =>
             GetSpecializedCollection(ProxyAuthenticateSlot, thisRef => new HttpHeaderValueCollection<AuthenticationHeaderValue>(KnownHeaders.ProxyAuthenticate.Descriptor, thisRef));
 
-        public RetryConditionHeaderValue RetryAfter
+        public RetryConditionHeaderValue? RetryAfter
         {
-            get { return (RetryConditionHeaderValue)GetParsedValues(KnownHeaders.RetryAfter.Descriptor); }
+            get { return (RetryConditionHeaderValue?)GetParsedValues(KnownHeaders.RetryAfter.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.RetryAfter.Descriptor, value); }
         }
 
@@ -81,7 +79,7 @@ namespace System.Net.Http.Headers
 
         #region General Headers
 
-        public CacheControlHeaderValue CacheControl
+        public CacheControlHeaderValue? CacheControl
         {
             get { return GeneralHeaders.CacheControl; }
             set { GeneralHeaders.CacheControl = value; }
@@ -152,7 +150,7 @@ namespace System.Net.Http.Headers
         internal override void AddHeaders(HttpHeaders sourceHeaders)
         {
             base.AddHeaders(sourceHeaders);
-            HttpResponseHeaders sourceResponseHeaders = sourceHeaders as HttpResponseHeaders;
+            HttpResponseHeaders? sourceResponseHeaders = sourceHeaders as HttpResponseHeaders;
             Debug.Assert(sourceResponseHeaders != null);
 
             // Copy special values, but do not overwrite
@@ -167,7 +165,7 @@ namespace System.Net.Http.Headers
             if (!_containsTrailingHeaders)
                 return true;
 
-            KnownHeader knownHeader = KnownHeaders.TryGetKnownHeader(descriptor.Name);
+            KnownHeader? knownHeader = KnownHeaders.TryGetKnownHeader(descriptor.Name);
             if (knownHeader == null)
                 return true;
 

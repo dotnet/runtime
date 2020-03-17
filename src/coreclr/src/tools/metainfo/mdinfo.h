@@ -9,7 +9,7 @@
 #include "cor.h"
 #include "corhlprpriv.h"
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #include <oleauto.h>
 #endif
 

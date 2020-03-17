@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Text;
 
 namespace System.Security.Cryptography
@@ -15,7 +16,7 @@ namespace System.Security.Cryptography
             string name,
             int sizeHint = -1)
         {
-            byte[] ret = XmlKeyHelper.ReadCryptoBinary(ref state, name, sizeHint);
+            byte[]? ret = XmlKeyHelper.ReadCryptoBinary(ref state, name, sizeHint);
 
             if (ret == null)
             {
@@ -35,10 +36,10 @@ namespace System.Security.Cryptography
             byte[] q = ReadRequiredElement(ref state, nameof(DSAParameters.Q));
             byte[] g = ReadRequiredElement(ref state, nameof(DSAParameters.G), p.Length);
             byte[] y = ReadRequiredElement(ref state, nameof(DSAParameters.Y), p.Length);
-            byte[] j = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.J));
-            byte[] seed = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.Seed));
+            byte[]? j = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.J));
+            byte[]? seed = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.Seed));
             int counter = 0;
-            byte[] x = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.X), q.Length);
+            byte[]? x = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.X), q.Length);
 
             if (seed != null)
             {
@@ -103,6 +104,7 @@ namespace System.Security.Cryptography
             // StringBuilder to need to grow.
 
             DSAParameters keyParameters = ExportParameters(includePrivateParameters);
+            Debug.Assert(keyParameters.P != null);
             StringBuilder builder = new StringBuilder((keyParameters.P.Length << 1) / 3);
             builder.Append("<DSAKeyValue>");
             XmlKeyHelper.WriteCryptoBinary(nameof(DSAParameters.P), keyParameters.P, builder);
@@ -125,7 +127,7 @@ namespace System.Security.Cryptography
             {
                 if (keyParameters.X == null)
                 {
-                    // NetFx compat when a 3rd party type lets X be null when
+                    // .NET Framework compat when a 3rd party type lets X be null when
                     // includePrivateParameters is true
                     // (the exception would have been from Convert.ToBase64String)
                     throw new ArgumentNullException("inArray");

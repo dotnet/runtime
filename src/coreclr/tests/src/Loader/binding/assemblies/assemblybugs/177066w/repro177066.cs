@@ -11,11 +11,7 @@ public class Repro
 	{
 		try
 		{
-#if DESKTOP
-			Assembly a = Assembly.Load("system, processorArchitecture=somebadvalue");
-#else 
-            AssemblyName an = new AssemblyName("system, processorArchitecture=somebadvalue");
-#endif
+			AssemblyName an = new AssemblyName("system, processorArchitecture=somebadvalue");
 		}
 		catch(System.IO.FileLoadException e)
 		{

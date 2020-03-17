@@ -64,7 +64,7 @@ namespace BasicEventSourceTests
         /// <summary>
         /// Test the
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
         public void Test_BadEventSource_MismatchedIds()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -125,8 +125,31 @@ namespace BasicEventSourceTests
             string message = _event.PayloadString(0, "message");
             Debug.WriteLine(string.Format("Message=\"{0}\"", message));
             // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_MismatchedIds: Event Event2 was assigned event ID 2 but 1 was passed to WriteEvent. "
-            if (!PlatformDetection.IsFullFramework) // Full framework has typo
+            if (!PlatformDetection.IsNetFramework) // .NET Framework has typo
                 Assert.Matches("Event Event2 was assigned event ID 2 but 1 was passed to WriteEvent", message);
+
+            // Validate the details of the EventWrittenEventArgs object
+            if (_event is EventListenerListener.EventListenerEvent elEvent)
+            {
+                EventWrittenEventArgs ea = elEvent.Data;
+                Assert.NotNull(ea);
+                Assert.Equal(Guid.Empty, ea.ActivityId);
+                Assert.Equal(EventChannel.None, ea.Channel);
+                Assert.Equal(0, ea.EventId);
+                Assert.Equal("EventSourceMessage", ea.EventName);
+                Assert.NotNull(ea.EventSource);
+                Assert.Equal(EventKeywords.None, ea.Keywords);
+                Assert.Equal(EventLevel.LogAlways, ea.Level);
+                Assert.Equal((EventOpcode)0, ea.Opcode);
+                Assert.NotNull(ea.Payload);
+                Assert.NotNull(ea.PayloadNames);
+                Assert.Equal(ea.PayloadNames.Count, ea.Payload.Count);
+                Assert.Equal(Guid.Empty, ea.RelatedActivityId);
+                Assert.Equal(EventTags.None, ea.Tags);
+                Assert.Equal(EventTask.None, ea.Task);
+                Assert.InRange(ea.TimeStamp, DateTime.MinValue, DateTime.MaxValue);
+                Assert.Equal(0, ea.Version);
+            }
         }
 
         [Fact]

@@ -16,8 +16,8 @@ namespace System.Security.Cryptography
         private int _keySize;
         private readonly CspParameters _parameters;
         private readonly bool _randomKeyContainer;
-        private SafeKeyHandle _safeKeyHandle;
-        private SafeProvHandle _safeProvHandle;
+        private SafeKeyHandle? _safeKeyHandle;
+        private SafeProvHandle? _safeProvHandle;
         private static volatile CspProviderFlags s_useMachineKeyStore = 0;
         private bool _disposed;
 
@@ -39,17 +39,17 @@ namespace System.Security.Cryptography
         {
         }
 
-        public RSACryptoServiceProvider(int dwKeySize, CspParameters parameters)
+        public RSACryptoServiceProvider(int dwKeySize, CspParameters? parameters)
             : this(dwKeySize, parameters, false)
         {
         }
 
-        public RSACryptoServiceProvider(CspParameters parameters)
+        public RSACryptoServiceProvider(CspParameters? parameters)
             : this(0, parameters, true)
         {
         }
 
-        private RSACryptoServiceProvider(int keySize, CspParameters parameters, bool useDefaultKeySize)
+        private RSACryptoServiceProvider(int keySize, CspParameters? parameters, bool useDefaultKeySize)
         {
             if (keySize < 0)
             {
@@ -103,7 +103,7 @@ namespace System.Security.Cryptography
             {
                 lock (_parameters)
                 {
-                    SafeProvHandle current = _safeProvHandle;
+                    SafeProvHandle? current = _safeProvHandle;
 
                     if (ReferenceEquals(value, current))
                     {
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography
 
                     if (current != null)
                     {
-                        SafeKeyHandle keyHandle = _safeKeyHandle;
+                        SafeKeyHandle? keyHandle = _safeKeyHandle;
                         _safeKeyHandle = null;
                         keyHandle?.Dispose();
                         current.Dispose();
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography
             {
                 lock (_parameters)
                 {
-                    SafeKeyHandle current = _safeKeyHandle;
+                    SafeKeyHandle? current = _safeKeyHandle;
 
                     if (ReferenceEquals(value, current))
                     {
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                // Desktop compat: Read the SafeKeyHandle property to force the key to load,
+                // .NET Framework compat: Read the SafeKeyHandle property to force the key to load,
                 // because it might throw here.
                 SafeKeyHandle localHandle = SafeKeyHandle;
                 Debug.Assert(localHandle != null);
@@ -336,7 +336,7 @@ namespace System.Security.Cryptography
                 }
             }
 
-            byte[] encryptedKey = null;
+            byte[]? encryptedKey = null;
             CapiHelper.EncryptKey(SafeKeyHandle, rgb, rgb.Length, fOAEP, ref encryptedKey);
             return encryptedKey;
         }
@@ -481,7 +481,7 @@ namespace System.Security.Cryptography
         /// <param name="rgbHash">The input data for which to compute the hash</param>
         /// <param name="str">The hash algorithm to use to create the hash value. </param>
         /// <returns>The RSA signature for the specified data.</returns>
-        public byte[] SignHash(byte[] rgbHash, string str)
+        public byte[] SignHash(byte[] rgbHash, string? str)
         {
             if (rgbHash == null)
                 throw new ArgumentNullException(nameof(rgbHash));
@@ -706,7 +706,7 @@ namespace System.Security.Cryptography
             return VerifyHash(hash, GetAlgorithmId(hashAlgorithm), signature);
         }
 
-        public override string KeyExchangeAlgorithm
+        public override string? KeyExchangeAlgorithm
         {
             get
             {

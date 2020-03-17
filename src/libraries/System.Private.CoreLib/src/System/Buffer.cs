@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if AMD64 || ARM64 || (BIT32 && !ARM)
+#if TARGET_AMD64 || TARGET_ARM64 || (TARGET_32BIT && !TARGET_ARM)
 #define HAS_CUSTOM_BLOCKS
 #endif
 
@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
 #else
@@ -166,7 +166,7 @@ namespace System
             Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
             *(Block16*)dest = *(Block16*)src;                   // [0,16]
-#elif BIT64
+#elif TARGET_64BIT
             *(long*)dest = *(long*)src;
             *(long*)(dest + 8) = *(long*)(src + 8);             // [0,16]
 #else
@@ -178,7 +178,7 @@ namespace System
             if (len <= 32) goto MCPY01;
 #if HAS_CUSTOM_BLOCKS
             *(Block16*)(dest + 16) = *(Block16*)(src + 16);     // [0,32]
-#elif BIT64
+#elif TARGET_64BIT
             *(long*)(dest + 16) = *(long*)(src + 16);
             *(long*)(dest + 24) = *(long*)(src + 24);           // [0,32]
 #else
@@ -190,7 +190,7 @@ namespace System
             if (len <= 48) goto MCPY01;
 #if HAS_CUSTOM_BLOCKS
             *(Block16*)(dest + 32) = *(Block16*)(src + 32);     // [0,48]
-#elif BIT64
+#elif TARGET_64BIT
             *(long*)(dest + 32) = *(long*)(src + 32);
             *(long*)(dest + 40) = *(long*)(src + 40);           // [0,48]
 #else
@@ -205,7 +205,7 @@ namespace System
             Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
             *(Block16*)(destEnd - 16) = *(Block16*)(srcEnd - 16);
-#elif BIT64
+#elif TARGET_64BIT
             *(long*)(destEnd - 16) = *(long*)(srcEnd - 16);
             *(long*)(destEnd - 8) = *(long*)(srcEnd - 8);
 #else
@@ -220,7 +220,7 @@ namespace System
             // Copy the first 8 bytes and then unconditionally copy the last 8 bytes and return.
             if ((len & 24) == 0) goto MCPY03;
             Debug.Assert(len >= 8 && len <= 16);
-#if BIT64
+#if TARGET_64BIT
             *(long*)dest = *(long*)src;
             *(long*)(destEnd - 8) = *(long*)(srcEnd - 8);
 #else
@@ -263,7 +263,7 @@ namespace System
         MCPY06:
 #if HAS_CUSTOM_BLOCKS
             *(Block64*)dest = *(Block64*)src;
-#elif BIT64
+#elif TARGET_64BIT
             *(long*)dest = *(long*)src;
             *(long*)(dest + 8) = *(long*)(src + 8);
             *(long*)(dest + 16) = *(long*)(src + 16);
@@ -299,7 +299,7 @@ namespace System
             if (len > 16) goto MCPY00;
 #if HAS_CUSTOM_BLOCKS
             *(Block16*)(destEnd - 16) = *(Block16*)(srcEnd - 16);
-#elif BIT64
+#elif TARGET_64BIT
             *(long*)(destEnd - 16) = *(long*)(srcEnd - 16);
             *(long*)(destEnd - 8) = *(long*)(srcEnd - 8);
 #else
@@ -361,7 +361,7 @@ namespace System
             Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
             Unsafe.As<byte, Block16>(ref dest) = Unsafe.As<byte, Block16>(ref src); // [0,16]
-#elif BIT64
+#elif TARGET_64BIT
             Unsafe.As<byte, long>(ref dest) = Unsafe.As<byte, long>(ref src);
             Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 8)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 8)); // [0,16]
 #else
@@ -374,7 +374,7 @@ namespace System
                 goto MCPY01;
 #if HAS_CUSTOM_BLOCKS
             Unsafe.As<byte, Block16>(ref Unsafe.Add(ref dest, 16)) = Unsafe.As<byte, Block16>(ref Unsafe.Add(ref src, 16)); // [0,32]
-#elif BIT64
+#elif TARGET_64BIT
             Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 16)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 16));
             Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 24)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 24)); // [0,32]
 #else
@@ -387,7 +387,7 @@ namespace System
                 goto MCPY01;
 #if HAS_CUSTOM_BLOCKS
             Unsafe.As<byte, Block16>(ref Unsafe.Add(ref dest, 32)) = Unsafe.As<byte, Block16>(ref Unsafe.Add(ref src, 32)); // [0,48]
-#elif BIT64
+#elif TARGET_64BIT
             Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 32)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 32));
             Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 40)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 40)); // [0,48]
 #else
@@ -402,7 +402,7 @@ namespace System
             Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
             Unsafe.As<byte, Block16>(ref Unsafe.Add(ref destEnd, -16)) = Unsafe.As<byte, Block16>(ref Unsafe.Add(ref srcEnd, -16));
-#elif BIT64
+#elif TARGET_64BIT
             Unsafe.As<byte, long>(ref Unsafe.Add(ref destEnd, -16)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref srcEnd, -16));
             Unsafe.As<byte, long>(ref Unsafe.Add(ref destEnd, -8)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref srcEnd, -8));
 #else
@@ -418,7 +418,7 @@ namespace System
             if ((len & 24) == 0)
                 goto MCPY03;
             Debug.Assert(len >= 8 && len <= 16);
-#if BIT64
+#if TARGET_64BIT
             Unsafe.As<byte, long>(ref dest) = Unsafe.As<byte, long>(ref src);
             Unsafe.As<byte, long>(ref Unsafe.Add(ref destEnd, -8)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref srcEnd, -8));
 #else
@@ -464,7 +464,7 @@ namespace System
         MCPY06:
 #if HAS_CUSTOM_BLOCKS
             Unsafe.As<byte, Block64>(ref dest) = Unsafe.As<byte, Block64>(ref src);
-#elif BIT64
+#elif TARGET_64BIT
             Unsafe.As<byte, long>(ref dest) = Unsafe.As<byte, long>(ref src);
             Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 8)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 8));
             Unsafe.As<byte, long>(ref Unsafe.Add(ref dest, 16)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref src, 16));
@@ -502,7 +502,7 @@ namespace System
                 goto MCPY00;
 #if HAS_CUSTOM_BLOCKS
             Unsafe.As<byte, Block16>(ref Unsafe.Add(ref destEnd, -16)) = Unsafe.As<byte, Block16>(ref Unsafe.Add(ref srcEnd, -16));
-#elif BIT64
+#elif TARGET_64BIT
             Unsafe.As<byte, long>(ref Unsafe.Add(ref destEnd, -16)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref srcEnd, -16));
             Unsafe.As<byte, long>(ref Unsafe.Add(ref destEnd, -8)) = Unsafe.As<byte, long>(ref Unsafe.Add(ref srcEnd, -8));
 #else

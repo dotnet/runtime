@@ -160,7 +160,7 @@ namespace System.Net.Primitives.Functional.Tests
             object current = null;
             var exception = Record.Exception(() => current = enumerator.Current);
 
-            // On full framework, enumerator.Current throws an exception because the collection has been modified after
+            // On .NET Framework, enumerator.Current throws an exception because the collection has been modified after
             // creating the enumerator.
             if (exception == null)
             {

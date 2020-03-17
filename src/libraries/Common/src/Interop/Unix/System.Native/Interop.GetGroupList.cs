@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Runtime.InteropServices;
 
@@ -9,7 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        internal static unsafe uint[] GetGroupList(string userName, uint primaryGroupId)
+        internal static unsafe uint[]? GetGroupList(string userName, uint primaryGroupId)
         {
             const int InitialGroupsLength =
 #if DEBUG

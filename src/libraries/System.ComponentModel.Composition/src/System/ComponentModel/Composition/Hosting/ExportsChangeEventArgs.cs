@@ -19,7 +19,7 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private readonly IEnumerable<ExportDefinition> _addedExports;
         private readonly IEnumerable<ExportDefinition> _removedExports;
-        private IEnumerable<string> _changedContractNames = null;
+        private IEnumerable<string>? _changedContractNames = null;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ExportsChangeEventArgs"/> class with
@@ -43,7 +43,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     <paramref name="addedExports"/> or <paramref name="removedExports"/> is <see langword="null"/>.
         /// </exception>
         public ExportsChangeEventArgs(IEnumerable<ExportDefinition> addedExports,
-                IEnumerable<ExportDefinition> removedExports, AtomicComposition atomicComposition)
+                IEnumerable<ExportDefinition> removedExports, AtomicComposition? atomicComposition)
         {
             Requires.NotNull(addedExports, nameof(addedExports));
             Requires.NotNull(removedExports, nameof(removedExports));
@@ -123,6 +123,6 @@ namespace System.ComponentModel.Composition.Hosting
         ///     When the value is non-null it should be used to record temporary changed state
         ///     and actions that will be executed when the atomicComposition is completeed.
         /// </value>
-        public AtomicComposition AtomicComposition { get; private set; }
+        public AtomicComposition? AtomicComposition { get; private set; }
     }
 }

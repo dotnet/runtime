@@ -21,20 +21,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static NotSupportedException GetNotSupportedException_SerializationNotSupportedCollection(Type propertyType, Type? parentType, MemberInfo? memberInfo)
+        public static void ThrowNotSupportedException_SerializationNotSupported(Type propertyType)
         {
-            if (parentType != null && parentType != typeof(object) && memberInfo != null)
-            {
-                return new NotSupportedException(SR.Format(SR.SerializationNotSupportedCollection, propertyType, $"{parentType}.{memberInfo.Name}"));
-            }
-
-            return new NotSupportedException(SR.Format(SR.SerializationNotSupportedCollectionType, propertyType));
-        }
-
-        [DoesNotReturn]
-        public static void ThrowInvalidOperationException_SerializerCycleDetected(int maxDepth)
-        {
-            throw new JsonException(SR.Format(SR.SerializerCycleDetected, maxDepth));
+            throw new NotSupportedException(SR.Format(SR.SerializationNotSupportedType, propertyType));
         }
 
         [DoesNotReturn]
@@ -44,21 +33,6 @@ namespace System.Text.Json
             var ex = new JsonException(SR.Format(SR.DeserializeUnableToConvertValue, propertyType));
             ex.AppendPathInformation = true;
             throw ex;
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType, string path, Exception? innerException = null)
-        {
-            string message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType) + $" Path: {path}.";
-            throw new JsonException(message, path, null, null, innerException);
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_DepthTooLarge(int currentDepth, JsonSerializerOptions options)
-        {
-            throw new JsonException(SR.Format(SR.DepthTooLarge, currentDepth, options.EffectiveMaxDepth));
         }
 
         [DoesNotReturn]
@@ -81,9 +55,27 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException()
+        public static void ThrowJsonException_SerializerCycleDetected(int maxDepth)
         {
-            throw new JsonException();
+            throw new JsonException(SR.Format(SR.SerializerCycleDetected, maxDepth));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException(string? message = null)
+        {
+            JsonException ex;
+            if (string.IsNullOrEmpty(message))
+            {
+                ex = new JsonException();
+            }
+            else
+            {
+                ex = new JsonException(message);
+                ex.AppendPathInformation = true;
+            }
+
+            throw ex;
         }
 
         [DoesNotReturn]
@@ -149,10 +141,18 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ReThrowWithPath(in ReadStack readStack, JsonReaderException ex)
+        public static void ThrowInvalidOperationException_SerializerConverterFactoryReturnsNull(Type converterType)
         {
-            string path = readStack.JsonPath();
+            throw new InvalidOperationException(SR.Format(SR.SerializerConverterFactoryReturnsNull, converterType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ReThrowWithPath(in ReadStack state, JsonReaderException ex)
+        {
+            Debug.Assert(ex.Path == null);
+
+            string path = state.JsonPath();
             string message = ex.Message;
 
             // Insert the "Path" portion before "LineNumber" and "BytePositionInLine".
@@ -171,14 +171,14 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ReThrowWithPath(in ReadStack readStack, in Utf8JsonReader reader, Exception ex)
+        public static void ReThrowWithPath(in ReadStack state, in Utf8JsonReader reader, Exception ex)
         {
             JsonException jsonException = new JsonException(null, ex);
-            AddExceptionInformation(readStack, reader, jsonException);
+            AddJsonExceptionInformation(state, reader, jsonException);
             throw jsonException;
         }
 
-        public static void AddExceptionInformation(in ReadStack readStack, in Utf8JsonReader reader, JsonException ex)
+        public static void AddJsonExceptionInformation(in ReadStack state, in Utf8JsonReader reader, JsonException ex)
         {
             long lineNumber = reader.CurrentState._lineNumber;
             ex.LineNumber = lineNumber;
@@ -186,7 +186,7 @@ namespace System.Text.Json
             long bytePositionInLine = reader.CurrentState._bytePositionInLine;
             ex.BytePositionInLine = bytePositionInLine;
 
-            string path = readStack.JsonPath();
+            string path = state.JsonPath();
             ex.Path = path;
 
             string? message = ex._message;
@@ -194,10 +194,10 @@ namespace System.Text.Json
             if (string.IsNullOrEmpty(message))
             {
                 // Use a default message.
-                Type? propertyType = readStack.Current.JsonPropertyInfo?.RuntimePropertyType;
+                Type? propertyType = state.Current.JsonPropertyInfo?.RuntimePropertyType;
                 if (propertyType == null)
                 {
-                    propertyType = readStack.Current.JsonClassInfo?.Type;
+                    propertyType = state.Current.JsonClassInfo?.Type;
                 }
 
                 message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType);
@@ -213,16 +213,16 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ReThrowWithPath(in WriteStack writeStack, Exception ex)
+        public static void ReThrowWithPath(in WriteStack state, Exception ex)
         {
             JsonException jsonException = new JsonException(null, ex);
-            AddExceptionInformation(writeStack, jsonException);
+            AddJsonExceptionInformation(state, jsonException);
             throw jsonException;
         }
 
-        public static void AddExceptionInformation(in WriteStack writeStack, JsonException ex)
+        public static void AddJsonExceptionInformation(in WriteStack state, JsonException ex)
         {
-            string path = writeStack.PropertyPath();
+            string path = state.PropertyPath();
             ex.Path = path;
 
             string? message = ex._message;
@@ -268,8 +268,70 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowNotSupportedException(in ReadStack state, in Utf8JsonReader reader, NotSupportedException ex)
+        {
+            string message = ex.Message;
+
+            // The caller should check to ensure path is not already set.
+            Debug.Assert(!message.Contains(" Path: "));
+
+            // Obtain the type to show in the message.
+            Type? propertyType = state.Current.JsonPropertyInfo?.RuntimePropertyType;
+            if (propertyType == null)
+            {
+                propertyType = state.Current.JsonClassInfo.Type;
+            }
+
+            if (!message.Contains(propertyType.ToString()))
+            {
+                if (message.Length > 0)
+                {
+                    message += " ";
+                }
+
+                message += SR.Format(SR.SerializationNotSupportedParentType, propertyType);
+            }
+
+            long lineNumber = reader.CurrentState._lineNumber;
+            long bytePositionInLine = reader.CurrentState._bytePositionInLine;
+            message += $" Path: {state.JsonPath()} | LineNumber: {lineNumber} | BytePositionInLine: {bytePositionInLine}.";
+
+            throw new NotSupportedException(message, ex);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException(in WriteStack state, NotSupportedException ex)
+        {
+            string message = ex.Message;
+
+            // The caller should check to ensure path is not already set.
+            Debug.Assert(!message.Contains(" Path: "));
+
+            // Obtain the type to show in the message.
+            Type? propertyType = state.Current.DeclaredJsonPropertyInfo?.RuntimePropertyType;
+            if (propertyType == null)
+            {
+                propertyType = state.Current.JsonClassInfo.Type;
+            }
+
+            if (!message.Contains(propertyType.ToString()))
+            {
+                if (message.Length > 0)
+                {
+                    message += " ";
+                }
+
+                message += SR.Format(SR.SerializationNotSupportedParentType, propertyType);
+            }
+
+            message += $" Path: {state.PropertyPath()}.";
+
+            throw new NotSupportedException(message, ex);
+        }
+
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowNotSupportedException_DeserializeCreateObjectDelegateIsNull(Type invalidType)
+        public static void ThrowNotSupportedException_DeserializeNoParameterlessConstructor(Type invalidType)
         {
             if (invalidType.IsInterface)
             {
@@ -278,6 +340,132 @@ namespace System.Text.Json
             else
             {
                 throw new NotSupportedException(SR.Format(SR.DeserializeMissingParameterlessConstructor, invalidType));
+            }
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataValuesInvalidToken(JsonTokenType tokenType)
+        {
+            ThrowJsonException(SR.Format(SR.MetadataInvalidTokenAfterValues, tokenType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataReferenceNotFound(string id)
+        {
+            ThrowJsonException(SR.Format(SR.MetadataReferenceNotFound, id));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataValueWasNotString(JsonTokenType tokenType)
+        {
+            ThrowJsonException(SR.Format(SR.MetadataValueWasNotString, tokenType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(ReadOnlySpan<byte> propertyName, ref ReadStack state)
+        {
+            state.Current.JsonPropertyName = propertyName.ToArray();
+            ThrowJsonException(SR.MetadataReferenceCannotContainOtherProperties);
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataIdIsNotFirstProperty(ReadOnlySpan<byte> propertyName, ref ReadStack state)
+        {
+            state.Current.JsonPropertyName = propertyName.ToArray();
+            ThrowJsonException(SR.MetadataIdIsNotFirstProperty);
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataMissingIdBeforeValues()
+        {
+            ThrowJsonException(SR.MetadataPreservedArrayPropertyNotFound);
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(ReadOnlySpan<byte> propertyName, ref ReadStack state, in Utf8JsonReader reader)
+        {
+            // Set PropertyInfo or KeyName to write down the conflicting property name in JsonException.Path
+            if (state.Current.IsProcessingDictionary())
+            {
+                state.Current.JsonPropertyNameAsString = reader.GetString();
+            }
+            else
+            {
+                state.Current.JsonPropertyName = propertyName.ToArray();
+            }
+
+            ThrowJsonException(SR.MetadataInvalidPropertyWithLeadingDollarSign);
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataDuplicateIdFound(string id, ref ReadStack state)
+        {
+            // Set so JsonPath throws exception with $id in it.
+            state.Current.JsonPropertyName = JsonSerializer.s_metadataId.EncodedUtf8Bytes.ToArray();
+
+            ThrowJsonException(SR.Format(SR.MetadataDuplicateIdFound, id));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataInvalidReferenceToValueType(Type propertyType)
+        {
+            ThrowJsonException(SR.Format(SR.MetadataInvalidReferenceToValueType, propertyType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataPreservedArrayInvalidProperty(Type propertyType, in Utf8JsonReader reader)
+        {
+            string propertyName = reader.GetString()!;
+
+            ThrowJsonException(SR.Format(SR.MetadataPreservedArrayFailed,
+                SR.Format(SR.MetadataPreservedArrayInvalidProperty, propertyName),
+                SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataPreservedArrayValuesNotFound(Type propertyType)
+        {
+            ThrowJsonException(SR.Format(SR.MetadataPreservedArrayFailed,
+                SR.MetadataPreservedArrayPropertyNotFound,
+                SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(Type propertyType)
+        {
+            ThrowJsonException(SR.Format(SR.MetadataCannotParsePreservedObjectToImmutable, propertyType));
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowUnexpectedMetadataException(
+            ReadOnlySpan<byte> propertyName,
+            ref Utf8JsonReader reader,
+            ref ReadStack state)
+        {
+            MetadataPropertyName name = JsonSerializer.GetMetadataPropertyName(propertyName);
+            if (name == MetadataPropertyName.Id)
+            {
+                ThrowJsonException_MetadataIdIsNotFirstProperty(propertyName, ref state);
+            }
+            else if (name == MetadataPropertyName.Ref)
+            {
+                ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(propertyName, ref state);
+            }
+            else
+            {
+                ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
             }
         }
     }

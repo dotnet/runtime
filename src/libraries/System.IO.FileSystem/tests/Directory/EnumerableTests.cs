@@ -12,7 +12,7 @@ namespace System.IO.Tests
     public class EnumerableTests : FileSystemTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25613", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24295", TestPlatforms.AnyUnix)]
         public void FileEnumeratorIsThreadSafe()
         {
             string directory = Directory.CreateDirectory(GetTestFilePath()).FullName;

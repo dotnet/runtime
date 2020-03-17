@@ -24,6 +24,7 @@ namespace System
         private const string ZoneTabFileName = "zone.tab";
         private const string TimeZoneEnvironmentVariable = "TZ";
         private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
+        private const string FallbackCultureName = "en-US";
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
@@ -80,9 +81,10 @@ namespace System
             }
             _displayName = _standardDisplayName;
 
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Generic, ref _displayName);
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Standard, ref _standardDisplayName);
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, ref _daylightDisplayName);
+            string uiCulture = CultureInfo.CurrentUICulture.Name.Length == 0 ? FallbackCultureName : CultureInfo.CurrentUICulture.Name; // ICU doesn't work nicely with Invariant
+            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture, ref _displayName);
+            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture, ref _standardDisplayName);
+            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture, ref _daylightDisplayName);
 
             if (_standardDisplayName == _displayName)
             {
@@ -108,7 +110,7 @@ namespace System
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
         }
 
-        private unsafe void GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType nameType, ref string? displayName)
+        private unsafe void GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType nameType, string uiCulture, ref string? displayName)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -125,10 +127,27 @@ namespace System
                         return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
                     }
                 },
-                CultureInfo.CurrentUICulture.Name,
+                uiCulture,
                 _id,
                 nameType,
                 out timeZoneDisplayName);
+
+            if (!result && uiCulture != FallbackCultureName)
+            {
+                // Try to fallback using FallbackCultureName just in case we can make it work.
+                result = Interop.CallStringMethod(
+                    (buffer, locale, id, type) =>
+                    {
+                        fixed (char* bufferPtr = buffer)
+                        {
+                            return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
+                        }
+                    },
+                    FallbackCultureName,
+                    _id,
+                    nameType,
+                    out timeZoneDisplayName);
+            }
 
             // If there is an unknown error, don't set the displayName field.
             // It will be set to the abbreviation that was read out of the tzfile.
@@ -1180,7 +1199,7 @@ namespace System
             TimeSpan? timeOffset = TZif_ParseOffsetString(time);
             if (timeOffset.HasValue)
             {
-                // This logic isn't correct and can't be corrected until https://github.com/dotnet/corefx/issues/2618 is fixed.
+                // This logic isn't correct and can't be corrected until https://github.com/dotnet/runtime/issues/14966 is fixed.
                 // Some time zones use time values like, "26", "144", or "-2".
                 // This allows the week to sometimes be week 4 and sometimes week 5 in the month.
                 // For now, strip off any 'days' in the offset, and just get the time of day correct
@@ -1236,7 +1255,7 @@ namespace System
                     //
                     // This specifies the Julian day, with n between 0 and 365. February 29 is counted in leap years.
                     //
-                    // n would be a relative number from the begining of the year. which should handle if the
+                    // n would be a relative number from the beginning of the year. which should handle if the
                     // the year is a leap year or not.
                     //
                     // In leap year, n would be counted as:

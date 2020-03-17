@@ -95,7 +95,7 @@ namespace System.Collections.Generic
 
         private void InsertNodeBefore(LinkedListNode<T> node, LinkedListNode<T> newNode)
         {
-           ...
+            ...
         }
         
         ...
@@ -124,10 +124,10 @@ namespace System.Collections.Generics
                 _parent = parent;
                 _value = value;
             }
-            
+
             public T Value
             {
-               get { return _value; }
+                get { return _value; }
             }
         }
 

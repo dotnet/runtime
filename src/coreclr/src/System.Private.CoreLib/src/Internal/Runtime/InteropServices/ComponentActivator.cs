@@ -25,7 +25,7 @@ namespace Internal.Runtime.InteropServices
                 throw new ArgumentNullException(argName);
             }
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
             string? result = Marshal.PtrToStringUni(arg);
 #else
             string? result = Marshal.PtrToStringUTF8(arg);

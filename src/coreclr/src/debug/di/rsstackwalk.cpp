@@ -617,9 +617,9 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         _ASSERTE(fSuccess);
 
         m_fIsOneFrameAhead = true;
-#if defined(DBG_TARGET_X86)
+#if defined(TARGET_X86)
         frameData.fp = pDAC->GetFramePointer(m_pSFIHandle);
-#endif // DBG_TARGET_X86
+#endif // TARGET_X86
 
         // currentFuncData contains general information about the method.
         // It has no information about any particular jitted instance of the method.
@@ -797,9 +797,9 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         _ASSERTE(fSuccess);
 
         m_fIsOneFrameAhead = true;
-#if defined(DBG_TARGET_X86)
+#if defined(TARGET_X86)
         frameData.fp = pDAC->GetFramePointer(m_pSFIHandle);
-#endif // DBG_TARGET_X86
+#endif // TARGET_X86
 
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.

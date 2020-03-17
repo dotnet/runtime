@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <CommonPathXPath>$(CommonTestPath)System\Xml\XPath</CommonPathXPath>
-    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <!-- XPath.XDocument navigator -->

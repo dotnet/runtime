@@ -2,13 +2,13 @@ add_subdirectory(src)
 
 # define variables for the configure_file below
 
-if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
+if (CLR_CMAKE_HOST_ARCH_AMD64)
     set(arch x86_64)
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+elseif(CLR_CMAKE_HOST_ARCH_ARM64)
     set(arch aarch64)
 elseif(CLR_CMAKE_PLATFROM_ARCH_ARM)
     set(arch arm)
-elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+elseif(CLR_CMAKE_HOST_ARCH_I386)
     set(arch x86)
 endif()
 

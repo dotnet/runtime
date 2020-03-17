@@ -131,9 +131,10 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     void   *m_raiseExceptionAddr;                       // The address of kernel32!RaiseException in the debuggee
     DWORD   m_debuggerWordTLSIndex;                     // The TLS slot for the debugger word used in the debugger hijack functions
 #endif // FEATURE_INTEROP_DEBUGGING
-    SIZE_T  m_TLSIndex;                                 // The TLS index the CLR is using to hold Thread objects
-    SIZE_T  m_TLSIsSpecialIndex;                        // The index into the Predef block of the the "IsSpecial" status for a thread.
-    SIZE_T  m_TLSCantStopIndex;                         // The index into the Predef block of the the Can't-Stop count.
+    SIZE_T  m_TLSIndex;                                 // The TLS index of the thread-local storage for coreclr.dll
+    SIZE_T  m_TLSEEThreadOffset;                        // TLS Offset of the Thread pointer.
+    SIZE_T  m_TLSIsSpecialOffset;                       // TLS Offset of the "IsSpecial" status for a thread.
+    SIZE_T  m_TLSCantStopOffset;                        // TLS Offset of the Can't-Stop count.
     SIZE_T  m_EEThreadStateOffset;                      // Offset of m_state in a Thread
     SIZE_T  m_EEThreadStateNCOffset;                    // Offset of m_stateNC in a Thread
     SIZE_T  m_EEThreadPGCDisabledOffset;                // Offset of the bit for whether PGC is disabled or not in a Thread
@@ -143,7 +144,6 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     DWORD   m_EEThreadSteppingStateMask;                // Mask for Thread::TSNC_DebuggerIsStepping
     DWORD   m_EEMaxFrameValue;                          // The max Frame value
     SIZE_T  m_EEThreadDebuggerFilterContextOffset;      // Offset of debugger's filter context within a Thread Object.
-    SIZE_T  m_EEThreadCantStopOffset;                   // Offset of the can't stop count in a Thread
     SIZE_T  m_EEFrameNextOffset;                        // Offset of the next ptr in a Frame
     DWORD   m_EEIsManagedExceptionStateMask;            // Mask for Thread::TSNC_DebuggerIsManagedException
     void   *m_pPatches;                                 // Addr of patch table
@@ -178,17 +178,17 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
 // declared DebuggerIPCEvent at the end of this header (and we can do so because in the transport case there
 // aren't any embedded buffers in the DebuggerIPCControlBlock).
 
-#if defined(DBG_TARGET_X86) || defined(DBG_TARGET_ARM)
-#ifdef BIT64
+#if defined(TARGET_X86) || defined(TARGET_ARM)
+#ifdef HOST_64BIT
 #define CorDBIPC_BUFFER_SIZE 2104
 #else
 #define CorDBIPC_BUFFER_SIZE 2092
 #endif
-#else  // !_TARGET_X86_ && !_TARGET_ARM_
+#else  // !TARGET_X86 && !TARGET_ARM
 // This is the size of a DebuggerIPCEvent.  You will hit an assert in Cordb::Initialize() (di\rsmain.cpp)
 // if this is not defined correctly.  AMD64 actually has a page size of 0x1000, not 0x2000.
 #define CorDBIPC_BUFFER_SIZE 4016 // (4016 + 6) * 2 + 148 = 8192 (two (DebuggerIPCEvent + alignment padding) + other fields = page size)
-#endif // DBG_TARGET_X86 || DBG_TARGET_ARM
+#endif // TARGET_X86 || TARGET_ARM
 
 //
 // DebuggerIPCControlBlock describes the layout of the shared memory shared between the Left Side and the Right
@@ -220,11 +220,11 @@ struct MSLAYOUT DebuggerIPCControlBlock
     HRESULT                    m_errorHR;
     unsigned int               m_errorCode;
 
-#if defined(DBG_TARGET_64BIT)
+#if defined(TARGET_64BIT)
     // 64-bit needs this padding to make the handles after this aligned.
     // But x86 can't have this padding b/c it breaks binary compatibility between v1.1 and v2.0.
     ULONG padding4;
-#endif // DBG_TARGET_64BIT
+#endif // TARGET_64BIT
 
 
     RemoteHANDLE               m_rightSideEventAvailable;
@@ -320,11 +320,11 @@ struct MSLAYOUT DebuggerIPCControlBlockTransport
     HRESULT                    m_errorHR;
     unsigned int               m_errorCode;
 
-#if defined(DBG_TARGET_64BIT)
+#if defined(TARGET_64BIT)
     // 64-bit needs this padding to make the handles after this aligned.
     // But x86 can't have this padding b/c it breaks binary compatibility between v1.1 and v2.0.
     ULONG padding4;
-#endif // DBG_TARGET_64BIT
+#endif // TARGET_64BIT
 
     // This is set immediately when the helper thread is created.
     // This will be set even if there's a temporary helper thread or if the real helper
@@ -366,7 +366,7 @@ struct MSLAYOUT DebuggerIPCControlBlockTransport
 #include "dbgtransportsession.h"
 #endif // defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
-#if defined(DBG_TARGET_X86) && !defined(FEATURE_CORESYSTEM)
+#if defined(TARGET_X86) && !defined(FEATURE_CORESYSTEM)
 // We have an versioning requirement.
 // Certain portions of the v1.0 and v1.1 IPC block are shared. This is b/c a v1.1 debugger needs to be able
 // to look at a v2.0 app enough to recognize the version mismatch.
@@ -1076,7 +1076,7 @@ struct MSLAYOUT IPCENames // We use a class/struct so that the function can rema
 
 struct MSLAYOUT DebuggerREGDISPLAY
 {
-#if defined(DBG_TARGET_X86)
+#if defined(TARGET_X86)
     #define DebuggerIPCE_FloatCount 8
 
     SIZE_T  Edi;
@@ -1096,7 +1096,7 @@ struct MSLAYOUT DebuggerREGDISPLAY
     SIZE_T  SP;
     SIZE_T  PC;
 
-#elif defined(DBG_TARGET_AMD64)
+#elif defined(TARGET_AMD64)
     #define DebuggerIPCE_FloatCount 16
 
     SIZE_T  Rax;
@@ -1133,7 +1133,7 @@ struct MSLAYOUT DebuggerREGDISPLAY
 
     SIZE_T  SP;
     SIZE_T  PC;
-#elif defined(DBG_TARGET_ARM)
+#elif defined(TARGET_ARM)
     #define DebuggerIPCE_FloatCount 32
 
     SIZE_T  R0;
@@ -1168,7 +1168,7 @@ struct MSLAYOUT DebuggerREGDISPLAY
     void   *pLR;
     SIZE_T  PC;
     void   *pPC;
-#elif defined(DBG_TARGET_ARM64)
+#elif defined(TARGET_ARM64)
     #define DebuggerIPCE_FloatCount 32
 
     SIZE_T  X[29];
@@ -1191,12 +1191,12 @@ inline LPVOID GetSPAddress(const DebuggerREGDISPLAY * display)
     return (LPVOID)&display->SP;
 }
 
-#if !defined(DBG_TARGET_AMD64) && !defined(DBG_TARGET_ARM)
+#if !defined(TARGET_AMD64) && !defined(TARGET_ARM)
 inline LPVOID GetFPAddress(const DebuggerREGDISPLAY * display)
 {
     return (LPVOID)&display->FP;
 }
-#endif // !DBG_TARGET_AMD64
+#endif // !TARGET_AMD64
 
 
 class MSLAYOUT FramePointer
@@ -1866,34 +1866,34 @@ struct MSLAYOUT DebuggerMDANotification
 // that the debugger only uses REGNUM_SP and REGNUM_AMBIENT_SP though, so we can just virtualize these two for
 // the target platform.
 // Keep this is sync with the definitions in inc/corinfo.h.
-#if defined(DBG_TARGET_X86)
+#if defined(TARGET_X86)
 #define DBG_TARGET_REGNUM_SP 4
 #define DBG_TARGET_REGNUM_AMBIENT_SP 9
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
 static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
-#endif // _TARGET_X86_
-#elif defined(DBG_TARGET_AMD64)
+#endif // TARGET_X86
+#elif defined(TARGET_AMD64)
 #define DBG_TARGET_REGNUM_SP 4
 #define DBG_TARGET_REGNUM_AMBIENT_SP 17
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
 static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
-#endif // _TARGET_AMD64_
-#elif defined(DBG_TARGET_ARM)
+#endif // TARGET_AMD64
+#elif defined(TARGET_ARM)
 #define DBG_TARGET_REGNUM_SP 13
 #define DBG_TARGET_REGNUM_AMBIENT_SP 17
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
 C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
-#endif // _TARGET_ARM_
-#elif defined(DBG_TARGET_ARM64)
+#endif // TARGET_ARM
+#elif defined(TARGET_ARM64)
 #define DBG_TARGET_REGNUM_SP 31
 #define DBG_TARGET_REGNUM_AMBIENT_SP 34
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
 C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 #else
 #error Target registers are not defined for this platform
 #endif

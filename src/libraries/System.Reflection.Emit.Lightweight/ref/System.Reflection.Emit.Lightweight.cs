@@ -2,11 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Reflection.Emit
 {
+    public sealed partial class DynamicILInfo
+    {
+        internal DynamicILInfo() { }
+        public System.Reflection.Emit.DynamicMethod DynamicMethod { get { throw null; } }
+        public int GetTokenFor(byte[] signature) { throw null; }
+        public int GetTokenFor(System.Reflection.Emit.DynamicMethod method) { throw null; }
+        public int GetTokenFor(System.RuntimeFieldHandle field) { throw null; }
+        public int GetTokenFor(System.RuntimeFieldHandle field, System.RuntimeTypeHandle contextType) { throw null; }
+        public int GetTokenFor(System.RuntimeMethodHandle method) { throw null; }
+        public int GetTokenFor(System.RuntimeMethodHandle method, System.RuntimeTypeHandle contextType) { throw null; }
+        public int GetTokenFor(System.RuntimeTypeHandle type) { throw null; }
+        public int GetTokenFor(string literal) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe void SetCode(byte* code, int codeSize, int maxStackSize) { }
+        public void SetCode(byte[]? code, int maxStackSize) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe void SetExceptions(byte* exceptions, int exceptionsSize) { }
+        public void SetExceptions(byte[]? exceptions) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe void SetLocalSignature(byte* localSignature, int signatureSize) { }
+        public void SetLocalSignature(byte[]? localSignature) { }
+    }
     public sealed partial class DynamicMethod : System.Reflection.MethodInfo
     {
         public DynamicMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Reflection.Module m, bool skipVisibility) { }
@@ -21,7 +43,11 @@ namespace System.Reflection.Emit
         public override System.Reflection.CallingConventions CallingConvention { get { throw null; } }
         public override System.Type? DeclaringType { get { throw null; } }
         public bool InitLocals { get { throw null; } set { } }
+        public override bool IsSecurityCritical { get { throw null; } }
+        public override bool IsSecuritySafeCritical { get { throw null; } }
+        public override bool IsSecurityTransparent { get { throw null; } }
         public override System.RuntimeMethodHandle MethodHandle { get { throw null; } }
+        public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type? ReflectedType { get { throw null; } }
         public override System.Reflection.ParameterInfo ReturnParameter { get { throw null; } }
@@ -33,6 +59,7 @@ namespace System.Reflection.Emit
         public override System.Reflection.MethodInfo GetBaseDefinition() { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
+        public System.Reflection.Emit.DynamicILInfo GetDynamicILInfo() { throw null; }
         public System.Reflection.Emit.ILGenerator GetILGenerator() { throw null; }
         public System.Reflection.Emit.ILGenerator GetILGenerator(int streamSize) { throw null; }
         public override System.Reflection.MethodImplAttributes GetMethodImplementationFlags() { throw null; }

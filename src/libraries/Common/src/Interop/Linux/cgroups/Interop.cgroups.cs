@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 internal static partial class Interop
@@ -24,14 +26,14 @@ internal static partial class Interop
         private const string ProcCGroupFilePath = "/proc/self/cgroup";
 
         /// <summary>Path to the found cgroup memory limit path, or null if it couldn't be found.</summary>
-        internal static readonly string s_cgroupMemoryLimitPath = FindCGroupMemoryLimitPath();
+        internal static readonly string? s_cgroupMemoryLimitPath = FindCGroupMemoryLimitPath();
 
         /// <summary>Tries to read the memory limit from the cgroup memory location.</summary>
         /// <param name="limit">The read limit, or 0 if it couldn't be read.</param>
         /// <returns>true if the limit was read successfully; otherwise, false.</returns>
         public static bool TryGetMemoryLimit(out ulong limit)
         {
-            string path = s_cgroupMemoryLimitPath;
+            string? path = s_cgroupMemoryLimitPath;
 
             if (path != null &&
                 TryReadMemoryValueFromFile(path, out limit))
@@ -102,9 +104,9 @@ internal static partial class Interop
 
         /// <summary>Find the cgroup memory limit path.</summary>
         /// <returns>The limit path if found; otherwise, null.</returns>
-        private static string FindCGroupMemoryLimitPath()
+        private static string? FindCGroupMemoryLimitPath()
         {
-            string cgroupMemoryPath = FindCGroupPath("memory", out CGroupVersion version);
+            string? cgroupMemoryPath = FindCGroupPath("memory", out CGroupVersion version);
             if (cgroupMemoryPath != null)
             {
                 if (version == CGroupVersion.CGroup1)
@@ -126,10 +128,10 @@ internal static partial class Interop
         /// <summary>Find the cgroup path for the specified subsystem.</summary>
         /// <param name="subsystem">The subsystem, e.g. "memory".</param>
         /// <returns>The cgroup path if found; otherwise, null.</returns>
-        private static string FindCGroupPath(string subsystem, out CGroupVersion version)
+        private static string? FindCGroupPath(string subsystem, out CGroupVersion version)
         {
-            if (TryFindHierarchyMount(subsystem, out version, out string hierarchyRoot, out string hierarchyMount) &&
-                TryFindCGroupPathForSubsystem(subsystem, out string cgroupPathRelativeToMount))
+            if (TryFindHierarchyMount(subsystem, out version, out string? hierarchyRoot, out string? hierarchyMount) &&
+                TryFindCGroupPathForSubsystem(subsystem, out string? cgroupPathRelativeToMount))
             {
                 // For a host cgroup, we need to append the relative path.
                 // In a docker container, the root and relative path are the same and we don't need to append.
@@ -146,12 +148,12 @@ internal static partial class Interop
         /// <param name="root">The path of the directory in the filesystem which forms the root of this mount; null if not found.</param>
         /// <param name="path">The path of the mount point relative to the process's root directory; null if not found.</param>
         /// <returns>true if the mount was found; otherwise, null.</returns>
-        private static bool TryFindHierarchyMount(string subsystem, out CGroupVersion version, out string root, out string path)
+        private static bool TryFindHierarchyMount(string subsystem, out CGroupVersion version, [NotNullWhen(true)] out string? root, [NotNullWhen(true)] out string? path)
         {
             return TryFindHierarchyMount(ProcMountInfoFilePath, subsystem, out version, out root, out path);
         }
 
-        internal static bool TryFindHierarchyMount(string mountInfoFilePath, string subsystem, out CGroupVersion version, out string root, out string path)
+        internal static bool TryFindHierarchyMount(string mountInfoFilePath, string subsystem, out CGroupVersion version, [NotNullWhen(true)] out string? root, [NotNullWhen(true)] out string? path)
         {
             if (File.Exists(mountInfoFilePath))
             {
@@ -159,7 +161,7 @@ internal static partial class Interop
                 {
                     using (var reader = new StreamReader(mountInfoFilePath))
                     {
-                        string line;
+                        string? line;
                         while ((line = reader.ReadLine()) != null)
                         {
                             // Look for an entry that has cgroup as the "filesystem type"
@@ -171,7 +173,7 @@ internal static partial class Interop
                             // the end of the optional values.
 
                             const string Separator = " - ";
-                            int endOfOptionalFields = line.IndexOf(Separator);
+                            int endOfOptionalFields = line.IndexOf(Separator, StringComparison.Ordinal);
                             if (endOfOptionalFields == -1)
                             {
                                 // Malformed line.
@@ -235,12 +237,12 @@ internal static partial class Interop
         /// <param name="subsystem">The subsystem, e.g. "memory".</param>
         /// <param name="path">The found path, or null if it couldn't be found.</param>
         /// <returns></returns>
-        private static bool TryFindCGroupPathForSubsystem(string subsystem, out string path)
+        private static bool TryFindCGroupPathForSubsystem(string subsystem, [NotNullWhen(true)] out string? path)
         {
             return TryFindCGroupPathForSubsystem(ProcCGroupFilePath, subsystem, out path);
         }
 
-        internal static bool TryFindCGroupPathForSubsystem(string procCGroupFilePath, string subsystem, out string path)
+        internal static bool TryFindCGroupPathForSubsystem(string procCGroupFilePath, string subsystem, [NotNullWhen(true)] out string? path)
         {
             if (File.Exists(procCGroupFilePath))
             {
@@ -248,7 +250,7 @@ internal static partial class Interop
                 {
                     using (var reader = new StreamReader(procCGroupFilePath))
                     {
-                        string line;
+                        string? line;
                         while ((line = reader.ReadLine()) != null)
                         {
                             string[] lineParts = line.Split(':');

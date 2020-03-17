@@ -54,7 +54,7 @@ namespace System.ComponentModel.Tests
                 CultureInfo.InvariantCulture,
                 "{0} ({1})",
                 typeof(Win32Exception).ToString(),
-                PlatformDetection.IsFullFramework ? $"0x{E_FAIL:X8}" : error.ToString(CultureInfo.InvariantCulture));
+                PlatformDetection.IsNetFramework ? $"0x{E_FAIL:X8}" : error.ToString(CultureInfo.InvariantCulture));
 
             Exception innerException = new FormatException();
 

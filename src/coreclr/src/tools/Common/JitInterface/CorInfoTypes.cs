@@ -15,6 +15,7 @@ namespace Internal.JitInterface
         // This accounts for up to 2 indirections to get at a dictionary followed by a possible spill slot
         public const uint MAXINDIRECTIONS = 4;
         public const ushort USEHELPER = 0xffff;
+        public const ushort CORINFO_NO_SIZE_CHECK = 0xffff;
     }
 
     public struct CORINFO_METHOD_STRUCT_
@@ -90,6 +91,10 @@ namespace Internal.JitInterface
     public struct CORINFO_VarArgInfo
     {
     }
+    
+    public struct PatchpointInfo
+    {
+    }
 
     public enum _EXCEPTION_POINTERS
     { }
@@ -115,7 +120,7 @@ namespace Internal.JitInterface
         public CORINFO_CLASS_STRUCT_* retTypeClass;   // if the return type is a value class, this is its handle (enums are normalized)
         public CORINFO_CLASS_STRUCT_* retTypeSigClass;// returns the value class as it is in the sig (enums are not converted to primitives)
         public byte _retType;
-        public byte flags;    // used by IL stubs code
+        public CorInfoSigInfoFlags flags;    // used by IL stubs code
         public ushort numArgs;
         public CORINFO_SIG_INST sigInst;  // information about how type variables are being instantiated in generic code
         public CORINFO_ARG_LIST_STRUCT_* args;
@@ -248,6 +253,7 @@ namespace Internal.JitInterface
         public byte _testForFixup;
         public bool testForFixup { get { return _testForFixup != 0; } set { _testForFixup = value ? (byte)1 : (byte)0; } }
 
+        public ushort sizeOffset;
         public IntPtr offset0;
         public IntPtr offset1;
         public IntPtr offset2;
@@ -322,8 +328,8 @@ namespace Internal.JitInterface
     public enum CorInfoMethodRuntimeFlags
     {
         CORINFO_FLG_BAD_INLINEE = 0x00000001, // The method is not suitable for inlining
-        CORINFO_FLG_VERIFIABLE = 0x00000002, // The method has verifiable code
-        CORINFO_FLG_UNVERIFIABLE = 0x00000004, // The method has unverifiable code
+        // unused = 0x00000002,
+        // unused = 0x00000004,
         CORINFO_FLG_SWITCHED_TO_MIN_OPT = 0x00000008, // The JIT decided to switch to MinOpt for this method, when it was not requested
         CORINFO_FLG_SWITCHED_TO_OPTIMIZED = 0x00000010, // The JIT decided to switch to tier 1 for this method, when a different tier was requested
     };
@@ -384,10 +390,12 @@ namespace Internal.JitInterface
         CORINFO_CONTEXTFLAGS_MASK = 0x01
     };
 
-    public enum CorInfoSigInfoFlags
+    public enum CorInfoSigInfoFlags : byte
     {
         CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
         CORINFO_SIGFLAG_IL_STUB = 0x02,
+        CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION = 0x04,
+        CORINFO_SIGFLAG_FAT_CALL = 0x08,
     };
 
     // These are returned from getMethodOptions
@@ -565,7 +573,7 @@ namespace Internal.JitInterface
     {
         CORINFO_ACCESS_ANY = 0x0000, // Normal access
         CORINFO_ACCESS_THIS = 0x0001, // Accessed via the this reference
-        CORINFO_ACCESS_UNWRAP = 0x0002, // Accessed via an unwrap reference
+        // CORINFO_ACCESS_UNUSED = 0x0002,
 
         CORINFO_ACCESS_NONNULL = 0x0004, // Instance is guaranteed non-null
 
@@ -604,13 +612,13 @@ namespace Internal.JitInterface
         CORINFO_FLG_SHAREDINST = 0x00020000, // the code for this method is shared between different generic instantiations (also set on classes/types)
         CORINFO_FLG_DELEGATE_INVOKE = 0x00040000, // "Delegate
         CORINFO_FLG_PINVOKE = 0x00080000, // Is a P/Invoke call
-        CORINFO_FLG_SECURITYCHECK = 0x00100000, // Is one of the security routines that does a stackwalk (e.g. Assert, Demand)
+        // CORINFO_FLG_UNUSED = 0x00100000,
         CORINFO_FLG_NOGCCHECK = 0x00200000, // This method is FCALL that has no GC check.  Don't put alone in loops
         CORINFO_FLG_INTRINSIC = 0x00400000, // This method MAY have an intrinsic ID
         CORINFO_FLG_CONSTRUCTOR = 0x00800000, // This method is an instance or type initializer
         CORINFO_FLG_AGGRESSIVE_OPT = 0x01000000, // The method may contain hot code and should be aggressively optimized if possible
         CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS = 0x02000000, // Indicates that tier 0 JIT should not be used for a method that contains a loop
-        CORINFO_FLG_NOSECURITYWRAP = 0x04000000, // The method requires no security checks
+        // CORINFO_FLG_UNUSED = 0x04000000,
         CORINFO_FLG_DONT_INLINE = 0x10000000, // The method should not be inlined
         CORINFO_FLG_DONT_INLINE_CALLER = 0x20000000, // The method should not be inlined, nor should its callers. It cannot be tail called.
         CORINFO_FLG_JIT_INTRINSIC = 0x40000000, // Method is a potential jit intrinsic; verify identity by name check
@@ -623,11 +631,11 @@ namespace Internal.JitInterface
         CORINFO_FLG_ARRAY = 0x00080000, // class is an array class (initialized differently)
         CORINFO_FLG_OVERLAPPING_FIELDS = 0x00100000, // struct or class has fields that overlap (aka union)
         CORINFO_FLG_INTERFACE = 0x00200000, // it is an interface
-        CORINFO_FLG_CONTEXTFUL = 0x00400000, // is this a contextful class?
+        // CORINFO_FLG_UNUSED = 0x00400000,
         CORINFO_FLG_CUSTOMLAYOUT = 0x00800000, // does this struct have custom layout?
         CORINFO_FLG_CONTAINS_GC_PTR = 0x01000000, // does the class contain a gc ptr ?
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
-        CORINFO_FLG_MARSHAL_BYREF = 0x04000000, // is this a subclass of MarshalByRef ?
+        // CORINFO_FLG_UNUSED = 0x04000000,
         CORINFO_FLG_CONTAINS_STACK_PTR = 0x08000000, // This class has a stack pointer inside it
         CORINFO_FLG_VARIANCE = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
         CORINFO_FLG_BEFOREFIELDINIT = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
@@ -711,7 +719,6 @@ namespace Internal.JitInterface
     {
         CORINFO_ACCESS_ALLOWED = 0,           // Call allowed
         CORINFO_ACCESS_ILLEGAL = 1,           // Call not allowed
-        CORINFO_ACCESS_RUNTIME_CHECK = 2,     // Ask at runtime whether to allow the call or not
     }
 
     //----------------------------------------------------------------------------
@@ -763,6 +770,8 @@ namespace Internal.JitInterface
         CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will be use the normal alignment
         CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN = 0x00000001, // The code will be 16-byte aligned
         CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
+        CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
+        CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
     }
 
     public enum CorJitFuncKind
@@ -772,6 +781,11 @@ namespace Internal.JitInterface
         CORJIT_FUNC_FILTER         // a funclet associated with an EH filter
     }
 
+    public unsafe struct CORINFO_OSR_INFO
+    {
+        public uint ILOffset;
+        public void* PatchpointInfo;
+    }
 
     public unsafe struct CORINFO_METHOD_INFO
     {
@@ -785,6 +799,7 @@ namespace Internal.JitInterface
         public CorInfoRegionKind regionKind;
         public CORINFO_SIG_INFO args;
         public CORINFO_SIG_INFO locals;
+        public CORINFO_OSR_INFO osrInfo;
     }
     //
     // what type of code region we are in
@@ -796,26 +811,6 @@ namespace Internal.JitInterface
         CORINFO_REGION_COLD,
         CORINFO_REGION_JIT,
     }
-
-    // This is for use when the JIT is compiling an instantiation
-    // of generic code.  The JIT needs to know if the generic code itself
-    // (which can be verified once and for all independently of the
-    // instantiations) passed verification.
-    public enum CorInfoInstantiationVerification
-    {
-        // The method is NOT a concrete instantiation (eg. List<int>.Add()) of a method
-        // in a generic class or a generic method. It is either the typical instantiation
-        // (eg. List<T>.Add()) or entirely non-generic.
-        INSTVER_NOT_INSTANTIATION = 0,
-
-        // The method is an instantiation of a method in a generic class or a generic method,
-        // and the generic class was successfully verified
-        INSTVER_GENERIC_PASSED_VERIFICATION = 1,
-
-        // The method is an instantiation of a method in a generic class or a generic method,
-        // and the generic class failed verification
-        INSTVER_GENERIC_FAILED_VERIFICATION = 2,
-    };
 
     public enum CorInfoTypeWithMod
     {
@@ -896,13 +891,6 @@ namespace Internal.JitInterface
         // Wrapper delegate offsets
         public uint offsetOfWrapperDelegateIndirectCell;
 
-        // Remoting offsets
-        public uint offsetOfTransparentProxyRP;
-        public uint offsetOfRealProxyServer;
-
-        // Array offsets
-        public uint offsetOfObjArrayData;
-
         // Reverse PInvoke offsets
         public uint sizeOfReversePInvokeFrame;
 
@@ -917,9 +905,6 @@ namespace Internal.JitInterface
         public CORINFO_RUNTIME_ABI targetAbi;
 
         public CORINFO_OS osType;
-        public uint osMajor;
-        public uint osMinor;
-        public uint osBuild;
     }
 
     public enum CORINFO_THIS_TRANSFORM
@@ -1045,8 +1030,6 @@ namespace Internal.JitInterface
         //      JIT may either insert the callsiteCalloutHelper into the code (as per a verification error) or
         //      call throwExceptionFromHelper on the callsiteCalloutHelper.  In this case callsiteCalloutHelper
         //      is guaranteed not to return.
-        //  - CORINFO_ACCESS_RUNTIME_CHECK - The jit must insert the callsiteCalloutHelper at the call site.
-        //      the helper may return
         public CorInfoIsAccessAllowedResult accessAllowed;
         public CORINFO_HELPER_DESC callsiteCalloutHelper;
 
@@ -1149,20 +1132,6 @@ namespace Internal.JitInterface
         // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
-
-        // Internal flags - never returned outside of the classification implementation.
-
-        // This value represents a very special type with two eightbytes.
-        // First ByRef, second Integer (platform int).
-        // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
-        // This is the classification counterpart for that element type. It is used to detect
-        // the special TypedReference type and specialize its classification.
-        // This type is represented as a struct with two fields. The classification needs to do
-        // special handling of it since the source/methadata type of the fieds is IntPtr.
-        // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
-        // special handling is warranted (similar thing is done in the getGCLayout function for this type).
-        SystemVClassificationTypeTypedReference     = 8,
-        SystemVClassificationTypeMAX                = 9
     };
 
     public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
@@ -1351,13 +1320,13 @@ namespace Internal.JitInterface
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLAG_USE_PINVOKE_HELPERS = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        CORJIT_FLAG_DESKTOP_QUIRKS = 38, // The JIT should generate desktop-quirk-compatible code
+        // CORJIT_FLAG_UNUSED = 38,
         CORJIT_FLAG_TIER0 = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_NO_INLINING = 42, // JIT should not inline any called method into this method
 
-#region ARM64
+#region TARGET_ARM64
         CORJIT_FLAG_HAS_ARM64_AES           = 43, // ID_AA64ISAR0_EL1.AES is 1 or better
         CORJIT_FLAG_HAS_ARM64_ATOMICS       = 44, // ID_AA64ISAR0_EL1.Atomic is 2 or better
         CORJIT_FLAG_HAS_ARM64_CRC32         = 45, // ID_AA64ISAR0_EL1.CRC32 is 1 or better

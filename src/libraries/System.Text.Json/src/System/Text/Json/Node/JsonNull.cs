@@ -63,7 +63,7 @@ namespace System.Text.Json
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
                 return (left is null) ? true : false;
             }
 

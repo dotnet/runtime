@@ -9,9 +9,9 @@
 #include "profilerdiagnosticprotocolhelper.h"
 #include "diagnosticsprotocol.h"
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #include "pal.h"
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #ifdef FEATURE_AUTO_TRACE
 #include "autotrace.h"
@@ -76,7 +76,7 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
                 EventPipeProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
             case DiagnosticsIpc::DiagnosticServerCommandSet::Dump:
                 DumpDiagnosticProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
@@ -135,9 +135,22 @@ bool DiagnosticServer::Initialize()
                 szMessage);                                           // data2
         };
 
+        NewArrayHolder<char> address = nullptr;
+        CLRConfigStringHolder wAddress = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsServerAddress);
+        int nCharactersWritten = 0;
+        if (wAddress != nullptr)
+        {
+            nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wAddress, -1, NULL, 0, NULL, NULL);
+            if (nCharactersWritten != 0)
+            {
+                address = new char[nCharactersWritten];
+                nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wAddress, -1, address, nCharactersWritten, NULL, NULL);
+                assert(nCharactersWritten != 0);
+            }
+        }
+
         // TODO: Should we handle/assert that (s_pIpc == nullptr)?
-        s_pIpc = IpcStream::DiagnosticsIpc::Create(
-            "dotnet-diagnostic", ErrorCallback);
+        s_pIpc = IpcStream::DiagnosticsIpc::Create(address, ErrorCallback);
 
         if (s_pIpc != nullptr)
         {

@@ -22,6 +22,7 @@ namespace System.Tests
     public partial class StringTests
     {
         private const string SoftHyphen = "\u00AD";
+        private const string ZeroWidthJoiner = "\u200D"; // weightless in both ICU and NLS
         private static readonly char[] s_whiteSpaceCharacters = { '\u0009', '\u000a', '\u000b', '\u000c', '\u000d', '\u0020', '\u0085', '\u00a0', '\u1680' };
 
         [Theory]
@@ -1673,12 +1674,12 @@ namespace System.Tests
             }
             Assert.Equal(expected, s.EndsWith(value, comparisonType));
 
-            // Cannot use implicit cast from string to ReadOnlySpan for other runtimes, like netfx. Therefore, explicitly call AsSpan.
+            // Cannot use implicit cast from string to ReadOnlySpan for other runtimes, like .NET Framework. Therefore, explicitly call AsSpan.
             Assert.Equal(expected, s.AsSpan().EndsWith(value.AsSpan(), comparisonType));
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/2051", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/4673", TestPlatforms.AnyUnix)]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]
@@ -1700,7 +1701,7 @@ namespace System.Tests
 
         // NOTE: This is by design. Unix ignores the null characters (i.e. null characters have no weights for the string comparison).
         // For desired behavior, use ordinal comparison instead of linguistic comparison.
-        // This is a known difference between Windows and Unix (https://github.com/dotnet/coreclr/issues/2051).
+        // This is a known difference between Windows and Unix (https://github.com/dotnet/runtime/issues/4673).
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(StringComparison.InvariantCulture)]
@@ -1865,7 +1866,7 @@ namespace System.Tests
                     //For example null character on Linux will be ignored if it is compared to anything
                     //while on Windows null will be always compared as ordinal.
                     //For desired behavior, use ordinal comparison instead of linguistic comparison.
-                    //This is a known difference between Windows and Unix (https://github.com/dotnet/coreclr/issues/2051).
+                    //This is a known difference between Windows and Unix (https://github.com/dotnet/runtime/issues/4673).
                     bool b = s1.EndsWith(s2, StringComparison.Ordinal);
                     Assert.False(b);
 
@@ -2628,7 +2629,7 @@ namespace System.Tests
         [InlineData("Hello", 'o', 5, 0, -1)]
         [InlineData("H" + SoftHyphen + "ello", 'e', 0, 3, 2)]
         // For some reason, this is failing on *nix with ordinal comparisons.
-        // Possibly related issue: dotnet/coreclr#2051
+        // Possibly related issue: https://github.com/dotnet/runtime/issues/4673
         // [InlineData("Hello", '\0', 0, 5, -1)] // .NET strings are terminated with a null character, but they should not be included as part of the string
         [InlineData("\ud800\udfff", '\ud800', 0, 1, 0)] // Surrogate characters
         [InlineData("ABCDEFGHIJKLMNOPQRSTUVWXYZ", 'A', 0, 26, 0)]
@@ -2774,7 +2775,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/2051", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/4673", TestPlatforms.AnyUnix)]
         [InlineData("He\0lo", "He\0lo", 0)]
         [InlineData("He\0lo", "He\0", 0)]
         [InlineData("He\0lo", "\0", 2)]
@@ -3864,7 +3865,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/2051", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/4673", TestPlatforms.AnyUnix)]
         [InlineData("He\0lo", "He\0lo", 0)]
         [InlineData("He\0lo", "He\0", 0)]
         [InlineData("He\0lo", "\0", 2)]
@@ -4650,7 +4651,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/2051", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/4673", TestPlatforms.AnyUnix)]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]
@@ -7077,7 +7078,7 @@ namespace System.Tests
 
         // NOTE: This is by design. Unix ignores the null characters (i.e. null characters have no weights for the string comparison).
         // For desired behavior, use ordinal comparison instead of linguistic comparison.
-        // This is a known difference between Windows and Unix (https://github.com/dotnet/coreclr/issues/2051).
+        // This is a known difference between Windows and Unix (https://github.com/dotnet/runtime/issues/4673).
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(StringComparison.CurrentCulture)]

@@ -12,9 +12,9 @@ namespace System.Security.Cryptography
 {
     public abstract partial class RSA : AsymmetricAlgorithm
     {
-        public static new RSA Create(string algName)
+        public static new RSA? Create(string algName)
         {
-            return (RSA)CryptoConfig.CreateFromName(algName);
+            return (RSA?)CryptoConfig.CreateFromName(algName);
         }
 
         public static RSA Create(int keySizeInBits)
@@ -635,7 +635,7 @@ namespace System.Security.Cryptography
             CryptographicOperations.ZeroMemory(rsaParameters.InverseQ);
         }
 
-        public override string KeyExchangeAlgorithm => "RSA";
+        public override string? KeyExchangeAlgorithm => "RSA";
         public override string SignatureAlgorithm => "RSA";
 
         private static Exception HashAlgorithmNameNullOrEmpty() =>

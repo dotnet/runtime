@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+    <ExcludeBoehmGCFromBuild>true</ExcludeBoehmGCFromBuild>
+    <ExcludeBoehmGCFromBuild Condition="'$(MONO_TARGET_GC)'=='boehm'">false</ExcludeBoehmGCFromBuild>
+  </PropertyGroup>
+  <ItemGroup Label="libmonogc_sources">
+    <ClCompile Include="$(MonoSourceLocation)\external\bdwgc\extra\gc.c">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MonoSourceLocation)\external\bdwgc\include\gc.h">
+      <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MonoSourceLocation)\external\bdwgc\Makefile.am" />
+  </ItemGroup>
+</Project>

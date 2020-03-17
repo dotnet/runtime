@@ -6,13 +6,14 @@ using System.Collections.Generic;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
-        private HttpMessageHandler _handler;
+        private HttpMessageHandler? _handler;
         private bool _disposed;
 
         private void CheckDisposed()
@@ -72,7 +73,7 @@ namespace System.Net.Http
             }
         }
 
-        public IWebProxy Proxy
+        public IWebProxy? Proxy
         {
             get => _settings._proxy;
             set
@@ -82,7 +83,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials DefaultProxyCredentials
+        public ICredentials? DefaultProxyCredentials
         {
             get => _settings._defaultProxyCredentials;
             set
@@ -102,7 +103,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials Credentials
+        public ICredentials? Credentials
         {
             get => _settings._credentials;
             set
@@ -198,6 +199,7 @@ namespace System.Net.Http
             }
         }
 
+        [AllowNull]
         public SslClientAuthenticationOptions SslOptions
         {
             get => _settings._sslOptions ?? (_settings._sslOptions = new SslClientAuthenticationOptions());
@@ -270,8 +272,8 @@ namespace System.Net.Http
             }
         }
 
-        public IDictionary<string, object> Properties =>
-            _settings._properties ?? (_settings._properties = new Dictionary<string, object>());
+        public IDictionary<string, object?> Properties =>
+            _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 
         protected override void Dispose(bool disposing)
         {
@@ -336,7 +338,7 @@ namespace System.Net.Http
             CheckDisposed();
             HttpMessageHandler handler = _handler ?? SetupHandlerChain();
 
-            Exception error = ValidateAndNormalizeRequest(request);
+            Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)
             {
                 return Task.FromException<HttpResponseMessage>(error);
@@ -345,7 +347,7 @@ namespace System.Net.Http
             return handler.SendAsync(request, cancellationToken);
         }
 
-        private Exception ValidateAndNormalizeRequest(HttpRequestMessage request)
+        private Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
         {
             if (request.Version.Major == 0)
             {

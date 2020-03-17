@@ -74,12 +74,7 @@ namespace System
         // Provides a string representation of a byte.
         public override string ToString()
         {
-            return Number.FormatInt32(m_value, null, null);
-        }
-
-        public string ToString(IFormatProvider? provider)
-        {
-            return Number.FormatInt32(m_value, null, provider);
+            return Number.Int32ToDecStr(m_value);
         }
 
         public string ToString(string? format)
@@ -87,34 +82,27 @@ namespace System
             return ToString(format, null);
         }
 
+        public string ToString(IFormatProvider? provider)
+        {
+            return ToString(null, provider);
+        }
+
         public string ToString(string? format, IFormatProvider? provider)
         {
-            if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
-            {
-                uint temp = (uint)(m_value & 0x000000FF);
-                return Number.FormatUInt32(temp, format, provider);
-            }
-            return Number.FormatInt32(m_value, format, provider);
+            return Number.FormatInt32(m_value, 0x000000FF, format, provider);
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            if (m_value < 0 && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
-            {
-                uint temp = (uint)(m_value & 0x000000FF);
-                return Number.TryFormatUInt32(temp, format, provider, destination, out charsWritten);
-            }
-            return Number.TryFormatInt32(m_value, format, provider, destination, out charsWritten);
+            return Number.TryFormatInt32(m_value, 0x000000FF, format, provider, destination, out charsWritten);
         }
 
-        [CLSCompliant(false)]
         public static sbyte Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
-        [CLSCompliant(false)]
         public static sbyte Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -122,7 +110,6 @@ namespace System
             return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        [CLSCompliant(false)]
         public static sbyte Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -133,7 +120,6 @@ namespace System
         // a NumberFormatInfo isn't specified, the current culture's
         // NumberFormatInfo is assumed.
         //
-        [CLSCompliant(false)]
         public static sbyte Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -141,7 +127,6 @@ namespace System
             return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        [CLSCompliant(false)]
         public static sbyte Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -165,7 +150,6 @@ namespace System
             return (sbyte)i;
         }
 
-        [CLSCompliant(false)]
         public static bool TryParse(string? s, out sbyte result)
         {
             if (s == null)
@@ -177,13 +161,11 @@ namespace System
             return TryParse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<char> s, out sbyte result)
         {
             return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        [CLSCompliant(false)]
         public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out sbyte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -197,7 +179,6 @@ namespace System
             return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out sbyte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);

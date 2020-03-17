@@ -56,6 +56,7 @@ class   AllocMemTracker;
 class   SimpleRWLock;
 class   MethodDataCache;
 class   EEClassLayoutInfo;
+class   EEClassNativeLayoutInfo;
 #ifdef FEATURE_COMINTEROP
 class   ComCallWrapperTemplate;
 #endif
@@ -239,7 +240,7 @@ typedef DPTR(GuidInfo) PTR_GuidInfo;
 // GenericsDictInfo is stored at negative offset of the dictionary
 struct GenericsDictInfo
 {
-#ifdef BIT64
+#ifdef HOST_64BIT
     DWORD m_dwPadding;               // Just to keep the size a multiple of 8
 #endif
 
@@ -354,7 +355,7 @@ struct MethodTableWriteableData
     // GC (like AD unload)
     Volatile<DWORD> m_dwLastVerifedGCCnt;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     DWORD m_dwPadding;               // Just to keep the size a multiple of 8
 #endif
 
@@ -475,7 +476,7 @@ public:
         // Used only during method table initialization - no need for logging or Interlocked Exchange.
         SetIsRestoredForBuildMethodTable();
 
-        // Array's parent is always precise 
+        // Array's parent is always precise
         m_dwFlags &= ~(MethodTableWriteableData::enum_flag_HasApproxParent);
 
     }
@@ -520,7 +521,7 @@ SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeT
         SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_VAR (type variable)
         SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_ARRAY
         SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_GENERICINST
-        SystemVClassificationTypeTypedReference,        // ELEMENT_TYPE_TYPEDBYREF
+        SystemVClassificationTypeStruct,                // ELEMENT_TYPE_TYPEDBYREF
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_VALUEARRAY_UNSUPPORTED
         SystemVClassificationTypeInteger,               // ELEMENT_TYPE_I
         SystemVClassificationTypeInteger,               // ELEMENT_TYPE_U
@@ -543,7 +544,7 @@ SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeT
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_I4] == SystemVClassificationTypeInteger);
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_PTR] == SystemVClassificationTypeInteger);
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_VALUETYPE] == SystemVClassificationTypeStruct);
-    _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_TYPEDBYREF] == SystemVClassificationTypeTypedReference);
+    _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_TYPEDBYREF] == SystemVClassificationTypeStruct);
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_BYREF] == SystemVClassificationTypeIntegerByRef);
 
     return (((unsigned)eeType) < ELEMENT_TYPE_MAX) ? (toSystemVAmd64ClassificationTypeMap[(unsigned)eeType]) : SystemVClassificationTypeUnknown;
@@ -892,6 +893,7 @@ public:
 #if defined(UNIX_AMD64_ABI_ITF)
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
     bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
+    bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, EEClassNativeLayoutInfo const* nativeLayoutInfo);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
     // Copy m_dwFlags from another method table
@@ -904,7 +906,7 @@ public:
 
     // Init the m_dwFlags field for an array
     void SetIsArray(CorElementType arrayType);
-        
+
     BOOL IsClassPreInited();
 
     // mark the class as having its cctor run.
@@ -931,7 +933,6 @@ private:
     void AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel) const;
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
     bool ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
-    bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
     DWORD   GetClassIndexFromToken(mdTypeDef typeToken)
@@ -1710,7 +1711,11 @@ public:
 
     inline BOOL HasLayout();
 
-    inline EEClassLayoutInfo *GetLayoutInfo();
+    inline EEClassLayoutInfo* GetLayoutInfo();
+
+    EEClassNativeLayoutInfo const* GetNativeLayoutInfo();
+
+    EEClassNativeLayoutInfo const* EnsureNativeLayoutInfoInitialized();
 
     inline BOOL IsBlittable();
 
@@ -1948,17 +1953,6 @@ public:
     // Returns true iff the native view of this type requires 64-bit aligment.
     bool NativeRequiresAlign8();
 #endif // FEATURE_64BIT_ALIGNMENT
-
-    // True if interface casts for an object having this type require more
-    // than a simple scan of the interface map
-    // See JIT_IsInstanceOfInterface
-    inline BOOL InstanceRequiresNonTrivialInterfaceCast()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return GetFlag(enum_flag_NonTrivialInterfaceCast);
-    }
-
 
     //-------------------------------------------------------------------
     // PARENT INTERFACES
@@ -2663,7 +2657,7 @@ public:
     // GetInternalCorElementType() retrieves the internal representation of the type. It's not always
     // appropiate to use this. For example, we treat enums as their underlying type or some structs are
     // optimized to be ints. To get the signature type or the verifier type (same as signature except for
-    // enums are normalized to the primtive type that underlies them), use the APIs in Typehandle.h
+    // enums are normalized to the primitive type that underlies them), use the APIs in Typehandle.h
     //
     //   * code:TypeHandle.GetSignatureCorElementType()
     //   * code:TypeHandle.GetVerifierCorElementType()
@@ -2752,21 +2746,7 @@ public:
         SetFlag(enum_flag_Category_Nullable);
     }
 
-    inline BOOL IsStructMarshalable()
-    {
-        LIMITED_METHOD_CONTRACT;
-        PRECONDITION(!IsInterface());
-        return GetFlag(enum_flag_IfNotInterfaceThenMarshalable);
-    }
-
-    inline void SetStructMarshalable()
-    {
-        LIMITED_METHOD_CONTRACT;
-        PRECONDITION(!IsInterface());
-        SetFlag(enum_flag_IfNotInterfaceThenMarshalable);
-    }
-    
-    // The following methods are only valid for the method tables for array types.  
+    // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType();
     DWORD GetRank();
 
@@ -2839,6 +2819,8 @@ public:
                                ULONG *pcbData);
 
     mdTypeDef GetEnclosingCl();
+
+    CorNativeLinkType GetCharSet();
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -3699,7 +3681,6 @@ private:
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization
 
-        enum_flag_IfNotInterfaceThenMarshalable = 0x00200000, // Is this type marshalable by the pinvoke marshalling layer
 #ifdef FEATURE_COMINTEROP
         enum_flag_IfInterfaceThenHasGuidInfo    = 0x00200000, // Does the type has optional GuidInfo
 #endif // FEATURE_COMINTEROP
@@ -3838,14 +3819,6 @@ private:
     {
         return (m_wFlags2 & (DWORD)mask) == (DWORD)flag;
     }
-
-    // Just exposing a couple of these for x86 asm versions of JIT_IsInstanceOfClass and JIT_IsInstanceOfInterface
-public:
-    enum
-    {
-        public_enum_flag_HasTypeEquivalence = enum_flag_HasTypeEquivalence,
-        public_enum_flag_NonTrivialInterfaceCast = enum_flag_NonTrivialInterfaceCast,
-    };
 
 private:
     /*

@@ -61,13 +61,13 @@ namespace System.Net.Http
         private int _lastStreamId = -1;
 
         // This will be set when a connection IO error occurs
-        private Exception _abortException;
+        private Exception? _abortException;
 
         // If an in-progress write is canceled we need to be able to immediately
         // report a cancellation to the user, but also block the connection until
         // the write completes. We avoid actually canceling the write, as we would
         // then have to close the whole connection.
-        private Task _inProgressWrite = null;
+        private Task? _inProgressWrite = null;
 
         private const int MaxStreamId = int.MaxValue;
 
@@ -159,20 +159,6 @@ namespace System.Net.Http
             _ = ProcessIncomingFramesAsync();
         }
 
-        private async ValueTask EnsureIncomingBytesAsync(int minReadBytes)
-        {
-            if (NetEventSource.IsEnabled) Trace($"{nameof(minReadBytes)}={minReadBytes}");
-            if (_incomingBuffer.ActiveLength >= minReadBytes)
-            {
-                return;
-            }
-
-            int bytesNeeded = minReadBytes - _incomingBuffer.ActiveLength;
-            _incomingBuffer.EnsureAvailableSpace(bytesNeeded);
-            int bytesRead = await ReadAtLeastAsync(_stream, _incomingBuffer.AvailableMemory, bytesNeeded).ConfigureAwait(false);
-            _incomingBuffer.Commit(bytesRead);
-        }
-
         private async Task FlushOutgoingBytesAsync()
         {
             if (NetEventSource.IsEnabled) Trace($"{nameof(_outgoingBuffer.ActiveLength)}={_outgoingBuffer.ActiveLength}");
@@ -198,10 +184,21 @@ namespace System.Net.Http
         {
             if (NetEventSource.IsEnabled) Trace($"{nameof(initialFrame)}={initialFrame}");
 
-            // Read frame header
-            await EnsureIncomingBytesAsync(FrameHeader.Size).ConfigureAwait(false);
-            FrameHeader frameHeader = FrameHeader.ReadFrom(_incomingBuffer.ActiveSpan);
+            // Ensure we've read enough data for the frame header.
+            if (_incomingBuffer.ActiveLength < FrameHeader.Size)
+            {
+                _incomingBuffer.EnsureAvailableSpace(FrameHeader.Size - _incomingBuffer.ActiveLength);
+                do
+                {
+                    int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
+                    _incomingBuffer.Commit(bytesRead);
+                    if (bytesRead == 0) ThrowPrematureEOF(FrameHeader.Size);
+                }
+                while (_incomingBuffer.ActiveLength < FrameHeader.Size);
+            }
 
+            // Parse the frame header from our read buffer and validate it.
+            FrameHeader frameHeader = FrameHeader.ReadFrom(_incomingBuffer.ActiveSpan);
             if (frameHeader.Length > FrameHeader.MaxLength)
             {
                 if (initialFrame && NetEventSource.IsEnabled)
@@ -215,16 +212,31 @@ namespace System.Net.Http
             }
             _incomingBuffer.Discard(FrameHeader.Size);
 
-            // Read frame contents
-            await EnsureIncomingBytesAsync(frameHeader.Length).ConfigureAwait(false);
+            // Ensure we've read the frame contents into our buffer.
+            if (_incomingBuffer.ActiveLength < frameHeader.Length)
+            {
+                _incomingBuffer.EnsureAvailableSpace(frameHeader.Length - _incomingBuffer.ActiveLength);
+                do
+                {
+                    int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
+                    _incomingBuffer.Commit(bytesRead);
+                    if (bytesRead == 0) ThrowPrematureEOF(frameHeader.Length);
+                }
+                while (_incomingBuffer.ActiveLength < frameHeader.Length);
+            }
 
+            // Return the read frame header.
             return frameHeader;
+
+            void ThrowPrematureEOF(int requiredBytes) =>
+                throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
         }
 
         private async Task ProcessIncomingFramesAsync()
         {
             try
             {
+                // Read the initial settings frame.
                 FrameHeader frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
                 if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
                 {
@@ -238,9 +250,37 @@ namespace System.Net.Http
                 // Keep processing frames as they arrive.
                 for (long frameNum = 1; ; frameNum++)
                 {
+                    // We could just call ReadFrameAsync here, but we add this code before it for two reasons:
+                    // 1. To provide a better error message when we're unable to read another frame.  We otherwise
+                    //    generally output an error message that's relatively obscure.
+                    // 2. To avoid another state machine allocation in the relatively common case where we
+                    //    currently don't have enough data buffered and issuing a read for the frame header
+                    //    completes asynchronously, but that read ends up also reading enough data to fulfill
+                    //    the entire frame's needs (not just the header).
+                    if (_incomingBuffer.ActiveLength < FrameHeader.Size)
+                    {
+                        _incomingBuffer.EnsureAvailableSpace(FrameHeader.Size - _incomingBuffer.ActiveLength);
+                        do
+                        {
+                            int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
+                            Debug.Assert(bytesRead >= 0);
+                            _incomingBuffer.Commit(bytesRead);
+                            if (bytesRead == 0)
+                            {
+                                string message = _incomingBuffer.ActiveLength == 0 ?
+                                    SR.net_http_invalid_response_missing_frame :
+                                    SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, FrameHeader.Size - _incomingBuffer.ActiveLength);
+                                throw new IOException(message);
+                            }
+                        }
+                        while (_incomingBuffer.ActiveLength < FrameHeader.Size);
+                    }
+
+                    // Read the frame.
                     frameHeader = await ReadFrameAsync().ConfigureAwait(false);
                     if (NetEventSource.IsEnabled) Trace($"Frame {frameNum}: {frameHeader}.");
 
+                    // Process the frame.
                     switch (frameHeader.Type)
                     {
                         case FrameType.Headers:
@@ -275,7 +315,11 @@ namespace System.Net.Http
                             ProcessGoAwayFrame(frameHeader);
                             break;
 
-                        case FrameType.PushPromise:     // Should not happen, since we disable this in our initial SETTINGS (TODO: ISSUE 31295: We aren't currently, but we should)
+                        case FrameType.AltSvc:
+                            ProcessAltSvcFrame(frameHeader);
+                            break;
+
+                        case FrameType.PushPromise:     // Should not happen, since we disable this in our initial SETTINGS
                         case FrameType.Continuation:    // Should only be received while processing headers in ProcessHeadersFrame
                         default:
                             throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
@@ -294,11 +338,8 @@ namespace System.Net.Http
         // Callers must check for this and send a RST_STREAM or ignore as appropriate.
         // If the streamId is invalid or the stream is idle, calling this function
         // will result in a connection level error.
-        private Http2Stream GetStream(int streamId)
+        private Http2Stream? GetStream(int streamId)
         {
-            // TODO: ISSUE 34192: If we implement support for Push Promise, this will
-            // need to be updated to track the highest stream ID used by the server in
-            // addition to the highest ID used by the client.
             if (streamId <= 0 || streamId >= _nextStream)
             {
                 throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
@@ -306,7 +347,7 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
-                if (!_httpStreams.TryGetValue(streamId, out Http2Stream http2Stream))
+                if (!_httpStreams.TryGetValue(streamId, out Http2Stream? http2Stream))
                 {
                     return null;
                 }
@@ -323,7 +364,7 @@ namespace System.Net.Http
             bool endStream = frameHeader.EndStreamFlag;
 
             int streamId = frameHeader.StreamId;
-            Http2Stream http2Stream = GetStream(streamId);
+            Http2Stream? http2Stream = GetStream(streamId);
 
             // Note, http2Stream will be null if this is a closed stream.
             // We will still process the headers, to ensure the header decoding state is up-to-date,
@@ -395,11 +436,46 @@ namespace System.Net.Http
             return frameData;
         }
 
+        /// <summary>
+        /// Parses an ALTSVC frame, defined by RFC 7838 Section 4.
+        /// </summary>
+        /// <remarks>
+        /// The RFC states that any parse errors should result in ignoring the frame.
+        /// </remarks>
+        private void ProcessAltSvcFrame(FrameHeader frameHeader)
+        {
+            if (NetEventSource.IsEnabled) Trace($"{frameHeader}");
+            Debug.Assert(frameHeader.Type == FrameType.AltSvc);
+
+            ReadOnlySpan<byte> span = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length);
+
+            if (BinaryPrimitives.TryReadUInt16BigEndian(span, out ushort originLength))
+            {
+                span = span.Slice(2);
+
+                // Check that this ALTSVC frame is valid for our pool's origin. ALTSVC frames can come in one of two ways:
+                //  - On stream 0, the origin will be specified. HTTP/2 can service multiple origins per connection, and so the server can report origins other than what our pool is using.
+                //  - Otherwise, the origin is implicitly defined by the request stream and must be of length 0.
+
+                if ((frameHeader.StreamId != 0 && originLength == 0) || (frameHeader.StreamId == 0 && span.Length >= originLength && span.Slice(originLength).SequenceEqual(_pool.Http2AltSvcOriginUri)))
+                {
+                    span = span.Slice(originLength);
+
+                    // The span now contains a string with the same format as Alt-Svc headers.
+
+                    string altSvcHeaderValue = Encoding.ASCII.GetString(span);
+                    _pool.HandleAltSvc(new[] { altSvcHeaderValue }, null);
+                }
+            }
+
+            _incomingBuffer.Discard(frameHeader.Length);
+        }
+
         private void ProcessDataFrame(FrameHeader frameHeader)
         {
             Debug.Assert(frameHeader.Type == FrameType.Data);
 
-            Http2Stream http2Stream = GetStream(frameHeader.StreamId);
+            Http2Stream? http2Stream = GetStream(frameHeader.StreamId);
 
             // Note, http2Stream will be null if this is a closed stream.
             // Just ignore the frame in this case.
@@ -607,7 +683,7 @@ namespace System.Net.Http
             }
             else
             {
-                Http2Stream http2Stream = GetStream(frameHeader.StreamId);
+                Http2Stream? http2Stream = GetStream(frameHeader.StreamId);
                 if (http2Stream == null)
                 {
                     // Ignore invalid stream ID, as per RFC
@@ -632,7 +708,7 @@ namespace System.Net.Http
                 throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
             }
 
-            Http2Stream http2Stream = GetStream(frameHeader.StreamId);
+            Http2Stream? http2Stream = GetStream(frameHeader.StreamId);
             if (http2Stream == null)
             {
                 // Ignore invalid stream ID, as per RFC
@@ -903,7 +979,7 @@ namespace System.Net.Http
             _headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string separator)
+        private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string? separator)
         {
             if (NetEventSource.IsEnabled) Trace($"{nameof(values)}={string.Join(separator, values.ToArray())}");
 
@@ -957,7 +1033,7 @@ namespace System.Net.Http
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = _headerValues.AsSpan(0, headerValuesCount);
 
-                KnownHeader knownHeader = header.Key.KnownHeader;
+                KnownHeader? knownHeader = header.Key.KnownHeader;
                 if (knownHeader != null)
                 {
                     // The Host header is not sent for HTTP2 because we send the ":authority" pseudo-header instead
@@ -982,10 +1058,10 @@ namespace System.Net.Http
 
                         // For all other known headers, send them via their pre-encoded name and the associated value.
                         WriteBytes(knownHeader.Http2EncodedName);
-                        string separator = null;
+                        string? separator = null;
                         if (headerValues.Length > 1)
                         {
-                            HttpHeaderParser parser = header.Key.Parser;
+                            HttpHeaderParser? parser = header.Key.Parser;
                             if (parser != null && parser.SupportsMultipleValues)
                             {
                                 separator = parser.Separator;
@@ -1013,43 +1089,47 @@ namespace System.Net.Http
             Debug.Assert(_headerBuffer.ActiveLength == 0);
 
             // HTTP2 does not support Transfer-Encoding: chunked, so disable this on the request.
-            request.Headers.TransferEncodingChunked = false;
+            if (request.HasHeaders && request.Headers.TransferEncodingChunked == true)
+            {
+                request.Headers.TransferEncodingChunked = false;
+            }
 
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
             // Method is normalized so we can do reference equality here.
             if (ReferenceEquals(normalizedMethod, HttpMethod.Get))
             {
-                WriteIndexedHeader(StaticTable.MethodGet);
+                WriteIndexedHeader(H2StaticTable.MethodGet);
             }
             else if (ReferenceEquals(normalizedMethod, HttpMethod.Post))
             {
-                WriteIndexedHeader(StaticTable.MethodPost);
+                WriteIndexedHeader(H2StaticTable.MethodPost);
             }
             else
             {
-                WriteIndexedHeader(StaticTable.MethodGet, normalizedMethod.Method);
+                WriteIndexedHeader(H2StaticTable.MethodGet, normalizedMethod.Method);
             }
 
-            WriteIndexedHeader(_stream is SslStream ? StaticTable.SchemeHttps : StaticTable.SchemeHttp);
+            WriteIndexedHeader(_stream is SslStream ? H2StaticTable.SchemeHttps : H2StaticTable.SchemeHttp);
 
             if (request.HasHeaders && request.Headers.Host != null)
             {
-                WriteIndexedHeader(StaticTable.Authority, request.Headers.Host);
+                WriteIndexedHeader(H2StaticTable.Authority, request.Headers.Host);
             }
             else
             {
-                WriteBytes(_pool._encodedAuthorityHostHeader);
+                WriteBytes(_pool._http2EncodedAuthorityHostHeader);
             }
 
+            Debug.Assert(request.RequestUri != null);
             string pathAndQuery = request.RequestUri.PathAndQuery;
             if (pathAndQuery == "/")
             {
-                WriteIndexedHeader(StaticTable.PathSlash);
+                WriteIndexedHeader(H2StaticTable.PathSlash);
             }
             else
             {
-                WriteIndexedHeader(StaticTable.PathSlash, pathAndQuery);
+                WriteIndexedHeader(H2StaticTable.PathSlash, pathAndQuery);
             }
 
             if (request.HasHeaders)
@@ -1060,7 +1140,7 @@ namespace System.Net.Http
             // Determine cookies to send.
             if (_pool.Settings._useCookies)
             {
-                string cookiesFromContainer = _pool.Settings._cookieContainer.GetCookieHeader(request.RequestUri);
+                string cookiesFromContainer = _pool.Settings._cookieContainer!.GetCookieHeader(request.RequestUri);
                 if (cookiesFromContainer != string.Empty)
                 {
                     WriteBytes(KnownHeaders.Cookie.Http2EncodedName);
@@ -1534,8 +1614,9 @@ namespace System.Net.Http
             GoAway = 7,
             WindowUpdate = 8,
             Continuation = 9,
+            AltSvc = 10,
 
-            Last = 9
+            Last = 10
         }
 
         private struct FrameHeader
@@ -1679,7 +1760,7 @@ namespace System.Net.Http
                 // complete before worrying about response headers completing.
                 if (requestBodyTask.IsCompleted ||
                     duplex == false ||
-                    requestBodyTask == await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) ||
+                    await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) == requestBodyTask ||
                     requestBodyTask.IsCompleted)
                 {
                     // The sending of the request body completed before receiving all of the request headers (or we're
@@ -1752,7 +1833,7 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
-                if (!_httpStreams.Remove(http2Stream.StreamId, out Http2Stream removed))
+                if (!_httpStreams.Remove(http2Stream.StreamId, out Http2Stream? removed))
                 {
                     Debug.Fail($"Stream {http2Stream.StreamId} not found in dictionary during RemoveStream???");
                     return;
@@ -1775,31 +1856,12 @@ namespace System.Net.Http
             }
         }
 
-        private static async ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minReadBytes)
-        {
-            Debug.Assert(buffer.Length >= minReadBytes);
-
-            int totalBytesRead = 0;
-            while (totalBytesRead < minReadBytes)
-            {
-                int bytesRead = await stream.ReadAsync(buffer.Slice(totalBytesRead)).ConfigureAwait(false);
-                if (bytesRead == 0)
-                {
-                    throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, minReadBytes));
-                }
-
-                totalBytesRead += bytesRead;
-            }
-
-            return totalBytesRead;
-        }
-
         public sealed override string ToString() => $"{nameof(Http2Connection)}({_pool})"; // Description for diagnostic purposes
 
-        public override void Trace(string message, [CallerMemberName] string memberName = null) =>
+        public override void Trace(string message, [CallerMemberName] string? memberName = null) =>
             Trace(0, message, memberName);
 
-        internal void Trace(int streamId, string message, [CallerMemberName] string memberName = null) =>
+        internal void Trace(int streamId, string message, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessage(
                 _pool?.GetHashCode() ?? 0,    // pool ID
                 GetHashCode(),                // connection ID

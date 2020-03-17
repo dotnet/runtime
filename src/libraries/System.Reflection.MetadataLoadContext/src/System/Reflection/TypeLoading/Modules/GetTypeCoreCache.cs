@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Reflection.TypeLoading
@@ -18,21 +19,20 @@ namespace System.Reflection.TypeLoading
             _container = new Container(this);
         }
 
-        public bool TryGet(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, int hashCode, out RoDefinitionType type)
+        public bool TryGet(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, int hashCode, [NotNullWhen(true)] out RoDefinitionType? type)
         {
             return _container.TryGetValue(ns, name, hashCode, out type);
         }
 
         public RoDefinitionType GetOrAdd(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, int hashCode, RoDefinitionType type)
         {
-            bool found = _container.TryGetValue(ns, name, hashCode, out RoDefinitionType prior);
-            if (found)
+            if ( _container.TryGetValue(ns, name, hashCode, out RoDefinitionType? prior))
                 return prior;
 
             Monitor.Enter(_lock);
             try
             {
-                if (_container.TryGetValue(ns, name, hashCode, out RoDefinitionType winner))
+                if (_container.TryGetValue(ns, name, hashCode, out RoDefinitionType? winner))
                     return winner;
                 if (!_container.HasCapacity)
                     _container.Resize(); // This overwrites the _container field.
@@ -77,7 +77,7 @@ namespace System.Reflection.TypeLoading
                 _owner = owner;
             }
 
-            public bool TryGetValue(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, int hashCode, out RoDefinitionType value)
+            public bool TryGetValue(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name, int hashCode, [NotNullWhen(true)] out RoDefinitionType? value)
             {
                 // Lock acquistion NOT required.
 

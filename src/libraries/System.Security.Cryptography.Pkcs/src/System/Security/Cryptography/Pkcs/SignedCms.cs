@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Pkcs
 
         // Similar to _heldContent, the Windows CMS API held this separate internally,
         // and thus we need to be reslilient against modification.
-        private string _contentType;
+        private string? _contentType;
 
         public int Version { get; private set; }
         public ContentInfo ContentInfo { get; private set; }
@@ -89,6 +89,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 foreach (CertificateChoiceAsn choice in certChoices)
                 {
+                    Debug.Assert(choice.Certificate.HasValue);
                     coll.Add(new X509Certificate2(choice.Certificate.Value.ToArray()));
                 }
 
@@ -165,10 +166,13 @@ namespace System.Security.Cryptography.Pkcs
 
         internal void Decode(ReadOnlyMemory<byte> encodedMessage)
         {
+            AsnValueReader reader = new AsnValueReader(encodedMessage.Span, AsnEncodingRules.BER);
+
             // Windows (and thus NetFx) reads the leading data and ignores extra.
             // So use the Decode overload which doesn't throw on extra data.
             ContentInfoAsn.Decode(
-                new AsnReader(encodedMessage, AsnEncodingRules.BER),
+                ref reader,
+                encodedMessage,
                 out ContentInfoAsn contentInfo);
 
             if (contentInfo.ContentType != Oids.Pkcs7Signed)
@@ -233,7 +237,7 @@ namespace System.Security.Cryptography.Pkcs
             // dynamic adapter.
             //
             // See https://tools.ietf.org/html/rfc5652#section-5.2.1
-            byte[] rented = null;
+            byte[]? rented = null;
             int bytesWritten = 0;
             try
             {
@@ -294,7 +298,7 @@ namespace System.Security.Cryptography.Pkcs
                 // Even if all signers have been removed, throw if doing a NoSignature signature
                 // on a loaded (from file, or from first signature) document.
                 //
-                // This matches the NetFX behavior.
+                // This matches the .NET Framework behavior.
                 throw new CryptographicException(SR.Cryptography_Cms_Sign_No_Signature_First_Signer);
             }
 
@@ -302,7 +306,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 if (silent)
                 {
-                    // NetFX compatibility, silent disallows prompting, so throws InvalidOperationException
+                    // .NET Framework compatibility, silent disallows prompting, so throws InvalidOperationException
                     // in this state.
                     //
                     // The message is different than on NetFX, because the resource string was for
@@ -402,6 +406,7 @@ namespace System.Security.Cryptography.Pkcs
 
         internal ReadOnlySpan<byte> GetHashableContentSpan()
         {
+            Debug.Assert(_heldContent.HasValue);
             ReadOnlyMemory<byte> content = _heldContent.Value;
 
             if (!_hasPkcs7Content)
@@ -418,7 +423,7 @@ namespace System.Security.Cryptography.Pkcs
 
         internal void Reencode()
         {
-            // When NetFx re-encodes it just resets the CMS handle, the ContentInfo property
+            // When .NET Framework re-encodes it just resets the CMS handle, the ContentInfo property
             // does not get changed.
             // See ReopenToDecode
             ContentInfo save = ContentInfo;
@@ -639,9 +644,9 @@ namespace System.Security.Cryptography.Pkcs
 
             if (existingLength > 0)
             {
-                foreach (CertificateChoiceAsn cert in _signedData.CertificateSet)
+                foreach (CertificateChoiceAsn cert in _signedData.CertificateSet!)
                 {
-                    if (cert.Certificate.Value.Span.SequenceEqual(rawData))
+                    if (cert.Certificate!.Value.Span.SequenceEqual(rawData))
                     {
                         throw new CryptographicException(SR.Cryptography_Cms_CertificateAlreadyInCollection);
                     }
@@ -674,9 +679,9 @@ namespace System.Security.Cryptography.Pkcs
                 int idx = 0;
                 byte[] rawData = certificate.RawData;
 
-                foreach (CertificateChoiceAsn cert in _signedData.CertificateSet)
+                foreach (CertificateChoiceAsn cert in _signedData.CertificateSet!)
                 {
-                    if (cert.Certificate.Value.Span.SequenceEqual(rawData))
+                    if (cert.Certificate!.Value.Span.SequenceEqual(rawData))
                     {
                         PkcsHelpers.RemoveAt(ref _signedData.CertificateSet, idx);
                         Reencode();

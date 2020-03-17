@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -68,6 +68,7 @@ namespace ILCompiler.IBC
                 // alone.
 
                 const uint scenarioMaskIfMissing = 1u;
+                HashSet<MethodDesc> methodsFoundInData = new HashSet<MethodDesc>();
 
                 foreach (TokenData entry in TokenList)
                 {
@@ -89,7 +90,8 @@ namespace ILCompiler.IBC
                     // scenarioMask will be 0 in unprocessed or V1 IBC data.
                     if (scenarioMask == 0)
                     {
-                        throw new NotImplementedException();
+                        // TODO Compute RunOnce and RunNever from basic block data
+                        scenarioMask = scenarioMaskIfMissing;
                         /*                        Debug.Assert(fullScenarioMask == 1, "Token entry not owned by one scenario");
                                                 // We have to compute the RunOnceMethod and RunNeverMethod flags.
                                                 entry.Flags = result.GetFlags(entry.Flags, section, entry.Token);
@@ -105,7 +107,15 @@ namespace ILCompiler.IBC
                         case CorTokenType.mdtMethodDef:
                         case CorTokenType.mdtMemberRef:
                         case CorTokenType.mdtMethodSpec:
-                            associatedMethod = ecmaModule.GetMethod(System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle((int)entry.Token));
+                            object metadataObject = ecmaModule.GetObject(System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle((int)entry.Token));
+                            if (metadataObject is MethodDesc)
+                            {
+                                associatedMethod = (MethodDesc)metadataObject;
+                            }
+                            else
+                            {
+                                _logger.Writer.WriteLine($"Token {0:x} does not refer to a method");
+                            }
                             break;
 
                         case CorTokenType.ibcMethodSpec:
@@ -129,7 +139,15 @@ namespace ILCompiler.IBC
 
                     if (associatedMethod != null)
                     {
-                        methodProfileData.Add(new MethodProfileData(associatedMethod, (MethodProfilingDataFlags)entry.Flags, scenarioMask));
+                        if (methodsFoundInData.Add(associatedMethod))
+                        {
+                            methodProfileData.Add(new MethodProfileData(associatedMethod, (MethodProfilingDataFlags)entry.Flags, scenarioMask));
+                        }
+                        else
+                        {
+                            if (_logger.IsVerbose)
+                                _logger.Writer.WriteLine($"Multiple copies of data for method '{associatedMethod}' found.");
+                        }
                     }
                 }
             }
@@ -273,13 +291,14 @@ namespace ILCompiler.IBC
         {
             if (!blobs.TryGetValue(new IBCBlobKey(ibcToken, BlobType.ExternalTypeDef), out BlobEntry externalTypeDefBlob))
             {
-                _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} unable to find external typedef");
+                if (_logger.IsVerbose)
+                    _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} unable to find external typedef");
                 return Cor.Macros.RidToToken(0, CorTokenType.mdtTypeDef); // Nil TypeDef token
             }
 
             var typeEntry = (BlobEntry.ExternalTypeEntry)externalTypeDefBlob;
 
-            string typeNamespace = null;
+            string typeNamespace = "";
             string typeName = Encoding.UTF8.GetString(typeEntry.Name, 0, typeEntry.Name.Length - 1 /* these strings are null terminated */);
             TypeDefinitionHandle enclosingType = default;
             if (!Cor.Macros.IsNilToken(typeEntry.NamespaceToken))
@@ -297,7 +316,8 @@ namespace ILCompiler.IBC
 
                 if (!blobs.TryGetValue(new IBCBlobKey(nameSpaceToken, BlobType.ExternalNamespaceDef), out BlobEntry namespaceEntryBlob))
                 {
-                    _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} unable to find external namespace blob '{nameSpaceToken:x}");
+                    if (_logger.IsVerbose)
+                        _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} unable to find external namespace blob '{nameSpaceToken:x}");
                     return Cor.Macros.RidToToken(0, CorTokenType.mdtTypeDef); // Nil TypeDef token
                 }
 
@@ -311,7 +331,7 @@ namespace ILCompiler.IBC
                     throw new Exception($"Ibc TypeToken {ibcToken:x} has NestedClass token which does not resolve to a type definition");
 
                 enclosingType = MetadataTokens.TypeDefinitionHandle((int)Cor.Macros.RidFromToken(enclosingTypeTokenValue));
-                if (enclosingType.IsNil)
+                if (enclosingType.IsNil && _logger.IsVerbose)
                     _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} has NestedClass token which resolves to a nil token");
             }
 
@@ -341,7 +361,8 @@ namespace ILCompiler.IBC
 
                 if (foundType == null)
                 {
-                    _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} has type token which resolves to a nil token");
+                    if (_logger.IsVerbose)
+                        _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} has type token which resolves to a nil token");
                     return Cor.Macros.RidToToken(0, CorTokenType.mdtTypeDef); // Nil TypeDef token
                 }
 
@@ -360,7 +381,8 @@ namespace ILCompiler.IBC
                     }
                 }
 
-                _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} unable to find nested type '{typeName}' on type '{externalModule.MetadataReader.GetToken(enclosingType):x}'");
+                if (_logger.IsVerbose)
+                    _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} unable to find nested type '{typeName}' on type '{externalModule.MetadataReader.GetToken(enclosingType):x}'");
                 return Cor.Macros.RidToToken(0, CorTokenType.mdtTypeDef); // Nil TypeDef token
             }
         }
@@ -408,7 +430,8 @@ namespace ILCompiler.IBC
                 }
             }
 
-            _logger.Writer.WriteLine("Warning: Unable to find exact match for candidate external method");
+            if (_logger.IsVerbose)
+                _logger.Writer.WriteLine("Warning: Unable to find exact match for candidate external method");
             return 0;
         }
 
@@ -658,11 +681,15 @@ namespace ILCompiler.IBC
                     var result = (MetadataType)ecmaModule.GetType(MetadataTokens.EntityHandle((int)token));
                     if ((typ == CorElementType.ELEMENT_TYPE_VALUETYPE) != result.IsValueType)
                     {
-                        throw new Exception("Mismatch between valuetype and reference type in while parsing generic instantiation");
+                        if (_logger.IsVerbose)
+                            _logger.Writer.WriteLine("Mismatch between valuetype and reference type in while parsing generic instantiation");
+                        return null;
                     }
                     return result;
                 default:
-                    throw new Exception("Unexpected token type parsing ELEMENT_TYPE_GENERICINST");
+                    if (_logger.IsVerbose)
+                        _logger.Writer.WriteLine("Unexpected token type parsing ELEMENT_TYPE_GENERICINST");
+                    return null;
             }
         }
 
@@ -677,7 +704,8 @@ namespace ILCompiler.IBC
             if (Macros.IsSlotUsedInsteadOfToken(flags))
             {
                 int slot = sig.ReadCompressedInteger();
-                _logger.Writer.WriteLine($"Warning: IBC Data for `{methodType}` with slot '{slot}' was ignored");
+                if (_logger.IsVerbose)
+                    _logger.Writer.WriteLine($"Warning: IBC Data for `{methodType}` with slot '{slot}' was ignored");
                 return null; // Unsupported case thought to be used only for array methods, which don't really matter for R2R codegen
             }
             else
@@ -697,7 +725,8 @@ namespace ILCompiler.IBC
                     methodToken = LookupIbcMethodToken(methodMetadataType, ibcToken, ibcModule.Blobs);
                     if (Cor.Macros.RidFromToken(methodToken) == 0)
                     {
-                        _logger.Writer.WriteLine($"Warning: External Method Token {ibcToken:x} on '{methodMetadataType}' could not be found.");
+                        if (_logger.IsVerbose)
+                            _logger.Writer.WriteLine($"Warning: External Method Token {ibcToken:x} on '{methodMetadataType}' could not be found.");
                         return null;
                     }
                 }
@@ -714,7 +743,11 @@ namespace ILCompiler.IBC
                     List<TypeDesc> instantiationArguments = new List<TypeDesc>();
                     for (int i = 0; i < instantiationArgumentCount; i++)
                     {
-                        instantiationArguments.Add(GetSigTypeFromIBCZapSig(ibcModule, ibcModule.EcmaModule, sig));
+                        TypeDesc instantiationType = GetSigTypeFromIBCZapSig(ibcModule, ibcModule.EcmaModule, sig);
+                        if (instantiationType == null)
+                            return null;
+
+                        instantiationArguments.Add(instantiationType);
                         SkipTypeInIBCZapSig(ref sig);
                     }
 
@@ -723,13 +756,15 @@ namespace ILCompiler.IBC
 
                 if (Macros.IsUnboxingStub(flags))
                 {
-                    _logger.Writer.WriteLine($"Warning: Skipping IBC data for unboxing stub {methodFound}");
+                    if (_logger.IsVerbose)
+                        _logger.Writer.WriteLine($"Warning: Skipping IBC data for unboxing stub {methodFound}");
                     return null;
                 }
 
                 if (Macros.IsInstantiatingStub(flags))
                 {
-                    _logger.Writer.WriteLine($"Warning: Skipping IBC data for instantiating stub {methodFound}");
+                    if (_logger.IsVerbose)
+                        _logger.Writer.WriteLine($"Warning: Skipping IBC data for instantiating stub {methodFound}");
                     return null;
                 }
 

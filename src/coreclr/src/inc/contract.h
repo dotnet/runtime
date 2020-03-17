@@ -409,8 +409,6 @@ public:
 #define CONTRACT_BITMASK_RESET(whichbit)     (m_flags &= ~(whichbit))
 #define CONTRACT_BITMASK_UPDATE(whichbit, value)  ((value)?CONTRACT_BITMASK_SET(whichbit):CONTRACT_BITMASK_RESET(whichbit))
 
-
-// Stored in the FLS under TlsIdx_ClrDebugState.
 struct ClrDebugState
 {
 private:
@@ -744,13 +742,13 @@ public:
 ClrDebugState *CLRInitDebugState();
 ClrDebugState *GetClrDebugState(BOOL fAlloc = TRUE);
 
+extern thread_local ClrDebugState* t_pClrDebugState;
 
 // This function returns a ClrDebugState if one has been created, but will not create one itself.
 inline ClrDebugState *CheckClrDebugState()
 {
     STATIC_CONTRACT_LIMITED_METHOD;
-    ClrDebugState *ret = (ClrDebugState*)ClrFlsGetValue(TlsIdx_ClrDebugState);
-    return ret;
+    return t_pClrDebugState;
 }
 
 void CONTRACT_ASSERT(const char *szElaboration,

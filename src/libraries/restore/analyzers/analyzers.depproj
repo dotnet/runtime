@@ -3,6 +3,7 @@
     <EnableBinPlacing>false</EnableBinPlacing>
     <EnableAnalyzers>true</EnableAnalyzers>
     <Language>C#</Language>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

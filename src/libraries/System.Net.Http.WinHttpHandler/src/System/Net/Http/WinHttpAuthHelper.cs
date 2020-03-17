@@ -10,9 +10,6 @@ namespace System.Net.Http
 {
     internal class WinHttpAuthHelper
     {
-        // TODO: Issue #2165. This looks messy but it is fast. Research a cleaner way
-        // to do this which keeps high performance lookup.
-        //
         // Fast lookup table to convert WINHTTP_AUTH constants to strings.
         // WINHTTP_AUTH_SCHEME_BASIC = 0x00000001;
         // WINHTTP_AUTH_SCHEME_NTLM = 0x00000002;
@@ -47,9 +44,6 @@ namespace System.Net.Http
             Interop.WinHttp.WINHTTP_AUTH_SCHEME_BASIC
         };
 
-        // TODO: Issue #2165. This current design uses a handler-wide lock to Add/Retrieve
-        // from the cache.  Need to improve this for next iteration in order
-        // to boost performance and scalability.
         private readonly CredentialCache _credentialCache = new CredentialCache();
         private readonly object _credentialCacheLock = new object();
 
@@ -157,7 +151,7 @@ namespace System.Net.Http
 
                     proxyAuthScheme = ChooseAuthScheme(
                         supportedSchemes,
-                        // TODO: Issue #6997. If Proxy==null, we're using the system proxy which is possibly
+                        // https://github.com/dotnet/runtime/issues/16737. If Proxy==null, we're using the system proxy which is possibly
                         // discovered/calculated with a PAC file. So, we can't determine the actual proxy uri at
                         // this point since it is calculated internally in WinHTTP. For now, pass in null for the uri.
                         state.Proxy?.GetProxy(state.RequestMessage.RequestUri),
@@ -227,12 +221,9 @@ namespace System.Net.Http
                 // No cached credential to use at this time. The request will first go out with no
                 // 'Authorization' header. Later, if a 401 occurs, we will be able to cache the credential
                 // since we will then know the proper auth scheme to use.
-                //
-                // TODO: Issue #2165. Adding logging to highlight the 'cache miss'.
             }
         }
 
-        // TODO: Issue #2165. Consider refactoring cache logic in separate class and avoid out parameters.
         public bool GetServerCredentialsFromCache(
             Uri uri,
             out uint serverAuthScheme,
@@ -386,7 +377,7 @@ namespace System.Net.Http
 
             if (uri == null && !(credentials is NetworkCredential))
             {
-                // TODO: Issue #6997.
+                // https://github.com/dotnet/runtime/issues/16737.
                 // If the credentials are a NetworkCredential, the uri isn't used when calling .GetCredential() since
                 // it will work against all uri's. Otherwise, credentials is probably a CredentialCache and passing in
                 // null for a uri is invalid.

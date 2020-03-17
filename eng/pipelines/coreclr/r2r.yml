@@ -2,6 +2,14 @@ trigger: none
 
 pr: none
 
+schedules:
+- cron: "0 5 * * *"
+  displayName: Mon through Sun at 9:00 PM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
 jobs:
 #
 # Checkout repository

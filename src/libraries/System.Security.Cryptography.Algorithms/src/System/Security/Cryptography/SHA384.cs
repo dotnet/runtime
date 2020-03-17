@@ -8,17 +8,20 @@ namespace System.Security.Cryptography
 {
     //
     // If you change anything in this class, you must make the same change in the other *Provider classes. This is a pain but given that the
-    // preexisting contract from the desktop locks all of these into deriving directly from the abstract HashAlgorithm class,
+    // preexisting contract from the .NET Framework locks all of these into deriving directly from the abstract HashAlgorithm class,
     // it can't be helped.
     //
 
     public abstract class SHA384 : HashAlgorithm
     {
-        protected SHA384() { }
+        protected SHA384()
+        {
+            HashSizeValue = 384;
+        }
 
         public static new SHA384 Create() => new Implementation();
 
-        public static new SHA384 Create(string hashName) => (SHA384)CryptoConfig.CreateFromName(hashName);
+        public static new SHA384? Create(string hashName) => (SHA384?)CryptoConfig.CreateFromName(hashName);
 
         private sealed class Implementation : SHA384
         {

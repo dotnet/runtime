@@ -33,7 +33,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_Read_byte_int_int()
         {
@@ -41,7 +41,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(Read_byte_int_int, false);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_Read_char_int_int()
         {
@@ -49,7 +49,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(Read_char_int_int, false);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_ReadByte()
         {
@@ -57,7 +57,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(ReadByte, false);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_ReadLine()
         {
@@ -65,7 +65,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(ReadLine, false);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_ReadTo()
         {
@@ -73,7 +73,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(ReadTo, false);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_Read_byte_int_int()
         {
@@ -81,7 +81,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(Read_byte_int_int, true);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_Read_char_int_int()
         {
@@ -89,7 +89,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(Read_char_int_int, true);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_ReadByte()
         {
@@ -97,7 +97,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(ReadByte, true);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_ReadLine()
         {
@@ -105,7 +105,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(ReadLine, true);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_ReadTo()
         {
@@ -113,7 +113,7 @@ namespace System.IO.Ports.Tests
             VerifyInfiniteTimeout(ReadTo, true);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_Read_byte_int_int_BeforeOpen()
         {
@@ -121,7 +121,7 @@ namespace System.IO.Ports.Tests
             VerifyZeroTimeoutBeforeOpen(Read_byte_int_int);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_Read_char_int_int_BeforeOpen()
         {
@@ -129,7 +129,7 @@ namespace System.IO.Ports.Tests
             VerifyZeroTimeoutBeforeOpen(Read_char_int_int);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadByte_BeforeOpen()
         {
@@ -137,7 +137,7 @@ namespace System.IO.Ports.Tests
             VerifyZeroTimeoutBeforeOpen(ReadByte);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadLine_BeforeOpen()
         {
@@ -145,7 +145,7 @@ namespace System.IO.Ports.Tests
             VerifyZeroTimeoutBeforeOpen(ReadLine);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadTo_BeforeOpen()
         {
@@ -153,7 +153,7 @@ namespace System.IO.Ports.Tests
             VerifyZeroTimeoutBeforeOpen(ReadTo);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_Read_byte_int_int_AfterOpen()
         {
@@ -161,7 +161,7 @@ namespace System.IO.Ports.Tests
             VerifyZeroTimeoutAfterOpen(Read_byte_int_int);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_Read_char_int_int_AfterOpen()
         {
@@ -169,7 +169,7 @@ namespace System.IO.Ports.Tests
             VerifyZeroTimeoutAfterOpen(Read_char_int_int);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadByte_AfterOpen()
         {
@@ -177,7 +177,7 @@ namespace System.IO.Ports.Tests
             VerifyZeroTimeoutAfterOpen(ReadByte);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadLine_AfterOpen()
         {
@@ -185,7 +185,7 @@ namespace System.IO.Ports.Tests
             VerifyZeroTimeoutAfterOpen(ReadLine);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadTo_AfterOpen()
         {
@@ -193,7 +193,7 @@ namespace System.IO.Ports.Tests
             VerifyZeroTimeoutAfterOpen(ReadTo);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_Int32MinValue()
         {
@@ -202,7 +202,7 @@ namespace System.IO.Ports.Tests
             VerifyException(int.MinValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/15961")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_NEG2()
         {

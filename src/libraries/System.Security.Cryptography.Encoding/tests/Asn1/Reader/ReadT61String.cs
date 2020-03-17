@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         public static IEnumerable<object[]> ValidEncodingData { get; } =
             new object[][]
             {
-                // https://github.com/dotnet/corefx/issues/27466
+                // https://github.com/dotnet/runtime/issues/25195
                 new object[]
                 {
                     PublicEncodingRules.DER,

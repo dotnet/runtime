@@ -79,9 +79,9 @@ class CrstStatic;
 
 class CorHost2 :
     public CorRuntimeHostBase
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     , public IPrivateManagedExceptionReporting /* This interface is for internal Watson testing only*/
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     , public ICLRRuntimeHost4
 {
     friend struct _DacGlobals;
@@ -102,10 +102,10 @@ public:
 
     // *** ICorRuntimeHost methods ***
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // defined in IPrivateManagedExceptionReporting interface for internal Watson testing only
     STDMETHODIMP GetBucketParametersForCurrentException(BucketParameters *pParams);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     // Starts the runtime. This is equivalent to CoInitializeCor().
     STDMETHODIMP Start();

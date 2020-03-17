@@ -13,9 +13,91 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
-        private DynamicWinsockMethods _dynamicWinsockMethods;
+        private DynamicWinsockMethods? _dynamicWinsockMethods;
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
+
+        public Socket(SocketInformation socketInformation)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            InitializeSockets();
+
+            SocketError errorCode = SocketPal.CreateSocket(socketInformation, out _handle,
+                ref _addressFamily, ref _socketType, ref _protocolType);
+
+            if (errorCode != SocketError.Success)
+            {
+                Debug.Assert(_handle.IsInvalid);
+                _handle = null!;
+
+                if (errorCode == SocketError.InvalidArgument)
+                {
+                    throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
+                }
+
+                // Failed to create the socket, throw.
+                throw new SocketException((int)errorCode);
+            }
+
+            if (_addressFamily != AddressFamily.InterNetwork && _addressFamily != AddressFamily.InterNetworkV6)
+            {
+                _handle.Dispose();
+                _handle = null!;
+                throw new NotSupportedException(SR.net_invalidversion);
+            }
+
+            _isConnected = socketInformation.GetOption(SocketInformationOptions.Connected);
+            _willBlock = !socketInformation.GetOption(SocketInformationOptions.NonBlocking);
+            InternalSetBlocking(_willBlock);
+            _isListening = socketInformation.GetOption(SocketInformationOptions.Listening);
+
+            IPAddress tempAddress = _addressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
+            IPEndPoint ep = new IPEndPoint(tempAddress, 0);
+
+            Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(ep);
+            errorCode = SocketPal.GetSockName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
+
+            if (errorCode == SocketError.Success)
+            {
+                _rightEndPoint = ep.Create(socketAddress);
+            }
+            else if (errorCode == SocketError.InvalidArgument)
+            {
+                // Socket is not yet bound.
+            }
+            else
+            {
+                _handle.Dispose();
+                _handle = null!;
+                throw new SocketException((int)errorCode);
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
+
+        public SocketInformation DuplicateAndClose(int targetProcessId)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, targetProcessId);
+
+            ThrowIfDisposed();
+
+            SocketError errorCode = SocketPal.DuplicateSocket(_handle, targetProcessId, out SocketInformation info);
+
+            if (errorCode != SocketError.Success)
+            {
+                throw new SocketException((int)errorCode);
+            }
+
+            info.SetOption(SocketInformationOptions.Connected, Connected);
+            info.SetOption(SocketInformationOptions.NonBlocking, !Blocking);
+            info.SetOption(SocketInformationOptions.Listening, _isListening);
+
+            Close(timeout: -1);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return info;
+        }
 
         private void EnsureDynamicWinsockMethods()
         {
@@ -35,7 +117,7 @@ namespace System.Net.Sockets
             NativeOverlapped* overlapped)
         {
             EnsureDynamicWinsockMethods();
-            AcceptExDelegate acceptEx = _dynamicWinsockMethods.GetDelegate<AcceptExDelegate>(listenSocketHandle);
+            AcceptExDelegate acceptEx = _dynamicWinsockMethods!.GetDelegate<AcceptExDelegate>(listenSocketHandle);
 
             return acceptEx(listenSocketHandle,
                 acceptSocketHandle,
@@ -57,7 +139,7 @@ namespace System.Net.Sockets
             out int remoteSocketAddressLength)
         {
             EnsureDynamicWinsockMethods();
-            GetAcceptExSockaddrsDelegate getAcceptExSockaddrs = _dynamicWinsockMethods.GetDelegate<GetAcceptExSockaddrsDelegate>(_handle);
+            GetAcceptExSockaddrsDelegate getAcceptExSockaddrs = _dynamicWinsockMethods!.GetDelegate<GetAcceptExSockaddrsDelegate>(_handle);
 
             getAcceptExSockaddrs(buffer,
                 receiveDataLength,
@@ -72,7 +154,7 @@ namespace System.Net.Sockets
         internal unsafe bool DisconnectEx(SafeSocketHandle socketHandle, NativeOverlapped* overlapped, int flags, int reserved)
         {
             EnsureDynamicWinsockMethods();
-            DisconnectExDelegate disconnectEx = _dynamicWinsockMethods.GetDelegate<DisconnectExDelegate>(socketHandle);
+            DisconnectExDelegate disconnectEx = _dynamicWinsockMethods!.GetDelegate<DisconnectExDelegate>(socketHandle);
 
             return disconnectEx(socketHandle, overlapped, flags, reserved);
         }
@@ -80,7 +162,7 @@ namespace System.Net.Sockets
         internal bool DisconnectExBlocking(SafeSocketHandle socketHandle, IntPtr overlapped, int flags, int reserved)
         {
             EnsureDynamicWinsockMethods();
-            DisconnectExDelegateBlocking disconnectEx_Blocking = _dynamicWinsockMethods.GetDelegate<DisconnectExDelegateBlocking>(socketHandle);
+            DisconnectExDelegateBlocking disconnectEx_Blocking = _dynamicWinsockMethods!.GetDelegate<DisconnectExDelegateBlocking>(socketHandle);
 
             return disconnectEx_Blocking(socketHandle, overlapped, flags, reserved);
         }
@@ -124,7 +206,7 @@ namespace System.Net.Sockets
             NativeOverlapped* overlapped)
         {
             EnsureDynamicWinsockMethods();
-            ConnectExDelegate connectEx = _dynamicWinsockMethods.GetDelegate<ConnectExDelegate>(socketHandle);
+            ConnectExDelegate connectEx = _dynamicWinsockMethods!.GetDelegate<ConnectExDelegate>(socketHandle);
 
             return connectEx(socketHandle, socketAddress, socketAddressSize, buffer, dataLength, out bytesSent, overlapped);
         }
@@ -132,7 +214,7 @@ namespace System.Net.Sockets
         internal unsafe SocketError WSARecvMsg(SafeSocketHandle socketHandle, IntPtr msg, out int bytesTransferred, NativeOverlapped* overlapped, IntPtr completionRoutine)
         {
             EnsureDynamicWinsockMethods();
-            WSARecvMsgDelegate recvMsg = _dynamicWinsockMethods.GetDelegate<WSARecvMsgDelegate>(socketHandle);
+            WSARecvMsgDelegate recvMsg = _dynamicWinsockMethods!.GetDelegate<WSARecvMsgDelegate>(socketHandle);
 
             return recvMsg(socketHandle, msg, out bytesTransferred, overlapped, completionRoutine);
         }
@@ -140,7 +222,7 @@ namespace System.Net.Sockets
         internal SocketError WSARecvMsgBlocking(SafeSocketHandle socketHandle, IntPtr msg, out int bytesTransferred, IntPtr overlapped, IntPtr completionRoutine)
         {
             EnsureDynamicWinsockMethods();
-            WSARecvMsgDelegateBlocking recvMsg_Blocking = _dynamicWinsockMethods.GetDelegate<WSARecvMsgDelegateBlocking>(_handle);
+            WSARecvMsgDelegateBlocking recvMsg_Blocking = _dynamicWinsockMethods!.GetDelegate<WSARecvMsgDelegateBlocking>(_handle);
 
             return recvMsg_Blocking(socketHandle, msg, out bytesTransferred, overlapped, completionRoutine);
         }
@@ -148,12 +230,12 @@ namespace System.Net.Sockets
         internal unsafe bool TransmitPackets(SafeSocketHandle socketHandle, IntPtr packetArray, int elementCount, int sendSize, NativeOverlapped* overlapped, TransmitFileOptions flags)
         {
             EnsureDynamicWinsockMethods();
-            TransmitPacketsDelegate transmitPackets = _dynamicWinsockMethods.GetDelegate<TransmitPacketsDelegate>(socketHandle);
+            TransmitPacketsDelegate transmitPackets = _dynamicWinsockMethods!.GetDelegate<TransmitPacketsDelegate>(socketHandle);
 
             return transmitPackets(socketHandle, packetArray, elementCount, sendSize, overlapped, flags);
         }
 
-        internal static void SocketListToFileDescriptorSet(IList socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
+        internal static void SocketListToFileDescriptorSet(IList? socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
         {
             int count;
             if (socketList == null || (count = socketList.Count) == 0)
@@ -168,7 +250,7 @@ namespace System.Net.Sockets
             {
                 if (!(socketList[current] is Socket socket))
                 {
-                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socketList[current].GetType().FullName, typeof(System.Net.Sockets.Socket).FullName), nameof(socketList));
+                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socketList[current]?.GetType().FullName, typeof(System.Net.Sockets.Socket).FullName), nameof(socketList));
                 }
 
                 bool success = false;
@@ -180,7 +262,7 @@ namespace System.Net.Sockets
 
         // Transform the list socketList such that the only sockets left are those
         // with a file descriptor contained in the array "fileDescriptorArray".
-        internal static void SelectFileDescriptor(IList socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
+        internal static void SelectFileDescriptor(IList? socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
         {
             // Walk the list in order.
             //
@@ -210,7 +292,8 @@ namespace System.Net.Sockets
             {
                 for (int currentSocket = 0; currentSocket < count; currentSocket++)
                 {
-                    Socket socket = socketList[currentSocket] as Socket;
+                    Socket? socket = socketList[currentSocket] as Socket;
+                    Debug.Assert(socket != null);
 
                     // Look for the file descriptor in the array.
                     int currentFileDescriptor;
@@ -234,7 +317,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private Socket GetOrCreateAcceptSocket(Socket acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle handle)
+        private Socket GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle handle)
         {
             // If an acceptSocket isn't specified, then we need to create one.
             if (acceptSocket == null)
@@ -250,15 +333,15 @@ namespace System.Net.Sockets
             return acceptSocket;
         }
 
-        private void SendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        private void SendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
         {
             // Open the file, if any
-            FileStream fileStream = OpenFile(fileName);
+            FileStream? fileStream = OpenFile(fileName);
 
             SocketError errorCode;
             using (fileStream)
             {
-                SafeFileHandle fileHandle = fileStream?.SafeFileHandle;
+                SafeFileHandle? fileHandle = fileStream?.SafeFileHandle;
 
                 // This can throw ObjectDisposedException.
                 errorCode = SocketPal.SendFile(_handle, fileHandle, preBuffer, postBuffer, flags);
@@ -280,9 +363,9 @@ namespace System.Net.Sockets
             }
         }
 
-        private IAsyncResult BeginSendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state)
+        private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
-            FileStream fileStream = OpenFile(fileName);
+            FileStream? fileStream = OpenFile(fileName);
 
             TransmitFileAsyncResult asyncResult = new TransmitFileAsyncResult(this, state, callback);
             asyncResult.StartPostingAsyncOp(false);
@@ -303,7 +386,7 @@ namespace System.Net.Sockets
 
         private void EndSendFileInternal(IAsyncResult asyncResult)
         {
-            TransmitFileAsyncResult castedAsyncResult = asyncResult as TransmitFileAsyncResult;
+            TransmitFileAsyncResult? castedAsyncResult = asyncResult as TransmitFileAsyncResult;
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));

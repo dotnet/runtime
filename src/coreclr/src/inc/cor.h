@@ -141,21 +141,10 @@ typedef UNALIGNED void const *UVCP_CONSTANT;
 #define MAIN_CLR_DLL_NAME_W           MAKEDLLNAME_W(MAIN_CLR_MODULE_NAME_W)
 #define MAIN_CLR_DLL_NAME_A           MAKEDLLNAME_A(MAIN_CLR_MODULE_NAME_A)
 
-
-#define MSCOREE_SHIM_W               MAIN_CLR_DLL_NAME_W
-#define MSCOREE_SHIM_A               MAIN_CLR_DLL_NAME_A
+#define TARGET_MAIN_CLR_DLL_NAME_W    MAKE_TARGET_DLLNAME_W(MAIN_CLR_MODULE_NAME_W)
+#define TARGET_MAIN_CLR_DLL_NAME_A    MAKE_TARGET_DLLNAME_A(MAIN_CLR_MODULE_NAME_A)
 
 #define SWITCHOUT_HANDLE_VALUE ((HANDLE)(LONG_PTR)-2)
-
-//
-// CoInitializeEE flags.
-//
-typedef enum tagCOINITEE
-{
-    COINITEE_DEFAULT        = 0x0,          // Default initialization mode.
-    COINITEE_DLL            = 0x1,          // Initialization mode for loading DLL.
-    COINITEE_MAIN           = 0x2           // Initialize prior to entering the main routine
-} COINITIEE;
 
 //*****************************************************************************
 //*****************************************************************************

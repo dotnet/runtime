@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -12,8 +13,8 @@ namespace System.Net.Http.Headers
     public class TransferCodingHeaderValue : ICloneable
     {
         // Use ObjectCollection<T> since we may have multiple parameters with the same name.
-        private ObjectCollection<NameValueHeaderValue> _parameters;
-        private string _value;
+        private ObjectCollection<NameValueHeaderValue>? _parameters;
+        private string _value = null!; // empty constructor only used internally and value set with non null
 
         public string Value
         {
@@ -57,20 +58,19 @@ namespace System.Net.Http.Headers
             _value = value;
         }
 
-        public static TransferCodingHeaderValue Parse(string input)
+        public static TransferCodingHeaderValue Parse(string? input)
         {
             int index = 0;
             return (TransferCodingHeaderValue)TransferCodingHeaderParser.SingleValueParser.ParseValue(
                 input, null, ref index);
         }
 
-        public static bool TryParse(string input, out TransferCodingHeaderValue parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out TransferCodingHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (TransferCodingHeaderParser.SingleValueParser.TryParseValue(input, null, ref index, out output))
+            if (TransferCodingHeaderParser.SingleValueParser.TryParseValue(input, null, ref index, out object? output))
             {
                 parsedValue = (TransferCodingHeaderValue)output;
                 return true;
@@ -79,7 +79,7 @@ namespace System.Net.Http.Headers
         }
 
         internal static int GetTransferCodingLength(string input, int startIndex,
-            Func<TransferCodingHeaderValue> transferCodingCreator, out TransferCodingHeaderValue parsedValue)
+            Func<TransferCodingHeaderValue> transferCodingCreator, out TransferCodingHeaderValue? parsedValue)
         {
             Debug.Assert(transferCodingCreator != null);
             Debug.Assert(startIndex >= 0);
@@ -102,7 +102,7 @@ namespace System.Net.Http.Headers
             string value = input.Substring(startIndex, valueLength);
             int current = startIndex + valueLength;
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
-            TransferCodingHeaderValue transferCodingHeader = null;
+            TransferCodingHeaderValue transferCodingHeader;
 
             // If we're not done and we have a parameter delimiter, then we have a list of parameters.
             if ((current < input.Length) && (input[current] == ';'))
@@ -138,9 +138,9 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            TransferCodingHeaderValue other = obj as TransferCodingHeaderValue;
+            TransferCodingHeaderValue? other = obj as TransferCodingHeaderValue;
 
             if (other == null)
             {

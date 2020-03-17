@@ -55,13 +55,13 @@ namespace System.ComponentModel.Tests
             yield return new object[] { attribute, new DisplayNameAttribute("name2"), false };
             yield return new object[] { attribute, new DisplayNameAttribute(""), false };
             // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 yield return new object[] { attribute, new DisplayNameAttribute(null), false };
             }
 
             // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(null), true };
                 yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(""), false };

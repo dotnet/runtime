@@ -163,7 +163,7 @@ namespace System.Diagnostics
 
         private static unsafe PEReader? TryGetPEReader(string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize)
         {
-            // TODO: https://github.com/dotnet/corefx/issues/11406
+            // TODO: https://github.com/dotnet/runtime/issues/18423
             //if (loadedPeAddress != IntPtr.Zero && loadedPeSize > 0)
             //{
             //    return new PEReader((byte*)loadedPeAddress, loadedPeSize, isLoadedImage: true);

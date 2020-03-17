@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "pal_locale_internal.h"
 #include "pal_localeNumberData.h"
 
 // invariant character definitions used by ICU

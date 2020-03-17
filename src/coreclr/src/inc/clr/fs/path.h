@@ -31,7 +31,7 @@ namespace clr
                 _ASSERTE(wzPath != nullptr);
 
                 // Similar to System.IO.Path.IsRelative()
-#if PLATFORM_UNIX
+#if TARGET_UNIX
                 if(wzPath[0] == VOLUME_SEPARATOR_CHAR_W)
                 {
                     return false;

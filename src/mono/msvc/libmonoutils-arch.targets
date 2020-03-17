@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ExcludeFromWindowsBuild>true</ExcludeFromWindowsBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ExcludeFromWindows32Build)'==''">
+    <ExcludeFromWindows32Build>false</ExcludeFromWindows32Build>
+    <ExcludeFromWindows32Build Condition="'$(Platform)'=='Win32'">true</ExcludeFromWindows32Build>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ExcludeFromWindows64Build)'==''">
+    <ExcludeFromWindows64Build>false</ExcludeFromWindows64Build>
+    <ExcludeFromWindows64Build Condition="'$(Platform)'=='x64'">true</ExcludeFromWindows64Build>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ExcludeMASMFromWindowsBuild)'==''">
+    <ExcludeMASMFromWindowsBuild>false</ExcludeMASMFromWindowsBuild>
+  </PropertyGroup>
+  <ItemGroup Label="arch_x86_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-x86.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-x86.c" />
+  </ItemGroup>
+  <ItemGroup Label="arch_amd64_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-amd64.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <MASM Include="$(MonoSourceLocation)\mono\utils\win64.asm" Condition="'$(ExcludeMASMFromWindowsBuild)'=='false'">
+      <FileType>Document</FileType>
+      <ExcludedFromBuild>$(ExcludeFromWindows32Build)</ExcludedFromBuild>
+      <PreprocessorDefinitions>X64</PreprocessorDefinitions>
+    </MASM>
+  </ItemGroup>
+  <ItemGroup Label="arch_arm_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-arm.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-arm.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_arm64_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-arm64.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-arm64.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_mips_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-mips.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_ppc_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-ppc.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_sparc_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-sparc.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_s390x_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-os390x.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_wasm_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-wasm.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_unknown_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support-unknown.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_cross_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-hwcap-cross.c">
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(MSBuildThisFileDirectory)masm.fixed.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
+  </ImportGroup>
+</Project>

@@ -475,14 +475,14 @@ BOOL DacDbiInterfaceImpl::IsTransitionStub(CORDB_ADDRESS address)
 
     BOOL fIsStub = FALSE;
 
-#if defined(FEATURE_PAL)
+#if defined(TARGET_UNIX)
     // Currently IsIPInModule() is not implemented in the PAL.  Rather than skipping the check, we should
     // either E_NOTIMPL this API or implement IsIPInModule() in the PAL.  Since ICDProcess::IsTransitionStub()
     // is only called by VS in mixed-mode debugging scenarios, and mixed-mode debugging is not supported on
     // POSIX systems, there is really no incentive to implement this API at this point.
     ThrowHR(E_NOTIMPL);
 
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 
     TADDR ip = (TADDR)address;
 
@@ -501,7 +501,7 @@ BOOL DacDbiInterfaceImpl::IsTransitionStub(CORDB_ADDRESS address)
         fIsStub = IsIPInModule(m_globalBase, ip);
     }
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     return fIsStub;
 }
@@ -586,18 +586,6 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetAppDomainObject(VMPTR_AppDomain vmApp
     return vmObj;
 
 }
-
-// Determine if the specified AppDomain is the default domain
-BOOL DacDbiInterfaceImpl::IsDefaultDomain(VMPTR_AppDomain   vmAppDomain)
-{
-    DD_ENTER_MAY_THROW;
-
-    AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-    BOOL fDefaultDomain = pAppDomain->IsDefaultDomain();
-
-    return fDefaultDomain;
-}
-
 
 // Get the full AD friendly name for the given EE AppDomain.
 void DacDbiInterfaceImpl::GetAppDomainFullName(
@@ -1408,7 +1396,7 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
     IJitManager::MethodRegionInfo methodRegionInfo = {NULL, 0, NULL, 0};
     TADDR codeAddr = CORDB_ADDRESS_TO_TADDR(hotCodeStartAddr);
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     // TADDR should not have the thumb code bit set.
     _ASSERTE((codeAddr & THUMB_CODE) == 0);
     codeAddr &= ~THUMB_CODE;
@@ -3633,7 +3621,7 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
             currentFrame.vmDomainFile.SetHostPtr(pDomainFile);
             currentFrame.ip = currentElement.ip;
             currentFrame.methodDef = currentElement.pFunc->GetMemberDef();
-            currentFrame.isLastForeignExceptionFrame = currentElement.fIsLastFrameFromForeignStackTrace;
+            currentFrame.isLastForeignExceptionFrame = (currentElement.flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE) != 0;
         }
     }
 }
@@ -5077,7 +5065,7 @@ void DacDbiInterfaceImpl::AlignStackPointer(CORDB_ADDRESS * pEsp)
     SUPPORTS_DAC;
 
     // Nop on x86.
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     // on 64-bit, stack pointer must be 16-byte aligned.
     // Stacks grown down, so round down to nearest 0xF bits.
     *pEsp &= ~((CORDB_ADDRESS) 0xF);
@@ -5174,7 +5162,7 @@ void DacDbiInterfaceImpl::Hijack(
     // (The hijack function already has the context)
     _ASSERTE((pOriginalContext == NULL) == (cbSizeContext == 0));
     _ASSERTE(EHijackReason::IsValid(reason));
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
     _ASSERTE(!"Not supported on this platform");
 #endif
 
@@ -5305,14 +5293,14 @@ void DacDbiInterfaceImpl::Hijack(
     // Regarding stack overflow: We could do an explicit check against the thread's stack base limit.
     // However, we don't need an explicit overflow check because if the stack does overflow,
     // the hijack will just hit a regular stack-overflow exception.
-#if defined(_TARGET_X86_)  // TARGET
+#if defined(TARGET_X86)  // TARGET
     // X86 calling convention is to push args on the stack in reverse order.
     // If we fail here, the stack is written, but esp hasn't been committed yet so it shouldn't matter.
     PushHelper(&esp, &pData, TRUE);
     PushHelper(&esp, &reason, TRUE);
     PushHelper(&esp, &espRecord, TRUE);
     PushHelper(&esp, &espContext, TRUE);
-#elif defined (_TARGET_AMD64_) // TARGET
+#elif defined (TARGET_AMD64) // TARGET
     // AMD64 calling convention is to place first 4 parameters in: rcx, rdx, r8 and r9
     ctx.Rcx = (DWORD64) espContext;
     ctx.Rdx = (DWORD64) espRecord;
@@ -5326,12 +5314,12 @@ void DacDbiInterfaceImpl::Hijack(
     PushHelper(&esp, reinterpret_cast<SIZE_T *>(&(ctx.R8)), FALSE);
     PushHelper(&esp, reinterpret_cast<SIZE_T *>(&(ctx.Rdx)), FALSE);
     PushHelper(&esp, reinterpret_cast<SIZE_T *>(&(ctx.Rcx)), FALSE);
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     ctx.R0 = (DWORD)espContext;
     ctx.R1 = (DWORD)espRecord;
     ctx.R2 = (DWORD)reason;
     ctx.R3 = (DWORD)pData;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     ctx.X0 = (DWORD64)espContext;
     ctx.X1 = (DWORD64)espRecord;
     ctx.X2 = (DWORD64)reason;
@@ -5404,11 +5392,11 @@ TargetBuffer DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS   VASigCookieAddr,
     VASigCookie * pVACookie = PTR_VASigCookie(taVASigCookie);
 
     // Figure out where the first argument is.
-#if defined(_TARGET_X86_) // (STACK_GROWS_DOWN_ON_ARGS_WALK)
+#if defined(TARGET_X86) // (STACK_GROWS_DOWN_ON_ARGS_WALK)
     *pArgBase = VASigCookieAddr + pVACookie->sizeOfArgs;
-#else  // !_TARGET_X86_ (STACK_GROWS_UP_ON_ARGS_WALK)
+#else  // !TARGET_X86 (STACK_GROWS_UP_ON_ARGS_WALK)
     *pArgBase = VASigCookieAddr + sizeof(VASigCookie *);
-#endif // !_TARGET_X86_ (STACK_GROWS_UP_ON_ARGS_WALK)
+#endif // !TARGET_X86 (STACK_GROWS_UP_ON_ARGS_WALK)
 
     return TargetBuffer(PTR_TO_CORDB_ADDRESS(pVACookie->signature.GetRawSig()),
                         pVACookie->signature.GetRawSigLen());
@@ -5584,9 +5572,6 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
     {
         result |= USER_WAIT_SLEEP_JOIN;
     }
-
-    // CoreCLR does not support user-requested thread suspension
-    _ASSERTE(!(ts & Thread::TS_UserSuspendPending));
 
     if (pThread->IsThreadPoolThread())
     {

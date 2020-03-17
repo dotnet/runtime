@@ -36,12 +36,12 @@ This runs the tests and generates the full code coverage report. The resulting i
 
 You can also build and test with code coverage for a particular test project rather than for the whole repo with the ```/p:Coverage=true``` argument:
 
-    dotnet msbuild /t:BuildAndTest /p:Coverage=true
+    dotnet build /t:Test /p:Coverage=true
 
 The results for this one library will then show up in the aforementioned index.htm file. For example, to build, test, and get code coverage results for the System.Diagnostics.Debug library, from the root of the repo one can do:
 
     cd src\System.Diagnostics.Debug\tests\
-    dotnet msbuild /t:BuildAndTest /p:Coverage=true
+    dotnet build /t:Test /p:Coverage=true
 
 And then once the run completes:
 
@@ -49,7 +49,7 @@ And then once the run completes:
 
 **Note:** If you only want to measure the coverage of your local changes (that haven't been pushed to git), run:
 
-    dotnet msbuild /t:BuildAndTest /p:Coverage=true /p:CoverageSourceLink=false
+    dotnet build /t:Test /p:Coverage=true /p:CoverageSourceLink=false
 
 
 ## Code coverage with System.Private.CoreLib code

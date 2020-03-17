@@ -11,23 +11,19 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal sealed class InterpretedFrame
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         [ThreadStatic]
         private static InterpretedFrame? s_currentFrame;
 
         internal readonly Interpreter Interpreter;
         internal InterpretedFrame? _parent;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         private readonly int[]? _continuations;
         private int _continuationIndex;
         private int _pendingContinuation;
         private object? _pendingValue;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public readonly object?[] Data;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public readonly IStrongBox[]? Closure;
 
         public int StackIndex;

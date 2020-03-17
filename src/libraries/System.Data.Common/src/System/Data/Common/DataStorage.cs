@@ -15,7 +15,7 @@ namespace System.Data.Common
     {
         Empty = TypeCode.Empty, // 0
         Object = TypeCode.Object,
-        DBNull = 2, // TypeCode.DBNull, // TODO #12292: Put TypeCode.DBNull back when it's available
+        DBNull = TypeCode.DBNull,
         Boolean = TypeCode.Boolean,
         Char = TypeCode.Char,
         SByte = TypeCode.SByte,

@@ -89,12 +89,12 @@ HELPER(READYTORUN_HELPER_DblRem,                    CORINFO_HELP_DBLREM,        
 HELPER(READYTORUN_HELPER_FltRound,                  CORINFO_HELP_FLTROUND,                          )
 HELPER(READYTORUN_HELPER_DblRound,                  CORINFO_HELP_DBLROUND,                          )
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
 HELPER(READYTORUN_HELPER_PersonalityRoutine,        CORINFO_HELP_EE_PERSONALITY_ROUTINE,            OPTIMIZEFORSIZE)
 HELPER(READYTORUN_HELPER_PersonalityRoutineFilterFunclet, CORINFO_HELP_EE_PERSONALITY_ROUTINE_FILTER_FUNCLET, OPTIMIZEFORSIZE)
 #endif
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 HELPER(READYTORUN_HELPER_WriteBarrier_EAX,          CORINFO_HELP_ASSIGN_REF_EAX,                    )
 HELPER(READYTORUN_HELPER_WriteBarrier_EBX,          CORINFO_HELP_ASSIGN_REF_EBX,                    )
 HELPER(READYTORUN_HELPER_WriteBarrier_ECX,          CORINFO_HELP_ASSIGN_REF_ECX,                    )
@@ -114,11 +114,13 @@ HELPER(READYTORUN_HELPER_EndCatch,                  CORINFO_HELP_ENDCATCH,      
 HELPER(READYTORUN_HELPER_PInvokeBegin,              CORINFO_HELP_JIT_PINVOKE_BEGIN,                 )
 HELPER(READYTORUN_HELPER_PInvokeEnd,                CORINFO_HELP_JIT_PINVOKE_END,                   )
 HELPER(READYTORUN_HELPER_GCPoll,                    CORINFO_HELP_POLL_GC,                           )
+HELPER(READYTORUN_HELPER_ReversePInvokeEnter,       CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER,         )
+HELPER(READYTORUN_HELPER_ReversePInvokeExit,        CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,          )
 
 HELPER(READYTORUN_HELPER_MonitorEnter,              CORINFO_HELP_MON_ENTER,                         )
 HELPER(READYTORUN_HELPER_MonitorExit,               CORINFO_HELP_MON_EXIT,                          )
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 HELPER(READYTORUN_HELPER_StackProbe,                CORINFO_HELP_STACK_PROBE,                       )
 #endif
 

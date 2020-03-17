@@ -160,7 +160,7 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
     if(strlen(szArg) == 0) return 0;
     if ((strcmp(szArg, "/?") == 0) || (strcmp(szArg, "-?") == 0)) return 1;
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     if(szArg[0] == '-')
 #else
     if((szArg[0] == '/') || (szArg[0] == '-'))
@@ -510,7 +510,7 @@ int ParseCmdLineA(__in __nullterminated char* szCmdLine, __out char** ppszObjFil
 
 int __cdecl main(int nCmdShow, char* lpCmdLine[])
 {
-#if defined(FEATURE_PAL)
+#if defined(TARGET_UNIX)
     if (0 != PAL_Initialize(nCmdShow, lpCmdLine))
     {
         printError(g_pFile, "Error: Fail to PAL_Initialize\n");
@@ -549,7 +549,7 @@ int __cdecl main(int nCmdShow, char* lpCmdLine[])
     hConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
     hConsoleErr = GetStdHandle(STD_ERROR_HANDLE);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Dev11 #5320 - pull the localized resource loader up so if ParseCmdLineW need resources, they're already loaded
     g_hResources = WszGetModuleHandle(NULL);
 #endif

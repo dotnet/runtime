@@ -98,7 +98,6 @@ namespace System.Runtime.Caching
             set { _usageEntryRef = value; }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Grandfathered suppression from original caching code checkin")]
         internal DateTime UtcLastUpdateUsage
         {
             get { return _utcLastUpdateUsage; }

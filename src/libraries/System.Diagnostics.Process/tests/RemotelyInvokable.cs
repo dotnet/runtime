@@ -13,8 +13,8 @@ using System.Threading.Tasks;
 namespace System.Diagnostics.Tests
 {
     /// <summary>
-    /// This class is used as interop between uap and netfx app running in the same app container.
-    /// On uap code running here will be running on netfx.
+    /// This class is used as interop between uap and .NET Framework app running in the same app container.
+    /// On uap code running here will be running on .NET Framework.
     /// This is a workaround for a limitation of uap RemoteInvoke which does not give us much control over the process.
     /// </summary>
     internal static class RemotelyInvokable

@@ -45,8 +45,8 @@ namespace System.Reflection.TypeLoading
         internal abstract RoType[] GetGenericTypeParametersNoCopy();
 
         // Applies if HasElementType == true
-        public sealed override Type GetElementType() => GetRoElementType();
-        internal abstract RoType GetRoElementType();
+        public sealed override Type? GetElementType() => GetRoElementType();
+        internal abstract RoType? GetRoElementType();
 
         // Applies if IsArray == true
         public abstract override int GetArrayRank();
@@ -69,26 +69,26 @@ namespace System.Reflection.TypeLoading
         // Naming
         public sealed override string Name => _lazyName ?? (_lazyName = ComputeName());
         protected abstract string ComputeName();
-        private volatile string _lazyName;
+        private volatile string? _lazyName;
 
-        public sealed override string Namespace => _lazyNamespace ?? (_lazyNamespace = ComputeNamespace());
-        protected abstract string ComputeNamespace();
-        private volatile string _lazyNamespace;
+        public sealed override string? Namespace => _lazyNamespace ?? (_lazyNamespace = ComputeNamespace());
+        protected abstract string? ComputeNamespace();
+        private volatile string? _lazyNamespace;
 
-        public sealed override string FullName => _lazyFullName ?? (_lazyFullName = ComputeFullName());
-        protected abstract string ComputeFullName();
-        private volatile string _lazyFullName;
+        public sealed override string? FullName => _lazyFullName ?? (_lazyFullName = ComputeFullName());
+        protected abstract string? ComputeFullName();
+        private volatile string? _lazyFullName;
 
-        public sealed override string AssemblyQualifiedName => _lazyAssemblyQualifiedFullName ?? (_lazyAssemblyQualifiedFullName = ComputeAssemblyQualifiedName());
-        private string ComputeAssemblyQualifiedName()
+        public sealed override string? AssemblyQualifiedName => _lazyAssemblyQualifiedFullName ?? (_lazyAssemblyQualifiedFullName = ComputeAssemblyQualifiedName());
+        private string? ComputeAssemblyQualifiedName()
         {
-            string fullName = FullName;
+            string? fullName = FullName;
             if (fullName == null)   // Open types return null for FullName by design.
                 return null;
-            string assemblyName = Assembly.FullName;
+            string? assemblyName = Assembly.FullName;
             return fullName + ", " + assemblyName;
         }
-        private volatile string _lazyAssemblyQualifiedFullName;
+        private volatile string? _lazyAssemblyQualifiedFullName;
 
         // Assembly and module
         public sealed override Assembly Assembly => Module.Assembly;
@@ -96,15 +96,15 @@ namespace System.Reflection.TypeLoading
         internal abstract RoModule GetRoModule();
 
         // Nesting
-        public sealed override Type DeclaringType => GetRoDeclaringType();
-        protected abstract RoType ComputeDeclaringType();
-        internal RoType GetRoDeclaringType() => _lazyDeclaringType ?? (_lazyDeclaringType = ComputeDeclaringType());
-        private volatile RoType _lazyDeclaringType;
+        public sealed override Type? DeclaringType => GetRoDeclaringType();
+        protected abstract RoType? ComputeDeclaringType();
+        internal RoType? GetRoDeclaringType() => _lazyDeclaringType ?? (_lazyDeclaringType = ComputeDeclaringType());
+        private volatile RoType? _lazyDeclaringType;
 
-        public abstract override MethodBase DeclaringMethod { get; }
-        // Desktop compat: For types, ReflectedType == DeclaringType. Nested types are always looked up as if BindingFlags.DeclaredOnly was passed.
+        public abstract override MethodBase? DeclaringMethod { get; }
+        // .NET Framework compat: For types, ReflectedType == DeclaringType. Nested types are always looked up as if BindingFlags.DeclaredOnly was passed.
         // For non-nested types, the concept of a ReflectedType doesn't even make sense.
-        public sealed override Type ReflectedType => DeclaringType;
+        public sealed override Type? ReflectedType => DeclaringType;
 
         // CustomAttributeData
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
@@ -112,17 +112,17 @@ namespace System.Reflection.TypeLoading
 
         // Optimized routines that find a custom attribute by type name only.
         internal abstract bool IsCustomAttributeDefined(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name);
-        internal abstract CustomAttributeData TryFindCustomAttribute(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name);
+        internal abstract CustomAttributeData? TryFindCustomAttribute(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name);
 
         // Inheritance
-        public sealed override Type BaseType => GetRoBaseType();
-        internal RoType GetRoBaseType() => object.ReferenceEquals(_lazyBaseType, Sentinels.RoType) ? (_lazyBaseType = ComputeBaseType()) : _lazyBaseType;
-        private RoType ComputeBaseType()
+        public sealed override Type? BaseType => GetRoBaseType();
+        internal RoType? GetRoBaseType() => object.ReferenceEquals(_lazyBaseType, Sentinels.RoType) ? (_lazyBaseType = ComputeBaseType()) : _lazyBaseType;
+        private RoType? ComputeBaseType()
         {
-            RoType baseType = ComputeBaseTypeWithoutDesktopQuirk();
+            RoType? baseType = ComputeBaseTypeWithoutDesktopQuirk();
             if (baseType != null && baseType.IsGenericParameter)
             {
-                // NETFX quirk: a generic parameter whose constraint is another generic parameter reports its BaseType as System.Object
+                // .NET Framework quirk: a generic parameter whose constraint is another generic parameter reports its BaseType as System.Object
                 // unless that other generic parameter has a "class" constraint.
                 GenericParameterAttributes genericParameterAttributes = baseType.GenericParameterAttributes;
                 if (0 == (genericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint))
@@ -130,16 +130,16 @@ namespace System.Reflection.TypeLoading
             }
             return baseType;
         }
-        private volatile RoType _lazyBaseType = Sentinels.RoType;
+        private volatile RoType? _lazyBaseType = Sentinels.RoType;
 
         //
-        // This internal method implements BaseType without the following NETFX quirk:
+        // This internal method implements BaseType without the following .NET Framework quirk:
         //
         //     class Foo<X,Y>
         //       where X:Y
         //       where Y:MyReferenceClass
         //
-        // NETFX reports "X"'s base type as "System.Object" rather than "Y", even though it does
+        // .NET Framework reports "X"'s base type as "System.Object" rather than "Y", even though it does
         // report any interfaces that are in MyReferenceClass's interface list.
         //
         // This seriously messes up the implementation of Type.GetInterfaces() which assumes
@@ -149,7 +149,7 @@ namespace System.Reflection.TypeLoading
         // To implement this with the least amount of code smell, we'll implement the idealized version of BaseType here
         // and make the special-case adjustment in the public version of BaseType.
         //
-        protected abstract RoType ComputeBaseTypeWithoutDesktopQuirk();
+        protected abstract RoType? ComputeBaseTypeWithoutDesktopQuirk();
 
         public sealed override Type[] GetInterfaces() => GetInterfacesNoCopy().CloneArray<Type>();
 
@@ -171,7 +171,7 @@ namespace System.Reflection.TypeLoading
         {
             HashSet<RoType> ifcs = new HashSet<RoType>();
 
-            RoType baseType = ComputeBaseTypeWithoutDesktopQuirk();
+            RoType? baseType = ComputeBaseTypeWithoutDesktopQuirk();
             if (baseType != null)
             {
                 foreach (RoType ifc in baseType.GetInterfacesNoCopy())
@@ -197,13 +197,13 @@ namespace System.Reflection.TypeLoading
             return list.ToArray();
         }
 
-        private volatile RoType[] _lazyInterfaces;
+        private volatile RoType[]? _lazyInterfaces;
 
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_InterfaceMapping);
 
         // Assignability
-        public sealed override bool IsAssignableFrom(TypeInfo typeInfo) => IsAssignableFrom((Type)typeInfo);
-        public sealed override bool IsAssignableFrom(Type c)
+        public sealed override bool IsAssignableFrom(TypeInfo? typeInfo) => IsAssignableFrom((Type?)typeInfo);
+        public sealed override bool IsAssignableFrom(Type? c)
         {
             if (c == null)
                 return false;
@@ -239,19 +239,19 @@ namespace System.Reflection.TypeLoading
 
         // Random interop stuff
         public abstract override Guid GUID { get; }
-        public abstract override StructLayoutAttribute StructLayoutAttribute { get; }
+        public abstract override StructLayoutAttribute? StructLayoutAttribute { get; }
 
         public sealed override MemberInfo[] GetDefaultMembers()
         {
-            string defaultMemberName = GetDefaultMemberName();
+            string? defaultMemberName = GetDefaultMemberName();
             return defaultMemberName != null ? GetMember(defaultMemberName) : Array.Empty<MemberInfo>();
         }
 
-        private string GetDefaultMemberName()
+        private string? GetDefaultMemberName()
         {
-            for (RoType type = this; type != null; type = type.GetRoBaseType())
+            for (RoType? type = this; type != null; type = type.GetRoBaseType())
             {
-                CustomAttributeData attribute = type.TryFindCustomAttribute(Utf8Constants.SystemReflection, Utf8Constants.DefaultMemberAttribute);
+                CustomAttributeData? attribute = type.TryFindCustomAttribute(Utf8Constants.SystemReflection, Utf8Constants.DefaultMemberAttribute);
                 if (attribute != null)
                 {
                     IList<CustomAttributeTypedArgument> fixedArguments = attribute.ConstructorArguments;
@@ -279,7 +279,7 @@ namespace System.Reflection.TypeLoading
         // Enum methods
         public sealed override Type GetEnumUnderlyingType() => _lazyUnderlyingEnumType ?? (_lazyUnderlyingEnumType = ComputeEnumUnderlyingType());
         protected internal abstract RoType ComputeEnumUnderlyingType();
-        private volatile RoType _lazyUnderlyingEnumType;
+        private volatile RoType? _lazyUnderlyingEnumType;
         public sealed override Array GetEnumValues() => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
         // No trust environment to apply these to.
@@ -292,19 +292,19 @@ namespace System.Reflection.TypeLoading
         public sealed override object[] GetCustomAttributes(bool inherit) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
         public sealed override bool IsDefined(Type attributeType, bool inherit) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
-        public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
+        public sealed override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
 
         // Low level support for the BindingFlag-driven enumerator apis. These return members declared (not inherited) on the current
         // type, possibly doing case-sensitive/case-insensitive filtering on a supplied name.
-        internal abstract IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter filter);
-        internal abstract IEnumerable<MethodInfo> GetMethodsCore(NameFilter filter, Type reflectedType);
-        internal abstract IEnumerable<EventInfo> GetEventsCore(NameFilter filter, Type reflectedType);
-        internal abstract IEnumerable<FieldInfo> GetFieldsCore(NameFilter filter, Type reflectedType);
-        internal abstract IEnumerable<PropertyInfo> GetPropertiesCore(NameFilter filter, Type reflectedType);
-        internal abstract IEnumerable<RoType> GetNestedTypesCore(NameFilter filter);
+        internal abstract IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter? filter);
+        internal abstract IEnumerable<MethodInfo> GetMethodsCore(NameFilter? filter, Type reflectedType);
+        internal abstract IEnumerable<EventInfo> GetEventsCore(NameFilter? filter, Type reflectedType);
+        internal abstract IEnumerable<FieldInfo> GetFieldsCore(NameFilter? filter, Type reflectedType);
+        internal abstract IEnumerable<PropertyInfo> GetPropertiesCore(NameFilter? filter, Type reflectedType);
+        internal abstract IEnumerable<RoType> GetNestedTypesCore(NameFilter? filter);
 
         // Backdoor for RoModule to invoke GetMethodImpl();
-        internal MethodInfo InternalGetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        internal MethodInfo? InternalGetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             return GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
         }

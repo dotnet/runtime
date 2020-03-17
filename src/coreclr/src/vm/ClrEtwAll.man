@@ -1198,6 +1198,36 @@
                         </UserData>
                     </template>
 
+                    <template tid="GCGlobalHeap_V3">
+                        <data name="FinalYoungestDesired" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="NumHeaps" inType="win:Int32" />
+                        <data name="CondemnedGeneration" inType="win:UInt32" />
+                        <data name="Gen0ReductionCount" inType="win:UInt32" />
+                        <data name="Reason" inType="win:UInt32" />
+                        <data name="GlobalMechanisms" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="PauseMode" inType="win:UInt32" />
+                        <data name="MemoryPressure" inType="win:UInt32" />
+                        <data name="CondemnReasons0" inType="win:UInt32" />
+                        <data name="CondemnReasons1" inType="win:UInt32" />
+
+                        <UserData>
+                            <GCGlobalHeap_V3 xmlns="myNs">
+                                <FinalYoungestDesired> %1 </FinalYoungestDesired>
+                                <NumHeaps> %2 </NumHeaps>
+                                <CondemnedGeneration> %3 </CondemnedGeneration>
+                                <Gen0ReductionCount> %4 </Gen0ReductionCount>
+                                <Reason> %5 </Reason>
+                                <GlobalMechanisms> %6 </GlobalMechanisms>
+                                <ClrInstanceID> %7 </ClrInstanceID>
+                                <PauseMode> %8 </PauseMode>
+                                <MemoryPressure> %9 </MemoryPressure>
+                                <CondemnReasons0> %10 </CondemnReasons0>
+                                <CondemnReasons1> %11 </CondemnReasons1>
+                            </GCGlobalHeap_V3>
+                        </UserData>
+                    </template>
+
                     <template tid="FinalizeObject">
                       <data name="TypeID" inType="win:Pointer" />
                       <data name="ObjectID" inType="win:Pointer" />
@@ -3566,6 +3596,11 @@
                            task="GarbageCollection"
                            symbol="GCGlobalHeapHistory_V2" message="$(string.RuntimePublisher.GCGlobalHeap_V2EventMessage)"/>
 
+                    <event value="205" version="3" level="win:Informational"  template="GCGlobalHeap_V3"
+                           keywords ="GCKeyword"  opcode="GCGlobalHeapHistory"
+                           task="GarbageCollection"
+                           symbol="GCGlobalHeapHistory_V3" message="$(string.RuntimePublisher.GCGlobalHeap_V3EventMessage)"/>
+
                     <!-- CLR Debugger events 240-249 -->
                     <event value="240" version="0" level="win:Informational"
                            keywords="DebuggerKeyword" opcode="win:Start"
@@ -4528,12 +4563,12 @@
                 </events>
             </provider>
 
+            <!-- CLR Stress Publisher-->
             <provider name="Microsoft-Windows-DotNETRuntimeStress"
                       guid="{CC2BCBBA-16B6-4cf3-8990-D74C2E8AF500}"
                       symbol="MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER"
                       resourceFileName="%INSTALL_PATH%\clretwrc.dll"
                       messageFileName="%INSTALL_PATH%\clretwrc.dll">
-                <!-- CLR Stress Publisher-->
 
                 <!--Keywords-->
                 <keywords>
@@ -6759,6 +6794,7 @@
                 <string id="RuntimePublisher.GCJoin_V2EventMessage" value="Heap=%1;%nJoinTime=%2;%nJoinType=%3;%nClrInstanceID=%4;%nJoinID=%5"/>
                 <string id="RuntimePublisher.GCPerHeapHistory_V3EventMessage" value="ClrInstanceID=%1;%nFreeListAllocated=%2;%nFreeListRejected=%3;%nEndOfSegAllocated=%4;%nCondemnedAllocated=%5;%nPinnedAllocated=%6;%nPinnedAllocatedAdvance=%7;%RunningFreeListEfficiency=%8;%nCondemnReasons0=%9;%nCondemnReasons1=%10;%nCompactMechanisms=%11;%nExpandMechanisms=%12;%nHeapIndex=%13;%nExtraGen0Commit=%14;%nCount=%15"/>
                 <string id="RuntimePublisher.GCGlobalHeap_V2EventMessage" value="FinalYoungestDesired=%1;%nNumHeaps=%2;%nCondemnedGeneration=%3;%nGen0ReductionCountD=%4;%nReason=%5;%nGlobalMechanisms=%6;%nClrInstanceID=%7;%nPauseMode=%8;%nMemoryPressure=%9"/>
+                <string id="RuntimePublisher.GCGlobalHeap_V3EventMessage" value="FinalYoungestDesired=%1;%nNumHeaps=%2;%nCondemnedGeneration=%3;%nGen0ReductionCountD=%4;%nReason=%5;%nGlobalMechanisms=%6;%nClrInstanceID=%7;%nPauseMode=%8;%nMemoryPressure=%9;%CondemnReasons0=%10;%CondemnReasons1=%11"/>
                 <string id="RuntimePublisher.FinalizeObjectEventMessage" value="TypeID=%1;%nObjectID=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.GCTriggeredEventMessage" value="Reason=%1" />
                 <string id="RuntimePublisher.PinObjectAtGCTimeEventMessage" value="HandleID=%1;%nObjectID=%2;%nObjectSize=%3;%nTypeName=%4;%n;%nClrInstanceID=%5" />

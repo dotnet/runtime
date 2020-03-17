@@ -22,7 +22,6 @@ namespace System.Xml.Linq
         /// <summary>
         /// Get the BaseUri for this <see cref="XObject"/>.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings", Justification = "Back-compat with System.Xml.")]
         public string BaseUri
         {
             get

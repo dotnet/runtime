@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
@@ -8,7 +8,7 @@
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86</Platforms>
-    <PlatformTargets Condition="'$(BuildArch)' != ''">$(BuildArch)</PlatformTargets>
+    <PlatformTargets Condition="'$(ArchGroup)' != ''">$(ArchGroup)</PlatformTargets>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
     <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
@@ -16,20 +16,12 @@
          binaries are up to date and which are stale. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Reflection.Metadata">
-      <Version>1.6.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-      <Version>4.3.0</Version>
-    </PackageReference>
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
@@ -55,7 +47,6 @@
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
     <Compile Include="..\..\Common\Compiler\CoreRTNameMangler.cs" Link="Compiler\CoreRTNameMangler.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs" Link="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\BlobNode.cs" Link="Compiler\DependencyAnalysis\BlobNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\CompilerComparer.cs" Link="Compiler\DependencyAnalysis\CompilerComparer.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodBodyNode.cs" Link="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
@@ -69,6 +60,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectNode.cs" Link="Compiler\DependencyAnalysis\ObjectNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectNodeSection.cs" Link="Compiler\DependencyAnalysis\ObjectNodeSection.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Relocation.cs" Link="Compiler\DependencyAnalysis\Relocation.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\SettableReadOnlyDataBlob.cs" Link="Compiler\DependencyAnalysis\SettableReadOnlyDataBlob.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" Link="Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\SortableDependencyNode.cs" Link="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
@@ -101,12 +93,16 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AllMethodsOnTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ArgIterator.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AssemblyTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AttributePresenceFilterNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedFieldRvaNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedManagedResourcesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedMetadataBlobNode.cs" />
@@ -115,9 +111,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedStrongNameSignatureNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExceptionInfoLookupTableNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ExternalTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunCodegenNodeFactory.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AvailableType.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ByteArrayComparer.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CompilerIdentifierNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugInfoTableNode.cs" />
@@ -134,8 +128,10 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Import.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionsTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InliningInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InstanceEntryPointTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\IReadyToRunMethodCodeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\OwnerCompositeExecutableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\LocalMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ManifestMetadataTableNode.cs" />
@@ -172,8 +168,10 @@
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
+    <Compile Include="Compiler\ReadyToRunCompilationModuleGroupBase.cs" />
     <Compile Include="IBC\IBCDataModel.cs" />
     <Compile Include="IBC\IBCDataReader.cs" />
+    <Compile Include="IBC\MIbcProfileParser.cs" />
     <Compile Include="IBC\ReaderExtensions.cs" />
     <Compile Include="Compiler\ProfileData.cs" />
     <Compile Include="Compiler\ReadyToRunHashCode.cs" />

@@ -6,7 +6,6 @@ using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -131,7 +130,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             DotNetCli dotnet = null,
             string runtime = null,
             string framework = null,
-            string outputDirectory = null)
+            string outputDirectory = null,
+            bool restore = false)
         {
             dotnet = dotnet ?? SdkDotnet;
             outputDirectory = outputDirectory ?? TestProject.OutputDirectory;
@@ -141,9 +141,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             var buildArgs = new List<string>
             {
-                "--no-restore",
                 "/bl:BuildProject.binlog"
             };
+
+            if (restore != true)
+            {
+                buildArgs.Add("--no-restore");
+            }
 
             if (runtime != null)
             {
@@ -252,7 +256,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string runtime = null,
             string framework = null,
             string selfContained = null,
-            string outputDirectory = null)
+            string outputDirectory = null,
+            bool singleFile = false,
+            bool restore = false)
         {
             dotnet = dotnet ?? SdkDotnet;
             outputDirectory = outputDirectory ?? TestProject.OutputDirectory;
@@ -262,9 +268,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             var publishArgs = new List<string>
             {
-                "--no-restore",
                 "/bl:PublishProject.binlog"
             };
+
+            if (restore != true)
+            {
+                publishArgs.Add("--no-restore");
+            }
 
             if (runtime != null)
             {
@@ -289,6 +299,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 publishArgs.Add("-o");
                 publishArgs.Add(outputDirectory);
+            }
+
+            if (singleFile)
+            {
+                publishArgs.Add("/p:PublishSingleFile=true");
             }
 
             publishArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");

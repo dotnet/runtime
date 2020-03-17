@@ -2379,8 +2379,7 @@ namespace System.Globalization
                 ch = Culture.TextInfo.ToLower(ch);
                 if (IsHebrewChar(ch) && TokenMask == TokenType.RegularTokenMask)
                 {
-                    bool badFormat;
-                    if (TryParseHebrewNumber(ref str, out badFormat, out tokenValue))
+                    if (TryParseHebrewNumber(ref str, out bool badFormat, out tokenValue))
                     {
                         if (badFormat)
                         {
@@ -2553,7 +2552,7 @@ namespace System.Globalization
                                 int nTokenType = (int)tokenType;
                                 int nCurrentTokenTypeInHash = (int)value.tokenType;
 
-                                // The folowing is the fix for the issue of throwing FormatException when "mar" is passed in string of the short date format dd/MMM/yyyy for es-MX
+                                // The following is the fix for the issue of throwing FormatException when "mar" is passed in string of the short date format dd/MMM/yyyy for es-MX
                                 if (((nCurrentTokenTypeInHash & (int)TokenType.RegularTokenMask) == 0) && ((nTokenType & (int)TokenType.RegularTokenMask) != 0) ||
                                     ((nCurrentTokenTypeInHash & (int)TokenType.SeparatorTokenMask) == 0) && ((nTokenType & (int)TokenType.SeparatorTokenMask) != 0))
                                 {

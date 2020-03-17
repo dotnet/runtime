@@ -37,7 +37,7 @@ namespace BasicEventSourceTests
         /// Tests the EventListener code path
         /// </summary>
         [Fact]
-        [ActiveIssue("dotnet/corefx #19455", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21564", TargetFrameworkMonikers.NetFramework)]
         public void Test_Write_T_EventListener()
         {
             using (var listener = new EventListenerListener())
@@ -51,7 +51,7 @@ namespace BasicEventSourceTests
         /// Tests the EventListener code path using events instead of virtual callbacks.
         /// </summary>
         [Fact]
-        [ActiveIssue("dotnet/corefx #19455", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21564", TargetFrameworkMonikers.NetFramework)]
         public void Test_Write_T_EventListener_UseEvents()
         {
             Test_Write_T(new EventListenerListener(true));
@@ -459,8 +459,8 @@ namespace BasicEventSourceTests
         static partial void Test_Write_T_AddEtwTests(Listener listener, List<SubTest> tests, EventSource logger);
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/27106")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/25035")]
         public void Test_Write_T_In_Manifest_Serialization()
         {
             using (var eventListener = new EventListenerListener())

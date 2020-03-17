@@ -479,7 +479,7 @@ namespace System.Resources.Extensions.Tests
                 TestData.WriteResourcesStream(actualData);
                 resourcesStream.CopyTo(expectedData);
 
-                if (!PlatformDetection.IsFullFramework)
+                if (!PlatformDetection.IsNetFramework)
                 {
                     // Some types rely on SerializationInfo.SetType on .NETCore
                     // which result in a different binary format

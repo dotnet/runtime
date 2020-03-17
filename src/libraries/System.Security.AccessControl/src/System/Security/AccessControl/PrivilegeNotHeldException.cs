@@ -12,20 +12,20 @@ namespace System.Security.AccessControl
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class PrivilegeNotHeldException : UnauthorizedAccessException, ISerializable
     {
-        private readonly string _privilegeName = null;
+        private readonly string? _privilegeName = null;
 
         public PrivilegeNotHeldException()
             : base(SR.PrivilegeNotHeld_Default)
         {
         }
 
-        public PrivilegeNotHeldException(string privilege)
+        public PrivilegeNotHeldException(string? privilege)
             : base(SR.Format(SR.PrivilegeNotHeld_Named, privilege))
         {
             _privilegeName = privilege;
         }
 
-        public PrivilegeNotHeldException(string privilege, Exception inner)
+        public PrivilegeNotHeldException(string? privilege, Exception? inner)
             : base(SR.Format(SR.PrivilegeNotHeld_Named, privilege), inner)
         {
             _privilegeName = privilege;
@@ -42,7 +42,7 @@ namespace System.Security.AccessControl
             info.AddValue(nameof(PrivilegeName), _privilegeName, typeof(string));
         }
 
-        public string PrivilegeName
+        public string? PrivilegeName
         {
             get { return _privilegeName; }
         }

@@ -22,6 +22,9 @@ namespace System.Buffers.Text
                 return false;
             }
 
+            value.GetDate(out int year, out int month, out int day);
+            value.GetTime(out int hour, out int minute, out int second);
+
             uint dayAbbrev = s_dayAbbreviationsLowercase[(int)value.DayOfWeek];
 
             destination[0] = (byte)dayAbbrev;
@@ -32,10 +35,10 @@ namespace System.Buffers.Text
             destination[3] = Utf8Constants.Comma;
             destination[4] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Day, destination, 5);
+            FormattingHelpers.WriteTwoDecimalDigits((uint)day, destination, 5);
             destination[7] = Utf8Constants.Space;
 
-            uint monthAbbrev = s_monthAbbreviationsLowercase[value.Month - 1];
+            uint monthAbbrev = s_monthAbbreviationsLowercase[month - 1];
             destination[8] = (byte)monthAbbrev;
             monthAbbrev >>= 8;
             destination[9] = (byte)monthAbbrev;
@@ -43,16 +46,16 @@ namespace System.Buffers.Text
             destination[10] = (byte)monthAbbrev;
             destination[11] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteFourDecimalDigits((uint)value.Year, destination, 12);
+            FormattingHelpers.WriteFourDecimalDigits((uint)year, destination, 12);
             destination[16] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Hour, destination, 17);
+            FormattingHelpers.WriteTwoDecimalDigits((uint)hour, destination, 17);
             destination[19] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Minute, destination, 20);
+            FormattingHelpers.WriteTwoDecimalDigits((uint)minute, destination, 20);
             destination[22] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Second, destination, 23);
+            FormattingHelpers.WriteTwoDecimalDigits((uint)second, destination, 23);
             destination[25] = Utf8Constants.Space;
 
             destination[26] = GMT1Lowercase;

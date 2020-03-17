@@ -79,7 +79,7 @@ namespace System.DirectoryServices.AccountManagement
             int startingIndex = 0;
             if (dnComponent[0] == ' ' || dnComponent[0] == '#')
             {
-                sb.Append(@"\");
+                sb.Append('\\');
                 sb.Append(dnComponent[0]);
                 startingIndex++;
             }
@@ -124,7 +124,7 @@ namespace System.DirectoryServices.AccountManagement
                         break;
 
                     default:
-                        sb.Append(c.ToString());
+                        sb.Append(c);
                         break;
                 }
             }
@@ -174,7 +174,7 @@ namespace System.DirectoryServices.AccountManagement
                         break;
 
                     default:
-                        sb.Append(c.ToString());
+                        sb.Append(c);
                         break;
                 }
             }
@@ -235,7 +235,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         default:
                             // including the '*' wildcard
-                            sb.Append(c.ToString());    //   *  --> *   and   x  --> x
+                            sb.Append(c);    //   *  --> *   and   x  --> x
                             break;
                     }
                 }
@@ -262,7 +262,7 @@ namespace System.DirectoryServices.AccountManagement
                             break;
 
                         default:
-                            sb.Append(c.ToString());    //      \x --> x
+                            sb.Append(c);    //      \x --> x
                             break;
                     }
                 }
@@ -284,7 +284,7 @@ namespace System.DirectoryServices.AccountManagement
 
             foreach (byte b in bytes)
             {
-                sb.Append(@"\");
+                sb.Append('\\');
                 sb.Append(b.ToString("x2", CultureInfo.InvariantCulture));
             }
 
@@ -343,7 +343,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (((firstChar >= '0' && firstChar <= '9') || (firstChar >= 'A' && firstChar <= 'F') || (firstChar >= 'a' && firstChar <= 'f')) &&
                      ((secondChar >= '0' && secondChar <= '9') || (secondChar >= 'A' && secondChar <= 'F') || (secondChar >= 'a' && secondChar <= 'f')))
                 {
-                    sb.Append(@"\");
+                    sb.Append('\\');
                     sb.Append(firstChar);
                     sb.Append(secondChar);
                 }

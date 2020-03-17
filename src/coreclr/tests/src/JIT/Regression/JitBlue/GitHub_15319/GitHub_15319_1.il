@@ -4,13 +4,13 @@
 
 
 // Test for remorphing subexpressions in casts of long shifts.
-.assembly extern System.Private.CoreLib { auto }
+.assembly extern System.Runtime { auto }
 .assembly extern mscorlib { auto }
 
 .assembly GitHub_15319_1 {}
 
 .class private auto ansi beforefieldinit Q
-       extends [System.Private.CoreLib]System.Object
+       extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  P(int64 x) cil managed noinlining
   {

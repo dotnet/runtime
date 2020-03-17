@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
             CngKey key,
             bool includePrivateParameters,
             out CngKeyBlobFormat format,
-            out string curveName)
+            out string? curveName)
         {
             curveName = key.GetCurveName(out _);
             bool forceGenericBlob = false;

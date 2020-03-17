@@ -14,7 +14,6 @@
 ===========================================================*/
 
 using System.Threading;
-using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Diagnostics;
 
@@ -161,9 +160,6 @@ namespace System.Runtime
             // re-convert into bytes
             requestedSizeRounded <<= 20;
 
-            ulong availPageFile = 0;  // available VM (physical + page file)
-            ulong totalAddressSpaceFree = 0;  // non-contiguous free address space
-
             // Check for available memory, with 2 attempts at getting more
             // memory.
             // Stage 0: If we don't have enough, trigger a GC.
@@ -178,6 +174,9 @@ namespace System.Runtime
             // would probably work, but do some thinking first.)
             for (int stage = 0; stage < 3; stage++)
             {
+                ulong availPageFile;  // available VM (physical + page file)
+                ulong totalAddressSpaceFree;  // non-contiguous free address space
+
                 if (!CheckForAvailableMemory(out availPageFile, out totalAddressSpaceFree))
                 {
                     // _mustSubtractReservation == false
@@ -235,10 +234,6 @@ namespace System.Runtime
                         if (!needPageFile)
                             continue;
 
-                        // Attempt to grow the OS's page file.  Note that we ignore
-                        // any allocation routines from the host intentionally.
-                        RuntimeHelpers.PrepareConstrainedRegions();
-
                         // This shouldn't overflow due to the if clauses above.
                         UIntPtr numBytes = new UIntPtr(segmentSize);
                         GrowPageFileIfNecessaryAndPossible(numBytes);
@@ -286,8 +281,6 @@ namespace System.Runtime
             if (LastKnownFreeAddressSpace < 0)
                 CheckForFreeAddressSpace(segmentSize, true);
 
-            RuntimeHelpers.PrepareConstrainedRegions();
-
             AddMemoryFailPointReservation((long)size);
             _mustSubtractReservation = true;
         }
@@ -317,8 +310,6 @@ namespace System.Runtime
             // within the GC heap.
             if (_mustSubtractReservation)
             {
-                RuntimeHelpers.PrepareConstrainedRegions();
-
                 AddMemoryFailPointReservation(-((long)_reservedMemory));
                 _mustSubtractReservation = false;
             }

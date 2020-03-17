@@ -14,15 +14,18 @@ namespace System.Runtime
             return (ulong)info.lpMaximumApplicationAddress;
         }
 
-        private static bool CheckForAvailableMemory(out ulong availPageFile, out ulong totalAddressSpaceFree)
+        private static unsafe bool CheckForAvailableMemory(out ulong availPageFile, out ulong totalAddressSpaceFree)
         {
-            bool r;
-            Interop.Kernel32.MEMORYSTATUSEX memory = default;
-            r = Interop.Kernel32.GlobalMemoryStatusEx(ref memory);
-            if (!r)
-                throw Win32Marshal.GetExceptionForLastWin32Error();
-            availPageFile = memory.availPageFile;
-            totalAddressSpaceFree = memory.availVirtual;
+            Interop.Kernel32.MEMORYSTATUSEX memoryStatus = default;
+            memoryStatus.dwLength = (uint)sizeof(Interop.Kernel32.MEMORYSTATUSEX);
+            if (!Interop.Kernel32.GlobalMemoryStatusEx(ref memoryStatus))
+            {
+                availPageFile = default;
+                totalAddressSpaceFree = default;
+                return false;
+            }
+            availPageFile = memoryStatus.ullAvailPageFile;
+            totalAddressSpaceFree = memoryStatus.ullAvailVirtual;
             // Console.WriteLine($"Memory gate:  Mem load: {memory.memoryLoad}%  Available memory (physical + page file): {(memory.availPageFile >> 20)} MB  Total free address space: {memory.availVirtual >> 20} MB  GC Heap: {(GC.GetTotalMemory(true) >> 20)} MB");
             return true;
         }
@@ -71,7 +74,7 @@ namespace System.Runtime
                     throw Win32Marshal.GetExceptionForLastWin32Error();
 
                 ulong regionSize = memInfo.RegionSize.ToUInt64();
-                if (memInfo.State == Interop.Kernel32.MEM_FREE)
+                if (memInfo.State == Interop.Kernel32.MemOptions.MEM_FREE)
                 {
                     if (regionSize >= size)
                         return regionSize;
@@ -89,10 +92,10 @@ namespace System.Runtime
         {
             unsafe
             {
-                void* pMemory = Interop.Kernel32.VirtualAlloc(null, numBytes, Interop.Kernel32.MEM_COMMIT, Interop.Kernel32.PAGE_READWRITE);
+                void* pMemory = Interop.Kernel32.VirtualAlloc(null, numBytes, Interop.Kernel32.MemOptions.MEM_COMMIT, Interop.Kernel32.PageOptions.PAGE_READWRITE);
                 if (pMemory != null)
                 {
-                    bool r = Interop.Kernel32.VirtualFree(pMemory, UIntPtr.Zero, Interop.Kernel32.MEM_RELEASE);
+                    bool r = Interop.Kernel32.VirtualFree(pMemory, UIntPtr.Zero, Interop.Kernel32.MemOptions.MEM_RELEASE);
                     if (!r)
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                 }

@@ -7,7 +7,7 @@
 #include "compiler.h"
 #include "phase.h"
 
-class StackLevelSetter : public Phase
+class StackLevelSetter final : public Phase
 {
 public:
     StackLevelSetter(Compiler* compiler);

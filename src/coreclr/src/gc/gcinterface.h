@@ -7,7 +7,7 @@
 
 // The major version of the GC/EE interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE_MAJOR_VERSION 3
+#define GC_INTERFACE_MAJOR_VERSION 4
 
 // The minor version of the GC/EE interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
@@ -137,7 +137,7 @@ struct gc_alloc_context
     uint8_t*       alloc_ptr;
     uint8_t*       alloc_limit;
     int64_t        alloc_bytes; //Number of bytes allocated on SOH by this context
-    int64_t        alloc_bytes_loh; //Number of bytes allocated on LOH by this context
+    int64_t        alloc_bytes_uoh; //Number of bytes allocated not on SOH by this context
     // These two fields are deliberately not exposed past the EE-GC interface.
     void*          gc_reserved_1;
     void*          gc_reserved_2;
@@ -151,7 +151,7 @@ public:
         alloc_ptr = 0;
         alloc_limit = 0;
         alloc_bytes = 0;
-        alloc_bytes_loh = 0;
+        alloc_bytes_uoh = 0;
         gc_reserved_1 = 0;
         gc_reserved_2 = 0;
         alloc_count = 0;
@@ -734,6 +734,9 @@ public:
     // Tells the GC how many YieldProcessor calls are equal to one scaled yield processor call.
     virtual void SetYieldProcessorScalingFactor(float yieldProcessorScalingFactor) = 0;
 
+    // Flush the log and close the file if GCLog is turned on.
+    virtual void Shutdown() = 0;
+
     /*
     ============================================================================
     Add/RemoveMemoryPressure support routines. These are on the interface
@@ -767,19 +770,8 @@ public:
     // a lock to ensure that the calling thread has unique ownership over this alloc context;
     virtual Object* Alloc(gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
 
-    // Allocates an object on the large object heap with the given size and flags.
-    virtual Object* AllocLHeap(size_t size, uint32_t flags) = 0;
-
-    // Allocates an object on the given allocation context, aligned to 64 bits,
-    // with the given size and flags.
-    // It is the responsibility of the caller to ensure that the passed-in alloc context is
-    // owned by the thread that is calling this function. If using per-thread alloc contexts,
-    // no lock is needed; callers not using per-thread alloc contexts will need to acquire
-    // a lock to ensure that the calling thread has unique ownership over this alloc context.
-    virtual Object* AllocAlign8(gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
-
     // This is for the allocator to indicate it's done allocating a large object during a
-    // background GC as the BGC threads also need to walk LOH.
+    // background GC as the BGC threads also need to walk UOH.
     virtual void PublishObject(uint8_t* obj) = 0;
 
     // Signals the WaitForGCEvent event, indicating that a GC has completed.
@@ -793,8 +785,8 @@ public:
     Heap verification routines. These are used during heap verification only.
     ===========================================================================
     */
-    // Returns whether or not this object is in the fixed heap.
-    virtual bool IsObjectInFixedHeap(Object* pObj) = 0;
+    // Returns whether or not this object is too large for SOH.
+    virtual bool IsLargeObject(Object* pObj) = 0;
 
     // Walks an object and validates its members.
     virtual void ValidateObjectMember(Object* obj) = 0;
@@ -907,6 +899,8 @@ enum GC_ALLOC_FLAGS
     GC_ALLOC_ALIGN8_BIAS        = 4,
     GC_ALLOC_ALIGN8             = 8,
     GC_ALLOC_ZEROING_OPTIONAL   = 16,
+    GC_ALLOC_LARGE_OBJECT_HEAP  = 32,
+    GC_ALLOC_PINNED_OBJECT_HEAP = 64,
 };
 
 inline GC_ALLOC_FLAGS operator|(GC_ALLOC_FLAGS a, GC_ALLOC_FLAGS b)

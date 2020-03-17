@@ -4,7 +4,7 @@
 
 namespace System.Security.Cryptography.Asn1
 {
-    internal partial class AsnReader
+    internal ref partial struct AsnValueReader
     {
         /// <summary>
         ///   Reads the next value as a NULL with tag UNIVERSAL 5.
@@ -44,6 +44,41 @@ namespace System.Security.Cryptography.Asn1
             }
 
             _data = _data.Slice(headerLength);
+        }
+    }
+
+    internal partial class AsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as a NULL with tag UNIVERSAL 5.
+        /// </summary>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules
+        /// </exception>
+        public void ReadNull() => ReadNull(Asn1Tag.Null);
+
+        /// <summary>
+        ///   Reads the next value as a NULL with a specified tag.
+        /// </summary>
+        /// <param name="expectedTag">The tag to check for before reading.</param>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method
+        /// </exception>
+        public void ReadNull(Asn1Tag expectedTag)
+        {
+            AsnValueReader valueReader = OpenValueReader();
+            valueReader.ReadNull(expectedTag);
+            valueReader.MatchSlice(ref _data);
         }
     }
 }

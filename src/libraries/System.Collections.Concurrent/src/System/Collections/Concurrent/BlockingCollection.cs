@@ -177,7 +177,7 @@ namespace System.Collections.Concurrent
             if (boundedCapacity < 1)
             {
                 throw new ArgumentOutOfRangeException(
-nameof(boundedCapacity), boundedCapacity,
+                    nameof(boundedCapacity), boundedCapacity,
                     SR.BlockingCollection_ctor_BoundedCapacityRange);
             }
             if (collection == null)
@@ -399,8 +399,7 @@ nameof(boundedCapacity), boundedCapacity,
         {
             CheckDisposed();
 
-            if (cancellationToken.IsCancellationRequested)
-                throw new OperationCanceledException(SR.Common_OperationCanceled, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (IsAddingCompleted)
             {
@@ -427,8 +426,7 @@ nameof(boundedCapacity), boundedCapacity,
                 catch (OperationCanceledException)
                 {
                     //if cancellation was via external token, throw an OCE
-                    if (cancellationToken.IsCancellationRequested)
-                        throw new OperationCanceledException(SR.Common_OperationCanceled, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     //if cancellation was via internal token, this indicates invalid use, hence InvalidOpEx.
                     //Debug.Assert(_ProducersCancellationTokenSource.Token.IsCancellationRequested);
@@ -674,8 +672,7 @@ nameof(boundedCapacity), boundedCapacity,
             CheckDisposed();
             item = default(T)!;
 
-            if (cancellationToken.IsCancellationRequested)
-                throw new OperationCanceledException(SR.Common_OperationCanceled, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
             //If the collection is completed then there is no need to wait.
             if (IsCompleted)
@@ -701,9 +698,7 @@ nameof(boundedCapacity), boundedCapacity,
             //The collection became completed while waiting on the semaphore.
             catch (OperationCanceledException)
             {
-                if (cancellationToken.IsCancellationRequested)
-                    throw new OperationCanceledException(SR.Common_OperationCanceled, cancellationToken);
-
+                cancellationToken.ThrowIfCancellationRequested();
                 return false;
             }
             finally
@@ -1023,10 +1018,8 @@ nameof(boundedCapacity), boundedCapacity,
 
                     if (linkedTokenSource.IsCancellationRequested)
                     {
-                        if (externalCancellationToken.IsCancellationRequested) //case#3
-                            throw new OperationCanceledException(SR.Common_OperationCanceled, externalCancellationToken);
-                        else //case#4
-                            throw new ArgumentException(SR.BlockingCollection_CantAddAnyWhenCompleted, nameof(collections));
+                        externalCancellationToken.ThrowIfCancellationRequested(); //case#3
+                        throw new ArgumentException(SR.BlockingCollection_CantAddAnyWhenCompleted, nameof(collections)); //case#4
                     }
                 }
 
@@ -1420,8 +1413,10 @@ nameof(boundedCapacity), boundedCapacity,
                     handles.Add(linkedTokenSource.Token.WaitHandle); // add the combined token to the handles list
                     int index = WaitHandle.WaitAny(handles.ToArray(), timeout);
 
-                    if (linkedTokenSource.IsCancellationRequested && externalCancellationToken.IsCancellationRequested)//case#3
-                        throw new OperationCanceledException(SR.Common_OperationCanceled, externalCancellationToken);
+                    if (linkedTokenSource.IsCancellationRequested)
+                    {
+                        externalCancellationToken.ThrowIfCancellationRequested(); //case#3
+                    }
 
                     if (!linkedTokenSource.IsCancellationRequested) // if neither internal nor external cancellation requested
                     {
@@ -1712,7 +1707,7 @@ nameof(boundedCapacity), boundedCapacity,
             {
                 //The number of WaitHandles must be <= 64 for MTA, and <=63 for STA, as we reserve one for CancellationToken
                 throw new ArgumentOutOfRangeException(
-nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
+                    nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
             }
 
             for (int i = 0; i < collections.Length; ++i)
@@ -1725,7 +1720,7 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_LargeSize);
 
                 if (collections[i]._isDisposed)
                     throw new ObjectDisposedException(
-nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
+                        nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
 
                 if (isAddOperation && collections[i].IsAddingCompleted)
                 {

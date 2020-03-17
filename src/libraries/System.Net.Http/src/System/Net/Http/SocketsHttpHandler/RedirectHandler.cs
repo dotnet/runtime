@@ -33,7 +33,8 @@ namespace System.Net.Http
             HttpResponseMessage response = await _initialInnerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             uint redirectCount = 0;
-            Uri redirectUri;
+            Uri? redirectUri;
+            Debug.Assert(request.RequestUri != null);
             while ((redirectUri = GetUriForRedirect(request.RequestUri, response)) != null)
             {
                 redirectCount++;
@@ -71,7 +72,10 @@ namespace System.Net.Http
 
                     request.Method = HttpMethod.Get;
                     request.Content = null;
-                    request.Headers.TransferEncodingChunked = false;
+                    if (request.Headers.TransferEncodingChunked == true)
+                    {
+                        request.Headers.TransferEncodingChunked = false;
+                    }
                 }
 
                 // Issue the redirected request.
@@ -83,7 +87,7 @@ namespace System.Net.Http
             return response;
         }
 
-        private Uri GetUriForRedirect(Uri requestUri, HttpResponseMessage response)
+        private Uri? GetUriForRedirect(Uri requestUri, HttpResponseMessage response)
         {
             switch (response.StatusCode)
             {
@@ -99,7 +103,7 @@ namespace System.Net.Http
                     return null;
             }
 
-            Uri location = response.Headers.Location;
+            Uri? location = response.Headers.Location;
             if (location == null)
             {
                 return null;
@@ -128,7 +132,7 @@ namespace System.Net.Http
             {
                 if (NetEventSource.IsEnabled)
                 {
-                    TraceError($"Insecure https to http redirect from '{requestUri}' to '{location}' blocked.", response.RequestMessage.GetHashCode());
+                    TraceError($"Insecure https to http redirect from '{requestUri}' to '{location}' blocked.", response.RequestMessage!.GetHashCode());
                 }
 
                 return null;
@@ -162,10 +166,10 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        internal void Trace(string message, int requestId, [CallerMemberName] string memberName = null) =>
+        internal void Trace(string message, int requestId, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessage(0, 0, requestId, memberName, ToString() + ": " + message);
 
-        internal void TraceError(string message, int requestId, [CallerMemberName] string memberName = null) =>
+        internal void TraceError(string message, int requestId, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessageError(0, 0, requestId, memberName, ToString() + ": " + message);
     }
 }

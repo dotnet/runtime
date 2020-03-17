@@ -219,6 +219,91 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class GenericIImmutableDictionaryWrapper<TKey, TValue> : IImmutableDictionary<TKey, TValue>
+    {
+        private ImmutableDictionary<TKey, TValue> _dictionary;
+
+        public GenericIImmutableDictionaryWrapper() { }
+
+        public GenericIImmutableDictionaryWrapper(Dictionary<TKey, TValue> items)
+        {
+            _dictionary = ImmutableDictionary.CreateRange(items);
+        }
+
+        public TValue this[TKey key] => _dictionary[key];
+
+        public IEnumerable<TKey> Keys => _dictionary.Keys;
+
+        public IEnumerable<TValue> Values => _dictionary.Values;
+
+        public int Count => _dictionary.Count;
+
+        public IImmutableDictionary<TKey, TValue> Add(TKey key, TValue value)
+        {
+            return ((IImmutableDictionary<TKey, TValue>)_dictionary).Add(key, value);
+        }
+
+        public IImmutableDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs)
+        {
+            return ((IImmutableDictionary<TKey, TValue>)_dictionary).AddRange(pairs);
+        }
+
+        public IImmutableDictionary<TKey, TValue> Clear()
+        {
+            return ((IImmutableDictionary<TKey, TValue>)_dictionary).Clear();
+        }
+
+        public bool Contains(KeyValuePair<TKey, TValue> pair)
+        {
+            return _dictionary.Contains(pair);
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            return _dictionary.ContainsKey(key);
+        }
+
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            return ((IImmutableDictionary<TKey, TValue>)_dictionary).GetEnumerator();
+        }
+
+        public IImmutableDictionary<TKey, TValue> Remove(TKey key)
+        {
+            return ((IImmutableDictionary<TKey, TValue>)_dictionary).Remove(key);
+        }
+
+        public IImmutableDictionary<TKey, TValue> RemoveRange(IEnumerable<TKey> keys)
+        {
+            return ((IImmutableDictionary<TKey, TValue>)_dictionary).RemoveRange(keys);
+        }
+
+        public IImmutableDictionary<TKey, TValue> SetItem(TKey key, TValue value)
+        {
+            return ((IImmutableDictionary<TKey, TValue>)_dictionary).SetItem(key, value);
+        }
+
+        public IImmutableDictionary<TKey, TValue> SetItems(IEnumerable<KeyValuePair<TKey, TValue>> items)
+        {
+            return ((IImmutableDictionary<TKey, TValue>)_dictionary).SetItems(items);
+        }
+
+        public bool TryGetKey(TKey equalKey, out TKey actualKey)
+        {
+            return _dictionary.TryGetKey(equalKey, out actualKey);
+        }
+
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            return _dictionary.TryGetValue(key, out value);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IImmutableDictionary<TKey, TValue>)_dictionary).GetEnumerator();
+        }
+    }
+
     public class StringIImmutableListWrapper : IImmutableList<string>
     {
         private ImmutableList<string> _list = ImmutableList.Create<string>();

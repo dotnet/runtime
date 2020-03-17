@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
 {
     public class DSASignatureDeformatter : AsymmetricSignatureDeformatter
     {
-        private DSA _dsaKey;
+        private DSA? _dsaKey;
 
         public DSASignatureDeformatter() { }
 

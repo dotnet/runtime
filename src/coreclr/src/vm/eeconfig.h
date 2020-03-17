@@ -284,8 +284,21 @@ public:
     bool          TieredCompilation_QuickJit() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJit; }
     bool          TieredCompilation_QuickJitForLoops() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJitForLoops; }
     bool          TieredCompilation_CallCounting()  const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_CallCounting; }
-    DWORD         TieredCompilation_CallCountThreshold() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountThreshold; }
+    UINT16        TieredCompilation_CallCountThreshold() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountThreshold; }
     DWORD         TieredCompilation_CallCountingDelayMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountingDelayMs; }
+    bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
+    DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    // OSR Config
+    DWORD         OSR_CounterBump() const { LIMITED_METHOD_CONTRACT; return dwOSR_CounterBump; }
+    DWORD         OSR_HitLimit() const { LIMITED_METHOD_CONTRACT; return dwOSR_HitLimit; }
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT) && defined(_DEBUG)
+    DWORD         OSR_LowId() const { LIMITED_METHOD_CONTRACT; return dwOSR_LowId; }
+    DWORD         OSR_HighId() const { LIMITED_METHOD_CONTRACT; return dwOSR_HighId; }
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -332,8 +345,6 @@ public:
 
 #ifdef _DEBUG
     bool GenDebuggableCode(void)                    const {LIMITED_METHOD_CONTRACT;  return fDebuggable; }
-    bool IsStressOn(void)                           const {LIMITED_METHOD_CONTRACT;  return fStressOn; }
-    int GetAPIThreadStressCount(void)               const {LIMITED_METHOD_CONTRACT;  return apiThreadStressCount; }
 
     bool ShouldExposeExceptionsInCOMToConsole()     const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 1) != 0; }
     bool ShouldExposeExceptionsInCOMToMsgBox()      const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 2) != 0; }
@@ -624,7 +635,7 @@ public:
 #ifdef FEATURE_CONSERVATIVE_GC
     bool    GetGCConservative()             const {LIMITED_METHOD_CONTRACT; return iGCConservative;}
 #endif
-#ifdef BIT64
+#ifdef HOST_64BIT
     bool    GetGCAllowVeryLargeObjects()    const {LIMITED_METHOD_CONTRACT; return iGCAllowVeryLargeObjects;}
 #endif
 #ifdef _DEBUG
@@ -818,8 +829,6 @@ private: //----------------------------------------------------------------
     static bool IsInMethList(MethodNamesList* list, MethodDesc* pMD);
 
     bool fDebuggable;
-    bool fStressOn;
-    int apiThreadStressCount;
 
     MethodNamesList* pPrestubHalt;      // list of methods on which to break when hit prestub
     MethodNamesList* pPrestubGC;        // list of methods on which to cause a GC when hit prestub
@@ -929,9 +938,9 @@ private: //----------------------------------------------------------------
 #ifdef FEATURE_CONSERVATIVE_GC
     bool iGCConservative;
 #endif // FEATURE_CONSERVATIVE_GC
-#ifdef BIT64
+#ifdef HOST_64BIT
     bool iGCAllowVeryLargeObjects;
-#endif // BIT64
+#endif // HOST_64BIT
 
     bool fGCBreakOnOOM;
 
@@ -1019,8 +1028,20 @@ private: //----------------------------------------------------------------
     bool fTieredCompilation_QuickJit;
     bool fTieredCompilation_QuickJitForLoops;
     bool fTieredCompilation_CallCounting;
-    DWORD tieredCompilation_CallCountThreshold;
+    bool fTieredCompilation_UseCallCountingStubs;
+    UINT16 tieredCompilation_CallCountThreshold;
     DWORD tieredCompilation_CallCountingDelayMs;
+    DWORD tieredCompilation_DeleteCallCountingStubsAfter;
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    DWORD dwOSR_HitLimit;
+    DWORD dwOSR_CounterBump;
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT) && defined(_DEBUG)
+    DWORD dwOSR_LowId;
+    DWORD dwOSR_HighId;
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -1059,7 +1080,7 @@ public:
 #endif
 
 #if defined(_DEBUG)
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 private:
 
     // Defaults to 0, which means we will not generate long jump dispatch stubs.
@@ -1084,7 +1105,7 @@ public:
     {
         return FALSE;
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 #endif // _DEBUG
 
 #if defined(_DEBUG)
@@ -1120,10 +1141,6 @@ public:
         }                                                               \
     } while(0)
 
-    // STRESS_ASSERT is meant to be temperary additions to the code base that stop the
-    // runtime quickly when running stress
-#define STRESS_ASSERT(cond)   do { if (!(cond) && g_pConfig->IsStressOn())  DebugBreak();    } while(0)
-
 #define FILE_FORMAT_CHECK_MSG(_condition, _message)                     \
     do {                                                                \
         if (g_pConfig != NULL && g_pConfig->fAssertOnBadImageFormat())  \
@@ -1136,7 +1153,6 @@ public:
 
 #else
 
-#define STRESS_ASSERT(cond)
 #define BAD_FORMAT_NOTHROW_ASSERT(str)
 
 #define FILE_FORMAT_CHECK_MSG(_condition, _message)

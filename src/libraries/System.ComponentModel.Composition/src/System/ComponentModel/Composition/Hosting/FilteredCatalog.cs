@@ -16,7 +16,7 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private readonly Func<ComposablePartDefinition, bool> _filter;
         private ComposablePartCatalog _innerCatalog;
-        private FilteredCatalog _complement;
+        private FilteredCatalog? _complement;
         private readonly object _lock = new object();
         private volatile bool _isDisposed = false;
 
@@ -30,7 +30,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
         }
 
-        internal FilteredCatalog(ComposablePartCatalog catalog, Func<ComposablePartDefinition, bool> filter, FilteredCatalog complement)
+        internal FilteredCatalog(ComposablePartCatalog catalog, Func<ComposablePartDefinition, bool> filter, FilteredCatalog? complement)
         {
             Requires.NotNull(catalog, nameof(catalog));
             Requires.NotNull(filter, nameof(filter));
@@ -39,8 +39,7 @@ namespace System.ComponentModel.Composition.Hosting
             _filter = (p) => filter.Invoke(p.GetGenericPartDefinition() ?? p);
             _complement = complement;
 
-            INotifyComposablePartCatalogChanged notifyCatalog = _innerCatalog as INotifyComposablePartCatalogChanged;
-            if (notifyCatalog != null)
+            if (_innerCatalog is INotifyComposablePartCatalogChanged notifyCatalog)
             {
                 notifyCatalog.Changed += OnChangedInternal;
                 notifyCatalog.Changing += OnChangingInternal;
@@ -59,7 +58,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (!_isDisposed)
                     {
-                        INotifyComposablePartCatalogChanged notifyCatalog = null;
+                        INotifyComposablePartCatalogChanged? notifyCatalog = null;
                         try
                         {
                             lock (_lock)
@@ -68,7 +67,7 @@ namespace System.ComponentModel.Composition.Hosting
                                 {
                                     _isDisposed = true;
                                     notifyCatalog = _innerCatalog as INotifyComposablePartCatalogChanged;
-                                    _innerCatalog = null;
+                                    _innerCatalog = null!;
                                 }
                             }
                         }
@@ -106,7 +105,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                 if (_complement == null)
                 {
-                    FilteredCatalog complement = new FilteredCatalog(_innerCatalog, p => !_filter(p), this);
+                    FilteredCatalog? complement = new FilteredCatalog(_innerCatalog, p => !_filter(p), this);
                     lock (_lock)
                     {
                         if (_complement == null)
@@ -171,12 +170,12 @@ namespace System.ComponentModel.Composition.Hosting
         /// <summary>
         /// Notify when the contents of the Catalog has changed.
         /// </summary>
-        public event EventHandler<ComposablePartCatalogChangeEventArgs> Changed;
+        public event EventHandler<ComposablePartCatalogChangeEventArgs>? Changed;
 
         /// <summary>
         /// Notify when the contents of the Catalog is changing.
         /// </summary>
-        public event EventHandler<ComposablePartCatalogChangeEventArgs> Changing;
+        public event EventHandler<ComposablePartCatalogChangeEventArgs>? Changing;
 
         /// <summary>
         /// Raises the <see cref="Changed"/> event.
@@ -184,7 +183,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <param name="e">The <see cref="System.ComponentModel.Composition.Hosting.ComposablePartCatalogChangeEventArgs"/> instance containing the event data.</param>
         protected virtual void OnChanged(ComposablePartCatalogChangeEventArgs e)
         {
-            EventHandler<ComposablePartCatalogChangeEventArgs> changedEvent = Changed;
+            EventHandler<ComposablePartCatalogChangeEventArgs>? changedEvent = Changed;
             if (changedEvent != null)
             {
                 changedEvent.Invoke(this, e);
@@ -197,32 +196,32 @@ namespace System.ComponentModel.Composition.Hosting
         /// <param name="e">The <see cref="System.ComponentModel.Composition.Hosting.ComposablePartCatalogChangeEventArgs"/> instance containing the event data.</param>
         protected virtual void OnChanging(ComposablePartCatalogChangeEventArgs e)
         {
-            EventHandler<ComposablePartCatalogChangeEventArgs> changingEvent = Changing;
+            EventHandler<ComposablePartCatalogChangeEventArgs>? changingEvent = Changing;
             if (changingEvent != null)
             {
                 changingEvent.Invoke(this, e);
             }
         }
 
-        private void OnChangedInternal(object sender, ComposablePartCatalogChangeEventArgs e)
+        private void OnChangedInternal(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             var processedArgs = ProcessEventArgs(e);
             if (processedArgs != null)
             {
-                OnChanged(ProcessEventArgs(processedArgs));
+                OnChanged(ProcessEventArgs(processedArgs)!);
             }
         }
 
-        private void OnChangingInternal(object sender, ComposablePartCatalogChangeEventArgs e)
+        private void OnChangingInternal(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             var processedArgs = ProcessEventArgs(e);
             if (processedArgs != null)
             {
-                OnChanging(ProcessEventArgs(processedArgs));
+                OnChanging(ProcessEventArgs(processedArgs)!);
             }
         }
 
-        private ComposablePartCatalogChangeEventArgs ProcessEventArgs(ComposablePartCatalogChangeEventArgs e)
+        private ComposablePartCatalogChangeEventArgs? ProcessEventArgs(ComposablePartCatalogChangeEventArgs e)
         {
             // the constructor for ComposablePartCatalogChangeEventArgs takes a snapshot of the arguments, so we don't have to
             var result = new ComposablePartCatalogChangeEventArgs(

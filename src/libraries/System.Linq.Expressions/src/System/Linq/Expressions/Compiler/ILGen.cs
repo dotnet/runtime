@@ -323,7 +323,6 @@ namespace System.Linq.Expressions.Compiler
             il.Emit(fi.IsStatic ? OpCodes.Stsfld : OpCodes.Stfld, fi);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
         internal static void EmitNew(this ILGenerator il, ConstructorInfo ci)
         {
             Debug.Assert(ci != null);
@@ -696,7 +695,6 @@ namespace System.Linq.Expressions.Compiler
         }
 
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static void EmitNumericConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked)
         {
             TypeCode tc = typeTo.GetTypeCode();
@@ -1081,7 +1079,9 @@ namespace System.Linq.Expressions.Compiler
 
         private static void EmitDecimal(this ILGenerator il, decimal value)
         {
-            int[] bits = decimal.GetBits(value);
+            Span<int> bits = stackalloc int[4];
+            decimal.GetBits(value, bits);
+
             int scale = (bits[3] & int.MaxValue) >> 16;
             if (scale == 0)
             {

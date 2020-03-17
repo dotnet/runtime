@@ -49,7 +49,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override byte[]? Key
+        public override byte[] Key
         {
             get => base.Key;
             set => base.Key = value;

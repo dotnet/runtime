@@ -70,7 +70,7 @@ public:
     ~GCHeap(){};
 
     /* BaseGCHeap Methods*/
-    PER_HEAP_ISOLATED   HRESULT Shutdown ();
+    PER_HEAP_ISOLATED   HRESULT StaticShutdown ();
 
     size_t  GetTotalBytesInUse ();
     // Gets the amount of bytes objects currently occupy on the GC heap.
@@ -102,12 +102,6 @@ public:
 
     HRESULT Initialize ();
 
-    //flags can be GC_ALLOC_CONTAINS_REF GC_ALLOC_FINALIZE
-    Object*  AllocAlign8 (gc_alloc_context* acontext, size_t size, uint32_t flags);
-private:
-    Object*  AllocAlign8Common (void* hp, alloc_context* acontext, size_t size, uint32_t flags);
-public:
-    Object*  AllocLHeap (size_t size, uint32_t flags);
     Object* Alloc (gc_alloc_context* acontext, size_t size, uint32_t flags);
 
     void FixAllocContext (gc_alloc_context* acontext, void* arg, void *heap);
@@ -125,7 +119,7 @@ public:
     void HideAllocContext(alloc_context*);
     void RevealAllocContext(alloc_context*);
 
-    bool IsObjectInFixedHeap(Object *pObj);
+    bool IsLargeObject(Object *pObj);
 
     HRESULT GarbageCollect (int generation = -1, bool low_memory_p=false, int mode=collection_blocking);
 
@@ -311,6 +305,8 @@ public:
     int GetLastGCPercentTimeInGC();
 
     size_t GetLastGCGenerationSize(int gen);
+
+    virtual void Shutdown();
 };
 
 #endif  // GCIMPL_H_

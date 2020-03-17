@@ -11,7 +11,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
 {
     internal static class CommonUtilities
     {
-        private const string DefaultDelimiter = ";";
+        internal const string DefaultDelimiter = ";";
 
         internal static void DeleteFile(string fileName)
         {

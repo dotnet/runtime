@@ -22,19 +22,19 @@ namespace System
         public NullReferenceException()
             : base(SR.Arg_NullReferenceException)
         {
-            HResult = HResults.COR_E_NULLREFERENCE;
+            HResult = HResults.E_POINTER;
         }
 
         public NullReferenceException(string? message)
             : base(message)
         {
-            HResult = HResults.COR_E_NULLREFERENCE;
+            HResult = HResults.E_POINTER;
         }
 
         public NullReferenceException(string? message, Exception? innerException)
             : base(message, innerException)
         {
-            HResult = HResults.COR_E_NULLREFERENCE;
+            HResult = HResults.E_POINTER;
         }
 
         protected NullReferenceException(SerializationInfo info, StreamingContext context) : base(info, context)

@@ -51,10 +51,10 @@ namespace System.Net.Http
             SetBuffer(_content, _offset, _count);
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsyncCore(stream, default);
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
             GetType() == typeof(ByteArrayContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
@@ -72,7 +72,7 @@ namespace System.Net.Http
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(CreateMemoryStreamForByteArray());
 
-        internal override Stream TryCreateContentReadStream() =>
+        internal override Stream? TryCreateContentReadStream() =>
             GetType() == typeof(ByteArrayContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
             null;
 

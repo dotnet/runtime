@@ -75,11 +75,11 @@ LiveProcDataTarget::GetMachineType(
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     *machine = IMAGE_FILE_MACHINE_I386;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     *machine = IMAGE_FILE_MACHINE_AMD64;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     *machine = IMAGE_FILE_MACHINE_ARMNT;
 #else
     PORTABILITY_ASSERT("Unknown Processor");

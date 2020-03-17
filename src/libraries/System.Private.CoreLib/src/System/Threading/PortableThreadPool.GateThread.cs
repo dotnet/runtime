@@ -20,7 +20,7 @@ namespace System.Threading
 
             private static LowLevelLock s_createdLock = new LowLevelLock();
 
-            private static readonly CpuUtilizationReader s_cpu = new CpuUtilizationReader();
+            private static CpuUtilizationReader s_cpu = new CpuUtilizationReader();
             private const int MaxRuns = 2;
 
             // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text;
 
 namespace System.Collections.Generic
@@ -50,7 +51,9 @@ namespace System.Collections.Generic
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct KeyValuePair<TKey, TValue>
     {
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private readonly TKey key; // Do not rename (binary serialization)
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private readonly TValue value; // Do not rename (binary serialization)
 
         public KeyValuePair(TKey key, TValue value)

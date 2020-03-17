@@ -81,7 +81,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
 
             /// <summary>Gets whether the IDisposable has been disposed.</summary>
-            [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
             private bool Disposed { get { return _action == null; } }
 
             /// <summary>Invoke the action.</summary>
@@ -124,7 +123,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
 
             /// <summary>Gets whether the IDisposable has been disposed.</summary>
-            [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
             private bool Disposed { get { return _action == null; } }
 
             /// <summary>Invoke the action.</summary>

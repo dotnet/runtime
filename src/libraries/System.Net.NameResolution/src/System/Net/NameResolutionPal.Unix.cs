@@ -46,7 +46,7 @@ namespace System.Net
             }
         }
 
-        private static unsafe void ParseHostEntry(Interop.Sys.HostEntry hostEntry, bool justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses)
+        private static unsafe void ParseHostEntry(Interop.Sys.HostEntry hostEntry, bool justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses)
         {
             try
             {
@@ -105,7 +105,7 @@ namespace System.Net
                         localAliases = new string[numAliases];
                         for (int i = 0; i < localAliases.Length; i++)
                         {
-                            localAliases[i] = Marshal.PtrToStringAnsi((IntPtr)hostEntry.Aliases[i]);
+                            localAliases[i] = Marshal.PtrToStringAnsi((IntPtr)hostEntry.Aliases[i])!;
                         }
                     }
                 }
@@ -119,7 +119,7 @@ namespace System.Net
             }
         }
 
-        public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
+        public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
         {
             if (name == "")
             {
@@ -143,7 +143,7 @@ namespace System.Net
             return SocketError.Success;
         }
 
-        public static unsafe string TryGetNameInfo(IPAddress addr, out SocketError socketError, out int nativeErrorCode)
+        public static unsafe string? TryGetNameInfo(IPAddress addr, out SocketError socketError, out int nativeErrorCode)
         {
             byte* buffer = stackalloc byte[Interop.Sys.NI_MAXHOST + 1 /*for null*/];
 

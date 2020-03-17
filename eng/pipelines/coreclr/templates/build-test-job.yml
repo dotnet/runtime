@@ -67,7 +67,7 @@ jobs:
       dependsOn:
       - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-        - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
 
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
@@ -139,10 +139,10 @@ jobs:
 
 
     # Publish Logs
-    - task: PublishBuildArtifacts@1
+    - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/artifacts/log
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
         artifactName: 'TestBuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

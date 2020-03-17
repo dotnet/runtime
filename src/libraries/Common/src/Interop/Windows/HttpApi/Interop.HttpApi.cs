@@ -507,7 +507,6 @@ internal static partial class Interop
 
         internal sealed class SafeLocalFreeChannelBinding : ChannelBinding
         {
-            private const int LMEM_FIXED = 0;
             private int _size;
 
             private SafeLocalFreeChannelBinding() { }
@@ -519,25 +518,18 @@ internal static partial class Interop
 
             public static SafeLocalFreeChannelBinding LocalAlloc(int cb)
             {
-                SafeLocalFreeChannelBinding result = HttpApi.LocalAlloc(LMEM_FIXED, (UIntPtr)cb);
-                if (result.IsInvalid)
-                {
-                    result.SetHandleAsInvalid();
-                    throw new OutOfMemoryException();
-                }
-
+                SafeLocalFreeChannelBinding result = new SafeLocalFreeChannelBinding();
+                result.SetHandle(Marshal.AllocHGlobal(cb));
                 result._size = cb;
                 return result;
             }
 
             protected override bool ReleaseHandle()
             {
-                return Interop.Kernel32.LocalFree(handle) == IntPtr.Zero;
+                Marshal.FreeHGlobal(handle);
+                return true;
             }
         }
-
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern SafeLocalFreeChannelBinding LocalAlloc(int uFlags, UIntPtr sizetdwBytes);
 
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal static extern unsafe uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, HTTP_SSL_CLIENT_CERT_INFO* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);

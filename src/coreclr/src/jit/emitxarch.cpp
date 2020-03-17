@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 
 /*****************************************************************************/
 /*****************************************************************************/
@@ -396,7 +396,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
             break;
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // movsx should always sign extend out to 8 bytes just because we don't track
     // whether the dest should be 4 bytes or 8 bytes (attr indicates the size
     // of the source, not the dest).
@@ -456,9 +456,9 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
     {
         return false;
     }
-#else  //!_TARGET_AMD64 = _TARGET_X86_
+#else  //! TARGET_AMD64 = TARGET_X86
     return false;
-#endif //!_TARGET_AMD64_
+#endif //! TARGET_AMD64
 }
 
 // Returns true if using this register will require a REX.* prefix.
@@ -467,7 +467,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
 // instruction in question is AVX.
 bool IsExtendedReg(regNumber reg)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return ((reg >= REG_R8) && (reg <= REG_R15)) || ((reg >= REG_XMM8) && (reg <= REG_XMM15));
 #else
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
@@ -478,7 +478,7 @@ bool IsExtendedReg(regNumber reg)
 // Returns true if using this register, for the given EA_SIZE(attr), will require a REX.* prefix
 bool IsExtendedReg(regNumber reg, emitAttr attr)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Not a register, so doesn't need a prefix
     if (reg > REG_XMM15)
     {
@@ -520,11 +520,11 @@ bool IsExtendedReg(regNumber reg, emitAttr attr)
 // can also used to know whether a YMM register in case of AVX instructions.
 bool IsXMMReg(regNumber reg)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return (reg >= REG_XMM0) && (reg <= REG_XMM15);
-#else  // !_TARGET_AMD64_
+#else  // !TARGET_AMD64
     return (reg >= REG_XMM0) && (reg <= REG_XMM7);
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 }
 
 // Returns bits to be encoded in instruction for the given register.
@@ -550,7 +550,7 @@ emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
             return emitter::code_t(code | 0x00008000000000ULL);
         }
     }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return emitter::code_t(code | 0x4800000000ULL);
 #else
     assert(!"UNREACHED");
@@ -558,7 +558,7 @@ emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
 #endif
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
 emitter::code_t emitter::AddRexRPrefix(instruction ins, code_t code)
 {
@@ -618,7 +618,7 @@ emitter::code_t emitter::AddRexPrefix(instruction ins, code_t code)
     return code | 0x4000000000ULL;
 }
 
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
 
 bool isPrefix(BYTE b)
 {
@@ -795,7 +795,7 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
         return 3;
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (code > 0x00FFFFFFFFLL)
     {
         BYTE prefix = (code >> 32) & 0xFF;
@@ -849,12 +849,12 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
 
         return emitOutputByte(dst, prefix);
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     return 0;
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 /*****************************************************************************
  * Is the last instruction emitted a call instruction?
  */
@@ -880,7 +880,7 @@ void emitter::emitOutputPreEpilogNOP()
     }
 }
 
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
 
 // Size of rex prefix in bytes
 unsigned emitter::emitGetRexPrefixSize(instruction ins)
@@ -1006,7 +1006,7 @@ unsigned emitter::emitGetPrefixSize(code_t code)
     return 0;
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 /*****************************************************************************
  *
  *  Record a non-empty stack
@@ -1426,7 +1426,7 @@ inline unsigned emitter::insEncodeReg012(instruction ins, regNumber reg, emitAtt
 {
     assert(reg < REG_STK);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Either code is not NULL or reg is not an extended reg.
     // If reg is an extended reg, instruction needs to be prefixed with 'REX'
     // which would require code != NULL.
@@ -1442,7 +1442,7 @@ inline unsigned emitter::insEncodeReg012(instruction ins, regNumber reg, emitAtt
         // not the corresponding AH, CH, DH, or BH
         *code = AddRexPrefix(ins, *code); // REX
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     unsigned regBits = RegEncoding(reg);
 
@@ -1460,7 +1460,7 @@ inline unsigned emitter::insEncodeReg345(instruction ins, regNumber reg, emitAtt
 {
     assert(reg < REG_STK);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Either code is not NULL or reg is not an extended reg.
     // If reg is an extended reg, instruction needs to be prefixed with 'REX'
     // which would require code != NULL.
@@ -1476,7 +1476,7 @@ inline unsigned emitter::insEncodeReg345(instruction ins, regNumber reg, emitAtt
         // not the corresponding AH, CH, DH, or BH
         *code = AddRexPrefix(ins, *code); // REX
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     unsigned regBits = RegEncoding(reg);
 
@@ -1522,7 +1522,7 @@ inline unsigned emitter::insEncodeRegSIB(instruction ins, regNumber reg, code_t*
 {
     assert(reg < REG_STK);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Either code is not NULL or reg is not an extended reg.
     // If reg is an extended reg, instruction needs to be prefixed with 'REX'
     // which would require code != NULL.
@@ -1533,9 +1533,9 @@ inline unsigned emitter::insEncodeRegSIB(instruction ins, regNumber reg, code_t*
         *code = AddRexXPrefix(ins, *code); // REX.X
     }
     unsigned regBits = RegEncoding(reg);
-#else  // !_TARGET_AMD64_
+#else  // !TARGET_AMD64
     unsigned regBits = reg;
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 
     assert(regBits < 8);
     return regBits;
@@ -1766,7 +1766,7 @@ bool emitter::emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1
 inline UNATIVE_OFFSET emitter::emitInsSize(code_t code)
 {
     UNATIVE_OFFSET size = (code & 0xFF000000) ? 4 : (code & 0x00FF0000) ? 3 : 2;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     size += emitGetPrefixSize(code);
 #endif
     return size;
@@ -1813,11 +1813,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code, int val
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(valSize <= sizeof(INT32) || !id->idIsCnsReloc());
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     if (valSize > sizeof(INT32))
     {
@@ -1938,9 +1938,9 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
         /* Is this a stack parameter reference? */
 
         if (emitComp->lvaIsParameter(var)
-#if !defined(_TARGET_AMD64_) || defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_AMD64) || defined(UNIX_AMD64_ABI)
             && !emitComp->lvaIsRegArgument(var)
-#endif // !_TARGET_AMD64_ || UNIX_AMD64_ABI
+#endif // !TARGET_AMD64 || UNIX_AMD64_ABI
                 )
         {
             /* If no EBP frame, arguments are off of ESP, above temps */
@@ -1959,7 +1959,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
 
             if (EBPbased)
             {
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
+#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
                 // If localloc is not used, then ebp chaining is done and hence
                 // offset of locals will be at negative offsets, Otherwise offsets
                 // will be positive.  In future, when RBP gets positioned in the
@@ -1981,9 +1981,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
                     LclVarDsc* varDsc         = emitComp->lvaTable + var;
                     bool       isRegPassedArg = varDsc->lvIsParam && varDsc->lvIsRegArg;
                     // Register passed args could have a stack offset of 0.
-                    noway_assert((int)offs < 0 || isRegPassedArg);
+                    noway_assert((int)offs < 0 || isRegPassedArg || emitComp->opts.IsOSR());
 #else  // !UNIX_AMD64_ABI
-                    noway_assert((int)offs < 0);
+
+                    // OSR transitioning to RBP frame currently can have mid-frame FP
+                    noway_assert(((int)offs < 0) || emitComp->opts.IsOSR());
 #endif // !UNIX_AMD64_ABI
                 }
 
@@ -2001,7 +2003,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
                     // offset is negative
                     return size + ((int(offs) >= SCHAR_MIN) ? sizeof(char) : sizeof(int));
                 }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 // This case arises for localloc frames
                 else
                 {
@@ -2040,7 +2042,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
 //  printf("lcl = %04X, tmp = %04X, stk = %04X, offs = %04X\n",
 //         emitLclSize, emitMaxTmpSize, emitCurStackLvl, offs);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     bool useSmallEncoding = (SCHAR_MIN <= (int)offs) && ((int)offs <= SCHAR_MAX);
 #else
     bool useSmallEncoding = (offs <= size_t(SCHAR_MAX));
@@ -2083,11 +2085,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     UNATIVE_OFFSET prefix    = emitGetAdjustedSize(ins, attrSize, code);
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(valSize <= sizeof(int) || !id->idIsCnsReloc());
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     if (valSize > sizeof(int))
     {
@@ -2123,7 +2125,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
 
 static bool baseRegisterRequiresSibByte(regNumber base)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return base == REG_ESP || base == REG_R12;
 #else
     return base == REG_ESP;
@@ -2132,7 +2134,7 @@ static bool baseRegisterRequiresSibByte(regNumber base)
 
 static bool baseRegisterRequiresDisplacement(regNumber base)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return base == REG_EBP || base == REG_R13;
 #else
     return base == REG_EBP;
@@ -2235,7 +2237,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 
             size += sizeof(INT32);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // If id is not marked for reloc, add 1 additional byte for SIB that follows disp32
             if (!id->idIsDspReloc())
             {
@@ -2365,11 +2367,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code, int val
     // Let's not complicate things until this is needed.
     assert(ins != INS_bt);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(valSize <= sizeof(INT32) || !id->idIsCnsReloc());
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     if (valSize > sizeof(INT32))
     {
@@ -2423,11 +2425,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
     // occasionally longs get here on x86
     if (valSize > sizeof(INT32))
         valSize = sizeof(INT32);
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 
     if (id->idIsCnsReloc())
     {
@@ -2833,9 +2835,16 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         // Absolute addresses marked as contained should fit within the base of addr mode.
         assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
 
-        // Either not generating relocatable code, or addr must be an icon handle, or the
-        // constant is zero (which we won't generate a relocation for).
-        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0));
+        // If we reach here, either:
+        // - we are not generating relocatable code, (typically the non-AOT JIT case)
+        // - the base address is a handle represented by an integer constant,
+        // - the base address is a constant zero, or
+        // - the base address is a constant that fits into the memory instruction (this can happen on x86).
+        //   This last case is captured in the FitsInAddrBase method which is used by Lowering to determine that it can
+        //   be contained.
+        //
+        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0) ||
+               memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
 
         if (memBase->AsIntConCommon()->AddrNeedsReloc(emitComp))
         {
@@ -3610,18 +3619,18 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     {
         case INS_inc:
         case INS_dec:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
             sz = 2; // x64 has no 1-byte opcode (it is the same encoding as the REX prefix)
 
-#else // !_TARGET_AMD64_
+#else // !TARGET_AMD64
 
             if (size == EA_1BYTE)
                 sz = 2; // Use the long form as the small one has no 'w' bit
             else
                 sz = 1; // Use short form
 
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 
             break;
 
@@ -3703,7 +3712,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
 
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(size < EA_8BYTE || ins == INS_mov || ((int)val == val && !EA_IS_CNS_RELOC(attr)));
@@ -3722,7 +3731,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     switch (ins)
     {
         case INS_mov:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // mov reg, imm64 is equivalent to mov reg, imm32 if the high order bits are all 0
             // and this isn't a reloc constant.
             if (((size > EA_4BYTE) && (0 == (val & 0xFFFFFFFF00000000LL))) && !EA_IS_CNS_RELOC(attr))
@@ -3735,7 +3744,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
                 sz = 9; // Really it is 10, but we'll add one more later
                 break;
             }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
             sz = 5;
             break;
 
@@ -3789,14 +3798,14 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
                     sz = 2;
                 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 if (size > EA_4BYTE)
                 {
                     // We special-case anything that takes a full 8-byte constant.
                     sz += 4;
                 }
                 else
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
                 {
                     sz += EA_SIZE_IN_BYTES(attr);
                 }
@@ -3841,7 +3850,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, int val)
     instrDesc*     id;
     bool           valInByte = ((signed char)val == val);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -3985,13 +3994,13 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     /* We don't want to generate any useless mov instructions! */
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Same-reg 4-byte mov can be useful because it performs a
     // zero-extension to 8 bytes.
     assert(ins != INS_mov || reg1 != reg2 || size == EA_4BYTE);
 #else
     assert(ins != INS_mov || reg1 != reg2);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, reg1, reg2));
@@ -4019,7 +4028,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
 
 void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -4829,7 +4838,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
         id->idInsFmt(fmt);
         id->idReg1(reg);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         // Special case: "mov eax, [addr]" is smaller.
         // This case is not enabled for amd64 as it always uses RIP relative addressing
         // and it results in smaller instruction size than encoding 64-bit addr in the
@@ -4841,7 +4850,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
                 sz += 1;
         }
         else
-#endif //_TARGET_X86_
+#endif // TARGET_X86
         {
             sz = emitInsSizeCV(id, insCodeRM(ins));
         }
@@ -4876,7 +4885,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 
     emitAttr size = EA_SIZE(attr);
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // For x86 it is valid to storeind a double sized operand in an xmm reg to memory
     assert(size <= EA_8BYTE);
 #else
@@ -4894,7 +4903,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 
     UNATIVE_OFFSET sz;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // Special case: "mov [addr], EAX" is smaller.
     // This case is not enable for amd64 as it always uses RIP relative addressing
     // and it will result in smaller instruction size than encoding 64-bit addr in
@@ -4913,7 +4922,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
         }
     }
     else
-#endif //_TARGET_X86_
+#endif // TARGET_X86
     {
         sz = emitInsSizeCV(id, insCodeMR(ins));
     }
@@ -5016,7 +5025,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
     emitTotalIGjmps++;
 #endif
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
     // Storing the address of a basicBlock will need a reloc
     // as the instruction uses the absolute address,
     // not a relative address.
@@ -5101,7 +5110,7 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -5157,7 +5166,7 @@ void emitter::emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -5335,7 +5344,7 @@ void emitter::emitIns_I_ARR(instruction ins, emitAttr attr, int val, regNumber r
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -5395,7 +5404,7 @@ void emitter::emitIns_I_ARX(
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -5519,7 +5528,7 @@ void emitter::emitIns_I_AX(instruction ins, emitAttr attr, int val, regNumber re
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -6498,7 +6507,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int va
 
     sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (attr == EA_1BYTE)
     {
         assert(isByteReg(ireg));
@@ -6538,7 +6547,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
 
 void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -6597,6 +6606,8 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 /*****************************************************************************
  *
  *  Add a jmp instruction.
+ *  When dst is NULL, instrCount specifies number of instructions
+ *       to jump: positive is forward, negative is backward.
  */
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 */)
@@ -6604,11 +6615,21 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     UNATIVE_OFFSET sz;
     instrDescJmp*  id = emitNewInstrJmp();
 
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    if (dst != nullptr)
+    {
+        assert(dst->bbFlags & BBF_JMP_TARGET);
+        assert(instrCount == 0);
+    }
+    else
+    {
+        /* Only allow non-label jmps in prolog */
+        assert(emitPrologIG);
+        assert(emitPrologIG == emitCurIG);
+        assert(instrCount != 0);
+    }
 
     id->idIns(ins);
     id->idInsFmt(IF_LABEL);
-    id->idAddr()->iiaBBlabel = dst;
 
 #ifdef DEBUG
     // Mark the finally call
@@ -6618,10 +6639,21 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     }
 #endif // DEBUG
 
-    /* Assume the jump will be long */
-
-    id->idjShort    = 0;
-    id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+    id->idjShort = 0;
+    if (dst != nullptr)
+    {
+        /* Assume the jump will be long */
+        id->idAddr()->iiaBBlabel = dst;
+        id->idjKeepLong          = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+    }
+    else
+    {
+        id->idAddr()->iiaSetInstrCount(instrCount);
+        id->idjKeepLong = false;
+        /* This jump must be short */
+        emitSetShortJump(id);
+        id->idSetIsBound();
+    }
 
     /* Record the jump's IG and offset within it */
 
@@ -6656,15 +6688,19 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     }
     else
     {
-        insGroup* tgt;
+        insGroup* tgt = nullptr;
 
-        /* This is a jump - assume the worst */
-
-        sz = (ins == INS_jmp) ? JMP_SIZE_LARGE : JCC_SIZE_LARGE;
-
-        /* Can we guess at the jump distance? */
-
-        tgt = (insGroup*)emitCodeGetCookie(dst);
+        if (dst != nullptr)
+        {
+            /* This is a jump - assume the worst */
+            sz = (ins == INS_jmp) ? JMP_SIZE_LARGE : JCC_SIZE_LARGE;
+            /* Can we guess at the jump distance? */
+            tgt = (insGroup*)emitCodeGetCookie(dst);
+        }
+        else
+        {
+            sz = JMP_SIZE_SMALL;
+        }
 
         if (tgt)
         {
@@ -7016,7 +7052,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                     {
                         id->idSetIsDspReloc();
                     }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                     else
                     {
                         // An absolute indir address that doesn't need reloc should fit within 32-bits
@@ -7025,7 +7061,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                         noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
                         sz++;
                     }
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
                 }
 
                 break;
@@ -7052,7 +7088,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         {
             id->idSetIsDspReloc();
         }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         else
         {
             // An absolute indir address that doesn't need reloc should fit within 32-bits
@@ -7061,7 +7097,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
             sz++;
         }
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
     }
     else
     {
@@ -7265,7 +7301,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
 
     const char* rn = emitComp->compRegVarName(reg, varName);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     char suffix = '\0';
 
     switch (EA_SIZE(attr))
@@ -7360,9 +7396,9 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
         default:
             break;
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     assert(strlen(rn) >= 3);
 
     switch (EA_SIZE(attr))
@@ -7403,7 +7439,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
         default:
             break;
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #if 0
     // The following is useful if you want register names to be tagged with * or ^ representing gcref or byref, respectively,
@@ -7739,7 +7775,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             {
                 printf("reloc ");
             }
-            printf("J_M%03u_DS%02u", Compiler::s_compMethodsCount, id->idDebugOnlyInfo()->idMemCookie);
+            printf("J_M%03u_DS%02u", emitComp->compMethodID, id->idDebugOnlyInfo()->idMemCookie);
 
             disp -= id->idDebugOnlyInfo()->idMemCookie;
         }
@@ -7872,12 +7908,12 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
         unsigned     cnt = (jdsc->dsSize - 1) / TARGET_POINTER_SIZE;
         BasicBlock** bbp = (BasicBlock**)jdsc->dsCont;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 #define SIZE_LETTER "Q"
 #else
 #define SIZE_LETTER "D"
 #endif
-        printf("\n\n    J_M%03u_DS%02u LABEL   " SIZE_LETTER "WORD", Compiler::s_compMethodsCount, jtno);
+        printf("\n\n    J_M%03u_DS%02u LABEL   " SIZE_LETTER "WORD", emitComp->compMethodID, jtno);
 
         /* Display the label table (it's stored as "BasicBlock*" values) */
 
@@ -7890,7 +7926,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             lab = (insGroup*)emitCodeGetCookie(*bbp++);
             assert(lab);
 
-            printf("\n            D" SIZE_LETTER "      G_M%03u_IG%02u", Compiler::s_compMethodsCount, lab->igNum);
+            printf("\n            D" SIZE_LETTER "      G_M%03u_IG%02u", emitComp->compMethodID, lab->igNum);
         } while (--cnt);
     }
 }
@@ -7949,10 +7985,10 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // how many bytes per instruction we format for
         const size_t digits = 10;
-#else // _TARGET_X86
+#else // TARGET_X86
         const size_t digits = 6;
 #endif
         printf(" ");
@@ -8126,11 +8162,11 @@ void emitter::emitDispIns(
     {
         printf(" %-9s", sstr);
     }
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (strnlen_s(sstr, 10) >= 8)
-#else  // FEATURE_PAL
+#else  // TARGET_UNIX
     if (strnlen(sstr, 10) >= 8)
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     {
         printf(" ");
     }
@@ -8158,7 +8194,7 @@ void emitter::emitDispIns(
 
         if (ins == INS_lea)
         {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
 #else
             assert(attr == EA_4BYTE);
@@ -8189,7 +8225,7 @@ void emitter::emitDispIns(
 
         case IF_CNS:
             val = emitGetInsSC(id);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
             assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
@@ -8261,7 +8297,7 @@ void emitter::emitDispIns(
         case IF_RRD_ARD:
         case IF_RWR_ARD:
         case IF_RRW_ARD:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             if (ins == INS_movsxd)
             {
                 attr = EA_8BYTE;
@@ -8406,7 +8442,7 @@ void emitter::emitDispIns(
             emitDispAddrMode(id);
             emitGetInsAmdCns(id, &cnsVal);
             val = cnsVal.cnsVal;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
             assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
@@ -8474,7 +8510,7 @@ void emitter::emitDispIns(
 
             emitGetInsCns(id, &cnsVal);
             val = cnsVal.cnsVal;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
             assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
@@ -8524,7 +8560,7 @@ void emitter::emitDispIns(
         case IF_RRD_SRD:
         case IF_RWR_SRD:
         case IF_RRW_SRD:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             if (ins == INS_movsxd)
             {
                 attr = EA_8BYTE;
@@ -8633,12 +8669,12 @@ void emitter::emitDispIns(
             {
                 printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
             }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             else if (ins == INS_movsxd)
             {
                 printf("%s, %s", emitRegName(id->idReg1(), EA_8BYTE), emitRegName(id->idReg2(), EA_4BYTE));
             }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
             else if (ins == INS_movsx || ins == INS_movzx)
             {
                 printf("%s, %s", emitRegName(id->idReg1(), EA_PTRSIZE), emitRegName(id->idReg2(), attr));
@@ -8709,7 +8745,7 @@ void emitter::emitDispIns(
             printf("%s,", emitRegName(id->idReg1(), attr));
             printf(" %s", emitRegName(id->idReg2(), attr));
             val = emitGetInsSC(id);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
             assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
@@ -8744,7 +8780,7 @@ void emitter::emitDispIns(
             {
                 attr = EA_PTRSIZE;
             }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             else if (ins == INS_movsxd)
             {
                 attr = EA_PTRSIZE;
@@ -8877,7 +8913,7 @@ void emitter::emitDispIns(
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             emitGetInsDcmCns(id, &cnsVal);
             val = cnsVal.cnsVal;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
             assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
@@ -8954,11 +8990,18 @@ void emitter::emitDispIns(
 
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                if (id->idAddr()->iiaHasInstrCount())
+                {
+                    printf("%3d instr", id->idAddr()->iiaGetInstrCount());
+                }
+                else
+                {
+                    printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                }
             }
             else
             {
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
             break;
 
@@ -9030,7 +9073,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
 {
     assert(nBytes <= 15);
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
     // TODO-X86-CQ: when VIA C3 CPU's are out of circulation, switch to the
     // more efficient real NOP: 0x0F 0x1F +modR/M
     // Also can't use AMD recommended, multiple size prefixes (i.e. 0x66 0x66 0x90 for 3 byte NOP)
@@ -9087,7 +9130,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
         case 0:
             break;
     }
-#else  // _TARGET_AMD64_
+#else  // TARGET_AMD64
     switch (nBytes)
     {
         case 2:
@@ -9164,7 +9207,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
             *dst++ = 0x00;
             break;
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     return dst;
 }
@@ -9206,7 +9249,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // The displacement field is in an unusual place for calls
         dsp = emitGetInsCIdisp(id);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
         // Compute the REX prefix if it exists
         if (IsExtendedReg(reg, EA_PTRSIZE))
@@ -9226,7 +9269,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // And emit the REX prefix
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
         goto GOT_DSP;
     }
@@ -9428,7 +9471,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 __fallthrough;
 
             case EA_4BYTE:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case EA_8BYTE:
 #endif
 
@@ -9437,7 +9480,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 code |= 0x1;
                 break;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             case EA_8BYTE:
 
                 /* Double operand - set the appropriate bit */
@@ -9445,7 +9488,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 code |= 0x04;
                 break;
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             default:
                 NO_WAY("unexpected size");
@@ -9501,12 +9544,12 @@ GOT_DSP:
 
                         ssize_t cval = addc->cnsVal;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                         // all these opcodes only take a sign-extended 4-byte immediate
                         noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-#else  //_TARGET_X86_
+#else  // TARGET_X86
                         noway_assert(opsz <= 4);
-#endif //_TARGET_X86_
+#endif // TARGET_X86
 
                         switch (opsz)
                         {
@@ -9528,7 +9571,7 @@ GOT_DSP:
                         }
                     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                     // We emit zero on Amd64, to avoid the assert in emitOutputLong()
                     dst += emitOutputLong(dst, 0);
 #else
@@ -9539,7 +9582,7 @@ GOT_DSP:
                 }
                 else
                 {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                     if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
                     {
                         dst += emitOutputByte(dst, code | 0x05);
@@ -9548,7 +9591,7 @@ GOT_DSP:
                     {
                         dst += emitOutputWord(dst, code | 0x0500);
                     }
-#else  //_TARGET_AMD64_
+#else  // TARGET_AMD64
                     // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
                     // This addr mode should never be used while generating relocatable ngen code nor if
                     // the addr can be encoded as pc-relative address.
@@ -9566,7 +9609,7 @@ GOT_DSP:
                         dst += emitOutputWord(dst, code | 0x0400);
                     }
                     dst += emitOutputByte(dst, 0x25);
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
                     dst += emitOutputLong(dst, dsp);
                 }
                 break;
@@ -9916,7 +9959,7 @@ GOT_DSP:
     {
         ssize_t cval = addc->cnsVal;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // all these opcodes only take a sign-extended 4-byte immediate
         noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
 #endif
@@ -10192,9 +10235,9 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 __fallthrough;
 
             case EA_4BYTE:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case EA_8BYTE:
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
                 /* Set the 'w' size bit to indicate 32-bit operation
                  * Note that incrementing "code" for INS_call (0xFF) would
@@ -10204,7 +10247,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 code |= 0x01;
                 break;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             case EA_8BYTE:
 
                 // Double operand - set the appropriate bit.
@@ -10215,7 +10258,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 code |= 0x04;
                 NO_WAY("bad 8 byte op");
                 break;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             default:
                 NO_WAY("unexpected size");
@@ -10333,7 +10376,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     {
         ssize_t cval = addc->cnsVal;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // all these opcodes only take a sign-extended 4-byte immediate
         noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
 #endif
@@ -10518,7 +10561,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             opsz = 1;
         }
     }
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     else
     {
         // Special case: "mov eax, [addr]" and "mov [addr], eax"
@@ -10552,7 +10595,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             }
         }
     }
-#endif //_TARGET_X86_
+#endif // TARGET_X86
 
     // Special case emitting AVX instructions
     if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
@@ -10658,19 +10701,19 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 __fallthrough;
 
             case EA_4BYTE:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case EA_8BYTE:
 #endif
                 // Set the 'w' bit to get the large version
                 code |= 0x1;
                 break;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             case EA_8BYTE:
                 // Double operand - set the appropriate bit
                 code |= 0x04;
                 break;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             default:
                 assert(!"unexpected size");
@@ -10745,12 +10788,12 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             ssize_t cval = addc->cnsVal;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // all these opcodes only take a sign-extended 4-byte immediate
             noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-#else  //_TARGET_X86_
+#else  // TARGET_X86
             noway_assert(opsz <= 4);
-#endif //_TARGET_X86_
+#endif // TARGET_X86
 
             switch (opsz)
             {
@@ -10772,13 +10815,13 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             }
         }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // All static field and data section constant accesses should be marked as relocatable
         noway_assert(id->idIsDspReloc());
         dst += emitOutputLong(dst, 0);
-#else  //_TARGET_X86_
+#else  // TARGET_X86
         dst += emitOutputLong(dst, (int)target);
-#endif //_TARGET_X86_
+#endif // TARGET_X86
 
         if (id->idIsDspReloc())
         {
@@ -10787,12 +10830,12 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else
     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // This code path should never be hit on amd64 since it always uses RIP relative addressing.
         // In future if ever there is a need to enable this special case, also enable the logic
         // that sets isMoffset to true on amd64.
         unreached();
-#else //_TARGET_X86_
+#else // TARGET_X86
 
         dst += emitOutputSizeT(dst, (ssize_t)target);
 
@@ -10801,7 +10844,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), target, IMAGE_REL_BASED_MOFFSET);
         }
 
-#endif //_TARGET_X86_
+#endif // TARGET_X86
     }
 
     // Now generate the constant value, if present
@@ -10809,7 +10852,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     {
         ssize_t cval = addc->cnsVal;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // all these opcodes only take a sign-extended 4-byte immediate
         noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
 #endif
@@ -10939,7 +10982,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
         case INS_inc:
         case INS_dec:
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             if (true)
 #else
             if (size == EA_1BYTE)
@@ -11182,7 +11225,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     else if ((ins == INS_movsx) || (ins == INS_movzx) || (insIsCMOV(ins)))
     {
         code = insEncodeRMreg(ins, code) | (int)(size == EA_2BYTE);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
         assert((size < EA_4BYTE) || (insIsCMOV(ins)));
         if ((size == EA_8BYTE) || (ins == INS_movsx))
@@ -11194,7 +11237,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         code = insEncodeRMreg(ins, code);
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     }
 #ifdef FEATURE_HW_INTRINSICS
     else if ((ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) || (ins == INS_tzcnt))
@@ -11242,7 +11285,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 code |= 0x1;
                 break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case EA_8BYTE:
                 // TODO-AMD64-CQ: Better way to not emit REX.W when we don't need it
                 // Don't need to zero out the high bits explicitly
@@ -11255,7 +11298,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 code |= 0x1;
                 break;
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
             default:
                 assert(!"unexpected size");
@@ -11575,6 +11618,21 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     noway_assert(!id->idGCref());
 
+    if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
+    {
+        switch (id->idInsFmt())
+        {
+            case IF_RWR_RRD_RRD:
+            case IF_RWR_RRD_RRD_CNS:
+            case IF_RWR_RRD_RRD_RRD:
+                emitGCregDeadUpd(id->idReg1(), dst);
+                break;
+
+            default:
+                break;
+        }
+    }
+
     return dst;
 }
 
@@ -11671,7 +11729,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         {
             dst += emitOutputLong(dst, val);
         }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         else
         {
             assert(size == EA_PTRSIZE);
@@ -11778,7 +11836,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             code |= 0x1;
             break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case EA_8BYTE:
             /* Set the 'w' bit to get the large version */
             /* and the REX.W bit to get the really large version */
@@ -11830,11 +11888,11 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             case EA_4BYTE:
                 dst += emitOutputLong(dst, val);
                 break;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case EA_8BYTE:
                 dst += emitOutputLong(dst, val);
                 break;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
             default:
                 break;
         }
@@ -11947,7 +12005,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
     assert(!IsSSEInstruction(ins));
     assert(!IsAVXInstruction(ins));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // all these opcodes take a sign-extended 4-byte immediate, max
     noway_assert(size < EA_8BYTE || ((int)val == val && !id->idIsCnsReloc()));
 #endif
@@ -12030,10 +12088,12 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
  *  needs to get bound to an actual address and processed by branch shortening.
  */
 
-BYTE* emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
+BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 {
     unsigned srcOffs;
     unsigned dstOffs;
+    BYTE*    srcAddr;
+    BYTE*    dstAddr;
     ssize_t  distVal;
 
     instrDescJmp* id  = (instrDescJmp*)i;
@@ -12084,16 +12144,32 @@ BYTE* emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
 
     // Figure out the distance to the target
     srcOffs = emitCurCodeOffs(dst);
-    dstOffs = id->idAddr()->iiaIGlabel->igOffs;
+    srcAddr = emitOffsetToPtr(srcOffs);
 
-    if (relAddr)
+    if (id->idAddr()->iiaHasInstrCount())
     {
-        distVal = (ssize_t)(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
+        assert(ig != nullptr);
+        int      instrCount = id->idAddr()->iiaGetInstrCount();
+        unsigned insNum     = emitFindInsNum(ig, id);
+        if (instrCount < 0)
+        {
+            // Backward branches using instruction count must be within the same instruction group.
+            assert(insNum + 1 >= (unsigned)(-instrCount));
+        }
+        dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
+        dstAddr = emitOffsetToPtr(dstOffs);
     }
     else
     {
-        distVal = (ssize_t)emitOffsetToPtr(dstOffs);
+        dstOffs = id->idAddr()->iiaIGlabel->igOffs;
+        dstAddr = emitOffsetToPtr(dstOffs);
+        if (!relAddr)
+        {
+            srcAddr = nullptr;
+        }
     }
+
+    distVal = (ssize_t)(dstAddr - srcAddr);
 
     if (dstOffs <= srcOffs)
     {
@@ -12320,7 +12396,7 @@ BYTE* emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
 
         dst += emitOutputLong(dst, distVal);
 
-#ifndef _TARGET_AMD64_ // all REL32 on AMD have to go through recordRelocation
+#ifndef TARGET_AMD64 // all REL32 on AMD have to go through recordRelocation
         if (emitComp->opts.compReloc)
 #endif
         {
@@ -12423,7 +12499,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             code = insCodeMR(ins);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // Support only scalar AVX instructions and hence size is hard coded to 4-byte.
             code = AddVexPrefixIfNeeded(ins, code, EA_4BYTE);
 
@@ -12477,7 +12553,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(id->idIsBound());
 
             // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?
-            dst = emitOutputLJ(dst, id);
+            dst = emitOutputLJ(ig, dst, id);
             sz  = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
             break;
 
@@ -12532,7 +12608,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 if (id->idIsDspReloc())
                 {
                     dst += emitOutputWord(dst, code | 0x0500);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                     dst += emitOutputLong(dst, 0);
 #else
                     dst += emitOutputLong(dst, (int)addr);
@@ -12541,9 +12617,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else
                 {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                     dst += emitOutputWord(dst, code | 0x0500);
-#else  //_TARGET_AMD64_
+#else  // TARGET_AMD64
                     // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
                     // This addr mode should never be used while generating relocatable ngen code nor if
                     // the addr can be encoded as pc-relative address.
@@ -12554,7 +12630,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     // This requires, specifying a SIB byte after ModRM byte.
                     dst += emitOutputWord(dst, code | 0x0400);
                     dst += emitOutputByte(dst, 0x25);
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
                     dst += emitOutputLong(dst, static_cast<int>(reinterpret_cast<intptr_t>(addr)));
                 }
                 goto DONE_CALL;
@@ -12569,7 +12645,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += (ins == INS_l_jmp) ? emitOutputByte(dst, insCode(ins)) : emitOutputByte(dst, insCodeMI(ins));
 
             ssize_t offset;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // All REL32 on Amd64 go through recordRelocation.  Here we will output zero to advance dst.
             offset = 0;
             assert(id->idIsDspReloc());
@@ -13839,7 +13915,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case INS_movsxd:
 #endif
         case INS_mov:
@@ -13935,7 +14011,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_imul_BP:
         case INS_imul_SI:
         case INS_imul_DI:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case INS_imul_08:
         case INS_imul_09:
         case INS_imul_10:
@@ -13944,7 +14020,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_imul_13:
         case INS_imul_14:
         case INS_imul_15:
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
         case INS_mulEAX:
         case INS_imulEAX:
         case INS_imul:
@@ -14180,9 +14256,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_BRANCH_DIRECT;
             break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case INS_rex_jmp:
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
         case INS_i_jmp:
             // branch to register
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
@@ -14259,7 +14335,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         case INS_fld:
         case INS_fstp:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -14268,22 +14344,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency = PERFSCORE_LATENCY_1C;
             }
             break;
-#endif // _TARGET_X86
+#endif // TARGET_X86
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case INS_movsq:
         case INS_stosq:
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
         case INS_movsd:
         case INS_stosd:
             // uops.info
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case INS_r_movsq:
         case INS_r_stosq:
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
         case INS_r_movsd:
         case INS_r_movsb:
         case INS_r_stosd:
@@ -15071,4 +15147,4 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 /*****************************************************************************/
 /*****************************************************************************/
 
-#endif // defined(_TARGET_XARCH_)
+#endif // defined(TARGET_XARCH)

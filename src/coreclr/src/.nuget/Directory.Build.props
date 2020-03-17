@@ -12,10 +12,13 @@
     <!-- build the transport package which includes product and symbols in addition to standard packages -->
     <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">true</CreatePackedPackage>
 
+    <!-- indicates that lib prefix is not added to library names for Unix-like operating systems -->
+    <SkipLibraryPrefixFromUnix>true</SkipLibraryPrefixFromUnix>
+
     <!-- Distro rid is passed as runtimeos-arch-->
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
-    <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(__BuildOS)' == 'OSX'">osx.10.12-x64</_parseDistroRid>
-    <_distroRidIndex>$(_parseDistroRid.IndexOfAny("-"))</_distroRidIndex>
+    <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(__TargetOS)' == 'OSX'">osx.10.12-x64</_parseDistroRid>
+    <_distroRidIndex>$(_parseDistroRid.LastIndexOfAny("-"))</_distroRidIndex>
     <_archRidIndex>$([MSBuild]::Add($(_distroRidIndex), 1))</_archRidIndex>
     <OSRid Condition="'$(OSRid)' == '' and '$(_distroRidIndex)' != '-1'">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
     <OSRid Condition="'$(OSRid)' == ''">win10</OSRid>
@@ -43,7 +46,7 @@
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'osx'">OSX</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'android'">Android</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'win'">Windows_NT</_derivedPackageTargetOSGroup>
-    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(__BuildOS)' != ''">$(__BuildOS)</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(__TargetOS)' != ''">$(__TargetOS)</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == ''">Linux</_derivedPackageTargetOSGroup>
 
     <_isSupportedOSGroup Condition="!$(SupportedPackageOSGroups.Contains(';$(_derivedPackageTargetOSGroup);'))">false</_isSupportedOSGroup>
@@ -108,6 +111,18 @@
         <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'alpine'">
+      <PropertyGroup>
+        <PackageRID>$(OSRid)-$(ArchGroup)</PackageRID>
+        <!-- Set the platform part of the RID if we are doing a portable build -->
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-musl-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(RuntimeOS)' == 'linux-musl'">
+      <PropertyGroup>
+        <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
     <Otherwise>
       <PropertyGroup>
         <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
@@ -117,29 +132,7 @@
     </Otherwise>
   </Choose>
 
-  <!-- Determine per-platform native binary extensions. -->
-  <Choose>
-    <When Condition="'$(_runtimeOSFamily)' == 'win'" />
-    <When Condition="'$(_runtimeOSFamily)' == 'osx'">
-      <PropertyGroup>
-        <LibraryFileExtension>.dylib</LibraryFileExtension>
-        <SymbolFileExtension>.dwarf</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(_runtimeOSFamily)' == 'android'">
-      <PropertyGroup>
-        <LibraryFileExtension>.so</LibraryFileExtension>
-        <!--symbols included in .so, like Linux, but can be generated externally and if so, uses .debug ext-->
-        <SymbolFileExtension>.debug</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <LibraryFileExtension>.so</LibraryFileExtension>
-        <SymbolFileExtension>.dbg</SymbolFileExtension>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
+  <Import Project="$(RepoRoot)eng\native\naming.props" />
 
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Linux;'))">
     <OfficialBuildRID Include="linux-x64" />

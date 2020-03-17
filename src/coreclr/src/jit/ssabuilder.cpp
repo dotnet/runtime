@@ -772,6 +772,7 @@ void SsaBuilder::RenameDef(GenTreeOp* asgNode, BasicBlock* block)
             }
             else
             {
+                assert((lclNode->gtFlags & GTF_VAR_USEASG) == 0);
                 lclNode->SetSsaNum(ssaNum);
             }
 
@@ -937,7 +938,7 @@ void SsaBuilder::AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* bl
     if (m_pCompiler->ehBlockHasExnFlowDsc(block))
     {
         // Don't do anything for a compiler-inserted BBJ_ALWAYS that is a "leave helper".
-        if (block->bbJumpKind == BBJ_ALWAYS && (block->bbFlags & BBF_INTERNAL) && (block->bbPrev->isBBCallAlwaysPair()))
+        if ((block->bbFlags & BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
         {
             return;
         }

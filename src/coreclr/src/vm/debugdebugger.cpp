@@ -510,7 +510,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                 // Set the BOOL indicating if the frame represents the last frame from a foreign exception stack trace.
                 U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
                                             ->GetDirectPointerToNonObjectElements();
-                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1) data.pElements[i].fIsLastFrameFromForeignStackTrace;
+                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1)(data.pElements[i].flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE);
             }
 
             MethodDesc *pMethod = data.pElements[i].pFunc;
@@ -882,41 +882,31 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
         Thread *pThread = pData->TargetThread->GetInternal();
         _ASSERTE (pThread != NULL);
 
-        // Here's the timeline for the TS_UserSuspendPending and TS_SyncSuspended bits.
-        // 0) Neither TS_UserSuspendPending nor TS_SyncSuspended set.
+        // Here's the timeline for the TS_SyncSuspended bit.
+        // 0) TS_SyncSuspended is not set.
         // 1) The suspending thread grabs the thread store lock
-        //       then sets TS_UserSuspendPending
-        //       then puts in place trip wires for the suspendee (if it is in managed code)
+        //    then puts in place trip wires for the suspendee (if it is in managed code)
         //    and releases the thread store lock.
         // 2) The suspending thread waits for the "SafeEvent".
         // 3) The suspendee continues execution until it tries to enter preemptive mode.
         //    If it trips over the wires put in place by the suspending thread,
         //    it will try to enter preemptive mode.
         // 4) The suspendee sets TS_SyncSuspended and the "SafeEvent".
-        //    Then it waits for m_UserSuspendEvent.
         // 5) AT THIS POINT, IT IS SAFE TO WALK THE SUSPENDEE'S STACK.
-        // 6) Now, some thread wants to resume the suspendee.
-        //    The resuming thread takes the thread store lock
-        //       then clears the TS_UserSuspendPending flag
-        //       then sets m_UserSuspendEvent
-        //    and releases the thread store lock.
-        // 7) The suspendee clears the TS_SyncSuspended flag.
+        // 6) The suspendee clears the TS_SyncSuspended flag.
         //
         // In other words, it is safe to trace the thread's stack IF we're holding the
-        // thread store lock AND TS_UserSuspendPending is set AND TS_SyncSuspended is set.
+        // thread store lock AND TS_SyncSuspended is set.
         //
         // This is because:
         // - If we were not holding the thread store lock, the thread could be resumed
         //   underneath us.
-        // - As long as only TS_UserSuspendPending is set (and the thread is in cooperative
-        //   mode), the thread can still be executing managed code until it trips.
-        // - When only TS_SyncSuspended is set, we race against it resuming execution.
+        // - When TS_SyncSuspended is set, we race against it resuming execution.
 
         ThreadStoreLockHolder tsl;
 
         // We erect a barrier so that if the thread tries to disable preemptive GC,
-        // it will look at the TS_UserSuspendPending flag.  Otherwise, it could resume
-        // execution of managed code during our stack walk.
+        // it could resume execution of managed code during our stack walk.
         TSSuspendHolder shTrap;
 
         Thread::ThreadState state = pThread->GetSnapshotState();
@@ -924,9 +914,6 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
         {
             goto LSafeToTrace;
         }
-
-        // CoreCLR does not support user-requested thread suspension
-        _ASSERTE(!(state & Thread::TS_UserSuspendPending));
 
         COMPlusThrow(kThreadStateException, IDS_EE_THREAD_BAD_STATE);
 
@@ -939,7 +926,7 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
 
     // Do a 2nd pass outside of any locks.
     // This will compute IL offsets.
-    for(INT32 i = 0; i < pData->cElements; i++)
+    for (INT32 i = 0; i < pData->cElements; i++)
     {
         pData->pElements[i].InitPass2();
     }
@@ -975,11 +962,6 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     CONTRACTL_END;
 
     GetStackFramesData* pData = (GetStackFramesData*)data;
-
-    if (pData->pDomain != pCf->GetAppDomain())
-    {
-        return SWA_CONTINUE;
-    }
 
     if (pData->skip > 0)
     {
@@ -1026,13 +1008,16 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
         dwNativeOffset = 0;
     }
 
+    // Pass on to InitPass2 that the IP has already been adjusted (decremented by 1)
+    INT flags = pCf->IsIPadjusted() ? STEF_IP_ADJUSTED : 0;
+
     pData->pElements[pData->cElements].InitPass1(
             dwNativeOffset,
             pFunc,
-            ip);
+            ip,
+            flags);
 
     // We'll init the IL offsets outside the TSL lock.
-
 
     ++pData->cElements;
 
@@ -1109,7 +1094,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 // If we come across any frame representing foreign exception stack trace,
                 // then set the flag indicating so. This will be used to allocate the
                 // corresponding array in StackFrameHelper.
-                if (cur.fIsLastFrameFromForeignStackTrace)
+                if ((cur.flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE) != 0)
                 {
                     pData->fDoWeHaveAnyFramesFromForeignStackTrace = TRUE;
                 }
@@ -1134,9 +1119,11 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                     dwNativeOffset = 0;
                 }
 
-                pData->pElements[i].InitPass1(dwNativeOffset, pMD, (PCODE) cur.ip
-                    , cur.fIsLastFrameFromForeignStackTrace
-                    );
+                pData->pElements[i].InitPass1(
+                    dwNativeOffset,
+                    pMD,
+                    (PCODE)cur.ip,
+                    cur.flags);
 #ifndef DACCESS_COMPILE
                 pData->pElements[i].InitPass2();
 #endif
@@ -1156,8 +1143,8 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 void DebugStackTrace::DebugStackTraceElement::InitPass1(
     DWORD dwNativeOffset,
     MethodDesc *pFunc,
-    PCODE ip
-    , BOOL fIsLastFrameFromForeignStackTrace /*= FALSE*/
+    PCODE ip,
+    INT flags
 )
 {
     LIMITED_METHOD_CONTRACT;
@@ -1169,7 +1156,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     this->pFunc = pFunc;
     this->dwOffset = dwNativeOffset;
     this->ip = ip;
-    this->fIsLastFrameFromForeignStackTrace = fIsLastFrameFromForeignStackTrace;
+    this->flags = flags;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1188,14 +1175,35 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
 
     _ASSERTE(!ThreadStore::HoldingThreadStore());
 
-    bool bRes = false;
+    bool bRes = false; 
 
 #ifdef DEBUGGING_SUPPORTED
     // Calculate the IL offset using the debugging services
     if ((this->ip != NULL) && g_pDebugInterface)
     {
+        // To get the source line number of the actual code that threw an exception, the dwOffset needs to be
+        // adjusted in certain cases when calculating the IL offset. 
+        //
+        // The dwOffset of the stack frame points to either:
+        //
+        // 1) The instruction that caused a hardware exception (div by zero, null ref, etc).
+        // 2) The instruction after the call to an internal runtime function (FCALL like IL_Throw, IL_Rethrow,
+        //    JIT_OverFlow, etc.) that caused a software exception.
+        // 3) The instruction after the call to a managed function (non-leaf node).
+        //
+        // #2 and #3 are the cases that need to adjust dwOffset because they point after the call instruction
+        // and may point to the next (incorrect) IL instruction/source line. If STEF_IP_ADJUSTED is set,
+        // IP/dwOffset has already be decremented so don't decrement it again.
+        //
+        // When the dwOffset needs to be adjusted it is a lot simpler to decrement instead of trying to figure out
+        // the beginning of the instruction. It is enough for GetILOffsetFromNative to return the IL offset of the
+        // instruction throwing the exception.
+        bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
         bRes = g_pDebugInterface->GetILOffsetFromNative(
-            pFunc, (LPCBYTE) this->ip, this->dwOffset, &this->dwILOffset);
+            pFunc,
+            (LPCBYTE)this->ip,
+            fAdjustOffset ? this->dwOffset - 1 : this->dwOffset,
+            &this->dwILOffset);
     }
 
 #endif // !DEBUGGING_SUPPORTED

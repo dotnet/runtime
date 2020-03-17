@@ -21,7 +21,7 @@ namespace DefaultNamespace
 
     internal class MulDimJagAry
     {
-        public static int Main(String[] args)
+        public static int Main(string[] args)
         {
             int iDim1 = 100;
             int iDim2 = 100;

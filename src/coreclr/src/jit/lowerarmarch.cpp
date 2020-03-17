@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifdef _TARGET_ARMARCH_ // This file is ONLY used for ARM and ARM64 architectures
+#ifdef TARGET_ARMARCH // This file is ONLY used for ARM and ARM64 architectures
 
 #include "jit.h"
 #include "sideeffects.h"
@@ -66,7 +66,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
         target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
         emitAttr       attr   = emitActualTypeSize(childNode->TypeGet());
         emitAttr       size   = EA_SIZE(attr);
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         insFlags flags = parentNode->gtSetFlags() ? INS_FLAGS_SET : INS_FLAGS_DONT_CARE;
 #endif
 
@@ -74,18 +74,18 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
         {
             case GT_ADD:
             case GT_SUB:
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
             case GT_CMPXCHG:
             case GT_LOCKADD:
             case GT_XADD:
                 return comp->compSupports(InstructionSet_Atomics) ? false
                                                                   : emitter::emitIns_valid_imm_for_add(immVal, size);
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
                 return emitter::emitIns_valid_imm_for_add(immVal, flags);
 #endif
                 break;
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
             case GT_EQ:
             case GT_NE:
             case GT_LT:
@@ -109,7 +109,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_JCMP:
                 assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
                 return true;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
             case GT_EQ:
             case GT_NE:
             case GT_LT:
@@ -121,9 +121,9 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_OR:
             case GT_XOR:
                 return emitter::emitIns_valid_imm_for_alu(immVal);
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
                 if (immVal == 0)
@@ -151,14 +151,14 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
 //
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    // Try to widen the ops if they are going into a local var.
     GenTree* op1 = storeLoc->gtGetOp1();
     if ((storeLoc->gtOper == GT_STORE_LCL_VAR) && (op1->gtOper == GT_CNS_INT))
     {
+        // Try to widen the ops if they are going into a local var.
         GenTreeIntCon* con    = op1->AsIntCon();
         ssize_t        ival   = con->gtIconVal;
         unsigned       varNum = storeLoc->GetLclNum();
-        LclVarDsc*     varDsc = comp->lvaTable + varNum;
+        LclVarDsc*     varDsc = comp->lvaGetDesc(varNum);
 
         if (varDsc->lvIsSIMDType())
         {
@@ -261,13 +261,13 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             if (fill == 0)
             {
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
                 // On ARM64 we can just use REG_ZR instead of having to load
                 // the constant into a real register like on ARM32.
                 src->SetContained();
 #endif
             }
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
             else if (size >= REGSIZE_BYTES)
             {
                 fill *= 0x0101010101010101LL;
@@ -379,7 +379,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
         return;
     }
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     // If we're going to use LDP/STP we need to ensure that the offset is
     // a multiple of 8 since these instructions do not have an unscaled
     // offset variant.
@@ -555,14 +555,14 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 //
 void Lowering::ContainCheckStoreIndir(GenTreeIndir* node)
 {
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     GenTree* src = node->AsOp()->gtOp2;
     if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
     {
         // an integer zero for 'src' can be contained.
         MakeSrcContained(node, src);
     }
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
     ContainCheckIndir(node);
 }
 
@@ -604,7 +604,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     bool     makeContained = true;
     if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
     {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         // ARM floating-point load/store doesn't support a form similar to integer
         // ldr Rdst, [Rbase + Roffset] with offset in a register. The only supported
         // form is vldr Rdst, [Rbase + imm] with a more limited constraint on the imm.
@@ -682,14 +682,14 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
     GenTree* shiftBy = node->gtOp2;
     assert(node->OperIsShiftOrRotate());
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     GenTree* source = node->gtOp1;
     if (node->OperIs(GT_LSH_HI, GT_RSH_LO))
     {
         assert(source->OperGet() == GT_LONG);
         MakeSrcContained(node, source);
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
     if (shiftBy->IsCnsIntOrI())
     {
@@ -708,6 +708,18 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
+    if (op1->OperIs(GT_BITCAST))
+    {
+        // If we know that the source of the bitcast will be in a register, then we can make
+        // the bitcast itself contained. This will allow us to store directly from the other
+        // type if this node doesn't get a register.
+        GenTree* bitCastSrc = op1->gtGetOp1();
+        if (!bitCastSrc->isContained() && !bitCastSrc->IsRegOptional())
+        {
+            op1->SetContained();
+            return;
+        }
+    }
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(storeLoc))
     {
@@ -723,16 +735,18 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
-    if (IsContainableImmed(storeLoc, op1) && (!op1->IsIntegralConst(0) || varTypeIsSmall(storeLoc)))
+    const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
+    var_types        type   = varDsc->GetRegisterType(storeLoc);
+    if (IsContainableImmed(storeLoc, op1) && (!op1->IsIntegralConst(0) || varTypeIsSmall(type)))
     {
         MakeSrcContained(storeLoc, op1);
     }
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     else if (op1->OperGet() == GT_LONG)
     {
         MakeSrcContained(storeLoc, op1);
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 }
 
 //------------------------------------------------------------------------
@@ -743,7 +757,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 void Lowering::ContainCheckCast(GenTreeCast* node)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     GenTree*  castOp     = node->CastOp();
     var_types castToType = node->CastToType();
     var_types srcType    = castOp->TypeGet();
@@ -753,7 +767,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
         assert(castOp->OperGet() == GT_LONG);
         MakeSrcContained(node, castOp);
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 }
 
 //------------------------------------------------------------------------
@@ -872,4 +886,4 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 }
 #endif // FEATURE_HW_INTRINSICS
 
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH

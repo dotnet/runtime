@@ -25,7 +25,7 @@ namespace Internal.Cryptography.Pal.Windows
             if (_hCryptMsg != null && !_hCryptMsg.IsInvalid)
             {
                 _hCryptMsg.Dispose();
-                _hCryptMsg = null;
+                _hCryptMsg = null!;
             }
         }
 

@@ -131,7 +131,7 @@ namespace System.Diagnostics
                 {
                     // Convert flags to binary.
                     Span<char> flagsChars = stackalloc char[2];
-                    ActivityTraceId.ByteToHexDigits(flagsChars, (byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags));
+                    HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags), flagsChars, 0, HexConverter.Casing.Lower);
                     string id = "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
 
                     Interlocked.CompareExchange(ref _id, id, null);
@@ -704,17 +704,18 @@ namespace System.Diagnostics
         private static bool IsW3CId(string id)
         {
             // A W3CId is
-            //  * 2 chars Version
+            //  * 2 hex chars Version (ff is invalid)
             //  * 1 char - char
-            //  * 32 chars traceId
+            //  * 32 hex chars traceId
             //  * 1 char - char
-            //  * 16 chars spanId
+            //  * 16 hex chars spanId
             //  * 1 char - char
-            //  * 2 chars flags
+            //  * 2 hex chars flags
             //  = 55 chars (see https://w3c.github.io/trace-context)
-            // We require that all non-WC3IDs NOT start with a digit.
-            // The digit is used to indicate that this is a WC3 ID.
-            return id.Length == 55 && '0' <= id[0] && id[0] <= '9';
+            // The version (00-fe) is used to indicate that this is a WC3 ID.
+            return id.Length == 55 &&
+                   ('0' <= id[0] && id[0] <= '9' || 'a' <= id[0] && id[0] <= 'f') &&
+                   ('0' <= id[1] && id[1] <= '9' || 'a' <= id[1] && id[1] <= 'e');
         }
 
         /// <summary>
@@ -900,7 +901,14 @@ namespace System.Diagnostics
                 }
                 else if (_parentId != null && IsW3CId(_parentId))
                 {
-                    _w3CIdFlags = (byte)(ActivityTraceId.HexByteFromChars(_parentId[53], _parentId[54]) | ActivityTraceFlagsIsSet);
+                    if (ActivityTraceId.IsHexadecimalLowercaseChar(_parentId[53]) && ActivityTraceId.IsHexadecimalLowercaseChar(_parentId[54]))
+                    {
+                        _w3CIdFlags = (byte)(ActivityTraceId.HexByteFromChars(_parentId[53], _parentId[54]) | ActivityTraceFlagsIsSet);
+                    }
+                    else
+                    {
+                        _w3CIdFlags = ActivityTraceFlagsIsSet;
+                    }
                 }
             }
         }
@@ -1010,7 +1018,7 @@ namespace System.Diagnostics
             if (idData.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-            return new ActivityTraceId(SpanToHexString(idData));
+            return new ActivityTraceId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
         }
         public static ActivityTraceId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivityTraceId(idData);
 
@@ -1071,14 +1079,14 @@ namespace System.Diagnostics
 
             if (!Utf8Parser.TryParse(idData.Slice(0, 16), out span[0], out _, 'x'))
             {
-                // Invalid Id, use random https://github.com/dotnet/corefx/issues/38486
+                // Invalid Id, use random https://github.com/dotnet/runtime/issues/29859
                 _hexString = CreateRandom()._hexString;
                 return;
             }
 
             if (!Utf8Parser.TryParse(idData.Slice(16, 16), out span[1], out _, 'x'))
             {
-                // Invalid Id, use random https://github.com/dotnet/corefx/issues/38486
+                // Invalid Id, use random https://github.com/dotnet/runtime/issues/29859
                 _hexString = CreateRandom()._hexString;
                 return;
             }
@@ -1089,7 +1097,7 @@ namespace System.Diagnostics
                 span[1] = BinaryPrimitives.ReverseEndianness(span[1]);
             }
 
-            _hexString = ActivityTraceId.SpanToHexString(MemoryMarshal.AsBytes(span));
+            _hexString = HexConverter.ToString(MemoryMarshal.AsBytes(span), HexConverter.Casing.Lower);
         }
 
         /// <summary>
@@ -1110,26 +1118,6 @@ namespace System.Diagnostics
             Guid guid = Guid.NewGuid();
             ReadOnlySpan<byte> guidBytes = new ReadOnlySpan<byte>(&guid, sizeof(Guid));
             guidBytes.Slice(0, outBytes.Length).CopyTo(outBytes);
-        }
-
-        // CONVERSION binary spans to hex spans, and hex spans to binary spans
-        /* It would be nice to use generic Hex number conversion routines, but there
-         * is nothing that is exposed publicly and efficient */
-        /// <summary>
-        /// Converts each byte in 'bytes' to hex (thus two characters) and concatenates them
-        /// and returns the resulting string.
-        /// </summary>
-        internal static string SpanToHexString(ReadOnlySpan<byte> bytes)
-        {
-            Debug.Assert(bytes.Length <= 16);   // We want it to not be very big
-            Span<char> result = stackalloc char[bytes.Length * 2];
-            int pos = 0;
-            foreach (byte b in bytes)
-            {
-                result[pos++] = BinaryToHexDigit(b >> 4);
-                result[pos++] = BinaryToHexDigit(b);
-            }
-            return result.ToString();
         }
 
         /// <summary>
@@ -1153,20 +1141,6 @@ namespace System.Diagnostics
             if ('a' <= c && c <= 'f')
                 return (byte)(c - ('a' - 10));
             throw new ArgumentOutOfRangeException("idData");
-        }
-        private static char BinaryToHexDigit(int val)
-        {
-            val &= 0xF;
-            if (val <= 9)
-                return (char)('0' + val);
-            return (char)(('a' - 10) + val);
-        }
-
-        internal static void ByteToHexDigits(Span<char> outChars, byte val)
-        {
-            Debug.Assert(outChars.Length == 2);
-            outChars[0] = BinaryToHexDigit((val >> 4) & 0xF);
-            outChars[1] = BinaryToHexDigit(val & 0xF);
         }
 
         internal static bool IsLowerCaseHexAndNotAllZeros(ReadOnlySpan<char> idData)
@@ -1192,7 +1166,7 @@ namespace System.Diagnostics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsHexadecimalLowercaseChar(char c)
+        internal static bool IsHexadecimalLowercaseChar(char c)
         {
             // Between 0 - 9 or lowercased between a - f
             return (uint)(c - '0') <= 9 || (uint)(c - 'a') <= ('f' - 'a');
@@ -1224,14 +1198,14 @@ namespace System.Diagnostics
         {
             ulong id;
             ActivityTraceId.SetToRandomBytes(new Span<byte>(&id, sizeof(ulong)));
-            return new ActivitySpanId(ActivityTraceId.SpanToHexString(new ReadOnlySpan<byte>(&id, sizeof(ulong))));
+            return new ActivitySpanId(HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower));
         }
         public static ActivitySpanId CreateFromBytes(ReadOnlySpan<byte> idData)
         {
             if (idData.Length != 8)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-            return new ActivitySpanId(ActivityTraceId.SpanToHexString(idData));
+            return new ActivitySpanId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
         }
         public static ActivitySpanId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivitySpanId(idData);
 
@@ -1289,7 +1263,7 @@ namespace System.Diagnostics
 
             if (!Utf8Parser.TryParse(idData, out ulong id, out _, 'x'))
             {
-                // Invalid Id, use random https://github.com/dotnet/corefx/issues/38486
+                // Invalid Id, use random https://github.com/dotnet/runtime/issues/29859
                 _hexString = CreateRandom()._hexString;
                 return;
             }
@@ -1299,7 +1273,7 @@ namespace System.Diagnostics
                 id = BinaryPrimitives.ReverseEndianness(id);
             }
 
-            _hexString = ActivityTraceId.SpanToHexString(new ReadOnlySpan<byte>(&id, sizeof(ulong)));
+            _hexString = HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower);
         }
 
         /// <summary>

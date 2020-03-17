@@ -256,6 +256,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void Ctor_AllPrimitives()
         {
             ConstructorInfo con = typeof(Primitives).GetConstructors()[0];
@@ -451,6 +452,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(Ctor_RefEmitParameters_TestData))]
         public static void Ctor_RefEmitParameters(ConstructorInfo con, object[] constructorArgs,
                                                   PropertyInfo[] namedProperties, object[] propertyValues,
@@ -466,6 +468,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [InlineData(nameof(TestAttribute.ReadonlyField))]
         [InlineData(nameof(TestAttribute.StaticField))]
         [InlineData(nameof(TestAttribute.StaticReadonlyField))]
@@ -499,6 +502,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [InlineData(typeof(PrivateAttribute))]
         [InlineData(typeof(NotAnAttribute))]
         public static void ClassNotSupportedAsAttribute_DoesNotThrow_DoesNotSet(Type type)
@@ -544,6 +548,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [InlineData(CallingConventions.Any)]
         [InlineData(CallingConventions.VarArgs)]
         public static void ConstructorHasNonStandardCallingConvention_ThrowsArgumentException(CallingConventions callingConvention)
@@ -645,6 +650,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in constructorParameters causes a corrupt created binary.")]
         [MemberData(nameof(IntPtrAttributeTypes_TestData))]
         public void ConstructorParametersContainsIntPtrOrUIntPtrArgument_ThrowsArgumentException(Type type, object value)
@@ -653,6 +659,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(InvalidAttributeTypes_TestData))]
         public void ConstructorParametersNotSupportedInAttributes_ThrowsArgumentException(Type type, object value)
         {
@@ -667,7 +674,8 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Used to throw a NullReferenceException, see issue #11702.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Used to throw a NullReferenceException, see https://github.com/dotnet/runtime/issues/18552.")]
         public void NullValueForPrimitiveTypeInConstructorArgs_ThrowsArgumentNullException()
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[] { typeof(int) });
@@ -686,6 +694,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in constructorArgs causes a corrupt created binary.")]
         [MemberData(nameof(NotSupportedPrimitives_TestData))]
         public static void NotSupportedPrimitiveInConstructorArgs_ThrowsArgumentException(object value)
@@ -700,6 +709,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void DynamicTypeInConstructorArgs_ThrowsFileNotFoundExceptionOnCreation()
         {
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
@@ -746,6 +756,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(FieldDoesntBelongToConstructorDeclaringType_TestData))]
         public void NamedFields_FieldDoesntBelongToConstructorDeclaringType_ThrowsArgumentException(ConstructorInfo con, FieldInfo field)
         {
@@ -756,6 +767,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public void NamedFields_ContainsConstField_ThrowsArgumentException()
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
@@ -781,6 +793,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void NullObjectInNamedFields_ThrowsArgumentNullException()
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
@@ -791,6 +804,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void NullObjectInFieldValues_ThrowsArgumentNullException()
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
@@ -802,6 +816,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(NotSupportedObject_Others_TestData))]
         public static void NotSupportedObjectInFieldValues_ThrowsArgumentException(object value)
         {
@@ -814,6 +829,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void ZeroCountMultidimensionalArrayInFieldValues_ChangesToZeroCountJaggedArray()
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
@@ -831,13 +847,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(NotSupportedPrimitives_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in fieldValues causes a corrupt created binary.")]
         public static void NotSupportedPrimitiveInFieldValues_ThrowsArgumentException(object value)
         {
             // Used to assert in CustomAttributeBuilder.EmitType(), not writing any CustomAttributeEncoding.
             // This created a blob that (probably) generates a CustomAttributeFormatException. In theory, this
-            // could have been something more uncontrolled, so was fixed. See issue #11703.
+            // could have been something more uncontrolled, so was fixed. See https://github.com/dotnet/runtime/issues/18553.
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
             FieldInfo[] namedFields = Helpers.GetFields(typeof(TestAttribute), nameof(TestAttribute.ObjectField));
             object[] fieldValues = new object[] { value };
@@ -847,6 +864,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void DynamicTypeInPropertyValues_ThrowsFileNotFoundExceptionOnCreation()
         {
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
@@ -894,6 +912,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void NullObjectInNamedProperties_ThrowsArgumentNullException()
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
@@ -904,6 +923,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void IndexerInNamedProperties_ThrowsCustomAttributeFormatExceptionOnCreation()
         {
             ConstructorInfo con = typeof(IndexerAttribute).GetConstructor(new Type[0]);
@@ -943,6 +963,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(PropertyDoesntBelongToConstructorDeclaringType_TestData))]
         public void NamedProperties_PropertyDoesntBelongToConstructorDeclaringType_ThrowsArgumentException(ConstructorInfo con, PropertyInfo property)
         {
@@ -953,6 +974,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void NullObjectInPropertyValues_ThrowsArgumentNullException()
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
@@ -964,6 +986,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(NotSupportedObject_Others_TestData))]
         public static void NotSupportedObjectInPropertyValues_ThrowsArgumentException(object value)
         {
@@ -976,6 +999,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void ZeroCountMultidimensionalArrayInPropertyValues_ChangesToZeroCountJaggedArray()
         {
             ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
@@ -993,6 +1017,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(NotSupportedPrimitives_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Coreclr fixed an issue where IntPtr/UIntPtr in propertValues causes a corrupt created binary.")]
         public static void NotSupportedPrimitiveInPropertyValues_ThrowsArgumentException(object value)
@@ -1006,6 +1031,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public static void DynamicTypeInFieldValues_ThrowsFileNotFoundExceptionOnCreation()
         {
             AssemblyBuilder assembly = Helpers.DynamicAssembly();

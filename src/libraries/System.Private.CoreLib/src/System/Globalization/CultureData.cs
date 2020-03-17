@@ -337,8 +337,7 @@ namespace System.Globalization
             if (retVal == null || retVal.IsNeutralCulture)
             {
                 // Not a valid mapping, try the hard coded table
-                string? name;
-                if (RegionNames.TryGetValue(cultureName, out name))
+                if (RegionNames.TryGetValue(cultureName, out string? name))
                 {
                     // Make sure we can get culture data for it
                     retVal = GetCultureData(name, useUserOverride);
@@ -508,7 +507,7 @@ namespace System.Globalization
             // Text information
             invariant._iReadingLayout = 0;
 
-            // These are desktop only, not coreclr
+            // These are .NET Framework only, not coreclr
 
             invariant._iLanguage = CultureInfo.LOCALE_INVARIANT;   // locale ID (0409) - NO sort information
             invariant._iDefaultAnsiCodePage = 1252;         // default ansi code page ID (ACP)

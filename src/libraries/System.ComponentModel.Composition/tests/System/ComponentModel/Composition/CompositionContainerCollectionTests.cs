@@ -13,6 +13,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition
 {
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class CompositionContainerCollectionTests
     {
         public class SupportedImportCollectionAssignments<T>

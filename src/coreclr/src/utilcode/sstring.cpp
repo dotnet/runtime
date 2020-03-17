@@ -71,7 +71,7 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags)
 
     WCHAR                     wTmp;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
     int iRet = ::LCMapStringEx(LOCALE_NAME_INVARIANT, dwFlags, &wc, 1, &wTmp, 1, NULL, NULL, 0);
     if (!iRet) {
@@ -79,7 +79,7 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags)
         wTmp = wc;
     }
 
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     // For PAL, no locale specific processing is done
 
     if (dwFlags == LCMAP_UPPERCASE)
@@ -101,7 +101,7 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags)
             PAL_ToLowerInvariant(wc);
 #endif
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     return wTmp;
 }

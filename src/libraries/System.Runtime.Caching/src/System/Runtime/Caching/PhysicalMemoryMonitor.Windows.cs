@@ -11,16 +11,16 @@ namespace System.Runtime.Caching
 {
     internal sealed partial class PhysicalMemoryMonitor : MemoryMonitor
     {
-        protected override int GetCurrentPressure()
+        protected override unsafe int GetCurrentPressure()
         {
-            Interop.Kernel32.MEMORYSTATUSEX memoryStatusEx = default;
-            memoryStatusEx.dwLength = (uint)Marshal.SizeOf<Interop.Kernel32.MEMORYSTATUSEX>();
-            if (Interop.Kernel32.GlobalMemoryStatusEx(out memoryStatusEx) == 0)
+            Interop.Kernel32.MEMORYSTATUSEX memoryStatus = default;
+            memoryStatus.dwLength = (uint)sizeof(Interop.Kernel32.MEMORYSTATUSEX);
+            if (!Interop.Kernel32.GlobalMemoryStatusEx(ref memoryStatus))
             {
                 return 0;
             }
 
-            int memoryLoad = (int)memoryStatusEx.dwMemoryLoad;
+            int memoryLoad = (int)memoryStatus.dwMemoryLoad;
             return memoryLoad;
         }
     }

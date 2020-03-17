@@ -1,0 +1,90 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${default}",
+                "/usr/local/include",
+                "${workspaceRoot}",
+                "${workspaceRoot}/mono",
+                "${workspaceRoot}/mono/eglib",
+                "${workspaceRoot}/support"
+            ],
+            "defines": [],
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "${default}",
+                    "/usr/local/include",
+                    "${workspaceRoot}",
+                    "${workspaceRoot}/mono",
+                    "${workspaceRoot}/mono/eglib",
+                    "${workspaceRoot}/support"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
+            "macFrameworkPath": [
+                "${default}",
+                "/System/Library/Frameworks",
+                "/Library/Frameworks"
+            ]
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "${default}",
+                "/usr/include",
+                "/usr/local/include",
+                "${workspaceRoot}",
+                "${workspaceRoot}/mono",
+                "${workspaceRoot}/mono/eglib",
+                "${workspaceRoot}/support"
+            ],
+            "defines": [],
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "${default}",
+                    "/usr/include",
+                    "/usr/local/include",
+                    "${workspaceRoot}",
+                    "${workspaceRoot}/mono",
+                    "${workspaceRoot}/mono/eglib",
+                    "${workspaceRoot}/support"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        },
+        {
+            "name": "Win32",
+            "includePath": [
+                "${default}",
+                "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/include",
+                "${workspaceRoot}",
+                "${workspaceRoot}/mono",
+                "${workspaceRoot}/mono/eglib",
+                "${workspaceRoot}/support"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE"
+            ],
+            "intelliSenseMode": "msvc-x64",
+            "browse": {
+                "path": [
+                    "${default}",
+                    "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/include/*",
+                    "${workspaceRoot}",
+                    "${workspaceRoot}/mono",
+                    "${workspaceRoot}/mono/eglib",
+                    "${workspaceRoot}/support"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        }
+    ],
+    "version": 4
+}

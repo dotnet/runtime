@@ -235,7 +235,7 @@ namespace System.Linq.Parallel
                     while (_leftSource.MoveNext(ref currentLeftElement, ref keyUnused))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         // We ensure we never return duplicates by tracking them in our set.
                         if (_hashLookup.Add(currentLeftElement.First))
@@ -263,7 +263,7 @@ namespace System.Linq.Parallel
                     {
                         Debug.Assert(_outputLoopCount != null);
                         if ((_outputLoopCount.Value++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         // We ensure we never return duplicates by tracking them in our set.
                         if (_hashLookup.Add(currentRightElement.First))
@@ -358,7 +358,7 @@ namespace System.Linq.Parallel
                     while (_leftSource.MoveNext(ref elem, ref leftKey))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         ConcatKey<TLeftKey, TRightKey> key =
                             ConcatKey<TLeftKey, TRightKey>.MakeLeft(_leftOrdered ? leftKey : default);
@@ -375,7 +375,7 @@ namespace System.Linq.Parallel
                     while (_rightSource.MoveNext(ref elem, ref rightKey))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         ConcatKey<TLeftKey, TRightKey> key =
                             ConcatKey<TLeftKey, TRightKey>.MakeRight(_rightOrdered ? rightKey : default);

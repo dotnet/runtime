@@ -169,7 +169,6 @@ namespace System.Xml.Serialization
             else
             {
                 var a = o as IEnumerable;
-                //  #10593: This assert may not be true. We need more tests for this method.
                 Debug.Assert(a != null);
 
                 IEnumerator e = a.GetEnumerator();
@@ -290,7 +289,6 @@ namespace System.Xml.Serialization
                 {
                     if (!WritePrimitiveValue(primitiveMapping.TypeDesc, o, false, out stringValue))
                     {
-                        // #10593: Add More Tests for Serialization Code
                         Debug.Assert(o is byte[]);
                     }
                 }
@@ -816,7 +814,6 @@ namespace System.Xml.Serialization
                                 {
                                     if (!WritePrimitiveValue(arrayElementTypeDesc, ai, true, out stringValue))
                                     {
-                                        // #10593: Add More Tests for Serialization Code
                                         Debug.Assert(ai is byte[]);
                                     }
                                 }
@@ -842,7 +839,7 @@ namespace System.Xml.Serialization
                                 {
                                     if (shouldAppendWhitespace)
                                     {
-                                        sb.Append(" ");
+                                        sb.Append(' ');
                                     }
 
                                     sb.Append(stringValue);
@@ -1037,7 +1034,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    Debug.Fail("#10593: Add More Tests for Serialization Code");
+                    Debug.Fail("https://github.com/dotnet/runtime/issues/18037: Add More Tests for Serialization Code");
                 }
             }
             else if (o is byte[] a)
@@ -1056,12 +1053,12 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    Debug.Fail("#10593: Add More Tests for Serialization Code");
+                    Debug.Fail("https://github.com/dotnet/runtime/issues/18037: Add More Tests for Serialization Code");
                 }
             }
             else
             {
-                Debug.Fail("#10593: Add More Tests for Serialization Code");
+                Debug.Fail("https://github.com/dotnet/runtime/issues/18037: Add More Tests for Serialization Code");
             }
         }
 

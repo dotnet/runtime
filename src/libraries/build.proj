@@ -11,14 +11,11 @@
     <BuildDependsOn Condition="'$(BuildManaged)' == 'true' and '$(BuildTests)' != 'only'">$(BuildDependsOn);BuildManaged</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildPackages)' == 'true' and '$(BuildTests)' != 'only'">$(BuildDependsOn);Pack</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildTests)' != ''">$(BuildDependsOn);BuildTests</BuildDependsOn>
-
-    <!-- Explicitly set Configuration based on BuildConfiguration for the root projects -->
-    <ProjectProperties>Configuration=$(BuildConfiguration)</ProjectProperties>
   </PropertyGroup>
 
   <Import Project="Directory.Build.targets" />
 
-  <Target Name="Restore" DependsOnTargets="GenerateConfigurationProps">
+  <Target Name="Restore" DependsOnTargets="GenerateRuntimeOSPropsFile">
     <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
       <_RestoreProjects Include="$(MSBuildThisFileDirectory)restore\dirs.proj" Build="true" />
     </ItemGroup>
@@ -79,15 +76,4 @@
 
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
-  <!-- set up inputs for UpdateVSConfigurations in a target to avoid globbing all the time -->
-  <Target Name="_setProjectsToUpdate" BeforeTargets="UpdateVSConfigurations">
-    <ItemGroup>
-      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)**/*.*csproj" 
-                        Exclude="$(MSBuildThisFileDirectory)shims/**/*.*csproj"/>
-      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)**/*.*ilproj" />
-      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)**/*.*vbproj" />
-      <_solutionsToUpdateFiles Include="$(MSBuildThisFileDirectory)*/Directory.Build.props" />
-      <SolutionsToUpdate Include="@(_solutionsToUpdateFiles->'%(RootDir)%(Directory)')" Exclude="@(_solutionsToExcludeFromUpdate)" />
-    </ItemGroup>
-  </Target>
 </Project>

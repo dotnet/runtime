@@ -168,28 +168,28 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI(msg)                    NYIRAW("NYI: " msg)
 #define NYI_IF(cond, msg) if (cond) NYIRAW("NYI: " msg)
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
 #define NYI_AMD64(msg)  NYIRAW("NYI_AMD64: " msg)
 #define NYI_X86(msg)    do { } while (0)
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  do { } while (0)
 
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 
 #define NYI_AMD64(msg)  do { } while (0)
 #define NYI_X86(msg)    NYIRAW("NYI_X86: " msg)
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  do { } while (0)
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
 #define NYI_AMD64(msg)  do { } while (0)
 #define NYI_X86(msg)    do { } while (0)
 #define NYI_ARM(msg)    NYIRAW("NYI_ARM: " msg)
 #define NYI_ARM64(msg)  do { } while (0)
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
 #define NYI_AMD64(msg)  do { } while (0)
 #define NYI_X86(msg)    do { } while (0)
@@ -213,7 +213,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 
 // clang-format on
 
-#if defined(_HOST_X86_) && !defined(FEATURE_PAL)
+#if defined(HOST_X86) && !defined(TARGET_UNIX)
 
 // While debugging in an Debugger, the "int 3" will cause the program to break
 // Outside, the exception handler will just filter out the "int 3".

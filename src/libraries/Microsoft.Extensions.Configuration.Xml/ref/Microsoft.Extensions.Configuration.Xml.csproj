@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Microsoft.Extensions.Configuration.Xml.cs" />
+    <Reference Include="Microsoft.Extensions.Configuration"  />
+    <Reference Include="Microsoft.Extensions.Configuration.FileExtensions"  />
+    <Reference Include="System.Security.Cryptography.Xml"  />
+  </ItemGroup>
+</Project>

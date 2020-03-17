@@ -332,11 +332,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Gets or sets the path for this <see cref='System.DirectoryServices.DirectoryEntry'/>.
         /// </devdoc>
-        [
-            DefaultValue(""),
-            // CoreFXPort - Remove design support
-            // TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
-        ]
+        [DefaultValue("")]
         public string Path
         {
             get => _path;
@@ -427,11 +423,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Gets or sets the username to use when authenticating the client.
         /// </devdoc>
-        [
-            DefaultValue(null),
-            // CoreFXPort - Remove design support
-            // TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
-        ]
+        [DefaultValue(null)]
         public string Username
         {
             get
@@ -1007,11 +999,11 @@ namespace System.DirectoryServices
                 {
                     if (propertyNames[i] != null)
                     {
-                        string name = propertyNames[i].ToLower(CultureInfo.InvariantCulture);
+                        string name = propertyNames[i].ToLowerInvariant();
                         _propertyCollection.valueTable.Remove(name);
 
                         // also need to consider the range retrieval case
-                        string[] results = name.Split(new char[] { ';' });
+                        string[] results = name.Split(';');
                         if (results.Length != 1)
                         {
                             string rangeName = "";

@@ -1,4 +1,5 @@
 parameters:
+  runtimeFlavor: 'coreclr'
   platforms: []
   jobParameters: []
   buildConfig: Release
@@ -14,5 +15,6 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     platforms: ${{ parameters.platforms }}
     passPlatforms: true
+    runtimeFlavor: ${{ parameters.runtimeFlavor }}
     jobParameters:
       ${{ insert }}: ${{ parameters.jobParameters }}

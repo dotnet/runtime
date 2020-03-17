@@ -29,6 +29,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15321", TestRuntimes.Mono)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The coreclr ignores the skipVisibility value of DynamicMethod.")]
         public void GetILGenerator_Int_Module_CoreclrIgnoresSkipVisibility()
         {
@@ -73,6 +74,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15321", TestRuntimes.Mono)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The coreclr ignores the skipVisibility value of DynamicMethod.")]
         public void GetILGenerator_Module_CoreclrIgnoresSkipVisibility()
         {

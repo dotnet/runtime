@@ -1400,32 +1400,32 @@ namespace System.Drawing
         /// <summary>
         /// Draws a string with the specified font.
         /// </summary>
-        public void DrawString(string s, Font font, Brush brush, float x, float y)
+        public void DrawString(string? s, Font font, Brush brush, float x, float y)
         {
             DrawString(s, font, brush, new RectangleF(x, y, 0, 0), null);
         }
 
-        public void DrawString(string s, Font font, Brush brush, PointF point)
+        public void DrawString(string? s, Font font, Brush brush, PointF point)
         {
             DrawString(s, font, brush, new RectangleF(point.X, point.Y, 0, 0), null);
         }
 
-        public void DrawString(string s, Font font, Brush brush, float x, float y, StringFormat format)
+        public void DrawString(string? s, Font font, Brush brush, float x, float y, StringFormat? format)
         {
             DrawString(s, font, brush, new RectangleF(x, y, 0, 0), format);
         }
 
-        public void DrawString(string s, Font font, Brush brush, PointF point, StringFormat format)
+        public void DrawString(string? s, Font font, Brush brush, PointF point, StringFormat? format)
         {
             DrawString(s, font, brush, new RectangleF(point.X, point.Y, 0, 0), format);
         }
 
-        public void DrawString(string s, Font font, Brush brush, RectangleF layoutRectangle)
+        public void DrawString(string? s, Font font, Brush brush, RectangleF layoutRectangle)
         {
             DrawString(s, font, brush, layoutRectangle, null);
         }
 
-        public void DrawString(string s, Font font, Brush brush, RectangleF layoutRectangle, StringFormat format)
+        public void DrawString(string? s, Font font, Brush brush, RectangleF layoutRectangle, StringFormat? format)
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
@@ -1445,10 +1445,10 @@ namespace System.Drawing
         }
 
         public SizeF MeasureString(
-            string text,
+            string? text,
             Font font,
             SizeF layoutArea,
-            StringFormat stringFormat,
+            StringFormat? stringFormat,
             out int charactersFitted,
             out int linesFilled)
         {
@@ -1479,7 +1479,7 @@ namespace System.Drawing
             return boundingBox.Size;
         }
 
-        public SizeF MeasureString(string text, Font font, PointF origin, StringFormat stringFormat)
+        public SizeF MeasureString(string? text, Font font, PointF origin, StringFormat? stringFormat)
         {
             if (string.IsNullOrEmpty(text))
                 return SizeF.Empty;
@@ -1503,9 +1503,9 @@ namespace System.Drawing
             return boundingBox.Size;
         }
 
-        public SizeF MeasureString(string text, Font font, SizeF layoutArea) => MeasureString(text, font, layoutArea, null);
+        public SizeF MeasureString(string? text, Font font, SizeF layoutArea) => MeasureString(text, font, layoutArea, null);
 
-        public SizeF MeasureString(string text, Font font, SizeF layoutArea, StringFormat stringFormat)
+        public SizeF MeasureString(string? text, Font font, SizeF layoutArea, StringFormat? stringFormat)
         {
             if (string.IsNullOrEmpty(text))
                 return SizeF.Empty;
@@ -1529,22 +1529,22 @@ namespace System.Drawing
             return boundingBox.Size;
         }
 
-        public SizeF MeasureString(string text, Font font)
+        public SizeF MeasureString(string? text, Font font)
         {
             return MeasureString(text, font, new SizeF(0, 0));
         }
 
-        public SizeF MeasureString(string text, Font font, int width)
+        public SizeF MeasureString(string? text, Font font, int width)
         {
             return MeasureString(text, font, new SizeF(width, 999999));
         }
 
-        public SizeF MeasureString(string text, Font font, int width, StringFormat format)
+        public SizeF MeasureString(string? text, Font font, int width, StringFormat? format)
         {
             return MeasureString(text, font, new SizeF(width, 999999), format);
         }
 
-        public Region[] MeasureCharacterRanges(string text, Font font, RectangleF layoutRect, StringFormat stringFormat)
+        public Region[] MeasureCharacterRanges(string? text, Font font, RectangleF layoutRect, StringFormat? stringFormat)
         {
             if (string.IsNullOrEmpty(text))
                 return Array.Empty<Region>();
@@ -1844,7 +1844,7 @@ namespace System.Drawing
             }
         }
 
-        public void DrawImage(Image image, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit, ImageAttributes imageAttr)
+        public void DrawImage(Image image, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit, ImageAttributes? imageAttr)
         {
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, null, 0);
         }
@@ -1854,8 +1854,8 @@ namespace System.Drawing
             PointF[] destPoints,
             RectangleF srcRect,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr,
-            DrawImageAbort callback)
+            ImageAttributes? imageAttr,
+            DrawImageAbort? callback)
         {
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, callback, 0);
         }
@@ -1865,8 +1865,8 @@ namespace System.Drawing
             PointF[] destPoints,
             RectangleF srcRect,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr,
-            DrawImageAbort callback,
+            ImageAttributes? imageAttr,
+            DrawImageAbort? callback,
             int callbackData)
         {
             if (destPoints == null)
@@ -1905,7 +1905,7 @@ namespace System.Drawing
             Point[] destPoints,
             Rectangle srcRect,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, null, 0);
         }
@@ -1915,8 +1915,8 @@ namespace System.Drawing
             Point[] destPoints,
             Rectangle srcRect,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr,
-            DrawImageAbort callback)
+            ImageAttributes? imageAttr,
+            DrawImageAbort? callback)
         {
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, callback, 0);
         }
@@ -1926,8 +1926,8 @@ namespace System.Drawing
             Point[] destPoints,
             Rectangle srcRect,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr,
-            DrawImageAbort callback,
+            ImageAttributes? imageAttr,
+            DrawImageAbort? callback,
             int callbackData)
         {
             if (destPoints == null)
@@ -1976,7 +1976,7 @@ namespace System.Drawing
             float srcWidth,
             float srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttrs)
+            ImageAttributes? imageAttrs)
         {
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttrs, null);
         }
@@ -1989,8 +1989,8 @@ namespace System.Drawing
             float srcWidth,
             float srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttrs,
-            DrawImageAbort callback)
+            ImageAttributes? imageAttrs,
+            DrawImageAbort? callback)
         {
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttrs, callback, IntPtr.Zero);
         }
@@ -2003,8 +2003,8 @@ namespace System.Drawing
             float srcWidth,
             float srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttrs,
-            DrawImageAbort callback,
+            ImageAttributes? imageAttrs,
+            DrawImageAbort? callback,
             IntPtr callbackData)
         {
             if (image == null)
@@ -2044,7 +2044,7 @@ namespace System.Drawing
             int srcWidth,
             int srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttr, null);
         }
@@ -2057,8 +2057,8 @@ namespace System.Drawing
             int srcWidth,
             int srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr,
-            DrawImageAbort callback)
+            ImageAttributes? imageAttr,
+            DrawImageAbort? callback)
         {
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttr, callback, IntPtr.Zero);
         }
@@ -2071,8 +2071,8 @@ namespace System.Drawing
             int srcWidth,
             int srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttrs,
-            DrawImageAbort callback,
+            ImageAttributes? imageAttrs,
+            DrawImageAbort? callback,
             IntPtr callbackData)
         {
             if (image == null)

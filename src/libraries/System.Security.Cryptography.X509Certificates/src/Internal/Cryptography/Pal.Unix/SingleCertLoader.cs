@@ -10,7 +10,7 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class SingleCertLoader : ILoaderPal
     {
-        private ICertificatePal _cert;
+        private ICertificatePal? _cert;
 
         public SingleCertLoader(ICertificatePal cert)
         {
@@ -27,7 +27,7 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(collection != null);
 
-            ICertificatePal localCert = Interlocked.Exchange(ref _cert, null);
+            ICertificatePal? localCert = Interlocked.Exchange(ref _cert, null);
             Debug.Assert(localCert != null);
 
             collection.Add(new X509Certificate2(localCert));

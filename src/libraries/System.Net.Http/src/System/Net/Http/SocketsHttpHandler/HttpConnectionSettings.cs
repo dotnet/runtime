@@ -14,20 +14,22 @@ namespace System.Net.Http
         private const string Http2SupportAppCtxSettingName = "System.Net.Http.SocketsHttpHandler.Http2Support";
         private const string Http2UnencryptedSupportEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2UNENCRYPTEDSUPPORT";
         private const string Http2UnencryptedSupportAppCtxSettingName = "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport";
+        private const string Http3DraftSupportEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3DRAFTSUPPORT";
+        private const string Http3DraftSupportAppCtxSettingName = "System.Net.SocketsHttpHandler.Http3DraftSupport";
 
         internal DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
 
         internal bool _useCookies = HttpHandlerDefaults.DefaultUseCookies;
-        internal CookieContainer _cookieContainer;
+        internal CookieContainer? _cookieContainer;
 
         internal bool _useProxy = HttpHandlerDefaults.DefaultUseProxy;
-        internal IWebProxy _proxy;
-        internal ICredentials _defaultProxyCredentials;
+        internal IWebProxy? _proxy;
+        internal ICredentials? _defaultProxyCredentials;
         internal bool _defaultCredentialsUsedForProxy;
         internal bool _defaultCredentialsUsedForServer;
 
         internal bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
-        internal ICredentials _credentials;
+        internal ICredentials? _credentials;
 
         internal bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
         internal int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
@@ -46,14 +48,20 @@ namespace System.Net.Http
 
         internal bool _allowUnencryptedHttp2;
 
-        internal SslClientAuthenticationOptions _sslOptions;
+        // Used for testing until https://github.com/dotnet/runtime/issues/987
+        internal bool _assumePrenegotiatedHttp3ForTesting;
 
-        internal IDictionary<string, object> _properties;
+        internal SslClientAuthenticationOptions? _sslOptions;
+
+        internal IDictionary<string, object?>? _properties;
 
         public HttpConnectionSettings()
         {
             bool allowHttp2 = AllowHttp2;
-            _maxHttpVersion = allowHttp2 ? HttpVersion.Version20 : HttpVersion.Version11;
+            _maxHttpVersion =
+                AllowDraftHttp3 && allowHttp2 ? HttpVersion.Version30 :
+                allowHttp2 ? HttpVersion.Version20 :
+                HttpVersion.Version11;
             _allowUnencryptedHttp2 = allowHttp2 && AllowUnencryptedHttp2;
             _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials);
             _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials;
@@ -94,6 +102,7 @@ namespace System.Net.Http
                 _useCookies = _useCookies,
                 _useProxy = _useProxy,
                 _allowUnencryptedHttp2 = _allowUnencryptedHttp2,
+                _assumePrenegotiatedHttp3ForTesting = _assumePrenegotiatedHttp3ForTesting
             };
         }
 
@@ -111,7 +120,7 @@ namespace System.Net.Http
                 }
 
                 // AppContext switch wasn't used. Check the environment variable.
-                string envVar = Environment.GetEnvironmentVariable(Http2SupportEnvironmentVariableSettingName);
+                string? envVar = Environment.GetEnvironmentVariable(Http2SupportEnvironmentVariableSettingName);
                 if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
                 {
                     // Disallow HTTP/2 protocol.
@@ -137,7 +146,7 @@ namespace System.Net.Http
                 }
 
                 // AppContext switch wasn't used. Check the environment variable.
-                string envVar = Environment.GetEnvironmentVariable(Http2UnencryptedSupportEnvironmentVariableSettingName);
+                string? envVar = Environment.GetEnvironmentVariable(Http2UnencryptedSupportEnvironmentVariableSettingName);
                 if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
                 {
                     // Allow HTTP/2.0 protocol for HTTP endpoints.
@@ -148,5 +157,34 @@ namespace System.Net.Http
                 return false;
             }
         }
+
+        private static bool AllowDraftHttp3
+        {
+            get
+            {
+                // Default to not allowing draft HTTP/3, but enable that to be overridden
+                // by an AppContext switch, or by an environment variable being to to true/1.
+
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(Http3DraftSupportAppCtxSettingName, out bool allowHttp3))
+                {
+                    return allowHttp3;
+                }
+
+                // AppContext switch wasn't used. Check the environment variable.
+                string? envVar = Environment.GetEnvironmentVariable(Http3DraftSupportEnvironmentVariableSettingName);
+                if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
+                {
+                    // Allow HTTP/3 protocol for HTTP endpoints.
+                    return true;
+                }
+
+                // Default to disallow.
+                return false;
+            }
+        }
+
+        private byte[]? _http3SettingsFrame;
+        internal byte[] Http3SettingsFrame => _http3SettingsFrame ??= Http3Connection.BuildSettingsFrame(this);
     }
 }

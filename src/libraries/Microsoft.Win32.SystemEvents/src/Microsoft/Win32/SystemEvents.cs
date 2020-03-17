@@ -70,7 +70,6 @@ namespace Microsoft.Win32
 
         // stole from SystemInformation... if we get SystemInformation moved
         // to somewhere that we can use it... rip this!
-        [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private static volatile IntPtr s_processWinStation = IntPtr.Zero;
         private static volatile bool s_isUserInteractive = false;
         private static unsafe bool UserInteractive
@@ -715,8 +714,6 @@ namespace Microsoft.Win32
         ///  This empties this control's callback queue, propagating any exceptions
         ///  back as needed.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void InvokeMarshaledCallbacks()
         {
             Debug.Assert(s_threadCallbackList != null, "Invoking marshaled callbacks before there are any");
@@ -998,8 +995,6 @@ namespace Microsoft.Win32
             RaiseEvent(true, key, args);
         }
 
-        [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static void RaiseEvent(bool checkFinalization, object key, params object[] args)
         {
             Debug.Assert(args != null && args.Length == 2);
@@ -1129,8 +1124,6 @@ namespace Microsoft.Win32
         /// <summary>
         ///  A standard Win32 window proc for our broadcast window.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private IntPtr WindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
         {
             switch (msg)
@@ -1255,8 +1248,6 @@ namespace Microsoft.Win32
         ///  is made visible with a size of 0, 0, so that it will trap
         ///  global broadcast messages.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void WindowThreadProc()
         {
             try

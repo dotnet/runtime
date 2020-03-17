@@ -18,7 +18,7 @@ namespace System.Reflection.TypeLoading
     // that it's far shorter than "ParametersAndReturnType".
     internal sealed class MethodSig<T>
     {
-        public T Return { get; private set; }
+        public T Return { get; private set; } = default!;
         public T[] Parameters { get; }
 
         public MethodSig(int parameterCount)

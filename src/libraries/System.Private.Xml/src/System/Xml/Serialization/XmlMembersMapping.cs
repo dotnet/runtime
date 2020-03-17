@@ -21,14 +21,14 @@ namespace System.Xml.Serialization
         {
             MembersMapping mapping = (MembersMapping)accessor.Mapping;
             StringBuilder key = new StringBuilder();
-            key.Append(":");
+            key.Append(':');
             _mappings = new XmlMemberMapping[mapping.Members.Length];
             for (int i = 0; i < _mappings.Length; i++)
             {
                 if (mapping.Members[i].TypeDesc.Type != null)
                 {
                     key.Append(GenerateKey(mapping.Members[i].TypeDesc.Type, null, null));
-                    key.Append(":");
+                    key.Append(':');
                 }
                 _mappings[i] = new XmlMemberMapping(mapping.Members[i]);
             }

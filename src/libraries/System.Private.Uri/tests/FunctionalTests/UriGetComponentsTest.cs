@@ -71,7 +71,7 @@ namespace System.PrivateUri.Tests
             testUri = new Uri("eb://[0000::01:123.32.123.23]/dir");
             Assert.Equal("[::1:7b20:7b17]", testUri.Authority);
 
-            // TODO #8330 : Canonical IPv6 is still performed for unknown schemes.
+            // Canonical IPv6 is still performed for unknown schemes.
             Assert.NotEqual("[0000::01:123.32.123.23]", testUri.Authority);
         }
 

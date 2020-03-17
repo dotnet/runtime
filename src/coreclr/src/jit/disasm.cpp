@@ -40,7 +40,7 @@
 
 #define MAX_CLASSNAME_LENGTH 1024
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
 
 #pragma comment(linker,                                                                                                \
                 "/ALTERNATENAME:__imp_?CchFormatAddr@DIS@@QEBA_K_KPEAG0@Z=__imp_?CchFormatAddr@DIS@@QEBA_K_KPEA_W0@Z")
@@ -59,7 +59,7 @@
     linker,                                                                                                            \
     "/ALTERNATENAME:__imp_?PfncchfixupSet@DIS@@QEAAP6A_KPEBV1@_K1PEAG1PEA_K@ZP6A_K011213@Z@Z=__imp_?PfncchfixupSet@DIS@@QEAAP6A_KPEBV1@_K1PEA_W1PEA_K@ZP6A_K011213@Z@Z")
 
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 
 #pragma comment(linker, "/ALTERNATENAME:__imp_?CchFormatAddr@DIS@@QBEI_KPAGI@Z=__imp_?CchFormatAddr@DIS@@QBEI_KPA_WI@Z")
 #pragma comment(linker, "/ALTERNATENAME:__imp_?CchFormatInstr@DIS@@QBEIPAGI@Z=__imp_?CchFormatInstr@DIS@@QBEIPA_WI@Z")
@@ -125,7 +125,7 @@ size_t DisAssembler::disCchAddrMember(
 
     size_t retval = 0; // assume we don't know
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 
     DISX86::TRMTA terminationType = DISX86::TRMTA(pdis->Trmta());
 
@@ -193,7 +193,7 @@ size_t DisAssembler::disCchAddrMember(
 
             break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
         case DISX86::trmtaFallThrough:
 
@@ -205,7 +205,7 @@ size_t DisAssembler::disCchAddrMember(
 
             break;
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
         default:
 
@@ -214,7 +214,7 @@ size_t DisAssembler::disCchAddrMember(
             break;
     }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
     DISARM64::TRMTA terminationType = DISARM64::TRMTA(pdis->Trmta());
 
@@ -319,9 +319,9 @@ size_t DisAssembler::disCchAddrMember(
             break;
     }
 
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
 
     if (retval == 0)
     {
@@ -360,7 +360,7 @@ size_t __stdcall DisAssembler::disCchFixup(
 size_t DisAssembler::disCchFixupMember(
     const DIS* pdis, DIS::ADDR addr, size_t size, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
 {
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 
     DISX86::TRMTA terminationType = DISX86::TRMTA(pdis->Trmta());
     // DIS::ADDR disIndAddr;
@@ -462,7 +462,7 @@ size_t DisAssembler::disCchFixupMember(
             break;
     }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
     DISARM64::TRMTA terminationType = DISARM64::TRMTA(pdis->Trmta());
     // DIS::ADDR disIndAddr;
@@ -568,9 +568,9 @@ size_t DisAssembler::disCchFixupMember(
             break;
     }
 
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
 
     /* no displacement */
 
@@ -600,7 +600,7 @@ size_t __stdcall DisAssembler::disCchRegRel(
 size_t DisAssembler::disCchRegRelMember(
     const DIS* pdis, DIS::REGA reg, DWORD disp, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp)
 {
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 
     DISX86::TRMTA terminationType = DISX86::TRMTA(pdis->Trmta());
     // DIS::ADDR disIndAddr;
@@ -696,7 +696,7 @@ size_t DisAssembler::disCchRegRelMember(
             break;
     }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
     DISARM64::TRMTA terminationType = DISARM64::TRMTA(pdis->Trmta());
 
@@ -781,9 +781,9 @@ size_t DisAssembler::disCchRegRelMember(
             break;
     }
 
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
 
     /* save displacement */
 
@@ -917,7 +917,7 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
         DISASM_DUMP("CbDisassemble offs %Iu addr %I64u\n", offs, addr);
         // assert(!"can't disassemble instruction!!!");
         fprintf(pfile, "MSVCDIS can't disassemble instruction @ offset %Iu (0x%02x)!!!\n", offs, offs);
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
         fprintf(pfile, "%08Xh\n", *(unsigned int*)pb);
         return 4;
 #else
@@ -926,9 +926,9 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
 #endif
     }
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     assert(cb == 4); // all instructions are 4 bytes!
-#endif               // _TARGET_ARM64_
+#endif               // TARGET_ARM64
 
     /* remember current offset and instruction size */
 
@@ -941,7 +941,7 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
 
     if (findLabels)
     {
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
         DISX86::TRMTA terminationType = DISX86::TRMTA(pdis->Trmta());
 
         /* check the termination type of the instruction */
@@ -1000,7 +1000,7 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
                 break;
 
         } // end switch
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         DISARM64::TRMTA terminationType = DISARM64::TRMTA(pdis->Trmta());
 
         /* check the termination type of the instruction */
@@ -1083,9 +1083,9 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
                 break;
 
         } // end switch
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
 
         return cb;
     } // end if
@@ -1112,9 +1112,9 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
             fprintf(pfile, "%03X", offs);
         }
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 #define CCH_INDENT 8 // fixed sized instructions, always 8 characters
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 #define CCH_INDENT 30 // large constants sometimes
 #else
 #define CCH_INDENT 24
@@ -1246,13 +1246,13 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
 {
     DIS* pdis = NULL;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     pdis = DIS::PdisNew(DIS::distX86);
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     pdis = DIS::PdisNew(DIS::distX8664);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     pdis = DIS::PdisNew(DIS::distArm64);
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
 #endif
 
@@ -1262,7 +1262,7 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
         return;
     }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     pdis->SetAddr64(true);
 #endif
 

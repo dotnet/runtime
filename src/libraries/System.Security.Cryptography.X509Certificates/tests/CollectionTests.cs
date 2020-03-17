@@ -457,7 +457,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        // On Desktop, list is untyped so it allows arbitrary types in it
+        // On .NET Framework, list is untyped so it allows arbitrary types in it
         public static void X509CertificateCollectionAsIListBogusEntry()
         {
             using (X509Certificate2 c = new X509Certificate2())
@@ -1394,6 +1394,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // the system-preferred lookup.
                 X509Extension byFriendlyName = extensions[new Oid(RsaOidValue).FriendlyName];
                 Assert.Null(byFriendlyName);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void SerializedCertDisposeDoesNotRemoveKeyFile()
+        {
+            using (X509Certificate2 fromPfx = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
+            {
+                Assert.True(fromPfx.HasPrivateKey, "fromPfx.HasPrivateKey - before");
+
+                byte[] serializedCert = fromPfx.Export(X509ContentType.SerializedCert);
+
+                X509Certificate2 fromSerialized;
+
+                using (ImportedCollection imported = Cert.Import(serializedCert))
+                {
+                    fromSerialized = imported.Collection[0];
+                    Assert.True(fromSerialized.HasPrivateKey, "fromSerialized.HasPrivateKey");
+                    Assert.NotEqual(IntPtr.Zero, fromSerialized.Handle);
+                }
+
+                // The certificate got disposed by the collection holder.
+                Assert.Equal(IntPtr.Zero, fromSerialized.Handle);
+
+                using (RSA key = fromPfx.GetRSAPrivateKey())
+                {
+                    key.SignData(serializedCert, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                }
             }
         }
 

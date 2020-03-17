@@ -3,9 +3,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;$(NetFrameworkCurrent)-Windows_NT-Debug;$(NetFrameworkCurrent)-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
+    <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'" >
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -84,7 +86,7 @@
       <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
     </Compile>	
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\System\Threading\Tasks\TaskToApm.cs</Link>
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="System\Net\Http\NetEventSource.WinHttpHandler.cs" />
     <Compile Include="System\Net\Http\WinHttpAuthHelper.cs" />

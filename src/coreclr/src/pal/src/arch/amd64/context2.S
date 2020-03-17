@@ -11,7 +11,7 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 
 #define IRETFRAME_Rip 0
 #define IRETFRAME_SegCs IRETFRAME_Rip+8

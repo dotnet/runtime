@@ -1,6 +1,6 @@
 name: dotnet-runtime-30
 base: core18
-version: 3.0.0
+version: 3.0.2
 summary: Cross-Platform .NET Core Runtime. 
 description: |
   .NET Core runtimes and libraries which are optimized for running .NET Core apps in production. See https://dot.net/core.
@@ -27,8 +27,8 @@ slots:
 parts:
   dotnet-runtime:
     plugin: dump
-    source: https://download.visualstudio.microsoft.com/download/pr/a5ff9cbb-d558-49d1-9fd2-410cb1c8b095/a940644f4133b81446cb3733a620983a/dotnet-runtime-3.0.0-linux-x64.tar.gz
-    source-checksum: sha512/0cabf85877eb3ee0415e6f8de9390c95ec90fa8f5a0fdb104f1163924fd52d89932a51c2e07b5c13a6b9802d5b6962676042a586ec8aff4f2a641d33c6c84dec
+    source: https://download.visualstudio.microsoft.com/download/pr/7647815e-9c28-40a5-96ea-c6ac4ebe2020/c026b1e93a5d6750a7666d3fe36a87f5/dotnet-runtime-3.0.2-linux-x64.tar.gz
+    source-checksum: sha512/c8f0e4eb220fa896c4a803a8d9d0c704ae7b8383801a977036f3089b1d779159f5a2d9293dc11ff5f4f6c76febc6f70f6cfcdff0debd3243cad5eb635f853d45
     stage-packages:
       - libicu60
       - libssl1.0.0

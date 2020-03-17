@@ -33,7 +33,7 @@ namespace Internal.Cryptography
             {
                 Debug.Assert(BlockSizeValue == 128);
 
-                // Values which were legal in desktop RijndaelManaged but not here in this wrapper type
+                // Values which were legal in .NET Framework RijndaelManaged but not here in this wrapper type
                 if (value == 192 || value == 256)
                     throw new PlatformNotSupportedException(SR.Cryptography_Rijndael_BlockSize);
 
@@ -74,9 +74,9 @@ namespace Internal.Cryptography
 
         public override KeySizes[] LegalKeySizes => _impl.LegalKeySizes;
         public override ICryptoTransform CreateEncryptor() => _impl.CreateEncryptor();
-        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) => _impl.CreateEncryptor(rgbKey, rgbIV);
+        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) => _impl.CreateEncryptor(rgbKey, rgbIV);
         public override ICryptoTransform CreateDecryptor() => _impl.CreateDecryptor();
-        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) => _impl.CreateDecryptor(rgbKey, rgbIV);
+        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) => _impl.CreateDecryptor(rgbKey, rgbIV);
         public override void GenerateIV() => _impl.GenerateIV();
         public override void GenerateKey() => _impl.GenerateKey();
 

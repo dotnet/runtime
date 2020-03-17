@@ -98,7 +98,7 @@ namespace System.Net
 
         internal static FtpMethodInfo GetMethodInfo(string method)
         {
-            method = method.ToUpper(CultureInfo.InvariantCulture);
+            method = method.ToUpperInvariant();
             foreach (FtpMethodInfo methodInfo in s_knownMethodInfo)
                 if (method == methodInfo.Method)
                     return methodInfo;

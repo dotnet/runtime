@@ -8,8 +8,6 @@ namespace System.Reflection.Tests
 {
     public class ModuleTests
     {
-        // This applies on all platforms. See System.Reflection.TypeExtensions.CoreCLR.Tests for more
-        // test cases that rely on platform-specific capabilities.
         [Fact]
         public void GetModuleVersionId_HasModuleVersionId_BehaveConsistently()
         {
@@ -23,6 +21,14 @@ namespace System.Reflection.Tests
             {
                 Assert.Throws<InvalidOperationException>(() => module.GetModuleVersionId());
             }
+        }
+
+        [Fact]
+        public void GetModuleVersionId_KnownAssembly_ReturnsExpected()
+        {
+            Module module = Assembly.Load(new AssemblyName("TinyAssembly")).ManifestModule;
+            Assert.True(module.HasModuleVersionId());
+            Assert.Equal(Guid.Parse("{06BB2468-908C-48CF-ADE9-DB6DE4614004}"), module.GetModuleVersionId());
         }
     }
 }

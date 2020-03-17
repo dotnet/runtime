@@ -36,25 +36,6 @@ private:
     ULONG STDMETHODCALLTYPE Release();
 
     //***************************************************************************
-    // IExecutionEngine methods for TLS
-    //***************************************************************************
-
-    // Associate a callback for cleanup with a TLS slot
-    VOID  STDMETHODCALLTYPE TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback);
-    // Get the master TLS slot index
-    LPVOID* STDMETHODCALLTYPE TLS_GetDataBlock();
-
-    // Get the value at a slot
-    LPVOID STDMETHODCALLTYPE TLS_GetValue(DWORD slot);
-
-    // Get the value at a slot, return FALSE if TLS info block doesn't exist
-    BOOL STDMETHODCALLTYPE TLS_CheckValue(DWORD slot, LPVOID * pValue);
-    // Set the value at a slot
-    VOID STDMETHODCALLTYPE TLS_SetValue(DWORD slot, LPVOID pData);
-    // Free TLS memory block and make callback
-    VOID STDMETHODCALLTYPE TLS_ThreadDetaching();
-
-    //***************************************************************************
     // IExecutionEngine methods for locking
     //***************************************************************************
 

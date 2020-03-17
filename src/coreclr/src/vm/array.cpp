@@ -173,7 +173,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
             break;
     }
 
-#if defined(FEATURE_ARRAYSTUB_AS_IL ) && !defined(_TARGET_X86_)
+#if defined(FEATURE_ARRAYSTUB_AS_IL ) && !defined(TARGET_X86)
     if(dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS && fForStubAsIL)
     {
         *pSig++ = ELEMENT_TYPE_I;
@@ -188,7 +188,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
         *pSig++ = ELEMENT_TYPE_VAR;
         *pSig++ = 0;        // variable 0
     }
-#if defined(FEATURE_ARRAYSTUB_AS_IL ) && defined(_TARGET_X86_)
+#if defined(FEATURE_ARRAYSTUB_AS_IL ) && defined(TARGET_X86)
     else if(dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS && fForStubAsIL)
     {
         *pSig++ = ELEMENT_TYPE_I;
@@ -479,10 +479,10 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     if (arrayKind == ELEMENT_TYPE_ARRAY)
         baseSize += Rank*sizeof(DWORD)*2;
 
-#if !defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4)
+#if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
     if (dwComponentSize >= DATA_ALIGNMENT)
         baseSize = (DWORD)ALIGN_UP(baseSize, DATA_ALIGNMENT);
-#endif // !defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4)
+#endif // !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
     pMT->SetBaseSize(baseSize);
     // Because of array method table persisting, we need to copy the map
     for (unsigned index = 0; index < pParentClass->GetNumInterfaces(); ++index)
@@ -782,7 +782,7 @@ public:
         UINT hiddenArgIdx = rank;
         _ASSERTE(rank>0);
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
         if(m_pMD->GetArrayFuncIndex() == ArrayMethodDesc::ARRAY_FUNC_ADDRESS)
         {
             firstIdx = 1;
@@ -1174,7 +1174,7 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
 
     ArgIterator argit(&msig);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     paos->m_cbretpop = argit.CbStackPop();
 #endif
 
