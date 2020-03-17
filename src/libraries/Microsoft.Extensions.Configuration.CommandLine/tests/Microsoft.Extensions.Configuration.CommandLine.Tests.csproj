@@ -27,11 +27,4 @@
     <ReferenceFromRuntime Include="Microsoft.Extensions.Configuration.CommandLine" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Configuration.Abstractions" />
-    <Reference Include="Microsoft.Extensions.Configuration.CommandLine" />
-    <Reference Include="Microsoft.Extensions.Configuration" />
-    <Reference Include="Microsoft.Extensions.Primitives" />
-  </ItemGroup>
-
 </Project>
