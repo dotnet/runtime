@@ -5,8 +5,4 @@
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Reference Include="Microsoft.Extensions.FileSystemGlobbing" />
-  </ItemGroup>
-
 </Project>

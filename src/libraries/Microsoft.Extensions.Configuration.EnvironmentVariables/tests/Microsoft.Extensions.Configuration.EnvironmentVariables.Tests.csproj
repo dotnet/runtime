@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="*.cs" />
     <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs">
       <Link>Common\ConfigurationProviderTestBase.cs</Link>
     </Compile>
@@ -18,8 +18,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <DefaultReferenceExclusions Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
     <ReferenceFromRuntime Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
   </ItemGroup>
   

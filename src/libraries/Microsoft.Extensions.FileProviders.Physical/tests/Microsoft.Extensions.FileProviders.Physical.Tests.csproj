@@ -16,12 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Moq" Version="$(MoqVersion)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <DefaultReferenceExclusions Include="Microsoft.Extensions.FileProviders.Physical" />
     <ReferenceFromRuntime Include="Microsoft.Extensions.FileProviders.Physical" />
   </ItemGroup>
 
