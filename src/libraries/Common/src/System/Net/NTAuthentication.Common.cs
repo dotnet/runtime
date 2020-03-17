@@ -28,7 +28,7 @@ namespace System.Net
         private string? _protocolName;
         private string? _clientSpecifiedSpn;
 
-        private ChannelBinding _channelBinding = null!;
+        private ChannelBinding? _channelBinding = null;
 
         // If set, no more calls should be made.
         internal bool IsCompleted => _isCompleted;
@@ -92,12 +92,12 @@ namespace System.Net
         //
         // This overload does not attempt to impersonate because the caller either did it already or the original thread context is still preserved.
         //
-        internal NTAuthentication(bool isServer, string package, NetworkCredential credential, string spn, ContextFlagsPal requestedContextFlags, ChannelBinding channelBinding)
+        internal NTAuthentication(bool isServer, string package, NetworkCredential credential, string spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
         {
             Initialize(isServer, package, credential, spn, requestedContextFlags, channelBinding);
         }
 
-        private void Initialize(bool isServer, string package, NetworkCredential credential, string spn, ContextFlagsPal requestedContextFlags, ChannelBinding channelBinding)
+        private void Initialize(bool isServer, string package, NetworkCredential credential, string spn, ContextFlagsPal requestedContextFlags, ChannelBinding? channelBinding)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, package, spn, requestedContextFlags);
 
@@ -167,7 +167,7 @@ namespace System.Net
             return NegotiateStreamPal.MakeSignature(_securityContext!, buffer, offset, count, ref output);
         }
 
-        internal string? GetOutgoingBlob(string incomingBlob)
+        internal string? GetOutgoingBlob(string? incomingBlob)
         {
             byte[]? decodedIncomingBlob = null;
             if (incomingBlob != null && incomingBlob.Length > 0)

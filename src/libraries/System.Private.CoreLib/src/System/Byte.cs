@@ -166,7 +166,7 @@ namespace System
 
         public override string ToString()
         {
-            return Number.UInt32ToDecStr(m_value, -1);
+            return Number.UInt32ToDecStr(m_value);
         }
 
         public string ToString(string? format)
@@ -176,7 +176,7 @@ namespace System
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatUInt32(m_value, null, provider);
+            return Number.UInt32ToDecStr(m_value);
         }
 
         public string ToString(string? format, IFormatProvider? provider)

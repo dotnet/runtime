@@ -936,9 +936,9 @@ namespace System
         [CLSCompliant(false)]
         public static explicit operator ulong(decimal value) => ToUInt64(value);
 
-        public static explicit operator float(decimal value) => ToSingle(value);
+        public static explicit operator float(decimal value) => DecCalc.VarR4FromDec(in value);
 
-        public static explicit operator double(decimal value) => ToDouble(value);
+        public static explicit operator double(decimal value) => DecCalc.VarR8FromDec(in value);
 
         public static decimal operator +(decimal d) => d;
 
@@ -1051,12 +1051,12 @@ namespace System
 
         float IConvertible.ToSingle(IFormatProvider? provider)
         {
-            return Convert.ToSingle(this);
+            return DecCalc.VarR4FromDec(in this);
         }
 
         double IConvertible.ToDouble(IFormatProvider? provider)
         {
-            return Convert.ToDouble(this);
+            return DecCalc.VarR8FromDec(in this);
         }
 
         decimal IConvertible.ToDecimal(IFormatProvider? provider)

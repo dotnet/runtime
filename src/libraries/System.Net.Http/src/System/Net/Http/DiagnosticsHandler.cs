@@ -45,7 +45,7 @@ namespace System.Net.Http
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
 
-            Activity activity = null;
+            Activity? activity = null;
 
             // if there is no listener, but propagation is enabled (with previous IsEnabled() check)
             // do not write any events just start/stop Activity and propagate Ids
@@ -92,13 +92,13 @@ namespace System.Net.Http
             }
 
             // If we are on at all, we propagate current activity information
-            Activity currentActivity = Activity.Current;
+            Activity? currentActivity = Activity.Current;
             if (currentActivity != null)
             {
                 InjectHeaders(currentActivity, request);
             }
 
-            Task<HttpResponseMessage> responseTask = null;
+            Task<HttpResponseMessage>? responseTask = null;
             try
             {
                 responseTask = base.SendAsync(request, cancellationToken);
@@ -164,14 +164,14 @@ namespace System.Net.Http
 
         private sealed class ActivityStopData
         {
-            internal ActivityStopData(HttpResponseMessage response, HttpRequestMessage request, TaskStatus requestTaskStatus)
+            internal ActivityStopData(HttpResponseMessage? response, HttpRequestMessage request, TaskStatus requestTaskStatus)
             {
                 Response = response;
                 Request = request;
                 RequestTaskStatus = requestTaskStatus;
             }
 
-            public HttpResponseMessage Response { get; }
+            public HttpResponseMessage? Response { get; }
             public HttpRequestMessage Request { get; }
             public TaskStatus RequestTaskStatus { get; }
 
@@ -210,7 +210,7 @@ namespace System.Net.Http
 
         private sealed class ResponseData
         {
-            internal ResponseData(HttpResponseMessage response, Guid loggingRequestId, long timestamp, TaskStatus requestTaskStatus)
+            internal ResponseData(HttpResponseMessage? response, Guid loggingRequestId, long timestamp, TaskStatus requestTaskStatus)
             {
                 Response = response;
                 LoggingRequestId = loggingRequestId;
@@ -218,7 +218,7 @@ namespace System.Net.Http
                 RequestTaskStatus = requestTaskStatus;
             }
 
-            public HttpResponseMessage Response { get; }
+            public HttpResponseMessage? Response { get; }
             public Guid LoggingRequestId { get; }
             public long Timestamp { get; }
             public TaskStatus RequestTaskStatus { get; }
@@ -240,7 +240,7 @@ namespace System.Net.Http
             }
 
             // AppContext switch wasn't used. Check the environment variable to determine which handler should be used.
-            string envVar = Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName);
+            string? envVar = Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName);
             if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
             {
                 // Suppress Activity propagation.
@@ -273,14 +273,14 @@ namespace System.Net.Http
             }
 
             // we expect baggage to be empty or contain a few items
-            using (IEnumerator<KeyValuePair<string, string>> e = currentActivity.Baggage.GetEnumerator())
+            using (IEnumerator<KeyValuePair<string, string?>> e = currentActivity.Baggage.GetEnumerator())
             {
                 if (e.MoveNext())
                 {
                     var baggage = new List<string>();
                     do
                     {
-                        KeyValuePair<string, string> item = e.Current;
+                        KeyValuePair<string, string?> item = e.Current;
                         baggage.Add(new NameValueHeaderValue(WebUtility.UrlEncode(item.Key), WebUtility.UrlEncode(item.Value)).ToString());
                     }
                     while (e.MoveNext());

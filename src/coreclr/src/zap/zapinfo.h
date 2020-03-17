@@ -701,6 +701,10 @@ public:
 
     void getGSCookie(GSCookie * pCookieVal,
                      GSCookie** ppCookieVal);
+
+    void setPatchpointInfo(PatchpointInfo * patchpointInfo);
+    PatchpointInfo * getOSRInfo(unsigned * ilOffset);
+
     // ICorErrorInfo
 
     HRESULT GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers);

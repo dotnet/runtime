@@ -526,18 +526,13 @@ static inline BOOL CheckSuspended(Thread *pThread)
     _ASSERTE(CheckPointer(pThread));
 
 #ifndef DISABLE_THREADSUSPEND
-    // Only perform this test if we're allowed to call back into the host.
-    // Thread::SuspendThread contains several potential calls into the host.
-    if (CanThisThreadCallIntoHost())
+    DWORD dwSuspendCount;
+    Thread::SuspendThreadResult str = pThread->SuspendThread(FALSE, &dwSuspendCount);
+    forceStackA = &dwSuspendCount;
+    if (str == Thread::STR_Success)
     {
-        DWORD dwSuspendCount;
-        Thread::SuspendThreadResult str = pThread->SuspendThread(FALSE, &dwSuspendCount);
-        forceStackA = &dwSuspendCount;
-        if (str == Thread::STR_Success)
-        {
-            pThread->ResumeThread();
-            return dwSuspendCount >= 1;
-        }
+        pThread->ResumeThread();
+        return dwSuspendCount >= 1;
     }
 #endif // !DISABLE_THREADSUSPEND
     return TRUE;
@@ -2255,7 +2250,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
         // we're doing managed/unmanaged debugging. Calling SetDebugCantStop(true) on the current thread helps us
         // remember that.
         if (pCurThread)
-            pCurThread->SetDebugCantStop(true);
+            IncCantStopCount();
 
         // This is used to avoid thread starvation if non-GC threads are competing for
         // the thread store lock when there is a real GC-thread waiting to get in.
@@ -2340,7 +2335,7 @@ void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSP
 
         // We're out of the critical area for managed/unmanaged debugging.
         if (!bThreadDestroyed && pCurThread)
-            pCurThread->SetDebugCantStop(false);
+            DecCantStopCount();
     }
 #ifdef _DEBUG
     else
@@ -6652,7 +6647,7 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         // Mark that we are performing a stackwalker like operation on the current thread.
         // This is necessary to allow the signature parsing functions to work without triggering any loads.
-        ClrFlsValueSwitch threadStackWalking(TlsIdx_StackWalkerWalkingThread, pThread);
+        StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
         void *pvHijackAddr = GetHijackAddr(pThread, &codeInfo);

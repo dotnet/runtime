@@ -8481,10 +8481,37 @@ DONE:
     if ((tailCallFlags != 0) && canTailCall && gtIsRecursiveCall(methHnd))
     {
         assert(verCurrentState.esStackDepth == 0);
+        BasicBlock* loopHead = nullptr;
+        if (opts.IsOSR())
+        {
+            // We might not have been planning on importing the method
+            // entry block, but now we must.
+
+            // We should have remembered the real method entry block.
+            assert(fgEntryBB != nullptr);
+
+            JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
+                    fgEntryBB->bbNum);
+            impImportBlockPending(fgEntryBB);
+
+            // Note there is no explicit flow to this block yet,
+            // make sure it stays around until we actually try
+            // the optimization.
+            fgEntryBB->bbFlags |= BBF_DONT_REMOVE;
+
+            loopHead = fgEntryBB;
+        }
+        else
+        {
+            // For normal jitting we'll branch back to the firstBB; this
+            // should already be imported.
+            loopHead = fgFirstBB;
+        }
+
         JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
                 " as having a backward branch.\n",
-                fgFirstBB->bbNum, compCurBB->bbNum);
-        fgMarkBackwardJump(fgFirstBB, compCurBB);
+                loopHead->bbNum, compCurBB->bbNum);
+        fgMarkBackwardJump(loopHead, compCurBB);
     }
 
     // Note: we assume that small return types are already normalized by the managed callee
@@ -10503,6 +10530,35 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     /* Get the tree list started */
 
     impBeginTreeList();
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+    // Are there any places in the method where we might add a patchpoint?
+    if (compHasBackwardJump)
+    {
+        // Are patchpoints enabled?
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
+        {
+            // We don't inline at Tier0, if we do, we may need rethink our approach.
+            // Could probably support inlines that don't introduce flow.
+            assert(!compIsForInlining());
+
+            // Is the start of this block a suitable patchpoint?
+            // Current strategy is blocks that are stack-empty and backwards branch targets
+            if (block->bbFlags & BBF_BACKWARD_JUMP_TARGET && (verCurrentState.esStackDepth == 0))
+            {
+                block->bbFlags |= BBF_PATCHPOINT;
+                setMethodHasPatchpoint();
+            }
+        }
+    }
+    else
+    {
+        // Should not see backward branch targets w/o backwards branches
+        assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
+    }
+
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
     /* Walk the opcodes that comprise the basic block */
 
@@ -16728,10 +16784,13 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
                     assert(HBtab->HasFaultHandler());
                 }
             }
+        }
 
-            /* Recursively process the handler block */
-            BasicBlock* hndBegBB = HBtab->ebdHndBeg;
+        // Recursively process the handler block, if we haven't already done so.
+        BasicBlock* hndBegBB = HBtab->ebdHndBeg;
 
+        if (((hndBegBB->bbFlags & BBF_IMPORTED) == 0) && (impGetPendingBlockMember(hndBegBB) == 0))
+        {
             //  Construct the proper verification stack state
             //   either empty or one that contains just
             //   the Exception Object that we are dealing with
@@ -16767,18 +16826,22 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
             // Queue up the handler for importing
             //
             impImportBlockPending(hndBegBB);
+        }
 
-            if (HBtab->HasFilter())
+        // Process the filter block, if we haven't already done so.
+        if (HBtab->HasFilter())
+        {
+            /* @VERIFICATION : Ideally the end of filter state should get
+               propagated to the catch handler, this is an incompleteness,
+               but is not a security/compliance issue, since the only
+               interesting state is the 'thisInit' state.
+            */
+
+            BasicBlock* filterBB = HBtab->ebdFilter;
+
+            if (((filterBB->bbFlags & BBF_IMPORTED) == 0) && (impGetPendingBlockMember(filterBB) == 0))
             {
-                /* @VERIFICATION : Ideally the end of filter state should get
-                   propagated to the catch handler, this is an incompleteness,
-                   but is not a security/compliance issue, since the only
-                   interesting state is the 'thisInit' state.
-                   */
-
                 verCurrentState.esStackDepth = 0;
-
-                BasicBlock* filterBB = HBtab->ebdFilter;
 
                 // push catch arg the stack, spill to a temp if necessary
                 // Note: can update HBtab->ebdFilter!
@@ -16788,7 +16851,9 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
                 impImportBlockPending(filterBB);
             }
         }
-        else if (verTrackObjCtorInitState && HBtab->HasFaultHandler())
+
+        // This seems redundant ....??
+        if (verTrackObjCtorInitState && HBtab->HasFaultHandler())
         {
             /* Recursively process the handler block */
 
@@ -17855,7 +17920,7 @@ void Compiler::impSpillCliqueSetMember(SpillCliqueDir predOrSucc, BasicBlock* bl
  *  basic flowgraph has already been constructed and is passed in.
  */
 
-void Compiler::impImport(BasicBlock* method)
+void Compiler::impImport()
 {
 #ifdef DEBUG
     if (verbose)
@@ -17917,21 +17982,45 @@ void Compiler::impImport(BasicBlock* method)
 
     impPendingList = impPendingFree = nullptr;
 
-    /* Add the entry-point to the worker-list */
+    // Skip leading internal blocks.
+    // These can arise from needing a leading scratch BB, from EH normalization, and from OSR entry redirects.
+    //
+    // We expect a linear flow to the first non-internal block. But not necessarily straght-line flow.
+    BasicBlock* entryBlock = fgFirstBB;
 
-    // Skip leading internal blocks. There can be one as a leading scratch BB, and more
-    // from EH normalization.
-    // NOTE: It might be possible to always just put fgFirstBB on the pending list, and let everything else just fall
-    // out.
-    for (; method->bbFlags & BBF_INTERNAL; method = method->bbNext)
+    while (entryBlock->bbFlags & BBF_INTERNAL)
     {
-        // Treat these as imported.
-        assert(method->bbJumpKind == BBJ_NONE); // We assume all the leading ones are fallthrough.
-        JITDUMP("Marking leading BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", method->bbNum);
-        method->bbFlags |= BBF_IMPORTED;
+        JITDUMP("Marking leading BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", entryBlock->bbNum);
+        entryBlock->bbFlags |= BBF_IMPORTED;
+
+        if (entryBlock->bbJumpKind == BBJ_NONE)
+        {
+            entryBlock = entryBlock->bbNext;
+        }
+        else if (entryBlock->bbJumpKind == BBJ_ALWAYS)
+        {
+            // Only expected for OSR
+            assert(opts.IsOSR());
+            entryBlock = entryBlock->bbJumpDest;
+        }
+        else
+        {
+            assert(!"unexpected bbJumpKind in entry sequence");
+        }
     }
 
-    impImportBlockPending(method);
+    // Note for OSR we'd like to be able to verify this block must be
+    // stack empty, but won't know that until we've imported...so instead
+    // we'll BADCODE out if we mess up.
+    //
+    // (the concern here is that the runtime asks us to OSR a
+    // different IL version than the one that matched the method that
+    // triggered OSR).  This should not happen but I might have the
+    // IL versioning stuff wrong.
+    //
+    // TODO: we also currently expect this block to be a join point,
+    // which we should verify over when we find jump targets.
+    impImportBlockPending(entryBlock);
 
     /* Import blocks in the worker-list until there are no more */
 

@@ -5110,7 +5110,7 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
 // Updated to be in its own code segment named CLR_UEF_SECTION_NAME to prevent
 // "VirtualProtect" calls from affecting its pages and thus, its
 // invocation. For details, see the comment within the implementation of
-// CExecutionEngine::ClrVirtualProtect.
+// ClrVirtualProtect.
 //
 // Parameters
 //   pExceptionInfo -- information about the exception
@@ -7359,7 +7359,7 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
             CONTRACT_VIOLATION(TakesLockViolation);
 
             fExternalException = (!ExecutionManager::IsManagedCode(GetIP(pExceptionInfo->ContextRecord)) &&
-                                  !IsIPInModule(g_pMSCorEE, GetIP(pExceptionInfo->ContextRecord)));
+                                  !IsIPInModule(g_hThisInst, GetIP(pExceptionInfo->ContextRecord)));
         }
 
         if (fExternalException)
@@ -7526,7 +7526,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
             if ((!fAVisOk) && !(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
             {
                 PCODE ip = (PCODE)GetIP(pContext);
-                if (IsIPInModule(g_pMSCorEE, ip) || IsIPInModule(GCHeapUtilities::GetGCModule(), ip))
+                if (IsIPInModule(g_hThisInst, ip) || IsIPInModule(GCHeapUtilities::GetGCModule(), ip))
                 {
                     CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
 
@@ -7979,6 +7979,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     //
     // 1) We have a valid Thread object (implies exception on managed thread)
     // 2) Not a valid Thread object but the IP is in the execution engine (implies native thread within EE faulted)
+    // 3) The exception occurred in a GC marked location when no thread exists (i.e. reverse P/Invoke with NativeCallableAttribute).
     if (pThread || fExceptionInEE)
     {
         if (!bIsGCMarker)
@@ -8065,6 +8066,11 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         }
 #endif // FEATURE_EH_FUNCLETS
 
+    }
+    else if (bIsGCMarker)
+    {
+        _ASSERTE(pThread == NULL);
+        result = EXCEPTION_CONTINUE_EXECUTION;
     }
 
     SetLastError(dwLastError);
@@ -8184,6 +8190,33 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     RaiseTheExceptionInternalOnly(orThrowable, FALSE);
 }
 
+thread_local DWORD t_dwCurrentExceptionCode;
+thread_local PEXCEPTION_RECORD t_pCurrentExceptionRecord;
+thread_local PCONTEXT t_pCurrentExceptionContext;
+
+void GetCurrentExceptionPointers(PEXCEPTION_POINTERS pExceptionInfo DEBUG_ARG(bool checkExceptionRecordLocation))
+{
+    WRAPPER_NO_CONTRACT;
+
+    pExceptionInfo->ContextRecord = t_pCurrentExceptionContext;
+    pExceptionInfo->ExceptionRecord = t_pCurrentExceptionRecord;
+
+#ifdef _DEBUG
+    if (pExceptionInfo->ExceptionRecord != NULL && checkExceptionRecordLocation)
+    {
+        _ASSERTE((PVOID)(pExceptionInfo->ExceptionRecord) > (PVOID)(&checkExceptionRecordLocation));
+    }
+#endif
+}
+
+DWORD GetCurrentExceptionCode()
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC_HOST_ONLY;
+
+    return t_dwCurrentExceptionCode;
+}
+
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PCONTEXT pContext)
 {
     CONTRACTL
@@ -8202,51 +8235,47 @@ void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PCONTEXT pContext)
         return;
     }
 
-    if (CExecutionEngine::CheckThreadStateNoCreate(TlsIdx_PEXCEPTION_RECORD))
+    BOOL fSave = TRUE;
+    if (pRecord->ExceptionCode != STATUS_STACK_OVERFLOW)
     {
-        BOOL fSave = TRUE;
-        if (pRecord->ExceptionCode != STATUS_STACK_OVERFLOW)
+        DWORD dwLastExceptionCode = t_dwCurrentExceptionCode;
+        if (dwLastExceptionCode == STATUS_STACK_OVERFLOW)
         {
-            DWORD dwLastExceptionCode = (DWORD)(SIZE_T) (ClrFlsGetValue(TlsIdx_EXCEPTION_CODE));
-            if (dwLastExceptionCode == STATUS_STACK_OVERFLOW)
-            {
-                PEXCEPTION_RECORD lastRecord =
-                    static_cast<PEXCEPTION_RECORD> (ClrFlsGetValue(TlsIdx_PEXCEPTION_RECORD));
+            PEXCEPTION_RECORD lastRecord = t_pCurrentExceptionRecord;
 
-                // We are trying to see if C++ is attempting a rethrow of a SO exception. If so,
-                // we want to prevent updating the exception details in the TLS. This is a workaround,
-                // as explained below.
-                if (pRecord->ExceptionCode == EXCEPTION_MSVC)
+            // We are trying to see if C++ is attempting a rethrow of a SO exception. If so,
+            // we want to prevent updating the exception details in the TLS. This is a workaround,
+            // as explained below.
+            if (pRecord->ExceptionCode == EXCEPTION_MSVC)
+            {
+                // This is a workaround.
+                // When C++ rethrows, C++ internally gets rid of the new exception record after
+                // unwinding stack, and present the original exception record to the thread.
+                // When we get VC's support to obtain exception record in try/catch, we will replace
+                // this code.
+                if (pRecord < lastRecord)
                 {
-                    // This is a workaround.
-                    // When C++ rethrows, C++ internally gets rid of the new exception record after
-                    // unwinding stack, and present the original exception record to the thread.
-                    // When we get VC's support to obtain exception record in try/catch, we will replace
-                    // this code.
-                    if (pRecord < lastRecord)
+                    // For the C++ rethrow workaround, ensure that the last exception record is still valid and as we expect it to be.
+                    //
+                    // Its possible that we are still below the address of last exception record
+                    // but since the execution stack could have changed, simply comparing its address
+                    // with the address of the current exception record may not be enough.
+                    //
+                    // Thus, ensure that its still valid and holds the exception code we expect it to
+                    // have (i.e. value in dwLastExceptionCode).
+                    if ((lastRecord != NULL) && (lastRecord->ExceptionCode == dwLastExceptionCode))
                     {
-                        // For the C++ rethrow workaround, ensure that the last exception record is still valid and as we expect it to be.
-                        //
-                        // Its possible that we are still below the address of last exception record
-                        // but since the execution stack could have changed, simply comparing its address
-                        // with the address of the current exception record may not be enough.
-                        //
-                        // Thus, ensure that its still valid and holds the exception code we expect it to
-                        // have (i.e. value in dwLastExceptionCode).
-                        if ((lastRecord != NULL) && (lastRecord->ExceptionCode == dwLastExceptionCode))
-                        {
-                            fSave = FALSE;
-                        }
+                        fSave = FALSE;
                     }
                 }
             }
         }
-        if (fSave)
-        {
-            ClrFlsSetValue(TlsIdx_EXCEPTION_CODE, (void*)(size_t)(pRecord->ExceptionCode));
-            ClrFlsSetValue(TlsIdx_PEXCEPTION_RECORD, pRecord);
-            ClrFlsSetValue(TlsIdx_PCONTEXT, pContext);
-        }
+    }
+    if (fSave)
+    {
+        t_dwCurrentExceptionCode = pRecord->ExceptionCode;
+        t_pCurrentExceptionRecord = pRecord;
+        t_pCurrentExceptionContext = pContext;
     }
 }
 

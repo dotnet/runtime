@@ -21,8 +21,8 @@ It's also part of the error when an SDK command is executed and there's no SDK i
 ```
 
 ## Install prerequisites link
-> https://go.microsoft.com/fwlink/?linkid=798306  for Windows  
-> https://go.microsoft.com/fwlink/?linkid=2063366 for OSX  
+> https://go.microsoft.com/fwlink/?linkid=798306  for Windows
+> https://go.microsoft.com/fwlink/?linkid=2063366 for OSX
 > https://go.microsoft.com/fwlink/?linkid=2063370 for Linux
 
 This URL is part of the error message when the host fails to load `hostfxr`.
@@ -45,7 +45,7 @@ This will happen when the host can't find `hostfxr`, typically when there's no .
 
 In this case the URL will contain these parameters:
 * `missing_runtime=true` - this marks the case of missing runtime.
-* `apphost_version=<Version>` - the version of the `apphost` which was used to create the executable for the app. For example `apphost_version=5.0.0-preview.2.20155.1`. Currently this is only included if the host is a GUI app - see dotnet/runtime#33569 to include it always.
+* `apphost_version=<Version>` - the version of the `apphost` which was used to create the executable for the app. For example `apphost_version=5.0.0-preview.2.20155.1`. This is included in all cases in 5.0 and above and it may be included in 3.1 only for GUI apps.
 
 In this case the `apphost_version` parameter could be used by the website to determine the major version of the runtime to offer (using latest minor/patch). Also if there's a `gui=true` we should offer the `WindowsDesktop` runtime installer.
 

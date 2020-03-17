@@ -7,8 +7,6 @@ using System.Runtime.Loader;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-using Console = Internal.Console;
-
 public class ALC : AssemblyLoadContext
 {
     protected override Assembly Load(AssemblyName assemblyName)
