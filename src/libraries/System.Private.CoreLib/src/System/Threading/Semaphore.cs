@@ -49,8 +49,10 @@ namespace System.Threading
             }
         }
 
+#pragma warning disable CS8762 // https://github.com/dotnet/roslyn/issues/42492
         public static bool TryOpenExisting(string name, [NotNullWhen(true)] out Semaphore? result) =>
             OpenExistingWorker(name, out result) == OpenExistingResult.Success;
+#pragma warning restore CS8762
 
         public int Release() => ReleaseCore(1);
 

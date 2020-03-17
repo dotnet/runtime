@@ -32,8 +32,9 @@ namespace System.Text.Json
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
             }
-
+#pragma warning disable CS8762 // https://github.com/dotnet/roslyn/issues/42492
             return result;
+#pragma warning restore CS8762
         }
 
         // Reject any invalid UTF-8 data rather than silently replacing.

@@ -122,7 +122,9 @@ namespace Internal.Cryptography.Pal
                     return false;
                 }
 
+#pragma warning disable CS8762 // https://github.com/dotnet/roslyn/issues/42492
                 return TryReadPkcs7(pkcs7, single, out certPal, out certPals);
+#pragma warning restore CS8762
             }
         }
 
@@ -274,7 +276,7 @@ namespace Internal.Cryptography.Pal
             bool single,
             out ICertificatePal? readPal,
             out List<ICertificatePal>? readCerts,
-            [NotNullWhen(false)] out Exception? openSslException)
+            out Exception? openSslException)
         {
             // DER-PKCS12
             OpenSslPkcs12Reader? pfx;

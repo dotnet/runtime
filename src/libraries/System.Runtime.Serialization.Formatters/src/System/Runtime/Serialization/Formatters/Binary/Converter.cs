@@ -223,8 +223,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 typeInformation = null;
                 bIsPrimitive = false;
             }
-
+#pragma warning disable CS8762 // https://github.com/dotnet/roslyn/issues/42492
             return bIsPrimitive;
+#pragma warning restore CS8762
         }
 
         private static void InitValueA()

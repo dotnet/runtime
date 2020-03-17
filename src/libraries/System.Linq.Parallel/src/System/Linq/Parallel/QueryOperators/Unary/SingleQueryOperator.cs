@@ -181,7 +181,9 @@ namespace System.Linq.Parallel
                 }
                 _alreadySearched = true;
 
+#pragma warning disable CS8762 // We intentionally fake out the caller if we've already searched by returning true when setting to default.
                 return found;
+#pragma warning restore CS8762
             }
 
             protected override void Dispose(bool disposing)

@@ -44,9 +44,9 @@ namespace System.Threading
             }
         }
 
-        public static bool TryOpenExisting(string name, [NotNullWhen(true)] out EventWaitHandle? result)
-        {
-            return OpenExistingWorker(name, out result) == OpenExistingResult.Success;
-        }
+#pragma warning disable CS8762 // https://github.com/dotnet/roslyn/issues/42492
+        public static bool TryOpenExisting(string name, [NotNullWhen(true)] out EventWaitHandle? result) =>
+            OpenExistingWorker(name, out result) == OpenExistingResult.Success;
+#pragma warning restore CS8762
     }
 }
