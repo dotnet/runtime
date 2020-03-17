@@ -213,6 +213,11 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException(nameof(access));
             }
 
+            if (access == MemoryMappedFileAccess.Write)
+            {
+                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
+            }
+
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
                 throw new ArgumentOutOfRangeException(nameof(inheritability));

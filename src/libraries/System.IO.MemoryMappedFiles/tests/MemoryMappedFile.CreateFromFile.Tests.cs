@@ -893,7 +893,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         [ConditionalTheory]
         [InlineData(MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWrite)]
-        [InlineData(MemoryMappedFileAccess.Write)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void OpenCharacterDeviceAsStream(MemoryMappedFileAccess access)
         {

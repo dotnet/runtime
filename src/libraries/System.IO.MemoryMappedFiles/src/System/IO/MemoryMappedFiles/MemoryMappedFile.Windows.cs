@@ -30,11 +30,6 @@ namespace System.IO.MemoryMappedFiles
                 {
                     throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
                 }
-
-                if (access == MemoryMappedFileAccess.Write)
-                {
-                    throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
-                }
             }
 
             SafeMemoryMappedFileHandle handle = fileHandle != null ?
