@@ -34,11 +34,8 @@ get_bundle_path (void)
     if (bundle_path)
         return bundle_path;
 
-    NSBundle *main_bundle = [NSBundle mainBundle];
-    NSString *path;
-    char *result;
-
-    path = [main_bundle bundlePath];
+    NSBundle* main_bundle = [NSBundle mainBundle];
+    NSString* path = [main_bundle bundlePath];
     bundle_path = strdup ([path UTF8String]);
 
     return bundle_path;
@@ -253,21 +250,15 @@ void mono_ios_setup_execution_mode (void)
 void
 mono_ios_runtime_init (void)
 {
-    NSBundle *main_bundle = [NSBundle mainBundle];
-    NSString *path;
-    char *result;
-    int res, nargs, config_nargs;
-    char *executable;
-
     // for now, only Invariant Mode is supported (FIXME: integrate ICU)
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
 
     stdout_log = os_log_create ("com.dotnet.mono", "stdout");
 
     bool wait_for_debugger = FALSE;
-    executable = "Program.dll";
+    char* executable = "Program.dll";
 
-    const char *bundle = get_bundle_path ();
+    const char* bundle = get_bundle_path ();
     chdir (bundle);
 
     register_dllmap ();
@@ -296,7 +287,7 @@ mono_ios_runtime_init (void)
     assert (assembly);
     os_log_info (OS_LOG_DEFAULT, "Executable: %{public}s", executable);
 
-    res = mono_jit_exec (mono_domain_get (), assembly, 1, &executable);
+    int res = mono_jit_exec (mono_domain_get (), assembly, 1, &executable);
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
 }

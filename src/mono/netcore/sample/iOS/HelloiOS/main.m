@@ -20,7 +20,7 @@
 @end
 
 UILabel *label;
-void (*clickHandlerPtr)();
+void (*clickHandlerPtr)(void);
 
 @implementation ViewController
 
