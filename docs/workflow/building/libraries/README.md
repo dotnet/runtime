@@ -8,23 +8,22 @@ Here is one example of a daily workflow for a developer working mainly on the li
 :: From root:
 git clean -xdf
 git pull upstream master & git push origin master
-build -subsetCategory coreclr -c Release
-build -subsetCategory libraries -runtimeConfiguration release
-
-:: The above you may only perform once in a day, or when
-:: you pull down significant new changes.
+:: Build Debug libraries on top of Release runtime:
+build -subsetCategory coreclr-libraries -runtimeConfiguration Release
+:: The above you may only perform once in a day, or when you pull down significant new changes.
 
 :: Switch to working on a given library (RegularExpressions in this case)
 cd src\libraries\System.Text.RegularExpressions
 
 :: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
+build -vs System.Text.RegularExpressions
 
 :: Change to test directory
 cd tests
 
 :: Then inner loop build / test
 :: (If using Visual Studio, you might run tests inside it instead)
-pushd ..\src & dotnet build & popd & dotnet build /t:buildandtest
+pushd ..\src & dotnet build & popd & dotnet build /t:test
 ```
 
 The instructions for Linux and macOS are essentially the same:
@@ -33,11 +32,9 @@ The instructions for Linux and macOS are essentially the same:
 # From root:
 git clean -xdf
 git pull upstream master & git push origin master
-./build.sh -subsetcategory coreclr -c Release
-./build.sh -subsetcategory libraries -runtimeconfiguration Release
-
-# The above you may only perform once in a day, or when
-# you pull down significant new changes.
+# Build Debug libraries on top of Release runtime:
+./build.sh -subsetCategory coreclr-libraries -runtimeconfiguration Release
+# The above you may only perform once in a day, or when you pull down significant new changes.
 
 # Switch to working on a given library (RegularExpressions in this case)
 cd src/libraries/System.Text.RegularExpressions
@@ -46,7 +43,7 @@ cd src/libraries/System.Text.RegularExpressions
 cd tests
 
 # Then inner loop build / test:
-pushd ../src & dotnet build & popd & dotnet build /t:buildandtest
+pushd ../src & dotnet build & popd & dotnet build /t:test
 ```
 
 The steps above may be all you need to know to make a change. Want more details about what this means? Read on.
@@ -59,12 +56,12 @@ These example commands will build a release CoreCLR (and CoreLib), debug librari
 
 For Linux:
 ```bash
-./build.sh -runtimeconfiguration Release
+./build.sh -runtimeConfiguration Release
 ```
 
 For Windows:
 ```bat
-./build.cmd -runtimeconfiguration Release
+./build.cmd -runtimeConfiguration Release
 ```
 
 Detailed information about building and testing runtimes and the libraries is in the documents linked below.
@@ -75,18 +72,18 @@ The above commands will give you libraries in "debug" configuration (the default
 
 The libraries build has two logical components, the native build which produces the "shims" (which provide a stable interface between the OS and managed code) and the managed build which produces the MSIL code and NuGet packages that make up Libraries. The commands above will build both.
 
-The build settings(TargetFramework, OSGroup, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
+The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
 - `-framework|-f` identifies the target framework for the build. Possible values include `netcoreapp5.0` (currently the latest .NET Core version) or `net472`. (msbuild property `BuildTargetFramework`)
-- `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `OSGroup`)
+- `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `ArchGroup`)
 
 For more details on the build settings see [project-guidelines](../../../coding-guidelines/project-guidelines.md#build-pivots).
 
-If you invoke the build script without any actions, the default action chain `-restore -build` is executed. You can chain multiple actions together (e.g., `-restore -build -buildtests`) and they will execute in the appropriate order. Note that if you specify actions like `-build` explicitly, you likely need to explicitly add `-restore` as well.
+If you invoke the `build` script without any actions, the default action chain `-restore -build` is executed. You can chain multiple actions together (e.g., `-restore -build -buildtests`) and they will execute in the appropriate order. Note that if you specify actions like `-build` explicitly, you likely need to explicitly add `-restore` as well.
 
-By default build only builds the product libraries and none of the tests. If you want to build the tests you can add the flag `-buildtests`. If you want to run the tests you can add the flag `-test`. To build and run the tests combine both arguments: `-buildtests -test`. To specify just the libraries, use `-subcategory libraries`.
+By default the `build` script only builds the product libraries and none of the tests. If you want to build the tests you can add the flag `-buildtests`. If you want to run the tests you can add the flag `-test`. To build and run the tests combine both arguments: `-buildtests -test`. To specify just the libraries, use `-subcategory libraries`.
 
 **Examples**
 - Building in release mode for platform x64 (restore and build are implicit here as no actions are passed in)
@@ -128,7 +125,7 @@ The libraries build contains some native code. This includes shims over libc, op
 ./src/libraries/Native/build-native.sh debug x64
 ```
 
-- The following example shows how you would do an arm cross-compile build.
+- The following example shows how you would do an arm cross-compile build
 ```bash
 ./src/libraries/Native/build-native.sh debug arm cross verbose
 ```
@@ -137,7 +134,7 @@ For Windows, replace `build-native.sh` with `build-native.cmd`.
 
 ## Building individual libraries
 
-Similar to building the entire repo with `build.cmd` or `build.sh` in the root you can build projects based on our directory structure by passing in the directory. We also support shortcuts for libraries so you can omit the root src folder from the path. When given a directory we will build all projects that we find recursively under that directory. Some examples may help here.
+Similar to building the entire repo with `build.cmd` or `build.sh` in the root you can build projects based on our directory structure by passing in the directory. We also support shortcuts for libraries so you can omit the root `src` folder from the path. When given a directory we will build all projects that we find recursively under that directory. Some examples may help here.
 
 **Examples**
 
@@ -147,7 +144,7 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
  ./build.sh -subsetCategory libraries src/libraries/System.Collections
 ```
 
-- Build just the tests for a library project.
+- Build just the tests for a library project
 ```bash
  ./build.sh -subsetCategory libraries src/libraries/System.Collections/tests
 ```
@@ -159,16 +156,16 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 
 As `dotnet build` works on both Unix and Windows and calls the restore target implicitly, we will use it throughout this guide.
 
-Under the src directory is a set of directories, each of which represents a particular assembly in Libraries. See Library Project Guidelines section under [project-guidelines](../../../coding-guidelines/project-guidelines.md) for more details about the structure.
+Under the `src` directory is a set of directories, each of which represents a particular assembly in Libraries. See Library Project Guidelines section under [project-guidelines](../../../coding-guidelines/project-guidelines.md) for more details about the structure.
 
-For example the src\libraries\System.Diagnostics.DiagnosticSource directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly.
+For example the `src\libraries\System.Diagnostics.DiagnosticSource` directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly.
 
-You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)]`.
+You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup)]`.
 
 You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to
 `src\libraries\System.Diagnostics.DiagnosticSource\tests` and typing `dotnet build`.
 
-Some libraries might also have a ref and/or a pkg directory and you can build them in a similar way by typing `dotnet build` in that directory.
+Some libraries might also have a `ref` and/or a `pkg` directory and you can build them in a similar way by typing `dotnet build` in that directory.
 
 For libraries that have multiple target frameworks the target frameworks will be listed in the `<TargetFrameworks>` property group. When building the csproj for a BuildTargetFramework the most compatible target framework in the list will be chosen and set for the build. For more information about `TargetFrameworks` see [project-guidelines](../../../coding-guidelines/project-guidelines.md).
 
@@ -176,12 +173,19 @@ For libraries that have multiple target frameworks the target frameworks will be
 
 - Build project for Linux for .NET Core
 ```
-dotnet build System.Net.NetworkInformation.csproj /p:OSGroup=Linux
+dotnet build System.Net.NetworkInformation.csproj /p:TargetOS=Linux
 ```
 
-- Build release version of library
+- Build Release version of library
 ```
 dotnet build -c Release System.Net.NetworkInformation.csproj
+```
+
+### Building for Mono
+By default the libraries will attempt to build using the CoreCLR version of `System.Private.CoreLib.dll`. In order to build against the Mono version you need to use the `/p:RuntimeFlavor=Mono` argument.
+
+```
+.\build.cmd -subsetCategory libraries /p:RuntimeFlavor=Mono
 ```
 
 ### Building all for other OSes

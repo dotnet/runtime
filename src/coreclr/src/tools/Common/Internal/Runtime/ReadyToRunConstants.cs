@@ -175,6 +175,8 @@ namespace Internal.ReadyToRunConstants
         PInvokeBegin                = 0x42,
         PInvokeEnd                  = 0x43,
         GCPoll                      = 0x44,
+        ReversePInvokeEnter         = 0x45,
+        ReversePInvokeExit          = 0x46,
 
         // Get string handle lazily
         GetString = 0x50,
@@ -295,10 +297,6 @@ namespace Internal.ReadyToRunConstants
         CheckCastInterface,
         CheckInstanceInterface,
 
-        // P/Invoke support
-        ReversePInvokeEnter,
-        ReversePInvokeExit,
-
         MonitorEnterStatic,
         MonitorExitStatic,
 
@@ -314,5 +312,6 @@ namespace Internal.ReadyToRunConstants
     public static class ReadyToRunRuntimeConstants
     {
         public const int READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11;
+        public const int READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits = 2;
     }
 }

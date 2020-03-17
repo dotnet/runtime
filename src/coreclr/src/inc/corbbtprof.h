@@ -147,7 +147,7 @@ enum TypeProfilingDataFlags
     ReadDispatchMap               = 7,  // 0x00080
     ReadDispatchTable             = 8,  // 0x00100
     ReadMethodTableWriteableData  = 9,  // 0x00200
-    ReadFieldMarshalers           = 10, // 0x00400
+//  ReadFieldMarshalers           = 10, // 0x00400  // obsolete
 //  WriteDispatchTable            = 11, // 0x00800  // obsolete
 //  WriteMethodTable              = 12, // 0x01000  // obsolete
     WriteMethodTableWriteableData = 13, // 0x02000

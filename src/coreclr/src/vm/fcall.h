@@ -567,22 +567,23 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
             FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_END;            \
             INDEBUG(__helperframe.SetAddrOfHaveCheckedRestoreState(&__haveCheckedRestoreState)); \
             DEBUG_ASSURE_NO_RETURN_BEGIN(HELPER_METHOD_FRAME);  \
-            INCONTRACT(FCallGCCanTrigger::Enter());             \
-            __helperframe.Push();                               \
-            MAKE_CURRENT_THREAD_AVAILABLE_EX(__helperframe.GetThread()); \
+            INCONTRACT(FCallGCCanTrigger::Enter());
 
 #define HELPER_METHOD_FRAME_BEGIN_EX(ret, helperFrame, gcpoll, allowGC)         \
         HELPER_METHOD_FRAME_BEGIN_EX_BODY(ret, helperFrame, gcpoll, allowGC)    \
             /* <TODO>TODO TURN THIS ON!!!   </TODO> */                    \
             /* gcpoll; */                                                       \
             INSTALL_MANAGED_EXCEPTION_DISPATCHER;                               \
+            __helperframe.Push();                                               \
+            MAKE_CURRENT_THREAD_AVAILABLE_EX(__helperframe.GetThread()); \
             INSTALL_UNWIND_AND_CONTINUE_HANDLER_FOR_HMF(&__helperframe);
 
 #define HELPER_METHOD_FRAME_BEGIN_EX_NOTHROW(ret, helperFrame, gcpoll, allowGC, probeFailExpr) \
         HELPER_METHOD_FRAME_BEGIN_EX_BODY(ret, helperFrame, gcpoll, allowGC)    \
+            __helperframe.Push();                                         \
+            MAKE_CURRENT_THREAD_AVAILABLE_EX(__helperframe.GetThread()); \
             /* <TODO>TODO TURN THIS ON!!!   </TODO> */                    \
             /* gcpoll; */
-
 
 // The while(__helperframe.RestoreState() needs a bit of explanation.
 // The issue is insuring that the same machine state (which registers saved)
@@ -596,7 +597,6 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 #define HELPER_METHOD_FRAME_END_EX_BODY(gcpoll,allowGC) \
             /* <TODO>TODO TURN THIS ON!!!   </TODO> */                \
             /* gcpoll; */                                                   \
-            __helperframe.Pop();                                            \
             DEBUG_ASSURE_NO_RETURN_END(HELPER_METHOD_FRAME);                \
             INCONTRACT(FCallGCCanTrigger::Leave(__FUNCTION__, __FILE__, __LINE__)); \
             FORLAZYMACHSTATE(alwaysZero =                                   \
@@ -607,10 +607,12 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 
 #define HELPER_METHOD_FRAME_END_EX(gcpoll,allowGC)                          \
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;                          \
+            __helperframe.Pop();                                            \
             UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;                         \
         HELPER_METHOD_FRAME_END_EX_BODY(gcpoll,allowGC);
 
 #define HELPER_METHOD_FRAME_END_EX_NOTHROW(gcpoll,allowGC)                  \
+            __helperframe.Pop();                                            \
         HELPER_METHOD_FRAME_END_EX_BODY(gcpoll,allowGC);
 
 #define HELPER_METHOD_FRAME_BEGIN_ATTRIB(attribs)                                       \

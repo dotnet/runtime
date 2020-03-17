@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.IO;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -127,7 +128,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             _registrationContext = ctx;
         }
 
-        internal static MsQuicApi Api { get; }
+        internal static MsQuicApi Api { get; } = null!;
 
         internal static bool IsQuicSupported { get; }
 
@@ -142,12 +143,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             //   error code mapping when creating exceptions.
 
             OperatingSystem ver = Environment.OSVersion;
-
-            if (ver.Platform == PlatformID.Win32NT && ver.Version < new Version(10, 0, 19041, 0))
-            {
-                IsQuicSupported = false;
-                return;
-            }
 
             // TODO: try to initialize TLS 1.3 in SslStream.
 
@@ -227,10 +222,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 buf);
         }
 
-        public async ValueTask<MsQuicSecurityConfig> CreateSecurityConfig(X509Certificate certificate, string certFilePath, string privateKeyFilePath)
+        public async ValueTask<MsQuicSecurityConfig?> CreateSecurityConfig(X509Certificate certificate, string? certFilePath, string? privateKeyFilePath)
         {
-            MsQuicSecurityConfig secConfig = null;
-            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            MsQuicSecurityConfig? secConfig = null;
+            var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
             uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
             uint createConfigStatus;
             IntPtr unmanagedAddr = IntPtr.Zero;
@@ -242,8 +237,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 {
                     fileParams = new MsQuicNativeMethods.CertFileParams
                     {
-                        CertificateFilePath = Marshal.StringToCoTaskMemUTF8(certFilePath),
-                        PrivateKeyFilePath = Marshal.StringToCoTaskMemUTF8(privateKeyFilePath)
+                        PrivateKeyFilePath = Marshal.StringToCoTaskMemUTF8(privateKeyFilePath),
+                        CertificateFilePath = Marshal.StringToCoTaskMemUTF8(certFilePath)
                     };
 
                     unmanagedAddr = Marshal.AllocHGlobal(Marshal.SizeOf(fileParams));
@@ -252,7 +247,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     createConfigStatus = SecConfigCreateDelegate(
                         _registrationContext,
                         (uint)QUIC_SEC_CONFIG_FLAG.CERT_FILE,
-                        certificate.Handle,
+                        unmanagedAddr,
                         null,
                         IntPtr.Zero,
                         SecCfgCreateCallbackHandler);

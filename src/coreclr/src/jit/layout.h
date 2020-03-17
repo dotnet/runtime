@@ -120,6 +120,42 @@ public:
         return m_size;
     }
 
+    //------------------------------------------------------------------------
+    // GetRegisterType: Determine register type for the layout.
+    //
+    // Return Value:
+    //    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+    //
+    var_types GetRegisterType() const
+    {
+        if (HasGCPtr())
+        {
+            return (GetSlotCount() == 1) ? GetGCPtrType(0) : TYP_UNDEF;
+        }
+
+        switch (m_size)
+        {
+            case 1:
+                return TYP_UBYTE;
+            case 2:
+                return TYP_USHORT;
+            case 4:
+                return TYP_INT;
+#ifdef TARGET_64BIT
+            case 8:
+                return TYP_LONG;
+#endif
+#ifdef FEATURE_SIMD
+            // TODO: check TYP_SIMD12 profitability,
+            // it will need additional support in `BuildStoreLoc`.
+            case 16:
+                return TYP_SIMD16;
+#endif
+            default:
+                return TYP_UNDEF;
+        }
+    }
+
     unsigned GetSlotCount() const
     {
         return roundUp(m_size, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;

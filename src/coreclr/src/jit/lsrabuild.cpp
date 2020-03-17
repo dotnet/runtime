@@ -1732,15 +1732,7 @@ BasicBlock* getNonEmptyBlock(BasicBlock* block)
 {
     while (block != nullptr && block->GetFirstLIRNode() == nullptr)
     {
-        BasicBlock* nextBlock = block->bbNext;
-        // Note that here we use the version of NumSucc that does not take a compiler.
-        // That way this doesn't have to take a compiler, or be an instance method, e.g. of LinearScan.
-        // If we have an empty block, it must have jump type BBJ_NONE or BBJ_ALWAYS, in which
-        // case we don't need the version that takes a compiler.
-        assert(block->NumSucc() == 1 && ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_NONE)));
-        // sometimes the first block is empty and ends with an uncond branch
-        // assert( block->GetSucc(0) == nextBlock);
-        block = nextBlock;
+        block = block->GetUniqueSucc();
     }
     assert(block != nullptr && block->GetFirstLIRNode() != nullptr);
     return block;
@@ -1785,12 +1777,21 @@ void LinearScan::insertZeroInitRefPositions()
             Interval* interval = getIntervalForLocalVar(varIndex);
             if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
             {
+                varDsc->lvMustInit = true;
+
+                // OSR will handle init of locals and promoted fields thereof
+                if (compiler->lvaIsOSRLocal(compiler->lvaTrackedIndexToLclNum(varIndex)))
+                {
+                    JITDUMP(" will be initialized by OSR\n");
+                    // setIntervalAsSpilled(interval);
+                    varDsc->lvMustInit = false;
+                }
+
                 JITDUMP(" creating ZeroInit\n");
                 GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
                 RefPosition* pos =
                     newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode, allRegs(interval->registerType));
                 pos->setRegOptional(true);
-                varDsc->lvMustInit = true;
             }
             else
             {
@@ -2603,7 +2604,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         assert((tree->GetRegNum() == REG_NA) || (dstCandidates == genRegMask(tree->GetRegByIndex(multiRegIdx))));
     }
 
-    RegisterType type = getDefType(tree);
+    RegisterType type;
     if (!tree->IsMultiRegNode())
     {
         type = getDefType(tree);
@@ -2611,6 +2612,11 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
     else
     {
         type = tree->GetRegTypeByIndex(multiRegIdx);
+    }
+
+    if (varTypeIsFloating(type) || varTypeIsSIMD(type))
+    {
+        compiler->compFloatingPointUsed = true;
     }
 
     Interval* interval = newInterval(type);
@@ -3035,7 +3041,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     GenTree*     op1 = storeLoc->gtGetOp1();
     int          srcCount;
     RefPosition* singleUseRef = nullptr;
-    LclVarDsc*   varDsc       = &compiler->lvaTable[storeLoc->GetLclNum()];
+    LclVarDsc*   varDsc       = compiler->lvaGetDesc(storeLoc->GetLclNum());
 
 // First, define internal registers.
 #ifdef FEATURE_SIMD
@@ -3103,7 +3109,8 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         srcCount                = 1;
         regMaskTP srcCandidates = RBM_NONE;
 #ifdef TARGET_X86
-        if (varTypeIsByte(storeLoc))
+        var_types type = varDsc->GetRegisterType(storeLoc);
+        if (varTypeIsByte(type))
         {
             srcCandidates = allByteRegs();
         }

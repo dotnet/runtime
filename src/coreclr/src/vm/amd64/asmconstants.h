@@ -139,17 +139,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 #ifndef CROSSGEN_COMPILE
-#define               OFFSETOF__Thread__m_State                     0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_State
-                    == offsetof(Thread, m_State));
-
-#define               OFFSETOF__Thread__m_dwLockCount               0x20
-ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_dwLockCount
-                    == offsetof(Thread, m_dwLockCount));
-
-#define               OFFSETOF__Thread__m_ThreadId                  0x24
-ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_ThreadId
-                    == offsetof(Thread, m_ThreadId));
 
 #define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x58
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));

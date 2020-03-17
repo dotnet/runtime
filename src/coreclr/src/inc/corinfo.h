@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 9C412381-94A6-4F35-B2B6-60AFB2495B72 */
-    0x9c412381,
-    0x94a6,
-    0x4f35,
-    { 0xb2, 0xb6, 0x60, 0xaf, 0xb2, 0x49, 0x5b, 0x72 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* c231d2d7-4764-4097-a9ef-5961041540df */
+    0xc231d2d7,
+    0x4764,
+    0x4097,
+    {0xa9, 0xef, 0x59, 0x61, 0x04, 0x15, 0x40, 0xdf}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -630,6 +630,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
 
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
+
+    CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
 
     CORINFO_HELP_COUNT,
 };
@@ -1083,6 +1085,11 @@ inline bool dontInline(CorInfoInline val) {
     return(val < 0);
 }
 
+// Patchpoint info is passed back and forth across the interface
+// but is opaque.
+
+struct PatchpointInfo;
+
 // Cookie types consumed by the code generator (these are opaque values
 // not inspected by the code generator):
 
@@ -1130,6 +1137,7 @@ enum CorInfoSigInfoFlags
     CORINFO_SIGFLAG_IS_LOCAL_SIG           = 0x01,
     CORINFO_SIGFLAG_IL_STUB                = 0x02,
     CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION = 0x04,
+    CORINFO_SIGFLAG_FAT_CALL               = 0x08,
 };
 
 struct CORINFO_SIG_INST
@@ -1274,6 +1282,7 @@ struct CORINFO_LOOKUP_KIND
 //
 #define CORINFO_MAXINDIRECTIONS 4
 #define CORINFO_USEHELPER ((WORD) 0xffff)
+#define CORINFO_NO_SIZE_CHECK ((WORD) 0xffff)
 
 struct CORINFO_RUNTIME_LOOKUP
 {
@@ -1296,6 +1305,7 @@ struct CORINFO_RUNTIME_LOOKUP
     // If set, test the lowest bit and dereference if set (see code:FixupPointer)
     bool                    testForFixup;
 
+    WORD                    sizeOffset;
     SIZE_T                  offsets[CORINFO_MAXINDIRECTIONS];
 
     // If set, first offset is indirect.
@@ -2140,6 +2150,16 @@ public:
     virtual void getGSCookie(
             GSCookie * pCookieVal,                     // OUT
             GSCookie ** ppCookieVal                    // OUT
+            ) = 0;
+
+    // Provide patchpoint info for the method currently being jitted.
+    virtual void setPatchpointInfo(
+            PatchpointInfo* patchpointInfo
+            ) = 0;
+
+    // Get patchpoint info and il offset for the method currently being jitted.
+    virtual PatchpointInfo* getOSRInfo(
+            unsigned                       *ilOffset        // [OUT] il offset of OSR entry point
             ) = 0;
 
     /**********************************************************************************/

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -115,14 +114,15 @@ namespace System.Text.Json
             Type = type;
             Options = options;
 
-            ClassType = GetClassType(
-                type,
-                parentClassType: type,
-                propertyInfo: null,
-                out Type? runtimeType,
-                out Type? elementType,
-                out JsonConverter? converter,
-                options);
+            JsonConverter converter = GetConverter(
+                Type,
+                parentClassType: null, // A ClassInfo never has a "parent" class.
+                propertyInfo: null, // A ClassInfo never has a "parent" property.
+                out Type runtimeType,
+                Options);
+
+            ClassType = converter.ClassType;
+            PropertyInfoForClassInfo = CreatePropertyInfoForClassInfo(Type, runtimeType, converter, Options);
 
             switch (ClassType)
             {
@@ -188,34 +188,29 @@ namespace System.Text.Json
                         PropertyCache = cache;
                         cache.Values.CopyTo(cacheArray, 0);
                         PropertyCacheArray = cacheArray;
-
-                        // Create the policy property.
-                        PolicyProperty = CreatePolicyProperty(type, runtimeType, converter!, ClassType, options);
                     }
                     break;
                 case ClassType.Enumerable:
                 case ClassType.Dictionary:
                     {
-                        ElementType = elementType;
-                        PolicyProperty = CreatePolicyProperty(type, runtimeType, converter!, ClassType, options);
-                        CreateObject = options.MemberAccessorStrategy.CreateConstructor(PolicyProperty.RuntimePropertyType!);
+                        ElementType = converter.ElementType;
+                        CreateObject = options.MemberAccessorStrategy.CreateConstructor(runtimeType);
                     }
                     break;
                 case ClassType.Value:
                 case ClassType.NewValue:
                     {
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
-                        PolicyProperty = CreatePolicyProperty(type, runtimeType, converter!, ClassType, options);
                     }
                     break;
-                case ClassType.Invalid:
+                case ClassType.None:
                     {
                         ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(type);
                     }
                     break;
                 default:
                     Debug.Fail($"Unexpected class type: {ClassType}");
-                    break;
+                    throw new InvalidOperationException();
             }
         }
 
@@ -228,11 +223,8 @@ namespace System.Text.Json
                 if (typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
                     typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType))
                 {
-                    JsonConverter? converter = Options.GetConverter(declaredPropertyType);
-                    if (converter == null)
-                    {
-                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(declaredPropertyType);
-                    }
+                    JsonConverter converter = Options.GetConverter(declaredPropertyType);
+                    Debug.Assert(converter != null);
                 }
                 else
                 {
@@ -399,7 +391,23 @@ namespace System.Text.Json
             return new Dictionary<string, JsonPropertyInfo>(capacity, comparer);
         }
 
-        public JsonPropertyInfo? PolicyProperty { get; private set; }
+        /// <summary>
+        /// The JsonPropertyInfo for this JsonClassInfo. It is used to obtain the converter for the ClassInfo.
+        /// </summary>
+        /// <remarks>
+        /// The returned JsonPropertyInfo does not represent a real property; instead it represents either:
+        /// a collection element type,
+        /// a generic type parameter,
+        /// a property type (if pushed to a new stack frame),
+        /// or the root type passed into the root serialization APIs.
+        /// For example, for a property returning <see cref="Collections.Generic.List{T}"/> where T is a string,
+        /// a JsonClassInfo will be created with .Type=typeof(string) and .PropertyInfoForClassInfo=JsonPropertyInfo{string}.
+        /// Without this property, a "Converter" property would need to be added to JsonClassInfo and there would be several more
+        /// `if` statements to obtain the converter from either the actual JsonPropertyInfo (for a real property) or from the
+        /// ClassInfo (for the cases mentioned above). In addition, methods that have a JsonPropertyInfo argument would also likely
+        /// need to add an argument for JsonClassInfo.
+        /// </remarks>
+        public JsonPropertyInfo PropertyInfoForClassInfo { get; private set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryIsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key, [NotNullWhen(true)] ref JsonPropertyInfo? info)
@@ -516,24 +524,16 @@ namespace System.Text.Json
         // - runtime type,
         // - element type (if the type is a collection),
         // - the converter (either native or custom), if one exists.
-        public static ClassType GetClassType(
+        public static JsonConverter GetConverter(
             Type type,
-            Type parentClassType,
+            Type? parentClassType,
             PropertyInfo? propertyInfo,
-            out Type? runtimeType,
-            out Type? elementType,
-            out JsonConverter? converter,
+            out Type runtimeType,
             JsonSerializerOptions options)
         {
             Debug.Assert(type != null);
 
-            converter = options.DetermineConverter(parentClassType, type, propertyInfo);
-            if (converter == null)
-            {
-                runtimeType = null;
-                elementType = null;
-                return ClassType.Invalid;
-            }
+            JsonConverter converter = options.DetermineConverter(parentClassType, type, propertyInfo)!;
 
             // The runtimeType is the actual value being assigned to the property.
             // There are three types to consider for the runtimeType:
@@ -569,14 +569,13 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        throw ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(type, parentClassType, propertyInfo);
+                        runtimeType = default!;
+                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(type);
                     }
                 }
             }
 
-            elementType = converter.ElementType;
-
-            return converter.ClassType;
+            return converter;
         }
     }
 }

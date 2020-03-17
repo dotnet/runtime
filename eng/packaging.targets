@@ -26,4 +26,12 @@
                       '$(_excludeCompile)' == 'true' and
                       '%(Dependency.Identity)' != '_._'" />
   </Target>
+
+  <Target Name="UndoExtensionsSuffix" Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions'))" BeforeTargets="GenerateNuspec">
+    <ItemGroup>
+      <Dependency Condition="!$([System.String]::Copy('%(Dependency.Identity)').StartsWith('Microsoft.Extensions'))">
+        <Version>$([System.String]::Copy('%(Dependency.Version)').Replace('-runtime', ''))</Version>
+      </Dependency>
+    </ItemGroup>
+  </Target>
 </Project>

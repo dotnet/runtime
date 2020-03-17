@@ -192,5 +192,43 @@ namespace System.Text.Json.Serialization.Tests
                 await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<SimpleStruct>(stream));
             }
         }
+
+        [Fact]
+        public static void DeserializeDictionaryWithNullValues()
+        {
+            {
+                Dictionary<string, string> dict = JsonSerializer.Deserialize<Dictionary<string, string>>(@"{""key"":null}");
+                Assert.Null(dict["key"]);
+            }
+
+            {
+                Dictionary<string, object> dict = JsonSerializer.Deserialize<Dictionary<string, object>>(@"{""key"":null}");
+                Assert.Null(dict["key"]);
+            }
+
+            {
+                Dictionary<string, Dictionary<string, string>> dict = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(@"{""key"":null}");
+                Assert.Null(dict["key"]);
+            }
+
+            {
+                Dictionary<string, Dictionary<string, object>> dict = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object>>>(@"{""key"":null}");
+                Assert.Null(dict["key"]);
+            }
+        }
+
+        [Fact]
+        public static void InvalidRootOnRead()
+        {
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int[,]>("null"));
+
+            var options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true
+            };
+
+            // We still throw when we have an unsupported root.
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int[,]>("null", options));
+        }
     }
 }

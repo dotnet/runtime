@@ -600,7 +600,6 @@ namespace System
                 {
                     if (newMin == 2)
                     {
-                        currentMin = i;
                         ambig = false;
                         currentMin = i;
                     }

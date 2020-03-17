@@ -43,7 +43,17 @@ namespace System.Text.RegularExpressions
             // We're doing this for your own protection. (Really, for speed.)
             Debug.Assert(pattern.Length != 0, "RegexBoyerMoore called with an empty string. This is bad for perf");
             Debug.Assert(pattern.Length <= MaxLimit, "RegexBoyerMoore can take a long time for large patterns");
-            Debug.Assert(!caseInsensitive || pattern.ToLower(culture) == pattern, "RegexBoyerMoore called with a pattern which is not lowercased with caseInsensitive true.");
+#if DEBUG
+            if (caseInsensitive)
+            {
+                foreach (char c in pattern)
+                {
+                    // We expect each individual character to have been lower-cased. We don't validate the whole
+                    // string at once because the rest of the library doesn't currently recognize/support surrogate pairs.
+                    Debug.Assert(c == culture.TextInfo.ToLower(c), "Pattern wasn't lowercased with provided culture");
+                }
+            }
+#endif
 
             Pattern = pattern;
             RightToLeft = rightToLeft;
@@ -229,7 +239,17 @@ namespace System.Text.RegularExpressions
 
             if (CaseInsensitive)
             {
-                return string.Compare(Pattern, 0, text, index, Pattern.Length, ignoreCase: true, _culture) == 0;
+                TextInfo textinfo = _culture.TextInfo;
+
+                for (int i = 0; i < Pattern.Length; i++)
+                {
+                    if (Pattern[i] != textinfo.ToLower(text[index + i]))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             }
 
             return Pattern.AsSpan().SequenceEqual(text.AsSpan(index, Pattern.Length));

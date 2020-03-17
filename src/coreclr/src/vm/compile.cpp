@@ -110,7 +110,7 @@ HRESULT CEECompileInfo::Startup(  BOOL fForceDebug,
 
         // When NGEN'ing this call may execute EE code, e.g. the managed code to set up
         // the SharedDomain.
-        hr = InitializeEE(COINITEE_DEFAULT);
+        hr = EnsureEEStarted();
     }
 
     //
@@ -1018,7 +1018,7 @@ void CEECompileInfo::CompressDebugInfo(
 {
     STANDARD_VM_CONTRACT;
 
-    CompressDebugInfo::CompressBoundariesAndVars(pOffsetMapping, iOffsetMapping, pNativeVarInfo, iNativeVarInfo, pDebugInfoBuffer, NULL);
+    CompressDebugInfo::CompressBoundariesAndVars(pOffsetMapping, iOffsetMapping, pNativeVarInfo, iNativeVarInfo, NULL, pDebugInfoBuffer, NULL);
 }
 
 ICorJitHost* CEECompileInfo::GetJitHost()

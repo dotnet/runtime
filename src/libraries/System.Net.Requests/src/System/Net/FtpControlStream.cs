@@ -411,7 +411,6 @@ namespace System.Net
             // OR parse out the file size or file time, usually a result of sending SIZE/MDTM commands
             else if (status == FtpStatusCode.FileStatus)
             {
-                FtpWebRequest request = (FtpWebRequest)_request;
                 if (entry.Command.StartsWith("SIZE ", StringComparison.Ordinal))
                 {
                     _contentLength = GetContentLengthFrom213Response(response.StatusDescription);

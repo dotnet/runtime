@@ -7,7 +7,7 @@
     <conclusion file="conclusion.html" mime-type="text/html" />
     <volume-check>
         <allowed-os-versions>
-            <os-version min="10.12" />
+            <os-version min="10.13" />
         </allowed-os-versions>
     </volume-check>
     <choices-outline>

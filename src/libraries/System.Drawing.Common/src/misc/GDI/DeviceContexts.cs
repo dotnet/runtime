@@ -11,7 +11,7 @@ namespace System.Drawing.Internal
     internal static class DeviceContexts
     {
         [ThreadStatic]
-        private static ClientUtils.WeakRefCollection t_activeDeviceContexts;
+        private static ClientUtils.WeakRefCollection? t_activeDeviceContexts;
 
         /// <summary>
         /// WindowsGraphicsCacheManager needs to track DeviceContext objects so it can ask them if a font is in use
@@ -34,7 +34,7 @@ namespace System.Drawing.Internal
             }
         }
 
-        private static void OnDcDisposing(object sender, EventArgs e)
+        private static void OnDcDisposing(object? sender, EventArgs e)
         {
             if (sender is DeviceContext dc)
             {

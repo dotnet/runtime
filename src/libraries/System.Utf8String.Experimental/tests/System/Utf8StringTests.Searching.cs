@@ -104,57 +104,71 @@ namespace System.Tests
                     CultureInfo.CurrentCulture = currentCulture;
                 }
 
-                // First, search forward
-
-                bool wasFound = source.TryFind(searchTerm, comparison, out Range actualForwardMatch);
-                Assert.Equal(expectedForwardMatch.HasValue, wasFound);
-
-                if (wasFound)
+                if (IsTryFindSupported(comparison))
                 {
-                    AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
-                }
+                    // First, search forward
 
-                // Also check Contains / StartsWith / SplitOn
+                    bool wasFound = source.TryFind(searchTerm, comparison, out Range actualForwardMatch);
+                    Assert.Equal(expectedForwardMatch.HasValue, wasFound);
 
-                Assert.Equal(wasFound, source.Contains(searchTerm, comparison));
-                Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+                    if (wasFound)
+                    {
+                        AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
+                    }
 
-                (var before, var after) = source.SplitOn(searchTerm, comparison);
-                if (wasFound)
-                {
-                    Assert.Equal(source[..actualForwardMatch.Start], before);
-                    Assert.Equal(source[actualForwardMatch.End..], after);
+                    // Also check Contains / StartsWith / SplitOn
+
+                    Assert.Equal(wasFound, source.Contains(searchTerm, comparison));
+                    Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+
+                    (var before, var after) = source.SplitOn(searchTerm, comparison);
+                    if (wasFound)
+                    {
+                        Assert.Equal(source[..actualForwardMatch.Start], before);
+                        Assert.Equal(source[actualForwardMatch.End..], after);
+                    }
+                    else
+                    {
+                        Assert.Same(source, before); // check for reference equality
+                        Assert.Null(after);
+                    }
+
+                    // Now search backward
+
+                    wasFound = source.TryFindLast(searchTerm, comparison, out Range actualBackwardMatch);
+                    Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
+
+                    if (wasFound)
+                    {
+                        AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                    }
+
+                    // Also check EndsWith / SplitOnLast
+
+                    Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm, comparison));
+
+                    (before, after) = source.SplitOnLast(searchTerm, comparison);
+                    if (wasFound)
+                    {
+                        Assert.Equal(source[..actualBackwardMatch.Start], before);
+                        Assert.Equal(source[actualBackwardMatch.End..], after);
+                    }
+                    else
+                    {
+                        Assert.Same(source, before); // check for reference equality
+                        Assert.Null(after);
+                    }
                 }
                 else
                 {
-                    Assert.Same(source, before); // check for reference equality
-                    Assert.Null(after);
-                }
+                    Assert.Throws<NotSupportedException>(() => source.TryFind(searchTerm, comparison, out var _));
+                    Assert.Throws<NotSupportedException>(() => source.TryFindLast(searchTerm, comparison, out var _));
+                    Assert.Throws<NotSupportedException>(() => source.SplitOn(searchTerm, comparison));
+                    Assert.Throws<NotSupportedException>(() => source.SplitOnLast(searchTerm, comparison));
 
-                // Now search backward
-
-                wasFound = source.TryFindLast(searchTerm, comparison, out Range actualBackwardMatch);
-                Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
-
-                if (wasFound)
-                {
-                    AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
-                }
-
-                // Also check EndsWith / SplitOnLast
-
-                Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm, comparison));
-
-                (before, after) = source.SplitOnLast(searchTerm, comparison);
-                if (wasFound)
-                {
-                    Assert.Equal(source[..actualBackwardMatch.Start], before);
-                    Assert.Equal(source[actualBackwardMatch.End..], after);
-                }
-                else
-                {
-                    Assert.Same(source, before); // check for reference equality
-                    Assert.Null(after);
+                    Assert.Equal(expectedForwardMatch.HasValue, source.Contains(searchTerm, comparison));
+                    Assert.Equal(expectedForwardMatch.HasValue && source[..expectedForwardMatch.Value.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+                    Assert.Equal(expectedBackwardMatch.HasValue && source[expectedBackwardMatch.Value.End..].Length == 0, source.EndsWith(searchTerm, comparison));
                 }
             });
         }
@@ -243,57 +257,71 @@ namespace System.Tests
                     CultureInfo.CurrentCulture = currentCulture;
                 }
 
-                // First, search forward
-
-                bool wasFound = source.TryFind(searchTerm, comparison, out Range actualForwardMatch);
-                Assert.Equal(expectedForwardMatch.HasValue, wasFound);
-
-                if (wasFound)
+                if (IsTryFindSupported(comparison))
                 {
-                    AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
-                }
+                    // First, search forward
 
-                // Also check Contains / StartsWith / SplitOn
+                    bool wasFound = source.TryFind(searchTerm, comparison, out Range actualForwardMatch);
+                    Assert.Equal(expectedForwardMatch.HasValue, wasFound);
 
-                Assert.Equal(wasFound, source.Contains(searchTerm, comparison));
-                Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+                    if (wasFound)
+                    {
+                        AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
+                    }
 
-                (var before, var after) = source.SplitOn(searchTerm, comparison);
-                if (wasFound)
-                {
-                    Assert.Equal(source[..actualForwardMatch.Start], before);
-                    Assert.Equal(source[actualForwardMatch.End..], after);
+                    // Also check Contains / StartsWith / SplitOn
+
+                    Assert.Equal(wasFound, source.Contains(searchTerm, comparison));
+                    Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+
+                    (var before, var after) = source.SplitOn(searchTerm, comparison);
+                    if (wasFound)
+                    {
+                        Assert.Equal(source[..actualForwardMatch.Start], before);
+                        Assert.Equal(source[actualForwardMatch.End..], after);
+                    }
+                    else
+                    {
+                        Assert.Same(source, before); // check for reference equality
+                        Assert.Null(after);
+                    }
+
+                    // Now search backward
+
+                    wasFound = source.TryFindLast(searchTerm, comparison, out Range actualBackwardMatch);
+                    Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
+
+                    if (wasFound)
+                    {
+                        AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                    }
+
+                    // Also check EndsWith / SplitOnLast
+
+                    Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm, comparison));
+
+                    (before, after) = source.SplitOnLast(searchTerm, comparison);
+                    if (wasFound)
+                    {
+                        Assert.Equal(source[..actualBackwardMatch.Start], before);
+                        Assert.Equal(source[actualBackwardMatch.End..], after);
+                    }
+                    else
+                    {
+                        Assert.Same(source, before); // check for reference equality
+                        Assert.Null(after);
+                    }
                 }
                 else
                 {
-                    Assert.Same(source, before); // check for reference equality
-                    Assert.Null(after);
-                }
+                    Assert.Throws<NotSupportedException>(() =>source.TryFind(searchTerm, comparison, out var _));
+                    Assert.Throws<NotSupportedException>(() =>source.TryFindLast(searchTerm, comparison, out var _));
+                    Assert.Throws<NotSupportedException>(() =>source.SplitOn(searchTerm, comparison));
+                    Assert.Throws<NotSupportedException>(() =>source.SplitOnLast(searchTerm, comparison));
 
-                // Now search backward
-
-                wasFound = source.TryFindLast(searchTerm, comparison, out Range actualBackwardMatch);
-                Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
-
-                if (wasFound)
-                {
-                    AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
-                }
-
-                // Also check EndsWith / SplitOnLast
-
-                Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm, comparison));
-
-                (before, after) = source.SplitOnLast(searchTerm, comparison);
-                if (wasFound)
-                {
-                    Assert.Equal(source[..actualBackwardMatch.Start], before);
-                    Assert.Equal(source[actualBackwardMatch.End..], after);
-                }
-                else
-                {
-                    Assert.Same(source, before); // check for reference equality
-                    Assert.Null(after);
+                    Assert.Equal(expectedForwardMatch.HasValue, source.Contains(searchTerm, comparison));
+                    Assert.Equal(expectedForwardMatch.HasValue && source[..expectedForwardMatch.Value.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+                    Assert.Equal(expectedBackwardMatch.HasValue && source[expectedBackwardMatch.Value.End..].Length == 0, source.EndsWith(searchTerm, comparison));
                 }
             });
         }
@@ -382,57 +410,71 @@ namespace System.Tests
                     CultureInfo.CurrentCulture = currentCulture;
                 }
 
-                // First, search forward
-
-                bool wasFound = source.TryFind(searchTerm, comparison, out Range actualForwardMatch);
-                Assert.Equal(expectedForwardMatch.HasValue, wasFound);
-
-                if (wasFound)
+                if (IsTryFindSupported(comparison))
                 {
-                    AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
-                }
+                    // First, search forward
 
-                // Also check Contains / StartsWith / SplitOn
+                    bool wasFound = source.TryFind(searchTerm, comparison, out Range actualForwardMatch);
+                    Assert.Equal(expectedForwardMatch.HasValue, wasFound);
 
-                Assert.Equal(wasFound, source.Contains(searchTerm, comparison));
-                Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+                    if (wasFound)
+                    {
+                        AssertRangesEqual(source.Length, expectedForwardMatch.Value, actualForwardMatch);
+                    }
 
-                (var before, var after) = source.SplitOn(searchTerm, comparison);
-                if (wasFound)
-                {
-                    Assert.Equal(source[..actualForwardMatch.Start], before);
-                    Assert.Equal(source[actualForwardMatch.End..], after);
+                    // Also check Contains / StartsWith / SplitOn
+
+                    Assert.Equal(wasFound, source.Contains(searchTerm, comparison));
+                    Assert.Equal(wasFound && source[..actualForwardMatch.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+
+                    (var before, var after) = source.SplitOn(searchTerm, comparison);
+                    if (wasFound)
+                    {
+                        Assert.Equal(source[..actualForwardMatch.Start], before);
+                        Assert.Equal(source[actualForwardMatch.End..], after);
+                    }
+                    else
+                    {
+                        Assert.Same(source, before); // check for reference equality
+                        Assert.Null(after);
+                    }
+
+                    // Now search backward
+
+                    wasFound = source.TryFindLast(searchTerm, comparison, out Range actualBackwardMatch);
+                    Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
+
+                    if (wasFound)
+                    {
+                        AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
+                    }
+
+                    // Also check EndsWith / SplitOnLast
+
+                    Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm, comparison));
+
+                    (before, after) = source.SplitOnLast(searchTerm, comparison);
+                    if (wasFound)
+                    {
+                        Assert.Equal(source[..actualBackwardMatch.Start], before);
+                        Assert.Equal(source[actualBackwardMatch.End..], after);
+                    }
+                    else
+                    {
+                        Assert.Same(source, before); // check for reference equality
+                        Assert.Null(after);
+                    }
                 }
                 else
                 {
-                    Assert.Same(source, before); // check for reference equality
-                    Assert.Null(after);
-                }
+                    Assert.Throws<NotSupportedException>(() => source.TryFind(searchTerm, comparison, out var _));
+                    Assert.Throws<NotSupportedException>(() => source.TryFindLast(searchTerm, comparison, out var _));
+                    Assert.Throws<NotSupportedException>(() => source.SplitOn(searchTerm, comparison));
+                    Assert.Throws<NotSupportedException>(() => source.SplitOnLast(searchTerm, comparison));
 
-                // Now search backward
-
-                wasFound = source.TryFindLast(searchTerm, comparison, out Range actualBackwardMatch);
-                Assert.Equal(expectedBackwardMatch.HasValue, wasFound);
-
-                if (wasFound)
-                {
-                    AssertRangesEqual(source.Length, expectedBackwardMatch.Value, actualBackwardMatch);
-                }
-
-                // Also check EndsWith / SplitOnLast
-
-                Assert.Equal(wasFound && source[actualBackwardMatch.End..].Length == 0, source.EndsWith(searchTerm, comparison));
-
-                (before, after) = source.SplitOnLast(searchTerm, comparison);
-                if (wasFound)
-                {
-                    Assert.Equal(source[..actualBackwardMatch.Start], before);
-                    Assert.Equal(source[actualBackwardMatch.End..], after);
-                }
-                else
-                {
-                    Assert.Same(source, before); // check for reference equality
-                    Assert.Null(after);
+                    Assert.Equal(expectedForwardMatch.HasValue, source.Contains(searchTerm, comparison));
+                    Assert.Equal(expectedForwardMatch.HasValue && source[..expectedForwardMatch.Value.Start].Length == 0, source.StartsWith(searchTerm, comparison));
+                    Assert.Equal(expectedBackwardMatch.HasValue && source[expectedBackwardMatch.Value.End..].Length == 0, source.EndsWith(searchTerm, comparison));
                 }
             });
         }

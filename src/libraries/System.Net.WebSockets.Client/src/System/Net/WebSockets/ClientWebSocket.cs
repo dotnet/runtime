@@ -19,7 +19,7 @@ namespace System.Net.WebSockets
         }
 
         private readonly ClientWebSocketOptions _options;
-        private WebSocketHandle _innerWebSocket; // may be mutable struct; do not make readonly
+        private WebSocketHandle? _innerWebSocket; // may be mutable struct; do not make readonly
 
         // NOTE: this is really an InternalState value, but Interlocked doesn't support
         //       operations on values of enum types.
@@ -58,7 +58,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        public override string CloseStatusDescription
+        public override string? CloseStatusDescription
         {
             get
             {
@@ -70,7 +70,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        public override string SubProtocol
+        public override string? SubProtocol
         {
             get
             {
@@ -162,40 +162,38 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
-            return _innerWebSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
+            return _innerWebSocket!.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
         }
 
         public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
-            return _innerWebSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
+            return _innerWebSocket!.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
         }
 
         public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer,
             CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
-            return _innerWebSocket.ReceiveAsync(buffer, cancellationToken);
+            return _innerWebSocket!.ReceiveAsync(buffer, cancellationToken);
         }
 
         public override ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
-            return _innerWebSocket.ReceiveAsync(buffer, cancellationToken);
+            return _innerWebSocket!.ReceiveAsync(buffer, cancellationToken);
         }
 
-        public override Task CloseAsync(WebSocketCloseStatus closeStatus, string statusDescription,
-            CancellationToken cancellationToken)
+        public override Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
-            return _innerWebSocket.CloseAsync(closeStatus, statusDescription, cancellationToken);
+            return _innerWebSocket!.CloseAsync(closeStatus, statusDescription, cancellationToken);
         }
 
-        public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string statusDescription,
-            CancellationToken cancellationToken)
+        public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
-            return _innerWebSocket.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
+            return _innerWebSocket!.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
         }
 
         public override void Abort()
@@ -241,8 +239,8 @@ namespace System.Net.WebSockets
         internal sealed class DefaultWebProxy : IWebProxy
         {
             public static DefaultWebProxy Instance { get; } = new DefaultWebProxy();
-            public ICredentials Credentials { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
-            public Uri GetProxy(Uri destination) => throw new NotSupportedException();
+            public ICredentials? Credentials { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public Uri? GetProxy(Uri destination) => throw new NotSupportedException();
             public bool IsBypassed(Uri host) => throw new NotSupportedException();
         }
     }

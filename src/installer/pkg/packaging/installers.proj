@@ -28,7 +28,7 @@
 
   <Target Name="SignCombinedInstallers"
           Condition="
-            '$(OSGroup)' == 'Windows_NT' and
+            '$(TargetOS)' == 'Windows_NT' and
             '$(SkipSigning)' != 'true'"
           DependsOnTargets="
             EnsureSignedBurnEngineFiles;
@@ -50,19 +50,19 @@
       Targets="Build" />
   </Target>
 
-  <Target Name="EnsureSignedR2RBinaries" Condition="'$(OSGroup)' == 'Windows_NT'" >
+  <Target Name="EnsureSignedR2RBinaries" Condition="'$(TargetOS)' == 'Windows_NT'" >
     <MSBuild Projects="$(SigningToolsDir)\SignR2RBinaries.proj" Targets="Build" />
   </Target>
 
-  <Target Name="EnsureSignedMsiFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
+  <Target Name="EnsureSignedMsiFiles" Condition="'$(TargetOS)' == 'Windows_NT'" >
     <MSBuild Projects="$(SigningToolsDir)\SignMsiFiles.proj" Targets="Build" />
   </Target>
 
-  <Target Name="EnsureSignedBurnEngineFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
+  <Target Name="EnsureSignedBurnEngineFiles" Condition="'$(TargetOS)' == 'Windows_NT'" >
     <MSBuild Projects="$(SigningToolsDir)\SignBurnEngineFiles.proj" Targets="Build" />
   </Target>
 
-  <Target Name="EnsureSignedBurnBundleFiles" Condition="'$(OSGroup)' == 'Windows_NT'" >
+  <Target Name="EnsureSignedBurnBundleFiles" Condition="'$(TargetOS)' == 'Windows_NT'" >
     <MSBuild Projects="$(SigningToolsDir)\SignBurnBundleFiles.proj" Targets="Build" />
   </Target>
 
@@ -122,22 +122,22 @@
       <NetHostFiles Include="$(_NetHostOutputDir)nethost.h" />
       <NetHostFiles Include="$(_NetHostOutputDir)$(LibPrefix)nethost$(LibSuffix)" />
       <NetHostFiles Include="$(_NetHostOutputDir)$(StaticLibPrefix)nethost$(StaticLibSuffix)" />
-      <NetHostFiles Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(_NetHostOutputDir)nethost.lib" />
+      <NetHostFiles Condition="'$(TargetOS)' == 'Windows_NT'" Include="$(_NetHostOutputDir)nethost.lib" />
     </ItemGroup>
     <Copy SourceFiles="@(NetHostFiles)"
           DestinationFolder="$(NetHostPublishRoot)" />
 
     <!-- Fix file permits -->
     <!-- Reset everything to user readable/writeable and group and world readable. -->
-    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT'"
           Command='find %(OutDirs.Identity) -type f -name "*" -exec chmod 644 {} \;' />
     <!-- Generally, dylibs and sos have 'x' -->
-    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT'"
           Command='find %(OutDirs.Identity) -type f -name "*.dylib" -exec chmod 755 {} \;' />
-    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT'"
           Command='find %(OutDirs.Identity) -type f -name "*.so" -exec chmod 755 {} \;' />
     <!-- Executables (those without dots) are executable -->
-    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+    <Exec Condition="'$(TargetOS)' != 'Windows_NT'"
           Command='find %(OutDirs.Identity) -type f ! -name "*.*" -exec chmod 755 {} \;' />
 
 
@@ -180,7 +180,7 @@
 
   <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateZip"
-          Condition="'$(OSGroup)'=='Windows_NT'">
+          Condition="'$(TargetOS)'=='Windows_NT'">
 
     <ZipFileCreateFromDirectory
         SourceDirectory="$(CombinedPublishRoot)"
@@ -209,7 +209,7 @@
   </Target>
 
   <Target Name="GenerateTarBall"
-          Condition="'$(OSGroup)'!='Windows_NT'">
+          Condition="'$(TargetOS)'!='Windows_NT'">
 
     <!-- tar command will throw 'file changed as we read it' on some distros.  ignore that error.
          we use -C so that we get a relative folder structure which is compressed rather than the full path -->

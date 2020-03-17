@@ -69,7 +69,7 @@ inline gc_alloc_context* GetThreadAllocContext()
 //   1) JIT_TrialAllocFastSP (and related assembly alloc helpers), which attempt to
 //      acquire it but move into an alloc slow path if acquiring fails
 //      (but does not decrement the lock variable when doing so)
-//   2) Alloc and AllocAlign8 in gchelpers.cpp, which acquire the lock using
+//   2) Alloc in gchelpers.cpp, which acquire the lock using
 //      the Acquire and Release methods below.
 class GlobalAllocLock {
     friend struct AsmOffsets;
@@ -194,13 +194,12 @@ inline void CheckObjectSize(size_t alloc_size)
 }
 
 
-// There are only three ways to get into allocate an object.
+// There are only two ways to allocate an object.
 //     * Call optimized helpers that were generated on the fly. This is how JIT compiled code does most
 //         allocations, however they fall back code:Alloc, when for all but the most common code paths. These
 //         helpers are NOT used if profiler has asked to track GC allocation (see code:TrackAllocations)
 //     * Call code:Alloc - When the jit helpers fall back, or we do allocations within the runtime code
 //         itself, we ultimately call here.
-//     * Call code:AllocLHeap - Used very rarely to force allocation to be on the large object heap.
 //
 // While this is a choke point into allocating an object, it is primitive (it does not want to know about
 // MethodTable and thus does not initialize that pointer. It also does not know if the object is finalizable
@@ -255,88 +254,6 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
 
     return retVal;
 }
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-// Helper for allocating 8-byte aligned objects (on platforms where this doesn't happen naturally, e.g. 32-bit
-// platforms).
-inline Object* AllocAlign8(size_t size, GC_ALLOC_FLAGS flags)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
-    } CONTRACTL_END;
-
-    if (flags & GC_ALLOC_CONTAINS_REF)
-        flags &= ~ GC_ALLOC_ZEROING_OPTIONAL;
-
-    Object *retVal = NULL;
-    CheckObjectSize(size);
-
-    if (GCHeapUtilities::UseThreadAllocationContexts())
-    {
-        gc_alloc_context *threadContext = GetThreadAllocContext();
-        GCStress<gc_on_alloc>::MaybeTrigger(threadContext);
-        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(threadContext, size, flags);
-    }
-    else
-    {
-        GlobalAllocLockHolder holder(&g_global_alloc_lock);
-        gc_alloc_context *globalContext = &g_global_alloc_context;
-        GCStress<gc_on_alloc>::MaybeTrigger(globalContext);
-        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(globalContext, size, flags);
-    }
-
-    if (!retVal)
-    {
-        ThrowOutOfMemory();
-    }
-
-    return retVal;
-}
-#endif // FEATURE_64BIT_ALIGNMENT
-
-// This is one of three ways of allocating an object (see code:Alloc for more). This variation is used in the
-// rare circumstance when you want to allocate an object on the large object heap but the object is not big
-// enough to naturally go there.
-//
-// One (and only?) example of where this is needed is 8 byte aligning of arrays of doubles. See
-// code:EEConfig.GetDoubleArrayToLargeObjectHeapThreshold and code:CORINFO_HELP_NEWARR_1_ALIGN8 for more.
-inline Object* AllocLHeap(size_t size, GC_ALLOC_FLAGS flags)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative (don't assume large heap doesn't compact!)
-    } CONTRACTL_END;
-
-
-    _ASSERTE(!NingenEnabled() && "You cannot allocate managed objects inside the ngen compilation process.");
-
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif
-
-    if (flags & GC_ALLOC_CONTAINS_REF)
-        flags &= ~GC_ALLOC_ZEROING_OPTIONAL;
-
-    Object *retVal = NULL;
-    CheckObjectSize(size);
-
-    retVal = GCHeapUtilities::GetGCHeap()->AllocLHeap(size, flags);
-
-    if (!retVal)
-    {
-        ThrowOutOfMemory();
-    }
-
-    return retVal;
-}
-
 
 #ifdef  _LOGALLOC
 int g_iNumAllocs = 0;
@@ -482,25 +399,12 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     ArrayBase* orArray = NULL;
     if (bAllocateInLargeHeap)
     {
-        orArray = (ArrayBase*)AllocLHeap(totalSize, flags);
+        orArray = (ArrayBase*)Alloc(totalSize, flags | GC_ALLOC_LARGE_OBJECT_HEAP);
         orArray->SetArrayMethodTableForLargeObject(pArrayMT);
     }
     else
     {
-#ifdef FEATURE_64BIT_ALIGNMENT
-        MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
-        if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
-        {
-            // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
-            // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
-            // header that requires alignment we need to be careful. However it just so happens that all the
-            // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
-            // in their headers so the alignment requirements for the header and the payload are the same.
-            _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-            orArray = (ArrayBase*)AllocAlign8(totalSize, flags);
-        }
-        else
-#else
+#ifndef FEATURE_64BIT_ALIGNMENT
         if ((DATA_ALIGNMENT < sizeof(double)) && (elemType == ELEMENT_TYPE_R8) &&
             (totalSize < g_pConfig->GetGCLOHThreshold() - MIN_OBJECT_SIZE))
         {
@@ -537,8 +441,20 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         }
         else
 #endif  // FEATURE_64BIT_ALIGNMENT
-
         {
+#ifdef FEATURE_64BIT_ALIGNMENT
+            MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
+            if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
+            {
+                // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
+                // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
+                // header that requires alignment we need to be careful. However it just so happens that all the
+                // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
+                // in their headers so the alignment requirements for the header and the payload are the same.
+                _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
+                flags |= GC_ALLOC_ALIGN8;
+            }
+#endif
             orArray = (ArrayBase*)Alloc(totalSize, flags);
         }
         orArray->SetArrayMethodTable(pArrayMT);
@@ -739,7 +655,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 
     if (bAllocateInLargeHeap)
     {
-        orArray = (ArrayBase *) AllocLHeap(totalSize, flags);
+        orArray = (ArrayBase *) Alloc(totalSize, flags | GC_ALLOC_LARGE_OBJECT_HEAP);
         orArray->SetArrayMethodTableForLargeObject(pArrayMT);
     }
     else
@@ -754,13 +670,10 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
             // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
             // in their headers so the alignment requirements for the header and the payload are the same.
             _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-            orArray = (ArrayBase *) AllocAlign8(totalSize, flags);
+            flags |= GC_ALLOC_ALIGN8;
         }
-        else
 #endif
-        {
-            orArray = (ArrayBase *) Alloc(totalSize, flags);
-        }
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetArrayMethodTable(pArrayMT);
     }
 
@@ -1137,7 +1050,6 @@ OBJECTREF AllocateObject(MethodTable *pMT
         PRECONDITION(pMT->CheckInstanceActivated());
     } CONTRACTL_END;
 
-    Object     *orObject = NULL;
     // use unchecked oref here to avoid triggering assert in Validate that the AD is
     // not set becuase it isn't until near the end of the fcn at which point we can allow
     // the check.
@@ -1175,14 +1087,15 @@ OBJECTREF AllocateObject(MethodTable *pMT
             // first field is aligned relative to the header) and true for boxed value types (where we can't
             // do the same padding without introducing more complexity in type layout and unboxing stubs).
             _ASSERTE(sizeof(Object) == 4);
-            flags |= pMT->IsValueType() ? GC_ALLOC_ALIGN8_BIAS : GC_ALLOC_NO_FLAGS;
-            orObject = (Object *) AllocAlign8(baseSize, flags);
+            flags |= GC_ALLOC_ALIGN8;
+            if (pMT->IsValueType())
+            {
+                flags |= GC_ALLOC_ALIGN8_BIAS;
+            }
         }
-        else
 #endif // FEATURE_64BIT_ALIGNMENT
-        {
-            orObject = (Object*)Alloc(baseSize, flags);
-        }
+
+        Object* orObject = (Object*)Alloc(baseSize, flags);
 
         // verify zero'd memory (at least for sync block)
         _ASSERTE( orObject->HasEmptySyncBlockInfo() );

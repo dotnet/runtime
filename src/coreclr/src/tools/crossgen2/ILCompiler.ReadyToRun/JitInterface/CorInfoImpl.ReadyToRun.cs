@@ -608,6 +608,14 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GCPoll;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
+                    id = ReadyToRunHelper.ReversePInvokeEnter;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
+                    id = ReadyToRunHelper.ReversePInvokeExit;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
@@ -616,8 +624,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
                 default:
@@ -1145,6 +1151,25 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
             }
 
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0
+                && originalMethod.IsNativeCallable)
+            {
+                if (!originalMethod.Signature.IsStatic) // Must be a static method
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, originalMethod);
+                }
+
+                if (originalMethod.HasInstantiation || originalMethod.OwningType.HasInstantiation) // No generics involved
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, originalMethod);
+                }
+
+                if (Marshaller.IsMarshallingRequired(originalMethod.Signature, Array.Empty<ParameterMetadata>())) // Only blittable arguments
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, originalMethod);
+                }
+            }
+
             exactType = type;
 
             constrainedType = null;
@@ -1496,7 +1521,7 @@ namespace Internal.JitInterface
                 }
                 else if (_TARGET_ARM64_)
                 {
-                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.Arm.Arm64");
+                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.Arm");
                 }
 
                 fIsHWIntrinsic = fIsPlatformHWIntrinsic || (namespaceName == "System.Runtime.Intrinsics");
@@ -1554,6 +1579,37 @@ namespace Internal.JitInterface
                             fTreatAsRegularMethodCall = (methodName == "Round");
                         }
                     }
+                    else if (namespaceName == "System.Numerics")
+                    {
+                        if ((className == "Vector3") || (className == "Vector4"))
+                        {
+                            if (methodName == ".ctor")
+                            {
+                                // Vector3 and Vector4 have constructors which take a smaller Vector and create bolt on
+                                // a larger vector. This uses insertps instruction when compiled with SSE4.1 instruction support
+                                // which must not be generated inline in R2R images that actually support an SSE2 only mode.
+                                if ((method.Signature.Length > 1) && (method.Signature[0].IsValueType && !method.Signature[0].IsPrimitive))
+                                {
+                                    fTreatAsRegularMethodCall = true;
+                                }
+                            }
+                            else if (methodName == "Dot")
+                            {
+                                // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                                // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                                fTreatAsRegularMethodCall = true;
+                            }
+                        }
+                        else if ((className == "Vector2") || (className == "Vector") || (className == "Vector`1"))
+                        {
+                            if (methodName == "Dot")
+                            {
+                                // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                                // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                                fTreatAsRegularMethodCall = true;
+                            }
+                        }
+                    }
                 }
 
                 if (fTreatAsRegularMethodCall)
@@ -1603,6 +1659,14 @@ namespace Internal.JitInterface
                 out useInstantiatingStub);
 
             pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, methodToCall);
+
+            var targetDetails = _compilation.TypeSystemContext.Target;
+            if (targetDetails.Architecture == TargetArchitecture.X86
+                && targetDetails.OperatingSystem == TargetOS.Windows
+                && targetMethod.IsNativeCallable)
+            {
+                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with NativeCallableAttribute not implemented");
+            }
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
@@ -1742,6 +1806,7 @@ namespace Internal.JitInterface
 
             // Unless we decide otherwise, just do the lookup via a helper function
             pResult.indirections = CORINFO.USEHELPER;
+            pResult.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
 
             MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
             TypeDesc contextType = typeFromContext(pResolvedToken.tokenContext);
@@ -2110,6 +2175,24 @@ namespace Internal.JitInterface
             *ppCookieVal = (IntPtr *)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.GSCookie));
         }
 
+        /// <summary>
+        /// Record patchpoint info for the method
+        /// </summary>
+        private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
+        {
+            // No patchpoint info when prejitting
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Retrieve OSR info for the method
+        /// </summary>
+        private PatchpointInfo* getOSRInfo(ref uint ilOffset)
+        {
+            // No patchpoint info when prejitting
+            throw new NotImplementedException();
+        }
+
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
         { throw new NotImplementedException("getMethodVTableOffset"); }
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
@@ -2265,6 +2348,7 @@ namespace Internal.JitInterface
         }
 
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
+        private int SizeOfReversePInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
 
         private void setEHcount(uint cEH)
         {

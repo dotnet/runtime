@@ -25,7 +25,7 @@ namespace System.Net.NetworkInformation
         private readonly uint _index = 0;
         private readonly uint _ipv6Index = 0;
         private readonly Interop.IpHlpApi.AdapterFlags _adapterFlags;
-        private readonly SystemIPInterfaceProperties _interfaceProperties = null;
+        private readonly SystemIPInterfaceProperties _interfaceProperties;
 
         internal static int InternalLoopbackInterfaceIndex
         {

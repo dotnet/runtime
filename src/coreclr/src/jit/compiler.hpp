@@ -4159,7 +4159,13 @@ bool Compiler::fgVarNeedsExplicitZeroInit(LclVarDsc* varDsc, bool bbInALoop, boo
 // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
 // changes, these conditions need to be updated.
 #ifdef TARGET_64BIT
+#if defined(TARGET_AMD64)
+        // We can clear using aligned SIMD so the threshold is lower,
+        // and clears in order which is better for auto-prefetching
+        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
+#else // !defined(TARGET_AMD64)
         if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 8)
+#endif
 #else
         if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
 #endif

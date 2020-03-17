@@ -2216,7 +2216,7 @@ bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helpe
 {
     if (useNativeLayout)
     {
-        return ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout);
+        return ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel, startOffsetOfStruct, GetNativeLayoutInfo());
     }
     else
     {
@@ -2418,8 +2418,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             // use the native classification. If not, continue using the managed layout.
             if (useNativeLayout && pFieldMT->HasLayout())
             {
-
-                structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
+                structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, pFieldMT->GetNativeLayoutInfo());
             }
             else
             {
@@ -2516,7 +2515,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr,
                                                     unsigned int nestingLevel,
                                                     unsigned int startOffsetOfStruct,
-                                                    bool useNativeLayout)
+                                                    EEClassNativeLayoutInfo const* pNativeLayoutInfo)
 {
     CONTRACTL
     {
@@ -2526,9 +2525,6 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     }
     CONTRACTL_END;
 
-    // Should be in this method only doing a native layout classification.
-    _ASSERTE(useNativeLayout);
-
 #ifdef DACCESS_COMPILE
     // No register classification for this case.
     return false;
@@ -2537,11 +2533,11 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     if (!HasLayout())
     {
         // If there is no native layout for this struct use the managed layout instead.
-        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout);
+        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, true);
     }
 
-    const NativeFieldDescriptor *pNativeFieldDescs = GetLayoutInfo()->GetNativeFieldDescriptors();
-    UINT  numIntroducedFields = GetLayoutInfo()->GetNumCTMFields();
+    const NativeFieldDescriptor *pNativeFieldDescs = pNativeLayoutInfo->GetNativeFieldDescriptors();
+    UINT  numIntroducedFields = pNativeLayoutInfo->GetNumFields();
 
     // No fields.
     if (numIntroducedFields == 0)
@@ -2562,11 +2558,11 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
                                     || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
                                 && (pNativeFieldDescs->GetExternalOffset() == 0)
                                 && IsValueType()
-                                && (GetLayoutInfo()->GetNativeSize() % pNativeFieldDescs->NativeSize() == 0);
+                                && (pNativeLayoutInfo->GetSize() % pNativeFieldDescs->NativeSize() == 0);
 
     if (isFixedBuffer)
     {
-        numIntroducedFields = GetNativeSize() / pNativeFieldDescs->NativeSize();
+        numIntroducedFields = pNativeLayoutInfo->GetSize() / pNativeFieldDescs->NativeSize();
     }
 
     // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
@@ -2650,17 +2646,9 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         pField->GetName_NoThrow(&fieldName);
 #endif // _DEBUG
 
-        NativeFieldFlags nfc = pNFD->GetNativeFieldFlags();
+        NativeFieldCategory nfc = pNFD->GetCategory();
 
-#ifdef FEATURE_COMINTEROP
-        if (nfc & NATIVE_FIELD_SUBCATEGORY_COM_ONLY)
-        {
-            _ASSERTE(false && "COMInterop not supported for CoreCLR on Unix.");
-            return false;
-        }
-        else
-#endif // FEATURE_COMINTEROP
-        if (nfc & NATIVE_FIELD_SUBCATEGORY_NESTED)
+        if (nfc == NativeFieldCategory::NESTED)
         {
             unsigned int numElements = pNFD->GetNumElements();
             unsigned int nestedElementOffset = normalizedFieldOffset;
@@ -2679,7 +2667,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             {
                 bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
                 helperPtr->inEmbeddedStruct = true;
-                bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, nestedElementOffset, useNativeLayout);
+                bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, nestedElementOffset, pFieldMT->GetNativeLayoutInfo());
                 helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
 
                 if (!structRet)
@@ -2690,15 +2678,15 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             }
             continue;
         }
-        else if (nfc & NATIVE_FIELD_SUBCATEGORY_FLOAT)
+        else if (nfc == NativeFieldCategory::FLOAT)
         {
             fieldClassificationType = SystemVClassificationTypeSSE;
         }
-        else if (nfc & NATIVE_FIELD_SUBCATEGORY_INTEGER)
+        else if (nfc == NativeFieldCategory::INTEGER)
         {
             fieldClassificationType = SystemVClassificationTypeInteger;
         }
-        else if (nfc & NATIVE_FIELD_SUBCATEGORY_OTHER)
+        else if (nfc == NativeFieldCategory::ILLEGAL)
         {
             return false;
         }
@@ -4008,12 +3996,6 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
     {
         _ASSERTE(!IsStringOrArray());
         SetFlag(enum_flag_NotInPZM);
-    }
-
-    // Set the IsStructMarshallable Bit
-    if (::IsStructMarshalable(this))
-    {
-        SetStructMarshalable();
     }
 
     TADDR start, end;
@@ -5559,24 +5541,22 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     }
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Fully load the types of fields associated with a field marshaler when ngenning
+    // Fully load the types of instance fields in types with layout when ngenning
     if (HasLayout() && GetAppDomain()->IsCompilationDomain() && !IsZapped())
     {
-        NativeFieldDescriptor* pNativeFieldDescriptors = this->GetLayoutInfo()->GetNativeFieldDescriptors();
-        UINT  numReferenceFields                       = this->GetLayoutInfo()->GetNumCTMFields();
+        ApproxFieldDescIterator fieldDescs(this, ApproxFieldDescIterator::INSTANCE_FIELDS);
 
-        for (UINT i = 0; i < numReferenceFields; ++i)
+        for (int i = 0; i < fieldDescs.Count(); i++)
         {
-            NativeFieldDescriptor* pFM = &pNativeFieldDescriptors[i];
-            FieldDesc *pMarshalerField = pFM->GetFieldDesc();
+            FieldDesc* pFieldDesc = fieldDescs.Next();
 
-            // If the fielddesc pointer here is a token tagged pointer, then the field marshaler that we are
+            // If the fielddesc pointer here is a token tagged pointer, then the field that we are
             // working with will not need to be saved into this ngen image. And as that was the reason that we
             // needed to load this type, thus we will not need to fully load the type associated with this field desc.
             //
-            if (!CORCOMPILE_IS_POINTER_TAGGED(pMarshalerField))
+            if (!CORCOMPILE_IS_POINTER_TAGGED(pFieldDesc))
             {
-                TypeHandle th = pMarshalerField->GetFieldTypeHandleThrowing((ClassLoadLevel) (level-1));
+                TypeHandle th = pFieldDesc->GetFieldTypeHandleThrowing((ClassLoadLevel) (level-1));
                 CONSISTENCY_CHECK(!th.IsNull());
 
                 th.DoFullyLoad(&locals.newVisited, level, pPending, &locals.fBailed, pInstContext);
@@ -9888,6 +9868,57 @@ NOINLINE BYTE *MethodTable::GetLoaderAllocatorObjectForGC()
     }
     BYTE * retVal = *(BYTE**)GetLoaderAllocatorObjectHandle();
     return retVal;
+}
+
+UINT32 MethodTable::GetNativeSize()
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(GetClass()));
+    }
+    CONTRACTL_END;
+    if (IsBlittable())
+    {
+        return GetClass()->GetLayoutInfo()->GetManagedSize();
+    }
+    return GetNativeLayoutInfo()->GetSize();
+}
+
+EEClassNativeLayoutInfo const* MethodTable::GetNativeLayoutInfo()
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(HasLayout());
+    }
+    CONTRACTL_END;
+    EEClassNativeLayoutInfo* pNativeLayoutInfo = GetClass()->GetNativeLayoutInfo();
+    if (pNativeLayoutInfo != nullptr)
+    {
+        return pNativeLayoutInfo;
+    }
+    return EnsureNativeLayoutInfoInitialized();
+}
+
+EEClassNativeLayoutInfo const* MethodTable::EnsureNativeLayoutInfoInitialized()
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(HasLayout());
+    }
+    CONTRACTL_END;
+#ifndef DACCESS_COMPILE
+    EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(this);
+    return this->GetClass()->GetNativeLayoutInfo();
+#else
+    DacNotImpl();
+    return nullptr;
+#endif
 }
 
 #ifdef FEATURE_COMINTEROP

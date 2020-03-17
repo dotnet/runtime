@@ -1,15 +1,174 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
-    <RootNamespace>System</RootNamespace>
+    <!-- CS3019: CLS attributes on internal types. Some shared source files are internal in this project. -->
+    <!-- CS0162: Unreachable code detected from Intrinsics IsSupported being 'false'. -->
+    <NoWarn Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">$(NoWarn);CS3019;CS0162</NoWarn>
+    <IsPartialFacadeAssembly Condition="'$(TargetFramework)' != 'netstandard2.0'">true</IsPartialFacadeAssembly>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.0;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineContants);FEATURE_UTF8STRING</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false'">
     <Compile Include="System\IO\Utf8StringStream.cs" />
     <Compile Include="System\Net\Http\Utf8StringContent.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Include="$(CoreLibSharedDir)\System\Index.cs">
+      <Link>System\Index.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Numerics\BitOperations.cs">
+      <Link>System\Numerics\BitOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs">
+      <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Range.cs">
+      <Link>System\Range.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Rune.cs">
+      <Link>System\Text\Rune.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8.cs">
+      <Link>System\Text\Unicode\Utf8.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.1'">
+    <Compile Include="$(CoreLibSharedDir)\System\Numerics\BitOperations.cs">
+      <Link>System\Numerics\BitOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Rune.cs">
+      <Link>System\Text\Rune.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8.cs">
+      <Link>System\Text\Unicode\Utf8.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Compile Include="System\Globalization\GlobalizationMode.cs" />
+    <Compile Include="System\Runtime\Intrinsics\Intrinsics.Shims.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
+    <Compile Include="System\Utf8Extensions.Portable.cs" />
+    <Compile Include="System\Utf8String.Portable.cs" />
+    <Compile Include="$(CommonPath)System\Marvin.cs">
+      <Link>Common\System\Marvin.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Char8.cs">
+      <Link>System\Char8.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\TrimType.cs">
+      <Link>System\Text\TrimType.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\UnicodeDebug.cs">
+      <Link>System\Text\UnicodeDebug.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\UnicodeUtility.cs">
+      <Link>System\Text\UnicodeUtility.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf16Utility.cs">
+      <Link>System\Text\Unicode\Utf16Utility.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf16Utility.Validation.cs">
+      <Link>System\Text\Unicode\Utf16Utility.Validation.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8StringComparer.cs">
+      <Link>System\Text\Utf8StringComparer.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\ASCIIUtility.cs">
+      <Link>System\Text\ASCIIUtility.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\ASCIIUtility.Helpers.cs">
+      <Link>System\Text\ASCIIUtility.Helpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.cs">
+      <Link>System\Text\Unicode\Utf8Utility.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.Helpers.cs">
+      <Link>System\Text\Unicode\Utf8Utility.Helpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.Validation.cs">
+      <Link>System\Text\Unicode\Utf8Utility.Validation.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.Transcoding.cs">
+      <Link>System\Text\Unicode\Utf8Utility.Transcoding.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.WhiteSpace.NonCoreLib.cs">
+      <Link>System\Text\Unicode\Utf8Utility.WhiteSpace.NonCoreLib.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8StringSplitOptions.cs">
+      <Link>System\Utf8StringSplitOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8Extensions.cs">
+      <Link>System\Utf8Extensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.cs">
+      <Link>System\Utf8String.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Comparison.cs">
+      <Link>System\Utf8String.Comparison.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Construction.cs">
+      <Link>System\Utf8String.Construction.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Conversion.cs">
+      <Link>System\Utf8String.Conversion.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Enumeration.cs">
+      <Link>System\Utf8String.Enumeration.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Manipulation.cs">
+      <Link>System\Utf8String.Manipulation.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Searching.cs">
+      <Link>System\Utf8String.Searching.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.cs">
+      <Link>System\Text\Utf8Span.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Comparison.cs">
+      <Link>System\Text\Utf8Span.Comparison.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Conversion.cs">
+      <Link>System\Text\Utf8Span.Conversion.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Enumeration.cs">
+      <Link>System\Text\Utf8Span.Enumeration.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Manipulation.cs">
+      <Link>System\Text\Utf8Span.Manipulation.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Searching.cs">
+      <Link>System\Text\Utf8Span.Searching.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Numerics.Vectors" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+    <Reference Include="System.Numerics.Vectors" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <Reference Include="netstandard" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Numerics.Vectors" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />

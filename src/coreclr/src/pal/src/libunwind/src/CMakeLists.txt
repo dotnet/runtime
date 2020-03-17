@@ -22,8 +22,9 @@ add_compile_options(-Wno-format)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wno-header-guard)
-elseif()
+else()
   add_compile_options(-Wno-unused-value)
+  add_compile_options(-Wno-unused-result)
 endif()
 
 if(CLR_CMAKE_HOST_ARCH_ARM)

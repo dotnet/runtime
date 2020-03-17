@@ -15,6 +15,7 @@ namespace Internal.JitInterface
         // This accounts for up to 2 indirections to get at a dictionary followed by a possible spill slot
         public const uint MAXINDIRECTIONS = 4;
         public const ushort USEHELPER = 0xffff;
+        public const ushort CORINFO_NO_SIZE_CHECK = 0xffff;
     }
 
     public struct CORINFO_METHOD_STRUCT_
@@ -88,6 +89,10 @@ namespace Internal.JitInterface
     }
 
     public struct CORINFO_VarArgInfo
+    {
+    }
+    
+    public struct PatchpointInfo
     {
     }
 
@@ -248,6 +253,7 @@ namespace Internal.JitInterface
         public byte _testForFixup;
         public bool testForFixup { get { return _testForFixup != 0; } set { _testForFixup = value ? (byte)1 : (byte)0; } }
 
+        public ushort sizeOffset;
         public IntPtr offset0;
         public IntPtr offset1;
         public IntPtr offset2;
@@ -389,6 +395,7 @@ namespace Internal.JitInterface
         CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
         CORINFO_SIGFLAG_IL_STUB = 0x02,
         CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION = 0x04,
+        CORINFO_SIGFLAG_FAT_CALL = 0x08,
     };
 
     // These are returned from getMethodOptions
@@ -774,6 +781,11 @@ namespace Internal.JitInterface
         CORJIT_FUNC_FILTER         // a funclet associated with an EH filter
     }
 
+    public unsafe struct CORINFO_OSR_INFO
+    {
+        public uint ILOffset;
+        public void* PatchpointInfo;
+    }
 
     public unsafe struct CORINFO_METHOD_INFO
     {
@@ -787,6 +799,7 @@ namespace Internal.JitInterface
         public CorInfoRegionKind regionKind;
         public CORINFO_SIG_INFO args;
         public CORINFO_SIG_INFO locals;
+        public CORINFO_OSR_INFO osrInfo;
     }
     //
     // what type of code region we are in

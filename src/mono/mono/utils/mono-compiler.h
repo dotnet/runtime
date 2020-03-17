@@ -75,24 +75,6 @@ typedef ptrdiff_t ssize_t;
 #define MONO_RESTORE_WARNING
 #endif
 
-// If MONO_LLVM_INTERNAL changes, update mono_debug_method_lookup_location declaration.
-#if !defined(_MSC_VER) && !defined(HOST_SOLARIS) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(MONOTOUCH) && HAVE_VISIBILITY_HIDDEN && MONO_LLVM_LOADED
-
-// Normally use this.
-#define MONO_LLVM_INTERNAL			MONO_API
-
-// Use these for extern data.
-#define MONO_LLVM_INTERNAL_NO_EXTERN_C		MONO_API_NO_EXTERN_C
-#define MONO_LLVM_INTERNAL_EXTERN_C_BEGIN	G_BEGIN_DECLS
-#define MONO_LLVM_INTERNAL_EXTERN_C_END		G_END_DECLS
-
-#else
-#define MONO_LLVM_INTERNAL			/* nothing */
-#define MONO_LLVM_INTERNAL_NO_EXTERN_C		/* nothing */
-#define MONO_LLVM_INTERNAL_EXTERN_C_BEGIN	/* nothing */
-#define MONO_LLVM_INTERNAL_EXTERN_C_END		/* nothing */
-#endif
-
 /* Used to mark internal functions used by the profiler modules */
 #define MONO_PROFILER_API MONO_API
 

@@ -21,7 +21,7 @@ namespace System.Net.Security
 
             if (context.IsServer)
             {
-                var safeContext = context.GetContext(out var status);
+                SafeDeleteContext safeContext = context.GetContext(out var status)!;
                 if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                 {
                     throw new Win32Exception((int)status.ErrorCode);
@@ -33,7 +33,7 @@ namespace System.Net.Security
 
         }
 
-        internal static string QueryContextAssociatedName(SafeDeleteContext securityContext)
+        internal static string QueryContextAssociatedName(SafeDeleteContext? securityContext)
         {
             throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
         }

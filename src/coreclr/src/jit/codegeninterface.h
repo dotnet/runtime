@@ -66,6 +66,11 @@ public:
     CodeGenInterface(Compiler* theCompiler);
     virtual void genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode) = 0;
 
+    Compiler* GetCompiler() const
+    {
+        return compiler;
+    }
+
     // genSpillVar is called by compUpdateLifeVar.
     // TODO-Cleanup: We should handle the spill directly in CodeGen, rather than
     // calling it from compUpdateLifeVar.  Then this can be non-virtual.

@@ -465,7 +465,7 @@ mono_domain_create (void)
 
 	mono_coop_mutex_init_recursive (&domain->lock);
 
-	mono_os_mutex_init_recursive (&domain->assemblies_lock);
+	mono_coop_mutex_init_recursive (&domain->assemblies_lock);
 	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
 	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
 
@@ -1189,7 +1189,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		MonoAssembly *ass = (MonoAssembly *)tmp->data;
 		if (!ass->image || !image_is_dynamic (ass->image))
 			continue;
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s[%p], assembly %s[%p], ref_count=%d", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading domain %s[%p], assembly %s[%p], ref_count=%d", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
 		if (!mono_assembly_close_except_image_pools (ass))
 			tmp->data = NULL;
 	}
@@ -1200,7 +1200,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 			continue;
 		if (!ass->image || image_is_dynamic (ass->image))
 			continue;
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s[%p], assembly %s[%p], ref_count=%d", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Unloading domain %s[%p], assembly %s[%p], ref_count=%d", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
 		if (!mono_assembly_close_except_image_pools (ass))
 			tmp->data = NULL;
 	}
@@ -1301,7 +1301,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 #endif
 
 	mono_os_mutex_destroy (&domain->finalizable_objects_hash_lock);
-	mono_os_mutex_destroy (&domain->assemblies_lock);
+	mono_coop_mutex_destroy (&domain->assemblies_lock);
 	mono_os_mutex_destroy (&domain->jit_code_hash_lock);
 
 	mono_coop_mutex_destroy (&domain->lock);

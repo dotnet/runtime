@@ -825,14 +825,6 @@ void DomainFile::ClearNativeImageStress()
     if (g_pConfig->RequireZaps() != EEConfig::REQUIRE_ZAPS_NONE)
         return;
 
-    // Its OK to ClearNativeImage even for a shared assembly, as the current PEFile will
-    // be discarded if we decide to share the assembly. However, we always use the same
-    // PEFile for the system assembly. So discarding the native image in the current
-    // AppDomain will actually affect the system assembly in the shared domain, and other
-    // appdomains may have already committed to using its ngen image.
-    if (GetFile()->IsSystem() && !this->GetAppDomain()->IsDefaultDomain())
-        return;
-
     if (g_IBCLogger.InstrEnabled())
         return;
 
@@ -2273,50 +2265,6 @@ void DomainAssembly::NotifyDebuggerUnload()
 
 }
 
-// This will enumerate for static GC refs (but not thread static GC refs)
-
-void DomainAssembly::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
-         GCHeapUtilities::IsServerHeap()   &&
-         IsGCSpecialThread());
-
-    if (IsCollectible())
-    {
-        // Collectible assemblies have statics stored in managed arrays, so they don't need special handlings
-        return;
-    }
-
-    DomainModuleIterator i = IterateModules(kModIterIncludeLoaded);
-    while (i.Next())
-    {
-        DomainFile* pDomainFile = i.GetDomainFile();
-
-        if (pDomainFile->IsActive())
-        {
-            // We guarantee that at this point the module has it's DomainLocalModule set up
-            // , as we create it while we load the module
-            _ASSERTE(pDomainFile->GetLoadedModule()->GetDomainLocalModule());
-            pDomainFile->GetLoadedModule()->EnumRegularStaticGCRefs(fn, sc);
-
-            // We current to do not iterate over the ThreadLocalModules that correspond
-            // to this Module. The GC discovers thread statics through the handle table.
-        }
-    }
-
-    RETURN;
-}
-
-
-
-
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
@@ -2366,6 +2314,4 @@ DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
 }
 
-
 #endif // #ifdef DACCESS_COMPILE
-

@@ -5,57 +5,49 @@
 using System;
 using System.Runtime.CompilerServices;
 
-namespace GCD
+class GCD
 {
-    /// <summary>
-    /// Summary description for Class1.
-    /// </summary>
-    class GCD
+    private int _val = -2;
+    private int _exitcode = -1;
+    public GCD() {}
+    public int GetExitCode(){ return _exitcode;}
+    public void g ()
     {
-        private int _val = -2;
-        private int _exitcode = -1;
-        public GCD() {}
-        public int GetExitCode(){ return _exitcode;}
-        public void g ()
+        throw new System.Exception("TryCode test");
+    }
+    public void TryCode0 (object obj)
+    {
+        _val = (int)obj;
+        g();
+    }
+    public void CleanupCode0 (object obj, bool excpThrown)
+    {
+        if(excpThrown && ((int)obj == _val))
         {
-            throw new System.Exception("TryCode test");
-        }
-        public void TryCode0 (object obj)
-        {
-            _val = (int)obj;
-            g();
-        }
-        public void CleanupCode0 (object obj, bool excpThrown)
-        {
-            if(excpThrown && ((int)obj == _val))
-            {
-                _exitcode = 100;
-            }
+            _exitcode = 100;
         }
     }
+}
 
-
-    class GCDTest 
+class ExecuteCodeWithGuaranteedCleanupTest
+{
+    public static void Run()
     {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-            static int Main(string[] args)
-            {
-                GCD gcd = new GCD();
-                RuntimeHelpers.TryCode t = new RuntimeHelpers.TryCode(gcd.TryCode0);
-                RuntimeHelpers.CleanupCode c = new RuntimeHelpers.CleanupCode(gcd.CleanupCode0);
-                int val = 21;
-                try
-                {
-                    RuntimeHelpers.ExecuteCodeWithGuaranteedCleanup(t, c, val);
-                }
-                catch (Exception Ex)
-                {
+        GCD gcd = new GCD();
+        RuntimeHelpers.TryCode t = new RuntimeHelpers.TryCode(gcd.TryCode0);
+        RuntimeHelpers.CleanupCode c = new RuntimeHelpers.CleanupCode(gcd.CleanupCode0);
+        int val = 21;
+        try
+        {
+            RuntimeHelpers.ExecuteCodeWithGuaranteedCleanup(t, c, val);
+        }
+        catch (Exception Ex)
+        {
 
-                }
+        }
 
-                return gcd.GetExitCode();
-            }
+        int res = gcd.GetExitCode();
+        if (res != 100)
+            throw new Exception($"{nameof(ExecuteCodeWithGuaranteedCleanupTest)} failed. Result: {res}");
     }
 }

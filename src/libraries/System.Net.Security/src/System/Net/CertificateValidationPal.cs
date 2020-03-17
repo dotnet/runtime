@@ -12,14 +12,14 @@ namespace System.Net
     {
         private static readonly object s_syncObject = new object();
 
-        private static volatile X509Store s_myCertStoreEx;
-        private static volatile X509Store s_myMachineCertStoreEx;
+        private static volatile X509Store? s_myCertStoreEx;
+        private static volatile X509Store? s_myMachineCertStoreEx;
 
         static partial void CheckSupportsStore(StoreLocation storeLocation, ref bool hasSupport);
 
-        internal static X509Store EnsureStoreOpened(bool isMachineStore)
+        internal static X509Store? EnsureStoreOpened(bool isMachineStore)
         {
-            X509Store store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
+            X509Store? store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
 
             if (store == null)
             {
