@@ -12678,6 +12678,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     flags = GetCompileFlags(ftn, flags, &methodInfo);
 
+#ifdef FEATURE_TIERED_COMPILATION
     // Clearing all tier flags and mark as optimized if the reverse P/Invoke
     // flag is used and the function is eligible.
     if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE)
@@ -12689,10 +12690,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
         flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
 
-#ifdef FEATURE_TIERED_COMPILATION
         config->SetJitSwitchedToOptimized();
-#endif // FEATURE_TIERED_COMPILATION
     }
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef _DEBUG
     if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION))
