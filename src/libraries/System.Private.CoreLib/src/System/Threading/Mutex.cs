@@ -56,9 +56,7 @@ namespace System.Threading
             }
         }
 
-#pragma warning disable CS8762 // The compiler can't track the out will be non-null when Success is returned
         public static bool TryOpenExisting(string name, [NotNullWhen(true)] out Mutex? result) =>
-            OpenExistingWorker(name, out result) == OpenExistingResult.Success;
-#pragma warning restore CS8762
+            OpenExistingWorker(name, out result!) == OpenExistingResult.Success;
     }
 }

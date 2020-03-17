@@ -171,18 +171,14 @@ namespace System.Net.Http
             Debug.Assert(_proxyConfig != null);
             if (_currentIndex < _proxyConfig.Length)
             {
-                bool hasProxy = TryParseProxyConfigPart(_proxyConfig.AsSpan(_currentIndex), _secure, out uri, out int charactersConsumed);
+                bool hasProxy = TryParseProxyConfigPart(_proxyConfig.AsSpan(_currentIndex), _secure, out uri!, out int charactersConsumed);
 
                 _currentIndex += charactersConsumed;
                 Debug.Assert(_currentIndex <= _proxyConfig.Length);
 
                 isFinalProxy = _currentIndex == _proxyConfig.Length;
 
-// Compiler can't see that uri will be non-null only when hasProxy is true.
-// https://github.com/dotnet/roslyn/issues/42492
-#pragma warning disable CS8762
                 return hasProxy;
-#pragma warning restore CS8762
             }
 
             uri = default;

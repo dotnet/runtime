@@ -25,16 +25,14 @@ namespace System.Text.Json
             utf8Unescaped = utf8Unescaped.Slice(0, written);
             Debug.Assert(!utf8Unescaped.IsEmpty);
 
-            bool result = TryDecodeBase64InPlace(utf8Unescaped, out bytes);
+            bool result = TryDecodeBase64InPlace(utf8Unescaped, out bytes!);
 
             if (unescapedArray != null)
             {
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
             }
-#pragma warning disable CS8762 // https://github.com/dotnet/roslyn/issues/42492
             return result;
-#pragma warning restore CS8762
         }
 
         // Reject any invalid UTF-8 data rather than silently replacing.
