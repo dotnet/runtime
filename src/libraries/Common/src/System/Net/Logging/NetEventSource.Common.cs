@@ -424,7 +424,7 @@ namespace System.Net
         public static string IdOf(object? value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;
 
         [NonEvent]
-        public static int GetHashCode(object value) => value?.GetHashCode() ?? 0;
+        public static int GetHashCode(object? value) => value?.GetHashCode() ?? 0;
 
         [NonEvent]
         public static object Format(object? value)

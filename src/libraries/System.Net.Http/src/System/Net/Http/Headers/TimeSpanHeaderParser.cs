@@ -23,8 +23,8 @@ namespace System.Net.Http.Headers
             return ((int)((TimeSpan)value).TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
         }
 
-        protected override int GetParsedValueLength(string value, int startIndex, object storeValue,
-            out object parsedValue)
+        protected override int GetParsedValueLength(string value, int startIndex, object? storeValue,
+            out object? parsedValue)
         {
             parsedValue = null;
 
