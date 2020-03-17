@@ -2989,13 +2989,16 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     // Fill as much as possible using SSE2 stores.
     if (size >= XMM_REGSIZE_BYTES)
     {
+        bool useYmm =
+            ((compiler->getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES) && (size >= YMM_REGSIZE_BYTES));
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
         if (src->gtSkipReloadOrCopy()->IsIntegralConst(0))
         {
+            unsigned regSize = useYmm ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
             // If the source is constant 0 then always use xorps, it's faster
             // than copying the constant from a GPR to a XMM register.
-            emit->emitIns_R_R(INS_xorps, EA_16BYTE, srcXmmReg, srcXmmReg);
+            emit->emitIns_R_R(INS_xorps, EA_ATTR(regSize), srcXmmReg, srcXmmReg);
         }
         else
         {
@@ -3005,20 +3008,36 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             // For x86, we need one more to convert it from 8 bytes to 16 bytes.
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
 #endif
+            if (useYmm)
+            {
+                emit->emitIns_R_R(INS_punpckldq, EA_32BYTE, srcXmmReg, srcXmmReg);
+            }
         }
 
         instruction simdMov = simdUnalignedMovIns();
-        for (unsigned regSize = XMM_REGSIZE_BYTES; size >= regSize; size -= regSize, dstOffset += regSize)
+
+        auto unrollUsingXMM = [&](unsigned regSize) {
+            for (; size >= regSize; size -= regSize, dstOffset += regSize)
+            {
+                if (dstLclNum != BAD_VAR_NUM)
+                {
+                    emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
+                }
+                else
+                {
+                    emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
+                                        dstAddrIndexScale, dstOffset);
+                }
+            }
+        };
+
+        if (useYmm)
         {
-            if (dstLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
-                                    dstAddrIndexScale, dstOffset);
-            }
+            unrollUsingXMM(YMM_REGSIZE_BYTES);
+        }
+        if (size >= XMM_REGSIZE_BYTES)
+        {
+            unrollUsingXMM(XMM_REGSIZE_BYTES);
         }
 
         // TODO-CQ-XArch: On x86 we could initialize 8 byte at once by using MOVQ instead of two 4 byte MOV stores.
@@ -3206,34 +3225,44 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     {
         regNumber tempReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
-        instruction simdMov = simdUnalignedMovIns();
-        for (unsigned regSize = XMM_REGSIZE_BYTES; size >= regSize;
-             size -= regSize, srcOffset += regSize, dstOffset += regSize)
+        auto unrollUsingXMM = [&](unsigned regSize, regNumber tempReg) {
+            instruction simdMov = simdUnalignedMovIns();
+            for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+            {
+                if (srcLclNum != BAD_VAR_NUM)
+                {
+                    emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+                }
+                else
+                {
+                    emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                        srcAddrIndexScale, srcOffset);
+                }
+
+                if (dstLclNum != BAD_VAR_NUM)
+                {
+                    emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+                }
+                else
+                {
+                    emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                        dstAddrIndexScale, dstOffset);
+                }
+            }
+
+            // TODO-CQ-XArch: On x86 we could copy 8 byte at once by using MOVQ instead of four 4 byte MOV stores.
+            // On x64 it may also be worth copying a 4/8 byte remainder using MOVD/MOVQ, that avoids the need to
+            // allocate a GPR just for the remainder.
+        };
+
+        if ((compiler->getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES) && (size >= YMM_REGSIZE_BYTES))
         {
-            if (srcLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
-            }
-            else
-            {
-                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
-                                    srcAddrIndexScale, srcOffset);
-            }
-
-            if (dstLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
-                                    dstAddrIndexScale, dstOffset);
-            }
+            unrollUsingXMM(YMM_REGSIZE_BYTES, tempReg);
         }
-
-        // TODO-CQ-XArch: On x86 we could copy 8 byte at once by using MOVQ instead of four 4 byte MOV stores.
-        // On x64 it may also be worth copying a 4/8 byte remainder using MOVD/MOVQ, that avoids the need to
-        // allocate a GPR just for the remainder.
+        if (size >= XMM_REGSIZE_BYTES)
+        {
+            unrollUsingXMM(XMM_REGSIZE_BYTES, tempReg);
+        }
     }
 
     if (size > 0)
