@@ -268,6 +268,7 @@ namespace System.Net.Http
         public bool AllowAutoRedirect { get { throw null; } set { } }
         public System.Net.DecompressionMethods AutomaticDecompression { get { throw null; } set { } }
         public System.TimeSpan ConnectTimeout { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public System.Net.CookieContainer CookieContainer { get { throw null; } set { } }
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         public System.Net.ICredentials? DefaultProxyCredentials { get { throw null; } set { } }

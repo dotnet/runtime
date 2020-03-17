@@ -43,6 +43,7 @@ namespace System.Net.Http
             }
         }
 
+        [AllowNull]
         public CookieContainer CookieContainer
         {
             get => _settings._cookieContainer ?? (_settings._cookieContainer = new CookieContainer());
