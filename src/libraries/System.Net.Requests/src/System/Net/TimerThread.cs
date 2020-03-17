@@ -34,7 +34,7 @@ namespace System.Net
             /// <summary>
             /// <para>Creates and returns a handle to a new timer with attached context.</para>
             /// </summary>
-            internal abstract Timer CreateTimer(Callback callback, object context);
+            internal abstract Timer CreateTimer(Callback callback, object? context);
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace System.Net
         /// <summary>
         /// <para>Prototype for the callback that is called when a timer expires.</para>
         /// </summary>
-        internal delegate void Callback(Timer timer, int timeNoticed, object context);
+        internal delegate void Callback(Timer timer, int timeNoticed, object? context);
 
         private const int ThreadIdleTimeoutMilliseconds = 30 * 1000;
         private const int CacheScanPerIterations = 32;
@@ -117,15 +117,15 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(durationMilliseconds));
             }
 
-            TimerQueue queue;
+            TimerQueue? queue;
             object key = durationMilliseconds; // Box once.
-            WeakReference weakQueue = (WeakReference)s_queuesCache[key];
-            if (weakQueue == null || (queue = (TimerQueue)weakQueue.Target) == null)
+            WeakReference? weakQueue = (WeakReference?)s_queuesCache[key];
+            if (weakQueue == null || (queue = (TimerQueue?)weakQueue.Target) == null)
             {
                 lock (s_newQueues)
                 {
-                    weakQueue = (WeakReference)s_queuesCache[key];
-                    if (weakQueue == null || (queue = (TimerQueue)weakQueue.Target) == null)
+                    weakQueue = (WeakReference?)s_queuesCache[key];
+                    if (weakQueue == null || (queue = (TimerQueue?)weakQueue.Target) == null)
                     {
                         queue = new TimerQueue(durationMilliseconds);
                         weakQueue = new WeakReference(queue);
@@ -141,7 +141,7 @@ namespace System.Net
                             while (e.MoveNext())
                             {
                                 DictionaryEntry pair = e.Entry;
-                                if (((WeakReference)pair.Value).Target == null)
+                                if (((WeakReference)pair.Value!).Target == null)
                                 {
                                     garbage.Add(pair.Key);
                                 }
@@ -192,7 +192,7 @@ namespace System.Net
             /// <summary>
             /// <para>Creates new timers.  This method is thread-safe.</para>
             /// </summary>
-            internal override Timer CreateTimer(Callback callback, object context)
+            internal override Timer CreateTimer(Callback callback, object? context)
             {
                 TimerNode timer = new TimerNode(callback, context, Duration, _timers);
 
@@ -200,7 +200,7 @@ namespace System.Net
                 bool needProd = false;
                 lock (_timers)
                 {
-                    if (!(_timers.Prev.Next == _timers))
+                    if (!(_timers.Prev!.Next == _timers))
                     {
                         NetEventSource.Fail(this, $"Tail corruption.");
                     }
@@ -240,12 +240,12 @@ namespace System.Net
                 while (true)
                 {
                     // Check if we got to the end.  If so, free the handle.
-                    TimerNode timer = _timers.Next;
+                    TimerNode timer = _timers.Next!;
                     if (timer == _timers)
                     {
                         lock (_timers)
                         {
-                            timer = _timers.Next;
+                            timer = _timers.Next!;
                             if (timer == _timers)
                             {
                                 if (_thisHandle != IntPtr.Zero)
@@ -279,7 +279,7 @@ namespace System.Net
             /// <summary>
             /// <para>Always returns a dummy infinite timer.</para>
             /// </summary>
-            internal override Timer CreateTimer(Callback callback, object context) => new InfiniteTimer();
+            internal override Timer CreateTimer(Callback callback, object? context) => new InfiniteTimer();
         }
 
         /// <summary>
@@ -288,11 +288,11 @@ namespace System.Net
         private class TimerNode : Timer
         {
             private TimerState _timerState;
-            private Callback _callback;
-            private object _context;
-            private readonly object _queueLock;
-            private TimerNode _next;
-            private TimerNode _prev;
+            private Callback? _callback;
+            private object? _context;
+            private readonly object _queueLock = null!;
+            private TimerNode? _next;
+            private TimerNode? _prev;
 
             /// <summary>
             /// <para>Status of the timer.</para>
@@ -305,7 +305,7 @@ namespace System.Net
                 Sentinel
             }
 
-            internal TimerNode(Callback callback, object context, int durationMilliseconds, object queueLock) : base(durationMilliseconds)
+            internal TimerNode(Callback callback, object? context, int durationMilliseconds, object queueLock) : base(durationMilliseconds)
             {
                 if (callback != null)
                 {
@@ -325,13 +325,13 @@ namespace System.Net
 
             internal override bool HasExpired => _timerState == TimerState.Fired;
 
-            internal TimerNode Next
+            internal TimerNode? Next
             {
                 get { return _next; }
                 set { _next = value; }
             }
 
-            internal TimerNode Prev
+            internal TimerNode? Prev
             {
                 get { return _prev; }
                 set { _prev = value; }
@@ -351,8 +351,8 @@ namespace System.Net
                             // Remove it from the list.  This keeps the list from getting too big when there are a lot of rapid creations
                             // and cancellations.  This is done before setting it to Cancelled to try to prevent the Fire() loop from
                             // seeing it, or if it does, of having to take a lock to synchronize with the state of the list.
-                            Next.Prev = Prev;
-                            Prev.Next = Next;
+                            Next!.Prev = Prev;
+                            Prev!.Next = Next;
 
                             // Just cleanup.  Doesn't need to be in the lock but is easier to have here.
                             Next = null;
@@ -406,8 +406,8 @@ namespace System.Net
                         _timerState = TimerState.Fired;
 
                         // Remove it from the list.
-                        Next.Prev = Prev;
-                        Prev.Next = Next;
+                        Next!.Prev = Prev;
+                        Prev!.Next = Next;
 
                         Next = null;
                         Prev = null;
@@ -419,8 +419,8 @@ namespace System.Net
                 {
                     try
                     {
-                        Callback callback = _callback;
-                        object context = _context;
+                        Callback callback = _callback!;
+                        object? context = _context;
                         _callback = null;
                         _context = null;
                         callback(this, nowMilliseconds, context);
@@ -517,7 +517,7 @@ namespace System.Net
                                 {
                                     lock (s_newQueues)
                                     {
-                                        for (LinkedListNode<WeakReference> node = s_newQueues.First; node != null; node = s_newQueues.First)
+                                        for (LinkedListNode<WeakReference>? node = s_newQueues.First; node != null; node = s_newQueues.First)
                                         {
                                             s_newQueues.Remove(node);
                                             s_queues.AddLast(node);
@@ -528,12 +528,12 @@ namespace System.Net
                                 int now = Environment.TickCount;
                                 int nextTick = 0;
                                 bool haveNextTick = false;
-                                for (LinkedListNode<WeakReference> node = s_queues.First; node != null; /* node = node.Next must be done in the body */)
+                                for (LinkedListNode<WeakReference>? node = s_queues.First; node != null; /* node = node.Next must be done in the body */)
                                 {
-                                    TimerQueue queue = (TimerQueue)node.Value.Target;
+                                    TimerQueue? queue = (TimerQueue?)node.Value.Target;
                                     if (queue == null)
                                     {
-                                        LinkedListNode<WeakReference> next = node.Next;
+                                        LinkedListNode<WeakReference>? next = node.Next;
                                         s_queues.Remove(node);
                                         node = next;
                                         continue;
