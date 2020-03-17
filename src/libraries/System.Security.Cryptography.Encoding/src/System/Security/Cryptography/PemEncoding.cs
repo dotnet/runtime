@@ -417,7 +417,7 @@ namespace System.Security.Cryptography
                 if (!success)
                 {
                     Debug.Fail("Convert.TryToBase64Chars failed with a pre-sized buffer");
-                    throw new CryptographicException();
+                    throw new ArgumentException();
                 }
 
                 return base64Written;
@@ -498,12 +498,16 @@ namespace System.Security.Cryptography
         /// </exception>
         public static char[] Write(ReadOnlySpan<char> label, ReadOnlySpan<byte> data)
         {
+            if (!IsValidLabel(label))
+                throw new ArgumentException(SR.Argument_PemEncoding_InvalidLabel, nameof(label));
+
             int encodedSize = GetEncodedSize(label.Length, data.Length);
             char[] buffer = new char[encodedSize];
 
             if (!TryWrite(label, data, buffer, out int charsWritten))
             {
-                throw new CryptographicException();
+                Debug.Fail("TryWrite failed with a pre-sized buffer");
+                throw new ArgumentException();
             }
 
             Debug.Assert(charsWritten == encodedSize);
