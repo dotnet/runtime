@@ -53,7 +53,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         private readonly Action<TInput> _action;
 
         /// <summary>Exceptions that may have occurred and gone unhandled during processing.  This field is lazily initialized.</summary>
-        private volatile List<Exception> _exceptions;
+        private volatile List<Exception>? _exceptions;
         /// <summary>Whether to stop accepting new messages.</summary>
         private volatile bool _decliningPermanently;
         /// <summary>A task has reserved the right to run the completion routine.</summary>
@@ -63,9 +63,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// and it should not be set to null once the block completes, as doing so would allow for races where the producer
         /// gets another consumer task queued even though the block has completed.
         /// </summary>
-        private volatile Task _activeConsumer;
+        private volatile Task? _activeConsumer;
         /// <summary>A task representing the completion of the block.  This field is lazily initialized.</summary>
-        private TaskCompletionSource<VoidResult> _completionTask;
+        private TaskCompletionSource<VoidResult>? _completionTask;
 
         /// <summary>Initialize the SPSC target core.</summary>
         /// <param name="owningTarget">The owning target block.</param>
@@ -108,7 +108,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
-        internal DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput> source, bool consumeToAccept)
+        internal DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput>? source, bool consumeToAccept)
         {
             // If we're not required to go back to the source to consume the offered message, try fast path.
             return !consumeToAccept && Post(messageValue) ?
@@ -122,7 +122,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="source">The source offering the message. This may be null.</param>
         /// <param name="consumeToAccept">true if we need to call back to the source to consume the message; otherwise, false if we can simply accept it directly.</param>
         /// <returns>The status of the message.</returns>
-        private DataflowMessageStatus OfferMessage_Slow(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput> source, bool consumeToAccept)
+        private DataflowMessageStatus OfferMessage_Slow(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput>? source, bool consumeToAccept)
         {
             // If we're declining permanently, let the caller know.
             if (_decliningPermanently)
@@ -146,7 +146,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
 
             // See the "fast path" comments in Post
-            _messages.Enqueue(messageValue);
+            _messages.Enqueue(messageValue!);
             Interlocked.MemoryBarrier(); // ensure the read of _activeConsumer doesn't move up before the writes in Enqueue
             if (_activeConsumer == null)
             {
@@ -164,7 +164,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 // Create a new consumption task and try to set it as current as long as there's still no other task
                 var newConsumer = new Task(
-                    state => ((SpscTargetCore<TInput>)state).ProcessMessagesLoopCore(),
+                    state => ((SpscTargetCore<TInput>)state!).ProcessMessagesLoopCore(),
                     this, CancellationToken.None, Common.GetCreationOptionsForTask(isReplica));
                 if (Interlocked.CompareExchange(ref _activeConsumer, newConsumer, null) == null)
                 {
@@ -225,7 +225,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     if (!Common.IsCooperativeCancellation(exc))
                     {
                         _decliningPermanently = true; // stop accepting from producers
-                        Common.StoreDataflowMessageValueIntoExceptionData<TInput>(exc, nextMessage, false);
+                        Common.StoreDataflowMessageValueIntoExceptionData<TInput>(exc, nextMessage!, false);
                         StoreException(exc);
                     }
                 }
@@ -254,7 +254,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                         else
                         {
                             // Mark that we're exiting.
-                            Task previousConsumer = Interlocked.Exchange(ref _activeConsumer, null);
+                            Task? previousConsumer = Interlocked.Exchange(ref _activeConsumer, null);
                             Debug.Assert(previousConsumer != null && previousConsumer.Id == Task.CurrentId,
                                 "The running task should have been denoted as the active task.");
 
@@ -285,7 +285,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// completing, all invocations after the first are ignored.
         /// </summary>
         /// <param name="exception">The exception to be stored.</param>
-        internal void Complete(Exception exception)
+        internal void Complete(Exception? exception)
         {
             // If we're not yet declining permanently...
             if (!_decliningPermanently)
