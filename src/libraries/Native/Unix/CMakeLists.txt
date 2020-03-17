@@ -3,7 +3,7 @@ cmake_policy(SET CMP0042 NEW)
 
 project(CoreFX C)
 
-include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 if(CLR_CMAKE_TARGET_IOS)
     cmake_minimum_required(VERSION 3.14.5)
@@ -83,6 +83,11 @@ elseif (CLR_CMAKE_TARGET_ARCH_ARM)
         add_compile_options(-march=armv7-a)
     endif()
 endif ()
+
+if(CLR_CMAKE_TARGET_ANDROID)
+    add_definitions(-DTARGET_ANDROID)
+    include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
+endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
@@ -195,7 +200,6 @@ function(install_library_and_symbols targetName)
 endfunction()
 
 include(configure.cmake)
-include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 

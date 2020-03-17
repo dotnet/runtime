@@ -149,6 +149,10 @@ elseif(CLR_CMAKE_TARGET_FREEBSD)
     add_compile_options(-fstack-protector)
 endif()
 
+if(CLR_CMAKE_TARGET_ANDROID)
+    add_compile_options(-Wno-user-defined-warnings)
+endif()
+
 add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
 if(CLR_CMAKE_TARGET_LINUX)

@@ -100,6 +100,7 @@
 #cmakedefine01 HAVE_TCP_H_TCP_KEEPALIVE
 #cmakedefine01 HAVE_BUILTIN_MUL_OVERFLOW
 #cmakedefine01 HAVE_DISCONNECTX
+#cmakedefine01 HAVE_PTHREAD_SETCANCELSTATE
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5
