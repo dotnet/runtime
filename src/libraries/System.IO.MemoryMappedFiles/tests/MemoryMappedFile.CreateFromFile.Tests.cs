@@ -869,6 +869,24 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
         }
 
+        private void ValidateDeviceAccess(MemoryMappedFile memMap, long viewCapacity, MemoryMappedFileAccess access)
+        {
+            using (MemoryMappedViewAccessor view = memMap.CreateViewAccessor(0, viewCapacity, access))
+            {
+                if (access != MemoryMappedFileAccess.Write)
+                {
+                    byte b = view.ReadByte(0);
+                    // /dev/zero return zeroes.
+                    Assert.Equal(0, b);
+                }
+
+                if (access != MemoryMappedFileAccess.Read)
+                {
+                    view.Write(0, (byte)1);
+                }
+            }
+        }
+
         /// <summary>
         /// Test that we can map special character devices on Unix using FileStream.
         /// </summary>
@@ -891,19 +909,8 @@ namespace System.IO.MemoryMappedFiles.Tests
             {
                 using (FileStream fs = new FileStream(device, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
                 using (MemoryMappedFile memMap = MemoryMappedFile.CreateFromFile(fs, null, viewCapacity, access, HandleInheritability.None, false))
-                using (MemoryMappedViewAccessor view = memMap.CreateViewAccessor(0, viewCapacity, access))
                 {
-                    if (access != MemoryMappedFileAccess.Write)
-                    {
-                        byte b = view.ReadByte(0);
-                        // /dev/zero return zeroes.
-                        Assert.Equal(0, b);
-                    }
-
-                    if (access != MemoryMappedFileAccess.Read)
-                    {
-                        view.Write(0, (byte)1);
-                    }
+                    ValidateDeviceAccess(memMap, viewCapacity, access);
                 }
             }
             catch (UnauthorizedAccessException) { }
@@ -930,19 +937,8 @@ namespace System.IO.MemoryMappedFiles.Tests
 
             try {
                 using (MemoryMappedFile memMap = MemoryMappedFile.CreateFromFile(device, FileMode.Open, null, viewCapacity, access))
-                using (MemoryMappedViewAccessor view = memMap.CreateViewAccessor(0, viewCapacity, access))
                 {
-                    if (access != MemoryMappedFileAccess.Write)
-                    {
-                        byte b = view.ReadByte(0);
-                        // /dev/zero return zeroes.
-                        Assert.Equal(0, b);
-                    }
-
-                    if (access != MemoryMappedFileAccess.Read)
-                    {
-                        view.Write(0, (byte)1);
-                    }
+                    ValidateDeviceAccess(memMap, viewCapacity, access);
                 }
             }
             catch (UnauthorizedAccessException) { }

@@ -18,7 +18,7 @@ namespace System.IO.MemoryMappedFiles
             HandleInheritability inheritability, MemoryMappedFileAccess access,
             MemoryMappedFileOptions options, long capacity)
         {
-            bool isSpecial = false;
+            bool isRegularFile = true;
             Interop.Sys.FileStatus status = default;
 
             if (fileStream != null)
@@ -30,10 +30,10 @@ namespace System.IO.MemoryMappedFiles
                     throw Interop.GetExceptionForIoErrno(errorInfo);
                 }
 
-                isSpecial = (status.Mode & Interop.Sys.FileTypes.S_IFCHR) != 0;
+                isRegularFile = (status.Mode & Interop.Sys.FileTypes.S_IFCHR) == 0;
 
                 // perform deferred argument check.
-                if (!isSpecial)
+                if (isRegularFile)
                 {
                     if (access == MemoryMappedFileAccess.Read && capacity > status.Size)
                     {
@@ -66,7 +66,7 @@ namespace System.IO.MemoryMappedFiles
             {
 
 
-                if (capacity > status.Size && !isSpecial)
+                if (capacity > status.Size && isRegularFile)
                 {
                     // This map is backed by a file.  Make sure the file's size is increased to be
                     // at least as big as the requested capacity of the map for Write* access.
