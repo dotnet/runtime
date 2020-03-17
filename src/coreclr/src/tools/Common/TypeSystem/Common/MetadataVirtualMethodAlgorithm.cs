@@ -407,6 +407,8 @@ namespace Internal.TypeSystem
                 FindBaseUnificationGroup(baseType, unificationGroup);
             }
 
+            Debug.Assert(unificationGroup.IsInGroupOrIsDefiningSlot(originalDefiningMethod));
+
             // Now, we have the unification group from the type, or have discovered its defined on the current type.
             // Adjust the group to contain all of the elements that are added to it on this type, remove the components that
             // have seperated themselves from the group
@@ -417,7 +419,7 @@ namespace Internal.TypeSystem
             foreach (MethodDesc memberMethod in unificationGroup)
             {
                 MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType, reverseMethodSearch: true);
-                if (nameSigMatchMemberMethod != null)
+                if (nameSigMatchMemberMethod != null && nameSigMatchMemberMethod != memberMethod)
                 {
                     if (separatedMethods == null)
                         separatedMethods = new MethodDescHashtable();
