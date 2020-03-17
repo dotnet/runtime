@@ -763,7 +763,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
         assertions = block->bbAssertionIn;
     }
 
-    if (!BitVecOps::MayBeUninit(assertions))
+    if (!BitVecOps::MayBeUninit(assertions) && (m_pCompiler->GetAssertionCount() > 0))
     {
         // Perform the merge step to fine tune the range value.
         MergeEdgeAssertions(op->AsLclVarCommon(), assertions, pRange);
@@ -889,7 +889,7 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
     }
 #endif
     Range range = GetRange(ssaDef->GetBlock(), ssaDef->GetAssignment()->gtGetOp2(), monIncreasing DEBUGARG(indent));
-    if (!BitVecOps::MayBeUninit(block->bbAssertionIn))
+    if (!BitVecOps::MayBeUninit(block->bbAssertionIn) && (m_pCompiler->GetAssertionCount() > 0))
     {
         JITDUMP("Merge assertions from " FMT_BB ":%s for assignment about [%06d]\n", block->bbNum,
                 BitVecOps::ToString(m_pCompiler->apTraits, block->bbAssertionIn),

@@ -25,6 +25,7 @@
 #include <mscoree.h>
 #include <corjit.h>
 #include <utilcode.h>
+#include <patchpointinfo.h>
 
 /// Turn back on direct access to a few OS level things...
 #undef HeapCreate

@@ -2406,6 +2406,8 @@ public:
 
     EHblkDsc* ehInitTryBlockRange(BasicBlock* blk, BasicBlock** tryBeg, BasicBlock** tryLast);
 
+    void fgSetTryBeg(EHblkDsc* handlerTab, BasicBlock* newTryBeg);
+
     void fgSetTryEnd(EHblkDsc* handlerTab, BasicBlock* newTryLast);
 
     void fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast);
@@ -3203,6 +3205,10 @@ public:
     int lvaToInitialSPRelativeOffset(unsigned offset, bool isFpBased);
     int lvaGetInitialSPRelativeOffset(unsigned varNum);
 
+    // True if this is an OSR compilation and this local is potentially
+    // located on the original method stack frame.
+    bool lvaIsOSRLocal(unsigned varNum);
+
     //------------------------ For splitting types ----------------------------
 
     void lvaInitTypeRef();
@@ -3525,8 +3531,7 @@ public:
 
 public:
     void impInit();
-
-    void impImport(BasicBlock* method);
+    void impImport();
 
     CORINFO_CLASS_HANDLE impGetRefAnyClass();
     CORINFO_CLASS_HANDLE impGetRuntimeArgumentHandle();
@@ -4142,6 +4147,7 @@ public:
     BasicBlock* fgFirstBB;        // Beginning of the basic block list
     BasicBlock* fgLastBB;         // End of the basic block list
     BasicBlock* fgFirstColdBlock; // First block to be placed in the cold section
+    BasicBlock* fgEntryBB;        // For OSR, the original method's entry point
 #if defined(FEATURE_EH_FUNCLETS)
     BasicBlock* fgFirstFuncletBB; // First block of outlined funclets (to allow block insertion before the funclets)
 #endif
@@ -4354,6 +4360,8 @@ public:
     void fgImport();
 
     void fgTransformIndirectCalls();
+
+    void fgTransformPatchpoints();
 
     void fgInline();
 
@@ -5264,11 +5272,10 @@ public:
 public:
     void fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt);
     Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree);
+    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree);
 
 private:
     void fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt);
-    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree);
-
     void fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt);
     Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
 
@@ -6348,6 +6355,7 @@ public:
 #define OMF_HAS_OBJSTACKALLOC 0x00000040    // Method contains an object allocated on the stack.
 #define OMF_HAS_GUARDEDDEVIRT 0x00000080    // Method contains guarded devirtualization candidate
 #define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
+#define OMF_HAS_PATCHPOINT 0x00000200       // Method contains patchpoints
 
     bool doesMethodHaveFatPointer()
     {
@@ -6403,6 +6411,16 @@ public:
     }
 
     void addExpRuntimeLookupCandidate(GenTreeCall* call);
+
+    bool doesMethodHavePatchpoints()
+    {
+        return (optMethodFlags & OMF_HAS_PATCHPOINT) != 0;
+    }
+
+    void setMethodHasPatchpoint()
+    {
+        optMethodFlags |= OMF_HAS_PATCHPOINT;
+    }
 
     unsigned optMethodFlags;
 
@@ -8447,6 +8465,18 @@ public:
         }
 #endif
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        bool IsOSR() const
+        {
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_OSR);
+        }
+#else
+        bool IsOSR() const
+        {
+            return false;
+        }
+#endif
+
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
         // PInvoke transitions inline (e.g. when targeting CoreRT).
         bool ShouldUsePInvokeHelpers()
@@ -8783,11 +8813,13 @@ public:
         // The following holds the class attributes for the method we're compiling.
         unsigned compClassAttr;
 
-        const BYTE*    compCode;
-        IL_OFFSET      compILCodeSize;     // The IL code size
-        IL_OFFSET      compILImportSize;   // Estimated amount of IL actually imported
-        UNATIVE_OFFSET compNativeCodeSize; // The native code size, after instructions are issued. This
-                                           // is less than (compTotalHotCodeSize + compTotalColdCodeSize) only if:
+        const BYTE*     compCode;
+        IL_OFFSET       compILCodeSize;     // The IL code size
+        IL_OFFSET       compILImportSize;   // Estimated amount of IL actually imported
+        IL_OFFSET       compILEntry;        // The IL entry point (normally 0)
+        PatchpointInfo* compPatchpointInfo; // Patchpoint data for OSR (normally nullptr)
+        UNATIVE_OFFSET  compNativeCodeSize; // The native code size, after instructions are issued. This
+        // is less than (compTotalHotCodeSize + compTotalColdCodeSize) only if:
         // (1) the code is not hot/cold split, and we issued less code than we expected, or
         // (2) the code is hot/cold split, and we issued less code than we expected
         // in the cold section (the hot section will always be padded out to compTotalHotCodeSize).
@@ -9069,6 +9101,8 @@ public:
                           JitFlags*             compileFlag);
 
     ArenaAllocator* compGetArenaAllocator();
+
+    void generatePatchpointInfo();
 
 #if MEASURE_MEM_ALLOC
     static bool s_dspMemStats; // Display per-phase memory statistics for every function

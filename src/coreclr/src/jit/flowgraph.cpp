@@ -65,6 +65,7 @@ void Compiler::fgInit()
     fgFirstBB        = nullptr;
     fgLastBB         = nullptr;
     fgFirstColdBlock = nullptr;
+    fgEntryBB        = nullptr;
 
 #if defined(FEATURE_EH_FUNCLETS)
     fgFirstFuncletBB  = nullptr;
@@ -5177,16 +5178,19 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
     }
 }
 
-/*****************************************************************************
- *
- *  Finally link up the bbJumpDest of the blocks together
- */
+//------------------------------------------------------------------------
+// fgMarkBackwardJump: mark blocks indicating there is a jump backwards in
+//   IL, from a higher to lower IL offset.
+//
+// Arguments:
+//   targetBlock -- target of the jump
+//   sourceBlock -- source of the jump
 
-void Compiler::fgMarkBackwardJump(BasicBlock* startBlock, BasicBlock* endBlock)
+void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlock)
 {
-    noway_assert(startBlock->bbNum <= endBlock->bbNum);
+    noway_assert(targetBlock->bbNum <= sourceBlock->bbNum);
 
-    for (BasicBlock* block = startBlock; block != endBlock->bbNext; block = block->bbNext)
+    for (BasicBlock* block = targetBlock; block != sourceBlock->bbNext; block = block->bbNext)
     {
         if ((block->bbFlags & BBF_BACKWARD_JUMP) == 0)
         {
@@ -5194,6 +5198,8 @@ void Compiler::fgMarkBackwardJump(BasicBlock* startBlock, BasicBlock* endBlock)
             compHasBackwardJump = true;
         }
     }
+
+    targetBlock->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
 }
 
 /*****************************************************************************
@@ -5981,6 +5987,28 @@ void Compiler::fgFindBasicBlocks()
         }
 
         return;
+    }
+
+    // If we are doing OSR, add an entry block that simply branches to the right IL offset.
+    if (opts.IsOSR())
+    {
+        // Remember the original entry block in case this method is tail recursive.
+        fgEntryBB = fgLookupBB(0);
+
+        // Find the OSR entry block.
+        assert(info.compILEntry >= 0);
+        BasicBlock* bbTarget = fgLookupBB(info.compILEntry);
+
+        fgEnsureFirstBBisScratch();
+        fgFirstBB->bbJumpKind = BBJ_ALWAYS;
+        fgFirstBB->bbJumpDest = bbTarget;
+        fgAddRefPred(bbTarget, fgFirstBB);
+
+        JITDUMP("OSR: redirecting flow at entry via " FMT_BB " to " FMT_BB " (il offset 0x%x)\n", fgFirstBB->bbNum,
+                bbTarget->bbNum, info.compILEntry);
+
+        // rebuild lookup table... should be able to avoid this by leaving room up front.
+        fgInitBBLookup();
     }
 
     /* Mark all blocks within 'try' blocks as such */
@@ -6859,7 +6887,7 @@ unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNestin
 
 void Compiler::fgImport()
 {
-    impImport(fgFirstBB);
+    impImport();
 
     // Estimate how much of method IL was actually imported.
     //
@@ -9693,118 +9721,238 @@ void Compiler::fgSimpleLowering()
 #endif
 }
 
-/*****************************************************************************
- *
- *  Find and remove any basic blocks that are useless (e.g. they have not been
- *  imported because they are not reachable, or they have been optimized away).
- */
-
+//------------------------------------------------------------------------
+// fgRemoveEmptyBlocks: clean up flow graph after importation
+//
+// Notes:
+//
+//  Find and remove any basic blocks that are useless (e.g. they have not been
+//  imported because they are not reachable, or they have been optimized away).
+//
+//  Remove try regions where no blocks in the try were imported.
+//  Update the end of try and handler regions where trailing blocks were not imported.
+//  Update the start of try regions that were partially imported (OSR)
+//
 void Compiler::fgRemoveEmptyBlocks()
 {
+    JITDUMP("\n*************** In fgRemoveEmptyBlocks\n");
+
     BasicBlock* cur;
     BasicBlock* nxt;
 
-    /* If we remove any blocks, we'll have to do additional work */
-
+    // If we remove any blocks, we'll have to do additional work
     unsigned removedBlks = 0;
 
     for (cur = fgFirstBB; cur != nullptr; cur = nxt)
     {
-        /* Get hold of the next block (in case we delete 'cur') */
-
+        // Get hold of the next block (in case we delete 'cur')
         nxt = cur->bbNext;
 
-        /* Should this block be removed? */
-
+        // Should this block be removed?
         if (!(cur->bbFlags & BBF_IMPORTED))
         {
             noway_assert(cur->isEmpty());
 
             if (ehCanDeleteEmptyBlock(cur))
             {
-                /* Mark the block as removed */
+                JITDUMP(FMT_BB " was not imported, marking as removed (%d)\n", cur->bbNum, removedBlks);
 
                 cur->bbFlags |= BBF_REMOVED;
-
-                /* Remember that we've removed a block from the list */
-
                 removedBlks++;
 
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf(FMT_BB " was not imported, marked as removed (%d)\n", cur->bbNum, removedBlks);
-                }
-#endif // DEBUG
-
-                /* Drop the block from the list */
-
+                // Drop the block from the list.
+                //
+                // We rely on the fact that this does not clear out
+                // cur->bbNext or cur->bbPrev in the code that
+                // follows.
                 fgUnlinkBlock(cur);
             }
             else
             {
-                // We were prevented from deleting this block by EH normalization. Mark the block as imported.
+                // We were prevented from deleting this block by EH
+                // normalization. Mark the block as imported.
                 cur->bbFlags |= BBF_IMPORTED;
             }
         }
     }
 
-    /* If no blocks were removed, we're done */
-
+    // If no blocks were removed, we're done
     if (removedBlks == 0)
     {
         return;
     }
 
-    /*  Update all references in the exception handler table.
-     *  Mark the new blocks as non-removable.
-     *
-     *  We may have made the entire try block unreachable.
-     *  Check for this case and remove the entry from the EH table.
-     */
-
+    // Update all references in the exception handler table.
+    //
+    // We may have made the entire try block unreachable.
+    // Check for this case and remove the entry from the EH table.
+    //
+    // For OSR, just the initial part of a try range may become
+    // unreachable; if so we need to shrink the try range down
+    // to the portion that was imported.
     unsigned  XTnum;
     EHblkDsc* HBtab;
-    INDEBUG(unsigned delCnt = 0;)
+    unsigned  delCnt = 0;
 
+    // Walk the EH regions from inner to outer
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
     AGAIN:
-        /* If the beginning of the try block was not imported, we
-         * need to remove the entry from the EH table. */
 
+        // If start of a try region was not imported, then we either
+        // need to trim the region extent, or remove the region
+        // entirely.
+        //
+        // In normal importation, it is not valid to jump into the
+        // middle of a try, so if the try entry was not imported, the
+        // entire try can be removed.
+        //
+        // In OSR importation the entry patchpoint may be in the
+        // middle of a try, and we need to determine how much of the
+        // try ended up getting imported.  Because of backwards
+        // branches we may end up importing the entire try even though
+        // execution starts in the middle.
+        //
+        // Note it is common in both cases for the ends of trys (and
+        // associated handlers) to end up not getting imported, so if
+        // the try region is not removed, we always check if we need
+        // to trim the ends.
+        //
         if (HBtab->ebdTryBeg->bbFlags & BBF_REMOVED)
         {
-            noway_assert(!(HBtab->ebdTryBeg->bbFlags & BBF_IMPORTED));
-#ifdef DEBUG
-            if (verbose)
+            // Usual case is that the entire try can be removed.
+            bool removeTryRegion = true;
+
+            if (opts.IsOSR())
             {
-                printf("Beginning of try block (" FMT_BB ") not imported "
-                       "- remove index #%u from the EH table\n",
-                       HBtab->ebdTryBeg->bbNum, XTnum + delCnt);
+                // For OSR we may need to trim the try region start.
+                //
+                // We rely on the fact that removed blocks have been snipped from
+                // the main block list, but that those removed blocks have kept
+                // their bbprev (and bbnext) links.
+                //
+                // Find the first unremoved block before the try entry block.
+                //
+                BasicBlock* const oldTryEntry  = HBtab->ebdTryBeg;
+                BasicBlock*       tryEntryPrev = oldTryEntry->bbPrev;
+                while ((tryEntryPrev != nullptr) && ((tryEntryPrev->bbFlags & BBF_REMOVED) != 0))
+                {
+                    tryEntryPrev = tryEntryPrev->bbPrev;
+                }
+
+                // Because we've added an unremovable scratch block as
+                // fgFirstBB, this backwards walk should always find
+                // some block.
+                assert(tryEntryPrev != nullptr);
+
+                // If there is a next block of this prev block, and that block is
+                // contained in the current try, we'd like to make that block
+                // the new start of the try, and keep the region.
+                BasicBlock* newTryEntry    = tryEntryPrev->bbNext;
+                bool        updateTryEntry = false;
+
+                if ((newTryEntry != nullptr) && bbInTryRegions(XTnum, newTryEntry))
+                {
+                    // We want to trim the begin extent of the current try region to newTryEntry.
+                    //
+                    // This method is invoked after EH normalization, so we may need to ensure all
+                    // try regions begin at blocks that are not the start or end of some other try.
+                    //
+                    // So, see if this block is already the start or end of some other EH region.
+                    if (bbIsTryBeg(newTryEntry))
+                    {
+                        // We've already end-trimmed the inner try. Do the same now for the
+                        // current try, so it is easier to detect when they mutually protect.
+                        // (we will call this again later, which is harmless).
+                        fgSkipRmvdBlocks(HBtab);
+
+                        // If this try and the inner try form a "mutually protected try region"
+                        // then we must continue to share the try entry block.
+                        EHblkDsc* const HBinner = ehGetBlockTryDsc(newTryEntry);
+                        assert(HBinner->ebdTryBeg == newTryEntry);
+
+                        if (HBtab->ebdTryLast != HBinner->ebdTryLast)
+                        {
+                            updateTryEntry = true;
+                        }
+                    }
+                    // Also, a try and handler cannot start at the same block
+                    else if (bbIsHandlerBeg(newTryEntry))
+                    {
+                        updateTryEntry = true;
+                    }
+
+                    if (updateTryEntry)
+                    {
+                        // We need to trim the current try to begin at a different block. Normally
+                        // this would be problematic as we don't have enough context to redirect
+                        // all the incoming edges, but we know oldTryEntry is unreachable.
+                        // So there are no incoming edges to worry about.
+                        //
+                        assert(!tryEntryPrev->bbFallsThrough());
+
+                        // What follows is similar to fgNewBBInRegion, but we can't call that
+                        // here as the oldTryEntry is no longer in the main bb list.
+                        newTryEntry = bbNewBasicBlock(BBJ_NONE);
+                        newTryEntry->bbFlags |= (BBF_IMPORTED | BBF_INTERNAL);
+
+                        // Set the right EH region indices on this new block.
+                        //
+                        // Patchpoints currently cannot be inside handler regions,
+                        // and so likewise the old and new try region entries.
+                        assert(!oldTryEntry->hasHndIndex());
+                        newTryEntry->setTryIndex(XTnum);
+                        newTryEntry->clearHndIndex();
+                        fgInsertBBafter(tryEntryPrev, newTryEntry);
+
+                        JITDUMP("OSR: changing start of try region #%u from " FMT_BB " to new " FMT_BB "\n",
+                                XTnum + delCnt, oldTryEntry->bbNum, newTryEntry->bbNum);
+                    }
+                    else
+                    {
+                        // We can just trim the try to newTryEntry as it is not part of some inner try or handler.
+                        JITDUMP("OSR: changing start of try region #%u from " FMT_BB " to " FMT_BB "\n", XTnum + delCnt,
+                                oldTryEntry->bbNum, newTryEntry->bbNum);
+                    }
+
+                    // Update the handler table
+                    fgSetTryBeg(HBtab, newTryEntry);
+
+                    // Try entry blocks get specially marked and have special protection.
+                    HBtab->ebdTryBeg->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_HAS_LABEL;
+
+                    // We are keeping this try region
+                    removeTryRegion = false;
+                }
             }
-            delCnt++;
-#endif // DEBUG
 
-            fgRemoveEHTableEntry(XTnum);
-
-            if (XTnum < compHndBBtabCount)
+            if (removeTryRegion)
             {
-                // There are more entries left to process, so do more. Note that
-                // HBtab now points to the next entry, that we copied down to the
-                // current slot. XTnum also stays the same.
-                goto AGAIN;
-            }
+                // In the dump, refer to the region by its original index.
+                JITDUMP("Try region #%u (" FMT_BB " -- " FMT_BB ") not imported, removing try from the EH table\n",
+                        XTnum + delCnt, HBtab->ebdTryBeg->bbNum, HBtab->ebdTryLast->bbNum);
 
-            break; // no more entries (we deleted the last one), so exit the loop
+                delCnt++;
+
+                fgRemoveEHTableEntry(XTnum);
+
+                if (XTnum < compHndBBtabCount)
+                {
+                    // There are more entries left to process, so do more. Note that
+                    // HBtab now points to the next entry, that we copied down to the
+                    // current slot. XTnum also stays the same.
+                    goto AGAIN;
+                }
+
+                // no more entries (we deleted the last one), so exit the loop
+                break;
+            }
         }
 
-/* At this point we know we have a valid try block */
-
-#ifdef DEBUG
+        // If we get here, the try entry block was not removed.
+        // Check some invariants.
         assert(HBtab->ebdTryBeg->bbFlags & BBF_IMPORTED);
         assert(HBtab->ebdTryBeg->bbFlags & BBF_DONT_REMOVE);
-
         assert(HBtab->ebdHndBeg->bbFlags & BBF_IMPORTED);
         assert(HBtab->ebdHndBeg->bbFlags & BBF_DONT_REMOVE);
 
@@ -9813,10 +9961,10 @@ void Compiler::fgRemoveEmptyBlocks()
             assert(HBtab->ebdFilter->bbFlags & BBF_IMPORTED);
             assert(HBtab->ebdFilter->bbFlags & BBF_DONT_REMOVE);
         }
-#endif // DEBUG
 
+        // Finally, do region end trimming -- update try and handler ends to reflect removed blocks.
         fgSkipRmvdBlocks(HBtab);
-    } /* end of the for loop over XTnum */
+    }
 
     // Renumber the basic blocks
     JITDUMP("\nRenumbering the basic blocks for fgRemoveEmptyBlocks\n");
@@ -13221,6 +13369,10 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
         if (fgFirstBB->bbWeight == 0)
         {
             fgFirstBB->bbFlags |= BBF_RUN_RARELY;
+        }
+        else
+        {
+            fgFirstBB->bbFlags &= ~BBF_RUN_RARELY;
         }
     }
 
@@ -20570,6 +20722,12 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
+    // For OSR, we allow the firstBB to branch to the middle of a try.
+    if (comp->opts.IsOSR() && (blockPred == comp->fgFirstBB))
+    {
+        return true;
+    }
+
     printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
@@ -20752,6 +20910,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #endif // DEBUG
 
     fgDebugCheckBlockLinks();
+    fgFirstBBisScratch();
 
     if (fgBBcount > 10000 && expensiveDebugCheckLevel < 1)
     {

@@ -17,10 +17,10 @@
 
     <!-- BaseIntermediateOutputPath is used by the SDK as the location
          for the lock file, and props/targets from nuget packages. -->
-    <BaseIntermediateOutputPath>$(RootRepoDir)/artifacts/tests/coreclr/obj/$(OSPlatformConfig)/Managed/$(BuildProjectRelativeDir)</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(RepoRoot)/artifacts/tests/coreclr/obj/$(OSPlatformConfig)/Managed/$(BuildProjectRelativeDir)</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
 
-    <BaseOutputPath>$(RootRepoDir)/artifacts/tests/coreclr/$(OSPlatformConfig)/$(BuildProjectRelativeDir)</BaseOutputPath>
+    <BaseOutputPath>$(RepoRoot)/artifacts/tests/coreclr/$(OSPlatformConfig)/$(BuildProjectRelativeDir)</BaseOutputPath>
     <OutputPath>$(BaseOutputPath)</OutputPath>
 
   </PropertyGroup>

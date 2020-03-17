@@ -20,14 +20,14 @@
 
 #include <dbgenginemetrics.h>
 
+// Globals
+extern HINSTANCE g_hThisInst;
+
 // Locals.
 BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                        HINSTANCE    hInst,                  // Instance handle of the loaded module.
                        DWORD        dwReason,               // Reason for loading.
                        LPVOID       lpReserved);                // Unused.
-
-// Globals.
-HINSTANCE g_hThisInst;  // This library.
 
 #ifndef CROSSGEN_COMPILE
 //*****************************************************************************
@@ -35,8 +35,6 @@ HINSTANCE g_hThisInst;  // This library.
 //*****************************************************************************
 
 #include <shlwapi.h>
-
-extern "C" IExecutionEngine* IEE();
 
 #ifdef TARGET_WINDOWS
 
@@ -62,15 +60,11 @@ extern "C" BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpRe
             // Initialization" check and makes it pass.
             __security_init_cookie();
 
-            // It's critical that we invoke InitUtilCode() before the CRT initializes.
+            // It's critical that we initialize g_hmodCoreCLR before the CRT initializes.
             // We have a lot of global ctors that will break if we let the CRT initialize without
             // this step having been done.
 
-            CoreClrCallbacks cccallbacks;
-            cccallbacks.m_hmodCoreCLR               = (HINSTANCE)hInstance;
-            cccallbacks.m_pfnIEE                    = IEE;
-            cccallbacks.m_pfnGetCORSystemDirectory  = GetCORSystemDirectoryInternaL;
-            InitUtilcode(cccallbacks);
+            g_hmodCoreCLR = (HINSTANCE)hInstance;
 
             if (!(result = _CRT_INIT(hInstance, dwReason, lpReserved)))
             {
@@ -115,15 +109,7 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     case DLL_PROCESS_ATTACH:
         {
 #ifndef TARGET_WINDOWS
-            // It's critical that we invoke InitUtilCode() before the CRT initializes.
-            // We have a lot of global ctors that will break if we let the CRT initialize without
-            // this step having been done.
-
-            CoreClrCallbacks cccallbacks;
-            cccallbacks.m_hmodCoreCLR = (HINSTANCE)hInstance;
-            cccallbacks.m_pfnIEE = IEE;
-            cccallbacks.m_pfnGetCORSystemDirectory = GetCORSystemDirectoryInternaL;
-            InitUtilcode(cccallbacks);
+            g_hmodCoreCLR = (HINSTANCE)hInstance;
 #endif
 
             // Save the module handle.

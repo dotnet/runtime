@@ -818,6 +818,8 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
     return uResumePC;
 }
 
+void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFrameChain, LPVOID MemoryStackFp);
+
 // On CoreARM, the MemoryStackFp is ULONG when passed by RtlDispatchException,
 // unlike its 64bit counterparts.
 EXTERN_C EXCEPTION_DISPOSITION
@@ -974,7 +976,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             BOOL fExternalException;
 
             fExternalException = (!ExecutionManager::IsManagedCode(ip) &&
-                                  !IsIPInModule(g_pMSCorEE, ip));
+                                  !IsIPInModule(g_hThisInst, ip));
 
             if (fExternalException)
             {
@@ -1262,6 +1264,22 @@ lExit: ;
 
     if ((ExceptionContinueSearch == returnDisposition))
     {
+        if (dwExceptionFlags & EXCEPTION_UNWINDING)
+        {
+            EECodeInfo codeInfo(pDispatcherContext->ControlPc);
+            if (codeInfo.IsValid())
+            {
+                GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+                if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
+                {
+                    // Exception is being propagated from a native callable method into its native caller.
+                    // The explicit frame chain needs to be unwound at this boundary.
+                    bool fIsSO = pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW;
+                    CleanUpForSecondPass(pThread, fIsSO, (void*)MemoryStackFp, (void*)MemoryStackFp);
+                }
+            }
+        }
+
         GCX_PREEMP_NO_DTOR();
     }
 
@@ -5824,7 +5842,7 @@ BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain
     // We're safe only if the managed method will be unwound also
     LPVOID managedSP = dac_cast<PTR_VOID>(GetRegdisplaySP(&rd));
 
-    if (managedSP < MemoryStackFpForFrameChain)
+    if (managedSP <= MemoryStackFpForFrameChain)
     {
         return TRUE;
     }
@@ -6841,7 +6859,7 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
 #if defined(DACCESS_COMPILE)
             HMODULE_TGT hEE = DacGlobalBase();
 #else  // !DACCESS_COMPILE
-            HMODULE_TGT hEE = g_pMSCorEE;
+            HMODULE_TGT hEE = g_hThisInst;
 #endif // !DACCESS_COMPILE
             fIsCallerInVM = IsIPInModule(hEE, callerIP);
 #endif // TARGET_UNIX

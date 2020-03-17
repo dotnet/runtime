@@ -17,7 +17,6 @@
 #include "securitywrapper.h"
 #endif
 #include <aclapi.h>
-#include <hosting.h>
 
 #include "eemessagebox.h"
 

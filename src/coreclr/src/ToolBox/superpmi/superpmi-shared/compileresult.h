@@ -112,6 +112,10 @@ public:
         DWORD     cVars;
         DWORD     vars_offset;
     };
+    struct Agnostic_SetPatchpointInfo
+    {
+        DWORD     index;
+    };
     struct Agnostic_CORINFO_EH_CLAUSE2
     {
         DWORD Flags;
@@ -199,6 +203,10 @@ public:
     void recSetVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo* vars);
     void dmpSetVars(DWORD key, const Agnostic_SetVars& value);
     bool repSetVars(CORINFO_METHOD_HANDLE* ftn, ULONG32* cVars, ICorDebugInfo::NativeVarInfo** vars);
+
+    void recSetPatchpointInfo(PatchpointInfo* patchpointInfo);
+    void dmpSetPatchpointInfo(DWORD key, const Agnostic_SetPatchpointInfo& value);
+    bool repSetPatchpointInfo(PatchpointInfo** patchpointInfo);
 
     void recAllocGCInfo(size_t size, void* retval);
     void recAllocGCInfoCapture();

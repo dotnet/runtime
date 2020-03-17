@@ -100,7 +100,7 @@ namespace System.Net.Security
             ref SafeGssContextHandle? context,
             SafeGssCredHandle credential,
             bool isNtlm,
-            ChannelBinding channelBinding,
+            ChannelBinding? channelBinding,
             SafeGssNameHandle? targetName,
             Interop.NetSecurityNative.GssFlags inFlags,
             byte[]? buffer,
@@ -279,7 +279,7 @@ namespace System.Net.Security
         private static SecurityStatusPal EstablishSecurityContext(
           SafeFreeNegoCredentials credential,
           ref SafeDeleteContext? context,
-          ChannelBinding channelBinding,
+          ChannelBinding? channelBinding,
           string targetName,
           ContextFlagsPal inFlags,
           byte[]? incomingBlob,
@@ -361,7 +361,7 @@ namespace System.Net.Security
             string spn,
             ContextFlagsPal requestedContextFlags,
             byte[]? incomingBlob,
-            ChannelBinding channelBinding,
+            ChannelBinding? channelBinding,
             ref byte[]? resultBlob,
             ref ContextFlagsPal contextFlags)
         {
@@ -400,7 +400,7 @@ namespace System.Net.Security
             ref SafeDeleteContext? securityContext,
             ContextFlagsPal requestedContextFlags,
             byte[]? incomingBlob,
-            ChannelBinding channelBinding,
+            ChannelBinding? channelBinding,
             ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
         {

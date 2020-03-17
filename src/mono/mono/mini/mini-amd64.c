@@ -1467,45 +1467,28 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 	return opts;
 }
 
-/*
- * This function test for all SSE functions supported.
- *
- * Returns a bitmask corresponding to all supported versions.
- * 
- */
-guint32
-mono_arch_cpu_enumerate_simd_versions (void)
-{
-	guint32 sse_opts = 0;
-
-	if (mono_hwcap_x86_has_sse1)
-		sse_opts |= SIMD_VERSION_SSE1;
-
-	if (mono_hwcap_x86_has_sse2)
-		sse_opts |= SIMD_VERSION_SSE2;
-
-	if (mono_hwcap_x86_has_sse3)
-		sse_opts |= SIMD_VERSION_SSE3;
-
-	if (mono_hwcap_x86_has_ssse3)
-		sse_opts |= SIMD_VERSION_SSSE3;
-
-	if (mono_hwcap_x86_has_sse41)
-		sse_opts |= SIMD_VERSION_SSE41;
-
-	if (mono_hwcap_x86_has_sse42)
-		sse_opts |= SIMD_VERSION_SSE42;
-
-	if (mono_hwcap_x86_has_sse4a)
-		sse_opts |= SIMD_VERSION_SSE4a;
-
-	return sse_opts;
-}
-
 MonoCPUFeatures
 mono_arch_get_cpu_features (void)
 {
 	guint64 features = MONO_CPU_INITED;
+
+	if (mono_hwcap_x86_has_sse1)
+		features |= MONO_CPU_X86_SSE;
+
+	if (mono_hwcap_x86_has_sse2)
+		features |= MONO_CPU_X86_SSE2;
+
+	if (mono_hwcap_x86_has_sse3)
+		features |= MONO_CPU_X86_SSE3;
+
+	if (mono_hwcap_x86_has_ssse3)
+		features |= MONO_CPU_X86_SSSE3;
+
+	if (mono_hwcap_x86_has_sse41)
+		features |= MONO_CPU_X86_SSE41;
+
+	if (mono_hwcap_x86_has_sse42)
+		features |= MONO_CPU_X86_SSE42;
 
 	if (mono_hwcap_x86_has_popcnt)
 		features |= MONO_CPU_X86_POPCNT;
@@ -5840,7 +5823,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			if ((d == 0.0) && (mono_signbit (d) == 0)) {
 				amd64_sse_xorpd_reg_reg (code, ins->dreg, ins->dreg);
-			} else if (cfg->compile_aot && (cfg->flags & JIT_FLAG_CODE_EXEC_ONLY)) {
+			} else if (cfg->compile_aot && cfg->code_exec_only) {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8_GOT, ins->inst_p0);
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof(gpointer));
 				amd64_sse_movsd_reg_membase (code, ins->dreg, AMD64_R11, 0);
@@ -5859,7 +5842,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				else
 					amd64_sse_xorpd_reg_reg (code, ins->dreg, ins->dreg);
 			} else {
-				if (cfg->compile_aot && (cfg->flags & JIT_FLAG_CODE_EXEC_ONLY)) {
+				if (cfg->compile_aot && cfg->code_exec_only) {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4_GOT, ins->inst_p0);
 					amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof(gpointer));
 					amd64_sse_movss_reg_membase (code, ins->dreg, AMD64_R11, 0);

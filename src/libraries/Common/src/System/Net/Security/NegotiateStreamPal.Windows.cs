@@ -77,7 +77,7 @@ namespace System.Net.Security
             string spn,
             ContextFlagsPal requestedContextFlags,
             byte[]? incomingBlob,
-            ChannelBinding channelBinding,
+            ChannelBinding? channelBinding,
             ref byte[]? resultBlob,
             ref ContextFlagsPal contextFlags)
         {
@@ -134,7 +134,7 @@ namespace System.Net.Security
             ref SafeDeleteContext? securityContext,
             ContextFlagsPal requestedContextFlags,
             byte[]? incomingBlob,
-            ChannelBinding channelBinding,
+            ChannelBinding? channelBinding,
             ref byte[]? resultBlob,
             ref ContextFlagsPal contextFlags)
         {

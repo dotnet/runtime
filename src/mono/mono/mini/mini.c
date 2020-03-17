@@ -3175,6 +3175,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->interp = (flags & JIT_FLAG_INTERP) != 0;
 	cfg->use_current_cpu = (flags & JIT_FLAG_USE_CURRENT_CPU) != 0;
 	cfg->self_init = (flags & JIT_FLAG_SELF_INIT) != 0;
+	cfg->code_exec_only = (flags & JIT_FLAG_CODE_EXEC_ONLY) != 0;
 	cfg->backend = current_backend;
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {
@@ -4335,7 +4336,7 @@ mini_get_cpu_features (MonoCompile* cfg)
 		// detect current CPU features if we are in JIT mode or AOT with use_current_cpu flag.
 #if defined(ENABLE_LLVM)
 		features = mono_llvm_get_cpu_features (); // llvm has a nice built-in API to detect features
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) || defined(TARGET_X86)
 		features = mono_arch_get_cpu_features ();
 #endif
 	}
