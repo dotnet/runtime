@@ -6,7 +6,7 @@
 
 #include "pal_digest.h"
 #include "pal_types.h"
-#include "pal_compiler.h"
+#include "compiler.h"
 
 typedef struct hmac_ctx_st HmacCtx;
 

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #include "pal_locale.h"
-#include "pal_compiler.h"
+#include "compiler.h"
 #include "pal_errors.h"
 
 /*
@@ -70,25 +70,25 @@ typedef enum
 // the function pointer definition for the callback used in EnumCalendarInfo
 typedef void (*EnumCalendarInfoCallback)(const UChar*, const void*);
 
-PALEXPORT int32_t GlobalizationNative_GetCalendars(const UChar* localeName,
+EXTERN_C PALEXPORT int32_t GlobalizationNative_GetCalendars(const UChar* localeName,
                                                    CalendarId* calendars,
                                                    int32_t calendarsCapacity);
 
-PALEXPORT ResultCode GlobalizationNative_GetCalendarInfo(const UChar* localeName,
+EXTERN_C PALEXPORT ResultCode GlobalizationNative_GetCalendarInfo(const UChar* localeName,
                                                          CalendarId calendarId,
                                                          CalendarDataType dataType,
                                                          UChar* result,
                                                          int32_t resultCapacity);
 
-PALEXPORT int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
+EXTERN_C PALEXPORT int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
                                                        const UChar* localeName,
                                                        CalendarId calendarId,
                                                        CalendarDataType dataType,
                                                        const void* context);
 
-PALEXPORT int32_t GlobalizationNative_GetLatestJapaneseEra(void);
+EXTERN_C PALEXPORT int32_t GlobalizationNative_GetLatestJapaneseEra(void);
 
-PALEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
+EXTERN_C PALEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
                                                               int32_t* startYear,
                                                               int32_t* startMonth,
                                                               int32_t* startDay);

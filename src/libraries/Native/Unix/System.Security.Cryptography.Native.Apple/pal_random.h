@@ -5,7 +5,7 @@
 #pragma once
 
 #include "pal_types.h"
-#include "pal_compiler.h"
+#include "compiler.h"
 
 /*
 Shims CCRandomGenerateBytes, putting the resulting CCRNGStatus value in pkCCStatus.

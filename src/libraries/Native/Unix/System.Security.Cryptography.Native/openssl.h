@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "pal_compiler.h"
+#include "compiler.h"
 #include "opensslshim.h"
 
 PALEXPORT int32_t CryptoNative_GetX509Thumbprint(X509* x509, uint8_t* pBuf, int32_t cBuf);

@@ -4,7 +4,10 @@
 //
 
 #include <stdint.h>
+
+#ifdef TARGET_UNIX
 #include <unistd.h>
+#endif
 
 #include "pal_errors_internal.h"
 #include "pal_locale_internal.h"

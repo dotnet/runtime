@@ -108,7 +108,7 @@ set(CORECLR_LIBRARIES
     gcinfo # Condition="'$(TargetCpu)'=='amd64' or '$(TargetCpu)' == 'arm' or '$(TargetCpu)' == 'arm64'"
     ildbsymlib
     utilcode
-    v3binder
+    System.Globalization.Native-Static
     libraries-native
     interop
 )
@@ -136,7 +136,6 @@ else()
         ${END_WHOLE_ARCHIVE}
         mscorrc
         palrt
-        System.Globalization.Native-Static
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 

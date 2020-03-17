@@ -6,7 +6,7 @@
 #pragma once
 
 #include "pal_locale.h"
-#include "pal_compiler.h"
+#include "compiler.h"
 #include "pal_errors.h"
 
 /*
@@ -19,7 +19,7 @@ typedef enum
     TimeZoneDisplayName_DaylightSavings = 2,
 } TimeZoneDisplayNameType;
 
-PALEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
+EXTERN_C PALEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
                                                                 const UChar* timeZoneId,
                                                                 TimeZoneDisplayNameType type,
                                                                 UChar* result,

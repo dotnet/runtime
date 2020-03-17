@@ -5,7 +5,7 @@
 #pragma once
 
 #include "pal_seckey.h"
-#include "pal_compiler.h"
+#include "compiler.h"
 
 #include <Security/Security.h>
 

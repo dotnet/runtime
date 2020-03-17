@@ -3,7 +3,13 @@
 // See the LICENSE file in the project root for more information.
 //
 
+#ifdef TARGET_UNIX
 #include <dlfcn.h>
+#else
+#include <windows.h>
+#include <libloaderapi.h>
+#include <errhandlingapi.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,6 +26,7 @@ FOR_ALL_ICU_FUNCTIONS
 static void* libicuuc = NULL;
 static void* libicui18n = NULL;
 
+#ifdef TARGET_UNIX
 #ifdef __APPLE__
 
 static int FindICULibs()
@@ -243,6 +250,23 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 }
 
 #endif // __APPLE__
+#else // TARGET_UNIX
+
+// Windows implementation for FindICULibs
+static int FindICULibs()
+{
+    libicuuc = LoadLibraryExW(L"icu.dll", NULL, 0);
+    if (libicuuc == NULL)
+    {
+        return FALSE;
+    }
+
+    // Windows has a single dll for icu.
+    libicui18n = libicuuc;
+    return TRUE;
+}
+
+#endif // TARGET_UNIX
 
 // GlobalizationNative_LoadICU
 // This method get called from the managed side during the globalization initialization.
@@ -250,6 +274,7 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 // return 0 if failed to load ICU and 1 otherwise
 int32_t GlobalizationNative_LoadICU()
 {
+#ifdef TARGET_UNIX
 #ifdef __APPLE__
 
     if (!FindICULibs())
@@ -284,6 +309,18 @@ int32_t GlobalizationNative_LoadICU()
 
 #endif // __APPLE__
 
+#else // TARGET_UNIX
+
+    if (!FindICULibs())
+    {
+        return FALSE;
+    }
+
+#define PER_FUNCTION_BLOCK(fn, lib) \
+    fn##_ptr = (__typeof(fn)*)GetProcAddress((HMODULE)lib, #fn); \
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", #fn, GetLastError()); abort(); }
+
+#endif // TARGET_UNIX
     FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 

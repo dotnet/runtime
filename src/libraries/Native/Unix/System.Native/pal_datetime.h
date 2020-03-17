@@ -4,6 +4,6 @@
 
 #pragma once
 
-#include "pal_compiler.h"
+#include "compiler.h"
 
 PALEXPORT int64_t SystemNative_GetSystemTimeAsTicks(void);

@@ -13,6 +13,10 @@
 #include "pal_errors_internal.h"
 #include "pal_collation.h"
 
+#ifndef TARGET_UNIX
+#include <atomic>
+#endif
+
 c_static_assert_msg(UCOL_EQUAL == 0, "managed side requires 0 for equal strings");
 c_static_assert_msg(UCOL_LESS < 0, "managed side requires less than zero for a < b");
 c_static_assert_msg(UCOL_GREATER > 0, "managed side requires greater than zero for a > b");
@@ -168,7 +172,7 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
         ((needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule) ? 5 * g_HalfFullCharsLength : 0);
 
     UChar* items;
-    customRules->items = items = malloc((size_t)capacity * sizeof(UChar));
+    customRules->items = items = (UChar*)malloc((size_t)capacity * sizeof(UChar));
     if (customRules->items == NULL)
     {
         free(customRules);
@@ -267,7 +271,7 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
         const UChar* localeRules = ucol_getRules(pCollator, &localeRulesLength);
         int32_t completeRulesLength = localeRulesLength + customRuleLength + 1;
 
-        UChar* completeRules = calloc((size_t)completeRulesLength, sizeof(UChar));
+        UChar* completeRules = (UChar*)calloc((size_t)completeRulesLength, sizeof(UChar));
 
         for (int i = 0; i < localeRulesLength; i++)
         {
@@ -403,8 +407,12 @@ static const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32
         pCollator = CloneCollatorWithOptions(pSortHandle->collatorsPerOption[0], options, pErr);
         UCollator* pNull = NULL;
 
+#ifdef TARGET_UNIX
         // we are not using the standard atomic_compare_exchange_strong to workaround bugs in clang 5.0 (https://bugs.llvm.org/show_bug.cgi?id=37457)
         if (!__atomic_compare_exchange_n(&pSortHandle->collatorsPerOption[options], &pNull, pCollator, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+#else
+        if (!::std::atomic_compare_exchange_strong_explicit((volatile ::std::atomic<UCollator*> *const)&pSortHandle->collatorsPerOption[options], &pNull, pCollator, ::std::memory_order_seq_cst, ::std::memory_order_seq_cst))
+#endif
         {
             ucol_close(pCollator);
             pCollator = pSortHandle->collatorsPerOption[options];
@@ -419,7 +427,7 @@ int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
 {
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, 0, &err);
-    int32_t result = 0;
+    int32_t result = 0xFFFFFFFF;
 
     if (U_SUCCESS(err))
     {
@@ -428,9 +436,6 @@ int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
     else
     {
         assert(FALSE && "Unexpected ucol_getVersion to fail.");
-
-        // we didn't use UCOL_TAILORINGS_VERSION because it is deprecated in ICU v5
-        result = UCOL_RUNTIME_VERSION << 16 | UCOL_BUILDER_VERSION;
     }
     return result;
 }
@@ -569,11 +574,15 @@ int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
         {
             UChar32 srcCodepoint, trgCodepoint;
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"
+#endif
             U16_NEXT(src, srcIdx, cwSourceLength, srcCodepoint);
             U16_NEXT(trg, trgIdx, cwTargetLength, trgCodepoint);
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
             if (!AreEqualOrdinalIgnoreCase(srcCodepoint, trgCodepoint))
             {
@@ -852,11 +861,15 @@ int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
     {
         UChar32 str1Codepoint, str2Codepoint;
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"
+#endif
         U16_NEXT(lpStr1, str1Idx, cwStr1Length, str1Codepoint);
         U16_NEXT(lpStr2, str2Idx, cwStr2Length, str2Codepoint);
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
         if (str1Codepoint != str2Codepoint && u_toupper(str1Codepoint) != u_toupper(str2Codepoint))
         {

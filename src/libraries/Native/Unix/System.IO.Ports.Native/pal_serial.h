@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
-#include "pal_compiler.h"
+#include "compiler.h"
 
 PALEXPORT intptr_t SystemIoPortsNative_SerialPortOpen(const char * name);
 PALEXPORT int SystemIoPortsNative_SerialPortClose(intptr_t fd);

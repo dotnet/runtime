@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "pal_compiler.h"
+#include "compiler.h"
 #include "pal_types.h"
 #include "pal_errno.h"
 

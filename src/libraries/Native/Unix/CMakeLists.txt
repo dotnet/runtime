@@ -181,6 +181,7 @@ if(CLR_CMAKE_TARGET_UNIX)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
     add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
+    add_definitions(-DTARGET_UNIX)
 endif(CLR_CMAKE_TARGET_UNIX)
 
 function(install_library_and_symbols targetName)
@@ -205,6 +206,8 @@ endfunction()
 
 include(configure.cmake)
 
+include_directories(../AnyOS/Common)
+
 add_subdirectory(System.IO.Compression.Native)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -221,7 +224,7 @@ add_subdirectory(System.Native)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
 if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
-    add_subdirectory(System.Globalization.Native)
+    add_subdirectory(../AnyOS/System.Globalization.Native System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
 endif()
 if (NOT CLR_CMAKE_TARGET_IOS)

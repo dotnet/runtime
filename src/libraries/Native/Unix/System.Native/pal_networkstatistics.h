@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "pal_compiler.h"
+#include "compiler.h"
 #include "pal_tcpstate.h"
 
 // Exchange types used to normalize Network protocol statistics information

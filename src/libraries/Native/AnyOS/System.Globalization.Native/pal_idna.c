@@ -8,6 +8,13 @@
 #include "pal_icushim_internal.h"
 #include "pal_idna.h"
 
+#ifndef TARGET_UNIX
+// Windows icu headers doesn't define this member.
+enum {
+    UIDNA_ALLOW_UNASSIGNED=1
+};
+#endif
+
 static const uint32_t AllowUnassigned = 0x1;
 static const uint32_t UseStd3AsciiRules = 0x2;
 
