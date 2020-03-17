@@ -688,7 +688,7 @@ namespace System.StubHelpers
     {
         // See interopconverter.h
         [Flags]
-        private enum ItfMarshalFlags : int
+        private enum ItfMarshalFlags
         {
             ITF_MARSHAL_INSP_ITF        = 0x01,
             ITF_MARSHAL_SUPPRESS_ADDREF = 0x02,
