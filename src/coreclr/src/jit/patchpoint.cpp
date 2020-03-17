@@ -231,6 +231,12 @@ void Compiler::fgTransformPatchpoints()
         return;
     }
 
+    if (opts.IsReversePInvoke())
+    {
+        JITDUMP(" -- unable to handle Reverse P/Invoke\n");
+        return;
+    }
+
     PatchpointTransformer ppTransformer(this);
     int                   count = ppTransformer.Run();
     JITDUMP("\n*************** After fgTransformPatchpoints() [%d patchpoints transformed]\n", count);
