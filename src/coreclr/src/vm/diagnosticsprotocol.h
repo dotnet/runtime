@@ -128,7 +128,7 @@ namespace DiagnosticsIpc
      * 
      * The flow for Advertise is a one-way burst of 24 bytes consisting of
      * 6 bytes - "AD_V1\0" (ASCII chars + null byte)
-     * 2 bytes - CLR Instance ID (little-endian)
+     * 2 bytes - random 16 bit number cookie (little-endian)
      * 8 bytes - PID (little-endian)
      */
 
@@ -136,9 +136,21 @@ namespace DiagnosticsIpc
 
     const uint32_t AdvertiseSize = 16;
 
+    static uint16_t AdvertiseCookie_V1 = 0;
+
+    inline uint16_t GetAdvertiseCookie_V1()
+    {
+        if (AdvertiseCookie_V1 == 0)
+        {
+            AdvertiseCookie_V1 = (uint16_t)GetRandomInt((int)((uint16_t)-1));
+        }
+
+        return AdvertiseCookie_V1;
+    }
+
     inline bool PopulateIpcAdvertisePayload_V1(uint8_t (&buf)[AdvertiseSize])
     {
-        uint16_t clrInstanceId = GetClrInstanceId();
+        uint16_t cookie = GetAdvertiseCookie_V1();
         uint64_t pid = GetCurrentProcessId();
         uint8_t *bufferCursor = &buf[0];
         uint32_t bufferLen = sizeof(buf);
@@ -147,7 +159,7 @@ namespace DiagnosticsIpc
             if (!TryWriteNumberLittleEndian(bufferCursor, bufferLen, AdvertiseMagic_V1[i]))
                 return false;
         
-        if (!TryWriteNumberLittleEndian(bufferCursor, bufferLen, clrInstanceId) ||
+        if (!TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie) ||
             !TryWriteNumberLittleEndian(bufferCursor, bufferLen, pid))
             return false;
 
