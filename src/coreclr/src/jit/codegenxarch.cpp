@@ -2989,8 +2989,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     // Fill as much as possible using SSE2 stores.
     if (size >= XMM_REGSIZE_BYTES)
     {
-        bool useYmm =
-            ((compiler->getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES) && (size >= YMM_REGSIZE_BYTES));
+#ifdef FEATURE_SIMD
+        bool useYmm = (compiler->getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES) && (size >= YMM_REGSIZE_BYTES);
+#else
+        bool useYmm             = false;
+#endif
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
         if (src->gtSkipReloadOrCopy()->IsIntegralConst(0))
@@ -3255,10 +3258,12 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
             // allocate a GPR just for the remainder.
         };
 
+#ifdef FEATURE_SIMD
         if ((compiler->getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES) && (size >= YMM_REGSIZE_BYTES))
         {
             unrollUsingXMM(YMM_REGSIZE_BYTES, tempReg);
         }
+#endif
         if (size >= XMM_REGSIZE_BYTES)
         {
             unrollUsingXMM(XMM_REGSIZE_BYTES, tempReg);

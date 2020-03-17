@@ -8173,7 +8173,7 @@ private:
     {
         return false;
     }
-#endif // FEATURE_SIMD
+#endif // !FEATURE_SIMD
 
 public:
     //------------------------------------------------------------------------
