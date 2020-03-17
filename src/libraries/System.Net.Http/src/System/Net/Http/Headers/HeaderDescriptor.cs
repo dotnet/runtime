@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Unicode;
 
 namespace System.Net.Http.Headers
@@ -15,7 +16,7 @@ namespace System.Net.Http.Headers
     internal readonly struct HeaderDescriptor : IEquatable<HeaderDescriptor>
     {
         private readonly string _headerName;
-        private readonly KnownHeader _knownHeader;
+        private readonly KnownHeader? _knownHeader;
 
         public HeaderDescriptor(KnownHeader knownHeader)
         {
@@ -31,23 +32,23 @@ namespace System.Net.Http.Headers
         }
 
         public string Name => _headerName;
-        public HttpHeaderParser Parser => _knownHeader?.Parser;
+        public HttpHeaderParser? Parser => _knownHeader?.Parser;
         public HttpHeaderType HeaderType => _knownHeader == null ? HttpHeaderType.Custom : _knownHeader.HeaderType;
-        public KnownHeader KnownHeader => _knownHeader;
+        public KnownHeader? KnownHeader => _knownHeader;
 
         public bool Equals(HeaderDescriptor other) =>
             _knownHeader == null ?
                 string.Equals(_headerName, other._headerName, StringComparison.OrdinalIgnoreCase) :
                 _knownHeader == other._knownHeader;
         public override int GetHashCode() => _knownHeader?.GetHashCode() ?? StringComparer.OrdinalIgnoreCase.GetHashCode(_headerName);
-        public override bool Equals(object obj) => throw new InvalidOperationException();   // Ensure this is never called, to avoid boxing
+        public override bool Equals(object? obj) => throw new InvalidOperationException();   // Ensure this is never called, to avoid boxing
 
         // Returns false for invalid header name.
         public static bool TryGet(string headerName, out HeaderDescriptor descriptor)
         {
             Debug.Assert(!string.IsNullOrEmpty(headerName));
 
-            KnownHeader knownHeader = KnownHeaders.TryGetKnownHeader(headerName);
+            KnownHeader? knownHeader = KnownHeaders.TryGetKnownHeader(headerName);
             if (knownHeader != null)
             {
                 descriptor = new HeaderDescriptor(knownHeader);
@@ -69,7 +70,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(headerName.Length > 0);
 
-            KnownHeader knownHeader = KnownHeaders.TryGetKnownHeader(headerName);
+            KnownHeader? knownHeader = KnownHeaders.TryGetKnownHeader(headerName);
             if (knownHeader != null)
             {
                 descriptor = new HeaderDescriptor(knownHeader);
@@ -86,7 +87,7 @@ namespace System.Net.Http.Headers
             return true;
         }
 
-        internal static bool TryGetStaticQPackHeader(int index, out HeaderDescriptor descriptor, out string knownValue)
+        internal static bool TryGetStaticQPackHeader(int index, out HeaderDescriptor descriptor, [NotNullWhen(true)] out string? knownValue)
         {
             Debug.Assert(index >= 0);
             Debug.Assert(s_qpackHeaderLookup.Length == 99);
@@ -140,7 +141,7 @@ namespace System.Net.Http.Headers
                 if (_knownHeader == KnownHeaders.Location)
                 {
                     // Normally Location should be in ISO-8859-1 but occasionally some servers respond with UTF-8.
-                    if (TryDecodeUtf8(headerValue, out string decoded))
+                    if (TryDecodeUtf8(headerValue, out string? decoded))
                     {
                         return decoded;
                     }
@@ -150,7 +151,7 @@ namespace System.Net.Http.Headers
             return HttpRuleParser.DefaultHttpEncoding.GetString(headerValue);
         }
 
-        private static bool TryDecodeUtf8(ReadOnlySpan<byte> input, out string decoded)
+        private static bool TryDecodeUtf8(ReadOnlySpan<byte> input, [NotNullWhen(true)] out string? decoded)
         {
             char[] rented = ArrayPool<char>.Shared.Rent(input.Length);
 

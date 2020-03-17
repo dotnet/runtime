@@ -52,7 +52,7 @@ public:
 
     #endif // !defined(TARGET_X86)
 
-        CORJIT_FLAG_UNUSED6                 = 13,
+        CORJIT_FLAG_OSR                     = 13, // Generate alternate method for On Stack Replacement
 
     #if defined(TARGET_X86) || defined(TARGET_AMD64)
 

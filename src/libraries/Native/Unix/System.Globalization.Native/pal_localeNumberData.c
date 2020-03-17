@@ -19,6 +19,7 @@
 #define UCHAR_PERCENT ((UChar)0x0025)    // '%'
 #define UCHAR_OPENPAREN ((UChar)0x0028)  // '('
 #define UCHAR_CLOSEPAREN ((UChar)0x0029) // ')'
+#define UCHAR_ZERO ((UChar)0x0030)       // '0'
 
 #define ARRAY_LENGTH(array) (sizeof(array) / sizeof(array[0]))
 
@@ -101,6 +102,7 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
         switch (ch)
         {
             case UCHAR_DIGIT:
+            case UCHAR_ZERO:
                 if (!digitAdded)
                 {
                     digitAdded = TRUE;
@@ -122,10 +124,6 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
                 {
                     spaceAdded = TRUE;
                     destPattern[index++] = ' ';
-                }
-                else
-                {
-                    assert(FALSE);
                 }
                 break;
 
@@ -200,8 +198,7 @@ static int GetNumericPattern(const UNumberFormat* pNumberFormat,
         }
     }
 
-    // TODO: https://github.com/dotnet/runtime/issues/946
-    // assert(FALSE); // should have found a valid pattern
+    assert(FALSE); // should have found a valid pattern
 
     free(normalizedPattern);
     return INVALID_FORMAT;
@@ -232,7 +229,8 @@ static int GetCurrencyNegativePattern(const char* locale)
                                      "C -n",
                                      "n- C",
                                      "(C n)",
-                                     "(n C)"};
+                                     "(n C)",
+                                     "C- n" };
     UErrorCode status = U_ZERO_ERROR;
 
     UNumberFormat* pFormat = unum_open(UNUM_CURRENCY, NULL, 0, locale, NULL, &status);

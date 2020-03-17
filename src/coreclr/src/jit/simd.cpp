@@ -3123,6 +3123,19 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         }
         break;
 
+        case SIMDIntrinsicCeil:
+        case SIMDIntrinsicFloor:
+#if defined(TARGET_XARCH)
+            // Rounding instructions are only available from SSE4.1.
+            if (getSIMDSupportLevel() < SIMD_SSE4_Supported)
+            {
+                return nullptr;
+            }
+#endif // defined(TARGET_XARCH)
+            op1    = impSIMDPopStack(simdType);
+            retVal = gtNewSIMDNode(genActualType(callType), op1, simdIntrinsicID, baseType, size);
+            break;
+
         case SIMDIntrinsicAbs:
             op1    = impSIMDPopStack(simdType);
             retVal = impSIMDAbs(clsHnd, baseType, size, op1);

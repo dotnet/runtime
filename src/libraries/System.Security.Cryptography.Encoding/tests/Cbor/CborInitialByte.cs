@@ -20,10 +20,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
     internal enum CborAdditionalInfo : byte
     {
-        UnsignedInteger8BitEncoding = 24,
-        UnsignedInteger16BitEncoding = 25,
-        UnsignedInteger32BitEncoding = 26,
-        UnsignedInteger64BitEncoding = 27,
+        Unsigned8BitIntegerEncoding = 24,
+        Unsigned16BitIntegerEncoding = 25,
+        Unsigned32BitIntegerEncoding = 26,
+        Unsigned64BitIntegerEncoding = 27,
         IndefiniteLength = 31,
     }
 

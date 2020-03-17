@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-
-[assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/32177", TestRuntimes.Mono)] // Test hangs
+namespace System.Globalization
+{
+    internal static partial class GlobalizationMode
+    {
+        internal static bool Invariant { get; } = false; // TODO: should we enable this?
+    }
+}

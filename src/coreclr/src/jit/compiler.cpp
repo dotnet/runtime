@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "stacklevelsetter.h"
 #include "jittelemetry.h"
+#include "patchpointinfo.h"
 
 #if defined(DEBUG)
 // Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
@@ -3228,6 +3229,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             printf("OPTIONS: Tier-1/FullOpts compilation, switched to MinOpts\n");
         }
 
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+        {
+            printf("OPTIONS: OSR variant with entry point 0x%x\n", info.compILEntry);
+        }
+
         printf("OPTIONS: compCodeOpt = %s\n",
                (opts.compCodeOpt == BLENDED_CODE)
                    ? "BLENDED_CODE"
@@ -4278,6 +4284,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
 
+    // Expand any patchpoints
+    //
+    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
+
     // PostImportPhase: cleanup inlinees
     //
     auto postImportPhase = [this]() {
@@ -4925,6 +4935,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     }
 #endif
 
+    // Generate PatchpointInfo
+    generatePatchpointInfo();
+
     RecordStateAtEndOfCompilation();
 
 #ifdef FEATURE_TRACELOGGING
@@ -4950,6 +4963,86 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         fprintf(compJitFuncInfoFile, ""); // in our logic this causes a flush
     }
 #endif // FUNC_INFO_LOGGING
+}
+
+//------------------------------------------------------------------------
+// generatePatchpointInfo: allocate and fill in patchpoint info data,
+//    and report it to the VM
+//
+void Compiler::generatePatchpointInfo()
+{
+    if (!doesMethodHavePatchpoints())
+    {
+        // Nothing to report
+        return;
+    }
+
+    // Patchpoints are only found in Tier0 code, which is unoptimized, and so
+    // should always have frame pointer.
+    assert(codeGen->isFramePointerUsed());
+
+    // Allocate patchpoint info storage from runtime, and fill in initial bits of data.
+    const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(info.compLocalsCount);
+    PatchpointInfo* const patchpointInfo     = (PatchpointInfo*)info.compCompHnd->allocateArray(patchpointInfoSize);
+
+    // The +TARGET_POINTER_SIZE here is to account for the extra slot the runtime
+    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
+    patchpointInfo->Initialize(info.compLocalsCount, codeGen->genSPtoFPdelta() + TARGET_POINTER_SIZE);
+
+    JITDUMP("--OSR--- FP-SP delta is %d\n", patchpointInfo->FpToSpDelta());
+
+    // We record offsets for all the "locals" here. Could restrict
+    // this to just the IL locals with some extra logic, and save a bit of space,
+    // but would need to adjust all consumers, too.
+    for (unsigned lclNum = 0; lclNum < info.compLocalsCount; lclNum++)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+
+        // We expect all these to have stack homes, and be FP relative
+        assert(varDsc->lvOnFrame);
+        assert(varDsc->lvFramePointerBased);
+
+        // Record FramePtr relative offset (no localloc yet)
+        patchpointInfo->SetOffset(lclNum, varDsc->lvStkOffs);
+
+        // Note if IL stream contained an address-of that potentially leads to exposure.
+        // This bit of IL may be skipped by OSR partial importation.
+        if (varDsc->lvHasLdAddrOp)
+        {
+            patchpointInfo->SetIsExposed(lclNum);
+        }
+
+        JITDUMP("--OSR-- V%02u is at offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
+                patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "");
+    }
+
+    // Special offsets
+
+    if (lvaReportParamTypeArg() || lvaKeepAliveAndReportThis())
+    {
+        const int offset = lvaToCallerSPRelativeOffset(lvaCachedGenericContextArgOffset(), true);
+        patchpointInfo->SetGenericContextArgOffset(offset);
+        JITDUMP("--OSR-- cached generic context offset is CallerSP %d\n", patchpointInfo->GenericContextArgOffset());
+    }
+
+    if (lvaKeepAliveAndReportThis())
+    {
+        const int offset = lvaCachedGenericContextArgOffset();
+        patchpointInfo->SetKeptAliveThisOffset(offset);
+        JITDUMP("--OSR-- kept-alive this offset is FP %d\n", patchpointInfo->KeptAliveThisOffset());
+    }
+
+    if (compGSReorderStackLayout)
+    {
+        assert(lvaGSSecurityCookie != BAD_VAR_NUM);
+        LclVarDsc* const varDsc = lvaGetDesc(lvaGSSecurityCookie);
+        patchpointInfo->SetSecurityCookieOffset(varDsc->lvStkOffs);
+        JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
+                patchpointInfo->SecurityCookieOffset());
+    }
+
+    // Register this with the runtime.
+    info.compCompHnd->setPatchpointInfo(patchpointInfo);
 }
 
 //------------------------------------------------------------------------
@@ -5207,6 +5300,19 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     info.compCompHnd    = compHnd;
     info.compMethodHnd  = methodHnd;
     info.compMethodInfo = methodInfo;
+
+    if (compIsForInlining())
+    {
+        compileFlags->Clear(JitFlags::JIT_FLAG_OSR);
+        info.compILEntry        = 0;
+        info.compPatchpointInfo = nullptr;
+    }
+    else if (compileFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    {
+        // Fetch OSR info from the runtime
+        info.compPatchpointInfo = info.compCompHnd->getOSRInfo(&info.compILEntry);
+        assert(info.compPatchpointInfo != nullptr);
+    }
 
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
 
@@ -6019,9 +6125,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if ((JitConfig.DumpJittedMethods() == 1) && !compIsForInlining())
     {
-        printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s\n", Compiler::jitTotalMethodCompiled,
+        printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s%s\n", Compiler::jitTotalMethodCompiled,
                info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName(), compGetStressMessage());
+               compGetTieringName(), opts.IsOSR() ? " OSR" : "", compGetStressMessage());
     }
     if (compIsForInlining())
     {
@@ -9179,6 +9285,39 @@ bool Compiler::killGCRefs(GenTree* tree)
     else if (tree->OperIs(GT_START_PREEMPTGC))
     {
         return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// lvaIsOSRLocal: check if this local var is one that requires special
+//     treatment for OSR compilations.
+//
+// Arguments:
+//    varNum     - variable of interest
+//
+// Return Value:
+//    true       - this is an OSR compile and this local requires special treatment
+//    false      - not an OSR compile, or not an interesting local for OSR
+
+bool Compiler::lvaIsOSRLocal(unsigned varNum)
+{
+    if (!opts.IsOSR())
+    {
+        return false;
+    }
+
+    if (varNum < info.compLocalsCount)
+    {
+        return true;
+    }
+
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+    if (varDsc->lvIsStructField)
+    {
+        return (varDsc->lvParentLcl < info.compLocalsCount);
     }
 
     return false;

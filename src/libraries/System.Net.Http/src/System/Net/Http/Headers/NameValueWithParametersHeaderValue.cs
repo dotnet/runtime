@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -15,7 +16,7 @@ namespace System.Net.Http.Headers
     {
         private static readonly Func<NameValueHeaderValue> s_nameValueCreator = CreateNameValue;
 
-        private ObjectCollection<NameValueHeaderValue> _parameters;
+        private ObjectCollection<NameValueHeaderValue>? _parameters;
 
         public ICollection<NameValueHeaderValue> Parameters
         {
@@ -34,7 +35,7 @@ namespace System.Net.Http.Headers
         {
         }
 
-        public NameValueWithParametersHeaderValue(string name, string value)
+        public NameValueWithParametersHeaderValue(string name, string? value)
             : base(name, value)
         {
         }
@@ -55,13 +56,13 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             bool result = base.Equals(obj);
 
             if (result)
             {
-                NameValueWithParametersHeaderValue other = obj as NameValueWithParametersHeaderValue;
+                NameValueWithParametersHeaderValue? other = obj as NameValueWithParametersHeaderValue;
 
                 if (other == null)
                 {
@@ -87,21 +88,20 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public static new NameValueWithParametersHeaderValue Parse(string input)
+        public static new NameValueWithParametersHeaderValue Parse(string? input)
         {
             int index = 0;
             return (NameValueWithParametersHeaderValue)GenericHeaderParser.SingleValueNameValueWithParametersParser
                 .ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string input, out NameValueWithParametersHeaderValue parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out NameValueWithParametersHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
             if (GenericHeaderParser.SingleValueNameValueWithParametersParser.TryParseValue(input,
-                null, ref index, out output))
+                null, ref index, out object? output))
             {
                 parsedValue = (NameValueWithParametersHeaderValue)output;
                 return true;
@@ -109,7 +109,7 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        internal static int GetNameValueWithParametersLength(string input, int startIndex, out object parsedValue)
+        internal static int GetNameValueWithParametersLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(input != null);
             Debug.Assert(startIndex >= 0);
@@ -121,9 +121,8 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            NameValueHeaderValue nameValue = null;
             int nameValueLength = NameValueHeaderValue.GetNameValueLength(input, startIndex,
-                s_nameValueCreator, out nameValue);
+                s_nameValueCreator, out NameValueHeaderValue? nameValue);
 
             if (nameValueLength == 0)
             {
@@ -132,7 +131,7 @@ namespace System.Net.Http.Headers
 
             int current = startIndex + nameValueLength;
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
-            NameValueWithParametersHeaderValue nameValueWithParameters =
+            NameValueWithParametersHeaderValue? nameValueWithParameters =
                 nameValue as NameValueWithParametersHeaderValue;
             Debug.Assert(nameValueWithParameters != null);
 

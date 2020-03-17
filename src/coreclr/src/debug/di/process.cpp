@@ -7678,8 +7678,6 @@ HRESULT CordbProcess::GetRuntimeOffsets()
          m_runtimeOffsets.m_EEMaxFrameValue));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadDebuggerFilterContextOffset= 0x%08x\n",
          m_runtimeOffsets.m_EEThreadDebuggerFilterContextOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadCantStopOffset=         0x%08x\n",
-         m_runtimeOffsets.m_EEThreadCantStopOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEFrameNextOffset=              0x%08x\n",
          m_runtimeOffsets.m_EEFrameNextOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEIsManagedExceptionStateMask=  0x%08x\n",

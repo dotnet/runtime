@@ -7109,6 +7109,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildSIToFP (builder, shuffle, LLVMVectorType (LLVMDoubleType (), 2), dname);
 			break;
 		}
+		case OP_CVTSD2SD: {
+			LLVMValueRef rhs_elem = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			LLVMValueRef fpext = LLVMBuildFPExt (builder, rhs_elem, LLVMDoubleType (), dname);
+			values [ins->dreg] = LLVMBuildInsertElement (builder, lhs, fpext, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			break;
+		}
 		case OP_CVTPS2PD: {
 			LLVMValueRef indexes [16];
 
@@ -7615,7 +7621,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_SSE_MOVNTPS: {
-			LLVMValueRef store = mono_llvm_build_aligned_store (builder, rhs, lhs, FALSE, 16);
+			LLVMValueRef store = mono_llvm_build_aligned_store (builder, rhs, lhs, FALSE, ins->inst_c0);
 			set_nontemporal_flag (store);
 			break;
 		}
@@ -7891,6 +7897,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_CVTSI2SS64: id = INTRINS_SSE_CVTSI2SS64; break;
 			case SIMD_OP_SSE_CVTSI2SD: id = INTRINS_SSE_CVTSI2SD; break;
 			case SIMD_OP_SSE_CVTSI2SD64: id = INTRINS_SSE_CVTSI2SD64; break;
+			case SIMD_OP_SSE_CVTSD2SS: id = INTRINS_SSE_CVTSD2SS; break; 
 			case SIMD_OP_SSE_MAXPS: id = INTRINS_SSE_MAXPS; break;
 			case SIMD_OP_SSE_MAXSS: id = INTRINS_SSE_MAXSS; break;
 			case SIMD_OP_SSE_MINPS: id = INTRINS_SSE_MINPS; break;
@@ -7905,9 +7912,22 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_PMULUDQ: id = INTRINS_SSE_PMULUDQ; break;
 			case SIMD_OP_SSE_PACKSSWB: id = INTRINS_SSE_PACKSSWB; break;
 			case SIMD_OP_SSE_PACKSSDW: id = INTRINS_SSE_PACKSSDW; break;
+			case SIMD_OP_SSE_PSRLW_IMM: id = INTRINS_SSE_PSRLI_W; break;
+			case SIMD_OP_SSE_PSRLD_IMM: id = INTRINS_SSE_PSRLI_D; break;
+			case SIMD_OP_SSE_PSRLQ_IMM: id = INTRINS_SSE_PSRLI_Q; break;
+			case SIMD_OP_SSE_PSRLW: id = INTRINS_SSE_PSRL_W; break;
+			case SIMD_OP_SSE_PSRLD: id = INTRINS_SSE_PSRL_D; break;
+			case SIMD_OP_SSE_PSRLQ: id = INTRINS_SSE_PSRL_Q; break;
 			case SIMD_OP_SSE_PSLLW_IMM: id = INTRINS_SSE_PSLLI_W; break;
 			case SIMD_OP_SSE_PSLLD_IMM: id = INTRINS_SSE_PSLLI_D; break;
 			case SIMD_OP_SSE_PSLLQ_IMM: id = INTRINS_SSE_PSLLI_Q; break;
+			case SIMD_OP_SSE_PSLLW: id = INTRINS_SSE_PSLL_W; break;
+			case SIMD_OP_SSE_PSLLD: id = INTRINS_SSE_PSLL_D; break;
+			case SIMD_OP_SSE_PSLLQ: id = INTRINS_SSE_PSLL_Q; break;
+			case SIMD_OP_SSE_PSRAW_IMM: id = INTRINS_SSE_PSRAI_W; break;
+			case SIMD_OP_SSE_PSRAD_IMM: id = INTRINS_SSE_PSRAI_D; break;
+			case SIMD_OP_SSE_PSRAW: id = INTRINS_SSE_PSRA_W; break;
+			case SIMD_OP_SSE_PSRAD: id = INTRINS_SSE_PSRA_D; break;
 			case SIMD_OP_SSE_PSUBSB: id = INTRINS_SSE_PSUBSB; break;
 			case SIMD_OP_SSE_PSUBSW: id = INTRINS_SSE_PSUBSW; break;
 			case SIMD_OP_SSE_PSUBUSB: id = INTRINS_SSE_PSUBUSB; break;
@@ -7917,8 +7937,19 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_ADDSUBPD: id = INTRINS_SSE_ADDSUBPD; break;
 			case SIMD_OP_SSE_HADDPS: id = INTRINS_SSE_HADDPS; break;
 			case SIMD_OP_SSE_HADDPD: id = INTRINS_SSE_HADDPD; break;
+			case SIMD_OP_SSE_PHADDW: id = INTRINS_SSE_PHADDW; break;
+			case SIMD_OP_SSE_PHADDD: id = INTRINS_SSE_PHADDD; break;
+			case SIMD_OP_SSE_PHSUBW: id = INTRINS_SSE_PHSUBW; break;
+			case SIMD_OP_SSE_PHSUBD: id = INTRINS_SSE_PHSUBD; break;
 			case SIMD_OP_SSE_HSUBPS: id = INTRINS_SSE_HSUBPS; break;
 			case SIMD_OP_SSE_HSUBPD: id = INTRINS_SSE_HSUBPD; break;
+			case SIMD_OP_SSE_PHADDSW: id = INTRINS_SSE_PHADDSW; break;
+			case SIMD_OP_SSE_PHSUBSW: id = INTRINS_SSE_PHSUBSW; break;
+			case SIMD_OP_SSE_PSIGNB: id = INTRINS_SSE_PSIGNB; break;
+			case SIMD_OP_SSE_PSIGNW: id = INTRINS_SSE_PSIGNW; break;
+			case SIMD_OP_SSE_PSIGND: id = INTRINS_SSE_PSIGND; break;
+			case SIMD_OP_SSE_PMADDUBSW: id = INTRINS_SSE_PMADDUBSW; break;
+			case SIMD_OP_SSE_PMULHRSW: id = INTRINS_SSE_PMULHRSW; break;
 			default: g_assert_not_reached (); break;
 			}
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
@@ -8182,6 +8213,30 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_SSSE3_ABS: {
+			// %sub = sub <16 x i8> zeroinitializer, %arg
+			// %cmp = icmp sgt <16 x i8> %arg, zeroinitializer
+			// %abs = select <16 x i1> %cmp, <16 x i8> %arg, <16 x i8> %sub
+			LLVMTypeRef typ = type_to_sse_type (ins->inst_c1);
+			LLVMValueRef sub = LLVMBuildSub(builder, LLVMConstNull(typ), lhs, "");
+			LLVMValueRef cmp = LLVMBuildICmp(builder, LLVMIntSGT, lhs, LLVMConstNull(typ), "");
+			LLVMValueRef abs = LLVMBuildSelect (builder, cmp, lhs, sub, "");
+			values [ins->dreg] = convert (ctx, abs, typ);
+			break;
+		}
+		
+		case OP_SSSE3_ALIGNR: {
+			LLVMValueRef mask_values [16];
+			for (int i = 0; i < 16; i++)
+				mask_values [i] = LLVMConstInt (LLVMInt8Type (), i + ins->inst_c0, FALSE);
+			LLVMValueRef shuffled = LLVMBuildShuffleVector (builder, 
+				convert (ctx, rhs, sse_i1_t),
+				convert (ctx, lhs, sse_i1_t),
+				LLVMConstVector (mask_values, 16), "");
+			values [ins->dreg] = convert (ctx, shuffled, type_to_sse_type (ins->inst_c1));
+			break;
+		}
+
 		case OP_CREATE_SCALAR:
 		case OP_CREATE_SCALAR_UNSAFE: {
 			LLVMTypeRef type = type_to_sse_type (ins->inst_c1);
@@ -8239,6 +8294,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef call = call_intrins (ctx, INTRINS_SSE_PTESTZ, args, dname);
 			LLVMValueRef cmp_zero = LLVMBuildICmp (builder, LLVMIntNE, call, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
 			values [ins->dreg] = LLVMBuildZExt (builder, cmp_zero, LLVMInt8Type (), "");
+			break;
+		}
+
+		case OP_SSE42_CRC32:
+		case OP_SSE42_CRC64: {
+			LLVMValueRef args [2];
+			args [0] = lhs;
+			args [1] = convert (ctx, rhs, primitive_type_to_llvm_type (ins->inst_c0));
+			IntrinsicId id;
+			switch (ins->inst_c0) {
+			case MONO_TYPE_U1: id = INTRINS_SSE_CRC32_32_8; break;
+			case MONO_TYPE_U2: id = INTRINS_SSE_CRC32_32_16; break;
+			case MONO_TYPE_U4: id = INTRINS_SSE_CRC32_32_32; break;
+			case MONO_TYPE_U8: id = INTRINS_SSE_CRC32_64_64; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 #endif

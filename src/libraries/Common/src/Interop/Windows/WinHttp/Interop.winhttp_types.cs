@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -239,7 +240,7 @@ internal partial class Interop
             public uint Flags;
             public uint AutoDetectFlags;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string AutoConfigUrl;
+            public string? AutoConfigUrl;
             public IntPtr Reserved1;
             public uint Reserved2;
             [MarshalAs(UnmanagedType.Bool)]

@@ -6647,9 +6647,11 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		break;
 	}
 	case MONO_PATCH_INFO_R4:
+	case MONO_PATCH_INFO_R4_GOT:
 		encode_value (*((guint32 *)patch_info->data.target), p, &p);
 		break;
 	case MONO_PATCH_INFO_R8:
+	case MONO_PATCH_INFO_R8_GOT:
 		encode_value (((guint32 *)patch_info->data.target) [MINI_LS_WORD_IDX], p, &p);
 		encode_value (((guint32 *)patch_info->data.target) [MINI_MS_WORD_IDX], p, &p);
 		break;
@@ -8728,6 +8730,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		flags = (JitFlags)(flags | JIT_FLAG_USE_CURRENT_CPU);
 	if (method_is_externally_callable (acfg, method))
 		flags = (JitFlags)(flags | JIT_FLAG_SELF_INIT);
+	if (acfg->flags & MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY)
+		flags = (JitFlags)(flags | JIT_FLAG_CODE_EXEC_ONLY);
 
 	jit_time_start = mono_time_track_start ();
 	cfg = mini_method_compile (method, acfg->jit_opts, mono_get_root_domain (), flags, 0, index);
@@ -12917,10 +12921,6 @@ acfg_create (MonoAssembly *ass, guint32 jit_opts)
 	acfg->globals = g_ptr_array_new ();
 	acfg->image = image;
 	acfg->jit_opts = jit_opts;
-	/* TODO: Write out set of SIMD instructions used, rather than just those available */
-#ifndef MONO_CROSS_COMPILE
-	acfg->simd_opts = mono_arch_cpu_enumerate_simd_versions ();
-#endif
 	acfg->mempool = mono_mempool_new ();
 	acfg->extra_methods = g_ptr_array_new ();
 	acfg->unwind_info_offsets = g_hash_table_new (NULL, NULL);

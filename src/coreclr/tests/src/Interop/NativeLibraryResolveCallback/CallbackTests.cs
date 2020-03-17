@@ -6,8 +6,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-using Console = Internal.Console;
-
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 public class CallbackTests
 {

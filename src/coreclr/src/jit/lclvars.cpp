@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "register_arg_convention.h"
 #include "jitstd/algorithm.h"
+#include "patchpointinfo.h"
 
 /*****************************************************************************/
 
@@ -277,6 +278,17 @@ void Compiler::lvaInitTypeRef()
         {
             CORINFO_CLASS_HANDLE clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->locals, localsSig);
             lvaSetClass(varNum, clsHnd);
+        }
+
+        if (opts.IsOSR() && info.compPatchpointInfo->IsExposed(varNum))
+        {
+            JITDUMP("-- V%02u is OSR exposed\n", varNum);
+            varDsc->lvHasLdAddrOp = 1;
+
+            if (varDsc->lvType != TYP_STRUCT)
+            {
+                lvaSetVarAddrExposed(varNum);
+            }
         }
     }
 
@@ -1027,6 +1039,14 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
             lvaSetVarAddrExposed(varDscInfo->varNum);
 #endif // !TARGET_X86
         }
+
+        if (opts.IsOSR() && info.compPatchpointInfo->IsExposed(varDscInfo->varNum))
+        {
+            JITDUMP("-- V%02u is OSR exposed\n", varDscInfo->varNum);
+            varDsc->lvHasLdAddrOp = 1;
+            lvaSetVarAddrExposed(varDscInfo->varNum);
+        }
+
     } // for each user arg
 
 #ifdef TARGET_ARM
@@ -1826,6 +1846,13 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     if (varDsc->lvIsMultiRegRet)
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsMultiRegRet\n", lclNum);
+        return false;
+    }
+
+    // TODO-CQ: enable promotion for OSR locals
+    if (compiler->lvaIsOSRLocal(lclNum))
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it is an OSR local\n", lclNum);
         return false;
     }
 
@@ -4780,6 +4807,13 @@ void Compiler::lvaFixVirtualFrameOffsets()
         assert(varDsc->lvFramePointerBased); // We always access it RBP-relative.
         assert(!varDsc->lvMustInit);         // It is never "must init".
         varDsc->lvStkOffs = codeGen->genCallerSPtoInitialSPdelta() + lvaLclSize(lvaOutgoingArgSpaceVar);
+
+        // With OSR the new frame RBP points at the base of the new frame, but the virtual offsets
+        // are from the base of the old frame. Adjust.
+        if (opts.IsOSR())
+        {
+            varDsc->lvStkOffs -= info.compPatchpointInfo->FpToSpDelta();
+        }
     }
 #endif
 
@@ -4788,9 +4822,11 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
 #ifdef TARGET_XARCH
     delta += REGSIZE_BYTES; // pushed PC (return address) for x86/x64
+    JITDUMP("--- delta bump %d for RA\n", REGSIZE_BYTES);
 
     if (codeGen->doubleAlignOrFramePointerUsed())
     {
+        JITDUMP("--- delta bump %d for FP\n", REGSIZE_BYTES);
         delta += REGSIZE_BYTES; // pushed EBP (frame pointer)
     }
 #endif
@@ -4798,6 +4834,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
     if (!codeGen->isFramePointerUsed())
     {
         // pushed registers, return address, and padding
+        JITDUMP("--- delta bump %d for RSP frame\n", codeGen->genTotalFrameSize());
         delta += codeGen->genTotalFrameSize();
     }
 #if defined(TARGET_ARM)
@@ -4810,9 +4847,20 @@ void Compiler::lvaFixVirtualFrameOffsets()
     else
     {
         // FP is used.
+        JITDUMP("--- delta bump %d for RBP frame\n", codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta());
         delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
     }
 #endif // TARGET_AMD64
+
+    // For OSR, update the delta to reflect the current policy that
+    // RBP points at the base of the new frame, and RSP is relative to that RBP.
+    if (opts.IsOSR())
+    {
+        JITDUMP("--- delta bump %d for OSR\n", info.compPatchpointInfo->FpToSpDelta());
+        delta += info.compPatchpointInfo->FpToSpDelta();
+    }
+
+    JITDUMP("--- virtual stack offset to actual stack offset delta is %d\n", delta);
 
     unsigned lclNum;
     for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
@@ -4856,6 +4904,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
         if (doAssignStkOffs)
         {
+            JITDUMP("-- V%02u was %d, now %d\n", lclNum, varDsc->lvStkOffs, varDsc->lvStkOffs + delta);
             varDsc->lvStkOffs += delta;
 
 #if DOUBLE_ALIGN
@@ -4875,8 +4924,9 @@ void Compiler::lvaFixVirtualFrameOffsets()
             }
 #endif
             // On System V environments the stkOffs could be 0 for params passed in registers.
-            assert(codeGen->isFramePointerUsed() ||
-                   varDsc->lvStkOffs >= 0); // Only EBP relative references can have negative offsets
+            //
+            // For normal methods only EBP relative references can have negative offsets.
+            assert(codeGen->isFramePointerUsed() || varDsc->lvStkOffs >= 0);
         }
     }
 
@@ -5578,7 +5628,9 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
  */
 void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 {
-    int stkOffs = 0;
+    int stkOffs              = 0;
+    int originalFrameStkOffs = 0;
+    int originalFrameSize    = 0;
     // codeGen->isFramePointerUsed is set in regalloc phase. Initialize it to a guess for pre-regalloc layout.
     if (lvaDoneFrameLayout <= PRE_REGALLOC_FRAME_LAYOUT)
     {
@@ -5613,6 +5665,15 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     // On x86/amd64, the return address has already been pushed by the call instruction in the caller.
     stkOffs -= TARGET_POINTER_SIZE; // return address;
 
+    // If we are an OSR method, we "inherit" the frame of the original method,
+    // and the stack is already double aligned on entry (since the return adddress push
+    // and any special alignment push happened "before").
+    if (opts.IsOSR())
+    {
+        originalFrameSize    = info.compPatchpointInfo->FpToSpDelta();
+        originalFrameStkOffs = stkOffs;
+        stkOffs -= originalFrameSize;
+    }
     // TODO-AMD64-CQ: for X64 eventually this should be pushed with all the other
     // calleeregs.  When you fix this, you'll also need to fix
     // the assert at the bottom of this method
@@ -5686,10 +5747,16 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     //     boundary we would have to use movups when offset turns out unaligned.  Movaps is more
     //     performant than movups.
     unsigned calleeFPRegsSavedSize = genCountBits(compCalleeFPRegsSavedMask) * XMM_REGSIZE_BYTES;
-    if (calleeFPRegsSavedSize > 0 && ((stkOffs % XMM_REGSIZE_BYTES) != 0))
+
+    // For OSR the alignment pad computation should not take the original frame into account.
+    // Original frame size includes the pseudo-saved RA and so is always = 8 mod 16.
+    const int offsetForAlign = -(stkOffs + originalFrameSize);
+
+    if ((calleeFPRegsSavedSize > 0) && ((offsetForAlign % XMM_REGSIZE_BYTES) != 0))
     {
         // Take care of alignment
-        int alignPad = (int)AlignmentPad((unsigned)-stkOffs, XMM_REGSIZE_BYTES);
+        int alignPad = (int)AlignmentPad((unsigned)offsetForAlign, XMM_REGSIZE_BYTES);
+        assert(alignPad != 0);
         stkOffs -= alignPad;
         lvaIncrementFrameSize(alignPad);
     }
@@ -5772,7 +5839,19 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // JIT32_GCENCODER
 
-    if (lvaReportParamTypeArg())
+    // OSR methods use the original method slot for the cached kept alive this,
+    // so don't need to allocate  a slot on the new frame.
+    if (opts.IsOSR())
+    {
+        if (lvaKeepAliveAndReportThis())
+        {
+            PatchpointInfo* ppInfo = info.compPatchpointInfo;
+            assert(ppInfo->HasKeptAliveThis());
+            int originalOffset             = ppInfo->KeptAliveThisOffset();
+            lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;
+        }
+    }
+    else if (lvaReportParamTypeArg())
     {
 #ifdef JIT32_GCENCODER
         noway_assert(codeGen->isFramePointerUsed());
@@ -5816,7 +5895,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     if (compGSReorderStackLayout)
     {
         assert(getNeedsGSSecurityCookie());
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclSize(lvaGSSecurityCookie), stkOffs);
+
+        if (!opts.IsOSR() || !info.compPatchpointInfo->HasSecurityCookie())
+        {
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclSize(lvaGSSecurityCookie), stkOffs);
+        }
     }
 
     /*
@@ -5909,7 +5992,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                In other words, we will not calculate the "base" address of the struct local if
                the promotion type is PROMOTION_TYPE_FIELD_DEPENDENT.
             */
-            if (lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+            if (!opts.IsOSR() && lvaIsFieldOfDependentlyPromotedStruct(varDsc))
             {
                 continue;
             }
@@ -5928,6 +6011,29 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 ((varDsc->TypeGet() != TYP_LONG) || (varDsc->GetOtherReg() != REG_STK)))
             {
                 allocateOnFrame = false;
+            }
+
+            // For OSR args and locals, we use the slots on the original frame.
+            //
+            // Note we must do this even for "non frame" locals, as we sometimes
+            // will refer to their memory homes.
+            if (lvaIsOSRLocal(lclNum))
+            {
+                // TODO-CQ: enable struct promotion for OSR locals; when that
+                // happens, figure out how to properly refer to the original
+                // frame slots for the promoted fields.
+                assert(!varDsc->lvIsStructField);
+
+                // Add frampointer-relative offset of this OSR live local in the original frame
+                // to the offset of original frame in our new frame.
+                int originalOffset = info.compPatchpointInfo->Offset(lclNum);
+                int offset         = originalFrameStkOffs + originalOffset;
+
+                JITDUMP("---OSR--- V%02u (on old frame) old rbp offset %d old frame offset %d new virt offset %d\n",
+                        lclNum, originalOffset, originalFrameStkOffs, offset);
+
+                lvaTable[lclNum].lvStkOffs = offset;
+                continue;
             }
 
             /* Ignore variables that are not on the stack frame */
@@ -5951,7 +6057,21 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             }
             else if (lvaGSSecurityCookie == lclNum && getNeedsGSSecurityCookie())
             {
-                continue; // This is allocated outside of this loop.
+                // Special case for OSR. If the original method had a cookie,
+                // we use its slot on the original frame.
+                if (opts.IsOSR() && info.compPatchpointInfo->HasSecurityCookie())
+                {
+                    int originalOffset = info.compPatchpointInfo->SecurityCookieOffset();
+                    int offset         = originalFrameStkOffs + originalOffset;
+
+                    JITDUMP("---OSR--- V%02u (on old frame, security cookie) old rbp offset %d old frame offset %d new "
+                            "virt offset %d\n",
+                            lclNum, originalOffset, originalFrameStkOffs, offset);
+
+                    lvaTable[lclNum].lvStkOffs = offset;
+                }
+
+                continue;
             }
 
             // These need to be located as the very first variables (highest memory address)
@@ -6144,8 +6264,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     if (getNeedsGSSecurityCookie() && !compGSReorderStackLayout)
     {
-        // LOCALLOC used, but we have no unsafe buffer.  Allocated cookie last, close to localloc buffer.
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclSize(lvaGSSecurityCookie), stkOffs);
+        if (!opts.IsOSR() || !info.compPatchpointInfo->HasSecurityCookie())
+        {
+            // LOCALLOC used, but we have no unsafe buffer.  Allocated cookie last, close to localloc buffer.
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaGSSecurityCookie, lvaLclSize(lvaGSSecurityCookie), stkOffs);
+        }
     }
 
     if (tempsAllocated == false)
@@ -6275,7 +6398,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     pushedCount += 1; // pushed PC (return address)
 #endif
 
-    noway_assert(compLclFrameSize == (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
+    noway_assert(compLclFrameSize + originalFrameSize ==
+                 (unsigned)-(stkOffs + (pushedCount * (int)TARGET_POINTER_SIZE)));
 }
 
 int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs)
@@ -7217,6 +7341,21 @@ int Compiler::lvaGetCallerSPRelativeOffset(unsigned varNum)
 int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased) const
 {
     assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
+
+    // TODO-Cleanup
+    //
+    // This current should not be called for OSR as caller SP relative
+    // offsets computed below do not reflect the extra stack space
+    // taken up by the original method frame.
+    //
+    // We should make it work.
+    //
+    // Instead we record the needed offsets in the patchpoint info
+    // when doing the original method compile(see special offsets
+    // in generatePatchpointInfo) and consume those values in the OSR
+    // compile. If we fix this we may be able to reduce the size
+    // of the patchpoint info and have less special casing for these
+    // frame slots.
 
     if (isFpBased)
     {

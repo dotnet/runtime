@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -12,7 +13,7 @@ namespace System.Net.Http.Headers
     public class RangeHeaderValue : ICloneable
     {
         private string _unit;
-        private ObjectCollection<RangeItemHeaderValue> _ranges;
+        private ObjectCollection<RangeItemHeaderValue>? _ranges;
 
         public string Unit
         {
@@ -91,9 +92,9 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            RangeHeaderValue other = obj as RangeHeaderValue;
+            RangeHeaderValue? other = obj as RangeHeaderValue;
 
             if (other == null)
             {
@@ -119,19 +120,18 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static RangeHeaderValue Parse(string input)
+        public static RangeHeaderValue Parse(string? input)
         {
             int index = 0;
             return (RangeHeaderValue)GenericHeaderParser.RangeParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string input, out RangeHeaderValue parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out RangeHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
-            parsedValue = null;
+             parsedValue = null;
 
-            if (GenericHeaderParser.RangeParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.RangeParser.TryParseValue(input, null, ref index, out object? output))
             {
                 parsedValue = (RangeHeaderValue)output;
                 return true;
@@ -139,7 +139,7 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        internal static int GetRangeLength(string input, int startIndex, out object parsedValue)
+        internal static int GetRangeLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 
