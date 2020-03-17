@@ -34,7 +34,6 @@ IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsI
         memset(s_ppActiveConnections, 0, nIpcs * sizeof(IpcStream*));
     }
 
-    // when we get a connection, put it in this list.  If we use that connection, remove it.
     IpcStream *pStream = nullptr;
     
     // Polling timeout semantics
@@ -61,10 +60,23 @@ IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsI
                 pollTimeoutMs = (pollTimeoutMs == -1) ? pollTimeoutMinMs : pollTimeoutMs;
                 if (s_ppActiveConnections[i] != nullptr)
                 {
-                    // check if still usable and then push it
-                    // s_ppActiveConnections[i]->IsConnected(); ????
-                    pStreams.Push(s_ppActiveConnections[i]);
-                    continue;
+                    // Check if the connection is still open by doing a 0 length read
+                    // this should fail if the connection has been closed
+                    // N.B.: this can race (connection closes between here and Poll)
+                    //       but retry semantics means it shouldn't matter cause we'll
+                    //       self-correct
+                    uint32_t nBytesRead;
+                    if (s_ppActiveConnections[i]->Read(nullptr, 0, nBytesRead))
+                    {
+                        pStreams.Push(s_ppActiveConnections[i]);
+                        continue;
+                    }
+                    else
+                    {
+                        delete s_ppActiveConnections[i];
+                        s_ppActiveConnections[i] = nullptr;
+                        pollTimeoutMs = pollTimeoutMinMs;
+                    }
                 }
 
                 // loop here
@@ -88,7 +100,7 @@ IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsI
                 }
                 else
                 {
-                    pollTimeoutMs = (pollTimeoutMs > pollTimeoutMaxMs) ?
+                    pollTimeoutMs = (pollTimeoutMs >= pollTimeoutMaxMs) ?
                         pollTimeoutMaxMs :
                         pollTimeoutMs * pollTimeoutFalloffFactor;
                 }
@@ -121,12 +133,11 @@ IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsI
                         s_ppActiveConnections[i] = nullptr;
                         delete pStream;
                         pStream = nullptr;
+                        pollTimeoutMs = pollTimeoutMinMs;
                     }
                 }
                 continue;
             }
-
-            // TODO: error handle here?
         }
     }
 
