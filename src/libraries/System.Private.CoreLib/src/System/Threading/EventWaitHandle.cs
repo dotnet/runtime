@@ -44,7 +44,7 @@ namespace System.Threading
             }
         }
 
-#pragma warning disable CS8762 // https://github.com/dotnet/roslyn/issues/42492
+#pragma warning disable CS8762 // The compiler can't track the out will be non-null when Success is returned
         public static bool TryOpenExisting(string name, [NotNullWhen(true)] out EventWaitHandle? result) =>
             OpenExistingWorker(name, out result) == OpenExistingResult.Success;
 #pragma warning restore CS8762

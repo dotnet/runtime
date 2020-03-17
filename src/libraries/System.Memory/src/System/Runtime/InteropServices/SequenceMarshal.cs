@@ -22,9 +22,7 @@ namespace System.Runtime.InteropServices
             [NotNullWhen(true)] out ReadOnlySequenceSegment<T>? endSegment,
             out int endIndex)
         {
-#pragma warning disable CS8762 // https://github.com/dotnet/roslyn/issues/42492
             return sequence.TryGetReadOnlySequenceSegment(out startSegment, out startIndex, out endSegment, out endIndex);
-#pragma warning restore CS8762
         }
 
         /// <summary>
@@ -58,9 +56,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         internal static bool TryGetString(ReadOnlySequence<char> sequence, [NotNullWhen(true)] out string? text, out int start, out int length)
         {
-#pragma warning disable CS8762 // https://github.com/dotnet/roslyn/issues/42492
             return sequence.TryGetString(out text, out start, out length);
-#pragma warning restore CS8762
         }
 
         /// <summary>

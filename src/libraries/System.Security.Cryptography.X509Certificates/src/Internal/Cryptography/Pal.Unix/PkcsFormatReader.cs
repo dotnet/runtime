@@ -109,7 +109,7 @@ namespace Internal.Cryptography.Pal
         private static bool TryReadPkcs7Der(
             byte[] rawData,
             bool single,
-            [NotNullWhen(true)] out ICertificatePal? certPal,
+            out ICertificatePal? certPal,
             [NotNullWhen(true)] out List<ICertificatePal>? certPals)
         {
             using (SafePkcs7Handle pkcs7 = Interop.Crypto.DecodePkcs7(rawData, rawData.Length))
@@ -122,9 +122,7 @@ namespace Internal.Cryptography.Pal
                     return false;
                 }
 
-#pragma warning disable CS8762 // https://github.com/dotnet/roslyn/issues/42492
                 return TryReadPkcs7(pkcs7, single, out certPal, out certPals);
-#pragma warning restore CS8762
             }
         }
 
@@ -219,7 +217,7 @@ namespace Internal.Cryptography.Pal
             SafePkcs7Handle pkcs7,
             bool single,
             out ICertificatePal? certPal,
-            out List<ICertificatePal> certPals)
+            [NotNullWhen(true)] out List<ICertificatePal> certPals)
         {
             List<ICertificatePal>? readPals = single ? null : new List<ICertificatePal>();
 
@@ -239,7 +237,7 @@ namespace Internal.Cryptography.Pal
                     throw new CryptographicException(SR.Cryptography_X509_PKCS7_NoSigner);
                 }
 
-                Debug.Assert(readPals != null); // null iff single == true
+                Debug.Assert(readPals != null); // null if single == true
 
                 for (int i = 0; i < count; i++)
                 {

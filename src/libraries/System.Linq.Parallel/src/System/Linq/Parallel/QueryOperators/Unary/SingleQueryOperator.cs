@@ -123,7 +123,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TSource currentElement, ref int currentKey)
+            internal override bool MoveNext([AllowNull] ref TSource currentElement, ref int currentKey)
             {
                 Debug.Assert(_source != null);
 
@@ -181,9 +181,7 @@ namespace System.Linq.Parallel
                 }
                 _alreadySearched = true;
 
-#pragma warning disable CS8762 // We intentionally fake out the caller if we've already searched by returning true when setting to default.
                 return found;
-#pragma warning restore CS8762
             }
 
             protected override void Dispose(bool disposing)

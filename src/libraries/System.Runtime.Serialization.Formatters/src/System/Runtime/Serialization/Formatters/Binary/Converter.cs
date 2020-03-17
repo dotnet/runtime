@@ -204,8 +204,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal static bool IsPrimitiveArray(Type? type, [NotNullWhen(true)] out object? typeInformation)
         {
-            bool bIsPrimitive = true;
-
             if (ReferenceEquals(type, s_typeofBooleanArray)) typeInformation = InternalPrimitiveTypeE.Boolean;
             else if (ReferenceEquals(type, s_typeofByteArray)) typeInformation = InternalPrimitiveTypeE.Byte;
             else if (ReferenceEquals(type, s_typeofCharArray)) typeInformation = InternalPrimitiveTypeE.Char;
@@ -221,11 +219,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
             else
             {
                 typeInformation = null;
-                bIsPrimitive = false;
+                return false;
             }
-#pragma warning disable CS8762 // https://github.com/dotnet/roslyn/issues/42492
-            return bIsPrimitive;
-#pragma warning restore CS8762
+
+            return true;
         }
 
         private static void InitValueA()
