@@ -67,6 +67,9 @@ jobs:
         value: /p:OutputRid=linux-musl-${{ parameters.archType }}
       - name: _PortableBuild
         value: true
+    - ${{ if eq(parameters.osGroup, 'iOS') }}:
+      - name: osOverride
+        value: -os iOS
     - ${{ parameters.variables }}
 
     steps:
@@ -75,7 +78,7 @@ jobs:
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -85,10 +88,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
+      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
+      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
 
     # Publish product output directory for consumption by tests.
@@ -104,10 +107,10 @@ jobs:
 
     # Build packages
     - ${{ if and(ne(parameters.llvm, true), ne(parameters.osGroup, 'Windows_NT')) }}:
-      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
         displayName: Build nupkg
     - ${{ if and(ne(parameters.llvm, true), eq(parameters.osGroup, 'Windows_NT')) }}:
-      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
         displayName: Build nupkg
 
     # Save packages using the prepare-signed-artifacts format.

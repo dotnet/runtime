@@ -87,6 +87,10 @@ jobs:
         ${{ if eq(parameters.osGroup, 'OSX') }}:
           vmImage: 'macOS-10.14'
 
+        # Public OSX Build Pool
+        ${{ if eq(parameters.osGroup, 'iOS') }}:
+          vmImage: 'macOS-10.14'
+
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
