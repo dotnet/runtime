@@ -19,6 +19,7 @@
 #define UCHAR_PERCENT ((UChar)0x0025)    // '%'
 #define UCHAR_OPENPAREN ((UChar)0x0028)  // '('
 #define UCHAR_CLOSEPAREN ((UChar)0x0029) // ')'
+#define UCHAR_ZERO ((UChar)0x0030)       // '0'
 
 #define ARRAY_LENGTH(array) (sizeof(array) / sizeof(array[0]))
 
@@ -101,6 +102,7 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
         switch (ch)
         {
             case UCHAR_DIGIT:
+            case UCHAR_ZERO:
                 if (!digitAdded)
                 {
                     digitAdded = TRUE;
