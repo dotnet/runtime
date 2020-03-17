@@ -154,7 +154,7 @@ jobs:
     - Linux_x64
     jobParameters:
       testGroup: innerloop
-      useGCC: true
+      compilerName: gcc
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),

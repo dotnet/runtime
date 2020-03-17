@@ -6523,6 +6523,9 @@ summarizer_state_term (SummarizerGlobalState *state, gchar **out, gchar *mem, si
 		mono_get_eh_callbacks ()->mono_summarize_managed_stack (threads [i]);
 	}
 
+	/* The value of the breadcrumb should match the "StackHash" value written by `mono_merp_write_fingerprint_payload` */
+	mono_create_crash_hash_breadcrumb (controlling);
+
 	MonoStateWriter writer;
 	memset (&writer, 0, sizeof (writer));
 

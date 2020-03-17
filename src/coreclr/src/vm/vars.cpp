@@ -30,7 +30,7 @@ const char g_psBaseLibrarySatelliteAssemblyName[]  = CoreLibSatelliteName_A;
 
 Volatile<LONG>       g_TrapReturningThreads;
 
-HINSTANCE            g_pMSCorEE;
+HINSTANCE            g_hThisInst;
 BBSweep              g_BBSweep;
 
 #ifdef _DEBUG
@@ -178,8 +178,6 @@ int g_IGCTrimCommit = 0;
 
 #endif
 
-BOOL g_fEnableETW = FALSE;
-
 //
 // Global state variable indicating if the EE is in its init phase.
 //
@@ -220,12 +218,6 @@ bool g_fWeControlLifetime = false;
 bool dbg_fDrasticShutdown = false;
 #endif
 bool g_fInControlC = false;
-
-//
-//
-// IJW needs the shim HINSTANCE
-//
-HINSTANCE g_hInstShim = NULL;
 
 #endif // #ifndef DACCESS_COMPILE
 

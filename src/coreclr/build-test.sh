@@ -6,9 +6,9 @@ build_test_wrappers()
         echo "${__MsgPrefix}Creating test wrappers..."
 
         if [[ $__Mono -eq 1 ]]; then
-            export RuntimeName="mono"
+            export RuntimeFlavor="mono"
         else
-            export RuntimeName="coreclr"
+            export RuntimeFlavor="coreclr"
         fi
 
         __Exclude="${__ProjectDir}/tests/issues.targets"

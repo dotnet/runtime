@@ -34,7 +34,7 @@
 static          DWORD        LogFlags                    = 0;
 static          CQuickWSTR   szLogFileName;
 static          HANDLE       LogFileHandle               = INVALID_HANDLE_VALUE;
-static volatile MUTEX_COOKIE LogFileMutex                = 0;
+static volatile HANDLE       LogFileMutex                = 0;
 static          DWORD        LogFacilityMask             = LF_ALL;
 static          DWORD        LogFacilityMask2            = 0;
 static          DWORD        LogVMLevel                  = LL_INFO100;
@@ -160,7 +160,7 @@ VOID EnterLogLock()
     if(LogFileMutex != 0)
     {
         DWORD status;
-        status = ClrWaitForMutex(LogFileMutex, INFINITE, FALSE);
+        status = WaitForSingleObjectEx(LogFileMutex, INFINITE, FALSE);
         _ASSERTE(WAIT_OBJECT_0 == status);
     }
 }
@@ -173,7 +173,7 @@ VOID LeaveLogLock()
     if(LogFileMutex != 0)
     {
         BOOL success;
-        success = ClrReleaseMutex(LogFileMutex);
+        success = ReleaseMutex(LogFileMutex);
         _ASSERTE(success);
     }
 }
@@ -186,11 +186,11 @@ VOID InitializeLogging()
     if (bLoggingInitialized)
         return;
 
-    MUTEX_COOKIE mutexCookie = ClrCreateMutex(NULL, FALSE, NULL);
-    _ASSERTE(mutexCookie != 0);
-    if (InterlockedCompareExchangeT(&LogFileMutex, mutexCookie, 0) != 0)
+    HANDLE mutex = WszCreateMutex(NULL, FALSE, NULL);
+    _ASSERTE(mutex != 0);
+    if (InterlockedCompareExchangeT(&LogFileMutex, mutex, 0) != 0)
     {
-        ClrCloseMutex(mutexCookie);
+        CloseHandle(mutex);
     }
 
     EnterLogLock();

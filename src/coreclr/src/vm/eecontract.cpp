@@ -35,10 +35,7 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
     // allow such calls.
     BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
     m_pThread = GetThread();
-    if (m_pThread != NULL)
-    {
-        m_pClrDebugState = m_pThread->GetClrDebugState();
-    }
+    m_pClrDebugState = GetClrDebugState();
 
     // Call our base DoChecks.
     BaseContract::DoChecks(testmask, szFunction, szFile, lineNum);
@@ -256,16 +253,3 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
     }
 }
 #endif // ENABLE_CONTRACTS
-
-
-BYTE* __stdcall GetAddrOfContractShutoffFlag()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Exposed entrypoint where we cannot probe or do anything TLS
-    // related
-    static BYTE gContractShutoffFlag = 0;
-
-    return &gContractShutoffFlag;
-}
-

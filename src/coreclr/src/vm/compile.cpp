@@ -1018,7 +1018,7 @@ void CEECompileInfo::CompressDebugInfo(
 {
     STANDARD_VM_CONTRACT;
 
-    CompressDebugInfo::CompressBoundariesAndVars(pOffsetMapping, iOffsetMapping, pNativeVarInfo, iNativeVarInfo, pDebugInfoBuffer, NULL);
+    CompressDebugInfo::CompressBoundariesAndVars(pOffsetMapping, iOffsetMapping, pNativeVarInfo, iNativeVarInfo, NULL, pDebugInfoBuffer, NULL);
 }
 
 ICorJitHost* CEECompileInfo::GetJitHost()

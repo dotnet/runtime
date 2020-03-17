@@ -29,8 +29,6 @@
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
-
-    <PreReleaseLabel>preview8</PreReleaseLabel>
   </PropertyGroup>
 
   <!-- Set up common target properties that we use to conditionally include sources -->
@@ -60,11 +58,6 @@
     <watchOSVersion></watchOSVersion>
     <watchOS64_32Version></watchOS64_32Version>
     <macOSVersion></macOSVersion>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <LangVersion>8.0</LangVersion>
-    <UseSharedCompilation>true</UseSharedCompilation>
   </PropertyGroup>
 
   <!-- Set the kind of PDB to Portable -->

@@ -1,4 +1,0 @@
-LIBRARY CorProfiler
-EXPORTS
-    DllGetClassObject             private
-    

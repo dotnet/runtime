@@ -2038,6 +2038,9 @@ public:
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    virtual unsigned GetILOffset() const { return 0; }
+#endif
     BOOL ProfilerRejectedPrecompiledCode();
     BOOL ReadyToRunRejectedPrecompiledCode();
     void SetProfilerRejectedPrecompiledCode();
@@ -2100,6 +2103,7 @@ public:
         Optimized,
         QuickJitted,
         OptimizedTier1,
+        OptimizedTier1OSR,
 
         Count
     };

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -21,11 +22,11 @@ namespace System.Net.Http.Headers
         /// <param name="storeValue"></param>
         /// <param name="parsedValue">The resulting value parsed.</param>
         /// <returns>If a value could be parsed, the number of characters used to parse that value. Otherwise, 0.</returns>
-        protected abstract int GetParsedValueLength(string value, int startIndex, object storeValue,
-            out object parsedValue);
+        protected abstract int GetParsedValueLength(string value, int startIndex, object? storeValue,
+            out object? parsedValue);
 
-        public sealed override bool TryParseValue(string value, object storeValue, ref int index,
-            out object parsedValue)
+        public sealed override bool TryParseValue(string? value, object? storeValue, ref int index,
+            [NotNullWhen(true)] out object? parsedValue)
         {
             parsedValue = null;
 
@@ -57,8 +58,7 @@ namespace System.Net.Http.Headers
                 return SupportsMultipleValues;
             }
 
-            object result = null;
-            int length = GetParsedValueLength(value, current, storeValue, out result);
+            int length = GetParsedValueLength(value, current, storeValue, out object? result);
 
             if (length == 0)
             {
@@ -76,7 +76,7 @@ namespace System.Net.Http.Headers
             }
 
             index = current;
-            parsedValue = result;
+            parsedValue = result!;
             return true;
         }
     }

@@ -23,6 +23,7 @@ class FuncPtrStubs;
 #include "callcounting.h"
 #include "methoddescbackpatchinfo.h"
 #include "crossloaderallocatorhash.h"
+#include "onstackreplacement.h"
 
 #define VPTRU_LoaderAllocator 0x3200
 
@@ -281,6 +282,10 @@ private:
 
 #ifndef CROSSGEN_COMPILE
     MethodDescBackpatchInfoTracker m_methodDescBackpatchInfoTracker;
+#endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    PTR_OnStackReplacementManager m_onStackReplacementManager;
 #endif
 
 #ifndef DACCESS_COMPILE
@@ -611,6 +616,12 @@ public:
         return &m_methodDescBackpatchInfoTracker;
     }
 #endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+public:
+    PTR_OnStackReplacementManager GetOnStackReplacementManager();
+#endif // FEATURE_ON_STACK_REPLACEMENT
+
 };  // class LoaderAllocator
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;

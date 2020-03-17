@@ -921,11 +921,7 @@ gctest: mono gc-test.exe
 	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(MINI_RUNTIME) --regression gc-test.exe
 
 LLVM_AOT_RUNTIME_OPTS=$(if $(LLVM),--llvm,)
-if AMD64
-LLVM_AOT_COMPILER_OPTS=$(if $(LLVM),llvmllc=-mattr=+sse3,)
-else
-LLVM_AOT_COMPILER_OPTS=
-endif
+LLVM_AOT_COMPILER_OPTS=mcpu=native
 GSHAREDVT_RUNTIME_OPTS=$(if $(GSHAREDVT),-O=gsharedvt,)
 
 aotcheck: mono $(regtests)

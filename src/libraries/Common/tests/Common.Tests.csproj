@@ -4,6 +4,7 @@
     <CoverageSupported>false</CoverageSupported>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx</TargetFrameworks>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs">
