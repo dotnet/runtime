@@ -394,12 +394,6 @@
 				"OTHER_LDFLAGS[sdk=*]" = (
 					"-liconv",
 					"-lz",
-					"-u",
-					_xamarin_log,
-					"-u",
-					_xamarin_timezone_get_data,
-					"-u",
-					_xamarin_timezone_get_names,
 					"-force_load",
 					../../../../../artifacts/bin/mono/iOS.arm64.Debug/libmono.a,
 					"-force_load",
