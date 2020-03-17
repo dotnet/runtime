@@ -144,15 +144,15 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                 if (!mapping.Key.StartsWith("-") && !mapping.Key.StartsWith("--"))
                 {
                     throw new ArgumentException(
-                        SR.Format(SR.Error_InvalidSwitchMapping, mapping.Key,
-                        nameof(switchMappings)));
+                        SR.Format(SR.Error_InvalidSwitchMapping, mapping.Key),
+                        nameof(switchMappings));
                 }
 
                 if (switchMappingsCopy.ContainsKey(mapping.Key))
                 {
                     throw new ArgumentException(
-                        SR.Format(SR.Error_DuplicatedKeyInSwitchMappings, mapping.Key,
-                        nameof(switchMappings)));
+                        SR.Format(SR.Error_DuplicatedKeyInSwitchMappings, mapping.Key),
+                        nameof(switchMappings));
                 }
 
                 switchMappingsCopy.Add(mapping.Key, mapping.Value);

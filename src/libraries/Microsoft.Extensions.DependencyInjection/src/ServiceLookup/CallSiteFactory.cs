@@ -40,8 +40,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     if (implementationTypeInfo == null || !implementationTypeInfo.IsGenericTypeDefinition)
                     {
                         throw new ArgumentException(
-                            SR.Format(SR.OpenGenericServiceRequiresOpenGenericImplementation, descriptor.ServiceType,
-                            "descriptors"));
+                            SR.Format(SR.OpenGenericServiceRequiresOpenGenericImplementation, descriptor.ServiceType),
+                            "descriptors");
                     }
 
                     if (implementationTypeInfo.IsAbstract || implementationTypeInfo.IsInterface)

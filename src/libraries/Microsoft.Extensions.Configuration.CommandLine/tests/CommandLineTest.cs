@@ -140,7 +140,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine.Test
             }
 
             var expectedMsg = new ArgumentException(SR.
-                Format(SR.Error_DuplicatedKeyInSwitchMappings, expectedDup, "switchMappings")).Message;
+                Format(SR.Error_DuplicatedKeyInSwitchMappings, expectedDup), "switchMappings").Message;
 
             // Act
             var exception = Assert.Throws<ArgumentException>(
@@ -167,8 +167,8 @@ namespace Microsoft.Extensions.Configuration.CommandLine.Test
                     { "--Key2", "SuperLongKey2" },
                     { "/Key3", "AnotherSuperLongKey3" }
                 };
-            var expectedMsg = new ArgumentException(SR.Format(SR.Error_InvalidSwitchMapping,"/Key3",
-                "switchMappings")).Message;
+            var expectedMsg = new ArgumentException(SR.Format(SR.Error_InvalidSwitchMapping,"/Key3"),
+                "switchMappings").Message;
 
             var exception = Assert.Throws<ArgumentException>(
                 () => new CommandLineConfigurationProvider(args, switchMappings));
