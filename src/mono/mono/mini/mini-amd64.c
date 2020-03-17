@@ -5823,7 +5823,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			if ((d == 0.0) && (mono_signbit (d) == 0)) {
 				amd64_sse_xorpd_reg_reg (code, ins->dreg, ins->dreg);
-			} else if (cfg->compile_aot && (cfg->flags & JIT_FLAG_CODE_EXEC_ONLY)) {
+			} else if (cfg->compile_aot && cfg->code_exec_only) {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8_GOT, ins->inst_p0);
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof(gpointer));
 				amd64_sse_movsd_reg_membase (code, ins->dreg, AMD64_R11, 0);
@@ -5842,7 +5842,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				else
 					amd64_sse_xorpd_reg_reg (code, ins->dreg, ins->dreg);
 			} else {
-				if (cfg->compile_aot && (cfg->flags & JIT_FLAG_CODE_EXEC_ONLY)) {
+				if (cfg->compile_aot && cfg->code_exec_only) {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4_GOT, ins->inst_p0);
 					amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof(gpointer));
 					amd64_sse_movss_reg_membase (code, ins->dreg, AMD64_R11, 0);

@@ -3175,6 +3175,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->interp = (flags & JIT_FLAG_INTERP) != 0;
 	cfg->use_current_cpu = (flags & JIT_FLAG_USE_CURRENT_CPU) != 0;
 	cfg->self_init = (flags & JIT_FLAG_SELF_INIT) != 0;
+	cfg->code_exec_only = (flags & JIT_FLAG_CODE_EXEC_ONLY) != 0;
 	cfg->backend = current_backend;
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {
