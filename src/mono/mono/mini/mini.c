@@ -4335,7 +4335,7 @@ mini_get_cpu_features (MonoCompile* cfg)
 		// detect current CPU features if we are in JIT mode or AOT with use_current_cpu flag.
 #if defined(ENABLE_LLVM)
 		features = mono_llvm_get_cpu_features (); // llvm has a nice built-in API to detect features
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) || defined(TARGET_X86)
 		features = mono_arch_get_cpu_features ();
 #endif
 	}
