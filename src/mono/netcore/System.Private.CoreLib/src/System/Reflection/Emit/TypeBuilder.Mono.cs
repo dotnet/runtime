@@ -144,7 +144,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                return fullname.DisplayName + ", " + Assembly.FullName;
+                return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName);
             }
         }
 
@@ -212,7 +212,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                return fullname.DisplayName;
+                return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
             }
         }
 
@@ -826,19 +826,19 @@ namespace System.Reflection.Emit
             if (parent != null)
             {
                 if (parent.IsSealed)
-                    throw new TypeLoadException("Could not load type '" + FullName + "' from assembly '" + Assembly + "' because the parent type is sealed.");
+                    throw new TypeLoadException("Could not load type '" + fullname.DisplayName + "' from assembly '" + Assembly + "' because the parent type is sealed.");
                 if (parent.IsGenericTypeDefinition)
                     throw new BadImageFormatException();
             }
 
             if (parent == typeof(Enum) && methods != null)
-                throw new TypeLoadException("Could not load type '" + FullName + "' from assembly '" + Assembly + "' because it is an enum with methods.");
+                throw new TypeLoadException("Could not load type '" + fullname.DisplayName + "' from assembly '" + Assembly + "' because it is an enum with methods.");
             if (interfaces != null)
             {
                 foreach (Type iface in interfaces)
                 {
                     if (iface.IsNestedPrivate && iface.Assembly != Assembly)
-                        throw new TypeLoadException("Could not load type '" + FullName + "' from assembly '" + Assembly + "' because it is implements the inaccessible interface '" + iface.FullName + "'.");
+                        throw new TypeLoadException("Could not load type '" + fullname.DisplayName + "' from assembly '" + Assembly + "' because it is implements the inaccessible interface '" + iface.FullName + "'.");
                     if (iface.IsGenericTypeDefinition)
                         throw new BadImageFormatException();
                     if (!iface.IsInterface)
