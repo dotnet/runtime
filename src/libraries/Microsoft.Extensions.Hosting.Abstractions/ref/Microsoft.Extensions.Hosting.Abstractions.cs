@@ -23,6 +23,7 @@ namespace Microsoft.Extensions.Hosting
         public virtual System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
+    [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.Environments.", false)]
     public static partial class EnvironmentName
     {
         public static readonly string Development;
@@ -76,6 +77,7 @@ namespace Microsoft.Extensions.Hosting
         public static bool IsProduction(this Microsoft.Extensions.Hosting.IHostingEnvironment hostingEnvironment) { throw null; }
         public static bool IsStaging(this Microsoft.Extensions.Hosting.IHostingEnvironment hostingEnvironment) { throw null; }
     }
+    [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.IHostApplicationLifetime.", false)]
     public partial interface IApplicationLifetime
     {
         System.Threading.CancellationToken ApplicationStarted { get; }
@@ -119,6 +121,7 @@ namespace Microsoft.Extensions.Hosting
         string ContentRootPath { get; set; }
         string EnvironmentName { get; set; }
     }
+    [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.IHostEnvironment.", false)]
     public partial interface IHostingEnvironment
     {
         string ApplicationName { get; set; }
