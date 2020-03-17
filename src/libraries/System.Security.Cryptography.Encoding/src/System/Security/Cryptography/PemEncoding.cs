@@ -266,14 +266,15 @@ namespace System.Security.Cryptography
                 }
             }
 
-            if (paddingCharacters > 2 ||
-               (paddingCharacters + significantCharacters & 0b11) != 0)
+            int totalChars = paddingCharacters + significantCharacters;
+
+            if (paddingCharacters > 2 || (totalChars & 0b11) != 0)
             {
                 base64DecodedSize = 0;
                 return false;
             }
 
-            base64DecodedSize = (int)((significantCharacters * 3L) >> 2);
+            base64DecodedSize = (totalChars >> 2) * 3 - paddingCharacters;
             return true;
         }
 
