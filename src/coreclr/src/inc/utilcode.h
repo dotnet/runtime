@@ -4713,50 +4713,7 @@ typedef HMODULE HMODULE_TGT;
 
 BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
 
-//----------------------------------------------------------------------------------------
-// The runtime invokes InitUtilcode() in its dllmain and passes along all of the critical
-// callback pointers. For the desktop CLR, all DLLs loaded by the runtime must also call
-// InitUtilcode with the same callbacks as the runtime used. To achieve this, the runtime
-// calls a special initialization routine exposed by the loaded module with the callbacks,
-// which in turn calls InitUtilcode.
-//
-// This structure collects all of the critical callback info passed in InitUtilcode().
-//----------------------------------------------------------------------------------------
-struct CoreClrCallbacks
-{
-    typedef IExecutionEngine* (* pfnIEE_t)();
-    typedef HRESULT (* pfnGetCORSystemDirectory_t)(SString& pbuffer);
-
-    HINSTANCE                   m_hmodCoreCLR;
-    pfnIEE_t                    m_pfnIEE;
-    pfnGetCORSystemDirectory_t  m_pfnGetCORSystemDirectory;
-};
-
-
-// For DAC, we include this functionality only when EH SxS is enabled.
-
-//----------------------------------------------------------------------------------------
-// CoreCLR must invoke this before CRT initialization to ensure utilcode has all the callback
-// pointers it needs.
-//----------------------------------------------------------------------------------------
-VOID InitUtilcode(const CoreClrCallbacks &cccallbacks);
-CoreClrCallbacks const & GetClrCallbacks();
-
-//----------------------------------------------------------------------------------------
-// Stuff below is for utilcode.lib eyes only.
-//----------------------------------------------------------------------------------------
-
-// Stores callback pointers provided by InitUtilcode().
-extern CoreClrCallbacks g_CoreClrCallbacks;
-
-// Throws up a helpful dialog if InitUtilcode() wasn't called.
-#ifdef _DEBUG
-void OnUninitializedCoreClrCallbacks();
-#define VALIDATECORECLRCALLBACKS() if (g_CoreClrCallbacks.m_hmodCoreCLR == NULL) OnUninitializedCoreClrCallbacks()
-#else  //_DEBUG
-#define VALIDATECORECLRCALLBACKS()
-#endif //_DEBUG
-
+extern HINSTANCE g_hmodCoreCLR;
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
 

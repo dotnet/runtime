@@ -974,7 +974,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             BOOL fExternalException;
 
             fExternalException = (!ExecutionManager::IsManagedCode(ip) &&
-                                  !IsIPInModule(g_pMSCorEE, ip));
+                                  !IsIPInModule(g_hThisInst, ip));
 
             if (fExternalException)
             {
@@ -6841,7 +6841,7 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
 #if defined(DACCESS_COMPILE)
             HMODULE_TGT hEE = DacGlobalBase();
 #else  // !DACCESS_COMPILE
-            HMODULE_TGT hEE = g_pMSCorEE;
+            HMODULE_TGT hEE = g_hThisInst;
 #endif // !DACCESS_COMPILE
             fIsCallerInVM = IsIPInModule(hEE, callerIP);
 #endif // TARGET_UNIX

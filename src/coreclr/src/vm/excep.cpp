@@ -5110,7 +5110,7 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
 // Updated to be in its own code segment named CLR_UEF_SECTION_NAME to prevent
 // "VirtualProtect" calls from affecting its pages and thus, its
 // invocation. For details, see the comment within the implementation of
-// CExecutionEngine::ClrVirtualProtect.
+// ClrVirtualProtect.
 //
 // Parameters
 //   pExceptionInfo -- information about the exception
@@ -7359,7 +7359,7 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
             CONTRACT_VIOLATION(TakesLockViolation);
 
             fExternalException = (!ExecutionManager::IsManagedCode(GetIP(pExceptionInfo->ContextRecord)) &&
-                                  !IsIPInModule(g_pMSCorEE, GetIP(pExceptionInfo->ContextRecord)));
+                                  !IsIPInModule(g_hThisInst, GetIP(pExceptionInfo->ContextRecord)));
         }
 
         if (fExternalException)
@@ -7526,7 +7526,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
             if ((!fAVisOk) && !(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
             {
                 PCODE ip = (PCODE)GetIP(pContext);
-                if (IsIPInModule(g_pMSCorEE, ip) || IsIPInModule(GCHeapUtilities::GetGCModule(), ip))
+                if (IsIPInModule(g_hThisInst, ip) || IsIPInModule(GCHeapUtilities::GetGCModule(), ip))
                 {
                     CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
 
