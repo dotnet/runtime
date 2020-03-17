@@ -2505,10 +2505,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             case NI_BMI2_X64_MultiplyNoFlags:
             {
                 assert(numArgs == 2 || numArgs == 3);
-                // If op1 is contained then op2 must be loaded into EDX (also optimize case where it's already in EDX)
-                if (op1->isContained() || (compiler->opts.OptimizationEnabled() && op2->OperGet() == GT_LCL_VAR &&
-                                           compiler->lvaTable[op2->AsLclVar()->GetLclNum()].lvTracked &&
-                                           getIntervalForLocalVarNode(op2->AsLclVar())->physReg == REG_EDX))
+                // If op1 is contained then op2 must be loaded into EDX
+                bool op2inEDX = op1->isContained();
+                // Also optimize for the case where it's an incoming arg in EDX
+                if (!op2inEDX && compiler->opts.OptimizationEnabled() && op2->OperGet() == GT_LCL_VAR)
+                {
+                    GenTreeLclVar* op2Lcl = op2->AsLclVar();
+                    if (compiler->lvaGetDesc(op2Lcl)->lvTracked)
+                    {
+                        op2inEDX = getIntervalForLocalVarNode(op2Lcl)->physReg == REG_EDX;
+                    }
+                }
+                if (op2inEDX)
                 {
                     op2->ClearRegOptional();
                     srcCount += BuildOperandUses(op2, RBM_EDX);

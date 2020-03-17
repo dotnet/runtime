@@ -1398,7 +1398,7 @@ GenTree* Compiler::impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METH
                 // If op3 (low part of result) is an address of a local variable of the correct type:
                 //   MultiplyNoFlags(*, *, &someLocal);
                 // Then it is transformed to use a dedicated local for that whose value is immediately copied to the
-                // original op3 local after MultiplyNoFlags (but before producing the main result):
+                // original op3 local after MultiplyNoFlags (before the main result is consumed):
                 //   MultiplyNoFlags(*, *, &op3TempLocal), MOV(someLocal, op3TempLocal);
                 //
                 // After this the original local isn't marked as address-exposed and lowering will see a GT_LCL_VAR
@@ -1408,17 +1408,21 @@ GenTree* Compiler::impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METH
                     op3->gtGetOp1()->OperGet() == GT_LCL_VAR && op3->gtGetOp1()->TypeGet() == callType)
                 {
                     // Get a single-use temp to store the 2nd value which we'll later remove in lowering.
-                    GenTreeLclVar* op3Local = op3->gtGetOp1()->AsLclVar();
-                    const unsigned orgNum   = op3Local->GetLclNum();
+                    GenTreeLclVar* op3Lcl   = op3->gtGetOp1()->AsLclVar();
+                    const unsigned orgNum   = op3Lcl->GetLclNum();
                     const unsigned tmpNum   = lvaGrabTemp(true DEBUGARG("MULX low part"));
                     lvaTable[tmpNum].lvType = callType;
-                    op3Local->SetLclNum(tmpNum);
+                    op3Lcl->SetLclNum(tmpNum);
+                    op3Lcl->gtFlags |= GTF_DONT_CSE;
 
                     GenTree* mulx = gtNewScalarHWIntrinsicNode(callType, op1, op2, op3, intrinsic);
+                    mulx->gtFlags |= GTF_DONT_CSE;
 
                     // Move the 2nd value to the original local var and stitch it together. This transformation produces
                     // correct results even if lowering fails to optimize it away.
-                    GenTree* mov = gtNewAssignNode(gtNewLclvNode(orgNum, callType), gtNewLclvNode(tmpNum, callType));
+                    GenTree* tmpLcl = gtNewLclvNode(tmpNum, callType);
+                    tmpLcl->gtFlags |= GTF_DONT_CSE;
+                    GenTree* mov = gtNewAssignNode(gtNewLclvNode(orgNum, callType), tmpLcl);
 
                     GenTree* comma = gtNewOperNode(GT_COMMA, callType, mov, mulx);
                     comma->gtFlags |= GTF_REVERSE_OPS;

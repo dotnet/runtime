@@ -3401,7 +3401,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 {
                                     GenTreeLclVar* op3Lcl  = op3->AsLclVar();
                                     GenTreeLclVar* nextLcl = node->gtNext->AsLclVar();
-                                    LclVarDsc*     tmp     = comp->lvaTable + op3Lcl->GetLclNum();
+                                    LclVarDsc*     tmp     = comp->lvaGetDesc(op3Lcl);
 
                                     if (tmp->lvIsTemp && tmp->TypeGet() == node->TypeGet() &&
                                         op3Lcl->GetLclNum() == nextLcl->GetLclNum())
