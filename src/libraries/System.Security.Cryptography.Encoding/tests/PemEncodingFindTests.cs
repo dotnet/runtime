@@ -282,6 +282,27 @@ Zm9v
             AssertNoPemFound(content);
         }
 
+        [Fact]
+        public void Find_Fail_InvalidBase64_Size()
+        {
+            string content = "-----BEGIN TEST-----\nZ\n-----END TEST-----";
+            AssertNoPemFound(content);
+        }
+
+        [Fact]
+        public void Find_Fail_InvalidBase64_ExtraPadding()
+        {
+            string content = "-----BEGIN TEST-----\nZm9v====\n-----END TEST-----";
+            AssertNoPemFound(content);
+        }
+
+        [Fact]
+        public void Find_Fail_InvalidBase64_MissingPadding()
+        {
+            string content = "-----BEGIN TEST-----\nZm8\n-----END TEST-----";
+            AssertNoPemFound(content);
+        }
+
         private PemFields AssertPemFound(
             ReadOnlySpan<char> input,
             Range expectedLocation,
