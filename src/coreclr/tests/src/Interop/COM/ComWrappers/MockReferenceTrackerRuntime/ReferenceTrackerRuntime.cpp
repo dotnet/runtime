@@ -337,3 +337,14 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE Trigger_NotifyEndOfReferenceTracking
 {
     return TrackerRuntimeManager.NotifyEndOfReferenceTrackingOnThread();
 }
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObject(IUnknown *obj, int i)
+{
+    if (obj == nullptr)
+        return E_POINTER;
+
+    HRESULT hr;
+    ComSmartPtr<ITest> testObj;
+    RETURN_IF_FAILED(obj->QueryInterface(&testObj))
+    return testObj->SetValue(i);
+}

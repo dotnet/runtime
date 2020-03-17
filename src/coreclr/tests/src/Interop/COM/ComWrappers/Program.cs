@@ -83,6 +83,16 @@ namespace ComWrappersTests
             extern public static int Trigger_NotifyEndOfReferenceTrackingOnThread();
         }
 
+        struct MarshalInterface
+        {
+            [DllImport(nameof(MockReferenceTrackerRuntime))]
+            [return: MarshalAs(UnmanagedType.IUnknown)]
+            extern public static object? CreateTrackerObject();
+
+            [DllImport(nameof(MockReferenceTrackerRuntime))]
+            extern public static void UpdateTestObject([MarshalAs(UnmanagedType.IUnknown)] object testObj, int i);
+        }
+
         [Guid("42951130-245C-485E-B60B-4ED4254256F8")]
         public interface ITrackerObject
         {
@@ -497,6 +507,9 @@ namespace ComWrappersTests
             ValidateMarshalAPIs(wrappers1, true);
             ValidateMarshalAPIs(wrappers1, false);
 
+            ValidateInterfaceMarshaler(wrappers1, true);
+            ValidateInterfaceMarshaler(wrappers1, false);
+
             Console.WriteLine($"Validate NotifyEndOfReferenceTrackingOnThread()...");
 
             int hr;
@@ -540,6 +553,23 @@ namespace ComWrappersTests
             Assert.AreNotEqual(objWrapper1, objWrapper3);
 
             Marshal.Release(trackerObjRaw);
+        }
+
+        private static void ValidateInterfaceMarshaler(TestComWrappers registeredWrapper, bool validateUseRegistered)
+        {
+            registeredWrapper.ReturnInvalid = !validateUseRegistered;
+            string scenario = validateUseRegistered ? "use registered wrapper" : "fall back to runtime";
+
+            Console.WriteLine($"Validate ConvertToNative: {scenario}...");
+            var testObj = new Test();
+            int value = 10;
+            MarshalInterface.UpdateTestObject(testObj, value);
+            Assert.AreEqual(validateUseRegistered, value == testObj.GetValue());
+            Assert.AreEqual(testObj, registeredWrapper.LastComputeVtablesObject, "Registered ComWrappers instance should have been called");
+
+            Console.WriteLine($"Validate ConvertToManaged: {scenario}...");
+            object obj = MarshalInterface.CreateTrackerObject();
+            Assert.AreEqual(validateUseRegistered, obj is ITrackerObjectWrapper, $"Should{(validateUseRegistered ? string.Empty : "not")} have returned {nameof(ITrackerObjectWrapper)} instance");
         }
 
         static int Main(string[] doNotUse)
