@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <ReferenceFromRuntime Include="Microsoft.Extensions.FileProviders.Physical" />
   </ItemGroup>
 
