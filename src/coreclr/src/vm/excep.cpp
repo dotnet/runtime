@@ -7979,6 +7979,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     //
     // 1) We have a valid Thread object (implies exception on managed thread)
     // 2) Not a valid Thread object but the IP is in the execution engine (implies native thread within EE faulted)
+    // 3) The exception occurred in a GC marked location when no thread exists (i.e. reverse P/Invoke with NativeCallableAttribute).
     if (pThread || fExceptionInEE)
     {
         if (!bIsGCMarker)
@@ -8065,6 +8066,11 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         }
 #endif // FEATURE_EH_FUNCLETS
 
+    }
+    else if (bIsGCMarker)
+    {
+        _ASSERTE(pThread == NULL);
+        result = EXCEPTION_CONTINUE_EXECUTION;
     }
 
     SetLastError(dwLastError);
