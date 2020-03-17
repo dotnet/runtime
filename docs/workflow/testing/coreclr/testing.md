@@ -1,4 +1,4 @@
-# Running .NET Core Tests
+# Running Tests
 
 Details on test metadata can be found in [test-configuration.md](test-configuration.md).
 

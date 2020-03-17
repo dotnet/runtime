@@ -171,7 +171,7 @@ For libraries that have multiple target frameworks the target frameworks will be
 
 **Examples**
 
-- Build project for Linux for .NET Core
+- Build project for Linux
 ```
 dotnet build System.Net.NetworkInformation.csproj /p:TargetOS=Linux
 ```

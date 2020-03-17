@@ -24,7 +24,7 @@ namespace System.DirectoryServices.Tests
                 // ensure cleanup before doing the creation.
                 DeleteOU(de, ouName);
 
-                CreateOU(de, ouName, ".Net Core Developers Unit");
+                CreateOU(de, ouName, ".Net Developers Unit");
                 try
                 {
                     SearchOUByName(de, ouName);
