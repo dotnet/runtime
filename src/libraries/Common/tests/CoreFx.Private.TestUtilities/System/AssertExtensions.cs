@@ -390,7 +390,7 @@ namespace System
         public delegate void AssertThrowsAction<T>(Span<T> span);
 
         // Cannot use standard Assert.Throws() when testing Span - Span and closures don't get along.
-        public static void AssertThrows<E, T>(ReadOnlySpan<T> span, AssertThrowsActionReadOnly<T> action) where E : Exception
+        public static Exception AssertThrows<E, T>(ReadOnlySpan<T> span, AssertThrowsActionReadOnly<T> action) where E : Exception
         {
             Exception exception;
 
@@ -413,9 +413,11 @@ namespace System
             {
                 throw new ThrowsException(typeof(E), exception);
             }
+
+            return exception;
         }
 
-        public static void AssertThrows<E, T>(Span<T> span, AssertThrowsAction<T> action) where E : Exception
+        public static Exception AssertThrows<E, T>(Span<T> span, AssertThrowsAction<T> action) where E : Exception
         {
             Exception exception;
 
@@ -438,6 +440,15 @@ namespace System
             {
                 throw new ThrowsException(typeof(E), exception);
             }
+
+            return exception;
+        }
+
+        public static void Throws<E, T>(string expectedParamName, ReadOnlySpan<T> span, AssertThrowsActionReadOnly<T> action)
+            where E : ArgumentException
+        {
+            ArgumentException exception = (ArgumentException)AssertThrows<E, T>(span, action);
+            Assert.Equal(expectedParamName, exception.ParamName);
         }
     }
 }

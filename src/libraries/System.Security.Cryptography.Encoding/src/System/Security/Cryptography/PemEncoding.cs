@@ -403,13 +403,13 @@ namespace System.Security.Cryptography
         /// </exception>
         public static bool TryWrite(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination, out int charsWritten)
         {
-            static void Write(ReadOnlySpan<char> str, Span<char> dest, ref int offset)
+            static int Write(ReadOnlySpan<char> str, Span<char> dest, int offset)
             {
                 str.CopyTo(dest[offset..]);
-                offset += str.Length;
+                return str.Length;
             }
 
-            static void WriteBase64(ReadOnlySpan<byte> bytes, Span<char> dest, ref int offset)
+            static int WriteBase64(ReadOnlySpan<byte> bytes, Span<char> dest, int offset)
             {
                 bool success = Convert.TryToBase64Chars(bytes, dest[offset..], out int base64Written);
 
@@ -419,7 +419,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException();
                 }
 
-                offset += base64Written;
+                return base64Written;
             }
 
             if (!IsValidLabel(label))
@@ -436,31 +436,31 @@ namespace System.Security.Cryptography
             }
 
             charsWritten = 0;
-            Write(PreEBPrefix, destination, ref charsWritten);
-            Write(label, destination, ref charsWritten);
-            Write(Ending, destination, ref charsWritten);
-            Write(NewLine, destination, ref charsWritten);
+            charsWritten += Write(PreEBPrefix, destination, charsWritten);
+            charsWritten += Write(label, destination, charsWritten);
+            charsWritten += Write(Ending, destination, charsWritten);
+            charsWritten += Write(NewLine, destination, charsWritten);
 
             ReadOnlySpan<byte> remainingData = data;
             while (remainingData.Length >= BytesPerLine)
             {
-                WriteBase64(remainingData[..BytesPerLine], destination, ref charsWritten);
+                charsWritten += WriteBase64(remainingData[..BytesPerLine], destination, charsWritten);
+                charsWritten += Write(NewLine, destination, charsWritten);
                 remainingData = remainingData[BytesPerLine..];
-                Write(NewLine, destination, ref charsWritten);
             }
 
             Debug.Assert(remainingData.Length < BytesPerLine);
 
             if (remainingData.Length > 0)
             {
-                WriteBase64(remainingData, destination, ref charsWritten);
-                Write(NewLine, destination, ref charsWritten);
+                charsWritten += WriteBase64(remainingData, destination, charsWritten);
+                charsWritten += Write(NewLine, destination, charsWritten);
                 remainingData = default;
             }
 
-            Write(PostEBPrefix, destination, ref charsWritten);
-            Write(label, destination, ref charsWritten);
-            Write(Ending, destination, ref charsWritten);
+            charsWritten += Write(PostEBPrefix, destination, charsWritten);
+            charsWritten += Write(label, destination, charsWritten);
+            charsWritten += Write(Ending, destination, charsWritten);
 
             return true;
         }
