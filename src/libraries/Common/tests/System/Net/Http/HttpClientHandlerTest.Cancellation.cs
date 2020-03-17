@@ -87,7 +87,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(OneBoolAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseHeadersReceived_TaskCanceledQuickly(bool connectionClose, CancellationMode mode)
         {
