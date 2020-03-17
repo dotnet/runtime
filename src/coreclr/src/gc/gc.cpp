@@ -37206,7 +37206,7 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
 
     assert(size < loh_size_threshold || (flags & GC_ALLOC_LARGE_OBJECT_HEAP));
 
-    if (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP))
+    if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
         // The LOH always guarantees at least 8-byte alignment, regardless of platform. Moreover it doesn't
         // support mis-aligned object headers so we can't support biased headers. Luckily for us

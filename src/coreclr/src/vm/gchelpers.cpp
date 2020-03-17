@@ -315,7 +315,7 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
 {
     _ASSERTE(orObject->HasEmptySyncBlockInfo());
 
-    if (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP))
+    if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
     }
@@ -425,7 +425,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         flags |= GC_ALLOC_CONTAINS_REF;
 
     ArrayBase* orArray = NULL;
-    if (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP))
+    if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
         orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetMethodTableForUOHObject(pArrayMT);
@@ -557,7 +557,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     // keep original flags in case the call is recursive (jugged array case)
     // the aditional flags that we infer here, such as GC_ALLOC_CONTAINS_REF
     // may not be applicable to inner arrays
-    GC_ALLOC_FLAGS flags_orig = flags;
+    GC_ALLOC_FLAGS flagsOriginal = flags;
 
    _ASSERTE(pArrayMT->CheckInstanceActivated());
     PREFIX_ASSUME(pArrayMT != NULL);
@@ -657,7 +657,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         flags |= GC_ALLOC_CONTAINS_REF;
 
     ArrayBase* orArray = NULL;
-    if (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP))
+    if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
         orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetMethodTableForUOHObject(pArrayMT);
@@ -719,7 +719,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
                     TypeHandle subArrayType = pArrayMT->GetArrayElementTypeHandle();
                     for (UINT32 i = 0; i < cElements; i++)
                     {
-                        OBJECTREF obj = AllocateArrayEx(subArrayType, &pArgs[1], dwNumArgs-1, flags_orig);
+                        OBJECTREF obj = AllocateArrayEx(subArrayType, &pArgs[1], dwNumArgs-1, flagsOriginal);
                         outerArray->SetAt(i, obj);
                     }
 
@@ -1023,7 +1023,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
 
         Object* orObject = (Object*)Alloc(totalSize, flags);
 
-        if (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP))
+        if (flags & GC_ALLOC_USER_OLD_HEAP)
         {
             orObject->SetMethodTableForUOHObject(pMT);
         }
