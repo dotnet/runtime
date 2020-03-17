@@ -15,12 +15,25 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.Caching.Abstractions",
+    "Description": "Caching abstractions for in-memory cache and distributed cache.",
+    "CommonTypes": [
+      "Microsoft.Extensions.Caching.Distributed.IDistributedCache",
+      "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Caching.Memory",
+    "Description": "In-memory cache implementation of Microsoft.Extensions.Caching.Memory.IMemoryCache.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.Extensions.Configuration",
     "Description": "Implementation of key-value pair based configuration for Microsoft.Extensions.Configuration. Includes the memory configuration provider.",
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.Extensions.Configuration.Abstraction",
+    "Name": "Microsoft.Extensions.Configuration.Abstractions",
     "Description": "Abstractions of key-value pair based configuration.",
     "CommonTypes": [
       "Microsoft.Extensions.Configuration.IConfiguration",
@@ -31,7 +44,7 @@
     ]
   },
   {
-    "Name": "Microsoft.Extensions.Configuration.Bindar",
+    "Name": "Microsoft.Extensions.Configuration.Binder",
     "Description": "Functionality to bind an object to data in configuration providers for Microsoft.Extensions.Configuration.",
     "CommonTypes": []
   },
@@ -115,6 +128,13 @@
     "Name": "Microsoft.Extensions.Hosting.Abstractions",
     "Description": ".NET Core hosting and startup abstractions for applications.",
     "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Http",
+    "Description": "The HttpClient factory is a pattern for configuring and retrieving named HttpClients in a composable way. The HttpClient factory provides extensibility to plug in DelegatingHandlers that address cross-cutting concerns such as service location, load balancing, and reliability. The default HttpClient factory provides built-in diagnostics and logging and manages the lifetimes of connections in a performant way.",
+    "CommonTypes": [
+      "System.Net.Http.IHttpClientFactory"
+    ]
   },
   {
     "Name": "Microsoft.Extensions.Logging",

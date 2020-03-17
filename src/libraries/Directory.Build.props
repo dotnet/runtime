@@ -5,21 +5,38 @@
   <Import Project="..\..\Directory.Build.props" />
 
   <ItemGroup>
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Caching.Abstractions\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Abstractions\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.CommandLine\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.EnvironmentVariables\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection.Abstractions\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.*\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileSystemGlobbing\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting.Abstractions\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options.*\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\**\*csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.AspNetCore.Testing\**\*.csproj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\ref\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\src\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.Extensions.*.Tests.csproj" Exclude="@(PortedExtensionsProject)" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\Microsoft.Extensions.*.Tests.csproj" Exclude="@(PortedExtensionsProject)" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\FunctionalTests\Microsoft.Extensions.Configuration.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\Common\test\Microsoft.Extensions.Logging.Testing.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\FunctionalTests\Microsoft.Extensions.Hosting.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\TestApp\Microsoft.Extensions.Hosting.TestApp.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\Common\Microsoft.Extensions.Logging.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Common\tests\Extensions\**\*.csproj" />
   </ItemGroup>
 
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
     <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <!-- Temporarily ignore nit warning/errors (e.g. extra whitespace) from Extensions projects -->
-    <NoWarn Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">$(NoWarn);SA1129;SA1028;SA1027;SA1121;CA1200;SA1000;CA1507;CA1802;CA1825</NoWarn>
-  </PropertyGroup>
+    <NoWarn Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">$(NoWarn);SA1129;SA1028;SA1027;SA1121;CA1200;SA1000;CA1507;CA1802;CA1825;CA1018;SA1648;CA2007;SA1001;SA1026</NoWarn>
+    <NoWarn Condition="!$(MSBuildProjectName.Contains('ref'))">$(NoWarn);CS0618</NoWarn>
+    </PropertyGroup>
 
   <PropertyGroup>
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>

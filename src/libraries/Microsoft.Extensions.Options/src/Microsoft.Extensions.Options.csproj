@@ -1,17 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;$(DefaultNetCoreTargetFramework)</TargetFrameworks>
-    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultNetCoreTargetFramework)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
-
-  <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Extensions.Options.Tests" />
-  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <Reference Include="Microsoft.Extensions.Primitives" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (defaultValue != null && !serviceType.IsInstanceOfType(defaultValue))
             {
-                throw new ArgumentException(Resources.FormatConstantCantBeConvertedToServiceType(defaultValue.GetType(), serviceType));
+                throw new ArgumentException(SR.Format(SR.ConstantCantBeConvertedToServiceType, defaultValue.GetType(), serviceType));
             }
 
             DefaultValue = defaultValue;

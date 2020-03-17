@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
                     else
                     {
-                        throw new InvalidOperationException(Resources.FormatAsyncDisposableServiceDispose(TypeNameHelper.GetTypeDisplayName(toDispose[i])));
+                        throw new InvalidOperationException(SR.Format(SR.AsyncDisposableServiceDispose, TypeNameHelper.GetTypeDisplayName(toDispose[i])));
                     }
                 }
             }
