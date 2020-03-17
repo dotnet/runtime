@@ -4,7 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.UnreachableBlock
 {
-//	[SetupCSharpCompilerToUse ("csc")]
+	[SetupCSharpCompilerToUse ("csc")]
 	[SetupCompileArgument ("/optimize+")]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	public class SimpleConditionalProperty
@@ -23,7 +23,12 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectBodyModified]
+		[ExpectedInstructionSequence (new [] {
+			"call",
+			"ldc.i4.3",
+			"beq.s",
+			"ret"
+			})]
 		static void TestProperty_int_1 ()
 		{
 			if (Prop != 3)
@@ -31,7 +36,12 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectBodyModified]
+		[ExpectedInstructionSequence (new [] {
+			"ldc.i4.3",
+			"call",
+			"beq.s",
+			"ret"
+			})]
 		static void TestProperty_int_2 ()
 		{
 			if (3 == Prop) {
@@ -42,7 +52,13 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectBodyModified]
+		[ExpectedInstructionSequence (new [] {
+			"call",
+			"ldc.i4.5",
+			"ble.s",
+			"ldc.i4.0",
+			"ret"
+			})]
 		static int TestProperty_int_3 ()
 		{
 			if (Prop > 5 && TestProperty_int_3 () == 0) {
@@ -53,8 +69,15 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectBodyModified]
-		[ExpectLocalsModified]
+		[ExpectedInstructionSequence (new [] {
+			"call",
+			"pop",
+			"nop",
+			"ldloca.s",
+			"initobj",
+			"ldloc.0",
+			"ret"
+			})]
 		static long? TestProperty_int_4 ()
 		{
 			if (Prop == 3)
@@ -64,7 +87,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectBodyModified]
+		[ExpectedInstructionSequence (new [] {
+			"call",
+			"brfalse.s",
+			"ret"
+			})]
 		static void TestProperty_bool_1 ()
 		{
 			if (!PropBool) {
@@ -75,7 +102,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectBodyModified]
+		[ExpectedInstructionSequence (new [] {
+			"call",
+			"brfalse.s",
+			"ret"
+			})]
 		static void TestProperty_bool_2 ()
 		{
 			if (PropBool) {
@@ -84,7 +115,12 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectBodyModified]
+		[ExpectedInstructionSequence (new [] {
+			"call",
+			"call",
+			"beq.s",
+			"ret"
+			})]
 		static void TestProperty_bool_3 ()
 		{
 			if (PropBool != PropBool) {
@@ -93,7 +129,13 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectBodyModified]
+		[ExpectedInstructionSequence (new [] {
+			"br.s",
+			"call",
+			"pop",
+			"nop",
+			"ret"
+			})]
 		static void TestProperty_enum_1 ()
 		{
 			while (PropEnum == TestEnum.C) {
@@ -102,7 +144,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectBodyModified]
+		[ExpectedInstructionSequence (new [] {
+			"call",
+			"brfalse.s",
+			"ret"
+			})]
 		static void TestProperty_null_1 ()
 		{
 			if (PropNull != null)
