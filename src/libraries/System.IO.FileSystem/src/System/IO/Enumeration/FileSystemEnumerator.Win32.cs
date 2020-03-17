@@ -45,8 +45,12 @@ namespace System.IO.Enumeration
                 default:
                     int error = (int)Interop.NtDll.RtlNtStatusToDosError(status);
 
+                    // ERROR_FILE_NOT_FOUND or ERROR_NO_MORE_FILES can be reached when enumerating directories in a completely empty drive root (and there isn't even a System Volume Information folder).
                     // Note that there are many NT status codes that convert to ERROR_ACCESS_DENIED.
-                    if ((error == Interop.Errors.ERROR_ACCESS_DENIED && _options.IgnoreInaccessible) || ContinueOnError(error))
+                    if (error == Interop.Errors.ERROR_FILE_NOT_FOUND ||
+                        error == Interop.Errors.ERROR_NO_MORE_FILES ||
+                        (error == Interop.Errors.ERROR_ACCESS_DENIED && _options.IgnoreInaccessible) ||
+                        ContinueOnError(error))
                     {
                         DirectoryFinished();
                         return false;
