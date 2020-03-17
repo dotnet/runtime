@@ -7736,6 +7736,7 @@ getMethodInfoHelper(
         &methInfo->locals,
         ftn,
         true);
+
 } // getMethodInfoHelper
 
 //---------------------------------------------------------------------------------------
@@ -10957,6 +10958,50 @@ void CEEJitInfo::setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo
     EE_TO_JIT_TRANSITION();
 }
 
+void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    // We receive ownership of the array
+    _ASSERTE(m_pPatchpointInfoFromJit == NULL);
+    m_pPatchpointInfoFromJit = patchpointInfo;
+#else
+    UNREACHABLE();
+#endif
+
+    EE_TO_JIT_TRANSITION();
+}
+
+PatchpointInfo* CEEJitInfo::getOSRInfo(unsigned* ilOffset)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    PatchpointInfo* result = NULL;
+    *ilOffset = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    result = m_pPatchpointInfoFromRuntime;
+    *ilOffset = m_ilOffset;
+#endif
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 void CEEJitInfo::CompressDebugInfo()
 {
     CONTRACTL {
@@ -10965,11 +11010,20 @@ void CEEJitInfo::CompressDebugInfo()
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    PatchpointInfo* patchpointInfo = m_pPatchpointInfoFromJit;
+#else
+    PatchpointInfo* patchpointInfo = NULL;
+#endif
+
     // Don't track JIT info for DynamicMethods.
     if (m_pMethodBeingCompiled->IsDynamicMethod() && !g_pConfig->GetTrackDynamicMethodDebugInfo())
+    {
+        _ASSERTE(patchpointInfo == NULL);
         return;
+    }
 
-    if (m_iOffsetMapping == 0 && m_iNativeVarInfo == 0)
+    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL))
         return;
 
     JIT_TO_EE_TRANSITION();
@@ -10979,6 +11033,7 @@ void CEEJitInfo::CompressDebugInfo()
         PTR_BYTE pDebugInfo = CompressDebugInfo::CompressBoundariesAndVars(
             m_pOffsetMapping, m_iOffsetMapping,
             m_pNativeVarInfo, m_iNativeVarInfo,
+            patchpointInfo,
             NULL,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
@@ -12116,7 +12171,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
                                                      info,
                                                      CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                                      nativeEntry,
-                                                     nativeSizeOfCode );
+                                                     nativeSizeOfCode);
 
 #ifdef FEATURE_STACK_SAMPLING
         if (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND))
@@ -12736,6 +12791,16 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             jitInfo.SetJumpStubOverflow(fForceJumpStubOverflow);
 #endif
         jitInfo.SetReserveForJumpStubs(reserveForJumpStubs);
+#endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        // If this is an OSR jit request, grab the OSR info so we can pass it to the jit
+        if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR))
+        {
+            unsigned ilOffset = 0;
+            PatchpointInfo* patchpointInfo = nativeCodeVersion.GetOSRInfo(&ilOffset);
+            jitInfo.SetOSRInfo(patchpointInfo, ilOffset);
+        }
 #endif
 
         MethodDesc * pMethodForSecurity = jitInfo.GetMethodForSecurity(ftnHnd);
@@ -13893,6 +13958,18 @@ void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
 }
 
 void CEEInfo::setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::NativeVarInfo *vars)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEEInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+PatchpointInfo* CEEInfo::getOSRInfo(unsigned* ilOffset)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

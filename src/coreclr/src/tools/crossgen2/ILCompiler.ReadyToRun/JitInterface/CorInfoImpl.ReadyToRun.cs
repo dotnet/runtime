@@ -2175,6 +2175,24 @@ namespace Internal.JitInterface
             *ppCookieVal = (IntPtr *)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.GSCookie));
         }
 
+        /// <summary>
+        /// Record patchpoint info for the method
+        /// </summary>
+        private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
+        {
+            // No patchpoint info when prejitting
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Retrieve OSR info for the method
+        /// </summary>
+        private PatchpointInfo* getOSRInfo(ref uint ilOffset)
+        {
+            // No patchpoint info when prejitting
+            throw new NotImplementedException();
+        }
+
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
         { throw new NotImplementedException("getMethodVTableOffset"); }
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)

@@ -262,6 +262,20 @@ void interceptor_ICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
     original_ICorJitInfo->getGSCookie(pCookieVal, ppCookieVal);
 }
 
+// Provide patchpoint info for the method currently being jitted.
+void interceptor_ICJI::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    mcs->AddCall("setPatchpointInfo");
+    original_ICorJitInfo->setPatchpointInfo(patchpointInfo);
+}
+
+// Get OSR info for the method currently being jitted
+PatchpointInfo* interceptor_ICJI::getOSRInfo(unsigned* ilOffset)
+{
+    mcs->AddCall("getOSRInfo");
+    return original_ICorJitInfo->getOSRInfo(ilOffset);
+}
+
 /**********************************************************************************/
 //
 // ICorModuleInfo
