@@ -4,6 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.UnreachableBody {
 	[SetupLinkerArgument ("--enable-opt", "unreachablebodies")]
+	[SetupCompileBefore ("FakeSystemAssembly.dll", new [] { "../PreserveDependencies/Dependencies/PreserveDependencyAttribute.cs" })]
 	public class WorksWithPreserveDependency {
 		public static void Main()
 		{

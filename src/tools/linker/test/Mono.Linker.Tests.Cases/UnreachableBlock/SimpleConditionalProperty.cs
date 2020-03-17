@@ -14,6 +14,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			TestProperty_int_1 ();
 			TestProperty_int_2 ();
 			TestProperty_int_3 ();
+			TestProperty_int_4 ();
 			TestProperty_bool_1 ();
 			TestProperty_bool_2 ();
 			TestProperty_bool_3 ();
@@ -49,6 +50,17 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			}
 
 			return 0;
+		}
+
+		[Kept]
+		[ExpectBodyModified]
+		[ExpectLocalsModified]
+		static long? TestProperty_int_4 ()
+		{
+			if (Prop == 3)
+				return null;
+
+			return new Nullable<long> (1);
 		}
 
 		[Kept]

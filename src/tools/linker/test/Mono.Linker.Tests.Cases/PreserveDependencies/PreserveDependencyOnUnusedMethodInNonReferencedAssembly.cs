@@ -4,6 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.PreserveDependencies {
+	[SetupCompileBefore ("FakeSystemAssembly.dll", new [] { "Dependencies/PreserveDependencyAttribute.cs" })]
 	[SetupCompileBefore ("base.dll", new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyBase.cs" })]
 	[SetupCompileBefore ("library.dll", new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyLibrary.cs" }, references: new [] { "base.dll" }, addAsReference: false)]
 	[KeptAssembly ("base.dll")]

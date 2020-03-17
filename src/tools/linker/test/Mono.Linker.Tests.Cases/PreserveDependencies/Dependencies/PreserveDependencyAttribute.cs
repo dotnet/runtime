@@ -1,4 +1,4 @@
-﻿//
+//
 // PreserveDependencyAttribute.cs
 //
 // Authors:

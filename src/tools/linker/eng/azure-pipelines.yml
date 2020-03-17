@@ -4,6 +4,14 @@ trigger:
     include:
     - master
     - release/*
+    - mono-*
+
+pr:
+  branches:
+    include:
+    - master
+    - release/*
+    - mono-*
 
 variables:
 - name: officialBuild

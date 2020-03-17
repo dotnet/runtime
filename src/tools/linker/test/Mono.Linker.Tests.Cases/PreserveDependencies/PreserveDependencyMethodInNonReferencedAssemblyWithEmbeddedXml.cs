@@ -8,6 +8,7 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 	/// This is an acceptable bug with the currently implementation.  Embedded link xml files will not be processed
 	/// </summary>
 	[IncludeBlacklistStep (true)]
+	[SetupCompileBefore ("FakeSystemAssembly.dll", new [] { "Dependencies/PreserveDependencyAttribute.cs" })]
 	[SetupCompileBefore ("base.dll", new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyBase.cs" })]
 	[SetupCompileBefore (
 		"PreserveDependencyMethodInNonReferencedAssemblyLibrary.dll",
