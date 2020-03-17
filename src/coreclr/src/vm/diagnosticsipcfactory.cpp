@@ -8,7 +8,8 @@
 
 #ifdef FEATURE_PERFTRACING
 
-IpcStream **DiagnosticsIpcFactory::s_ppActiveConnections = nullptr;
+IpcStream **DiagnosticsIpcFactory::s_ppActiveConnectionsCache = nullptr;
+uint32_t DiagnosticsIpcFactory::s_ActiveConnectionsCacheSize = 0;
 
 IpcStream::DiagnosticsIpc *DiagnosticsIpcFactory::CreateServer(const char *const pIpcName, ErrorCallback callback)
 {
@@ -20,7 +21,6 @@ IpcStream::DiagnosticsIpc *DiagnosticsIpcFactory::CreateClient(const char *const
     return IpcStream::DiagnosticsIpc::Create(pIpcName, IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT, callback);
 }
 
-// TODO: log info on looping counts
 IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsIpc *const *const ppIpcs, uint32_t nIpcs, ErrorCallback callback)
 {
     // a static array that holds open client connections that haven't been used
@@ -28,10 +28,17 @@ IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsI
     // This will prevent the runtime from continually reestablishing connection when the server loop loops.
     // This does, however, introduce state to this method which is undesireable, but a justifiable cost to minimizing system calls.
 
-    if (s_ppActiveConnections == nullptr)
+    if (s_ppActiveConnectionsCache == nullptr)
     {
-        s_ppActiveConnections = new IpcStream*[nIpcs];
-        memset(s_ppActiveConnections, 0, nIpcs * sizeof(IpcStream*));
+        ResizeCache(nIpcs);
+    }
+
+    if (s_ActiveConnectionsCacheSize != nIpcs)
+    {
+        // number of connections has changed
+        // (3/2020 - This isn't possible, but should be here for future proofing)
+        ClearCache();
+        ResizeCache(nIpcs);
     }
 
     IpcStream *pStream = nullptr;
@@ -58,7 +65,7 @@ IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsI
             if (ppIpcs[i]->mode == IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT)
             {
                 pollTimeoutMs = (pollTimeoutMs == -1) ? pollTimeoutMinMs : pollTimeoutMs;
-                if (s_ppActiveConnections[i] != nullptr)
+                if (s_ppActiveConnectionsCache[i] != nullptr)
                 {
                     // Check if the connection is still open by doing a 0 length read
                     // this should fail if the connection has been closed
@@ -66,15 +73,16 @@ IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsI
                     //       but retry semantics means it shouldn't matter cause we'll
                     //       self-correct
                     uint32_t nBytesRead;
-                    if (s_ppActiveConnections[i]->Read(nullptr, 0, nBytesRead))
+                    uint8_t buf[1];
+                    if (s_ppActiveConnectionsCache[i]->Read(buf, 0, nBytesRead))
                     {
-                        pStreams.Push(s_ppActiveConnections[i]);
+                        pStreams.Push(s_ppActiveConnectionsCache[i]);
                         continue;
                     }
                     else
                     {
-                        delete s_ppActiveConnections[i];
-                        s_ppActiveConnections[i] = nullptr;
+                        delete s_ppActiveConnectionsCache[i];
+                        s_ppActiveConnectionsCache[i] = nullptr;
                         pollTimeoutMs = pollTimeoutMinMs;
                     }
                 }
@@ -89,12 +97,11 @@ IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsI
                     {
                         if (callback != nullptr)
                             callback("Failed to send advertise message", -1);
-                        // TODO: Should we just fall through instead and ignore the client conn?
                         return nullptr;
                     }
 
-                    // Add connection to list
-                    s_ppActiveConnections[i] = pConnection;
+                    // Add connection to cache
+                    s_ppActiveConnectionsCache[i] = pConnection;
                     pStreams.Push(pConnection);
                     pollTimeoutMs = pollTimeoutMaxMs;
                 }
@@ -120,31 +127,25 @@ IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsI
 
         int32_t retval = IpcStream::Poll(pStreams.Ptr(), (uint32_t)pStreams.Size(), pollTimeoutMs, &pStream, callback);
         nPollAttempts++;
+        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "DiagnosticsIpcFactory::GetNextAvailableStream - Poll attempt: %d, timeout: %dms.\n", nPollAttempts, pollTimeoutMs);
 
         if (retval < 0)
         {
             if (pStream != nullptr)
             {
+                STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, "DiagnosticsIpcFactory::GetNextAvailableStream - Poll attempt: %d, connection hung up.\n", nPollAttempts);
                 // This stream was hung up
-                for (uint32_t i = 0; i < nIpcs; i++)
-                {
-                    if (s_ppActiveConnections[i] == pStream)
-                    {
-                        s_ppActiveConnections[i] = nullptr;
-                        delete pStream;
-                        pStream = nullptr;
-                        pollTimeoutMs = pollTimeoutMinMs;
-                    }
-                }
+                RemoveFromCache(pStream);
+                delete pStream;
+                pStream = nullptr;
+                pollTimeoutMs = pollTimeoutMinMs;
                 continue;
             }
         }
     }
 
     // Clean the Active Connection Cache of a used connection
-    for (uint32_t i = 0; i < nIpcs; i++)
-        if (s_ppActiveConnections[i] == pStream)
-            s_ppActiveConnections[i] = nullptr;
+    RemoveFromCache(pStream);
     return pStream;
 }
 
