@@ -5040,7 +5040,7 @@ bool Compiler::verCheckTailCallConstraint(
 
     assert(impOpcodeIsCallOpcode(opcode));
 
-    if (compIsForInlining())
+    if (compIsForInlining() || opts.IsReversePInvoke())
     {
         return false;
     }
