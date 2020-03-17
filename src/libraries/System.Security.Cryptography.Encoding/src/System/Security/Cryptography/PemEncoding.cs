@@ -215,8 +215,8 @@ namespace System.Security.Cryptography
                     return false;
 
                 previousSpaceOrHyphen = true;
-
             }
+
             return true;
         }
 
