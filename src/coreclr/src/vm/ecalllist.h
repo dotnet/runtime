@@ -640,6 +640,9 @@ FCFuncStart(gThreadPoolFuncs)
     QCFuncElement("GetCompletedWorkItemCount", ThreadPoolNative::GetCompletedWorkItemCount)
     FCFuncElement("GetPendingUnmanagedWorkItemCount", ThreadPoolNative::GetPendingUnmanagedWorkItemCount)
     FCFuncElement("RegisterWaitForSingleObjectNative", ThreadPoolNative::CorRegisterWaitForSingleObject)
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+    FCFuncElement("QueueWaitCompletionNative", ThreadPoolNative::CorQueueWaitCompletion)
+#endif
     FCFuncElement("BindIOCompletionCallbackNative", ThreadPoolNative::CorBindIoCompletionCallback)
     FCFuncElement("SetMaxThreadsNative", ThreadPoolNative::CorSetMaxThreads)
     FCFuncElement("GetMaxThreadsNative", ThreadPoolNative::CorGetMaxThreads)

@@ -119,21 +119,6 @@ namespace System.Threading
         internal class WaitThread
         {
             /// <summary>
-            /// The info for a completed wait on a specific <see cref="RegisteredWaitHandle"/>.
-            /// </summary>
-            private struct CompletedWaitHandle
-            {
-                public CompletedWaitHandle(RegisteredWaitHandle completedHandle, bool timedOut)
-                {
-                    CompletedHandle = completedHandle;
-                    TimedOut = timedOut;
-                }
-
-                public RegisteredWaitHandle CompletedHandle { get; }
-                public bool TimedOut { get; }
-            }
-
-            /// <summary>
             /// The wait handles registered on this wait thread.
             /// </summary>
             private readonly RegisteredWaitHandle[] _registeredWaits = new RegisteredWaitHandle[WaitHandle.MaxWaitHandles - 1];
@@ -325,13 +310,14 @@ namespace System.Threading
             }
 
             /// <summary>
-            /// Queue a call to <see cref="CompleteWait(object)"/> on the ThreadPool.
+            /// Queue a call to complete the wait on the ThreadPool.
             /// </summary>
             /// <param name="registeredHandle">The handle that completed.</param>
             /// <param name="timedOut">Whether or not the wait timed out.</param>
             private void QueueWaitCompletion(RegisteredWaitHandle registeredHandle, bool timedOut)
             {
                 registeredHandle.RequestCallback();
+
                 // If the handle is a repeating handle, set up the next call. Otherwise, remove it from the wait thread.
                 if (registeredHandle.Repeating)
                 {
@@ -341,17 +327,8 @@ namespace System.Threading
                 {
                     UnregisterWait(registeredHandle, blocking: false); // We shouldn't block the wait thread on the unregistration.
                 }
-                ThreadPool.QueueUserWorkItem(CompleteWait, new CompletedWaitHandle(registeredHandle, timedOut));
-            }
 
-            /// <summary>
-            /// Process the completion of a user-registered wait (call the callback).
-            /// </summary>
-            /// <param name="state">A <see cref="CompletedWaitHandle"/> object representing the wait completion.</param>
-            private void CompleteWait(object? state)
-            {
-                CompletedWaitHandle handle = (CompletedWaitHandle)state!;
-                handle.CompletedHandle.PerformCallback(handle.TimedOut);
+                ThreadPool.UnsafeQueueWaitCompletion(new CompleteWaitThreadPoolWorkItem(registeredHandle, timedOut));
             }
 
             /// <summary>

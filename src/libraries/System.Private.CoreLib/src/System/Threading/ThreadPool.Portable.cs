@@ -117,5 +117,8 @@ namespace System.Threading
 
         private static void RegisterWaitForSingleObjectCore(WaitHandle? waitObject, RegisteredWaitHandle registeredWaitHandle) =>
             PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
+
+        internal static void UnsafeQueueWaitCompletion(CompleteWaitThreadPoolWorkItem completeWaitWorkItem) =>
+            UnsafeQueueUserWorkItemInternal(completeWaitWorkItem, preferLocal: false);
     }
 }

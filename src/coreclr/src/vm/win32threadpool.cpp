@@ -1200,6 +1200,76 @@ void ThreadpoolMgr::WaitIOCompletionCallback(
         DWORD ret = AsyncCallbackCompletion((PVOID)lpOverlapped);
 }
 
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+
+void WINAPI ThreadpoolMgr::ManagedWaitIOCompletionCallback(
+    DWORD dwErrorCode,
+    DWORD dwNumberOfBytesTransfered,
+    LPOVERLAPPED lpOverlapped)
+{
+    Thread *pThread = GetThread();
+    if (pThread == NULL)
+    {
+        ClrFlsSetThreadType(ThreadType_Threadpool_Worker);
+        pThread = SetupThreadNoThrow();
+        if (pThread == NULL)
+        {
+            return;
+        }
+    }
+
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    if (dwErrorCode != ERROR_SUCCESS)
+    {
+        return;
+    }
+
+    _ASSERTE(lpOverlapped != NULL);
+
+    {
+        GCX_COOP();
+        ManagedThreadBase::ThreadPool(ManagedWaitIOCompletionCallback_Worker, lpOverlapped);
+    }
+
+    Thread::IncrementIOThreadPoolCompletionCount(pThread);
+}
+
+void ThreadpoolMgr::ManagedWaitIOCompletionCallback_Worker(LPVOID state)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(state != NULL);
+
+    OBJECTHANDLE completeWaitWorkItemObjectHandle = (OBJECTHANDLE)state;
+    OBJECTREF completeWaitWorkItemObject = ObjectFromHandle(completeWaitWorkItemObjectHandle);
+    _ASSERTE(completeWaitWorkItemObject != NULL);
+
+    GCPROTECT_BEGIN(completeWaitWorkItemObject);
+
+    DestroyHandle(completeWaitWorkItemObjectHandle);
+    completeWaitWorkItemObjectHandle = NULL;
+
+    ARG_SLOT args[] = { ObjToArgSlot(completeWaitWorkItemObject) };
+    MethodDescCallSite(METHOD__COMPLETE_WAIT_THREAD_POOL_WORK_ITEM__COMPLETE_WAIT, &completeWaitWorkItemObject).Call(args);
+
+    GCPROTECT_END();
+}
+
+#endif // TARGET_WINDOWS
+
 #ifndef TARGET_UNIX
 // We need to make sure that the next jobs picked up by a completion port thread
 // is inserted into the queue after we start cleanup.  The cleanup starts when a completion

@@ -1244,6 +1244,23 @@ namespace System.Threading
         }
     }
 
+    /// <summary>
+    /// The info for a completed wait on a specific <see cref="RegisteredWaitHandle"/>.
+    /// </summary>
+    internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
+    {
+        private RegisteredWaitHandle _registeredWaitHandle;
+        private bool _timedOut;
+
+        public CompleteWaitThreadPoolWorkItem(RegisteredWaitHandle registeredWaitHandle, bool timedOut)
+        {
+            _registeredWaitHandle = registeredWaitHandle;
+            _timedOut = timedOut;
+        }
+
+        void IThreadPoolWorkItem.Execute() => _registeredWaitHandle.PerformCallback(_timedOut);
+    }
+
     public static partial class ThreadPool
     {
         internal const string WorkerThreadName = ".NET ThreadPool Worker";

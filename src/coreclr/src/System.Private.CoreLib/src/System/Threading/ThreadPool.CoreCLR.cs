@@ -134,6 +134,12 @@ namespace System.Threading
         private static extern bool UnregisterWaitNative(IntPtr handle, SafeHandle? waitObject);
     }
 
+    internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
+    {
+        // Entry point from unmanaged code
+        private void CompleteWait() => ((IThreadPoolWorkItem)this).Execute();
+    }
+
     internal sealed class UnmanagedThreadPoolWorkItem : IThreadPoolWorkItem
     {
         private readonly IntPtr _callback;
@@ -328,6 +334,22 @@ namespace System.Threading
             registeredWaitHandle.SetNativeRegisteredWaitHandle(nativeRegisteredWaitHandle);
         }
 
+        internal static void UnsafeQueueWaitCompletion(CompleteWaitThreadPoolWorkItem completeWaitWorkItem)
+        {
+            Debug.Assert(UsePortableThreadPool);
+
+#if TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+            QueueWaitCompletionNative(completeWaitWorkItem);
+#else
+            UnsafeQueueUserWorkItemInternal(completeWaitWorkItem, preferLocal: false);
+#endif
+        }
+
+#if TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void QueueWaitCompletionNative(CompleteWaitThreadPoolWorkItem completeWaitWorkItem);
+#endif
+
         internal static void RequestWorkerThread()
         {
             if (UsePortableThreadPool)
@@ -456,5 +478,4 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool BindIOCompletionCallbackNative(IntPtr fileHandle);
     }
-
 }

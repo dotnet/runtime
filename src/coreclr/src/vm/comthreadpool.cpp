@@ -490,6 +490,32 @@ FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
 }
 FCIMPLEND
 
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+FCIMPL1(void, ThreadPoolNative::CorQueueWaitCompletion, Object* completeWaitWorkItemObjectUNSAFE)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(ThreadpoolMgr::UsePortableThreadPool());
+
+    HANDLE completeWaitWorkItemHandle = NULL;
+    struct _gc
+    {
+        OBJECTREF completeWaitWorkItemObject;
+    } gc;
+    gc.completeWaitWorkItemObject = ObjectToOBJECTREF(completeWaitWorkItemObjectUNSAFE);
+
+    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
+
+    _ASSERTE(gc.completeWaitWorkItemObject != NULL);
+
+    OBJECTHANDLE completeWaitWorkItemObjectHandle = GetAppDomain()->CreateHandle(gc.completeWaitWorkItemObject);
+    ThreadpoolMgr::PostQueuedCompletionStatus(
+        (LPOVERLAPPED)completeWaitWorkItemObjectHandle,
+        ThreadpoolMgr::ManagedWaitIOCompletionCallback);
+
+    HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND
+#endif // TARGET_WINDOWS
 
 VOID QueueUserWorkItemManagedCallback(PVOID pArg)
 {

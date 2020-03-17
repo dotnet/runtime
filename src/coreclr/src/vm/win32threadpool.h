@@ -294,6 +294,12 @@ public:
                                             DWORD numBytesTransferred,
                                             LPOVERLAPPED lpOverlapped);
 
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+    static void WINAPI ManagedWaitIOCompletionCallback(DWORD dwErrorCode,
+                                                       DWORD dwNumberOfBytesTransfered,
+                                                       LPOVERLAPPED lpOverlapped);
+#endif
+
     static VOID WINAPI CallbackForInitiateDrainageOfCompletionPortQueue(
         DWORD dwErrorCode,
         DWORD dwNumberOfBytesTransfered,
@@ -354,7 +360,11 @@ public:
         // We handle registered waits at a higher abstraction level
         return (Function == ThreadpoolMgr::CallbackForInitiateDrainageOfCompletionPortQueue
                 || Function == ThreadpoolMgr::CallbackForContinueDrainageOfCompletionPortQueue
-                || Function == ThreadpoolMgr::WaitIOCompletionCallback);
+                || Function == ThreadpoolMgr::WaitIOCompletionCallback
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+                || Function == ThreadpoolMgr::ManagedWaitIOCompletionCallback
+#endif
+            );
     }
 #endif
 
@@ -908,6 +918,10 @@ public:
     static void ProcessWaitCompletion( WaitInfo* waitInfo,
                                 unsigned index,      // array index
                                 BOOL waitTimedOut);
+
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+    static void ManagedWaitIOCompletionCallback_Worker(LPVOID state);
+#endif
 
     static DWORD WINAPI WaitThreadStart(LPVOID lpArgs);
 

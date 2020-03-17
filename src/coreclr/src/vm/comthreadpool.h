@@ -43,13 +43,15 @@ public:
 
     static FCDECL1(void, ReportThreadStatus, CLR_BOOL isWorking);
 
-
     static FCDECL5(LPVOID, CorRegisterWaitForSingleObject,
                                 Object* waitObjectUNSAFE,
                                 Object* stateUNSAFE,
                                 UINT32 timeout,
                                 CLR_BOOL executeOnlyOnce,
                                 Object* registeredWaitObjectUNSAFE);
+#ifdef TARGET_WINDOWS // the IO completion thread pool is currently only available on Windows
+    static FCDECL1(void, CorQueueWaitCompletion, Object* completeWaitWorkItemObjectUNSAFE);
+#endif
 
     static BOOL QCALLTYPE RequestWorkerThread();
 
