@@ -659,12 +659,14 @@ namespace System
         }
 
         /// <summary>
-        /// Skips zero-initialization of the array if possible.
-        /// If T contains object references, the array is always zero-initialized.
-        /// pinned: true means you want to pin this object that you are allocating
-        /// otherwise it's not pinned.
-        /// pinned requires that T does not contain object references.
+        /// Allocate an array while skipping zero-initialization if possible.
         /// </summary>
+        /// <typeparam name="T">Specifies the type of the array element.</typeparam>
+        /// <param name="length">Specifies the length of the array.</param>
+        /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
+        /// <remarks>
+        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
         public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
         {
@@ -704,10 +706,14 @@ namespace System
         }
 
         /// <summary>
-        /// pinned: true means you want to pin this object that you are allocating
-        /// otherwise it's not pinned.
-        /// pinned requires that T does not contain object references.
+        /// Allocate an array.
         /// </summary>
+        /// <typeparam name="T">Specifies the type of the array element.</typeparam>
+        /// <param name="length">Specifies the length of the array.</param>
+        /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
+        /// <remarks>
+        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
+        /// </remarks>
         public static T[] AllocateArray<T>(int length, bool pinned = false)
         {
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
