@@ -285,13 +285,6 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_PostScenario_Http2_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class PlatformHandler_ResponseStream_Http2_Test : ResponseStreamTest
-    {
-        protected override Version UseVersion => HttpVersion20.Value;
-
-        public PlatformHandler_ResponseStream_Http2_Test(ITestOutputHelper output) : base(output) { }
-    }
-
     public sealed class PlatformHandler_HttpClientHandler_SslProtocols_Http2_Test : HttpClientHandler_SslProtocols_Test
     {
         protected override Version UseVersion => HttpVersion20.Value;
@@ -379,4 +372,10 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_HttpClientHandler_Authentication_Http2_Test(ITestOutputHelper output) : base(output) { }
     }
 #endif
+    public sealed class PlatformHandler_ResponseStream_Http2_Test : ResponseStreamTest
+    {
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandler_ResponseStream_Http2_Test(ITestOutputHelper output) : base(output) { }
+    }
 }

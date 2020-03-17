@@ -227,7 +227,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
-
+#if NETCOREAPP
         [Theory]
         [InlineData(TransferType.ContentLength, TransferError.ContentLengthTooLarge)]
         [InlineData(TransferType.Chunked, TransferError.MissingChunkTerminator)]
@@ -255,6 +255,7 @@ namespace System.Net.Http.Functional.Tests
                 await ReadAsStreamHelper(uri);
             });
         }
+#endif
 
         public enum TransferType
         {
