@@ -6,35 +6,42 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 	[SetupCSharpCompilerToUse ("csc")]
 	[SetupCompileArgument ("/optimize+")]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
-	public class TryFinallyBlocks
+	public class TryCatchBlocks
 	{
 		public static void Main ()
 		{
-			TestSimpleTry ();
+			TestSimpleTryUnreachable ();
 		}
 
 		[Kept]
 		[ExpectedInstructionSequence (new [] {
 			"call",
-			"ldc.i4.3",
+			"ldc.i4.6",
 			"beq.s",
+			"ldc.i4.3",
 			"ret"
 		})]
-		static void TestSimpleTry ()
+		[ExpectedExceptionHandlerSequence (new string[0])]
+		[ExpectedLocalsSequence (new string[0])]
+		static int TestSimpleTryUnreachable ()
 		{
-			if (Prop != 3)
-				Unreached_1 ();
+			if (Prop != 6) {
+                try {
+					Unreached_1 ();
+					return 1;
+                } catch {
+                    return 2;
+                }
+            }
+
+			return 3;
 		}
 
 		[Kept]
 		static int Prop {
 			[Kept]
 			get {
-				try {
-					return 3;
-				} finally {
-
-				}
+				return 6;
 			}
 		}
 

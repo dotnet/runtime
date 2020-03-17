@@ -5,10 +5,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.UnreachableBlock
 {
-	// 	Invalid IL detected in F:\Temp\linker_tests\output\test.exe
-	// [IL]: Error: [F:\Temp\linker_tests\output\test.exe : Mono.Linker.Tests.Cases.UnreachableBlock.ComplexConditions::Test_1][offset 0x0000001D] Stack depth differs depending on path.
-	[IgnoreTestCase("Fails peverify on windows.")]
-	
 	[SetupCompileArgument ("/optimize-")] // Relying on debug csc behaviour
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	public class ComplexConditions
@@ -35,7 +31,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"ldnull",
 			"cgt.un",
 			"br.s",
-			"nop",
 			"br.s",
 			"ldc.i4.1",
 			"stloc.0",

@@ -37,9 +37,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"pop",
 			"call",
 			"ldc.i4.1",
-			"ret",
-			"nop",
-			"ldc.i4.0",
 			"ret"
 			})]
 		static int Test1 ()
@@ -58,8 +55,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"pop",
 			"call",
 			"ldc.i4.0",
-			"ret",
-			"ldc.i4.0",
 			"ret"
 			})]
 		static bool Test2 ()
@@ -73,16 +68,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectLocalsModified]
 		[ExpectedInstructionSequence (new [] {
 			"call",
 			"pop",
 			"ldsfld",
 			"call",
-			"ret",
-			"ldloca.s",
-			"initobj",
-			"ldloc.0",
 			"ret"
 			})]
 		static DateTime Test3 ()
@@ -97,16 +87,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-		[ExpectLocalsModified]
 		[ExpectedInstructionSequence (new [] {
 			"call",
 			"pop",
 			"ldsfld",
 			"call",
-			"ret",
-			"ldloca.s",
-			"initobj",
-			"ldloc.0",
 			"ret"
 			})]
 		static DateTime Test3b ()
@@ -130,10 +115,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"pop",
 			"call",
 			"ldc.i4.3",
-			"ret",
-			"nop",
-			"nop",
-			"ldc.i4.0",
 			"ret"
 			})]
 		static TestEnum Test4 ()
@@ -155,8 +136,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"call",
 			"pop",
 			"call",
-			"leave.s",
-			"nop",
 			"leave.s",
 			"pop",
 			"call",
@@ -190,11 +169,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"conv.i8",
 			"stloc.0",
 			"leave.s",
-			"nop",
-			"nop",
-			"nop",
-			"nop",
-			"leave.s",
 			"pop",
 			"ldc.i4.2",
 			"conv.i8",
@@ -226,11 +200,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"call",
 			"ldc.i4.1",
 			"stloc.1",
-			"leave.s",
-			"nop",
-			"nop",
-			"nop",
-			"nop",
 			"leave.s",
 			"pop",
 			"ldloc.0",
@@ -266,16 +235,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"call",
 			"pop",
 			"call",
-			"ret",
-			"nop",
-			"nop",
-			"nop",
-			"nop",
-			"nop",
-			"nop",
-			"nop",
-			"nop",
-			"nop",
 			"ret"
 		})]
 		static void Test8 ()
@@ -295,9 +254,6 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"call",
 			"pop",
 			"call",
-			"leave.s",
-			"nop",
-			"nop",
 			"leave.s",
 			"pop",
 			"leave.s",
