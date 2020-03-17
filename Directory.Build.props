@@ -69,7 +69,7 @@
     <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
 
     <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
-    <!-- Keep it in sync with PRERELEASE in clrdefinitions.cmake -->
+    <!-- Keep it in sync with PRERELEASE in eng/native/configureplatform.cmake -->
     <IsPrerelease>true</IsPrerelease>
 
     <!-- Experimental packages should not be stable -->
