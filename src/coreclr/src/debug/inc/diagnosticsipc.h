@@ -32,7 +32,7 @@ public:
     // Returns:
     // int32_t: -1 on error, 0 on timeout, >0 on successful poll
     // - if ppStream is != nullptr and -1 is returned, that connection was hungup and it shouldn't be treated as an error
-    static int32_t Poll(IpcStream **ppStreams, uint32_t nStreams, int32_t timeoutMs, IpcStream **ppStream, ErrorCallback callback = nullptr);
+    static int32_t Poll(IpcStream *const *const ppStreams, uint32_t nStreams, int32_t timeoutMs, IpcStream **ppStream, ErrorCallback callback = nullptr);
 
     class DiagnosticsIpc final
     {

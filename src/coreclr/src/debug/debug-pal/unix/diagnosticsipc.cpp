@@ -171,7 +171,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
     return new IpcStream(clientSocket, _serverSocket);
 }
 
-int32_t IpcStream::Poll(IpcStream **ppStreams, uint32_t nStreams, int32_t timeoutMs, IpcStream **ppStream, ErrorCallback callback)
+int32_t IpcStream::Poll(IpcStream *const *const ppStreams, uint32_t nStreams, int32_t timeoutMs, IpcStream **ppStream, ErrorCallback callback)
 {
     *ppStream = nullptr;
     pollfd *pollfds = new pollfd[nStreams];

@@ -20,8 +20,8 @@ IpcStream::DiagnosticsIpc *DiagnosticsIpcFactory::CreateClient(const char *const
     return IpcStream::DiagnosticsIpc::Create(pIpcName, IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT, callback);
 }
 
-// TODO: const x2, ppIpcs, log info on looping counts
-IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsIpc **ppIpcs, uint32_t nIpcs, ErrorCallback callback)
+// TODO: log info on looping counts
+IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsIpc *const *const ppIpcs, uint32_t nIpcs, ErrorCallback callback)
 {
     // a static array that holds open client connections that haven't been used
     // Remove entries from this list that have been used, e.g., they are placed in pStream and returned
