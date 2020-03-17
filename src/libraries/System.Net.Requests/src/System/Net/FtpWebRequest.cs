@@ -906,7 +906,7 @@ namespace System.Net
                 //
                 // FYI: Will do 2 attempts max as per AttemptedRecovery
                 //
-                Stream stream;
+                Stream? stream;
 
                 while (true)
                 {
@@ -971,20 +971,16 @@ namespace System.Net
             catch (WebException webException)
             {
                 // If this was a timeout, throw a timeout exception
-                IOException? ioEx = webException.InnerException as IOException;
-                if (ioEx != null)
+                if (webException.InnerException is IOException ioEx &&
+                    ioEx.InnerException is SocketException sEx &&
+                    sEx.SocketErrorCode == SocketError.TimedOut)
                 {
-                    SocketException? sEx = ioEx.InnerException as SocketException;
-                    if (sEx != null)
-                    {
-                        if (sEx.SocketErrorCode == SocketError.TimedOut)
-                        {
-                            SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new WebException(SR.net_timeout, WebExceptionStatus.Timeout)));
-                        }
-                    }
+                    SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new WebException(SR.net_timeout, WebExceptionStatus.Timeout)));
                 }
-
-                SetException(webException);
+                else
+                {
+                    SetException(webException);
+                }
             }
             catch (Exception exception)
             {
@@ -994,8 +990,7 @@ namespace System.Net
 
         private Exception TranslateConnectException(Exception e)
         {
-            SocketException? se = e as SocketException;
-            if (se != null)
+            if (e is SocketException se)
             {
                 if (se.SocketErrorCode == SocketError.HostNotFound)
                 {
@@ -1051,7 +1046,7 @@ namespace System.Net
             return new FtpControlStream(client);
         }
 
-        private Stream TimedSubmitRequestHelper(bool isAsync)
+        private Stream? TimedSubmitRequestHelper(bool isAsync)
         {
             if (isAsync)
             {
@@ -1099,7 +1094,7 @@ namespace System.Net
                 }
             }
 
-            return stream!;
+            return stream;
         }
 
         /// <summary>
@@ -1324,7 +1319,7 @@ namespace System.Net
 
                         try
                         {
-                            stream = (FtpDataStream)TimedSubmitRequestHelper(true);
+                            stream = (FtpDataStream?)TimedSubmitRequestHelper(true);
                         }
                         catch (Exception e)
                         {
