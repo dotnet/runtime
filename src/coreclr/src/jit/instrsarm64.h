@@ -620,9 +620,6 @@ INST2(fneg,    "fneg",   0, 0, IF_EN2J,   0x2EA0F800,  0x1E214000)
                                    //  fneg    Vd,Vn                DV_2A  0Q1011101X100000 111110nnnnnddddd   2EA0 F800   Vd,Vn    (vector)
                                    //  fneg    Vd,Vn                DV_2G  000111100X100001 010000nnnnnddddd   1E21 4000   Vd,Vn    (scalar)
 
-INST2(fsqrt,   "fsqrt",  0, 0, IF_EN2J,   0x2EA1F800,  0x1E21C000)
-                                   //  fsqrt   Vd,Vn                DV_2A  0Q1011101X100001 111110nnnnnddddd   2EA1 F800   Vd,Vn    (vector)
-                                   //  fsqrt   Vd,Vn                DV_2G  000111100X100001 110000nnnnnddddd   1E21 C000   Vd,Vn    (scalar)
 
 INST2(frintn,  "frintn", 0, 0, IF_EN2J,   0x0E218800,  0x1E244000)
                                    //  frintn  Vd,Vn                DV_2A  0Q0011100X100001 100010nnnnnddddd   0E21 8800   Vd,Vn    (vector)
@@ -651,6 +648,12 @@ INST2(frintx,  "frintx", 0, 0, IF_EN2J,   0x2E219800,  0x1E274000)
 INST2(frinti,  "frinti", 0, 0, IF_EN2J,   0x2EA19800,  0x1E27C000)
                                    //  frinti  Vd,Vn                DV_2A  0Q1011101X100001 100110nnnnnddddd   2EA1 9800   Vd,Vn    (vector)
                                    //  frinti  Vd,Vn                DV_2G  000111100X100111 110000nnnnnddddd   1E27 C000   Vd,Vn    (scalar)
+
+INST2(fsqrt,   "fsqrt",  0, 0, IF_EN2J,   0x2EA1F800,  0x1E21C000)
+                                   // C7.2.164 FSQRT (vector)
+                                   //  fsqrt   Vd,Vn                DV_2A  0Q1011101X100001 111110nnnnnddddd   2EA1 F800   Vd,Vn    (vector)
+                                   // C7.2.165 FSQRT (scalar)
+                                   //  fsqrt   Vd,Vn                DV_2G  000111100X100001 110000nnnnnddddd   1E21 C000   Vd,Vn    (scalar)
 
 //    enum     name     FP LD/ST            DV_2M        DV_2L
 INST2(abs,     "abs",    0, 0, IF_EN2K,   0x0E20B800,  0x5E20B800)
