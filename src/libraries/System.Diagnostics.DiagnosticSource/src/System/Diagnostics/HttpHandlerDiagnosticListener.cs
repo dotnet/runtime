@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.Serialization;
 using System.Text;
 
 // This HttpHandlerDiagnosticListener class is applicable only for .NET 4.6, and not for .NET core.
@@ -66,14 +65,14 @@ namespace System.Diagnostics
         {
             lock (this)
             {
-                if (!this.initialized)
+                if (!this._initialized)
                 {
                     try
                     {
                         // This flag makes sure we only do this once. Even if we failed to initialize in an
                         // earlier time, we should not retry because this initialization is not cheap and
                         // the likelihood it will succeed the second time is very small.
-                        this.initialized = true;
+                        this._initialized = true;
 
                         PrepareReflectionObjects();
                         PerformInjection();
@@ -280,7 +279,7 @@ namespace System.Diagnostics
         /// </summary>
         private class ArrayListWrapper : ArrayList
         {
-            private ArrayList _list;
+            private readonly ArrayList _list;
 
             public override int Capacity
             {
@@ -590,10 +589,9 @@ namespace System.Diagnostics
 
                     // If an Exception is thrown opening a connection (ex: DNS issues, TLS issue) or something is aborted really early on we will reach here.
                     var error = s_errorField.GetValue(_Connection) as WebExceptionStatus?;
-                    var exception = s_innerExceptionField.GetValue(_Connection) as Exception;
                     if (error.HasValue)
                     {
-                        s_instance.RaiseExceptionEvent(request, error.Value, exception);
+                        s_instance.RaiseExceptionEvent(request, error.Value, s_innerExceptionField.GetValue(_Connection) as Exception);
                     }
                 }
             }
@@ -832,7 +830,7 @@ namespace System.Diagnostics
 
         #endregion
 
-        internal static HttpHandlerDiagnosticListener s_instance = new HttpHandlerDiagnosticListener();
+        internal static readonly HttpHandlerDiagnosticListener s_instance = new HttpHandlerDiagnosticListener();
 
         #region private fields
         private const string DiagnosticListenerName = "System.Net.Http.Desktop";
@@ -848,7 +846,7 @@ namespace System.Diagnostics
         private const string TraceStateHeaderName = "tracestate";
 
         // Fields for controlling initialization of the HttpHandlerDiagnosticListener singleton
-        private bool initialized = false;
+        private bool _initialized = false;
 
         // Fields for reflection
         private static FieldInfo s_connectionGroupListField;
