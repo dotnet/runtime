@@ -26,7 +26,7 @@ all: prepare
 	make Program.dll.o
 
 # recompile Program.cs AOT
-Program.dll.o: bin/Program.dll
+Program.dll.o: bin/Program.dll Makefile
 	make aot-lib LIB=bin/Program.dll
 
 # we need to copy some BCL libs to ARTIFACTS_MONO
