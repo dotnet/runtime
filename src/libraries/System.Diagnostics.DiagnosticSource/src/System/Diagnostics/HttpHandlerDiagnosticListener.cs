@@ -496,7 +496,7 @@ namespace System.Diagnostics
                     // which allows us to intercept each new HttpWebRequest object added under
                     // this Connection.
                     ArrayList originalArrayList = s_writeListField.GetValue(value) as ArrayList;
-                    HttpWebRequestArrayList newArrayList = new HttpWebRequestArrayList(originalArrayList ?? new ArrayList());
+                    HttpWebRequestArrayList newArrayList = new HttpWebRequestArrayList(value, originalArrayList ?? new ArrayList());
 
                     s_writeListField.SetValue(value, newArrayList);
                 }
@@ -514,22 +514,45 @@ namespace System.Diagnostics
         /// </summary>
         private sealed class HttpWebRequestArrayList : ArrayListWrapper
         {
-            public HttpWebRequestArrayList(ArrayList list) : base(list)
+            private readonly object _Connection;
+
+            public HttpWebRequestArrayList(object connection, ArrayList list) : base(list)
             {
+                _Connection = connection;
             }
 
             public override int Add(object value)
             {
+                // Add before firing events so if some user code cancels/aborts the request it will be found in the outstanding list.
+                int index = base.Add(value);
+
                 HttpWebRequest request = value as HttpWebRequest;
                 if (request != null)
                 {
                     s_instance.RaiseRequestEvent(request);
                 }
 
-                return base.Add(value);
+                return index;
             }
 
             public override void RemoveAt(int index)
+            {
+                RemoveRequest(index);
+
+                base.RemoveAt(index);
+            }
+
+            public override void Clear()
+            {
+                for (int index = 0; index < Count; index++)
+                {
+                    RemoveRequest(index);
+                }
+
+                base.Clear();
+            }
+
+            private void RemoveRequest(int index)
             {
                 HttpWebRequest request = base[index] as HttpWebRequest;
                 if (request != null)
@@ -538,35 +561,41 @@ namespace System.Diagnostics
                     if (response != null)
                     {
                         s_instance.RaiseResponseEvent(request, response);
+                        return;
                     }
-                    else
+
+                    // In case reponse content length is 0 and request is async,
+                    // we won't have a HttpWebResponse set on request object when this method is called
+                    // http://referencesource.microsoft.com/#System/net/System/Net/HttpWebResponse.cs,525
+
+                    // But we there will be CoreResponseData object that is either exception
+                    // or the internal HTTP reponse representation having status, content and headers
+
+                    var coreResponse = s_coreResponseAccessor(request);
+                    if (coreResponse != null && s_coreResponseDataType.IsInstanceOfType(coreResponse))
                     {
-                        // In case reponse content length is 0 and request is async,
-                        // we won't have a HttpWebResponse set on request object when this method is called
-                        // http://referencesource.microsoft.com/#System/net/System/Net/HttpWebResponse.cs,525
+                        HttpStatusCode status = s_coreStatusCodeAccessor(coreResponse);
+                        WebHeaderCollection headers = s_coreHeadersAccessor(coreResponse);
 
-                        // But we there will be CoreResponseData object that is either exception
-                        // or the internal HTTP reponse representation having status, content and headers
+                        // Manual creation of HttpWebResponse here is not possible as this method is eventually called from the
+                        // HttpWebResponse ctor. So we will send Stop event with the Status and Headers payload
+                        // to notify listeners about response;
+                        // We use two different names for Stop events since one event with payload type that varies creates
+                        // complications for efficient payload parsing and is not supported by DiagnosicSource helper
+                        // libraries (e.g. Microsoft.Extensions.DiagnosticAdapter)
 
-                        var coreResponse = s_coreResponseAccessor(request);
-                        if (coreResponse != null && s_coreResponseDataType.IsInstanceOfType(coreResponse))
-                        {
-                            HttpStatusCode status = s_coreStatusCodeAccessor(coreResponse);
-                            WebHeaderCollection headers = s_coreHeadersAccessor(coreResponse);
+                        s_instance.RaiseResponseEvent(request, status, headers);
+                        return;
+                    }
 
-                            // Manual creation of HttpWebResponse here is not possible as this method is eventually called from the
-                            // HttpWebResponse ctor. So we will send Stop event with the Status and Headers payload
-                            // to notify listeners about response;
-                            // We use two different names for Stop events since one event with payload type that varies creates
-                            // complications for efficient payload parsing and is not supported by DiagnosicSource helper
-                            // libraries (e.g. Microsoft.Extensions.DiagnosticAdapter)
-
-                            s_instance.RaiseResponseEvent(request, status, headers);
-                        }
+                    // If an Exception is thrown opening a connection (ex: DNS issues, TLS issue) or something is aborted really early on we will reach here.
+                    var error = s_errorField.GetValue(_Connection) as WebExceptionStatus?;
+                    var exception = s_innerExceptionField.GetValue(_Connection) as Exception;
+                    if (error.HasValue)
+                    {
+                        s_instance.RaiseExceptionEvent(request, error.Value, exception);
                     }
                 }
-
-                base.RemoveAt(index);
             }
         }
 
@@ -583,7 +612,7 @@ namespace System.Diagnostics
 
         private void RaiseRequestEvent(HttpWebRequest request)
         {
-            if (request.Headers.Get(RequestIdHeaderName) != null)
+            if (IsRequestInstrumented(request))
             {
                 // this request was instrumented by previous RaiseRequestEvent
                 return;
@@ -593,15 +622,7 @@ namespace System.Diagnostics
             {
                 var activity = new Activity(ActivityName);
 
-                // Only send start event to users who subscribed for it, but start activity anyway
-                if (this.IsEnabled(RequestStartName))
-                {
-                    this.StartActivity(activity, new { Request = request });
-                }
-                else
-                {
-                    activity.Start();
-                }
+                activity.Start();
 
                 if (activity.IdFormat == ActivityIdFormat.W3C)
                 {
@@ -618,14 +639,11 @@ namespace System.Diagnostics
                         }
                     }
                 }
-                else
+                else if (request.Headers.Get(RequestIdHeaderName) == null)
                 {
                     // do not inject header if it was injected already
                     // perhaps tracing systems wants to override it
-                    if (request.Headers.Get(RequestIdHeaderName) == null)
-                    {
-                        request.Headers.Add(RequestIdHeaderName, activity.Id);
-                    }
+                    request.Headers.Add(RequestIdHeaderName, activity.Id);
                 }
 
                 if (request.Headers.Get(CorrelationContextHeaderName) == null)
@@ -648,9 +666,20 @@ namespace System.Diagnostics
                     }
                 }
 
+                // Only send start event to users who subscribed for it, but start activity anyway
+                if (this.IsEnabled(RequestStartName))
+                {
+                    Write(activity.OperationName + ".Start", new { Request = request });
+                }
+
                 // There is no guarantee that Activity.Current will flow to the Response, so let's stop it here
                 activity.Stop();
             }
+        }
+
+        private bool IsRequestInstrumented(HttpWebRequest request)
+        {
+            return request.Headers.Get(TraceParentHeaderName) != null || request.Headers.Get(RequestIdHeaderName) != null;
         }
 
         private void RaiseResponseEvent(HttpWebRequest request, HttpWebResponse response)
@@ -658,8 +687,7 @@ namespace System.Diagnostics
             // Response event could be received several times for the same request in case it was redirected
             // IsLastResponse checks if response is the last one (no more redirects will happen)
             // based on response StatusCode and number or redirects done so far
-            bool wasRequestInstrumented = request.Headers.Get(TraceParentHeaderName) != null || request.Headers.Get(RequestIdHeaderName) != null;
-            if (wasRequestInstrumented && IsLastResponse(request, response.StatusCode))
+            if (IsRequestInstrumented(request) && IsLastResponse(request, response.StatusCode))
             {
                 // only send Stop if request was instrumented
                 this.Write(RequestStopName, new { Request = request, Response = response });
@@ -671,9 +699,17 @@ namespace System.Diagnostics
             // Response event could be received several times for the same request in case it was redirected
             // IsLastResponse checks if response is the last one (no more redirects will happen)
             // based on response StatusCode and number or redirects done so far
-            if (request.Headers.Get(RequestIdHeaderName) != null && IsLastResponse(request, statusCode))
+            if (IsRequestInstrumented(request) && IsLastResponse(request, statusCode))
             {
                 this.Write(RequestStopExName, new { Request = request, StatusCode = statusCode, Headers = headers });
+            }
+        }
+
+        private void RaiseExceptionEvent(HttpWebRequest request, WebExceptionStatus status, Exception exception)
+        {
+            if (IsRequestInstrumented(request))
+            {
+                this.Write(RequestExceptionName, new { Request = request, Status = status, Exception = exception });
             }
         }
 
@@ -706,6 +742,8 @@ namespace System.Diagnostics
             s_connectionListField = s_connectionGroupType?.GetField("m_ConnectionList", BindingFlags.Instance | BindingFlags.NonPublic);
             s_connectionType = systemNetHttpAssembly?.GetType("System.Net.Connection");
             s_writeListField = s_connectionType?.GetField("m_WriteList", BindingFlags.Instance | BindingFlags.NonPublic);
+            s_errorField = s_connectionType?.GetField("m_Error", BindingFlags.Instance | BindingFlags.NonPublic);
+            s_innerExceptionField = s_connectionType?.GetField("m_InnerException", BindingFlags.Instance | BindingFlags.NonPublic);
 
             s_httpResponseAccessor = CreateFieldGetter<HttpWebRequest, HttpWebResponse>("_HttpResponse", BindingFlags.NonPublic | BindingFlags.Instance);
             s_autoRedirectsAccessor = CreateFieldGetter<HttpWebRequest, int>("_AutoRedirects", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -723,6 +761,8 @@ namespace System.Diagnostics
                 s_connectionListField == null ||
                 s_connectionType == null ||
                 s_writeListField == null ||
+                s_errorField == null ||
+                s_innerExceptionField == null ||
                 s_httpResponseAccessor == null ||
                 s_autoRedirectsAccessor == null ||
                 s_coreResponseDataType == null ||
@@ -799,6 +839,7 @@ namespace System.Diagnostics
         private const string ActivityName = "System.Net.Http.Desktop.HttpRequestOut";
         private const string RequestStartName = "System.Net.Http.Desktop.HttpRequestOut.Start";
         private const string RequestStopName = "System.Net.Http.Desktop.HttpRequestOut.Stop";
+        private const string RequestExceptionName = "System.Net.Http.Desktop.HttpRequestOut.Exception";
         private const string RequestStopExName = "System.Net.Http.Desktop.HttpRequestOut.Ex.Stop";
         private const string InitializationFailed = "System.Net.Http.InitializationFailed";
         private const string RequestIdHeaderName = "Request-Id";
@@ -815,6 +856,8 @@ namespace System.Diagnostics
         private static FieldInfo s_connectionListField;
         private static Type s_connectionType;
         private static FieldInfo s_writeListField;
+        private static FieldInfo s_errorField;
+        private static FieldInfo s_innerExceptionField;
         private static Func<HttpWebRequest, HttpWebResponse> s_httpResponseAccessor;
         private static Func<HttpWebRequest, int> s_autoRedirectsAccessor;
         private static Func<HttpWebRequest, object> s_coreResponseAccessor;

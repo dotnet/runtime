@@ -161,6 +161,8 @@ namespace System.Diagnostics.Tests
                         (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
                     }
 
+                    Assert.Equal(2, eventRecords.Records.Count());
+
                     // Check to make sure: The first record must be a request, the next record must be a response.
                     KeyValuePair<string, object> startEvent;
                     Assert.True(eventRecords.Records.TryDequeue(out startEvent));
@@ -212,6 +214,8 @@ namespace System.Diagnostics.Tests
 
                     parent.Stop();
 
+                    Assert.Equal(2, eventRecords.Records.Count());
+
                     // Check to make sure: The first record must be a request, the next record must be a response.
                     Assert.True(eventRecords.Records.TryDequeue(out var evnt));
                     Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Start", evnt.Key);
@@ -250,6 +254,8 @@ namespace System.Diagnostics.Tests
                     (await client.SendAsync(request)).Dispose();
                 }
 
+                Assert.Equal(1, eventRecords.Records.Count()); // Only Stop event is sent.
+
                 // Check to make sure: The first record must be a request, the next record must be a response.
                 Assert.True(eventRecords.Records.TryDequeue(out var evnt));
                 HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(evnt.Value, "Request");
@@ -275,6 +281,8 @@ namespace System.Diagnostics.Tests
                         request.Headers.Add("traceparent", "00-abcdef0123456789abcdef0123456789-abcdef0123456789-01");
                         (await client.SendAsync(request)).Dispose();
                     }
+
+                    Assert.Equal(1, eventRecords.Records.Count()); // Only Stop event is sent.
 
                     // Check to make sure: The first record must be a request, the next record must be a response.
                     Assert.True(eventRecords.Records.TryDequeue(out var evnt));
@@ -348,6 +356,7 @@ namespace System.Diagnostics.Tests
                 }
 
                 // We should have exactly one Start and one Stop event
+                Assert.Equal(2, eventRecords.Records.Count());
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
             }
@@ -371,9 +380,10 @@ namespace System.Diagnostics.Tests
                 Assert.NotNull(webException);
                 Assert.True(webException.Status == WebExceptionStatus.NameResolutionFailure);
 
-                // We should have one Start event and no stop event
+                // We should have one Start event, no Stop event, and one Exception event.
+                Assert.Equal(2, eventRecords.Records.Count());
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
-                Assert.Equal(0, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Exception")));
             }
         }
 
@@ -393,9 +403,10 @@ namespace System.Diagnostics.Tests
                     Assert.True(ex is TaskCanceledException || ex is WebException);
                 }
 
-                // We should have one Start event and no stop event
+                // We should have one Start event, no Stop event, and one Exception event.
+                Assert.Equal(2, eventRecords.Records.Count());
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
-                Assert.Equal(0, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Exception")));
             }
         }
 
@@ -414,6 +425,7 @@ namespace System.Diagnostics.Tests
                     (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
                 }
 
+                Assert.Equal(2, eventRecords.Records.Count());
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
 
@@ -447,6 +459,7 @@ namespace System.Diagnostics.Tests
                     (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
                 }
 
+                Assert.Equal(2, eventRecords.Records.Count());
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
 
