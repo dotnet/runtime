@@ -4504,6 +4504,8 @@ void emitter::emitIns_R_R(
         case INS_fcmgt:
         case INS_fcmle:
         case INS_fcmlt:
+        case INS_frecpe:
+        case INS_frsqrte:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
 
@@ -4525,6 +4527,7 @@ void emitter::emitIns_R_R(
                 fmt = IF_DV_2G;
             }
             break;
+
         case INS_aesd:
         case INS_aese:
         case INS_aesmc:
@@ -4584,6 +4587,25 @@ void emitter::emitIns_R_R(
             // Load single structure and replicate  base register
             reg2 = encodingSPtoZR(reg2);
             fmt  = IF_LS_2D;
+            break;
+
+        case INS_urecpe:
+        case INS_ursqrte:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidVectorDatasize(size));
+            assert(isValidArrangement(size, opt));
+            elemsize = optGetElemsize(opt);
+            assert(elemsize == EA_4BYTE);
+            fmt = IF_DV_2A;
+            break;
+
+        case INS_frecpx:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidScalarDatasize(size));
+            assert(insOptsNone(opt));
+            fmt = IF_DV_2G;
             break;
 
         default:
@@ -5532,6 +5554,8 @@ void emitter::emitIns_R_R_R(
         case INS_fcmeq:
         case INS_fcmge:
         case INS_fcmgt:
+        case INS_frecps:
+        case INS_frsqrts:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
