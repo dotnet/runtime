@@ -4509,21 +4509,21 @@ void emitter::emitIns_R_R(
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
-                assert((elemsize == EA_8BYTE) || (elemsize == EA_4BYTE)); // Only Double/Float supported
-                assert(opt != INS_OPTS_1D);                               // Reserved encoding
+                assert(isValidVectorElemsizeFloat(elemsize)); // Only Double/Float supported
+                assert(opt != INS_OPTS_1D);                   // Reserved encoding
                 fmt = IF_DV_2A;
             }
             else
             {
-                NYI("Untested");
                 // Scalar operation
-                assert((size == EA_8BYTE) || (size == EA_4BYTE)); // Only Double/Float supported
+                assert(isValidScalarDatasize(size)); // Only Double/Float supported
+                assert(insOptsNone(opt));
                 fmt = IF_DV_2G;
             }
             break;
