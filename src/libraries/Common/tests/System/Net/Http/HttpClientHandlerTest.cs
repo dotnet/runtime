@@ -250,10 +250,20 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalTheory]
+#else
         [Theory]
+#endif
         [MemberData(nameof(GetAsync_IPBasedUri_Success_MemberData))]
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             using (HttpClient client = CreateHttpClient())
             {
                 var options = new GenericLoopbackOptions { Address = address };
@@ -562,11 +572,21 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalTheory]
+#else
         [Theory]
+#endif
         [InlineData("WWW-Authenticate", "CustomAuth")]
         [InlineData("", "")] // RFC7235 requires servers to send this header with 401 but some servers don't.
         public async Task GetAsync_ServerNeedsNonStandardAuthAndSetCredential_StatusCodeUnauthorized(string authHeadrName, string authHeaderValue)
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -1897,9 +1917,19 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalFact]
+#else
         [Fact]
+#endif
         public async Task GetAsync_ExpectContinueTrue_NoContent_StillSendsHeader()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             const string ExpectedContent = "Hello, expecting and continuing world.";
             var clientCompleted = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1936,10 +1966,20 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { (HttpStatusCode) 199 };
         }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalTheory]
+#else
         [Theory]
+#endif
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_1xxResponsesWithHeaders_InterimResponsesHeadersIgnored(HttpStatusCode responseStatusCode)
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             var clientFinished = new TaskCompletionSource<bool>();
             const string TestString = "test";
             const string CookieHeaderExpected = "yummy_cookie=choco";
@@ -2000,10 +2040,20 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalTheory]
+#else
         [Theory]
+#endif
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(HttpStatusCode responseStatusCode)
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             var clientFinished = new TaskCompletionSource<bool>();
             const string TestString = "test";
 
@@ -2040,9 +2090,19 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalFact]
+#else
         [Fact]
+#endif
         public async Task SendAsync_MultipleExpected100Responses_ReceivesCorrectResponse()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             var clientFinished = new TaskCompletionSource<bool>();
             const string TestString = "test";
 
@@ -2079,9 +2139,19 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalFact]
+#else
         [Fact]
+#endif
         public async Task SendAsync_No100ContinueReceived_RequestBodySentEventually()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             var clientFinished = new TaskCompletionSource<bool>();
             const string RequestString = "request";
             const string ResponseString = "response";
@@ -2508,9 +2578,19 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalFact]
+#else
         [Fact]
+#endif
         public async Task SendAsync_RequestVersion20_HttpNotHttps_NoUpgradeRequest()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
