@@ -36,6 +36,7 @@ using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
+using Mono.Linker.Dataflow;
 
 namespace Mono.Linker.Steps {
 
@@ -2366,6 +2367,9 @@ namespace Mono.Linker.Steps {
 			if (HasManuallyTrackedDependency (body))
 				return;
 
+			var scanner = new ReflectionMethodBodyScanner (this);
+			scanner.Scan (body);
+
 			var instructions = body.Instructions;
 			ReflectionPatternDetector detector = new ReflectionPatternDetector (this, body.Method);
 
@@ -2436,6 +2440,14 @@ namespace Mono.Linker.Steps {
 			{
 #if DEBUG
 				_patternAnalysisAttempted = true;
+#endif
+			}
+
+			[Conditional ("DEBUG")]
+			public void RecordHandledPattern ()
+			{
+#if DEBUG
+				_patternReported = true;
 #endif
 			}
 
@@ -3353,6 +3365,176 @@ namespace Mono.Linker.Steps {
 
 			public CustomAttribute Attribute { get; private set; }
 			public ICustomAttributeProvider Provider { get; private set; }
+		}
+
+		private class ReflectionMethodBodyScanner : Dataflow.MethodBodyScanner
+		{
+			private readonly MarkStep _markStep;
+
+			public ReflectionMethodBodyScanner(MarkStep parent)
+			{
+				_markStep = parent;
+			}
+
+			protected override void WarnAboutInvalidILInMethod (MethodBody method, int ilOffset)
+			{
+				// TODO: remove once we're ready to scan actual invalid IL
+				// Serves as a debug helper for now to make sure valid IL is not considered invalid.
+				throw new Exception ();
+			}
+
+			public override bool HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams, out ValueNode methodReturnValue)
+			{
+				var reflectionContext = new ReflectionPatternContext (_markStep._context, callingMethodBody.Method, calledMethod.Resolve (), operation.Offset);
+
+				try {
+
+					methodReturnValue = null;
+
+					switch (calledMethod.Name) {
+						case "GetTypeFromHandle" when calledMethod.DeclaringType.Name == "Type": {
+								// Infrastructure piece to support "typeof(Foo)"
+								var typeHnd = methodParams[0] as RuntimeTypeHandleValue;
+								if (typeHnd != null)
+									methodReturnValue = new SystemTypeValue (typeHnd.TypeRepresented);
+							}
+							break;
+
+						case "MakeGenericType" when calledMethod.DeclaringType.Name == "Type": {
+								// Don't care about the actual arguments, but we don't want to lose track of the type
+								// in case this is e.g. Activator.CreateInstance(typeof(Foo<>).MakeGenericType(...));
+								methodReturnValue = methodParams [0];
+							}
+							break;
+
+						//
+						// static CreateInstance (System.Type type)
+						// static CreateInstance (System.Type type, bool nonPublic)
+						// static CreateInstance (System.Type type, params object?[]? args)
+						// static CreateInstance (System.Type type, object?[]? args, object?[]? activationAttributes)
+						// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture)
+						// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
+						//
+						case "CreateInstance" when !calledMethod.ContainsGenericParameter
+							&& calledMethod.DeclaringType.Name == "Activator"
+							&& calledMethod.Parameters.Count >= 1
+							&& calledMethod.Parameters[0].ParameterType.MetadataType != MetadataType.String: {
+
+								var parameters = calledMethod.Parameters;
+
+								reflectionContext.AnalyzingPattern ();
+
+								int? ctorParameterCount = null;
+								BindingFlags bindingFlags = BindingFlags.Instance;
+								if (parameters.Count > 1) {									
+									if (parameters [1].ParameterType.MetadataType == MetadataType.Boolean) {
+										// The overload that takes a "nonPublic" bool
+										bool nonPublic = true;
+										if (methodParams [1] is ConstIntValue constInt) {
+											nonPublic = constInt.Value != 0;
+										}
+
+										if (nonPublic)
+											bindingFlags |= BindingFlags.NonPublic | BindingFlags.Public;
+										else
+											bindingFlags |= BindingFlags.Public;
+										ctorParameterCount = 0;
+									} else {
+										// Overload that has the parameters as the second or fourth argument
+										int argsParam = parameters.Count == 2 || parameters.Count == 3 ? 1 : 3;
+										
+										if (methodParams.Count > argsParam &&
+											methodParams [argsParam] is ArrayValue arrayValue &&
+											arrayValue.Size.AsConstInt () != null) {
+											ctorParameterCount = arrayValue.Size.AsConstInt ();
+										}
+
+										if (parameters.Count > 3) {
+											if (methodParams [1].AsConstInt () != null)
+												bindingFlags |= (BindingFlags)methodParams [1].AsConstInt ();
+											else
+												bindingFlags |= BindingFlags.NonPublic | BindingFlags.Public;
+										} else {
+											bindingFlags |= BindingFlags.Public;
+										}
+									}
+								}
+								else {
+									// The overload with a single System.Type argument
+									ctorParameterCount = 0;
+									bindingFlags |= BindingFlags.Public;
+								}
+
+								// Go over all types we've seen
+								foreach (var value in methodParams[0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", bindingFlags, ctorParameterCount);
+									} else if (value == NullValue.Instance) {
+										// Nothing to report. This is likely just a value on some unreachable branch.
+										reflectionContext.RecordHandledPattern ();
+									} else if (value is MethodParameterValue methodParameterValue) {
+										// This is the case where the value comes from a method parameter.
+										// TODO: If the parameter is annotated, we're good. If it's not annotated, we shold warn.
+										reflectionContext.RecordUnrecognizedPattern ($"Activator call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument expression which cannot be analyzed");
+									} else {
+										// Not known where the value is coming from
+										reflectionContext.RecordUnrecognizedPattern ($"Activator call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument expression which cannot be analyzed");
+									}
+								}
+							}
+							break;
+						default:
+							return false;
+					}
+				}
+				finally {
+					reflectionContext.Dispose ();
+				}
+
+				// If we get here, we handled this as an intrinsic.  As a convenience, if the code above
+				// didn't set the return value (and the method has a return value), we will set it to be an
+				// unknown value with the return type of the method.
+				if (methodReturnValue == null) {
+					if (calledMethod.ReturnType.MetadataType != MetadataType.Void) {
+						methodReturnValue = UnknownValue.Instance;
+					}
+				}
+
+				return true;
+			}
+
+			void MarkMethodsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, BindingFlags? bindingFlags, int? parametersCount = null)
+			{
+				bool foundMatch = false;
+				foreach (var method in declaringType.Methods) {
+					var mname = method.Name;
+
+					if (mname != name) {
+						continue;
+					}
+
+					if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Static && !method.IsStatic)
+						continue;
+
+					if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Instance && method.IsStatic)
+						continue;
+
+					if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public && !method.IsPublic)
+						continue;
+
+					if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic && method.IsPublic)
+						continue;
+
+					if (parametersCount != null && parametersCount != method.Parameters.Count)
+						continue;
+
+					foundMatch = true;
+					reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method));
+				}
+
+				if (!foundMatch)
+					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve method `{name}` on type `{declaringType.FullName}`.");
+			}
 		}
 	}
 
