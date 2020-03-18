@@ -1,4 +1,4 @@
-add_definitions(-MT)
+add_compile_options(/MT)
 add_executable(GenClrDebugResource GenClrDebugResource.cpp)
 
 target_link_libraries(GenClrDebugResource

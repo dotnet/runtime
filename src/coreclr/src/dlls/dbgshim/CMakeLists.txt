@@ -9,7 +9,7 @@ set(DBGSHIM_SOURCES
 
 if(CLR_CMAKE_HOST_WIN32)
     # Use static crt
-    add_definitions(-MT)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/MT>)
     add_definitions(-DFX_VER_INTERNALNAME_STR=dbgshim.dll)
 endif(CLR_CMAKE_HOST_WIN32)
 

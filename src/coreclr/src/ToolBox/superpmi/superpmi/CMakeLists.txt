@@ -9,7 +9,7 @@ add_definitions(-DUSE_COREDISTOOLS)
 
 if(CLR_CMAKE_HOST_WIN32)
   #use static crt
-  add_definitions(-MT)
+  add_compile_options(/MT)
 endif(CLR_CMAKE_HOST_WIN32)
 
 include_directories(.)
@@ -61,7 +61,7 @@ else()
         ${STATIC_MT_CPP_LIB}
     )
 
-    _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/superpmi.pdb DESTINATION PDB)
+    _install (FILES $<TARGET_PDB_FILE:superpmi> DESTINATION PDB)
 endif(CLR_CMAKE_HOST_UNIX)
 
 _install (TARGETS superpmi DESTINATION .)

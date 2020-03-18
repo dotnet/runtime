@@ -124,7 +124,7 @@ function(preprocess_compile_asm)
   set(oneValueArgs OUTPUT_OBJECTS)
   set(multiValueArgs ASM_FILES)
   cmake_parse_arguments(PARSE_ARGV 0 COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}")
-  
+
   get_include_directories_asm(ASM_INCLUDE_DIRECTORIES)
 
   set (ASSEMBLED_OBJECTS "")
@@ -218,36 +218,36 @@ function(target_precompile_header)
     message(SEND_ERROR "No header supplied to target_precompile_header.")
   endif()
 
-  if(MSVC)
-    get_filename_component(PCH_NAME ${PRECOMPILE_HEADERS_HEADER} NAME_WE)
-    # We need to use the $<TARGET_PROPERTY:NAME> generator here instead of the ${targetName} variable since
-    # CMake evaluates source file properties once per directory. If we just use ${targetName}, we end up sharing
-    # the same PCH between targets, which doesn't work.
-    set(precompiledBinary "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${PCH_NAME}.$<TARGET_PROPERTY:NAME>.pch")
-    set(pchSourceFile "${CMAKE_CURRENT_BINARY_DIR}/${PCH_NAME}.${PRECOMPILE_HEADERS_TARGET}.cpp")
+#   if(MSVC)
+#     get_filename_component(PCH_NAME ${PRECOMPILE_HEADERS_HEADER} NAME_WE)
+#     # We need to use the $<TARGET_PROPERTY:NAME> generator here instead of the ${targetName} variable since
+#     # CMake evaluates source file properties once per directory. If we just use ${targetName}, we end up sharing
+#     # the same PCH between targets, which doesn't work.
+#     set(precompiledBinary "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${PCH_NAME}.$<TARGET_PROPERTY:NAME>.pch")
+#     set(pchSourceFile "${CMAKE_CURRENT_BINARY_DIR}/${PCH_NAME}.${PRECOMPILE_HEADERS_TARGET}.cpp")
 
-    file(GENERATE OUTPUT ${pchSourceFile} CONTENT "#include \"${PRECOMPILE_HEADERS_HEADER}\"")
+#     file(GENERATE OUTPUT ${pchSourceFile} CONTENT "#include \"${PRECOMPILE_HEADERS_HEADER}\"")
 
-    set(PCH_SOURCE_FILE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR} ${PRECOMPILE_HEADERS_ADDITIONAL_INCLUDE_DIRECTORIES})
+#     set(PCH_SOURCE_FILE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR} ${PRECOMPILE_HEADERS_ADDITIONAL_INCLUDE_DIRECTORIES})
 
-    set_source_files_properties(${pchSourceFile}
-                                PROPERTIES COMPILE_FLAGS "/Yc\"${PRECOMPILE_HEADERS_HEADER}\" /Fp\"${precompiledBinary}\""
-                                            OBJECT_OUTPUTS "${precompiledBinary}"
-                                            INCLUDE_DIRECTORIES "${PCH_SOURCE_FILE_INCLUDE_DIRECTORIES}")
-    get_target_property(TARGET_SOURCES ${PRECOMPILE_HEADERS_TARGET} SOURCES)
+#     set_source_files_properties(${pchSourceFile}
+#                                 PROPERTIES COMPILE_FLAGS "/Yc\"${PRECOMPILE_HEADERS_HEADER}\" /Fp\"${precompiledBinary}\""
+#                                             OBJECT_OUTPUTS "${precompiledBinary}"
+#                                             INCLUDE_DIRECTORIES "${PCH_SOURCE_FILE_INCLUDE_DIRECTORIES}")
+#     get_target_property(TARGET_SOURCES ${PRECOMPILE_HEADERS_TARGET} SOURCES)
 
-    foreach (SOURCE ${TARGET_SOURCES})
-      get_source_file_property(SOURCE_LANG ${SOURCE} LANGUAGE)
-      if (("${SOURCE_LANG}" STREQUAL "C") OR ("${SOURCE_LANG}" STREQUAL "CXX"))
-        set_source_files_properties(${SOURCE}
-          PROPERTIES COMPILE_FLAGS "/Yu\"${PRECOMPILE_HEADERS_HEADER}\" /Fp\"${precompiledBinary}\""
-                      OBJECT_DEPENDS "${precompiledBinary}")
-      endif()
-    endforeach()
+#     foreach (SOURCE ${TARGET_SOURCES})
+#       get_source_file_property(SOURCE_LANG ${SOURCE} LANGUAGE)
+#       if (("${SOURCE_LANG}" STREQUAL "C") OR ("${SOURCE_LANG}" STREQUAL "CXX"))
+#         set_source_files_properties(${SOURCE}
+#           PROPERTIES COMPILE_FLAGS "/Yu\"${PRECOMPILE_HEADERS_HEADER}\" /Fp\"${precompiledBinary}\""
+#                       OBJECT_DEPENDS "${precompiledBinary}")
+#       endif()
+#     endforeach()
 
-    # Add pchSourceFile to PRECOMPILE_HEADERS_TARGET target
-    target_sources(${PRECOMPILE_HEADERS_TARGET} PRIVATE ${pchSourceFile})
-  endif(MSVC)
+#     # Add pchSourceFile to PRECOMPILE_HEADERS_TARGET target
+#     target_sources(${PRECOMPILE_HEADERS_TARGET} PRIVATE ${pchSourceFile})
+#   endif(MSVC)
 endfunction()
 
 function(strip_symbols targetName outputFilename skipStrip)
@@ -315,16 +315,22 @@ function(install_clr)
         # We don't need to install the export libraries for our DLLs
         # since they won't be directly linked against.
         install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${INSTALL_CLR_DESTINATION})
-        if(WIN32)
+        if(GENERATOR_IS_MULTI_CONFIG)
             # We can't use the $<TARGET_PDB_FILE> generator expression here since
             # the generator expression isn't supported on resource DLLs.
             install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION ${INSTALL_CLR_DESTINATION}/PDB)
+        elseif(WIN32)
+            # We can't use the $<TARGET_PDB_FILE> generator expression here since
+            # the generator expression isn't supported on resource DLLs.
+            install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${targetName}.pdb DESTINATION ${INSTALL_CLR_DESTINATION}/PDB)
         else()
             install(FILES ${strip_destination_file} DESTINATION ${INSTALL_CLR_DESTINATION})
         endif()
         if(CLR_CMAKE_PGO_INSTRUMENT)
-            if(WIN32)
+            if(GENERATOR_IS_MULTI_CONFIG AND WIN32)
                 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pgd DESTINATION ${INSTALL_CLR_DESTINATION}/PGD OPTIONAL)
+            else()
+                install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${targetName}.pgd DESTINATION ${INSTALL_CLR_DESTINATION}/PGD OPTIONAL)
             endif()
         endif()
     endif()

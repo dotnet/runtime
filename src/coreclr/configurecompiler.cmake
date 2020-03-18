@@ -18,7 +18,9 @@ include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 #-----------------------------------------------------
 
 if(MSVC)
-    add_compile_options(/Zi /FC /Zc:strictStrings)
+    add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Zi>)
+    add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/FC>)
+    add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Zc:strictStrings>)
 elseif (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-g)
     add_compile_options(-Wall)
@@ -409,28 +411,38 @@ if (MSVC)
   # Compile options for targeting windows
 
   # The following options are set by the razzle build
-  add_compile_options(/TP) # compile all files as C++
-  add_compile_options(/d2Zi+) # make optimized builds debugging easier
-  add_compile_options(/nologo) # Suppress Startup Banner
-  add_compile_options(/W3) # set warning level to 3
-  add_compile_options(/WX) # treat warnings as errors
-  add_compile_options(/Oi) # enable intrinsics
-  add_compile_options(/Oy-) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
-  add_compile_options(/U_MT) # undefine the predefined _MT macro
-  add_compile_options(/GF) # enable read-only string pooling
-  add_compile_options(/Gm-) # disable minimal rebuild
-  add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
-  add_compile_options(/Zp8) # pack structs on 8-byte boundary
-  add_compile_options(/Gy) # separate functions for linker
-  add_compile_options(/Zc:wchar_t-) # C++ language conformance: wchar_t is NOT the native type, but a typedef
-  add_compile_options(/Zc:forScope) # C++ language conformance: enforce Standard C++ for scoping rules
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/TP>) # compile all files as C++
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/d2Zi+>) # make optimized builds debugging easier
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/nologo>) # Suppress Startup Banner
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/W3>) # set warning level to 3
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/WX>) # treat warnings as errors
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Oi>) # enable intrinsics
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Oy->) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/U_MT>) # undefine the predefined _MT macro
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/GF>) # enable read-only string pooling
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Gm->) # disable minimal rebuild
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/EHa>) # enable C++ EH (w/ SEH exceptions)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Zp8>) # pack structs on 8-byte boundary
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Gy>) # separate functions for linker
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Zc:wchar_t->) # C++ language conformance: wchar_t is NOT the native type, but a typedef
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Zc:forScope>) # C++ language conformance: enforce Standard C++ for scoping rules
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-") # disable C++ RTTI
-  add_compile_options(/FC) # use full pathnames in diagnostics
-  add_compile_options(/MP) # Build with Multiple Processes (number of processes equal to the number of processors)
-  add_compile_options(/GS) # Buffer Security Check
-  add_compile_options(/Zm200) # Specify Precompiled Header Memory Allocation Limit of 150MB
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/FC>) # use full pathnames in diagnostics
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/MP>) # Build with Multiple Processes (number of processes equal to the number of processors)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/GS>) # Buffer Security Check
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Zm200>) # Specify Precompiled Header Memory Allocation Limit of 150MB
 
-  add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4960>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4961>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4603>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4627>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4838>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4456>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4457>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4458>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4459>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4091>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/we4640>)
 
   # Disable Warnings:
   # 4291: Delete not defined for new, c++ exception may cause leak.
@@ -438,7 +450,12 @@ if (MSVC)
   # 4311: Pointer truncation from '%$S' to '%$S'.
   # 4312: '<function-style-cast>' : conversion from '%$S' to '%$S' of greater size.
   # 4477: Format string '%$S' requires an argument of type '%$S', but variadic argument %d has type '%$S'.
-  add_compile_options(/wd4291 /wd4302 /wd4311 /wd4312 /wd4477)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4291>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4297>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4302>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4311>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4312>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/wd4477>)
 
   # Treat Warnings as Errors:
   # 4007: 'main' : must be __cdecl.
@@ -447,7 +464,12 @@ if (MSVC)
   # 4551: Function call missing argument list.
   # 4700: Local used w/o being initialized.
   # 4806: Unsafe operation involving type 'bool'.
-  add_compile_options(/we4007 /we4013 /we4102 /we4551 /we4700 /we4806)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/we4007>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/we4013>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/we4102>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/we4551>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/we4700>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/we4806>)
 
   # Set Warning Level 3:
   # 4092: Sizeof returns 'unsigned long'.
@@ -457,18 +479,24 @@ if (MSVC)
   # 4132: Const object should be initialized.
   # 4212: Function declaration used ellipsis.
   # 4530: C++ exception handler used, but unwind semantics are not enabled. Specify -GX.
-  add_compile_options(/w34092 /w34121 /w34125 /w34130 /w34132 /w34212 /w34530)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/w34092>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/w34121>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/w34125>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/w34130>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/w34132>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/w34212>)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/w34530>)
 
   # Set Warning Level 4:
   # 4177: Pragma data_seg s/b at global scope.
-  add_compile_options(/w44177)
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/w44177>)
 
-  add_compile_options(/Zi) # enable debugging information
-  add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler processed source files.
-  add_compile_options(/source-charset:utf-8) # Force MSVC to compile source as UTF-8.
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Zi>) # enable debugging information
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/ZH:SHA_256>) # use SHA256 for generating hashes of compiler processed source files.
+  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
 
   if (CLR_CMAKE_HOST_ARCH_I386)
-    add_compile_options(/Gz)
+    add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/Gz>)
   endif (CLR_CMAKE_HOST_ARCH_I386)
 
   add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
@@ -520,6 +548,6 @@ if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
 endif(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
-if (CMAKE_BUILD_TOOL STREQUAL nmake)
+if (CMAKE_GENERATOR MATCHES "(Makefile|Ninja)")
   set(CMAKE_RC_CREATE_SHARED_LIBRARY "${CMAKE_CXX_CREATE_SHARED_LIBRARY}")
-endif(CMAKE_BUILD_TOOL STREQUAL nmake)
+endif()
