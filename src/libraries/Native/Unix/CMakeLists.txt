@@ -36,7 +36,11 @@ if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     add_compile_options(-Wthread-safety)
     add_compile_options(-Wno-thread-safety-analysis)
 endif()
-add_compile_options(-Werror)
+
+# Suppress warnings-as-errors in release branches to reduce servicing churn
+if (PRERELEASE)
+    add_compile_options(-Werror)
+endif()
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
     add_definitions(-D_WASM_)

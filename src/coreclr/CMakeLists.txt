@@ -30,7 +30,6 @@ if(CORECLR_SET_RPATH)
 endif(CORECLR_SET_RPATH)
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
-OPTION(CLR_CMAKE_WARNINGS_ARE_ERRORS "Warnings are errors" ON)
 
 # Ensure other tools are present
 if (CLR_CMAKE_HOST_WIN32)

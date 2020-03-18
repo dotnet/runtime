@@ -111,7 +111,10 @@ else()
         # compiling with -std=c++11.
         # add_compile_options(-Weverything)
     endif()
-    add_compile_options(-Werror)
+    # Suppress warnings-as-errors in release branches to reduce servicing churn
+    if (PRERELEASE)
+        add_compile_options(-Werror)
+    endif()
     add_compile_options(-Wno-missing-field-initializers)
     add_compile_options(-Wno-unused-function)
     add_compile_options(-Wno-unused-local-typedef)
