@@ -2029,6 +2029,8 @@ namespace System
     {
         public static int MaxGeneration { get { throw null; } }
         public static void AddMemoryPressure(long bytesAllocated) { }
+        public static T[] AllocateArray<T>(int length, bool pinned = false) { throw null; }
+        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false) { throw null; }
         public static void CancelFullGCNotification() { }
         public static void Collect() { }
         public static void Collect(int generation) { }

@@ -890,7 +890,7 @@ void updateGCShadow(Object** ptr, Object* val);
 #define GC_CALL_INTERIOR            0x1
 #define GC_CALL_PINNED              0x2
 
-//flags for IGCHeapAlloc(...)
+// keep in sync with GC_ALLOC_FLAGS in GC.cs
 enum GC_ALLOC_FLAGS
 {
     GC_ALLOC_NO_FLAGS           = 0,
@@ -901,6 +901,7 @@ enum GC_ALLOC_FLAGS
     GC_ALLOC_ZEROING_OPTIONAL   = 16,
     GC_ALLOC_LARGE_OBJECT_HEAP  = 32,
     GC_ALLOC_PINNED_OBJECT_HEAP = 64,
+    GC_ALLOC_USER_OLD_HEAP      = GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP,
 };
 
 inline GC_ALLOC_FLAGS operator|(GC_ALLOC_FLAGS a, GC_ALLOC_FLAGS b)

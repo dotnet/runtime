@@ -997,9 +997,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AddUsageTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AllocateUninitializedArray/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/Collect1/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
