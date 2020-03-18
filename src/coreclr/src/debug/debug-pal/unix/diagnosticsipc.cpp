@@ -142,7 +142,6 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
         if (callback != nullptr)
             callback(strerror(errno), errno);
         return nullptr;
-        // TODO: unlinks?
     }
 
     if (::connect(clientSocket, (struct sockaddr *)_pServerAddress, sizeof(*_pServerAddress)) < 0)
@@ -150,7 +149,6 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
         if (callback != nullptr)
             callback(strerror(errno), errno);
         return nullptr;
-        // TODO: Anything else?
     }
 
     return new IpcStream(clientSocket, -1, ConnectionMode::CLIENT);

@@ -42,11 +42,6 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
             ::GetCurrentProcessId());
     }
 
-    if (mode == ConnectionMode::CLIENT)
-    {
-        // TODO: block here till the socket exists?
-    }
-
     if (nCharactersWritten == -1)
     {
         if (callback != nullptr)
@@ -256,6 +251,8 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
     _ASSERTE(lpBuffer != nullptr);
 
     DWORD nNumberOfBytesRead = 0;
+    // Server connections are Overlapped to allow non-blocking Accept calls
+    // Client connections are not
     LPOVERLAPPED overlap = (_mode == DiagnosticsIpc::ConnectionMode::SERVER) ? 
         const_cast<LPOVERLAPPED>(&_oOverlap) :
         NULL;
@@ -288,6 +285,8 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
     _ASSERTE(lpBuffer != nullptr);
 
     DWORD nNumberOfBytesWritten = 0;
+    // Server connections are Overlapped to allow non-blocking Accept calls
+    // Client connections are not
     LPOVERLAPPED overlap = (_mode == DiagnosticsIpc::ConnectionMode::SERVER) ? 
         const_cast<LPOVERLAPPED>(&_oOverlap) :
         NULL;
