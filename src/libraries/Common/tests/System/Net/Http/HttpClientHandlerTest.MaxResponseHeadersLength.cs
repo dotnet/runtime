@@ -55,7 +55,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task SetAfterUse_Throws()
         {
 #if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value && !PlatformDetection.IsWindows10Version1607OrGreater)
+            if (UseVersion >= HttpVersion20.Value)
             {
                 throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
             }

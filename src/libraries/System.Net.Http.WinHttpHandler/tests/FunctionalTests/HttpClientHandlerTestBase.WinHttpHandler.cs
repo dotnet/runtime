@@ -11,9 +11,9 @@ namespace System.Net.Http.Functional.Tests
     {
         protected static bool IsWinHttpHandler => true;
 
-        protected virtual bool AllowAllCertificates => true;
+        protected static bool AllowAllCertificates { get; set; } = true;
 
-        protected WinHttpClientHandler CreateHttpClientHandler(Version useVersion = null)
+        protected static WinHttpClientHandler CreateHttpClientHandler(Version useVersion = null)
         {
             useVersion ??= HttpVersion.Version11;
 

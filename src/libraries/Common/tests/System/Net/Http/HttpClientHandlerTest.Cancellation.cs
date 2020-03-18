@@ -44,7 +44,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
 #if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value && !PlatformDetection.IsWindows10Version1607OrGreater)
+            if (UseVersion >= HttpVersion20.Value)
             {
                 throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
             }
@@ -98,7 +98,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
 #if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value && !PlatformDetection.IsWindows10Version1607OrGreater)
+            if (UseVersion >= HttpVersion20.Value)
             {
                 throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
             }
@@ -215,7 +215,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
 #if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value && !PlatformDetection.IsWindows10Version1607OrGreater)
+            if (UseVersion >= HttpVersion20.Value)
             {
                 throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
             }
@@ -278,7 +278,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_CancelPendingRequests_DoesntCancelReadAsyncOnResponseStream(CancellationMode mode, bool copyToAsync)
         {
 #if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion20.Value && !PlatformDetection.IsWindows10Version1607OrGreater)
+            if (UseVersion >= HttpVersion20.Value)
             {
                 throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
             }

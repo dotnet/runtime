@@ -226,6 +226,12 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             using (HttpClient client = CreateHttpClient())
             {
                 var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress() };
@@ -1265,6 +1271,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(null)]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked)
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunked == true)
             {
                 throw new SkipTestException("Chunking is not supported on HTTP/2 and later.");
@@ -1415,9 +1427,19 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+#if WINHTTPHANDLER_TEST
+        [ConditionalFact]
+#else
         [Fact]
+#endif
         public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
@@ -1500,10 +1522,19 @@ namespace System.Net.Http.Functional.Tests
             },
             server => server.AcceptConnectionSendResponseAndCloseAsync());
         }
-
+#if WINHTTPHANDLER_TEST
+        [ConditionalFact]
+#else
         [Fact]
+#endif
         public async Task Dispose_DisposingHandlerCancelsActiveOperationsWithoutResponses()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             await LoopbackServerFactory.CreateServerAsync(async (server1, url1) =>
             {
                 await LoopbackServerFactory.CreateServerAsync(async (server2, url2) =>
@@ -2551,12 +2582,22 @@ namespace System.Net.Http.Functional.Tests
 
             return receivedRequestVersion;
         }
-#endregion
+        #endregion
 
-#region Uri wire transmission encoding tests
+        #region Uri wire transmission encoding tests
+#if WINHTTPHANDLER_TEST
+        [ConditionalFact]
+#else
         [Fact]
+#endif
         public async Task SendRequest_UriPathHasReservedChars_ServerReceivedExpectedPath()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion >= HttpVersion20.Value)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             await LoopbackServerFactory.CreateServerAsync(async (server, rootUrl) =>
             {
                 var uri = new Uri($"{rootUrl.Scheme}://{rootUrl.Host}:{rootUrl.Port}/test[]");

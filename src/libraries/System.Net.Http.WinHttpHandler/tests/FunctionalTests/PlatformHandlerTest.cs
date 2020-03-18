@@ -275,9 +275,9 @@ namespace System.Net.Http.Functional.Tests
     {
         protected override Version UseVersion => HttpVersion20.Value;
 
-        protected override bool AllowAllCertificates => false;
-
-        public PlatformHandler_HttpClientHandler_ServerCertificates_Http2_Test(ITestOutputHelper output) : base(output) { }
+        public PlatformHandler_HttpClientHandler_ServerCertificates_Http2_Test(ITestOutputHelper output) : base(output) {
+            AllowAllCertificates = false;
+        }
     }
 
     public sealed class PlatformHandler_PostScenario_Http2_Test : PostScenarioTest
