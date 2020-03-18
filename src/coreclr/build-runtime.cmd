@@ -148,7 +148,7 @@ if [!__PassThroughArgs!]==[] (
 )
 
 if /i "%1" == "-alpinedac"           (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __TargetOS=alpine&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-linuxdac"            (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __TargetOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-linuxdac"            (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __TargetOS=linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
