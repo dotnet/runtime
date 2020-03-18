@@ -3220,6 +3220,18 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 }
 
 static gboolean
+signature_has_vt_params (MonoMethodSignature *csignature)
+{
+	int i;
+	for (i = 0; i < csignature->param_count; ++i) {
+		int mt = mint_type (csignature->params [i]);
+		if (mt == MINT_TYPE_VT)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
 generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error)
 {
 	int target;
@@ -3395,9 +3407,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		if (signature->hasthis) {
 			/*
 			 * If this is value type, it is passed by address and not by value.
-			 * FIXME We should use MINT_TYPE_P instead of MINT_TYPE_O
+			 * Valuetype this local gets integer type MINT_TYPE_I. Maybe it could
+			 * be MINT_TYPE_P for better clarity, as when not inlining.
 			 */
-			MonoType *type = mono_get_object_type ();
+			MonoType *type;
+			if (m_class_is_valuetype (method->klass))
+				type = mono_get_int_type ();
+			else
+				type = mono_get_object_type ();
 			local = create_interp_local (td, type);
 			arg_locals [0] = local;
 			store_local (td, local);
@@ -4563,53 +4580,59 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						!mono_class_is_marshalbyref (klass) &&
 						!mono_class_has_finalizer (klass) &&
 						!m_class_has_weak_fields (klass)) {
-					if (!m_class_is_valuetype (klass)) {
-						InterpInst *newobj_fast = interp_add_ins (td, MINT_NEWOBJ_FAST);
+					gboolean is_vt = m_class_is_valuetype (klass);
+					int mt = mint_type (m_class_get_byval_arg (klass));
+					gboolean is_vtst = is_vt ? mt == MINT_TYPE_VT : FALSE;
+					int vtsize = mono_class_value_size (klass, NULL);
+					InterpInst *newobj_fast;
 
-						newobj_fast->data [1] = csignature->param_count;
-
+					if (is_vt) {
+						newobj_fast = interp_add_ins (td, is_vtst ? MINT_NEWOBJ_VTST_FAST : MINT_NEWOBJ_VT_FAST);
+						if (is_vtst)
+							newobj_fast->data [2] = vtsize;
+					} else {
 						MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
 						goto_if_nok (error, exit);
+						newobj_fast = interp_add_ins (td, MINT_NEWOBJ_FAST);
 						newobj_fast->data [2] = get_data_item_index (td, vtable);
+					}
+					newobj_fast->data [1] = csignature->param_count;
 
-						move_stack (td, (td->sp - td->stack) - csignature->param_count, 2);
-
-						StackInfo *tmp_sp = td->sp - csignature->param_count - 2;
-						SET_TYPE (tmp_sp, STACK_TYPE_O, klass);
+					move_stack (td, (td->sp - td->stack) - csignature->param_count, 2);
+					StackInfo *tmp_sp = td->sp - csignature->param_count - 2;
+					SET_TYPE (tmp_sp, stack_type [mt], klass);
+					// for MINT_TYPE_VT, we will push a value type on vtstack
+					if (is_vtst)
+						PUSH_VT (td, vtsize);
+					// In vt case we pass indirect pointer as this
+					if (is_vt)
+						SET_SIMPLE_TYPE (tmp_sp + 1, STACK_TYPE_I);
+					else
 						SET_TYPE (tmp_sp + 1, STACK_TYPE_O, klass);
 
-						if ((mono_interp_opt & INTERP_OPT_INLINE) && interp_method_check_inlining (td, m)) {
-							MonoMethodHeader *mheader = interp_method_get_header (m, error);
-							goto_if_nok (error, exit);
+					// We don't support inlining ctors of MINT_TYPE_VT which also receive a MINT_TYPE_VT
+					// as an argument. The reason is that we would need to push this on the vtstack before
+					// the argument, which is very awkward for uncommon scenario.
+					if ((mono_interp_opt & INTERP_OPT_INLINE) && interp_method_check_inlining (td, m) &&
+							(!is_vtst || !signature_has_vt_params (csignature))) {
+						MonoMethodHeader *mheader = interp_method_get_header (m, error);
+						goto_if_nok (error, exit);
 
-							if (interp_inline_method (td, m, mheader, error)) {
-								newobj_fast->data [0] = INLINED_METHOD_FLAG;
-								break;
-							}
+						if (interp_inline_method (td, m, mheader, error)) {
+							newobj_fast->data [0] = INLINED_METHOD_FLAG;
+							break;
 						}
-						// If inlining failed, restore the stack.
-						// At runtime, interp.c newobj_fast uses an extra stack element
-						// after the parameters to store `o` across the non-recursive call
-						// where GC will see it.
-						// move_stack with the last parameter negative does not reduce max_stack.
-						move_stack (td, (td->sp - td->stack) - csignature->param_count, -2);
-						// Set the method to be executed as part of newobj instruction
-						newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
-					} else {
-						// Runtime (interp_exec_method_full in interp.c) inserts
-						// extra stack to hold this and return value, before call.
-						simulate_runtime_stack_increase (td, 2);
-
-						const gboolean vt = mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT;
-
-						interp_add_ins (td, vt ? MINT_NEWOBJ_VTST_FAST : MINT_NEWOBJ_VT_FAST);
-
-						td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
-						td->last_ins->data [1] = csignature->param_count;
-
-						if (vt)
-							td->last_ins->data [2] = mono_class_value_size (klass, NULL);
 					}
+					// If inlining failed, restore the stack.
+					// At runtime, interp.c newobj_fast uses an extra stack element
+					// after the parameters to store `o` across the non-recursive call
+					// where GC will see it.
+					// move_stack with the last parameter negative does not reduce max_stack.
+					if (is_vtst)
+						POP_VT (td, vtsize);
+					move_stack (td, (td->sp - td->stack) - csignature->param_count, -2);
+					// Set the method to be executed as part of newobj instruction
+					newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 				} else {
 					// Runtime (interp_exec_method_full in interp.c) inserts
 					// extra stack to hold this and return value, before call.
@@ -4790,7 +4813,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					if ((td->sp - 1)->type == STACK_TYPE_O) {
 						interp_add_ins (td, MINT_LDFLDA);
 					} else {
-						g_assert ((td->sp -1)->type == STACK_TYPE_MP);
+						int sp_type = (td->sp - 1)->type;
+						g_assert (sp_type == STACK_TYPE_MP || sp_type == STACK_TYPE_I);
 						interp_add_ins (td, MINT_LDFLDA_UNSAFE);
 					}
 					td->last_ins->data [0] = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
@@ -6387,6 +6411,8 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 			*push = imethod->rtype->type != MONO_TYPE_VOID;
 			break;
 		}
+		case MINT_NEWOBJ_VT_FAST:
+		case MINT_NEWOBJ_VTST_FAST:
 		case MINT_NEWOBJ_FAST: {
 			int param_count = ins->data [1];
 			gboolean is_inlined = ins->data [0] == INLINED_METHOD_FLAG;
@@ -6402,8 +6428,6 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 			break;
 		}
 		case MINT_NEWOBJ_ARRAY:
-		case MINT_NEWOBJ_VT_FAST:
-		case MINT_NEWOBJ_VTST_FAST:
 			*pop = ins->data [1];
 			*push = 1;
 			break;
@@ -7239,7 +7263,7 @@ retry:
 				// value of the stack, so it is not considered for further optimizations.
 				sp->val.type = STACK_VALUE_NONE;
 			}
-		} else if (ins->opcode == MINT_NEWOBJ_FAST && ins->data [0] == INLINED_METHOD_FLAG) {
+		} else if ((ins->opcode >= MINT_NEWOBJ_FAST && ins->opcode <= MINT_NEWOBJ_VTST_FAST) && ins->data [0] == INLINED_METHOD_FLAG) {
 			int param_count = ins->data [1];
 			// memmove the stack values while clearing ins, to prevent instruction removal
 			for (int i = 1; i <= param_count; i++) {
