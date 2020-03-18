@@ -12175,7 +12175,16 @@ void emitter::emitDispIns(
         case IF_DV_2L: // DV_2L   ........XX...... ......nnnnnddddd      Vd Vn      (abs, neg - scalar)
             elemsize = id->idOpSize();
             emitDispReg(id->idReg1(), elemsize, true);
-            emitDispReg(id->idReg2(), elemsize, false);
+            if ((ins == INS_fcmeq) || (ins == INS_fcmge) || (ins == INS_fcmgt) || (ins == INS_fcmle) ||
+                (ins == INS_fcmlt))
+            {
+                emitDispReg(id->idReg2(), elemsize, true);
+                emitDispImm(0, false);
+            }
+            else
+            {
+                emitDispReg(id->idReg2(), elemsize, false);
+            }
             break;
 
         case IF_DV_2H: // DV_2H   X........X...... ......nnnnnddddd      Rd Vn      (fmov, fcvtXX - to general)
