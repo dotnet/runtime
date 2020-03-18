@@ -6048,19 +6048,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			static double r8_0 = -0.0;
 
 			g_assert (ins->sreg1 == ins->dreg);
-					
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, &r8_0);
-			amd64_sse_xorpd_reg_membase (code, ins->dreg, AMD64_RIP, 0);
+
+			if (cfg->compile_aot && cfg->code_exec_only) {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8_GOT, &r8_0);
+				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof (target_mgreg_t));
+				amd64_sse_movsd_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_R11, 0);
+				amd64_sse_xorpd_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+			} else {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, &r8_0);
+				amd64_sse_xorpd_reg_membase (code, ins->dreg, AMD64_RIP, 0);
+			}
 			break;
 		}
 		case OP_ABS: {
 			static guint64 d = 0x7fffffffffffffffUL;
 
 			g_assert (ins->sreg1 == ins->dreg);
-					
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, &d);
-			amd64_sse_andpd_reg_membase (code, ins->dreg, AMD64_RIP, 0);
-			break;		
+
+			if (cfg->compile_aot && cfg->code_exec_only) {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8_GOT, &d);
+				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof (target_mgreg_t));
+				amd64_sse_movsd_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_R11, 0);
+				amd64_sse_andpd_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+			} else {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, &d);
+				amd64_sse_andpd_reg_membase (code, ins->dreg, AMD64_RIP, 0);
+			}
+			break;
 		}
 		case OP_SQRT:
 			EMIT_SSE2_FPFUNC (code, fsqrt, ins->dreg, ins->sreg1);
@@ -6083,8 +6097,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			g_assert (ins->sreg1 == ins->dreg);
 
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4, &r4_0);
-			amd64_sse_movss_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_RIP, 0);
+			if (cfg->compile_aot && cfg->code_exec_only) {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4_GOT, &r4_0);
+				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof (target_mgreg_t));
+				amd64_sse_movss_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_R11, 0);
+			} else {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4, &r4_0);
+				amd64_sse_movss_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_RIP, 0);
+			}
+
 			amd64_sse_xorps_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
 			break;
 		}
