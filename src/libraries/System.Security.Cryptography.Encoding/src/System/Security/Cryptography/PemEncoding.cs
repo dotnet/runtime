@@ -190,19 +190,16 @@ namespace System.Security.Cryptography
             if (data.IsEmpty)
                 return true;
 
-            // First character of label must be a labelchar, which is a character
-            // in 0x21..0x7e (both inclusive), except hyphens.
-            if (!IsLabelChar(data[0]))
-                return false;
+            // The first character must be a labelchar, so initialize to false
+            bool previousIsLabelChar = false;
 
-            bool previousSpaceOrHyphen = false;
-            for (int index = 1; index < data.Length; index++)
+            for (int index = 0; index < data.Length; index++)
             {
                 char c = data[index];
 
                 if (IsLabelChar(c))
                 {
-                    previousSpaceOrHyphen = false;
+                    previousIsLabelChar = true;
                     continue;
                 }
 
@@ -214,17 +211,20 @@ namespace System.Security.Cryptography
                 // If this character is not a space or hyphen, then this characer
                 // is invalid.
                 // If it is a space or hyphen, and the previous character was
-                // also a space or hyphen, then we have two consecutive spaces
-                // or hyphens which is is invalid.
-                if (!isSpaceOrHyphen || previousSpaceOrHyphen)
+                // also not a labelchar (another hyphen or space), then we have
+                // two consecutive spaces or hyphens which is is invalid.
+                if (!isSpaceOrHyphen || !previousIsLabelChar)
                 {
                     return false;
                 }
 
-                previousSpaceOrHyphen = true;
+                previousIsLabelChar = false;
             }
 
-            return true;
+            // The last character must also be a labelchar. It cannot be a
+            // hyphen or space since these are only allowed to precede
+            // a labelchar.
+            return previousIsLabelChar;
         }
 
         private static bool TryCountBase64(

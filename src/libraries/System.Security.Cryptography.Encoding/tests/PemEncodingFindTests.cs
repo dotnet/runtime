@@ -163,7 +163,6 @@ namespace System.Security.Cryptography.Encoding.Tests
         [Theory]
         [InlineData("H E L L O")]
         [InlineData("H-E-L-L-O")]
-        [InlineData("H-E-L-L-O ")]
         [InlineData("HEL-LO")]
         public void TryFind_True_LabelsWithHyphenSpace(string label)
         {
@@ -244,6 +243,8 @@ Zm9v
         [InlineData("te\x19st")]
         [InlineData("te  st")] //two spaces
         [InlineData("te- st")]
+        [InlineData("test ")] //last is space, must be labelchar
+        [InlineData("test-")] //last is hypen, must be labelchar
         public void Find_Fail_InvalidLabel(string label)
         {
             string content = $"-----BEGIN {label}-----\nZm9v\n-----END {label}-----";
