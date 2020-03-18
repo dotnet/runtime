@@ -170,15 +170,15 @@ namespace System.Security.Cryptography
                 int size = PostEBPrefix.Length + label.Length + Ending.Length;
                 Debug.Assert(destination.Length >= size);
                 PostEBPrefix.AsSpan().CopyTo(destination);
-                label.CopyTo(destination[PostEBPrefix.Length..]);
-                Ending.AsSpan().CopyTo(destination[(PostEBPrefix.Length + label.Length)..]);
-                return destination[..size];
+                label.CopyTo(destination.Slice(PostEBPrefix.Length));
+                Ending.AsSpan().CopyTo(destination.Slice(PostEBPrefix.Length + label.Length));
+                return destination.Slice(0, size);
             }
         }
 
         private static int IndexOfByOffset(this ReadOnlySpan<char> str, ReadOnlySpan<char> value, int startPosition)
         {
-            int index = str[startPosition..].IndexOf(value);
+            int index = str.Slice(startPosition).IndexOf(value);
             return index == -1 ? -1 : index + startPosition;
         }
 
@@ -421,13 +421,13 @@ namespace System.Security.Cryptography
         {
             static int Write(ReadOnlySpan<char> str, Span<char> dest, int offset)
             {
-                str.CopyTo(dest[offset..]);
+                str.CopyTo(dest.Slice(offset));
                 return str.Length;
             }
 
             static int WriteBase64(ReadOnlySpan<byte> bytes, Span<char> dest, int offset)
             {
-                bool success = Convert.TryToBase64Chars(bytes, dest[offset..], out int base64Written);
+                bool success = Convert.TryToBase64Chars(bytes, dest.Slice(offset), out int base64Written);
 
                 if (!success)
                 {
@@ -460,9 +460,9 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> remainingData = data;
             while (remainingData.Length >= BytesPerLine)
             {
-                charsWritten += WriteBase64(remainingData[..BytesPerLine], destination, charsWritten);
+                charsWritten += WriteBase64(remainingData.Slice(0, BytesPerLine), destination, charsWritten);
                 charsWritten += Write(NewLine, destination, charsWritten);
-                remainingData = remainingData[BytesPerLine..];
+                remainingData = remainingData.Slice(BytesPerLine);
             }
 
             Debug.Assert(remainingData.Length < BytesPerLine);
