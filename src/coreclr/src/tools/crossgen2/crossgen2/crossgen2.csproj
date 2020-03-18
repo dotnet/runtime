@@ -9,6 +9,7 @@
     <Platforms>x64;x86</Platforms>
     <PlatformTargets Condition="'$(ArchGroup)' != ''">$(ArchGroup)</PlatformTargets>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
     <OutputPath>$(BinDir)/crossgen2</OutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
