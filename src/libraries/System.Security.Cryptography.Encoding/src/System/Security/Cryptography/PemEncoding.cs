@@ -42,6 +42,7 @@ namespace System.Security.Cryptography
             {
                 throw new ArgumentException(SR.Argument_PemEncoding_NoPemFound, nameof(pemData));
             }
+
             return fields;
         }
 

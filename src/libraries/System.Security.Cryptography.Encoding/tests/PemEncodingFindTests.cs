@@ -183,6 +183,16 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
+        public void Find_Success_Base64SurroundingWhiteSpaceStripped()
+        {
+            string content = $"-----BEGIN A-----\r\n Zm9v\n\r \t-----END A-----";
+            PemFields fields = AssertPemFound(content,
+                expectedLocation: 0..43,
+                expectedBase64: 20..24,
+                expectedLabel: 11..12);
+        }
+
+        [Fact]
         public void Find_Success_FindsPemAfterPemWithInvalidBase64()
         {
             string content = @"
@@ -301,6 +311,23 @@ Zm9v
         {
             string content = "-----BEGIN TEST-----\nZm8\n-----END TEST-----";
             AssertNoPemFound(content);
+        }
+
+        [Theory]
+        [InlineData("", 0)]
+        [InlineData("cA==", 1)]
+        [InlineData("cGU=", 2)]
+        [InlineData("cGVu", 3)]
+        [InlineData("cGVubg==", 4)]
+        [InlineData("cGVubnk=", 5)]
+        [InlineData("cGVubnkh", 6)]
+        [InlineData("c G V u b n k h", 6)]
+        public void Find_Success_DecodeSize(string base64, int expectedSize)
+        {
+            string content = $"-----BEGIN TEST-----\n{base64}\n-----END TEST-----";
+            PemFields fields = FindPem(content);
+            Assert.Equal(expectedSize, fields.DecodedDataLength);
+            Assert.Equal(base64, content[fields.Base64Data]);
         }
 
         private PemFields AssertPemFound(
