@@ -13540,6 +13540,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fcmgt:
                 case INS_fcmle:
                 case INS_fcmlt:
+                case INS_frecpe:
+                case INS_frsqrte:
+                case INS_urecpe:
+                case INS_ursqrte:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
@@ -13604,6 +13608,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
 
+                case INS_frecpe:
+                case INS_frecpx:
+                case INS_frsqrte:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
                 case INS_fsqrt:
                     if (id->idOpSize() == EA_8BYTE)
                     {
@@ -13653,6 +13664,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fmulx:
                 case INS_fmla:
                 case INS_fmls:
+                case INS_frecps:
+                case INS_frsqrts:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
@@ -13742,6 +13755,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fmul:
                 case INS_fmulx:
                 case INS_fnmul:
+                case INS_frecps:
+                case INS_frsqrts:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
