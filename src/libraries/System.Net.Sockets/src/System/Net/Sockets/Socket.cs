@@ -3802,7 +3802,6 @@ namespace System.Net.Sockets
 
                 WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
 
-                bool canUseConnectEx = CanUseConnectEx(endPointSnapshot);
                 // Save the old RightEndPoint and prep new RightEndPoint.
                 EndPoint? oldEndPoint = _rightEndPoint;
                 if (_rightEndPoint == null)
@@ -3818,6 +3817,7 @@ namespace System.Net.Sockets
                 SocketError socketError = SocketError.Success;
                 try
                 {
+                    bool canUseConnectEx = CanUseConnectEx(endPointSnapshot);
                     if (canUseConnectEx)
                     {
                         socketError = e.DoOperationConnectEx(this, _handle);
