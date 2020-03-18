@@ -260,7 +260,7 @@ public:
     static CtxEntry *Null()                     { LIMITED_METHOD_CONTRACT; return NULL; }
     static bool IsNull(CtxEntry *e)             { LIMITED_METHOD_CONTRACT; return (e == NULL); }
     static const LPVOID GetKey(CtxEntry *e)     { LIMITED_METHOD_CONTRACT; return e->GetCtxCookie(); }
-    static count_t Hash(LPVOID key_t)           { LIMITED_METHOD_CONTRACT; return (count_t) key_t; }
+    static count_t Hash(LPVOID key_t)           { LIMITED_METHOD_CONTRACT; return (count_t)(size_t) key_t; }
     static BOOL Equals(LPVOID lhs, LPVOID rhs)  { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
     static CtxEntry *Deleted()                  { LIMITED_METHOD_CONTRACT; return (CtxEntry *)-1; }
     static bool IsDeleted(CtxEntry *e)          { LIMITED_METHOD_CONTRACT; return e == (CtxEntry *)-1; }
