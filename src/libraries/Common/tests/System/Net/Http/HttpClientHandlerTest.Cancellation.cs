@@ -528,6 +528,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+#if !NETFRAMEWORK
         [OuterLoop("Uses Task.Delay")]
         [Theory]
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
@@ -556,6 +557,7 @@ namespace System.Net.Http.Functional.Tests
                     catch (Exception) { }
                 });
         }
+#endif
 
         private async Task ValidateClientCancellationAsync(Func<Task> clientBodyAsync)
         {

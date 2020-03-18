@@ -38,7 +38,7 @@ namespace System.Net.Http.Functional.Tests
 #endif
             };
 
-        protected static HttpClient CreateHttpClient(string useVersionString) =>
+        protected HttpClient CreateHttpClient(string useVersionString) =>
             CreateHttpClient(CreateHttpClientHandler(useVersionString), useVersionString);
 
         protected static HttpClient CreateHttpClient(HttpMessageHandler handler, string useVersionString) =>
@@ -50,7 +50,7 @@ namespace System.Net.Http.Functional.Tests
 
         protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion);
 
-        protected static HttpClientHandler CreateHttpClientHandler(string useVersionString) =>
+        protected HttpClientHandler CreateHttpClientHandler(string useVersionString) =>
             CreateHttpClientHandler(Version.Parse(useVersionString));
 
         protected LoopbackServerFactory LoopbackServerFactory => GetFactoryForVersion(UseVersion);

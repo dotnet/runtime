@@ -2244,6 +2244,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+#if !NETFRAMEWORK
         [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task PostAsync_ReuseRequestContent_Success(Configuration.Http.RemoteServer remoteServer)
@@ -2262,6 +2263,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
+#endif
 
         [Theory]
         [InlineData(HttpStatusCode.MethodNotAllowed, "Custom description")]
@@ -2415,6 +2417,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request()
         {
+            // Test is not supported for WinHttpHandler and HTTP/2
+            if(IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            {
+                return;
+            }
+
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 0));
             Assert.Equal(new Version(1, 0), receivedRequestVersion);
         }
