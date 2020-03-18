@@ -213,4 +213,4 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
 
 
 
-#endif CORINFOINSTRUCTIONSET_H
+#endif // CORINFOINSTRUCTIONSET_H

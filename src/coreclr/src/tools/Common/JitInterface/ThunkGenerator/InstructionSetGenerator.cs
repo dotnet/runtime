@@ -499,7 +499,7 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
 
 
 
-#endif CORINFOINSTRUCTIONSET_H
+#endif // CORINFOINSTRUCTIONSET_H
 ");
             return;
 
@@ -532,7 +532,7 @@ enum ReadyToRunInstructionSet
             tr.Write(@"
 };
 
-#endif READYTORUNINSTRUCTIONSET_H
+#endif // READYTORUNINSTRUCTIONSET_H
 ");
         }
     }

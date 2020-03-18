@@ -32,4 +32,4 @@ enum ReadyToRunInstructionSet
 
 };
 
-#endif READYTORUNINSTRUCTIONSET_H
+#endif // READYTORUNINSTRUCTIONSET_H
