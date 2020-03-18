@@ -53,7 +53,9 @@ namespace System.Resources.Extensions
         // Compare two type names ignoring version
         // If a type name is missing assembly, we assume it came from mscorlib
         // since this is what Type.GetType will do.
+#pragma warning disable CS8767 // This API member has [AllowNull] implemented interface, but we don't want to accept nulls here.
         public bool Equals(string assemblyQualifiedTypeName1, string assemblyQualifiedTypeName2)
+#pragma warning restore CS8767
         {
             if (assemblyQualifiedTypeName1 == null)
                 throw new ArgumentNullException(nameof(assemblyQualifiedTypeName1));

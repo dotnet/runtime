@@ -107,7 +107,7 @@ namespace System.Net.Http.Headers
 
             if (GenericHeaderParser.RangeConditionParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (RangeConditionHeaderValue)output;
+                parsedValue = (RangeConditionHeaderValue)output!;
                 return true;
             }
             return false;

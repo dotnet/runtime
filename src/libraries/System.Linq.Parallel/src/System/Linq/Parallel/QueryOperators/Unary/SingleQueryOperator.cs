@@ -123,7 +123,7 @@ namespace System.Linq.Parallel
             // Straightforward IEnumerator<T> methods.
             //
 
-            internal override bool MoveNext([MaybeNullWhen(false), AllowNull] ref TSource currentElement, ref int currentKey)
+            internal override bool MoveNext([AllowNull] ref TSource currentElement, ref int currentKey)
             {
                 Debug.Assert(_source != null);
 
