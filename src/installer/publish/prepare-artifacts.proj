@@ -7,10 +7,13 @@
     <SuppressFinalPackageVersion>true</SuppressFinalPackageVersion>
   </PropertyGroup>
 
+  <!-- Create all the checksum files. Exclude anything that ends
+       in .nupkg (symbol and regular packages). -->
   <Target Name="CreateChecksums">
     <ItemGroup>
       <ArtifactsForGeneratingChecksums
         Include="@(UploadToBlobStorageFile)"
+        Excldude="*.nupkg"
         DestinationPath="%(FullPath)$(ChecksumExtension)" />
 
       <GeneratedChecksumFile Include="@(ArtifactsForGeneratingChecksums -> '%(DestinationPath)')" />
