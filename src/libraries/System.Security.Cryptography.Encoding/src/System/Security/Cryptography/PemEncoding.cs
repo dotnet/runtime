@@ -208,6 +208,14 @@ namespace System.Security.Cryptography
 
                 bool isSpaceOrHyphen = c == ' ' || c == '-';
 
+                // IETF RFC 7468 states that every character in a label must
+                // be a labelchar, and each labelchar may have zero or one
+                // preceding space or hyphen, except the first labelchar.
+                // If this character is not a space or hyphen, then this characer
+                // is invalid.
+                // If it is a space or hyphen, and the previous character was
+                // also a space or hyphen, then we have two consecutive spaces
+                // or hyphens which is is invalid.
                 if (!isSpaceOrHyphen || previousSpaceOrHyphen)
                     return false;
 
