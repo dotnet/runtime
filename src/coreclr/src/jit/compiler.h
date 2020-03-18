@@ -3672,7 +3672,7 @@ protected:
                                        bool                  mustExpand);
 
 protected:
-    bool compSupportsHWIntrinsic(InstructionSet isa);
+    bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -8270,7 +8270,7 @@ private:
         return false;
     }
 
-    bool compSupports(InstructionSet isa) const
+    bool compSupports(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (opts.compSupportsISA & (1ULL << isa)) != 0;
@@ -8379,11 +8379,13 @@ public:
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         uint64_t compSupportsISA;
-        void setSupportedISA(InstructionSet isa)
-        {
-            compSupportsISA |= 1ULL << isa;
-        }
 #endif
+        void setSupportedISAs(CORINFO_InstructionSetFlags isas)
+        {
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+            compSupportsISA = isas.GetFlagsRaw();
+#endif
+        }
 
         unsigned compFlags; // method attributes
         unsigned instrCount;

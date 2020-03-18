@@ -303,7 +303,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*   comp,
                                          const char* enclosingClassName)
 {
     // TODO-Throughput: replace sequential search by binary search
-    InstructionSet isa = lookupIsa(className, enclosingClassName);
+    CORINFO_InstructionSet isa = lookupIsa(className, enclosingClassName);
 
     if (isa == InstructionSet_ILLEGAL)
     {
@@ -585,7 +585,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immO
 //
 // Return Value:
 //    true iff the given instruction set is supported in the current compilation.
-bool Compiler::compSupportsHWIntrinsic(InstructionSet isa)
+bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 {
     return JitConfig.EnableHWIntrinsic() && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
            (
@@ -630,11 +630,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
-    InstructionSet      isa      = HWIntrinsicInfo::lookupIsa(intrinsic);
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
-    int                 numArgs  = sig->numArgs;
-    var_types           retType  = JITtype2varType(sig->retType);
-    var_types           baseType = TYP_UNKNOWN;
+    CORINFO_InstructionSet isa      = HWIntrinsicInfo::lookupIsa(intrinsic);
+    HWIntrinsicCategory    category = HWIntrinsicInfo::lookupCategory(intrinsic);
+    int                    numArgs  = sig->numArgs;
+    var_types              retType  = JITtype2varType(sig->retType);
+    var_types              baseType = TYP_UNKNOWN;
 
     if ((retType == TYP_STRUCT) && featureSIMD)
     {
