@@ -6736,41 +6736,57 @@ static InterpInst*
 interp_fold_unop (TransformData *td, StackContentInfo *sp, InterpInst *ins)
 {
 	StackValue result;
-	// Decrement sp so it's easier to access top of the stack
-	sp--;
-	if (sp->val.type != STACK_VALUE_I4 && sp->val.type != STACK_VALUE_I8)
-		goto cfold_failed;
 
-	// Top of the stack is a constant
-	switch (ins->opcode) {
-		INTERP_FOLD_UNOP (MINT_ADD1_I4, STACK_VALUE_I4, i, 1+);
-		INTERP_FOLD_UNOP (MINT_ADD1_I8, STACK_VALUE_I8, l, 1+);
-		INTERP_FOLD_UNOP (MINT_SUB1_I4, STACK_VALUE_I4, i, -1+);
-		INTERP_FOLD_UNOP (MINT_SUB1_I8, STACK_VALUE_I8, l, -1+);
-		INTERP_FOLD_UNOP (MINT_NEG_I4, STACK_VALUE_I4, i, -);
-		INTERP_FOLD_UNOP (MINT_NEG_I8, STACK_VALUE_I8, l, -);
-		INTERP_FOLD_UNOP (MINT_NOT_I4, STACK_VALUE_I4, i, ~);
-		INTERP_FOLD_UNOP (MINT_NOT_I8, STACK_VALUE_I8, l, ~);
-		INTERP_FOLD_UNOP (MINT_CEQ0_I4, STACK_VALUE_I4, i, 0 ==);
-
-		INTERP_FOLD_CONV (MINT_CONV_I1_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint8);
-		INTERP_FOLD_CONV (MINT_CONV_I1_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint8);
-		INTERP_FOLD_CONV (MINT_CONV_U1_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint8);
-		INTERP_FOLD_CONV (MINT_CONV_U1_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint8);
-
-		INTERP_FOLD_CONV (MINT_CONV_I2_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint16);
-		INTERP_FOLD_CONV (MINT_CONV_I2_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint16);
-		INTERP_FOLD_CONV (MINT_CONV_U2_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint16);
-		INTERP_FOLD_CONV (MINT_CONV_U2_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint16);
-
-		INTERP_FOLD_CONV (MINT_CONV_I4_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint32);
-		INTERP_FOLD_CONV (MINT_CONV_U4_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint32);
-
-		INTERP_FOLD_CONV (MINT_CONV_I8_I4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, gint32);
-		INTERP_FOLD_CONV (MINT_CONV_I8_U4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, guint32);
-
-		default:
+	if (ins->opcode >= MINT_CONV_I4_I8_SP &&
+			ins->opcode <= MINT_CONV_R8_R4_SP) {
+		// Decrement sp so it's easier to access top of the stack
+		sp -= 2;
+		if (sp->val.type != STACK_VALUE_I4 && sp->val.type != STACK_VALUE_I8)
 			goto cfold_failed;
+
+		switch (ins->opcode) {
+			INTERP_FOLD_CONV (MINT_CONV_I4_I8_SP, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint32);
+			INTERP_FOLD_CONV (MINT_CONV_I8_I4_SP, STACK_VALUE_I8, l, STACK_VALUE_I4, i, gint64);
+			default:
+				goto cfold_failed;
+		}
+	} else {
+		// Decrement sp so it's easier to access top of the stack
+		sp--;
+		if (sp->val.type != STACK_VALUE_I4 && sp->val.type != STACK_VALUE_I8)
+			goto cfold_failed;
+
+		// Top of the stack is a constant
+		switch (ins->opcode) {
+			INTERP_FOLD_UNOP (MINT_ADD1_I4, STACK_VALUE_I4, i, 1+);
+			INTERP_FOLD_UNOP (MINT_ADD1_I8, STACK_VALUE_I8, l, 1+);
+			INTERP_FOLD_UNOP (MINT_SUB1_I4, STACK_VALUE_I4, i, -1+);
+			INTERP_FOLD_UNOP (MINT_SUB1_I8, STACK_VALUE_I8, l, -1+);
+			INTERP_FOLD_UNOP (MINT_NEG_I4, STACK_VALUE_I4, i, -);
+			INTERP_FOLD_UNOP (MINT_NEG_I8, STACK_VALUE_I8, l, -);
+			INTERP_FOLD_UNOP (MINT_NOT_I4, STACK_VALUE_I4, i, ~);
+			INTERP_FOLD_UNOP (MINT_NOT_I8, STACK_VALUE_I8, l, ~);
+			INTERP_FOLD_UNOP (MINT_CEQ0_I4, STACK_VALUE_I4, i, 0 ==);
+
+			INTERP_FOLD_CONV (MINT_CONV_I1_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint8);
+			INTERP_FOLD_CONV (MINT_CONV_I1_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint8);
+			INTERP_FOLD_CONV (MINT_CONV_U1_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint8);
+			INTERP_FOLD_CONV (MINT_CONV_U1_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint8);
+
+			INTERP_FOLD_CONV (MINT_CONV_I2_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint16);
+			INTERP_FOLD_CONV (MINT_CONV_I2_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint16);
+			INTERP_FOLD_CONV (MINT_CONV_U2_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint16);
+			INTERP_FOLD_CONV (MINT_CONV_U2_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint16);
+
+			INTERP_FOLD_CONV (MINT_CONV_I4_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint32);
+			INTERP_FOLD_CONV (MINT_CONV_U4_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint32);
+
+			INTERP_FOLD_CONV (MINT_CONV_I8_I4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, gint32);
+			INTERP_FOLD_CONV (MINT_CONV_I8_U4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, guint32);
+
+			default:
+				goto cfold_failed;
+		}
 	}
 
 	// We were able to compute the result of the ins instruction. We store the
@@ -6778,19 +6794,19 @@ interp_fold_unop (TransformData *td, StackContentInfo *sp, InterpInst *ins)
 	// instructions that are part of this unary operation with a single LDC.
 	mono_interp_stats.constant_folds++;
 	if (sp->ins != NULL) {
-		interp_clear_ins (td, sp->ins);
-		mono_interp_stats.killed_instructions++;
+		// The instruction that pushed the top of stack can be replaced with the new constant result
 		if (result.type == STACK_VALUE_I4)
-			ins = interp_get_ldc_i4_from_const (td, ins, result.i);
+			sp->ins = interp_get_ldc_i4_from_const (td, sp->ins, result.i);
 		else if (result.type == STACK_VALUE_I8)
-			ins = interp_inst_replace_with_i8_const (td, ins, result.l);
+			sp->ins = interp_inst_replace_with_i8_const (td, sp->ins, result.l);
 		else
 			g_assert_not_reached ();
 		if (td->verbose_level) {
 			g_print ("Fold unop :\n\t");
-			dump_interp_inst_newline (ins);
+			dump_interp_inst_newline (sp->ins);
 		}
-		sp->ins = ins;
+		mono_interp_stats.killed_instructions++;
+		interp_clear_ins (td, ins);
 	}
 	sp->val = result;
 	return ins;
