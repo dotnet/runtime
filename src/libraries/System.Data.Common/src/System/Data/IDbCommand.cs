@@ -20,5 +20,10 @@ namespace System.Data
         IDataReader ExecuteReader();
         IDataReader ExecuteReader(CommandBehavior behavior);
         object ExecuteScalar();
+        System.Threading.Tasks.Task PrepareAsync(System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<int> ExecuteNonQueryAsync();
+        System.Threading.Tasks.Task<IDataReader> ExecuteReaderAsync();
+        System.Threading.Tasks.Task<IDataReader> ExecuteReaderAsync(CommandBehavior behavior);
+        System.Threading.Tasks.Task<object> ExecuteScalarAsync();
     }
 }

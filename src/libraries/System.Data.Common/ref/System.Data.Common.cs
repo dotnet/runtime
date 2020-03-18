@@ -1233,6 +1233,11 @@ namespace System.Data
         System.Data.IDataReader ExecuteReader(System.Data.CommandBehavior behavior);
         object ExecuteScalar();
         void Prepare();
+        System.Threading.Tasks.Task PrepareAsync(System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<int> ExecuteNonQueryAsync();
+        System.Threading.Tasks.Task<IDataReader> ExecuteReaderAsync();
+        System.Threading.Tasks.Task<IDataReader> ExecuteReaderAsync(CommandBehavior behavior);
+        System.Threading.Tasks.Task<object> ExecuteScalarAsync();
     }
     public partial interface IDbConnection : System.IDisposable
     {
@@ -1244,8 +1249,10 @@ namespace System.Data
         System.Data.IDbTransaction BeginTransaction(System.Data.IsolationLevel il);
         void ChangeDatabase(string databaseName);
         void Close();
+        System.Threading.Tasks.Task CloseAsync();
         System.Data.IDbCommand CreateCommand();
         void Open();
+        System.Threading.Tasks.Task OpenAsync(System.Threading.CancellationToken cancellationToken);
     }
     public partial interface IDbDataAdapter : System.Data.IDataAdapter
     {
@@ -1620,6 +1627,13 @@ namespace System.Data.Common
         public virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
         protected virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable, System.Data.IDataReader dataReader) { throw null; }
         protected virtual System.Data.DataTable FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDataReader dataReader) { throw null; }
+        public virtual System.Threading.Tasks.Task<int> FillAsync(System.Data.DataSet dataSet) { throw null; }
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(System.Data.DataSet dataSet, string srcTable, System.Data.IDataReader dataReader, int startRecord, int maxRecords) { throw null; }
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(System.Data.DataTable dataTable, System.Data.IDataReader dataReader) { throw null; }
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(System.Data.DataTable[] dataTables, System.Data.IDataReader dataReader, int startRecord, int maxRecords) { throw null; }
+        public virtual System.Threading.Tasks.Task<System.Data.DataTable[]> FillSchemaAsync(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
+        protected virtual System.Threading.Tasks.Task<System.Data.DataTable[]> FillSchemaAsync(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable, System.Data.IDataReader dataReader) { throw null; }
+        protected virtual System.Threading.Tasks.Task<System.Data.DataTable> FillSchemaAsync(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDataReader dataReader) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public virtual System.Data.IDataParameter[] GetFillParameters() { throw null; }
         protected bool HasTableMappings() { throw null; }
@@ -1843,6 +1857,8 @@ namespace System.Data.Common
         System.Data.IDbDataParameter System.Data.IDbCommand.CreateParameter() { throw null; }
         System.Data.IDataReader System.Data.IDbCommand.ExecuteReader() { throw null; }
         System.Data.IDataReader System.Data.IDbCommand.ExecuteReader(System.Data.CommandBehavior behavior) { throw null; }
+        System.Threading.Tasks.Task<IDataReader> IDbCommand.ExecuteReaderAsync() { throw null; }
+        System.Threading.Tasks.Task<IDataReader> IDbCommand.ExecuteReaderAsync(CommandBehavior behavior) { throw null; }
     }
     public abstract partial class DbCommandBuilder : System.ComponentModel.Component
     {
@@ -2025,6 +2041,19 @@ namespace System.Data.Common
         public System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable) { throw null; }
         public System.Data.DataTable FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType) { throw null; }
         protected virtual System.Data.DataTable FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
+        public override System.Threading.Tasks.Task<int> FillAsync(System.Data.DataSet dataSet) { throw null; }
+        public System.Threading.Tasks.Task<int> FillAsync(System.Data.DataSet dataSet, int startRecord, int maxRecords, string srcTable) { throw null; }
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(System.Data.DataSet dataSet, int startRecord, int maxRecords, string srcTable, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
+        public System.Threading.Tasks.Task<int> FillAsync(System.Data.DataSet dataSet, string srcTable) { throw null; }
+        public System.Threading.Tasks.Task<int> FillAsync(System.Data.DataTable dataTable) { throw null; }
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(System.Data.DataTable dataTable, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(System.Data.DataTable[] dataTables, int startRecord, int maxRecords, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
+        public System.Threading.Tasks.Task<int> FillAsync(int startRecord, int maxRecords, params System.Data.DataTable[] dataTables) { throw null; }
+        public override System.Threading.Tasks.Task<System.Data.DataTable[]> FillSchemaAsync(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
+        protected virtual System.Threading.Tasks.Task<System.Data.DataTable[]> FillSchemaAsync(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, System.Data.IDbCommand command, string srcTable, System.Data.CommandBehavior behavior) { throw null; }
+        public System.Threading.Tasks.Task<System.Data.DataTable[]> FillSchemaAsync(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable) { throw null; }
+        public System.Threading.Tasks.Task<System.Data.DataTable> FillSchemaAsync(System.Data.DataTable dataTable, System.Data.SchemaType schemaType) { throw null; }
+        protected virtual System.Threading.Tasks.Task<System.Data.DataTable> FillSchemaAsync(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         protected virtual System.Data.IDataParameter GetBatchedParameter(int commandIdentifier, int parameterIndex) { throw null; }
         protected virtual bool GetBatchedRecordsAffected(int commandIdentifier, out int recordsAffected, out System.Exception error) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]

@@ -246,5 +246,15 @@ namespace System.Data.Common
             Dispose();
             return default;
         }
+
+        async Task<IDataReader> IDbCommand.ExecuteReaderAsync()
+        {
+            return await ExecuteReaderAsync().ConfigureAwait(false);
+        }
+
+        async Task<IDataReader> IDbCommand.ExecuteReaderAsync(CommandBehavior behavior)
+        {
+            return await ExecuteReaderAsync(behavior).ConfigureAwait(false);
+        }
     }
 }

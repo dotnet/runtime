@@ -16,5 +16,7 @@ namespace System.Data
         void ChangeDatabase(string databaseName);
         IDbCommand CreateCommand();
         void Open();
+        System.Threading.Tasks.Task OpenAsync(System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task CloseAsync();
     }
 }

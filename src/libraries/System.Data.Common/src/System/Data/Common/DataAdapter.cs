@@ -268,6 +268,11 @@ namespace System.Data.Common
             throw ADP.NotSupported();
         }
 
+        public virtual System.Threading.Tasks.Task<DataTable[]> FillSchemaAsync(DataSet dataSet, SchemaType schemaType)
+        {
+            throw ADP.NotSupported();
+        }
+
         protected virtual DataTable[] FillSchema(DataSet dataSet, SchemaType schemaType, string srcTable, IDataReader dataReader)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchema|API> {0}, dataSet, schemaType={1}, srcTable, dataReader", ObjectID, schemaType);
@@ -327,6 +332,65 @@ namespace System.Data.Common
             }
         }
 
+        protected virtual async System.Threading.Tasks.Task<DataTable[]> FillSchemaAsync(DataSet dataSet, SchemaType schemaType, string srcTable, IDataReader dataReader)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchemaAsync|API> {0}, dataSet, schemaType={1}, srcTable, dataReader", ObjectID, schemaType);
+            try
+            {
+                if (null == dataSet)
+                {
+                    throw ADP.ArgumentNull(nameof(dataSet));
+                }
+                if ((SchemaType.Source != schemaType) && (SchemaType.Mapped != schemaType))
+                {
+                    throw ADP.InvalidSchemaType(schemaType);
+                }
+                if (string.IsNullOrEmpty(srcTable))
+                {
+                    throw ADP.FillSchemaRequiresSourceTableName(nameof(srcTable));
+                }
+                if ((null == dataReader) || dataReader.IsClosed)
+                {
+                    throw ADP.FillRequires(nameof(dataReader));
+                }
+                // user must Close/Dispose of the dataReader
+                object value = await FillSchemaFromReaderAsync(dataSet, null, schemaType, srcTable, dataReader).ConfigureAwait(false);
+                return (DataTable[])value;
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        protected virtual async System.Threading.Tasks.Task<DataTable> FillSchemaAsync(DataTable dataTable, SchemaType schemaType, IDataReader dataReader)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchemaAsync|API> {0}, dataTable, schemaType, dataReader", ObjectID);
+            try
+            {
+                if (null == dataTable)
+                {
+                    throw ADP.ArgumentNull(nameof(dataTable));
+                }
+                if ((SchemaType.Source != schemaType) && (SchemaType.Mapped != schemaType))
+                {
+                    throw ADP.InvalidSchemaType(schemaType);
+                }
+                if ((null == dataReader) || dataReader.IsClosed)
+                {
+                    throw ADP.FillRequires(nameof(dataReader));
+                }
+                // user must Close/Dispose of the dataReader
+                // user will have to call NextResult to access remaining results
+                object value = await FillSchemaFromReaderAsync(null, dataTable, schemaType, null, dataReader).ConfigureAwait(false);
+                return (DataTable)value;
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
         internal object FillSchemaFromReader(DataSet dataset, DataTable datatable, SchemaType schemaType, string srcTable, IDataReader dataReader)
         {
             DataTable[] dataTables = null;
@@ -375,7 +439,60 @@ namespace System.Data.Common
             return value; // null if datatable had no results
         }
 
+        internal System.Threading.Tasks.Task<object> FillSchemaFromReaderAsync(DataSet dataset, DataTable datatable, SchemaType schemaType, string srcTable, IDataReader dataReader)
+        {
+            DataTable[] dataTables = null;
+            int schemaCount = 0;
+            do
+            {
+                DataReaderContainer readerHandler = DataReaderContainer.Create(dataReader, ReturnProviderSpecificTypes);
+
+                AssertReaderHandleFieldCount(readerHandler);
+                if (0 >= readerHandler.FieldCount)
+                {
+                    continue;
+                }
+                string tmp = null;
+                if (null != dataset)
+                {
+                    tmp = DataAdapter.GetSourceTableName(srcTable, schemaCount);
+                    schemaCount++; // don't increment if no SchemaTable ( a non-row returning result )
+                }
+
+                SchemaMapping mapping = new SchemaMapping(this, dataset, datatable, readerHandler, true, schemaType, tmp, false, null, null);
+
+                if (null != datatable)
+                {
+                    // do not read remaining results in single DataTable case
+                    return System.Threading.Tasks.Task.FromResult<object>(mapping.DataTable);
+                }
+                else if (null != mapping.DataTable)
+                {
+                    if (null == dataTables)
+                    {
+                        dataTables = new DataTable[1] { mapping.DataTable };
+                    }
+                    else
+                    {
+                        dataTables = DataAdapter.AddDataTableToArray(dataTables, mapping.DataTable);
+                    }
+                }
+            } while (dataReader.NextResult()); // FillSchema does not capture errors for FillError event
+
+            object value = dataTables;
+            if ((null == value) && (null == datatable))
+            {
+                value = Array.Empty<DataTable>();
+            }
+            return System.Threading.Tasks.Task.FromResult(value); // null if datatable had no results
+        }
+
         public virtual int Fill(DataSet dataSet)
+        {
+            throw ADP.NotSupported();
+        }
+
+        public virtual System.Threading.Tasks.Task<int> FillAsync(DataSet dataSet)
         {
             throw ADP.NotSupported();
         }
@@ -419,10 +536,55 @@ namespace System.Data.Common
             }
         }
 
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(DataSet dataSet, string srcTable, IDataReader dataReader, int startRecord, int maxRecords)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillAsync|API> {0}, dataSet, srcTable, dataReader, startRecord, maxRecords", ObjectID);
+            try
+            {
+                if (null == dataSet)
+                {
+                    throw ADP.FillRequires(nameof(dataSet));
+                }
+                if (string.IsNullOrEmpty(srcTable))
+                {
+                    throw ADP.FillRequiresSourceTableName(nameof(srcTable));
+                }
+                if (null == dataReader)
+                {
+                    throw ADP.FillRequires(nameof(dataReader));
+                }
+                if (startRecord < 0)
+                {
+                    throw ADP.InvalidStartRecord(nameof(startRecord), startRecord);
+                }
+                if (maxRecords < 0)
+                {
+                    throw ADP.InvalidMaxRecords(nameof(maxRecords), maxRecords);
+                }
+                if (dataReader.IsClosed)
+                {
+                    return System.Threading.Tasks.Task.FromResult(0);
+                }
+                // user must Close/Dispose of the dataReader
+                DataReaderContainer readerHandler = DataReaderContainer.Create(dataReader, ReturnProviderSpecificTypes);
+                return FillFromReaderAsync(dataSet, null, srcTable, readerHandler, startRecord, maxRecords, null, null);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
         protected virtual int Fill(DataTable dataTable, IDataReader dataReader)
         {
             DataTable[] dataTables = new DataTable[] { dataTable };
             return Fill(dataTables, dataReader, 0, 0);
+        }
+
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(DataTable dataTable, IDataReader dataReader)
+        {
+            DataTable[] dataTables = new DataTable[] { dataTable };
+            return FillAsync(dataTables, dataReader, 0, 0);
         }
 
         protected virtual int Fill(DataTable[] dataTables, IDataReader dataReader, int startRecord, int maxRecords)
@@ -520,6 +682,101 @@ namespace System.Data.Common
             }
         }
 
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(DataTable[] dataTables, IDataReader dataReader, int startRecord, int maxRecords)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillAsync|API> {0}, dataTables[], dataReader, startRecord, maxRecords", ObjectID);
+            try
+            {
+                ADP.CheckArgumentLength(dataTables, nameof(dataTables));
+                if ((null == dataTables) || (0 == dataTables.Length) || (null == dataTables[0]))
+                {
+                    throw ADP.FillRequires("dataTable");
+                }
+                if (null == dataReader)
+                {
+                    throw ADP.FillRequires(nameof(dataReader));
+                }
+                if ((1 < dataTables.Length) && ((0 != startRecord) || (0 != maxRecords)))
+                {
+                    throw ADP.NotSupported(); // FillChildren is not supported with FillPage
+                }
+
+                int result = 0;
+                bool enforceContraints = false;
+                DataSet commonDataSet = dataTables[0].DataSet;
+                try
+                {
+                    if (null != commonDataSet)
+                    {
+                        enforceContraints = commonDataSet.EnforceConstraints;
+                        commonDataSet.EnforceConstraints = false;
+                    }
+                    for (int i = 0; i < dataTables.Length; ++i)
+                    {
+                        Debug.Assert(null != dataTables[i], "null DataTable Fill");
+
+                        if (dataReader.IsClosed)
+                        {
+#if DEBUG
+                            Debug.Assert(!_debugHookNonEmptySelectCommand, "Debug hook asserts data reader should be open");
+#endif
+                            break;
+                        }
+                        DataReaderContainer readerHandler = DataReaderContainer.Create(dataReader, ReturnProviderSpecificTypes);
+                        AssertReaderHandleFieldCount(readerHandler);
+                        if (readerHandler.FieldCount <= 0)
+                        {
+                            if (i == 0)
+                            {
+                                bool lastFillNextResult;
+                                do
+                                {
+                                    lastFillNextResult = FillNextResult(readerHandler);
+                                }
+                                while (lastFillNextResult && readerHandler.FieldCount <= 0);
+                                if (!lastFillNextResult)
+                                {
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+                        if ((0 < i) && !FillNextResult(readerHandler))
+                        {
+                            break;
+                        }
+                        // user must Close/Dispose of the dataReader
+                        // user will have to call NextResult to access remaining results
+                        int count = FillFromReader(null, dataTables[i], null, readerHandler, startRecord, maxRecords, null, null);
+                        if (0 == i)
+                        {
+                            result = count;
+                        }
+                    }
+                }
+                catch (ConstraintException)
+                {
+                    enforceContraints = false;
+                    throw;
+                }
+                finally
+                {
+                    if (enforceContraints)
+                    {
+                        commonDataSet.EnforceConstraints = true;
+                    }
+                }
+                return System.Threading.Tasks.Task.FromResult(result);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
         internal int FillFromReader(DataSet dataset, DataTable datatable, string srcTable, DataReaderContainer dataReader, int startRecord, int maxRecords, DataColumn parentChapterColumn, object parentChapterValue)
         {
             int rowsAddedToDataSet = 0;
@@ -580,6 +837,68 @@ namespace System.Data.Common
             } while (FillNextResult(dataReader));
 
             return rowsAddedToDataSet;
+        }
+
+        internal System.Threading.Tasks.Task<int> FillFromReaderAsync(DataSet dataset, DataTable datatable, string srcTable, DataReaderContainer dataReader, int startRecord, int maxRecords, DataColumn parentChapterColumn, object parentChapterValue)
+        {
+            int rowsAddedToDataSet = 0;
+            int schemaCount = 0;
+            do
+            {
+                AssertReaderHandleFieldCount(dataReader);
+                if (0 >= dataReader.FieldCount)
+                {
+                    continue; // loop to next result
+                }
+
+                SchemaMapping mapping = FillMapping(dataset, datatable, srcTable, dataReader, schemaCount, parentChapterColumn, parentChapterValue);
+                schemaCount++; // don't increment if no SchemaTable ( a non-row returning result )
+
+                AssertSchemaMapping(mapping);
+
+                if (null == mapping)
+                {
+                    continue; // loop to next result
+                }
+                if (null == mapping.DataValues)
+                {
+                    continue; // loop to next result
+                }
+                if (null == mapping.DataTable)
+                {
+                    continue; // loop to next result
+                }
+                mapping.DataTable.BeginLoadData();
+                try
+                {
+                    // startRecord and maxRecords only apply to the first resultset
+                    if ((1 == schemaCount) && ((0 < startRecord) || (0 < maxRecords)))
+                    {
+                        rowsAddedToDataSet = FillLoadDataRowChunk(mapping, startRecord, maxRecords);
+                    }
+                    else
+                    {
+                        int count = FillLoadDataRow(mapping);
+
+                        if (1 == schemaCount)
+                        {
+                            // only return LoadDataRow count for first resultset
+                            // not secondary or chaptered results
+                            rowsAddedToDataSet = count;
+                        }
+                    }
+                }
+                finally
+                {
+                    mapping.DataTable.EndLoadData();
+                }
+                if (null != datatable)
+                {
+                    break; // do not read remaining results in single DataTable case
+                }
+            } while (FillNextResult(dataReader));
+
+            return System.Threading.Tasks.Task.FromResult(rowsAddedToDataSet);
         }
 
         private int FillLoadDataRowChunk(SchemaMapping mapping, int startRecord, int maxRecords)

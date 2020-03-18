@@ -662,6 +662,380 @@ namespace System.Data.Common
             return rowsAddedToDataSet;
         }
 
+        public System.Threading.Tasks.Task<DataTable> FillSchemaAsync(DataTable dataTable, SchemaType schemaType)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchemaAsync|API> {0}, dataTable, schemaType={1}", ObjectID, schemaType);
+            try
+            {
+                IDbCommand selectCmd = _IDbDataAdapter.SelectCommand;
+                CommandBehavior cmdBehavior = FillCommandBehavior;
+                return FillSchemaAsync(dataTable, schemaType, selectCmd, cmdBehavior);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        public override System.Threading.Tasks.Task<DataTable[]> FillSchemaAsync(DataSet dataSet, SchemaType schemaType)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchemaAsync|API> {0}, dataSet, schemaType={1}", ObjectID, schemaType);
+            try
+            {
+                IDbCommand command = _IDbDataAdapter.SelectCommand;
+                if (DesignMode && ((null == command) || (null == command.Connection) || string.IsNullOrEmpty(command.CommandText)))
+                {
+                    return System.Threading.Tasks.Task.FromResult(Array.Empty<DataTable>()); // design-time support
+                }
+                CommandBehavior cmdBehavior = FillCommandBehavior;
+                return FillSchemaAsync(dataSet, schemaType, command, DbDataAdapter.DefaultSourceTableName, cmdBehavior);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        public System.Threading.Tasks.Task<DataTable[]> FillSchemaAsync(DataSet dataSet, SchemaType schemaType, string srcTable)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchemaAsync|API> {0}, dataSet, schemaType={1}, srcTable={2}", ObjectID, (int)schemaType, srcTable);
+            try
+            {
+                IDbCommand selectCmd = _IDbDataAdapter.SelectCommand;
+                CommandBehavior cmdBehavior = FillCommandBehavior;
+                return FillSchemaAsync(dataSet, schemaType, selectCmd, srcTable, cmdBehavior);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        protected virtual async System.Threading.Tasks.Task<DataTable[]> FillSchemaAsync(DataSet dataSet, SchemaType schemaType, IDbCommand command, string srcTable, CommandBehavior behavior)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchemaAsync|API> {0}, dataSet, schemaType, command, srcTable, behavior={1}", ObjectID, behavior);
+            try
+            {
+                if (null == dataSet)
+                {
+                    throw ADP.ArgumentNull(nameof(dataSet));
+                }
+                if ((SchemaType.Source != schemaType) && (SchemaType.Mapped != schemaType))
+                {
+                    throw ADP.InvalidSchemaType(schemaType);
+                }
+                if (string.IsNullOrEmpty(srcTable))
+                {
+                    throw ADP.FillSchemaRequiresSourceTableName(nameof(srcTable));
+                }
+                if (null == command)
+                {
+                    throw ADP.MissingSelectCommand(ADP.FillSchema);
+                }
+                return (DataTable[])(await FillSchemaInternalAsync(dataSet, null, schemaType, command, srcTable, behavior).ConfigureAwait(false));
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        protected virtual async System.Threading.Tasks.Task<DataTable> FillSchemaAsync(DataTable dataTable, SchemaType schemaType, IDbCommand command, CommandBehavior behavior)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchemaAsync|API> {0}, dataTable, schemaType, command, behavior={1}", ObjectID, behavior);
+            try
+            {
+                if (null == dataTable)
+                {
+                    throw ADP.ArgumentNull(nameof(dataTable));
+                }
+                if ((SchemaType.Source != schemaType) && (SchemaType.Mapped != schemaType))
+                {
+                    throw ADP.InvalidSchemaType(schemaType);
+                }
+                if (null == command)
+                {
+                    throw ADP.MissingSelectCommand(ADP.FillSchema);
+                }
+                string srcTableName = dataTable.TableName;
+                int index = IndexOfDataSetTable(srcTableName);
+                if (-1 != index)
+                {
+                    srcTableName = TableMappings[index].SourceTable;
+                }
+                return (DataTable)(await FillSchemaInternalAsync(null, dataTable, schemaType, command, srcTableName, behavior | CommandBehavior.SingleResult).ConfigureAwait(false));
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        private async System.Threading.Tasks.Task<object> FillSchemaInternalAsync(DataSet dataset, DataTable datatable, SchemaType schemaType, IDbCommand command, string srcTable, CommandBehavior behavior)
+        {
+            object dataTables = null;
+            bool restoreNullConnection = (null == command.Connection);
+            try
+            {
+                IDbConnection activeConnection = DbDataAdapter.GetConnection3(this, command, ADP.FillSchema);
+                ConnectionState originalState = ConnectionState.Open;
+
+                try
+                {
+                    await QuietOpenAsync(activeConnection, out originalState).ConfigureAwait(false);
+                    using (IDataReader dataReader = await command.ExecuteReaderAsync(behavior | CommandBehavior.SchemaOnly | CommandBehavior.KeyInfo).ConfigureAwait(false))
+                    {
+                        if (null != datatable)
+                        { // delegate to next set of protected FillSchema methods
+                            dataTables = await FillSchemaAsync(datatable, schemaType, dataReader).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            dataTables = await FillSchemaAsync(dataset, schemaType, srcTable, dataReader).ConfigureAwait(false);
+                        }
+                    }
+                }
+                finally
+                {
+                    await QuietCloseAsync(activeConnection, originalState).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                if (restoreNullConnection)
+                {
+                    command.Transaction = null;
+                    command.Connection = null;
+                }
+            }
+            return dataTables;
+        }
+
+        public override System.Threading.Tasks.Task<int> FillAsync(DataSet dataSet)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillAsync|API> {0}, dataSet", ObjectID);
+            try
+            {
+                // delegate to Fill4
+                IDbCommand selectCmd = _IDbDataAdapter.SelectCommand;
+                CommandBehavior cmdBehavior = FillCommandBehavior;
+                return FillAsync(dataSet, 0, 0, DbDataAdapter.DefaultSourceTableName, selectCmd, cmdBehavior);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        public System.Threading.Tasks.Task<int> FillAsync(DataSet dataSet, string srcTable)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillAsync|API> {0}, dataSet, srcTable='{1}'", ObjectID, srcTable);
+            try
+            {
+                // delegate to Fill4
+                IDbCommand selectCmd = _IDbDataAdapter.SelectCommand;
+                CommandBehavior cmdBehavior = FillCommandBehavior;
+                return FillAsync(dataSet, 0, 0, srcTable, selectCmd, cmdBehavior);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        public System.Threading.Tasks.Task<int> FillAsync(DataSet dataSet, int startRecord, int maxRecords, string srcTable)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillAsync|API> {0}, dataSet, startRecord={1}, maxRecords={2}, srcTable='{3}'", ObjectID, startRecord, maxRecords, srcTable);
+            try
+            {
+                // delegate to Fill4
+                IDbCommand selectCmd = _IDbDataAdapter.SelectCommand;
+                CommandBehavior cmdBehavior = FillCommandBehavior;
+                return FillAsync(dataSet, startRecord, maxRecords, srcTable, selectCmd, cmdBehavior);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(DataSet dataSet, int startRecord, int maxRecords, string srcTable, IDbCommand command, CommandBehavior behavior)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillAsync|API> {0}, dataSet, startRecord, maxRecords, srcTable, command, behavior={1}", ObjectID, behavior);
+            try
+            {
+                if (null == dataSet)
+                {
+                    throw ADP.FillRequires(nameof(dataSet));
+                }
+                if (startRecord < 0)
+                {
+                    throw ADP.InvalidStartRecord(nameof(startRecord), startRecord);
+                }
+                if (maxRecords < 0)
+                {
+                    throw ADP.InvalidMaxRecords(nameof(maxRecords), maxRecords);
+                }
+                if (string.IsNullOrEmpty(srcTable))
+                {
+                    throw ADP.FillRequiresSourceTableName(nameof(srcTable));
+                }
+                if (null == command)
+                {
+                    throw ADP.MissingSelectCommand(ADP.Fill);
+                }
+                return FillInternalAsync(dataSet, null, startRecord, maxRecords, srcTable, command, behavior);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        public System.Threading.Tasks.Task<int> FillAsync(DataTable dataTable)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillAsync|API> {0}, dataTable", ObjectID);
+            try
+            {
+                // delegate to Fill8
+                DataTable[] dataTables = new DataTable[1] { dataTable };
+                IDbCommand selectCmd = _IDbDataAdapter.SelectCommand;
+                CommandBehavior cmdBehavior = FillCommandBehavior;
+                return FillAsync(dataTables, 0, 0, selectCmd, cmdBehavior);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        public System.Threading.Tasks.Task<int> FillAsync(int startRecord, int maxRecords, params DataTable[] dataTables)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillAsync|API> {0}, startRecord={1}, maxRecords={2}, dataTable[]", ObjectID, startRecord, maxRecords);
+            try
+            {
+                // delegate to Fill8
+                IDbCommand selectCmd = _IDbDataAdapter.SelectCommand;
+                CommandBehavior cmdBehavior = FillCommandBehavior;
+                return FillAsync(dataTables, startRecord, maxRecords, selectCmd, cmdBehavior);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(DataTable dataTable, IDbCommand command, CommandBehavior behavior)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillAsync|API> {0}, dataTable, command, behavior={1}", ObjectID, behavior);
+            try
+            {
+                // delegate to Fill8
+                DataTable[] dataTables = new DataTable[1] { dataTable };
+                return FillAsync(dataTables, 0, 0, command, behavior);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        protected virtual System.Threading.Tasks.Task<int> FillAsync(DataTable[] dataTables, int startRecord, int maxRecords, IDbCommand command, CommandBehavior behavior)
+        {
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillAsync|API> {0}, dataTables[], startRecord, maxRecords, command, behavior={1}", ObjectID, behavior);
+            try
+            {
+                if ((null == dataTables) || (0 == dataTables.Length) || (null == dataTables[0]))
+                {
+                    throw ADP.FillRequires("dataTable");
+                }
+                if (startRecord < 0)
+                {
+                    throw ADP.InvalidStartRecord(nameof(startRecord), startRecord);
+                }
+                if (maxRecords < 0)
+                {
+                    throw ADP.InvalidMaxRecords(nameof(maxRecords), maxRecords);
+                }
+                if ((1 < dataTables.Length) && ((0 != startRecord) || (0 != maxRecords)))
+                {
+                    throw ADP.OnlyOneTableForStartRecordOrMaxRecords();
+                }
+                if (null == command)
+                {
+                    throw ADP.MissingSelectCommand(ADP.Fill);
+                }
+                if (1 == dataTables.Length)
+                {
+                    behavior |= CommandBehavior.SingleResult;
+                }
+                return FillInternalAsync(null, dataTables, startRecord, maxRecords, null, command, behavior);
+            }
+            finally
+            {
+                DataCommonEventSource.Log.ExitScope(logScopeId);
+            }
+        }
+
+        private async System.Threading.Tasks.Task<int> FillInternalAsync(DataSet dataset, DataTable[] datatables, int startRecord, int maxRecords, string srcTable, IDbCommand command, CommandBehavior behavior)
+        {
+            int rowsAddedToDataSet = 0;
+            bool restoreNullConnection = (null == command.Connection);
+            try
+            {
+                IDbConnection activeConnection = DbDataAdapter.GetConnection3(this, command, ADP.Fill);
+                ConnectionState originalState = ConnectionState.Open;
+
+                // the default is MissingSchemaAction.Add, the user must explicitly
+                // set MisingSchemaAction.AddWithKey to get key information back in the dataset
+                if (Data.MissingSchemaAction.AddWithKey == MissingSchemaAction)
+                {
+                    behavior |= CommandBehavior.KeyInfo;
+                }
+
+                try
+                {
+                    await QuietOpenAsync(activeConnection, out originalState).ConfigureAwait(false);
+                    behavior |= CommandBehavior.SequentialAccess;
+
+                    IDataReader dataReader = null;
+                    try
+                    {
+                        dataReader = await command.ExecuteReaderAsync(behavior).ConfigureAwait(false);
+
+                        if (null != datatables)
+                        { // delegate to next set of protected Fill methods
+                            rowsAddedToDataSet = await FillAsync(datatables, dataReader, startRecord, maxRecords).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            rowsAddedToDataSet = await FillAsync(dataset, srcTable, dataReader, startRecord, maxRecords).ConfigureAwait(false);
+                        }
+                    }
+                    finally
+                    {
+                        if (null != dataReader)
+                        {
+                            dataReader.Dispose();
+                        }
+                    }
+                }
+                finally
+                {
+                    await QuietCloseAsync(activeConnection, originalState).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                if (restoreNullConnection)
+                {
+                    command.Transaction = null;
+                    command.Connection = null;
+                }
+            }
+            return rowsAddedToDataSet;
+        }
+
         protected virtual IDataParameter GetBatchedParameter(int commandIdentifier, int parameterIndex)
         {
             // Called to retrieve a parameter from a specific bached command, the
@@ -1808,6 +2182,36 @@ namespace System.Data.Common
             {
                 connection.Open();
             }
+        }
+
+        private static System.Threading.Tasks.Task QuietCloseAsync(IDbConnection connection, ConnectionState originalState)
+        {
+            // close the connection if:
+            // * it was closed on first use and adapter has opened it, AND
+            // * provider's implementation did not ask to keep this connection open
+            if ((null != connection) && (ConnectionState.Closed == originalState))
+            {
+                // we don't have to check the current connection state because
+                // it is supposed to be safe to call Close multiple times
+                return connection.CloseAsync();
+            }
+
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+
+        // QuietOpen needs to appear in the try {} finally { QuietClose } block
+        // otherwise a possibility exists that an exception may be thrown
+        // where we would Open the connection and not close it
+        private static System.Threading.Tasks.Task QuietOpenAsync(IDbConnection connection, out ConnectionState originalState)
+        {
+            Debug.Assert(null != connection, "QuietOpen: null connection");
+            originalState = connection.State;
+            if (ConnectionState.Closed == originalState)
+            {
+                return connection.OpenAsync(System.Threading.CancellationToken.None);
+            }
+
+            return System.Threading.Tasks.Task.CompletedTask;
         }
     }
 }
