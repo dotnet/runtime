@@ -401,6 +401,9 @@ mono_wasm_setup_single_step (int kind)
 	if (!isBPOnNativeCode) {
 		mono_de_cancel_ss ();
 	}
+	if (depth == 0 && ss_req->global == TRUE) {
+		return 2;
+	}
 	return isBPOnNativeCode;
 }
 
