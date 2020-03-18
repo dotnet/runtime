@@ -45,16 +45,16 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library_clr(mdruntime_dac ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime_dac PROPERTIES DAC_COMPONENT TRUE)
-target_precompile_header(TARGET mdruntime_dac HEADER stdafx.h)
+target_precompile_headers(mdruntime_dac PRIVATE stdafx.h)
 
 add_library_clr(mdruntime_wks ${MDRUNTIME_SOURCES})
 target_compile_definitions(mdruntime_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
-target_precompile_header(TARGET mdruntime_wks HEADER stdafx.h)
+target_precompile_headers(mdruntime_wks PRIVATE stdafx.h)
 
 add_library_clr(mdruntime-dbi ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime-dbi PROPERTIES DBI_COMPONENT TRUE)
-target_precompile_header(TARGET mdruntime-dbi HEADER stdafx.h)
+target_precompile_headers(mdruntime-dbi PRIVATE stdafx.h)
 
 add_library_clr(mdruntime_crossgen ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
-target_precompile_header(TARGET mdruntime_crossgen HEADER stdafx.h)
+target_precompile_headers(mdruntime_crossgen PRIVATE stdafx.h)

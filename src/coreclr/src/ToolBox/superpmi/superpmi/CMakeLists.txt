@@ -44,7 +44,7 @@ _add_executable(superpmi
     ${SUPERPMI_SOURCES}
 )
 
-target_precompile_header(TARGET superpmi HEADER standardpch.h)
+target_precompile_headers(superpmi PRIVATE [["standardpch.h"]])
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi

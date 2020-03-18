@@ -371,7 +371,8 @@ function(add_jit jitName)
         ${JIT_ARCH_SOURCES}
     )
 
-    target_precompile_header(TARGET ${jitName} HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
+    target_include_directories(${jitName} PRIVATE ${JIT_SOURCE_DIR})
+    target_precompile_headers(${jitName} PRIVATE [["jitpch.h"]])
 
     add_dependencies(${jitName} jit_exports)
 

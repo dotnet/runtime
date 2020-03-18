@@ -56,16 +56,16 @@ endif()
 
 add_library_clr(mdcompiler_dac ${MDCOMPILER_SOURCES})
 set_target_properties(mdcompiler_dac PROPERTIES DAC_COMPONENT TRUE)
-target_precompile_header(TARGET mdcompiler_dac HEADER stdafx.h)
+target_precompile_headers(mdcompiler_dac PRIVATE stdafx.h)
 
 add_library_clr(mdcompiler_wks ${MDCOMPILER_SOURCES})
 target_compile_definitions(mdcompiler_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
-target_precompile_header(TARGET mdcompiler_wks HEADER stdafx.h)
+target_precompile_headers(mdcompiler_wks PRIVATE stdafx.h)
 
 add_library_clr(mdcompiler-dbi ${MDCOMPILER_SOURCES})
 set_target_properties(mdcompiler-dbi PROPERTIES DBI_COMPONENT TRUE)
-target_precompile_header(TARGET mdcompiler-dbi HEADER stdafx.h)
+target_precompile_headers(mdcompiler-dbi PRIVATE stdafx.h)
 
 add_library_clr(mdcompiler_crossgen ${MDCOMPILER_SOURCES})
 set_target_properties(mdcompiler_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
-target_precompile_header(TARGET mdcompiler_crossgen HEADER stdafx.h)
+target_precompile_headers(mdcompiler_crossgen PRIVATE stdafx.h)

@@ -22,4 +22,4 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library_clr(mddatasource_dbi STATIC ${MDDATASOURCE_SOURCES})
 set_target_properties(mddatasource_dbi PROPERTIES DBI_COMPONENT TRUE)
-target_precompile_header(TARGET mddatasource_dbi HEADER stdafx.h)
+target_precompile_headers(mddatasource_dbi PRIVATE stdafx.h)

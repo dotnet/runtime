@@ -931,7 +931,7 @@ convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 add_library_clr(cee_dac ${VM_SOURCES_DAC})
 add_dependencies(cee_dac eventing_headers)
 set_target_properties(cee_dac PROPERTIES DAC_COMPONENT TRUE)
-target_precompile_header(TARGET cee_dac HEADER common.h)
+target_precompile_headers(cee_dac PRIVATE [["common.h"]])
 
 add_subdirectory(wks)
 

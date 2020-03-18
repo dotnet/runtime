@@ -29,4 +29,4 @@ add_library_clr(ceefgen
     STATIC
     ${CEEFILEGEN_SOURCES}
 )
-target_precompile_header(TARGET ceefgen HEADER stdafx.h)
+target_precompile_headers(ceefgen PRIVATE stdafx.h)

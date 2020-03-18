@@ -46,16 +46,16 @@ convert_to_absolute_path(MDRUNTIMERW_SOURCES ${MDRUNTIMERW_SOURCES})
 
 add_library_clr(mdruntimerw_dac ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw_dac PROPERTIES DAC_COMPONENT TRUE)
-target_precompile_header(TARGET mdruntimerw_dac HEADER stdafx.h)
+target_precompile_headers(mdruntimerw_dac PRIVATE stdafx.h)
 
 add_library_clr(mdruntimerw_wks ${MDRUNTIMERW_SOURCES})
 target_compile_definitions(mdruntimerw_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
-target_precompile_header(TARGET mdruntimerw_wks HEADER stdafx.h)
+target_precompile_headers(mdruntimerw_wks PRIVATE stdafx.h)
 
 add_library_clr(mdruntimerw-dbi ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw-dbi PROPERTIES DBI_COMPONENT TRUE)
-target_precompile_header(TARGET mdruntimerw-dbi HEADER stdafx.h)
+target_precompile_headers(mdruntimerw-dbi PRIVATE stdafx.h)
 
 add_library_clr(mdruntimerw_crossgen ${MDRUNTIMERW_SOURCES})
 set_target_properties(mdruntimerw_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
-target_precompile_header(TARGET mdruntimerw_crossgen HEADER stdafx.h)
+target_precompile_headers(mdruntimerw_crossgen PRIVATE stdafx.h)

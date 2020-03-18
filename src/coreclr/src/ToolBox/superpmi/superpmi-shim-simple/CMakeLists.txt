@@ -44,7 +44,7 @@ _add_library(superpmi-shim-simple
     ${SUPERPMI_SHIM_SIMPLE_SOURCES}
 )
 
-target_precompile_header(TARGET superpmi-shim-simple HEADER standardpch.h)
+target_precompile_headers(superpmi-shim-simple PRIVATE [["standardpch.h"]])
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-simple

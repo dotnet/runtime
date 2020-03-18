@@ -45,7 +45,7 @@ _add_library(superpmi-shim-counter
     ${SUPERPMI_SHIM_COUNTER_SOURCES}
 )
 
-target_precompile_header(TARGET superpmi-shim-counter HEADER standardpch.h)
+target_precompile_headers(superpmi-shim-counter PRIVATE [["standardpch.h"]])
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-counter

@@ -56,7 +56,7 @@ if(CLR_CMAKE_HOST_DARWIN)
 endif(CLR_CMAKE_HOST_DARWIN)
 
 add_library_clr(mscordbi SHARED ${MSCORDBI_SOURCES})
-target_precompile_header(TARGET mscordbi HEADER stdafx.h)
+target_precompile_headers(mscordbi PRIVATE stdafx.h)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_custom_target(mscordbi_exports DEPENDS ${EXPORTS_FILE})

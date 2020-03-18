@@ -15,4 +15,4 @@ else()
       ${JIT_ARCH_SOURCES}
     )
 endif(CLR_CMAKE_HOST_UNIX)
-target_precompile_header(TARGET clrjit_static HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
+target_precompile_headers(clrjit_static PRIVATE [["jitpch.h"])
