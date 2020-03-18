@@ -446,7 +446,7 @@ if %__BuildCrossArchNative% EQU 1 (
     set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -j 8
+    "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -j
 
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!
@@ -529,7 +529,7 @@ if %__BuildNative% EQU 1 (
     set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -j 8
+    "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -j
 
     if not !errorlevel! == 0 (
         set __exitCode=!errorlevel!
