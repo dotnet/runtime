@@ -7302,7 +7302,7 @@ ClrDataAccess::GetDacGlobals()
     }
 
     if (FAILED(status = GetResourceRvaFromResourceSectionRvaByName(m_pTarget, m_globalBase,
-        resourceSectionRVA, (DWORD)RT_RCDATA, _WIDE(DACCESS_TABLE_RESOURCE), 0,
+        resourceSectionRVA, (DWORD)(size_t)RT_RCDATA, _WIDE(DACCESS_TABLE_RESOURCE), 0,
         &rsrcRVA, &rsrcSize)))
     {
         _ASSERTE_MSG(false, "DAC fatal error: can't locate DAC table resource in " TARGET_MAIN_CLR_DLL_NAME_A);
