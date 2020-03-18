@@ -21,8 +21,6 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
-    # Linux tests are built on the OSX machines.
-    - OSX_x64
     - Linux_x64
     - Windows_NT_x64
     jobParameters:
@@ -33,12 +31,11 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/test-job.yml
     buildConfig: checked
     platforms:
-    # Linux tests are built on the OSX machines.
-    - OSX_x64
     - Linux_x64
     - Windows_NT_x64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    managedOsxBuild: false
     jobParameters:
       testGroup: jit-offbydefault-extra
       liveLibrariesBuildConfig: Release
