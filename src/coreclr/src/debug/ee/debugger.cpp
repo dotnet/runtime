@@ -13947,7 +13947,7 @@ void GenericHijackFuncHelper()
     if (pEEThread != NULL)
     {
         // We've got a Thread ptr, so get the continue type out of the thread's debugger word.
-        continueType = (DWORD)threadDebuggerWord;
+        continueType = (DWORD)(size_t) threadDebuggerWord;
 
         _ASSERTE(pEEThread->GetInteropDebuggingHijacked());
         pEEThread->SetInteropDebuggingHijacked(FALSE);
