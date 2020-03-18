@@ -19,7 +19,7 @@ add_executable(
     ${APP_RESOURCES}
 )
 
-include_directories("../../../../../artifacts/bin/mono/iOS.arm64.Debug/include/mono-2.0")
+include_directories("../../../../../artifacts/bin/mono/iOS.${MONO_ARCH}.${MONO_CONFIG}/include/mono-2.0")
 
 set_target_properties(HelloiOS PROPERTIES
     MACOSX_BUNDLE TRUE
@@ -39,9 +39,9 @@ target_link_libraries(
     "-framework GSS"
     "-lz"
     "-liconv"
-    "-force_load ../../../../../artifacts/bin/mono/iOS.arm64.Debug/libmono.a"
-    "-force_load ../../../../../artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.IO.Compression.Native.a"
-    "-force_load ../../../../../artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.Native.a"
-    "-force_load ../../../../../artifacts/bin/native/netcoreapp5.0-iOS-Debug-arm64/libSystem.Security.Cryptography.Native.Apple.a"
+    "-force_load ../../../../../artifacts/bin/mono/iOS.${MONO_ARCH}.${MONO_CONFIG}/libmono.a"
+    "-force_load ../../../../../artifacts/bin/native/netcoreapp5.0-iOS-${MONO_CONFIG}-${MONO_ARCH}/libSystem.IO.Compression.Native.a"
+    "-force_load ../../../../../artifacts/bin/native/netcoreapp5.0-iOS-${MONO_CONFIG}-${MONO_ARCH}/libSystem.Native.a"
+    "-force_load ../../../../../artifacts/bin/native/netcoreapp5.0-iOS-${MONO_CONFIG}-${MONO_ARCH}/libSystem.Security.Cryptography.Native.Apple.a"
     ${DLLS_AOT}
 )

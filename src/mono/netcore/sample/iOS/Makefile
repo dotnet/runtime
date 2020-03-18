@@ -53,11 +53,13 @@ aot-lib:
 	cp $(LIB) $(notdir $(LIB))
 
 # generate an xcode project
-xcode:
+xcode: all
 	cmake -S. -BXcode -GXcode \
     -DCMAKE_SYSTEM_NAME=iOS \
     -DCMAKE_OSX_ARCHITECTURES=arm64 \
     -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1 \
     -DCMAKE_INSTALL_PREFIX=`pwd`/_install \
     -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=YES \
-    -DCMAKE_IOS_INSTALL_COMBINED=YES
+    -DCMAKE_IOS_INSTALL_COMBINED=YES \
+	-DMONO_CONFIG=Debug \
+	-DMONO_ARCH=arm64
