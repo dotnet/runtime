@@ -19,13 +19,6 @@ void mono_install_load_aot_data_hook (MonoLoadAotDataFunc load_func, MonoFreeAot
 void mono_trace_init (void);
 void mono_gc_init_finalizer_thread (void);
 
-bool
-file_exists (const char *path)
-{
-    struct stat buffer;
-    return stat (path, &buffer) == 0;
-}
-
 static char *bundle_path;
 
 const char *

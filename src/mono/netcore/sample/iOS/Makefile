@@ -47,7 +47,17 @@ bin/Program.dll: Program.cs
 
 aot-lib:
 	DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 MONO_PATH=$(ARTIFACTS_MONO) \
-	$(ARTIFACTS_MONO)/cross/./mono-aot-cross -O=gsharedvt,float32 --debug \
+	$(ARTIFACTS_MONO)/cross/./mono-aot-cross -O=gsharedvt,float32 --nollvm --debug \
 	--aot=mtriple=arm64-ios,static,asmonly,direct-icalls,no-direct-calls,dwarfdebug,full $(LIB) && \
 	clang -isysroot $(SYSROOT) -miphoneos-version-min=10.1 -arch arm64 -c $(LIB).s
 	cp $(LIB) $(notdir $(LIB))
+
+# generate an xcode project
+xcode:
+	cmake -S. -BXcode -GXcode \
+    -DCMAKE_SYSTEM_NAME=iOS \
+    -DCMAKE_OSX_ARCHITECTURES=arm64 \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1 \
+    -DCMAKE_INSTALL_PREFIX=`pwd`/_install \
+    -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=YES \
+    -DCMAKE_IOS_INSTALL_COMBINED=YES

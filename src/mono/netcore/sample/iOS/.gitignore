@@ -1,7 +1,4 @@
 bin/
-xcuserdata/
-*.xcscmblueprint
-*.xccheckout
-*.s
+xcode/
 *.o
 *.dll
