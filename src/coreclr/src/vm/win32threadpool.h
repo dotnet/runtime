@@ -986,8 +986,10 @@ private:
 
     static BOOL CreateGateThread();
     static void EnsureGateThreadRunning();
+    static bool NeedGateThreadForIOCompletions();
     static bool ShouldGateThreadKeepRunning();
     static DWORD WINAPI GateThreadStart(LPVOID lpArgs);
+    static void PerformGateActivities(int cpuUtilization);
     static BOOL SufficientDelaySinceLastSample(unsigned int LastThreadCreationTime,
                                                unsigned NumThreads, // total number of threads of that type (worker or CP)
                                                double   throttleRate=0.0 // the delay is increased by this percentage for each extra thread
@@ -1118,7 +1120,6 @@ private:
     static Volatile<LONG> NumCPInfrastructureThreads;   // number of threads currently busy handling draining cycle
 
     SVAL_DECL(LONG,cpuUtilization);
-    static LONG cpuUtilizationAverage;
 
     DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) static RecycledListsWrapper RecycledLists;
 };

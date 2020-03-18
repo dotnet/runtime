@@ -100,10 +100,14 @@ namespace System.Threading
         /// <summary>
         /// This method is called to request a new thread pool worker to handle pending work.
         /// </summary>
-        internal static void RequestWorkerThread()
-        {
-            PortableThreadPool.ThreadPoolInstance.RequestWorker();
-        }
+        internal static void RequestWorkerThread() => PortableThreadPool.ThreadPoolInstance.RequestWorker();
+
+        /// <summary>
+        /// Called from the gate thread periodically to perform runtime-specific gate activities
+        /// </summary>
+        /// <param name="cpuUtilization">CPU utilization as a percentage since the last call</param>
+        /// <returns>True if the runtime still needs to perform gate activities, false otherwise</returns>
+        internal static bool PerformRuntimeSpecificGateActivities(int cpuUtilization) => false;
 
         internal static void NotifyWorkItemProgress()
         {

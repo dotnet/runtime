@@ -54,6 +54,7 @@ public:
 #endif
 
     static BOOL QCALLTYPE RequestWorkerThread();
+    static BOOL QCALLTYPE PerformGateActivities(INT32 cpuUtilization);
 
     static FCDECL1(FC_BOOL_RET, CorPostQueuedCompletionStatus, LPOVERLAPPED lpOverlapped);
     static FCDECL2(FC_BOOL_RET, CorUnregisterWait, LPVOID WaitHandle, Object * objectToNotify);

@@ -17,61 +17,70 @@ namespace System.Threading
 
             private static readonly AutoResetEvent s_runGateThreadEvent = new AutoResetEvent(initialState: true);
 
-            private static CpuUtilizationReader s_cpu;
             private const int MaxRuns = 2;
 
-            // TODO: CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
+            // TODO: PortableThreadPool - CoreCLR: Worker Tracking in CoreCLR? (Config name: ThreadPool_EnableWorkerTracking)
             private static void GateThreadStart()
             {
-                _ = s_cpu.CurrentUtilization; // The first reading is over a time range other than what we are focusing on, so we do not use the read.
-
                 AppContext.TryGetSwitch("System.Threading.ThreadPool.DisableStarvationDetection", out bool disableStarvationDetection);
                 AppContext.TryGetSwitch("System.Threading.ThreadPool.DebugBreakOnWorkerStarvation", out bool debuggerBreakOnWorkStarvation);
+
+                // The first reading is over a time range other than what we are focusing on, so we do not use the read other
+                // than to send it to any runtime-specific implementation that may also use the CPU utilization.
+                CpuUtilizationReader cpuUtilizationReader = default;
+                _ = cpuUtilizationReader.CurrentUtilization;
 
                 while (true)
                 {
                     s_runGateThreadEvent.WaitOne();
+
+                    bool needGateThreadForRuntime;
                     do
                     {
                         Thread.Sleep(GateThreadDelayMs);
 
-                        ThreadPoolInstance._cpuUtilization = s_cpu.CurrentUtilization;
+                        int cpuUtilization = cpuUtilizationReader.CurrentUtilization;
+                        ThreadPoolInstance._cpuUtilization = cpuUtilization;
 
-                        if (!disableStarvationDetection)
+                        needGateThreadForRuntime = ThreadPool.PerformRuntimeSpecificGateActivities(cpuUtilization);
+
+                        if (!disableStarvationDetection &&
+                            ThreadPoolInstance._separated.numRequestedWorkers > 0 &&
+                            SufficientDelaySinceLastDequeue())
                         {
-                            if (ThreadPoolInstance._separated.numRequestedWorkers > 0 && SufficientDelaySinceLastDequeue())
+                            try
                             {
-                                try
+                                ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Acquire();
+                                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
+                                // don't add a thread if we're at max or if we are already in the process of adding threads
+                                while (counts.numExistingThreads < ThreadPoolInstance._maxThreads && counts.numExistingThreads >= counts.numThreadsGoal)
                                 {
-                                    ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Acquire();
-                                    ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts);
-                                    // don't add a thread if we're at max or if we are already in the process of adding threads
-                                    while (counts.numExistingThreads < ThreadPoolInstance._maxThreads && counts.numExistingThreads >= counts.numThreadsGoal)
+                                    if (debuggerBreakOnWorkStarvation)
                                     {
-                                        if (debuggerBreakOnWorkStarvation)
-                                        {
-                                            Debugger.Break();
-                                        }
-
-                                        ThreadCounts newCounts = counts;
-                                        newCounts.numThreadsGoal = (short)(newCounts.numExistingThreads + 1);
-                                        ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
-                                        if (oldCounts == counts)
-                                        {
-                                            HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.Starvation);
-                                            WorkerThread.MaybeAddWorkingWorker();
-                                            break;
-                                        }
-                                        counts = oldCounts;
+                                        Debugger.Break();
                                     }
-                                }
-                                finally
-                                {
-                                    ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Release();
+
+                                    ThreadCounts newCounts = counts;
+                                    newCounts.numThreadsGoal = (short)(newCounts.numExistingThreads + 1);
+                                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
+                                    if (oldCounts == counts)
+                                    {
+                                        HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.Starvation);
+                                        WorkerThread.MaybeAddWorkingWorker();
+                                        break;
+                                    }
+                                    counts = oldCounts;
                                 }
                             }
+                            finally
+                            {
+                                ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Release();
+                            }
                         }
-                    } while (ThreadPoolInstance._separated.numRequestedWorkers > 0 || Interlocked.Decrement(ref s_runningState) > GetRunningStateForNumRuns(0));
+                    } while (
+                        needGateThreadForRuntime ||
+                        ThreadPoolInstance._separated.numRequestedWorkers > 0 ||
+                        Interlocked.Decrement(ref s_runningState) > GetRunningStateForNumRuns(0));
                 }
             }
 
@@ -139,5 +148,7 @@ namespace System.Threading
                 gateThread.Start();
             }
         }
+
+        internal static void EnsureGateThreadRunning() => GateThread.EnsureRunning();
     }
 }

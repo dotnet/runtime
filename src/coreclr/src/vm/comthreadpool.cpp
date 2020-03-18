@@ -564,6 +564,23 @@ BOOL QCALLTYPE ThreadPoolNative::RequestWorkerThread()
     return res;
 }
 
+BOOL QCALLTYPE ThreadPoolNative::PerformGateActivities(INT32 cpuUtilization)
+{
+    QCALL_CONTRACT;
+
+    bool needGateThread = false;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(ThreadpoolMgr::UsePortableThreadPool());
+
+    ThreadpoolMgr::PerformGateActivities(cpuUtilization);
+    needGateThread = ThreadpoolMgr::NeedGateThreadForIOCompletions();
+
+    END_QCALL;
+
+    return needGateThread;
+}
 
 /********************************************************************************************************************/
 

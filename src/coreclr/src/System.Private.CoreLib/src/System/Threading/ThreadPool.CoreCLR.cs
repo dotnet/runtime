@@ -364,6 +364,27 @@ namespace System.Threading
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern Interop.BOOL RequestWorkerThreadNative();
 
+        // Entry point from unmanaged code
+        private static void EnsureGateThreadRunning()
+        {
+            Debug.Assert(UsePortableThreadPool);
+            PortableThreadPool.EnsureGateThreadRunning();
+        }
+
+        /// <summary>
+        /// Called from the gate thread periodically to perform runtime-specific gate activities
+        /// </summary>
+        /// <param name="cpuUtilization">CPU utilization as a percentage since the last call</param>
+        /// <returns>True if the runtime still needs to perform gate activities, false otherwise</returns>
+        internal static bool PerformRuntimeSpecificGateActivities(int cpuUtilization)
+        {
+            Debug.Assert(UsePortableThreadPool);
+            return PerformRuntimeSpecificGateActivitiesNative(cpuUtilization) != Interop.BOOL.FALSE;
+        }
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern Interop.BOOL PerformRuntimeSpecificGateActivitiesNative(int cpuUtilization);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);
 

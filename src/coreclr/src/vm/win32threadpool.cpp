@@ -91,7 +91,6 @@ SVAL_IMPL(LONG,ThreadpoolMgr,MinLimitTotalWorkerThreads);          // = MaxLimit
 SVAL_IMPL(LONG,ThreadpoolMgr,MaxLimitTotalWorkerThreads);        // = MaxLimitCPThreadsPerCPU * number of CPUS
 
 SVAL_IMPL(LONG,ThreadpoolMgr,cpuUtilization);
-LONG    ThreadpoolMgr::cpuUtilizationAverage = 0;
 
 HillClimbing ThreadpoolMgr::HillClimbingInstance;
 
@@ -1483,11 +1482,12 @@ void ThreadpoolMgr::EnsureGateThreadRunning()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // TODO: PortableThreadPool - Uncomment after gate thread is rerouted
-    //if (!UsePortableThreadPool())
-    //{
-    //    return;
-    //}
+    if (UsePortableThreadPool())
+    {
+        GCX_COOP();
+        MethodDescCallSite(METHOD__THREAD_POOL__ENSURE_GATE_THREAD_RUNNING).Call(NULL);
+        return;
+    }
 
     while (true)
     {
@@ -1529,15 +1529,25 @@ void ThreadpoolMgr::EnsureGateThreadRunning()
             _ASSERTE(!"Invalid value of ThreadpoolMgr::GateThreadStatus");
         }
     }
-
-    return;
 }
 
+bool ThreadpoolMgr::NeedGateThreadForIOCompletions()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (!InitCompletionPortThreadpool)
+    {
+        return false;
+    }
+
+    ThreadCounter::Counts counts = CPThreadCounter.GetCleanCounts();
+    return counts.NumActive <= counts.NumWorking;
+}
 
 bool ThreadpoolMgr::ShouldGateThreadKeepRunning()
 {
     LIMITED_METHOD_CONTRACT;
-
+    _ASSERTE(!UsePortableThreadPool());
     _ASSERTE(GateThreadStatus == GATE_THREAD_STATUS_WAITING_FOR_REQUEST ||
              GateThreadStatus == GATE_THREAD_STATUS_REQUESTED);
 
@@ -1556,17 +1566,13 @@ bool ThreadpoolMgr::ShouldGateThreadKeepRunning()
         // Are there any free threads in the I/O completion pool?  If there are, we don't need a gate thread.
         // This implies that whenever we decrement NumFreeCPThreads to 0, we need to call EnsureGateThreadRunning().
         //
-        ThreadCounter::Counts counts = CPThreadCounter.GetCleanCounts();
-        bool needGateThreadForCompletionPort =
-            InitCompletionPortThreadpool &&
-            (counts.NumActive - counts.NumWorking) <= 0;
+        bool needGateThreadForCompletionPort = NeedGateThreadForIOCompletions();
 
         //
         // Are there any work requests in any worker queue?  If so, we need a gate thread.
         // This imples that whenever a work queue goes from empty to non-empty, we need to call EnsureGateThreadRunning().
         //
-        bool needGateThreadForWorkerThreads =
-            !UsePortableThreadPool() && PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains();
+        bool needGateThreadForWorkerThreads = PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains();
 
         //
         // If worker tracking is enabled, we need to fire periodic ETW events with active worker counts.  This is
@@ -3215,8 +3221,7 @@ void ThreadpoolMgr::WaitHandleCleanup(HANDLE hWaitObject)
 BOOL ThreadpoolMgr::CreateGateThread()
 {
     LIMITED_METHOD_CONTRACT;
-    // TODO: PortableThreadPool - Uncomment after gate thread is rerouted
-    //_ASSERTE(!UsePortableThreadPool());
+    _ASSERTE(!UsePortableThreadPool());
 
     HANDLE threadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, GateThreadStart, NULL, W(".NET ThreadPool Gate"));
 
@@ -4161,7 +4166,6 @@ public:
     }
 };
 
-
 DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
 {
     ClrFlsSetThreadType (ThreadType_Gate);
@@ -4174,8 +4178,7 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
     }
     CONTRACTL_END;
 
-    // TODO: PortableThreadPool - Uncomment after gate thread is rerouted
-    //_ASSERTE(!UsePortableThreadPool());
+    _ASSERTE(!UsePortableThreadPool());
     _ASSERTE(GateThreadStatus == GATE_THREAD_STATUS_REQUESTED);
 
     GateThreadTimer timer;
@@ -4296,139 +4299,154 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
             IgnoreNextSample = TRUE;
         }
 
-#ifndef TARGET_UNIX
-        // don't mess with CP thread pool settings if not initialized yet
-        if (InitCompletionPortThreadpool)
-        {
-            ThreadCounter::Counts oldCounts, newCounts;
-            oldCounts = CPThreadCounter.GetCleanCounts();
-
-            if (oldCounts.NumActive == oldCounts.NumWorking &&
-                oldCounts.NumRetired == 0 &&
-                oldCounts.NumActive < MaxLimitTotalCPThreads &&
-                !g_fCompletionPortDrainNeeded &&
-                NumCPInfrastructureThreads == 0 &&       // infrastructure threads count as "to be free as needed"
-                !GCHeapUtilities::IsGCInProgress(TRUE))
-
-            {
-                BOOL status;
-                DWORD numBytes;
-                size_t key;
-                LPOVERLAPPED pOverlapped;
-                DWORD errorCode;
-
-                errorCode = S_OK;
-
-                status = GetQueuedCompletionStatus(
-                            GlobalCompletionPort,
-                            &numBytes,
-                            (PULONG_PTR)&key,
-                            &pOverlapped,
-                            0 // immediate return
-                            );
-
-                if (status == 0)
-                {
-                    errorCode = GetLastError();
-                }
-
-                if(pOverlapped == &overlappedForContinueCleanup)
-                {
-                    // if we picked up a "Continue Drainage" notification DO NOT create a new CP thread
-                }
-                else
-                if (errorCode != WAIT_TIMEOUT)
-                {
-                    QueuedStatus *CompletionStatus = NULL;
-
-                    // loop, retrying until memory is allocated.  Under such conditions the gate
-                    // thread is not useful anyway, so I feel comfortable with this behavior
-                    do
-                    {
-                        // make sure to free mem later in thread
-                        CompletionStatus = new (nothrow) QueuedStatus;
-                        if (CompletionStatus == NULL)
-                        {
-                            __SwitchToThread(GATE_THREAD_DELAY, CALLER_LIMITS_SPINNING);
-                        }
-                    }
-                    while (CompletionStatus == NULL);
-
-                    CompletionStatus->numBytes = numBytes;
-                    CompletionStatus->key = (PULONG_PTR)key;
-                    CompletionStatus->pOverlapped = pOverlapped;
-                    CompletionStatus->errorCode = errorCode;
-
-                    // IOCP threads are created as "active" and "working"
-                    while (true)
-                    {
-                        // counts volatile read paired with CompareExchangeCounts loop set
-                        oldCounts = CPThreadCounter.DangerousGetDirtyCounts();
-                        newCounts = oldCounts;
-                        newCounts.NumActive++;
-                        newCounts.NumWorking++;
-                        if (oldCounts == CPThreadCounter.CompareExchangeCounts(newCounts, oldCounts))
-                            break;
-                    }
-
-                    // loop, retrying until thread is created.
-                    while (!CreateCompletionPortThread((LPVOID)CompletionStatus))
-                    {
-                        __SwitchToThread(GATE_THREAD_DELAY, CALLER_LIMITS_SPINNING);
-                    }
-                }
-            }
-            else if (cpuUtilization < CpuUtilizationLow)
-            {
-                // this could be an indication that threads might be getting blocked or there is no work
-                if (oldCounts.NumWorking == oldCounts.NumActive &&                // don't bump the limit if there are already free threads
-                    oldCounts.NumRetired > 0)
-                {
-                    RetiredCPWakeupEvent->Set();
-                }
-            }
-        }
-#endif // !TARGET_UNIX
-
-        if (!UsePortableThreadPool() &&
-            0 == CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_DisableStarvationDetection))
-        {
-            if (PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains() && SufficientDelaySinceLastDequeue())
-            {
-                DangerousNonHostedSpinLockHolder tal(&ThreadAdjustmentLock);
-
-                ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
-                while (counts.NumActive < MaxLimitTotalWorkerThreads && //don't add a thread if we're at the max
-                       counts.NumActive >= counts.MaxWorking)            //don't add a thread if we're already in the process of adding threads
-                {
-                    bool breakIntoDebugger = (0 != CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_DebugBreakOnWorkerStarvation));
-                    if (breakIntoDebugger)
-                    {
-                        OutputDebugStringW(W("The CLR ThreadPool detected work queue starvation!"));
-                        DebugBreak();
-                    }
-
-                    ThreadCounter::Counts newCounts = counts;
-                    newCounts.MaxWorking = newCounts.NumActive + 1;
-
-                    ThreadCounter::Counts oldCounts = WorkerCounter.CompareExchangeCounts(newCounts, counts);
-                    if (oldCounts == counts)
-                    {
-                        HillClimbingInstance.ForceChange(newCounts.MaxWorking, Starvation);
-                        MaybeAddWorkingWorker();
-                        break;
-                    }
-                    else
-                    {
-                        counts = oldCounts;
-                    }
-                }
-            }
-        }
+        PerformGateActivities(cpuUtilization);
     }
     while (ShouldGateThreadKeepRunning());
 
     return 0;
+}
+
+void ThreadpoolMgr::PerformGateActivities(int cpuUtilization)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    ThreadpoolMgr::cpuUtilization = cpuUtilization;
+
+#ifndef TARGET_UNIX
+    // don't mess with CP thread pool settings if not initialized yet
+    if (InitCompletionPortThreadpool)
+    {
+        ThreadCounter::Counts oldCounts, newCounts;
+        oldCounts = CPThreadCounter.GetCleanCounts();
+
+        if (oldCounts.NumActive == oldCounts.NumWorking &&
+            oldCounts.NumRetired == 0 &&
+            oldCounts.NumActive < MaxLimitTotalCPThreads &&
+            !g_fCompletionPortDrainNeeded &&
+            NumCPInfrastructureThreads == 0 &&       // infrastructure threads count as "to be free as needed"
+            !GCHeapUtilities::IsGCInProgress(TRUE))
+
+        {
+            BOOL status;
+            DWORD numBytes;
+            size_t key;
+            LPOVERLAPPED pOverlapped;
+            DWORD errorCode;
+
+            errorCode = S_OK;
+
+            status = GetQueuedCompletionStatus(
+                        GlobalCompletionPort,
+                        &numBytes,
+                        (PULONG_PTR)&key,
+                        &pOverlapped,
+                        0 // immediate return
+                        );
+
+            if (status == 0)
+            {
+                errorCode = GetLastError();
+            }
+
+            if(pOverlapped == &overlappedForContinueCleanup)
+            {
+                // if we picked up a "Continue Drainage" notification DO NOT create a new CP thread
+            }
+            else
+            if (errorCode != WAIT_TIMEOUT)
+            {
+                QueuedStatus *CompletionStatus = NULL;
+
+                // loop, retrying until memory is allocated.  Under such conditions the gate
+                // thread is not useful anyway, so I feel comfortable with this behavior
+                do
+                {
+                    // make sure to free mem later in thread
+                    CompletionStatus = new (nothrow) QueuedStatus;
+                    if (CompletionStatus == NULL)
+                    {
+                        __SwitchToThread(GATE_THREAD_DELAY, CALLER_LIMITS_SPINNING);
+                    }
+                }
+                while (CompletionStatus == NULL);
+
+                CompletionStatus->numBytes = numBytes;
+                CompletionStatus->key = (PULONG_PTR)key;
+                CompletionStatus->pOverlapped = pOverlapped;
+                CompletionStatus->errorCode = errorCode;
+
+                // IOCP threads are created as "active" and "working"
+                while (true)
+                {
+                    // counts volatile read paired with CompareExchangeCounts loop set
+                    oldCounts = CPThreadCounter.DangerousGetDirtyCounts();
+                    newCounts = oldCounts;
+                    newCounts.NumActive++;
+                    newCounts.NumWorking++;
+                    if (oldCounts == CPThreadCounter.CompareExchangeCounts(newCounts, oldCounts))
+                        break;
+                }
+
+                // loop, retrying until thread is created.
+                while (!CreateCompletionPortThread((LPVOID)CompletionStatus))
+                {
+                    __SwitchToThread(GATE_THREAD_DELAY, CALLER_LIMITS_SPINNING);
+                }
+            }
+        }
+        else if (cpuUtilization < CpuUtilizationLow)
+        {
+            // this could be an indication that threads might be getting blocked or there is no work
+            if (oldCounts.NumWorking == oldCounts.NumActive &&                // don't bump the limit if there are already free threads
+                oldCounts.NumRetired > 0)
+            {
+                RetiredCPWakeupEvent->Set();
+            }
+        }
+    }
+#endif // !TARGET_UNIX
+
+    if (!UsePortableThreadPool() &&
+        0 == CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_DisableStarvationDetection))
+    {
+        if (PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains() && SufficientDelaySinceLastDequeue())
+        {
+            DangerousNonHostedSpinLockHolder tal(&ThreadAdjustmentLock);
+
+            ThreadCounter::Counts counts = WorkerCounter.GetCleanCounts();
+            while (counts.NumActive < MaxLimitTotalWorkerThreads && //don't add a thread if we're at the max
+                    counts.NumActive >= counts.MaxWorking)            //don't add a thread if we're already in the process of adding threads
+            {
+                bool breakIntoDebugger = (0 != CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_DebugBreakOnWorkerStarvation));
+                if (breakIntoDebugger)
+                {
+                    OutputDebugStringW(W("The CLR ThreadPool detected work queue starvation!"));
+                    DebugBreak();
+                }
+
+                ThreadCounter::Counts newCounts = counts;
+                newCounts.MaxWorking = newCounts.NumActive + 1;
+
+                ThreadCounter::Counts oldCounts = WorkerCounter.CompareExchangeCounts(newCounts, counts);
+                if (oldCounts == counts)
+                {
+                    HillClimbingInstance.ForceChange(newCounts.MaxWorking, Starvation);
+                    MaybeAddWorkingWorker();
+                    break;
+                }
+                else
+                {
+                    counts = oldCounts;
+                }
+            }
+        }
+    }
 }
 
 // called by logic to spawn a new completion port thread.

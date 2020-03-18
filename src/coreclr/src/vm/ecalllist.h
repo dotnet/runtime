@@ -651,6 +651,7 @@ FCFuncStart(gThreadPoolFuncs)
     FCFuncElement("GetEnableWorkerTracking", ThreadPoolNative::GetEnableWorkerTracking)
     FCFuncElement("ReportThreadStatusNative", ThreadPoolNative::ReportThreadStatus)
     QCFuncElement("RequestWorkerThreadNative", ThreadPoolNative::RequestWorkerThread)
+    QCFuncElement("PerformRuntimeSpecificGateActivitiesNative", ThreadPoolNative::PerformGateActivities)
 FCFuncEnd()
 
 FCFuncStart(gTimerFuncs)
