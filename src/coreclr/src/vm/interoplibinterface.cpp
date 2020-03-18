@@ -174,7 +174,7 @@ namespace
         public:
             using key_t = void*;
             static const key_t GetKey(_In_ element_t e) { LIMITED_METHOD_CONTRACT; return (key_t)e->Identity; }
-            static count_t Hash(_In_ key_t key) { LIMITED_METHOD_CONTRACT; return (count_t)key; }
+            static count_t Hash(_In_ key_t key) { LIMITED_METHOD_CONTRACT; return (count_t)(size_t)key; }
             static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
         };
 
