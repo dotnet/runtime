@@ -1296,11 +1296,6 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_CMOV);
         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
     }
-
-    if (CPU_X86_USE_SSE2(cpuInfo.dwFeatures))
-    {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
-    }
 #endif // TARGET_X86
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
