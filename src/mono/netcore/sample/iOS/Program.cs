@@ -3,46 +3,48 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
+// it's not part of the BCL but runtime needs it for native-to-managed callbacks in AOT
+// To be replaced with NativeCallableAttribute
 public class MonoPInvokeCallbackAttribute : Attribute
 {
-    public MonoPInvokeCallbackAttribute (Type delegateType) { }
+    public MonoPInvokeCallbackAttribute(Type delegateType) { }
 }
 
 public static class Program
 {
     // Defined in main.m
-    [DllImport ("__Internal")]
-    extern static void ios_set_text ([MarshalAs (UnmanagedType.LPUTF8Str)] string value);
+    [DllImport("__Internal")]
+    private extern static void ios_set_text(string value);
 
-    [DllImport ("__Internal")]
-    extern static void ios_register_button_click (Action action);
-    static Action buttonClickHandler = null;
+    [DllImport("__Internal")]
+    private extern static void ios_register_button_click(Action action);
 
-    static int counter = 0;
+    private static Action buttonClickHandler = null;
+
+    private static int counter = 0;
 
     // Called by native code, see main.m
-    [MonoPInvokeCallback (typeof (Action))]
-    static async void OnButtonClick ()
+    [MonoPInvokeCallback(typeof(Action))]
+    private static async void OnButtonClick()
     {
-        ios_set_text ("OnButtonClick! #" + counter++);
+        ios_set_text("OnButtonClick! #" + counter++);
     }
 
-    public static async Task Main (string[] args)
+    public static async Task Main(string[] args)
     {
         // Register a managed callback (will be called by UIButton, see main.m)
         // Also, keep the handler alive so GC won't collect it.
-        ios_register_button_click (buttonClickHandler = OnButtonClick);
+        ios_register_button_click(buttonClickHandler = OnButtonClick);
 
         const string msg = "Hello World!\n.NET 5.0";
         for (int i = 0; i < msg.Length; i++)
         {
             // a kind of an animation
-            ios_set_text (msg.Substring (0, i + 1));
-            await Task.Delay (100);
+            ios_set_text(msg.Substring(0, i + 1));
+            await Task.Delay(100);
         }
 
-        // TODO: Implement ConsolePal.iOS.cs for TargetsiOS==true.
-        // to redirect stdout to NSLog
-        Console.WriteLine ("Done!");
+        // TODO: https://github.com/dotnet/runtime/issues/33667
+        Console.WriteLine("Done!");
     }
 }

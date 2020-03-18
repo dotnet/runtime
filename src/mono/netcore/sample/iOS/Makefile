@@ -1,7 +1,7 @@
-
+MONO_CONFIG=Debug
 ARTIFACTS_BIN=../../../../../artifacts/bin/
-ARTIFACTS_BCL=$(ARTIFACTS_BIN)runtime/netcoreapp5.0-iOS-Debug-arm64
-ARTIFACTS_MONO=$(ARTIFACTS_BIN)/mono/iOS.arm64.Debug
+ARTIFACTS_BCL=$(ARTIFACTS_BIN)runtime/netcoreapp5.0-iOS-$(MONO_CONFIG)-arm64
+ARTIFACTS_MONO=$(ARTIFACTS_BIN)/mono/iOS.arm64.$(MONO_CONFIG)
 
 DOTNET := $(shell cd ../../ && bash init-tools.sh | tail -1)
 SYSROOT := $(shell xcrun --sdk iphoneos --show-sdk-path)
@@ -55,11 +55,11 @@ aot-lib:
 # generate an xcode project
 xcode: all
 	cmake -S. -BXcode -GXcode \
-    -DCMAKE_SYSTEM_NAME=iOS \
-    -DCMAKE_OSX_ARCHITECTURES=arm64 \
-    -DCMAKE_OSX_DEPLOYMENT_TARGET=10.1 \
-    -DCMAKE_INSTALL_PREFIX=`pwd`/_install \
-    -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=YES \
-    -DCMAKE_IOS_INSTALL_COMBINED=YES \
-	-DMONO_CONFIG=Debug \
+	-DCMAKE_SYSTEM_NAME=iOS \
+	-DCMAKE_OSX_ARCHITECTURES=arm64 \
+	-DCMAKE_OSX_DEPLOYMENT_TARGET=10.1 \
+	-DCMAKE_INSTALL_PREFIX=`pwd`/_install \
+	-DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=YES \
+	-DCMAKE_IOS_INSTALL_COMBINED=YES \
+	-DMONO_CONFIG=$(MONO_CONFIG) \
 	-DMONO_ARCH=arm64

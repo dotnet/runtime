@@ -246,7 +246,7 @@ mono_ios_runtime_init (void)
     // for now, only Invariant Mode is supported (FIXME: integrate ICU)
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
 
-    stdout_log = os_log_create ("com.dotnet.mono", "stdout");
+    stdout_log = os_log_create ("net.dot.mono", "stdout");
 
     bool wait_for_debugger = FALSE;
     char* executable = "Program.dll";
@@ -273,7 +273,7 @@ mono_ios_runtime_init (void)
         char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55555" };
         mono_jit_parse_options (1, options);
     }
-    mono_jit_init_version ("Mono.ios", "mobile");
+    mono_jit_init_version ("dotnet.ios", "mobile");
     mono_gc_init_finalizer_thread ();
 
     MonoAssembly *assembly = load_assembly (executable, NULL);
