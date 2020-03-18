@@ -44,7 +44,7 @@
       COMPlus_TC_OnStackReplacement;
       COMPlus_TC_QuickJitForLoops;
       COMPlus_TC_OnStackReplacement_InitialCounter;
-      COMplus_OSR_HitLimit;
+      COMPlus_OSR_HitLimit;
       COMPlus_JitEnableGuardedDevirtualization;
       COMPlus_EnableEHWriteThru;
       COMPlus_JitObjectStackAllocation
