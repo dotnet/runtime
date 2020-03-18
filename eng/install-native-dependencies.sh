@@ -23,8 +23,18 @@ elif [ "$1" = "osx" ]; then
     if [ "$?" != "0" ]; then
         exit 1;
     fi
+elif [ "$1" = "iOS" ]; then
+    brew update
+    brew upgrade
+    if [ "$?" != "0" ]; then
+        exit 1;
+    fi
+    brew install openssl autoconf automake libtool pkg-config python3
+    if [ "$?" != "0" ]; then
+        exit 1;
+    fi
 else
-    echo "Must pass \"linux\" or \"osx\" as first argument."
+    echo "Must pass \"linux\", \"ios\" or \"osx\" as first argument."
     exit 1
 fi
 

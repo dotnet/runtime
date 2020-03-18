@@ -69,6 +69,9 @@ stages:
       runtimeFlavor: mono
       buildConfig: release
       platforms:
+      - ios_x64
+      - ios_arm
+      - ios_arm64
       - osx_x64
       - linux_x64
       - linux_arm
@@ -100,6 +103,22 @@ stages:
       - win_x64
       - win_arm
       - win_arm64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        liveRuntimeBuildConfig: release
+
+  #
+  # Build libraries using live CoreLib from Mono
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Release
+      runtimeFlavor: mono
+      platforms:
+      - iOS_x64
+      - iOS_arm
+      - iOS_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Sockets;
@@ -27,36 +26,36 @@ namespace System.Net
     /// </summary>
     internal class FtpControlStream : CommandStream
     {
-        private Socket _dataSocket;
-        private IPEndPoint _passiveEndPoint;
-        private TlsStream _tlsStream;
+        private Socket? _dataSocket;
+        private IPEndPoint? _passiveEndPoint;
+        private TlsStream? _tlsStream;
 
-        private StringBuilder _bannerMessage;
-        private StringBuilder _welcomeMessage;
-        private StringBuilder _exitMessage;
-        private WeakReference _credentials;
+        private StringBuilder? _bannerMessage;
+        private StringBuilder? _welcomeMessage;
+        private StringBuilder? _exitMessage;
+        private WeakReference? _credentials;
         private string _currentTypeSetting = string.Empty;
 
         private long _contentLength = -1;
         private DateTime _lastModified;
         private bool _dataHandshakeStarted = false;
-        private string _loginDirectory = null;
-        private string _establishedServerDirectory = null;
-        private string _requestedServerDirectory = null;
-        private Uri _responseUri;
+        private string? _loginDirectory;
+        private string? _establishedServerDirectory;
+        private string? _requestedServerDirectory;
+        private Uri? _responseUri;
 
         private FtpLoginState _loginState = FtpLoginState.NotLoggedIn;
 
         internal FtpStatusCode StatusCode;
-        internal string StatusLine;
+        internal string? StatusLine;
 
-        internal NetworkCredential Credentials
+        internal NetworkCredential? Credentials
         {
             get
             {
                 if (_credentials != null && _credentials.IsAlive)
                 {
-                    return (NetworkCredential)_credentials.Target;
+                    return (NetworkCredential?)_credentials.Target;
                 }
                 else
                 {
@@ -87,7 +86,7 @@ namespace System.Net
         /// </summary>
         internal void AbortConnect()
         {
-            Socket socket = _dataSocket;
+            Socket? socket = _dataSocket;
             if (socket != null)
             {
                 try
@@ -105,12 +104,12 @@ namespace System.Net
         /// </summary>
         private static void AcceptCallback(IAsyncResult asyncResult)
         {
-            FtpControlStream connection = (FtpControlStream)asyncResult.AsyncState;
-            Socket listenSocket = connection._dataSocket;
+            FtpControlStream connection = (FtpControlStream)asyncResult.AsyncState!;
+            Socket listenSocket = connection._dataSocket!;
             try
             {
                 connection._dataSocket = listenSocket.EndAccept(asyncResult);
-                if (!connection.ServerAddress.Equals(((IPEndPoint)connection._dataSocket.RemoteEndPoint).Address))
+                if (!connection.ServerAddress.Equals(((IPEndPoint)connection._dataSocket.RemoteEndPoint!).Address))
                 {
                     connection._dataSocket.Close();
                     throw new WebException(SR.net_ftp_active_address_different, WebExceptionStatus.ProtocolError);
@@ -133,10 +132,10 @@ namespace System.Net
         /// </summary>
         private static void ConnectCallback(IAsyncResult asyncResult)
         {
-            FtpControlStream connection = (FtpControlStream)asyncResult.AsyncState;
+            FtpControlStream connection = (FtpControlStream)asyncResult.AsyncState!;
             try
             {
-                connection._dataSocket.EndConnect(asyncResult);
+                connection._dataSocket!.EndConnect(asyncResult);
                 connection.ContinueCommandPipeline();
             }
             catch (Exception e)
@@ -148,10 +147,10 @@ namespace System.Net
 
         private static void SSLHandshakeCallback(IAsyncResult asyncResult)
         {
-            FtpControlStream connection = (FtpControlStream)asyncResult.AsyncState;
+            FtpControlStream connection = (FtpControlStream)asyncResult.AsyncState!;
             try
             {
-                connection._tlsStream.EndAuthenticateAsClient(asyncResult);
+                connection._tlsStream!.EndAuthenticateAsClient(asyncResult);
                 connection.ContinueCommandPipeline();
             }
             catch (Exception e)
@@ -163,7 +162,7 @@ namespace System.Net
 
         //    Creates a FtpDataStream object, constructs a TLS stream if needed.
         //    In case SSL and ASYNC we delay sigaling the user stream until the handshake is done.
-        private PipelineInstruction QueueOrCreateFtpDataStream(ref Stream stream)
+        private PipelineInstruction QueueOrCreateFtpDataStream(ref Stream? stream)
         {
             if (_dataSocket == null)
                 throw new InternalException();
@@ -173,7 +172,7 @@ namespace System.Net
             //
             if (_tlsStream != null)
             {
-                stream = new FtpDataStream(_tlsStream, (FtpWebRequest)_request, IsFtpDataStreamWriteable());
+                stream = new FtpDataStream(_tlsStream, (FtpWebRequest)_request!, IsFtpDataStreamWriteable());
                 _tlsStream = null;
                 return PipelineInstruction.GiveStream;
             }
@@ -182,7 +181,7 @@ namespace System.Net
 
             if (UsingSecureStream)
             {
-                FtpWebRequest request = (FtpWebRequest)_request;
+                FtpWebRequest request = (FtpWebRequest)_request!;
 
                 TlsStream tlsStream = new TlsStream(networkStream, _dataSocket, request.RequestUri.Host, request.ClientCertificates);
                 networkStream = tlsStream;
@@ -200,7 +199,7 @@ namespace System.Net
                 }
             }
 
-            stream = new FtpDataStream(networkStream, (FtpWebRequest)_request, IsFtpDataStreamWriteable());
+            stream = new FtpDataStream(networkStream, (FtpWebRequest)_request!, IsFtpDataStreamWriteable());
             return PipelineInstruction.GiveStream;
         }
 
@@ -222,7 +221,7 @@ namespace System.Net
 
         //    This is called by underlying base class code, each time a new response is received from the wire or a protocol stage is resumed.
         //    This function controls the setting up of a data socket/connection, and of saving off the server responses.
-        protected override PipelineInstruction PipelineCallback(PipelineEntry entry, ResponseDescription response, bool timeout, ref Stream stream)
+        protected override PipelineInstruction PipelineCallback(PipelineEntry? entry, ResponseDescription? response, bool timeout, ref Stream? stream)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Command:{entry?.Command} Description:{response?.StatusDescription}");
 
@@ -267,7 +266,7 @@ namespace System.Net
             //
             // Check for the result of our attempt to use UTF8
             //
-            if (entry.Command == "OPTS utf8 on\r\n")
+            if (entry!.Command == "OPTS utf8 on\r\n")
             {
                 if (response.PositiveCompletion)
                 {
@@ -342,13 +341,13 @@ namespace System.Net
                 }
 
                 // Parse out the Content length, if we can
-                TryUpdateContentLength(response.StatusDescription);
+                TryUpdateContentLength(response.StatusDescription!);
 
                 // Parse out the file name, when it is returned and use it for our ResponseUri
-                FtpWebRequest request = (FtpWebRequest)_request;
+                FtpWebRequest request = (FtpWebRequest)_request!;
                 if (request.MethodInfo.ShouldParseForResponseUri)
                 {
-                    TryUpdateResponseUri(response.StatusDescription, request);
+                    TryUpdateResponseUri(response.StatusDescription!, request);
                 }
 
                 return QueueOrCreateFtpDataStream(ref stream);
@@ -362,12 +361,12 @@ namespace System.Net
             // Update welcome message
             if (status == FtpStatusCode.LoggedInProceed)
             {
-                _welcomeMessage.Append(StatusLine);
+                _welcomeMessage!.Append(StatusLine);
             }
             // OR set the user response ExitMessage
             else if (status == FtpStatusCode.ClosingControl)
             {
-                _exitMessage.Append(response.StatusDescription);
+                _exitMessage!.Append(response.StatusDescription);
                 // And close the control stream socket on "QUIT"
                 CloseSocket();
             }
@@ -379,7 +378,7 @@ namespace System.Net
                 // So just let the pipeline continue.
                 if (!(NetworkStream is TlsStream))
                 {
-                    FtpWebRequest request = (FtpWebRequest)_request;
+                    FtpWebRequest request = (FtpWebRequest)_request!;
                     TlsStream tlsStream = new TlsStream(NetworkStream, Socket, request.RequestUri.Host, request.ClientCertificates);
 
                     if (_isAsync)
@@ -413,11 +412,11 @@ namespace System.Net
             {
                 if (entry.Command.StartsWith("SIZE ", StringComparison.Ordinal))
                 {
-                    _contentLength = GetContentLengthFrom213Response(response.StatusDescription);
+                    _contentLength = GetContentLengthFrom213Response(response.StatusDescription!);
                 }
                 else if (entry.Command.StartsWith("MDTM ", StringComparison.Ordinal))
                 {
-                    _lastModified = GetLastModifiedFrom213Response(response.StatusDescription);
+                    _lastModified = GetLastModifiedFrom213Response(response.StatusDescription!);
                 }
             }
             // OR parse out our login directory
@@ -425,7 +424,7 @@ namespace System.Net
             {
                 if (entry.Command == "PWD\r\n" && !entry.HasFlag(PipelineEntryFlags.UserCommand))
                 {
-                    _loginDirectory = GetLoginDirectory(response.StatusDescription);
+                    _loginDirectory = GetLoginDirectory(response.StatusDescription!);
                 }
             }
             // Asserting we have some positive response
@@ -479,7 +478,7 @@ namespace System.Net
 
             if (_loginState != FtpLoginState.LoggedIn)
             {
-                Credentials = request.Credentials.GetCredential(request.RequestUri, "basic");
+                Credentials = request.Credentials!.GetCredential(request.RequestUri, "basic");
                 _welcomeMessage = new StringBuilder();
                 _exitMessage = new StringBuilder();
 
@@ -630,7 +629,7 @@ namespace System.Net
             return (PipelineEntry[])commandList.ToArray(typeof(PipelineEntry));
         }
 
-        private PipelineInstruction QueueOrCreateDataConection(PipelineEntry entry, ResponseDescription response, bool timeout, ref Stream stream, out bool isSocketReady)
+        private PipelineInstruction QueueOrCreateDataConection(PipelineEntry entry, ResponseDescription response, bool timeout, ref Stream? stream, out bool isSocketReady)
         {
             isSocketReady = false;
             if (_dataHandshakeStarted)
@@ -654,11 +653,11 @@ namespace System.Net
                 }
                 if (entry.Command == "PASV\r\n")
                 {
-                    port = GetPortV4(response.StatusDescription);
+                    port = GetPortV4(response.StatusDescription!);
                 }
                 else
                 {
-                    port = GetPortV6(response.StatusDescription);
+                    port = GetPortV6(response.StatusDescription!);
                 }
 
                 isPassive = true;
@@ -673,14 +672,14 @@ namespace System.Net
 
                 try
                 {
-                    _dataSocket = CreateFtpDataSocket((FtpWebRequest)_request, Socket);
+                    _dataSocket = CreateFtpDataSocket((FtpWebRequest)_request!, Socket);
                 }
                 catch (ObjectDisposedException)
                 {
                     throw ExceptionHelper.RequestAbortedException;
                 }
 
-                IPEndPoint localEndPoint = new IPEndPoint(((IPEndPoint)Socket.LocalEndPoint).Address, 0);
+                IPEndPoint localEndPoint = new IPEndPoint(((IPEndPoint)Socket.LocalEndPoint!).Address, 0);
                 _dataSocket.Bind(localEndPoint);
 
                 _passiveEndPoint = new IPEndPoint(ServerAddress, port);
@@ -695,12 +694,12 @@ namespace System.Net
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, "starting Connect()");
                 if (_isAsync)
                 {
-                    _dataSocket.BeginConnect(passiveEndPoint, s_connectCallbackDelegate, this);
+                    _dataSocket!.BeginConnect(passiveEndPoint, s_connectCallbackDelegate, this);
                     result = PipelineInstruction.Pause;
                 }
                 else
                 {
-                    _dataSocket.Connect(passiveEndPoint);
+                    _dataSocket!.Connect(passiveEndPoint);
                     result = PipelineInstruction.Advance; // for passive mode we end up going to the next command
                 }
             }
@@ -710,16 +709,16 @@ namespace System.Net
 
                 if (_isAsync)
                 {
-                    _dataSocket.BeginAccept(s_acceptCallbackDelegate, this);
+                    _dataSocket!.BeginAccept(s_acceptCallbackDelegate, this);
                     result = PipelineInstruction.Pause;
                 }
                 else
                 {
-                    Socket listenSocket = _dataSocket;
+                    Socket listenSocket = _dataSocket!;
                     try
                     {
-                        _dataSocket = _dataSocket.Accept();
-                        if (!ServerAddress.Equals(((IPEndPoint)_dataSocket.RemoteEndPoint).Address))
+                        _dataSocket = _dataSocket!.Accept();
+                        if (!ServerAddress.Equals(((IPEndPoint)_dataSocket.RemoteEndPoint!).Address))
                         {
                             _dataSocket.Close();
                             throw new WebException(SR.net_ftp_active_address_different, WebExceptionStatus.ProtocolError);
@@ -839,14 +838,14 @@ namespace System.Net
         {
             get
             {
-                return _responseUri;
+                return _responseUri!;
             }
         }
 
         /// <summary>
         ///    <para>Returns the server message sent before user credentials are sent</para>
         /// </summary>
-        internal string BannerMessage
+        internal string? BannerMessage
         {
             get
             {
@@ -857,7 +856,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Returns the server message sent after user credentials are sent</para>
         /// </summary>
-        internal string WelcomeMessage
+        internal string? WelcomeMessage
         {
             get
             {
@@ -868,7 +867,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Returns the exit sent message on shutdown</para>
         /// </summary>
-        internal string ExitMessage
+        internal string? ExitMessage
         {
             get
             {
@@ -966,7 +965,7 @@ namespace System.Net
                 baseUri = uriBuilder.Uri;
             }
 
-            Uri newUri;
+            Uri? newUri;
             if (!Uri.TryCreate(baseUri, escapedFilename, out newUri))
             {
                 throw new FormatException(SR.Format(SR.net_ftp_invalid_response_filename, filename));
@@ -1076,7 +1075,7 @@ namespace System.Net
         private void CreateFtpListenerSocket(FtpWebRequest request)
         {
             // Gets an IPEndPoint for the local host for the data socket to bind to.
-            IPEndPoint epListener = new IPEndPoint(((IPEndPoint)Socket.LocalEndPoint).Address, 0);
+            IPEndPoint epListener = new IPEndPoint(((IPEndPoint)Socket.LocalEndPoint!).Address, 0);
             try
             {
                 _dataSocket = CreateFtpDataSocket(request, Socket);
@@ -1099,7 +1098,7 @@ namespace System.Net
             try
             {
                 // retrieves the IP address of the local endpoint
-                IPEndPoint localEP = (IPEndPoint)_dataSocket.LocalEndPoint;
+                IPEndPoint localEP = (IPEndPoint)_dataSocket!.LocalEndPoint!;
                 if (ServerAddress.AddressFamily == AddressFamily.InterNetwork || ServerAddress.IsIPv4MappedToIPv6)
                 {
                     return FormatAddress(localEP.Address, localEP.Port);
@@ -1122,7 +1121,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Formats a simple FTP command + parameter in correct pre-wire format</para>
         /// </summary>
-        private string FormatFtpCommand(string command, string parameter)
+        private string FormatFtpCommand(string command, string? parameter)
         {
             StringBuilder stringBuilder = new StringBuilder(command.Length + ((parameter != null) ? parameter.Length : 0) + 3 /*size of ' ' \r\n*/);
             stringBuilder.Append(command);
@@ -1228,7 +1227,7 @@ namespace System.Net
         /// </summary>
         private TriState IsFtpDataStreamWriteable()
         {
-            FtpWebRequest request = _request as FtpWebRequest;
+            FtpWebRequest? request = _request as FtpWebRequest;
             if (request != null)
             {
                 if (request.MethodInfo.IsUpload)

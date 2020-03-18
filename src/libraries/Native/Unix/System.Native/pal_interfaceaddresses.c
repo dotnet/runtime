@@ -114,7 +114,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
             freeifaddrs(headAddr);
             return -1;
         }
-        
+
         assert(result == actualName);
         int family = current->ifa_addr->sa_family;
         if (family == AF_INET)
@@ -377,7 +377,11 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
                         ecmd.cmd = ETHTOOL_GSET;
                         if (ioctl(socketfd, SIOCETHTOOL, &ifr) == 0)
                         {
+#ifdef TARGET_ANDROID
+                            nii->Speed = (int64_t)ecmd.speed;
+#else
                             nii->Speed = (int64_t)ethtool_cmd_speed(&ecmd);
+#endif
                             if (nii->Speed > 0)
                             {
                                 // If we did not get -1

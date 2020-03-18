@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private string CreateCircularDependencyExceptionMessage(Type type)
         {
             var messageBuilder = new StringBuilder();
-            messageBuilder.AppendFormat(Resources.CircularDependencyException, TypeNameHelper.GetTypeDisplayName(type));
+            messageBuilder.AppendFormat(SR.CircularDependencyException, TypeNameHelper.GetTypeDisplayName(type));
             messageBuilder.AppendLine();
 
             AppendResolutionPath(messageBuilder, type);

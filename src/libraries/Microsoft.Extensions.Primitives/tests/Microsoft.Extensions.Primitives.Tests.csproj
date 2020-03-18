@@ -16,9 +16,5 @@
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Primitives" />
-  </ItemGroup>
 
 </Project>

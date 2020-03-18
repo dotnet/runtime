@@ -535,7 +535,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var configurationBuilder = new ConfigurationBuilder();
             var config = configurationBuilder.Build();
 
-            var expectedMsg = Resources.Error_NoSources;
+            var expectedMsg = SR.Error_NoSources;
 
             // Act
             var ex = Assert.Throws<InvalidOperationException>(() => config["Title"] = "Welcome");

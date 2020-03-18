@@ -133,7 +133,7 @@ namespace System.Net.Http.Headers
 
             if (GenericHeaderParser.RangeParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (RangeHeaderValue)output;
+                parsedValue = (RangeHeaderValue)output!;
                 return true;
             }
             return false;
