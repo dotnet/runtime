@@ -139,17 +139,13 @@ namespace System.Security.Cryptography
 
                 Range contentRange = contentStartIndex..postebStartIndex;
 
-                if (!TryCountBase64(pemData[contentRange],
-                                   out int base64start,
-                                   out int base64end,
-                                   out int decodedSize))
+                if (!TryCountBase64(pemData[contentRange], out int base64start, out int base64end, out int decodedSize))
                 {
                     goto NextAfterLabel;
                 }
 
                 Range pemRange = preebIndex..pemEndIndex;
-                Range base64range = (contentStartIndex + base64start)..
-                                    (contentStartIndex + base64end);
+                Range base64range = (contentStartIndex + base64start)..(contentStartIndex + base64end);
                 fields = new PemFields(labelRange, base64range, pemRange, decodedSize);
                 return true;
 
