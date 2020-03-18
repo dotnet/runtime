@@ -27,7 +27,7 @@ namespace System.Net.Http
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             stream.WriteAsync(_content).AsTask();
 
-        protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             // Last chance to check for timeout/cancellation, sync Stream API doesn't have any support for it.
             cancellationToken.ThrowIfCancellationRequested();

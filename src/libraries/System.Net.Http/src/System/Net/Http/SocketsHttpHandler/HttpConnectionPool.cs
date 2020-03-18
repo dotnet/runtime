@@ -440,7 +440,7 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) Trace("Connection limit reached, waiting for available connection.");
             return async ?
                 waiter.WaitWithCancellationAsync(cancellationToken) :
-                new ValueTask<HttpConnection>(waiter.Task.GetAwaiter().GetResult());
+                new ValueTask<HttpConnection?>(waiter.Task.GetAwaiter().GetResult());
         }
 
         private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>

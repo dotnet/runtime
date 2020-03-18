@@ -1367,7 +1367,7 @@ namespace System.Net.Http
                 public override void Write(byte[] buffer, int offset, int count)
                 {
                     ValidateBufferArgs(buffer, offset, count);
-                    Http2Stream http2Stream = _http2Stream;
+                    Http2Stream? http2Stream = _http2Stream;
                     if (http2Stream == null)
                     {
                         throw new ObjectDisposedException(nameof(Http2WriteStream));

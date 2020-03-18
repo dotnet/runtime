@@ -63,7 +63,7 @@ namespace System.Net.Http
         private protected Task SerializeToStreamAsyncCore(Stream stream, CancellationToken cancellationToken) =>
             stream.WriteAsync(_content, _offset, _count, cancellationToken);
 
-        protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
 

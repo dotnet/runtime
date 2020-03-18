@@ -41,12 +41,12 @@ namespace System.Net.Http
             if (!async)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                Socket socket = null;
+                Socket? socket = null;
                 try
                 {
                     socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
                     socket.NoDelay = true;
-                    using (cancellationToken.UnsafeRegister(s => ((Socket)s).Dispose(), socket))
+                    using (cancellationToken.UnsafeRegister(s => ((Socket)s!).Dispose(), socket))
                     {
                         socket.Connect(new DnsEndPoint(host, port));
                     }
@@ -179,7 +179,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    sslStream.AuthenticateAsClient(sslOptions.TargetHost, sslOptions.ClientCertificates, sslOptions.EnabledSslProtocols, sslOptions.CertificateRevocationCheckMode == X509RevocationMode.Online);
+                    sslStream.AuthenticateAsClient(sslOptions.TargetHost!, sslOptions.ClientCertificates, sslOptions.EnabledSslProtocols, sslOptions.CertificateRevocationCheckMode == X509RevocationMode.Online);
                 }
             }
             catch (Exception e)

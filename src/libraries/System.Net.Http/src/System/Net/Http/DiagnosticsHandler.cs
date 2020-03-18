@@ -115,7 +115,7 @@ namespace System.Net.Http
                 InjectHeaders(currentActivity, request);
             }
 
-            HttpResponseMessage response = null;
+            HttpResponseMessage? response = null;
             TaskStatus taskStatus = TaskStatus.Faulted;
             try
             {

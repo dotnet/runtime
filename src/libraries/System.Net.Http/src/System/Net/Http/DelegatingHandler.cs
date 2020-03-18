@@ -53,7 +53,7 @@ namespace System.Net.Http
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
             SetOperationStarted();
-            return _innerHandler.Send(request, cancellationToken);
+            return _innerHandler!.Send(request, cancellationToken);
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

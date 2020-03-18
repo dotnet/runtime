@@ -321,7 +321,7 @@ namespace System.Net.Http
 
         protected abstract Task SerializeToStreamAsync(Stream stream, TransportContext? context);
 
-        protected virtual void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        protected virtual void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             // No choice but to do sync-over-async. Derived types should override this whenever possible.
             // Thankfully most CreateContentReadStreamAsync implementations actually complete synchronously.
@@ -343,7 +343,7 @@ namespace System.Net.Http
         // on all known HttpContent types, waiting for the request content to complete before completing the SendAsync task.
         internal virtual bool AllowDuplex => true;
 
-        public void CopyTo(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        public void CopyTo(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             CheckDisposed();
             if (stream == null)
@@ -357,7 +357,7 @@ namespace System.Net.Http
                 {
                     // Last chance to check for timeout/cancellation, sync Stream API doesn't have any support for it.
                     cancellationToken.ThrowIfCancellationRequested();
-                    stream.Write(buffer.Array, buffer.Offset, buffer.Count);
+                    stream.Write(buffer.Array!, buffer.Offset, buffer.Count);
                 }
                 else
                 {
@@ -436,10 +436,10 @@ namespace System.Net.Http
                 return;
             }
 
-            MemoryStream tempBuffer = CreateMemoryStream(maxBufferSize, out Exception error);
+            MemoryStream? tempBuffer = CreateMemoryStream(maxBufferSize, out Exception? error);
             if (tempBuffer == null)
             {
-                throw error;
+                throw error!;
             }
 
             try

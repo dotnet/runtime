@@ -340,7 +340,7 @@ namespace System.Net.Http
             CheckDisposed();
             HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 
-            Exception error = ValidateAndNormalizeRequest(request);
+            Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)
             {
                 throw error;
