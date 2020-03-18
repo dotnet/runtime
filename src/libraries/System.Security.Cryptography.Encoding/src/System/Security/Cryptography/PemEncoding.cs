@@ -217,7 +217,9 @@ namespace System.Security.Cryptography
                 // also a space or hyphen, then we have two consecutive spaces
                 // or hyphens which is is invalid.
                 if (!isSpaceOrHyphen || previousSpaceOrHyphen)
+                {
                     return false;
+                }
 
                 previousSpaceOrHyphen = true;
             }
@@ -251,9 +253,13 @@ namespace System.Security.Cryptography
                 if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r')
                 {
                     if (significantCharacters == 0)
+                    {
                         base64Start++;
+                    }
                     else
+                    {
                         base64End--;
+                    }
 
                     continue;
                 }
@@ -261,9 +267,13 @@ namespace System.Security.Cryptography
                 base64End = str.Length;
 
                 if (ch == '=')
+                {
                     paddingCharacters++;
+                }
                 else if (paddingCharacters == 0 && IsBase64Character(ch))
+                {
                     significantCharacters++;
+                }
                 else
                 {
                     base64DecodedSize = 0;
