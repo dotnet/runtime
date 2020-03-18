@@ -3,7 +3,7 @@ trigger: none
 pr: none
 
 schedules:
-- cron: "0 22 * * 0"
+- cron: "0 22 * * 0,6"
   displayName: Sun at 2:00 PM (UTC-8:00)
   branches:
     include:
