@@ -188,7 +188,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return CollectionServices.GetCollectionWrapper(itemType, collectionObject);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void EnsureCollectionIsWritable(ICollection<object>? collection)
         {
             bool isReadOnly = true;
@@ -221,7 +220,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void PopulateCollection(ICollection<object?> collection, IEnumerable values)
         {
             if (collection == null)

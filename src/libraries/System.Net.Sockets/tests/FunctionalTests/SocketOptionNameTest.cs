@@ -65,14 +65,14 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/corefx/issues/29929
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
             await MulticastInterface_Set_Helper(0);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/corefx/issues/29929
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         [PlatformSpecific(TestPlatforms.Windows)] // see comment below
         public async Task MulticastInterface_Set_Loopback_Succeeds()
         {
@@ -128,7 +128,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/corefx/issues/29929
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
         {
@@ -156,7 +156,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/corefx/issues/29929
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         public void MulticastTTL_Set_IPv6_Succeeds()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
@@ -185,7 +185,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/corefx/issues/29929
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task MulticastInterface_Set_IPv6_Loopback_Succeeds()
         {
@@ -280,7 +280,7 @@ namespace System.Net.Sockets.Tests
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     // The Windows implementation doesn't clear the error code after retrieved.
-                    // https://github.com/dotnet/corefx/issues/8464
+                    // https://github.com/dotnet/runtime/issues/17260
                     Assert.Equal(errorCode, (int)client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error));
                 }
                 else
@@ -381,7 +381,7 @@ namespace System.Net.Sockets.Tests
             ReuseAddress(exclusiveAddressUse, firstSocketReuseAddress, secondSocketReuseAddress, expectFailure);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows defaults are different
         public void ExclusiveAddress_Default_Unix()
         {
@@ -393,7 +393,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [InlineData(1)]
         [InlineData(0)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix does not have separate options for ExclusiveAddressUse and ReuseAddress.
@@ -417,7 +417,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public void ExclusiveAddressUseTcp()
         {
             using (Socket a = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -462,8 +462,7 @@ namespace System.Net.Sockets.Tests
             using (Socket s1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
                 int value = 1;
-                int rv = setsockopt(s1.Handle.ToInt32(), SOL_SOCKET, option, &value, sizeof(int));
-                Assert.Equal(0, rv);
+                s1.SetRawSocketOption(SOL_SOCKET, option, new Span<byte>(&value, sizeof(int)));
                 s1.Bind(new IPEndPoint(IPAddress.Any, 0));
                 using (Socket s2 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
                 {
@@ -516,6 +515,47 @@ namespace System.Net.Sockets.Tests
             using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
             {
                 AssertExtensions.Throws<ArgumentException>("level", () => socket.SetIPProtectionLevel(IPProtectionLevel.Unspecified));
+            }
+        }
+
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public void GetSetRawSocketOption_Roundtrips(AddressFamily family)
+        {
+            int SOL_SOCKET;
+            int SO_RCVBUF;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+                RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                SOL_SOCKET = 0xffff;
+                SO_RCVBUF = 0x1002;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                SOL_SOCKET = 1;
+                SO_RCVBUF = 8;
+            }
+            else
+            {
+                throw new SkipTestException("Unknown platform");
+            }
+
+            using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
+            {
+                const int SetSize = 8192;
+                int ExpectedGetSize =
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? SetSize * 2 : // Linux kernel documented to double the size
+                    SetSize;
+
+                socket.SetRawSocketOption(SOL_SOCKET, SO_RCVBUF, BitConverter.GetBytes(SetSize));
+
+                var buffer = new byte[sizeof(int)];
+                Assert.Equal(4, socket.GetRawSocketOption(SOL_SOCKET, SO_RCVBUF, buffer));
+                Assert.Equal(ExpectedGetSize, BitConverter.ToInt32(buffer));
+
+                Assert.Equal(ExpectedGetSize, socket.ReceiveBufferSize);
             }
         }
     }

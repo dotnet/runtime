@@ -1,4 +1,4 @@
-﻿from __future__ import print_function
+from __future__ import print_function
 from genEventing import *
 from genLttngProvider import *
 import os

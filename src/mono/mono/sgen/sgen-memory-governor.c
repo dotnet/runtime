@@ -238,7 +238,7 @@ sgen_memgov_major_post_sweep (mword used_slots_size)
 
 	sgen_gc_info.heap_size_bytes = sgen_major_collector.get_num_major_sections () * sgen_major_collector.section_size + sgen_los_memory_usage_total;
 	sgen_gc_info.fragmented_bytes = sgen_gc_info.heap_size_bytes - sgen_los_memory_usage - (used_slots_size + sgen_total_allocated_major - total_allocated_major_end);
-	sgen_gc_info.memory_load_bytes = sgen_los_memory_usage + used_slots_size + sgen_total_allocated_major - total_allocated_major_end;
+	sgen_gc_info.memory_load_bytes = mono_determine_physical_ram_available_size ();
 
 	last_used_slots_size = used_slots_size;
 }
@@ -248,8 +248,6 @@ sgen_memgov_major_collection_start (gboolean concurrent, const char *reason)
 {
 	need_calculate_minor_collection_allowance = TRUE;
 	major_start_heap_size = get_heap_size ();
-
-	sgen_gc_info.high_memory_load_threshold_bytes = major_collection_trigger_size;
 
 	if (debug_print_allowance) {
 		SGEN_LOG (0, "Starting collection with heap size %ld bytes", (long)major_start_heap_size);
@@ -311,7 +309,7 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 
 	switch (entry->type) {
 		case SGEN_LOG_NURSERY:
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MINOR%s: (%s) time %.2fms, %s promoted %luK major size: %luK in use: %luK los size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MINOR%s: (%s) time %.2fms, %s promoted %luK major size: %luK in use: %luK los size: %luK in use: %luK",
 				entry->is_overflow ? "_OVERFLOW" : "",
 				entry->reason ? entry->reason : "",
 				entry->time / 10000.0f,
@@ -323,7 +321,7 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 				(unsigned long)entry->los_size_in_use / 1024);
 			break;
 		case SGEN_LOG_MAJOR_SERIAL:
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR%s: (%s) time %.2fms, %s los size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR%s: (%s) time %.2fms, %s los size: %luK in use: %luK",
 				entry->is_overflow ? "_OVERFLOW" : "",
 				entry->reason ? entry->reason : "",
 				(int)entry->time / 10000.0f,
@@ -332,10 +330,10 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 				(unsigned long)entry->los_size_in_use / 1024);
 			break;
 		case SGEN_LOG_MAJOR_CONC_START:
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_CONCURRENT_START: (%s)", entry->reason ? entry->reason : "");
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR_CONCURRENT_START: (%s)", entry->reason ? entry->reason : "");
 			break;
 		case SGEN_LOG_MAJOR_CONC_FINISH:
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_CONCURRENT_FINISH: (%s) time %.2fms, %s los size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR_CONCURRENT_FINISH: (%s) time %.2fms, %s los size: %luK in use: %luK",
 				entry->reason ? entry->reason : "",
 				entry->time / 10000.0f,
 				full_timing_buff,
@@ -343,7 +341,7 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 				(unsigned long)entry->los_size_in_use / 1024);
 			break;
 		case SGEN_LOG_MAJOR_SWEEP_FINISH:
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major size: %luK in use: %luK",
 				(unsigned long)entry->major_size / 1024,
 				(unsigned long)entry->major_size_in_use / 1024);
 			break;
@@ -503,7 +501,11 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 	if (max_heap == 0) {
 		sgen_gc_info.total_available_memory_bytes = mono_determine_physical_ram_size ();
 
-		if (!sgen_gc_info.total_available_memory_bytes){
+		// This threshold is commonly used by software caches to detect when they are approaching the limit of available memory.
+		// In sgen it is not adjusted dynamically, since sgen does not adjust compaction strategies based on a threshold.
+		sgen_gc_info.high_memory_load_threshold_bytes = .9 * sgen_gc_info.total_available_memory_bytes;
+
+		if (!sgen_gc_info.total_available_memory_bytes) {
 			SGEN_LOG(9, "Warning: Unable to determine physical ram size for GCMemoryInfo");
 		}
 
@@ -522,6 +524,7 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 	max_heap_size = max_heap;
 
 	sgen_gc_info.total_available_memory_bytes = max_heap;
+	sgen_gc_info.high_memory_load_threshold_bytes = .9 * sgen_gc_info.total_available_memory_bytes;
 
 	if (allowance_ratio)
 		default_allowance_nursery_size_ratio = allowance_ratio;

@@ -850,7 +850,7 @@ namespace System.IO
             Dispose(false);
         }
 
-        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback callback, object? state)
+        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback? callback, object? state)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -870,7 +870,7 @@ namespace System.IO
                 return TaskToApm.Begin(ReadAsyncTask(array, offset, numBytes, CancellationToken.None), callback, state);
         }
 
-        public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback callback, object? state)
+        public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback? callback, object? state)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));

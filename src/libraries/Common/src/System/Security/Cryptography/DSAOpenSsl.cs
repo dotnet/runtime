@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.IO;
 using Internal.Cryptography;
@@ -24,7 +25,7 @@ namespace System.Security.Cryptography
         public sealed partial class DSAOpenSsl : DSA
         {
             private const int BitsPerByte = 8;
-            private Lazy<SafeDsaHandle> _key;
+            private Lazy<SafeDsaHandle> _key = null!;
 
             public DSAOpenSsl()
                 : this(2048)
@@ -103,7 +104,7 @@ namespace System.Security.Cryptography
                 if (parameters.G.Length != keySize || parameters.Y.Length != keySize)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedPGY);
 
-                if (hasPrivateKey && parameters.X.Length != parameters.Q.Length)
+                if (hasPrivateKey && parameters.X!.Length != parameters.Q.Length)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedQX);
 
                 ThrowIfDisposed();
@@ -146,7 +147,7 @@ namespace System.Security.Cryptography
                 if (disposing)
                 {
                     FreeKey();
-                    _key = null;
+                    _key = null!;
                 }
 
                 base.Dispose(disposing);

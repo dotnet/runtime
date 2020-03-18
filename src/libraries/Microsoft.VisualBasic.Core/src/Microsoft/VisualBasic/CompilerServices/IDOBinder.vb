@@ -29,7 +29,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ' We need to pass the CopyBack value from the VB binder through
             ' the DLR and into the Fallback.  Unfortunately the DLR APIs provide
             ' no obvious way to get the value from one place to the other.  So
-            ' we store its value in a ThreadLocal here.
+            ' we store its value in a ThreadStatic here.
             <ThreadStatic()>
             Private Shared s_savedCopyBack As Boolean()
 

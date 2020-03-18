@@ -134,6 +134,58 @@ mono_config_get_wordsize (void)
 	return CONFIG_WORDSIZE;
 }
 
+static char *mono_cfg_dir;
+static const char *bundled_machine_config;
+
+/**
+ * mono_set_config_dir:
+ * Invoked during startup
+ */
+void
+mono_set_config_dir (const char *dir)
+{
+	/* If this environment variable is set, overrides the directory computed */
+	char *env_mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
+	if (env_mono_cfg_dir == NULL && dir != NULL)
+		env_mono_cfg_dir = g_strdup (dir);
+
+	if (mono_cfg_dir)
+		g_free (mono_cfg_dir);
+	mono_cfg_dir = env_mono_cfg_dir;
+}
+
+/**
+ * mono_get_config_dir:
+ */
+const char*
+mono_get_config_dir (void)
+{
+	if (mono_cfg_dir == NULL)
+		mono_set_dirs (NULL, NULL);
+
+	return mono_cfg_dir;
+}
+
+/**
+ * mono_register_machine_config:
+ */
+void
+mono_register_machine_config (const char *config_xml)
+{
+	bundled_machine_config = config_xml;
+}
+
+/**
+ * mono_get_machine_config:
+ */
+const char *
+mono_get_machine_config (void)
+{
+	return bundled_machine_config;
+}
+
+#ifndef DISABLE_CONFIG
+
 static void start_element (GMarkupParseContext *context, 
                            const gchar         *element_name,
 			   const gchar        **attribute_names,
@@ -172,8 +224,6 @@ mono_parser = {
 };
 
 static GHashTable *config_handlers;
-
-static char *mono_cfg_dir = NULL;
 
 /* when this interface is stable, export it. */
 typedef struct MonoParseHandler MonoParseHandler;
@@ -514,7 +564,7 @@ mono_config_parse_file_with_context (MonoConfigParseState *state, const char *fi
 	gsize len;
 	gint offset;
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_CONFIG,
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_CONFIG,
 			"Config attempting to parse: '%s'.", filename);
 
 	if (!g_file_get_contents (filename, &text, &len, NULL))
@@ -579,8 +629,6 @@ struct _BundledConfig {
 };
 
 static BundledConfig *bundled_configs = NULL;
-
-static const char *bundled_machine_config = NULL;
 
 /**
  * mono_register_config_for_assembly:
@@ -695,53 +743,6 @@ mono_config_parse (const char *filename)
 	mono_config_parse_file (user_cfg);
 	g_free (user_cfg);
 #endif
-}
-
-/**
- * mono_set_config_dir:
- * Invoked during startup
- */
-void
-mono_set_config_dir (const char *dir)
-{
-	/* If this environment variable is set, overrides the directory computed */
-	char *env_mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
-	if (env_mono_cfg_dir == NULL && dir != NULL)
-		env_mono_cfg_dir = g_strdup (dir);
-
-	if (mono_cfg_dir)
-		g_free (mono_cfg_dir);
-	mono_cfg_dir = env_mono_cfg_dir;
-}
-
-/**
- * mono_get_config_dir:
- */
-const char* 
-mono_get_config_dir (void)
-{
-	if (mono_cfg_dir == NULL)
-		mono_set_dirs (NULL, NULL);
-
-	return mono_cfg_dir;
-}
-
-/**
- * mono_register_machine_config:
- */
-void
-mono_register_machine_config (const char *config_xml)
-{
-	bundled_machine_config = config_xml;
-}
-
-/**
- * mono_get_machine_config:
- */
-const char *
-mono_get_machine_config (void)
-{
-	return bundled_machine_config;
 }
 
 static void
@@ -931,6 +932,26 @@ mono_config_parse_assembly_bindings (const char *filename, int amajor, int amino
 	mono_config_parse_file_with_context (&state, filename);
 }
 
+#else
+
+void
+mono_config_for_assembly_internal (MonoImage *assembly)
+{
+}
+
+void
+mono_config_parse_assembly_bindings (const char *filename, int amajor, int aminor, void *user_data, void (*infocb)(MonoAssemblyBindingInfo *info, void *user_data))
+{
+}
+
+const char *
+mono_config_string_for_assembly_file (const char *filename)
+{
+	return NULL;
+}
+
+#endif /* DISABLE_CONFIG */
+
 static mono_bool mono_server_mode = FALSE;
 
 /**
@@ -950,4 +971,3 @@ mono_config_is_server_mode (void)
 {
 	return mono_server_mode;
 }
-

@@ -60,7 +60,6 @@ namespace System.ComponentModel.Composition.Hosting
                 return _catalogExportProvider.GetExportedValue(GetPart(), _definition, IsSharedPart);
             }
 
-            [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
             public static CatalogExport CreateExport(CatalogExportProvider catalogExportProvider,
                 ComposablePartDefinition partDefinition, ExportDefinition definition, CreationPolicy importCreationPolicy)
             {

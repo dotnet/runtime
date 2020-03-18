@@ -24,4 +24,4 @@ typedef enum
     TcpState_DeleteTcb
 } TcpState;
 
-DLLEXPORT int32_t SystemNative_MapTcpState(int32_t tcpState);
+PALEXPORT int32_t SystemNative_MapTcpState(int32_t tcpState);

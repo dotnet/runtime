@@ -9,11 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Net.Cache;
 using System.Net.Http;
-using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
@@ -1148,7 +1146,6 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "no exception thrown on mono")]
         public void BeginGetRequestStream_CreatePostRequestThenCallTwice_ThrowsInvalidOperationException(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
@@ -1449,7 +1446,7 @@ namespace System.Net.Tests
             Assert.NotNull(request.Proxy);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/42323")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31380")]
         [OuterLoop("Uses external server")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
         [Fact]
@@ -1714,8 +1711,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19083")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "https://github.com/dotnet/corefx/issues/19083")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21418")]
         [Fact]
         public async Task Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException()
         {
@@ -1737,7 +1733,6 @@ namespace System.Net.Tests
             });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "ResponseCallback not called after Abort on mono")]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_ResponseCallbackCalledBeforeAbortReturns()
         {
@@ -1756,7 +1751,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18800")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21291")]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_EndGetResponseThrowsWebException()
         {

@@ -825,7 +825,7 @@ namespace System.Management
 
             if (strTemp.Length > 0)
             {
-                string strFirstChar = strTemp.Substring(0, 1).ToUpper(CultureInfo.InvariantCulture);
+                string strFirstChar = strTemp.Substring(0, 1).ToUpperInvariant();
                 strTemp = strFirstChar + strTemp.Substring(1, strTemp.Length - 1);
             }
 
@@ -846,7 +846,7 @@ namespace System.Management
             {
                 strNs = OriginalNamespace;
                 strNs = strNs.Replace('\\', '.');
-                strNs = strNs.ToUpper(CultureInfo.InvariantCulture);
+                strNs = strNs.ToUpperInvariant();
             }
             else
             {
@@ -1141,7 +1141,7 @@ namespace System.Management
                     strPropName[j - i] = strPropTemp[j];
                 }
 
-                cmp.Name = (new string(strPropName)).ToUpper(CultureInfo.InvariantCulture);
+                cmp.Name = (new string(strPropName)).ToUpperInvariant();
                 cmp.Attributes = MemberAttributes.Public | MemberAttributes.Final;
                 cmp.Type = ConvertCIMType(prop.Type, prop.IsArray);
 
@@ -5006,7 +5006,7 @@ namespace System.Management
             string strTemp = "0x";
             int ret = 0;
 
-            if (bitMap.StartsWith(strTemp, StringComparison.Ordinal) || bitMap.StartsWith(strTemp.ToUpper(CultureInfo.InvariantCulture), StringComparison.Ordinal))
+            if (bitMap.StartsWith(strTemp, StringComparison.Ordinal) || bitMap.StartsWith(strTemp.ToUpperInvariant(), StringComparison.Ordinal))
             {
                 strTemp = string.Empty;
                 char[] arrString = bitMap.ToCharArray();

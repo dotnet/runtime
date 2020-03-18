@@ -111,7 +111,7 @@ namespace System.Text.Json
             }
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringMinimized(ReadOnlySpan<char> escapedValue)
         {
             Debug.Assert(escapedValue.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - 3);
@@ -138,7 +138,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringIndented(ReadOnlySpan<char> escapedValue)
         {
             int indent = Indentation;
@@ -254,7 +254,7 @@ namespace System.Text.Json
             }
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringMinimized(ReadOnlySpan<byte> escapedValue)
         {
             Debug.Assert(escapedValue.Length < int.MaxValue - 3);
@@ -281,7 +281,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringIndented(ReadOnlySpan<byte> escapedValue)
         {
             int indent = Indentation;

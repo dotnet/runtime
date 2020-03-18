@@ -72,7 +72,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new object[] { null, false };
 
             // .NET Core fixed a bug where whitespace strings were allowed as CustomDataType.
-            // See https://github.com/dotnet/corefx/issues/4465.
+            // See https://github.com/dotnet/runtime/issues/15690.
             yield return new object[] { "   ", PlatformDetection.IsNetFramework };
         }
 

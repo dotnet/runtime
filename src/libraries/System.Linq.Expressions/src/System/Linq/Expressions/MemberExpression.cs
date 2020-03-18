@@ -125,7 +125,6 @@ namespace System.Linq.Expressions
         /// <param name="expression">The containing object of the field.  This can be null for static fields.</param>
         /// <param name="field">The field to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1719:ParameterNamesShouldNotMatchMemberNames")]
         public static MemberExpression Field(Expression? expression, FieldInfo field)
         {
             ContractUtils.RequiresNotNull(field, nameof(field));
@@ -175,7 +174,6 @@ namespace System.Linq.Expressions
         /// <param name="type">The <see cref="Type"/> containing the field.</param>
         /// <param name="fieldName">The field to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1719:ParameterNamesShouldNotMatchMemberNames")]
         public static MemberExpression Field(Expression? expression, Type type, string fieldName)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
@@ -242,7 +240,6 @@ namespace System.Linq.Expressions
         /// <param name="expression">The containing object of the property.  This can be null for static properties.</param>
         /// <param name="property">The property to be accessed.</param>
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1719:ParameterNamesShouldNotMatchMemberNames")]
         public static MemberExpression Property(Expression? expression, PropertyInfo property)
         {
             ContractUtils.RequiresNotNull(property, nameof(property));

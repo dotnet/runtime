@@ -36,12 +36,12 @@ namespace System.ComponentModel
             if (value == null)
                 return false;
 
-            value = value.Trim();
+            value = value.TrimStart();
             if (value.Equals(string.Empty))
                 return false;
 
             // Path names should start with "\\"
-            return value.StartsWith("\\\\");
+            return value.StartsWith("\\\\", StringComparison.Ordinal);
         }
 
         /// <summary>

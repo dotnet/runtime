@@ -21,10 +21,10 @@ namespace System.Diagnostics
         private int _indentSize = 4;
         private TraceOptions _traceOptions = TraceOptions.None;
         private bool _needIndent = true;
-        private StringDictionary _attributes;
+        private StringDictionary? _attributes;
 
-        private string _listenerName;
-        private TraceFilter _filter = null;
+        private string? _listenerName;
+        private TraceFilter? _filter = null;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TraceListener'/> class.</para>
@@ -124,7 +124,7 @@ namespace System.Diagnostics
             }
         }
 
-        public TraceFilter Filter
+        public TraceFilter? Filter
         {
             get
             {
@@ -176,12 +176,12 @@ namespace System.Diagnostics
             return;
         }
 
-        protected internal virtual string[] GetSupportedAttributes()
+        protected internal virtual string[]? GetSupportedAttributes()
         {
             return null;
         }
 
-        public virtual void TraceTransfer(TraceEventCache eventCache, string source, int id, string message, Guid relatedActivityId)
+        public virtual void TraceTransfer(TraceEventCache? eventCache, string source, int id, string? message, Guid relatedActivityId)
         {
             TraceEvent(eventCache, source, TraceEventType.Transfer, id, message + ", relatedActivityId=" + relatedActivityId.ToString());
         }
@@ -189,7 +189,7 @@ namespace System.Diagnostics
         /// <devdoc>
         ///    <para>Emits or displays a message for an assertion that always fails.</para>
         /// </devdoc>
-        public virtual void Fail(string message)
+        public virtual void Fail(string? message)
         {
             Fail(message, null);
         }
@@ -197,15 +197,15 @@ namespace System.Diagnostics
         /// <devdoc>
         ///    <para>Emits or displays messages for an assertion that always fails.</para>
         /// </devdoc>
-        public virtual void Fail(string message, string detailMessage)
+        public virtual void Fail(string? message, string? detailMessage)
         {
             StringBuilder failMessage = new StringBuilder();
             failMessage.Append(SR.TraceListenerFail);
-            failMessage.Append(" ");
+            failMessage.Append(' ');
             failMessage.Append(message);
             if (detailMessage != null)
             {
-                failMessage.Append(" ");
+                failMessage.Append(' ');
                 failMessage.Append(detailMessage);
             }
 
@@ -216,13 +216,13 @@ namespace System.Diagnostics
         ///    <para>When overridden in a derived class, writes the specified
         ///       message to the listener you specify in the derived class.</para>
         /// </devdoc>
-        public abstract void Write(string message);
+        public abstract void Write(string? message);
 
         /// <devdoc>
         /// <para>Writes the name of the <paramref name="o"/> parameter to the listener you specify when you inherit from the <see cref='System.Diagnostics.TraceListener'/>
         /// class.</para>
         /// </devdoc>
-        public virtual void Write(object o)
+        public virtual void Write(object? o)
         {
             if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, null, null, o))
                 return;
@@ -236,7 +236,7 @@ namespace System.Diagnostics
         ///       inherit from the <see cref='System.Diagnostics.TraceListener'/>
         ///       class.</para>
         /// </devdoc>
-        public virtual void Write(string message, string category)
+        public virtual void Write(string? message, string? category)
         {
             if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, message))
                 return;
@@ -252,7 +252,7 @@ namespace System.Diagnostics
         ///    specify when you inherit from the <see cref='System.Diagnostics.TraceListener'/>
         ///    class.</para>
         /// </devdoc>
-        public virtual void Write(object o, string category)
+        public virtual void Write(object? o, string? category)
         {
             if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, category, null, o))
                 return;
@@ -290,14 +290,14 @@ namespace System.Diagnostics
         ///       the derived class, followed by a line terminator. The default line terminator is a carriage return followed
         ///       by a line feed (\r\n).</para>
         /// </devdoc>
-        public abstract void WriteLine(string message);
+        public abstract void WriteLine(string? message);
 
         /// <devdoc>
         /// <para>Writes the name of the <paramref name="o"/> parameter to the listener you specify when you inherit from the <see cref='System.Diagnostics.TraceListener'/> class, followed by a line terminator. The default line terminator is a
         ///    carriage return followed by a line feed
         ///    (\r\n).</para>
         /// </devdoc>
-        public virtual void WriteLine(object o)
+        public virtual void WriteLine(object? o)
         {
             if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, null, null, o))
                 return;
@@ -310,7 +310,7 @@ namespace System.Diagnostics
         ///       inherit from the <see cref='System.Diagnostics.TraceListener'/> class,
         ///       followed by a line terminator. The default line terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
-        public virtual void WriteLine(string message, string category)
+        public virtual void WriteLine(string? message, string? category)
         {
             if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, message))
                 return;
@@ -327,7 +327,7 @@ namespace System.Diagnostics
         ///       class, followed by a line terminator. The default line terminator is a carriage
         ///       return followed by a line feed (\r\n).</para>
         /// </devdoc>
-        public virtual void WriteLine(object o, string category)
+        public virtual void WriteLine(object? o, string? category)
         {
             if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, category, null, o))
                 return;
@@ -338,13 +338,13 @@ namespace System.Diagnostics
 
         // new write methods used by TraceSource
 
-        public virtual void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id, object data)
+        public virtual void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, object? data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data))
                 return;
 
             WriteHeader(source, eventType, id);
-            string datastring = string.Empty;
+            string? datastring = string.Empty;
             if (data != null)
                 datastring = data.ToString();
 
@@ -352,7 +352,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public virtual void TraceData(TraceEventCache eventCache, string source, TraceEventType eventType, int id, params object[] data)
+        public virtual void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, params object?[]? data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
                 return;
@@ -368,7 +368,7 @@ namespace System.Diagnostics
                         sb.Append(", ");
 
                     if (data[i] != null)
-                        sb.Append(data[i].ToString());
+                        sb.Append(data[i]!.ToString());
                 }
             }
             WriteLine(sb.ToString());
@@ -376,13 +376,13 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public virtual void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id)
+        public virtual void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id)
         {
             TraceEvent(eventCache, source, eventType, id, string.Empty);
         }
 
         // All other TraceEvent methods come through this one.
-        public virtual void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string message)
+        public virtual void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? message)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, message))
                 return;
@@ -393,7 +393,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public virtual void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id, string format, params object[] args)
+        public virtual void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args))
                 return;
@@ -412,7 +412,7 @@ namespace System.Diagnostics
             Write(string.Format(CultureInfo.InvariantCulture, "{0} {1}: {2} : ", source, eventType.ToString(), id.ToString(CultureInfo.InvariantCulture)));
         }
 
-        private void WriteFooter(TraceEventCache eventCache)
+        private void WriteFooter(TraceEventCache? eventCache)
         {
             if (eventCache == null)
                 return;
@@ -427,7 +427,7 @@ namespace System.Diagnostics
                 Write("LogicalOperationStack=");
                 Stack operationStack = eventCache.LogicalOperationStack;
                 bool first = true;
-                foreach (object obj in operationStack)
+                foreach (object? obj in operationStack)
                 {
                     if (!first)
                     {
@@ -438,7 +438,7 @@ namespace System.Diagnostics
                         first = false;
                     }
 
-                    Write(obj.ToString());
+                    Write(obj!.ToString());
                 }
 
                 WriteLine(string.Empty);

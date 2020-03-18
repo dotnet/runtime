@@ -16,14 +16,10 @@ set(SOURCES
     ../fxr_resolver.cpp
     clsidmap.cpp
     ../redirected_error_writer.cpp
-    ../fxr/fx_ver.cpp
-    ../json_parser.cpp
 )
 
 set(HEADERS
     comhost.h
-    ../fxr/fx_ver.h
-    ../json_parser.h
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -48,3 +44,4 @@ endif()
 
 install(TARGETS comhost DESTINATION corehost)
 install_symbols(comhost corehost)
+target_link_libraries(comhost libhostcommon)

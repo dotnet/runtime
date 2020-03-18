@@ -90,7 +90,7 @@
 #include "object-internals.h"
 #include "icall-decl.h"
 
-#ifndef ENABLE_NETCORE
+#if !defined(ENABLE_NETCORE) && !defined(DISABLE_PROCESSES)
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 242
@@ -1814,7 +1814,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		/* Copy each environ string into 'strings' turning it into utf8 (or the requested encoding) at the same time */
 		for (gsize i = 0; i < array_length; ++i) {
 			MONO_HANDLE_ARRAY_GETREF (var, array, i);
-			gchandle_t gchandle = 0;
+			MonoGCHandle gchandle = NULL;
 			env_strings [i] = mono_unicode_to_external (mono_string_handle_pin_chars (var, &gchandle));
 			mono_gchandle_free_internal (gchandle);
 		}
@@ -4270,7 +4270,7 @@ mono_w32process_ver_language_name (guint32 lang, gunichar2 *lang_out, guint32 la
 	return copy_lang (lang_out, lang_len, name);
 }
 
-#else /* ENABLE_NETCORE */
+#else /* ENABLE_NETCORE && DISABLE_PROCESSES */
 
 void
 mono_w32process_init (void)
@@ -4316,4 +4316,4 @@ mono_w32process_ver_query_value (gconstpointer datablock, const gunichar2 *subbl
 	return FALSE;
 }
 
-#endif /* ENABLE_NETCORE */
+#endif /* ENABLE_NETCORE && DISABLE_PROCESSES */

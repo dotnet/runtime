@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.IO;
 
@@ -18,7 +19,7 @@ namespace System.Net.NetworkInformation
             // Iface  Destination  Gateway  Flags  RefCnt  Use  Metric  Mask  MTU  Window  IRTT
             foreach (string line in fileLines)
             {
-                if (line.StartsWith(interfaceName))
+                if (line.StartsWith(interfaceName, StringComparison.Ordinal))
                 {
                     StringParser parser = new StringParser(line, '\t', skipEmpty: true);
                     parser.MoveNext();
@@ -57,7 +58,7 @@ namespace System.Net.NetworkInformation
             // 9. Interface name
             foreach (string line in fileLines)
             {
-                if (line.StartsWith("00000000000000000000000000000000"))
+                if (line.StartsWith("00000000000000000000000000000000", StringComparison.Ordinal))
                 {
                    string[] token = line.Split(s_delimiter, StringSplitOptions.RemoveEmptyEntries);
                    if (token.Length > 9 && token[4] != "00000000000000000000000000000000")
@@ -111,7 +112,7 @@ namespace System.Net.NetworkInformation
                         int afterAddress = fileContents.IndexOf(';', indexOfDhcp);
                         int beforeAddress = fileContents.LastIndexOf(' ', afterAddress);
                         string dhcpAddressString = fileContents.Substring(beforeAddress + 1, afterAddress - beforeAddress - 1);
-                        IPAddress dhcpAddress;
+                        IPAddress? dhcpAddress;
                         if (IPAddress.TryParse(dhcpAddressString, out dhcpAddress))
                         {
                             collection.Add(dhcpAddress);

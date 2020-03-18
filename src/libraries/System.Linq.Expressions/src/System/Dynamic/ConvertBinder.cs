@@ -27,7 +27,6 @@ namespace System.Dynamic
         /// <summary>
         /// The type to convert to.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public Type Type { get; }
 
         /// <summary>

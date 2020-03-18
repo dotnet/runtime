@@ -27,13 +27,11 @@ namespace System.Net.Http.Headers
         // Validator
         internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
 
-        private static readonly char[] s_hexUpperChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
         internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
             Debug.Assert(parameters != null);
 
-            NameValueHeaderValue qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
+            NameValueHeaderValue? qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
             if (value.HasValue)
             {
                 // Note that even if we check the value here, we can't prevent a user from adding an invalid quality
@@ -125,15 +123,15 @@ namespace System.Net.Http.Headers
             Debug.Assert(destination != null);
 
             destination.Append('%');
-            destination.Append(s_hexUpperChars[(c & 0xf0) >> 4]);
-            destination.Append(s_hexUpperChars[c & 0xf]);
+            destination.Append(HexConverter.ToCharUpper(c >> 4));
+            destination.Append(HexConverter.ToCharUpper(c));
         }
 
         internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
         {
             Debug.Assert(parameters != null);
 
-            NameValueHeaderValue qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
+            NameValueHeaderValue? qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
             if (qualityParameter != null)
             {
                 // Note that the RFC requires decimal '.' regardless of the culture. I.e. using ',' as decimal
@@ -193,12 +191,12 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static bool AreEqualCollections<T>(ObjectCollection<T> x, ObjectCollection<T> y) where T : class
+        internal static bool AreEqualCollections<T>(ObjectCollection<T>? x, ObjectCollection<T>? y) where T : class
         {
             return AreEqualCollections(x, y, null);
         }
 
-        internal static bool AreEqualCollections<T>(ObjectCollection<T> x, ObjectCollection<T> y, IEqualityComparer<T> comparer) where T : class
+        internal static bool AreEqualCollections<T>(ObjectCollection<T>? x, ObjectCollection<T>? y, IEqualityComparer<T>? comparer) where T : class
         {
             if (x == null)
             {
@@ -295,7 +293,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetParsedValues(descriptor);
             if (storedValue != null)
             {
                 return (DateTimeOffset)storedValue;
@@ -312,7 +310,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetParsedValues(descriptor);
             if (storedValue != null)
             {
                 return (TimeSpan)storedValue;
@@ -345,7 +343,7 @@ namespace System.Net.Http.Headers
             return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
         }
 
-        internal static void DumpHeaders(StringBuilder sb, params HttpHeaders[] headers)
+        internal static void DumpHeaders(StringBuilder sb, params HttpHeaders?[] headers)
         {
             // Appends all headers as string similar to:
             // {
@@ -360,7 +358,7 @@ namespace System.Net.Http.Headers
             {
                 if (headers[i] != null)
                 {
-                    foreach (var header in headers[i])
+                    foreach (var header in headers[i]!) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                     {
                         foreach (var headerValue in header.Value)
                         {
@@ -378,16 +376,15 @@ namespace System.Net.Http.Headers
 
         internal static bool IsValidEmailAddress(string value)
         {
-            try
+            if (MailAddressParser.TryParseAddress(value, out ParseAddressInfo _, throwExceptionIfFail: false))
             {
-                MailAddressParser.ParseAddress(value);
                 return true;
             }
-            catch (FormatException e)
+            else
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value, e.Message));
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value));
+                return false;
             }
-            return false;
         }
 
         private static void ValidateToken(HttpHeaderValueCollection<string> collection, string value)

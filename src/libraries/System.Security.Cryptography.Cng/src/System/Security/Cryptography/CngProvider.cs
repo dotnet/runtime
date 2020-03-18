@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public static bool operator ==(CngProvider left, CngProvider right)
+        public static bool operator ==(CngProvider? left, CngProvider? right)
         {
             if (object.ReferenceEquals(left, null))
                 return object.ReferenceEquals(right, null);
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
             return left.Equals(right);
         }
 
-        public static bool operator !=(CngProvider left, CngProvider right)
+        public static bool operator !=(CngProvider? left, CngProvider? right)
         {
             if (object.ReferenceEquals(left, null))
             {
@@ -54,14 +54,14 @@ namespace System.Security.Cryptography
             return !left.Equals(right);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             Debug.Assert(_provider != null);
 
             return Equals(obj as CngProvider);
         }
 
-        public bool Equals(CngProvider other)
+        public bool Equals(CngProvider? other)
         {
             if (object.ReferenceEquals(other, null))
             {
@@ -103,8 +103,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static CngProvider s_msSmartCardKsp;
-        private static CngProvider s_msSoftwareKsp;
+        private static CngProvider? s_msSmartCardKsp;
+        private static CngProvider? s_msSoftwareKsp;
 
         private readonly string _provider;
     }

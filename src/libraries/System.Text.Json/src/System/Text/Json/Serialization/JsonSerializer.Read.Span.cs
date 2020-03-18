@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -20,10 +21,22 @@ namespace System.Text.Json
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// </exception>
         [return: MaybeNull]
         public static TValue Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
         {
-            return (TValue)ParseCore(utf8Json, typeof(TValue), options)!;
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
+
+            var readerState = new JsonReaderState(options.GetReaderOptions());
+            var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
+
+            return ReadCore<TValue>(ref reader, typeof(TValue), options);
         }
 
         /// <summary>
@@ -34,23 +47,24 @@ namespace System.Text.Json
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
         /// <exception cref="System.ArgumentNullException">
-        /// Thrown if <paramref name="returnType"/> is null.
+        /// <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="returnType"/> or its serializable members.
+        /// </exception>
         public static object? Deserialize(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
+            {
                 throw new ArgumentNullException(nameof(returnType));
+            }
 
-            return ParseCore(utf8Json, returnType, options);
-        }
-
-        private static object? ParseCore(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options)
-        {
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
@@ -58,12 +72,8 @@ namespace System.Text.Json
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
             var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
-            object? result = ReadCore(returnType, options, ref reader);
 
-            // The reader should have thrown if we have remaining bytes.
-            Debug.Assert(reader.BytesConsumed == utf8Json.Length);
-
-            return result;
+            return ReadCore<object>(ref reader, returnType, options);
         }
     }
 }

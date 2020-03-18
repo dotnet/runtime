@@ -262,6 +262,7 @@ public:
     {
         SUPPORTS_DAC;
         return pRealCodeHeader->phdrJitGCInfo;
+
     }
     PTR_MethodDesc          GetMethodDesc()
     {
@@ -913,51 +914,6 @@ public:
     }
 #endif // ALLOW_SXS_JIT
 
-    VOID ClearCache()
-    {
-        CONTRACTL {
-            NOTHROW;
-            GC_NOTRIGGER;
-        } CONTRACTL_END;
-
-        if( m_jit != NULL )
-        {
-            m_jit->clearCache();
-        }
-#ifdef ALLOW_SXS_JIT
-        if( m_alternateJit != NULL )
-        {
-            m_alternateJit->clearCache();
-        }
-#endif // ALLOW_SXS_JIT
-    }
-
-    BOOL IsCacheCleanupRequired()
-    {
-        CONTRACTL {
-            NOTHROW;
-            GC_NOTRIGGER;
-        } CONTRACTL_END;
-
-        BOOL ret = FALSE;
-
-        if( m_jit != NULL )
-        {
-            if (m_jit->isCacheCleanupRequired())
-                ret = TRUE;
-        }
-
-#ifdef ALLOW_SXS_JIT
-        if( !ret && m_alternateJit != NULL )
-        {
-            if (m_alternateJit->isCacheCleanupRequired())
-                ret = TRUE;
-        }
-#endif // ALLOW_SXS_JIT
-
-        return ret;
-    }
-
 #if !defined CROSSGEN_COMPILE && !defined DACCESS_COMPILE
     EEJitManager();
 
@@ -1312,9 +1268,6 @@ public:
         return m_pReadyToRunJitManager;
     }
 #endif
-
-    static void ClearCaches( void );
-    static BOOL IsCacheCleanupRequired();
 
     static LPCWSTR         GetJitName();
 

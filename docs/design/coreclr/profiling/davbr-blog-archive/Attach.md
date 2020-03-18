@@ -88,7 +88,7 @@ To understand limitations around the GC modes, here's a quick review of the GC m
 - **Workstation Concurrent / Background mode (the default)**.  Concurrent GC (V1 & V2) allows portions of a full GC to execute while other threads are allowed to run.  Background GC (its replacement in V4) takes it one step further, and also allows an ephemeral GC (i.e., gen 0 or gen 1) to execute while a gen 2 GC is executing. 
 - **Server mode**.  Hosts like ASP.NET may choose to enable server mode which creates a heap + dedicated GC thread per CPU.  This allows GCs to be fanned out to multiple threads. 
 
-Of course, [Maoni's blog](http://blogs.msdn.com/maoni/) is required reading for anyone who wants to understand how the GC works.
+Of course, [Maoni's blog](https://devblogs.microsoft.com/dotnet/author/maoni/) is required reading for anyone who wants to understand how the GC works.
 
 The profiling API is able to work against workstation blocking mode and server mode, but not concurrent / background mode.  This has been the case in V1 & V2, and remains the case in V4.  When the app starts up, if a profiler is configured to load, then the CLR forcibly turns off concurrent / background mode, and you end up in workstation blocking mode (or you end up in server mode if the host requested that instead).  Again, this has been the case in V1 & V2, and remains true in V4.
 

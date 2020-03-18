@@ -23,7 +23,7 @@ namespace System.IO.Pipes
             {
                 Interop.Kernel32.LoadLibraryEx("sspicli.dll", IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
 
-                if (Interop.Kernel32.GetNamedPipeHandleStateW(InternalHandle, null, null, null, null, userName, userNameMaxLength))
+                if (Interop.Kernel32.GetNamedPipeHandleStateW(InternalHandle!, null, null, null, null, userName, userNameMaxLength))
                 {
                     return new string(userName);
                 }

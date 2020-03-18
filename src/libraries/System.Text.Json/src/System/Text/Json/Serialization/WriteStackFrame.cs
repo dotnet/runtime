@@ -4,204 +4,121 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
+    [DebuggerDisplay("ClassType.{JsonClassInfo.ClassType}, {JsonClassInfo.Type.Name}")]
     internal struct WriteStackFrame
     {
-        // The object (POCO or IEnumerable) that is being populated.
-        public object? CurrentValue;
-        public JsonClassInfo? JsonClassInfo;
-
-        // Support Dictionary keys.
-        public string? KeyName;
-
-        // The current IEnumerable or IDictionary.
+        /// <summary>
+        /// The enumerator for resumable collections.
+        /// </summary>
         public IEnumerator? CollectionEnumerator;
-        // Note all bools are kept together for packing:
-        public bool PopStackOnEndCollection;
 
-        // The current object.
-        public bool PopStackOnEndObject;
-        public bool StartObjectWritten;
-        public bool MoveToNextProperty;
+        /// <summary>
+        /// The original JsonPropertyInfo that is not changed. It contains all properties.
+        /// </summary>
+        /// <remarks>
+        /// For objects, it is either the actual (real) JsonPropertyInfo or the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class.
+        /// For collections, it is the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class and current element.
+        /// </remarks>
+        public JsonPropertyInfo? DeclaredJsonPropertyInfo;
 
-        public bool WriteWrappingBraceOnEndPreservedArray;
+        /// <summary>
+        /// Used when processing extension data dictionaries.
+        /// </summary>
+        public bool IgnoreDictionaryKeyPolicy;
 
-        // The current property.
-        public int PropertyEnumeratorIndex;
-        public ExtensionDataWriteStatus ExtensionDataStatus;
-        public JsonPropertyInfo? JsonPropertyInfo;
+        /// <summary>
+        /// The class (POCO or IEnumerable) that is being populated.
+        /// </summary>
+        public JsonClassInfo JsonClassInfo;
 
-        // Pre-encoded metadata properties.
-        private static readonly JsonEncodedText s_metadataId = JsonEncodedText.Encode("$id", encoder: null);
-        private static readonly JsonEncodedText s_metadataRef = JsonEncodedText.Encode("$ref", encoder: null);
-        private static readonly JsonEncodedText s_metadataValues = JsonEncodedText.Encode("$values", encoder: null);
+        /// <summary>
+        /// Validation state for a class.
+        /// </summary>
+        public int OriginalDepth;
 
-        public void Initialize(Type type, JsonSerializerOptions options)
+        // Class-level state for collections.
+        public bool ProcessedStartToken;
+        public bool ProcessedEndToken;
+
+        /// <summary>
+        /// Property or Element state.
+        /// </summary>
+        public StackFramePropertyState PropertyState;
+
+        /// <summary>
+        /// The enumerator index for resumable collections.
+        /// </summary>
+        public int EnumeratorIndex;
+
+        // This is used for re-entry cases for exception handling.
+        public string? JsonPropertyNameAsString;
+
+        // Preserve Reference
+        public MetadataPropertyName MetadataPropertyName;
+
+        /// <summary>
+        /// The run-time JsonPropertyInfo that contains the ClassInfo and ConverterBase for polymorphic scenarios.
+        /// </summary>
+        /// <remarks>
+        /// For objects, it is the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class and current property.
+        /// For collections, it is the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class and current element.
+        /// </remarks>
+        public JsonPropertyInfo? PolymorphicJsonPropertyInfo;
+
+        public void EndDictionaryElement()
         {
-            JsonClassInfo = options.GetOrAddClass(type);
-            if ((JsonClassInfo.ClassType & (ClassType.Value | ClassType.Enumerable | ClassType.Dictionary)) != 0)
-            {
-                JsonPropertyInfo = JsonClassInfo.PolicyProperty;
-            }
+            PropertyState = StackFramePropertyState.None;
         }
 
-        public void WriteObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, JsonSerializerOptions options, bool writeNull = false)
+        public void EndProperty()
         {
-            if (JsonPropertyInfo?.EscapedName.HasValue == true)
-            {
-                WriteObjectOrArrayStart(classType, JsonPropertyInfo.EscapedName!.Value, writer, writeNull);
-            }
-            else if (KeyName != null)
-            {
-                JsonEncodedText propertyName = JsonEncodedText.Encode(KeyName, options.Encoder);
-                WriteObjectOrArrayStart(classType, propertyName, writer, writeNull);
-            }
-            else
-            {
-                Debug.Assert(writeNull == false);
-
-                // Write start without a property name.
-                if (classType == ClassType.Object || classType == ClassType.Dictionary)
-                {
-                    writer.WriteStartObject();
-                    StartObjectWritten = true;
-                }
-                else
-                {
-                    Debug.Assert(classType == ClassType.Enumerable);
-                    writer.WriteStartArray();
-                }
-            }
+            DeclaredJsonPropertyInfo = null!;
+            JsonPropertyNameAsString = null;
+            PolymorphicJsonPropertyInfo = null;
+            PropertyState = StackFramePropertyState.None;
         }
 
-        private void WriteObjectOrArrayStart(ClassType classType, JsonEncodedText propertyName, Utf8JsonWriter writer, bool writeNull)
+        /// <summary>
+        /// Return the property that contains the correct polymorphic properties including
+        /// the ClassType and ConverterBase.
+        /// </summary>
+        public JsonPropertyInfo GetPolymorphicJsonPropertyInfo()
         {
-            if (writeNull)
-            {
-                writer.WriteNull(propertyName);
-            }
-            else if ((classType & (ClassType.Object | ClassType.Dictionary)) != 0)
-            {
-                writer.WriteStartObject(propertyName);
-                StartObjectWritten = true;
-            }
-            else
-            {
-                Debug.Assert(classType == ClassType.Enumerable);
-                writer.WriteStartArray(propertyName);
-            }
+            return PolymorphicJsonPropertyInfo ?? DeclaredJsonPropertyInfo!;
         }
 
-        public void WritePreservedObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, JsonSerializerOptions options, string referenceId)
+        /// <summary>
+        /// Initializes the state for polymorphic or re-entry cases.
+        /// </summary>
+        public JsonConverter InitializeReEntry(Type type, JsonSerializerOptions options, string? propertyName = null)
         {
-            if (JsonPropertyInfo?.EscapedName.HasValue == true)
-            {
-                writer.WriteStartObject(JsonPropertyInfo.EscapedName!.Value);
-            }
-            else if (KeyName != null)
-            {
-                writer.WriteStartObject(KeyName);
-            }
-            else
-            {
-                writer.WriteStartObject();
-            }
+            JsonClassInfo newClassInfo = options.GetOrAddClass(type);
 
+            // todo: check if type==newtype and skip below?
+            // https://github.com/dotnet/runtime/issues/32358
 
-            writer.WriteString(s_metadataId, referenceId);
+            // Set for exception handling calculation of JsonPath.
+            JsonPropertyNameAsString = propertyName;
 
-            if ((classType & (ClassType.Object | ClassType.Dictionary)) != 0)
-            {
-                StartObjectWritten = true;
-            }
-            else
-            {
-                // Wrap array into an object with $id and $values metadata properties.
-                Debug.Assert(classType == ClassType.Enumerable);
-                writer.WriteStartArray(s_metadataValues);
-                WriteWrappingBraceOnEndPreservedArray = true;
-            }
-        }
-
-        public void WriteReferenceObject(Utf8JsonWriter writer, JsonSerializerOptions options, string referenceId)
-        {
-            if (JsonPropertyInfo?.EscapedName.HasValue == true)
-            {
-                writer.WriteStartObject(JsonPropertyInfo.EscapedName!.Value);
-            }
-            else if (KeyName != null)
-            {
-                writer.WriteStartObject(KeyName);
-            }
-            else
-            {
-                writer.WriteStartObject();
-            }
-
-            writer.WriteString(s_metadataRef, referenceId);
-            writer.WriteEndObject();
+            PolymorphicJsonPropertyInfo = newClassInfo.PropertyInfoForClassInfo;
+            return PolymorphicJsonPropertyInfo.ConverterBase;
         }
 
         public void Reset()
         {
-            CurrentValue = null;
             CollectionEnumerator = null;
-            ExtensionDataStatus = ExtensionDataWriteStatus.NotStarted;
-            JsonClassInfo = null;
-            PropertyEnumeratorIndex = 0;
-            PopStackOnEndCollection = false;
-            PopStackOnEndObject = false;
-            StartObjectWritten = false;
+            EnumeratorIndex = 0;
+            IgnoreDictionaryKeyPolicy = false;
+            JsonClassInfo = null!;
+            OriginalDepth = 0;
+            ProcessedStartToken = false;
+            ProcessedEndToken = false;
 
             EndProperty();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void EndProperty()
-        {
-            JsonPropertyInfo = null;
-            KeyName = null;
-            MoveToNextProperty = false;
-            WriteWrappingBraceOnEndPreservedArray = false;
-        }
-
-        public void EndDictionary()
-        {
-            CollectionEnumerator = null;
-            PopStackOnEndCollection = false;
-        }
-
-        public void EndArray()
-        {
-            CollectionEnumerator = null;
-            PopStackOnEndCollection = false;
-        }
-
-        // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void NextProperty()
-        {
-            EndProperty();
-
-            Debug.Assert(JsonClassInfo != null && JsonClassInfo.PropertyCacheArray != null);
-            int maxPropertyIndex = JsonClassInfo.PropertyCacheArray.Length;
-
-            ++PropertyEnumeratorIndex;
-            if (PropertyEnumeratorIndex >= maxPropertyIndex)
-            {
-                if (PropertyEnumeratorIndex > maxPropertyIndex)
-                {
-                    ExtensionDataStatus = ExtensionDataWriteStatus.Finished;
-                }
-                else if (JsonClassInfo.DataExtensionProperty != null)
-                {
-                    ExtensionDataStatus = ExtensionDataWriteStatus.Writing;
-                }
-            }
         }
     }
 }

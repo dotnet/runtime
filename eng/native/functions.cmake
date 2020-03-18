@@ -1,10 +1,10 @@
 function(clr_unknown_arch)
     if (WIN32)
-        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 are supported")
+        message(FATAL_ERROR "Only AMD64, ARM64, ARM and I386 are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     elseif(CLR_CROSS_COMPONENTS_BUILD)
-        message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component")
+        message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
-        message(FATAL_ERROR "Only AMD64, ARM64 and ARM are supported")
+        message(FATAL_ERROR "Only AMD64, ARM64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     endif()
 endfunction()
 
@@ -276,9 +276,9 @@ function(strip_symbols targetName outputFilename skipStrip)
             TARGET ${targetName}
             POST_BUILD
             VERBATIM
-            COMMAND ${OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-            COMMAND ${OBJCOPY} --strip-debug ${strip_source_file}
-            COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+            COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
+            COMMAND ${CMAKE_OBJCOPY} --strip-debug ${strip_source_file}
+            COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
             COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
             )
         endif()

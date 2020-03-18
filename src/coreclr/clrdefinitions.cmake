@@ -1,9 +1,5 @@
 include(clrfeatures.cmake)
 
-# If set, indicates that this is not an officially supported release
-# Keep in sync with IsPrerelease in dir.props
-set(PRERELEASE 1)
-
 # Features we're currently flighting, but don't intend to ship in officially supported releases
 if (PRERELEASE)
   add_definitions(-DFEATURE_UTF8STRING)
@@ -98,6 +94,7 @@ add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:F
 add_definitions(-DFEATURE_COLLECTIBLE_TYPES)
 
 if(CLR_CMAKE_TARGET_WIN32)
+    add_definitions(-DFEATURE_COMWRAPPERS)
     add_definitions(-DFEATURE_CLASSIC_COMINTEROP)
     add_definitions(-DFEATURE_COMINTEROP)
     add_definitions(-DFEATURE_COMINTEROP_APARTMENT_SUPPORT)
@@ -117,6 +114,8 @@ add_definitions(-DFEATURE_DEFAULT_INTERFACES)
 if(FEATURE_EVENT_TRACE)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:FEATURE_EVENT_TRACE>)
     add_definitions(-DFEATURE_PERFTRACING)
+else(FEATURE_EVENT_TRACE)
+    add_custom_target(eventing_headers) # add a dummy target to avoid checking for FEATURE_EVENT_TRACE in multiple places
 endif(FEATURE_EVENT_TRACE)
 if(FEATURE_GDBJIT)
     add_definitions(-DFEATURE_GDBJIT)
@@ -169,11 +168,7 @@ else()
   add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>:FEATURE_PREJIT>)
 endif(FEATURE_PREJIT)
 
-if(CLR_CMAKE_TARGET_WIN32 OR CLR_CMAKE_TARGET_LINUX)
-    add_compile_definitions($<$<AND:$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>,$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>>:FEATURE_PROFAPI_ATTACH_DETACH>)
-endif(CLR_CMAKE_TARGET_WIN32 OR CLR_CMAKE_TARGET_LINUX)
-
-add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>:DATA_PROFAPI_ATTACH_DETACH>)
+add_compile_definitions($<$<AND:$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>,$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>>:FEATURE_PROFAPI_ATTACH_DETACH>)
 
 add_definitions(-DFEATURE_READYTORUN)
 
@@ -198,6 +193,9 @@ endif(FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
 add_definitions(-DFEATURE_SVR_GC)
 add_definitions(-DFEATURE_SYMDIFF)
 add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:FEATURE_TIERED_COMPILATION>)
+if (CLR_CMAKE_TARGET_ARCH_AMD64)
+   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:FEATURE_ON_STACK_REPLACEMENT>)
+endif (CLR_CMAKE_TARGET_ARCH_AMD64)
 if (CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DFEATURE_TYPEEQUIVALENCE)
 endif(CLR_CMAKE_TARGET_WIN32)

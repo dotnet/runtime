@@ -91,6 +91,11 @@ namespace System.Runtime.InteropServices
             return (IntPtr)(-1);
         }
 
+        public static IntPtr GetIDispatchForObject(object o)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+        }
+
         public static IntPtr GetIUnknownForObject(object o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);

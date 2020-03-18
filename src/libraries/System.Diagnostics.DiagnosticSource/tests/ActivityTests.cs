@@ -1190,7 +1190,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [OuterLoop("https://github.com/dotnet/corefx/issues/23072")]
+        [OuterLoop("https://github.com/dotnet/runtime/issues/23104")]
         public void DiagnosticSourceStartStop()
         {
             using (DiagnosticListener listener = new DiagnosticListener("Testing"))

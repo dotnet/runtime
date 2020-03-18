@@ -27,6 +27,10 @@
 #include "trace.h"
 #include <mono/metadata/callspec.h>
 
+#if _MSC_VER
+#pragma warning(disable:4312) // FIXME pointer cast to different size
+#endif
+
 #if defined (HOST_ANDROID) || (defined (TARGET_IOS) && defined (TARGET_IOS))
 #  undef printf
 #  define printf(...) g_log("mono", G_LOG_LEVEL_MESSAGE, __VA_ARGS__)

@@ -171,7 +171,7 @@ namespace Internal.Cryptography
                 if (disposing && _hmacCtx != null)
                 {
                     _hmacCtx.Dispose();
-                    _hmacCtx = null;
+                    _hmacCtx = null!;
                 }
             }
         }

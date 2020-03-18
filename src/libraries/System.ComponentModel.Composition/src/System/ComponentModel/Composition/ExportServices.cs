@@ -83,7 +83,6 @@ namespace System.ComponentModel.Composition
             return (Func<Export, Lazy<object, object>>)Delegate.CreateDelegate(typeof(Func<Export, Lazy<object, object>>), genericMethod);
         }
 
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         internal static Lazy<T, M> CreateStronglyTypedLazyOfTM<T, M>(Export export)
         {
             if (export is IDisposable disposable)
@@ -103,7 +102,6 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         internal static Lazy<T> CreateStronglyTypedLazyOfT<T>(Export export)
         {
             if (export is IDisposable disposable)
@@ -119,7 +117,6 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         internal static Lazy<object?, object> CreateSemiStronglyTypedLazy<T, M>(Export export)
         {
             if (export is IDisposable disposable)

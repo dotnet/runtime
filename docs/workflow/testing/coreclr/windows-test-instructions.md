@@ -51,7 +51,7 @@ Note: `build-test.cmd` or `build.cmd skipnative` needs to be run at least once
 
 ### Running Tests
 
-`src\coreclr\runtest.cmd /?` - will list supported parameters.
+`src\coreclr\tests\runtest.cmd /?` - will list supported parameters.
 
 For example to run all of the tests using your checked build:
 

@@ -35,9 +35,6 @@
     <Compile Include="System\ComponentModel\RefreshPropertiesAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FxCopBaseline.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ObjectModel" />

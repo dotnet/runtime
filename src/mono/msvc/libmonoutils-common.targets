@@ -108,6 +108,8 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-stack-unwinding.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\hazard-pointer.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\hazard-pointer.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\lifo-semaphore.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\lifo-semaphore.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\lock-free-queue.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\lock-free-queue.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\lock-free-alloc.c" />

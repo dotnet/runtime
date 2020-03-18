@@ -284,7 +284,7 @@ namespace System.Globalization
             return CompareString(string1.AsSpan(), string2.AsSpan(), options);
         }
 
-        // TODO https://github.com/dotnet/coreclr/issues/13827:
+        // TODO https://github.com/dotnet/runtime/issues/8890:
         // This method shouldn't be necessary, as we should be able to just use the overload
         // that takes two spans.  But due to this issue, that's adding significant overhead.
         internal int Compare(ReadOnlySpan<char> string1, string? string2, CompareOptions options)
@@ -621,7 +621,7 @@ namespace System.Globalization
                 }
 
                 // The ternary operator below seems redundant but helps RyuJIT generate more optimal code.
-                // See https://github.com/dotnet/coreclr/issues/914.
+                // See https://github.com/dotnet/runtime/issues/4207.
                 return (valueA == (valueB | 0x20u)) ? true : false;
             }
 
@@ -1112,23 +1112,50 @@ namespace System.Globalization
 
         internal static int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
+            Debug.Assert(source != null);
+            Debug.Assert(value != null);
+            Debug.Assert((uint)startIndex <= (uint)source.Length);
+            Debug.Assert((uint)count <= (uint)(source.Length - startIndex));
+
+            // For ordinal (non-linguistic) comparisons, an empty target string is always
+            // found at the beginning of the search space, and a non-empty target string
+            // can never be found within an empty search space. This assumption is not
+            // valid for linguistic comparisons, including InvariantCulture comparisons.
+
+            if (value.Length == 0)
+            {
+                return startIndex;
+            }
+
+            if (count == 0)
+            {
+                return -1;
+            }
+
+            int result;
+
             if (!ignoreCase)
             {
-                int result = SpanHelpers.IndexOf(
+                result = SpanHelpers.IndexOf(
                     ref Unsafe.Add(ref source.GetRawStringData(), startIndex),
                     count,
                     ref value.GetRawStringData(),
                     value.Length);
-
-                return (result >= 0 ? startIndex : 0) + result;
             }
-
-            if (GlobalizationMode.Invariant)
+            else if (GlobalizationMode.Invariant)
             {
-                return InvariantIndexOf(source, value, startIndex, count, ignoreCase);
+                result = InvariantIndexOf(source.AsSpan(startIndex, count), value, ignoreCase, fromBeginning: true);
+            }
+            else
+            {
+                result = IndexOfOrdinalCore(source.AsSpan(startIndex, count), value, ignoreCase, fromBeginning: true);
             }
 
-            return IndexOfOrdinalCore(source, value, startIndex, count, ignoreCase);
+            if (result >= 0)
+            {
+                result += startIndex;
+            }
+            return result;
         }
 
         /// <summary>
@@ -1335,9 +1362,27 @@ namespace System.Globalization
 
         internal static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
+            Debug.Assert(source != null);
+            Debug.Assert(value != null);
+
             if (GlobalizationMode.Invariant)
             {
                 return InvariantLastIndexOf(source, value, startIndex, count, ignoreCase);
+            }
+
+            // For ordinal (non-linguistic) comparisons, an empty target string is always
+            // found at the end of the search space, and a non-empty target string
+            // can never be found within an empty search space. This assumption is not
+            // valid for linguistic comparisons, including InvariantCulture comparisons.
+
+            if (value.Length == 0)
+            {
+                return Math.Max(0, startIndex - count + 1);
+            }
+
+            if (count == 0)
+            {
+                return -1;
             }
 
             return LastIndexOfOrdinalCore(source, value, startIndex, count, ignoreCase);

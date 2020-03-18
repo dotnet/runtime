@@ -20,7 +20,7 @@ namespace System.Net
     //
     internal class AsyncProtocolRequest
     {
-        private AsyncProtocolCallback _callback;
+        private AsyncProtocolCallback? _callback;
         private int _completionStatus;
 
         private const int StatusNotStarted = 0;
@@ -31,7 +31,7 @@ namespace System.Net
         public int Result;
         public readonly CancellationToken CancellationToken;
 
-        public byte[] Buffer; // Temporary buffer reused by a protocol.
+        public byte[]? Buffer; // Temporary buffer reused by a protocol.
         public int Offset;
         public int Count;
 
@@ -41,7 +41,7 @@ namespace System.Net
             {
                 NetEventSource.Fail(this, "userAsyncResult == null");
             }
-            if (userAsyncResult.InternalPeekCompleted)
+            if (userAsyncResult!.InternalPeekCompleted)
             {
                 NetEventSource.Fail(this, "userAsyncResult is already completed.");
             }
@@ -49,7 +49,7 @@ namespace System.Net
             CancellationToken = cancellationToken;
         }
 
-        public void SetNextRequest(byte[] buffer, int offset, int count, AsyncProtocolCallback callback)
+        public void SetNextRequest(byte[]? buffer, int offset, int count, AsyncProtocolCallback? callback)
         {
             if (_completionStatus != StatusNotStarted)
             {
@@ -62,7 +62,7 @@ namespace System.Net
             _callback = callback;
         }
 
-        internal object AsyncObject => UserAsyncResult.AsyncObject;
+        internal object? AsyncObject => UserAsyncResult.AsyncObject;
 
         //
         // Notify protocol so a next stage could be started.
@@ -79,7 +79,7 @@ namespace System.Net
             if (status == StatusCheckedOnSyncCompletion)
             {
                 _completionStatus = StatusNotStarted;
-                _callback(this);
+                _callback!(this);
             }
         }
 

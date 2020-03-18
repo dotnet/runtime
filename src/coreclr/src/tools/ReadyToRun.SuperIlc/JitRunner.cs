@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -27,9 +27,14 @@ namespace ReadyToRun.SuperIlc
         /// JIT runner has no compilation process as it doesn't transform the source IL code in any manner.
         /// </summary>
         /// <returns></returns>
-        public override ProcessParameters CompilationProcess(string outputRoot, string assemblyFileName)
+        public override ProcessParameters CompilationProcess(string outputFileName, IEnumerable<string> inputAssemblyFileNames)
         {
-            File.Copy(assemblyFileName, GetOutputFileName(outputRoot, assemblyFileName), overwrite: true);
+            if (inputAssemblyFileNames.Count() != 1)
+            {
+                throw new Exception($@"JIT builder doesn't support composite mode for building input assemblies: {string.Join("; ", inputAssemblyFileNames)}");
+            }
+
+            File.Copy(inputAssemblyFileNames.First(), outputFileName, overwrite: true);
             return null;
         }
 
@@ -40,7 +45,7 @@ namespace ReadyToRun.SuperIlc
             return processParameters;
         }
 
-        protected override IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName)
+        protected override IEnumerable<string> BuildCommandLineArguments(IEnumerable<string> assemblyFileNames, string outputFileName)
         {
             // This should never get called as the overridden CompilationProcess returns null
             throw new NotImplementedException();

@@ -57,6 +57,10 @@ else(CLR_CMAKE_HOST_WIN32)
         set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
     endif(CLR_CMAKE_TARGET_DARWIN)
 
+    if(CLR_CMAKE_TARGET_ANDROID AND CLR_CMAKE_HOST_ARCH_ARM)
+        set(EXPORTS_LINKER_OPTION "${EXPORTS_LINKER_OPTION} -Wl,--no-warn-shared-textrel")
+    endif()
+
 endif (CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
@@ -90,6 +94,7 @@ set(CORECLR_LIBRARIES
     debug-pal
     ${LIB_UNWINDER}
     cee_wks
+    v3binder
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks
     mdruntime_wks
@@ -104,6 +109,8 @@ set(CORECLR_LIBRARIES
     ildbsymlib
     utilcode
     v3binder
+    libraries-native
+    interop
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -127,7 +134,7 @@ else()
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         ${END_WHOLE_ARCHIVE}
-        mscorrc_debug
+        mscorrc
         palrt
         System.Globalization.Native-Static
     )

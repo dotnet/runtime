@@ -124,8 +124,8 @@ ENDM
 ;
 ;*******************************************************************************
 
-; The code here is tightly coupled with AdjustContextForWriteBarrier, if you change
-; anything here, you might need to change AdjustContextForWriteBarrier as well
+; The code here is tightly coupled with AdjustContextForJITHelpers, if you change
+; anything here, you might need to change AdjustContextForJITHelpers as well
 ; Note that beside the AV case, we might be unwinding inside the region where we have
 ; already push ecx and ebp in the branch under FEATURE_DATABREAKPOINT
 WriteBarrierHelper MACRO rg
@@ -176,7 +176,7 @@ endif
 
 ifdef WRITE_BARRIER_CHECK
         ; Test dest here so if it is bad AV would happen before we change register/stack
-        ; status. This makes job of AdjustContextForWriteBarrier easier.
+        ; status. This makes job of AdjustContextForJITHelpers easier.
         cmp     [edx], 0
         ;; ALSO update the shadow GC heap if that is enabled
         ; Make ebp into the temporary src register. We need to do this so that we can use ecx
@@ -293,8 +293,8 @@ ENDM
 ;
 ;*******************************************************************************
 
-; The code here is tightly coupled with AdjustContextForWriteBarrier, if you change
-; anything here, you might need to change AdjustContextForWriteBarrier as well
+; The code here is tightly coupled with AdjustContextForJITHelpers, if you change
+; anything here, you might need to change AdjustContextForJITHelpers as well
 
 ByRefWriteBarrierHelper MACRO
         ALIGN 4
@@ -314,7 +314,7 @@ endif
 
 ifdef WRITE_BARRIER_CHECK
         ; Test dest here so if it is bad AV would happen before we change register/stack
-        ; status. This makes job of AdjustContextForWriteBarrier easier.
+        ; status. This makes job of AdjustContextForJITHelpers easier.
         cmp     [edi], 0
 
         ;; ALSO update the shadow GC heap if that is enabled
@@ -1337,8 +1337,8 @@ _JIT_StackProbe@0 PROC public
     and     esp, -PAGE_SIZE      ; esp points to the **lowest address** on the last probed page
                                  ; This is done to make the loop end condition simpler.
 ProbeLoop:
+    test    [esp - 4], eax       ; esp points to the lowest address on the **last probed** page
     sub     esp, PAGE_SIZE       ; esp points to the lowest address of the **next page** to probe
-    test    [esp], eax           ; esp points to the lowest address on the **last probed** page
     cmp     esp, eax
     jg      ProbeLoop            ; if esp > eax, then we need to probe at least one more page.
 
@@ -1347,5 +1347,10 @@ ProbeLoop:
     ret
 
 _JIT_StackProbe@0 ENDP
+
+PUBLIC _JIT_StackProbe_End@0
+_JIT_StackProbe_End@0 PROC
+    ret
+_JIT_StackProbe_End@0 ENDP
 
     end

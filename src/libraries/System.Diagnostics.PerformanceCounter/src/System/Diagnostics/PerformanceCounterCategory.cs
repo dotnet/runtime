@@ -384,7 +384,7 @@ namespace System.Diagnostics
             CheckValidCategory(categoryName);
             string machineName = ".";
 
-            categoryName = categoryName.ToLower(CultureInfo.InvariantCulture);
+            categoryName = categoryName.ToLowerInvariant();
 
             Mutex mutex = null;
             try

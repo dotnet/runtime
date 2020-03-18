@@ -25,28 +25,29 @@ namespace System.Text.Json
             utf8Unescaped = utf8Unescaped.Slice(0, written);
             Debug.Assert(!utf8Unescaped.IsEmpty);
 
-            bool result = TryDecodeBase64InPlace(utf8Unescaped, out bytes);
+            bool result = TryDecodeBase64InPlace(utf8Unescaped, out bytes!);
 
             if (unescapedArray != null)
             {
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
             }
-
             return result;
         }
 
         // Reject any invalid UTF-8 data rather than silently replacing.
         public static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-        // TODO: Similar to escaping, replace the unescaping logic with publicly shipping APIs from https://github.com/dotnet/corefx/issues/33509
+        // TODO: Similar to escaping, replace the unescaping logic with publicly shipping APIs from https://github.com/dotnet/runtime/issues/27919
         public static string GetUnescapedString(ReadOnlySpan<byte> utf8Source, int idx)
         {
-            byte[]? unescapedArray = null;
+            // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
+            int length = utf8Source.Length;
+            byte[]? pooledName = null;
 
-            Span<byte> utf8Unescaped = utf8Source.Length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[utf8Source.Length] :
-                (unescapedArray = ArrayPool<byte>.Shared.Rent(utf8Source.Length));
+            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (pooledName = ArrayPool<byte>.Shared.Rent(length));
 
             Unescape(utf8Source, utf8Unescaped, idx, out int written);
             Debug.Assert(written > 0);
@@ -56,13 +57,38 @@ namespace System.Text.Json
 
             string utf8String = TranscodeHelper(utf8Unescaped);
 
-            if (unescapedArray != null)
+            if (pooledName != null)
             {
                 utf8Unescaped.Clear();
-                ArrayPool<byte>.Shared.Return(unescapedArray);
+                ArrayPool<byte>.Shared.Return(pooledName);
             }
 
             return utf8String;
+        }
+
+        public static ReadOnlySpan<byte> GetUnescapedSpan(ReadOnlySpan<byte> utf8Source, int idx)
+        {
+            // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
+            int length = utf8Source.Length;
+            byte[]? pooledName = null;
+
+            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (pooledName = ArrayPool<byte>.Shared.Rent(length));
+
+            Unescape(utf8Source, utf8Unescaped, idx, out int written);
+            Debug.Assert(written > 0);
+
+            ReadOnlySpan<byte> propertyName = utf8Unescaped.Slice(0, written).ToArray();
+            Debug.Assert(!propertyName.IsEmpty);
+
+            if (pooledName != null)
+            {
+                new Span<byte>(pooledName, 0, written).Clear();
+                ArrayPool<byte>.Shared.Return(pooledName);
+            }
+
+            return propertyName;
         }
 
         public static bool UnescapeAndCompare(ReadOnlySpan<byte> utf8Source, ReadOnlySpan<byte> other)

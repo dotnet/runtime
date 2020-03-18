@@ -25,6 +25,8 @@
 #undef min
 #undef max
 
+#include <algorithm>
+
 #if HAVE_SYS_TIME_H
  #include <sys/time.h>
 #else
@@ -478,6 +480,7 @@ uint32_t GCToOSInterface::GetCurrentProcessorNumber()
     assert(processorNumber != -1);
     return processorNumber;
 #else
+    assert(false); // This method is expected to be called only if CanGetCurrentProcessorNumber is true
     return 0;
 #endif
 }

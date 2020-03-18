@@ -19,7 +19,7 @@ namespace ReadyToRun.SuperIlc
 
         protected override string CompilerRelativePath => ".";
 
-        protected override string CompilerFileName => "crossgen".OSExeSuffix();
+        protected override string CompilerFileName => "crossgen".AppendOSExeSuffix();
 
         protected override string CompilerPath
         {
@@ -40,17 +40,22 @@ namespace ReadyToRun.SuperIlc
             return processParameters;
         }
 
-        protected override IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName)
+        protected override IEnumerable<string> BuildCommandLineArguments(IEnumerable<string> assemblyFileNames, string outputFileName)
         {
+            if (assemblyFileNames.Count() > 1)
+            {
+                throw new NotImplementedException($@"Crossgen1 doesn't support composite build mode for compiling multiple input assemblies: {string.Join("; ", assemblyFileNames)}");
+            }
+
             // The file to compile
             yield return "/in";
-            yield return assemblyFileName;
+            yield return assemblyFileNames.First();
 
             // Output
             yield return "/out";
             yield return outputFileName;
 
-            if (_options.LargeBubble && Path.GetFileNameWithoutExtension(assemblyFileName) != "System.Private.CoreLib")
+            if (_options.LargeBubble && Path.GetFileNameWithoutExtension(assemblyFileNames.First()) != "System.Private.CoreLib")
             {
                 // There seems to be a bug in Crossgen on Linux we don't intend to fix -
                 // it crashes when trying to compile S.P.C in large version bubble mode.
@@ -59,7 +64,12 @@ namespace ReadyToRun.SuperIlc
 
             yield return "/platform_assemblies_paths";
 
-            IEnumerable<string> paths = new string[] { Path.GetDirectoryName(assemblyFileName) }.Concat(_referenceFolders);
+            HashSet<string> paths = new HashSet<string>();
+            foreach (string assemblyFileName in assemblyFileNames)
+            {
+                paths.Add(Path.GetDirectoryName(assemblyFileName));
+            }
+            paths.UnionWith(_referenceFolders);
 
             yield return paths.ConcatenatePaths();
         }

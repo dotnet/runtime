@@ -806,7 +806,6 @@ public:
 #define GTF_FLD_INITCLASS           0x20000000 // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
 
 #define GTF_INX_RNGCHK              0x80000000 // GT_INDEX/GT_INDEX_ADDR -- the array reference should be range-checked.
-#define GTF_INX_REFARR_LAYOUT       0x20000000 // GT_INDEX
 #define GTF_INX_STRING_LAYOUT       0x40000000 // GT_INDEX -- this uses the special string array layout
 
 #define GTF_IND_TGT_NOT_HEAP        0x80000000 // GT_IND   -- the target is not on the heap
@@ -1840,6 +1839,10 @@ public:
     // Simpler variant of the above which just returns the local node if this is an expression that
     // yields an address into a local
     GenTreeLclVarCommon* IsLocalAddrExpr();
+
+    // Determine if this tree represents the value of an entire implict byref parameter,
+    // and if so return the tree for the parameter.
+    GenTreeLclVar* IsImplicitByrefParameterValue(Compiler* compiler);
 
     // Determine if this is a LclVarCommon node and return some additional info about it in the
     // two out parameters.
@@ -3919,6 +3922,7 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_GUARDED                 0x00200000 // GT_CALL -- this call was transformed by guarded devirtualization
 #define GTF_CALL_M_ALLOC_SIDE_EFFECTS      0x00400000 // GT_CALL -- this is a call to an allocator with side effects
 #define GTF_CALL_M_SUPPRESS_GC_TRANSITION  0x00800000 // GT_CALL -- suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
+#define GTF_CALL_M_EXP_RUNTIME_LOOKUP      0x01000000 // GT_CALL -- this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
 
     // clang-format on
 
@@ -4166,6 +4170,21 @@ struct GenTreeCall final : public GenTree
     void SetIsGuarded()
     {
         gtCallMoreFlags |= GTF_CALL_M_GUARDED;
+    }
+
+    void SetExpRuntimeLookup()
+    {
+        gtFlags |= GTF_CALL_M_EXP_RUNTIME_LOOKUP;
+    }
+
+    void ClearExpRuntimeLookup()
+    {
+        gtFlags &= ~GTF_CALL_M_EXP_RUNTIME_LOOKUP;
+    }
+
+    bool IsExpRuntimeLookup() const
+    {
+        return (gtFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
     }
 
     unsigned gtCallMoreFlags; // in addition to gtFlags
@@ -4520,6 +4539,9 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
     {
     }
 
+    bool OperIsMemoryLoad() const; // Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics,
+                                   // false otherwise
+
 #if DEBUGGABLE_GENTREE
     GenTreeSIMD() : GenTreeJitIntrinsic()
     {
@@ -4568,12 +4590,12 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     // However there are HW Instrinsic instructions that have 3 or even 4 operands and this is
     // supported using a single op1 and using an ArgList for it:  gtNewArgList(op1, op2, op3)
 
-    bool OperIsMemoryLoad();        // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics,
+    bool OperIsMemoryLoad() const;  // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics,
                                     // false otherwise
-    bool OperIsMemoryStore();       // Returns true for the HW Instrinsic instructions that have MemoryStore semantics,
+    bool OperIsMemoryStore() const; // Returns true for the HW Instrinsic instructions that have MemoryStore semantics,
                                     // false otherwise
-    bool OperIsMemoryLoadOrStore(); // Returns true for the HW Instrinsic instructions that have MemoryLoad or
-                                    // MemoryStore semantics, false otherwise
+    bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Instrinsic instructions that have MemoryLoad or
+                                          // MemoryStore semantics, false otherwise
 
 #if DEBUGGABLE_GENTREE
     GenTreeHWIntrinsic() : GenTreeJitIntrinsic()
@@ -4614,11 +4636,6 @@ struct GenTreeIndex : public GenTreeOp
         {
             // Do bounds check
             gtFlags |= GTF_INX_RNGCHK;
-        }
-
-        if (type == TYP_REF)
-        {
-            gtFlags |= GTF_INX_REFARR_LAYOUT;
         }
 
         gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
@@ -5035,6 +5052,13 @@ struct GenTreeIndir : public GenTreeOp
     GenTree*& Addr()
     {
         return gtOp1;
+    }
+
+    void SetAddr(GenTree* addr)
+    {
+        assert(addr != nullptr);
+        assert(addr->TypeIs(TYP_I_IMPL, TYP_BYREF));
+        gtOp1 = addr;
     }
 
     // these methods provide an interface to the indirection node which

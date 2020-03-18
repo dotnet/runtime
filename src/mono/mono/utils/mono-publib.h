@@ -75,15 +75,8 @@ typedef unsigned __int64	uint64_t;
 
 #define MONO_API MONO_EXTERN_C MONO_API_NO_EXTERN_C
 
-// extern "C" extern int c; // warning: duplicate 'extern' declaration specifier [-Wduplicate-decl-specifier]
-//
-// Therefore, remove extern on functions as always meaningless/redundant,
-// and provide MONO_API_DATA for data, that always has one and only one extern.
-#ifdef __cplusplus
-#define MONO_API_DATA MONO_API
-#else
-#define MONO_API_DATA extern MONO_API
-#endif
+// Should (but not must) wrap in extern "C" (MONO_BEGIN_DECLS, MONO_END_DECLS).
+#define MONO_API_DATA MONO_API_NO_EXTERN_C extern
 
 typedef int32_t		mono_bool;
 typedef uint8_t		mono_byte;

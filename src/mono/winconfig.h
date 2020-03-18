@@ -20,10 +20,8 @@
 /* @ENABLE_DEFINES@ */
 /* End configure ENABLE_DEFINES picked up from cygconfig.h or other external source, if available */
 
-#if defined(ENABLE_HYBRID_SUSPEND)
 /* Windows MSVC builds defaults to preemptive suspend. Disable ENABLE_HYBRID_SUSPEND defines. */
 #undef ENABLE_HYBRID_SUSPEND
-#endif
 
 /* No ENABLE_DEFINES below this point */
 
@@ -31,6 +29,10 @@
 #ifdef ENABLE_NETCORE
 #ifndef DISABLE_REMOTING
 #define DISABLE_REMOTING 1
+#endif
+#ifndef DISABLE_SIMD
+// FIXME: disable SIMD support for Windows, see https://github.com/dotnet/runtime/issues/1933
+#define DISABLE_SIMD 1
 #endif
 #ifndef DISABLE_REFLECTION_EMIT_SAVE
 #define DISABLE_REFLECTION_EMIT_SAVE 1

@@ -394,7 +394,7 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entr
                 }
 
                 // Skip loopback addresses if at least one interface has non-loopback one.
-                if ((!includeIPv4Loopback && ifa->ifa_addr->sa_family == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) || 
+                if ((!includeIPv4Loopback && ifa->ifa_addr->sa_family == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) ||
                     (!includeIPv6Loopback && ifa->ifa_addr->sa_family == AF_INET6 && (ifa->ifa_flags & IFF_LOOPBACK) != 0))
                 {
                     entry->IPAddressCount--;
@@ -495,7 +495,7 @@ int32_t SystemNative_GetNameInfo(const uint8_t* address,
                              (uint32_t)hostLength,
                              (char*)service,
                              (uint32_t)serviceLength,
-                             nativeFlags);
+                             (int)nativeFlags);
     }
     else
     {
@@ -508,7 +508,7 @@ int32_t SystemNative_GetNameInfo(const uint8_t* address,
                              (uint32_t)hostLength,
                              (char*)service,
                              (uint32_t)serviceLength,
-                             nativeFlags);
+                             (int)nativeFlags);
     }
 
     return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
@@ -904,7 +904,7 @@ static void ConvertMessageHeaderToMsghdr(struct msghdr* header, const MessageHea
         iovlen = (int)IOV_MAX;
     }
     header->msg_name = messageHeader->SocketAddress;
-    header->msg_namelen = (unsigned int)messageHeader->SocketAddressLen;
+    header->msg_namelen = (socklen_t)messageHeader->SocketAddressLen;
     header->msg_iov = (struct iovec*)messageHeader->IOVectors;
     header->msg_iovlen = (__typeof__(header->msg_iovlen))iovlen;
     header->msg_control = messageHeader->ControlBuffer;
@@ -1474,7 +1474,7 @@ int32_t SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8_t* socket
     if (socketAddress == NULL || socketAddressLen < 0)
     {
         return Error_EFAULT;
-    }   
+    }
 
     int fd = ToFileDescriptor(socket);
 
@@ -1489,11 +1489,7 @@ int32_t SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8_t* socket
     int err = bind(
         fd,
         (struct sockaddr*)socketAddress,
-#if BIND_ADDRLEN_UNSIGNED
         (socklen_t)socketAddressLen);
-#else
-        socketAddressLen);
-#endif
 
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
@@ -1990,6 +1986,26 @@ int32_t SystemNative_GetSockOpt(
     return Error_SUCCESS;
 }
 
+int32_t SystemNative_GetRawSockOpt(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen)
+{
+    if (optionLen == NULL || *optionLen < 0)
+    {
+        return Error_EFAULT;
+    }
+
+    socklen_t optLen = (socklen_t)*optionLen;
+    int err = getsockopt(ToFileDescriptor(socket), socketOptionLevel, socketOptionName, optionValue, &optLen);
+    if (err != 0)
+    {
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    assert(optLen <= (socklen_t)*optionLen);
+    *optionLen = (int32_t)optLen;
+    return Error_SUCCESS;
+}
+
 int32_t
 SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
 {
@@ -2066,6 +2082,18 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
     }
 
     int err = setsockopt(fd, optLevel, optName, optionValue, (socklen_t)optionLen);
+    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+int32_t SystemNative_SetRawSockOpt(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
+{
+    if (optionLen < 0 || optionValue == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int err = setsockopt(ToFileDescriptor(socket), socketOptionLevel, socketOptionName, optionValue, (socklen_t)optionLen);
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 

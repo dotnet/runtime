@@ -347,7 +347,7 @@ GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<LONG>   g_TrapReturningThreads;
 
-EXTERN HINSTANCE            g_pMSCorEE;
+EXTERN HINSTANCE            g_hThisInst;
 EXTERN BBSweep              g_BBSweep;
 EXTERN IBCLogger            g_IBCLogger;
 
@@ -471,8 +471,6 @@ extern int g_IGCHoardVM;
 extern int g_IGCTrimCommit;
 #endif
 
-extern BOOL g_fEnableETW;
-
 // Returns a BOOL to indicate if the runtime is active or not
 BOOL IsRuntimeActive();
 
@@ -504,9 +502,6 @@ EXTERN Volatile<LONG> g_fForbidEnterEE;
 GVAL_DECL(bool, g_fProcessDetach);
 EXTERN bool g_fManagedAttach;
 EXTERN bool g_fNoExceptions;
-#ifdef FEATURE_COMINTEROP
-EXTERN bool g_fShutDownCOM;
-#endif // FEATURE_COMINTEROP
 
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
@@ -631,12 +626,6 @@ inline bool CORDebuggerAttached()
 #endif// defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
 
-
-
-//
-// IJW needs the shim HINSTANCE
-//
-EXTERN HINSTANCE g_hInstShim;
 
 #ifndef TARGET_UNIX
 GVAL_DECL(SIZE_T, g_runtimeLoadedBaseAddress);

@@ -42,7 +42,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new PhoneAttribute(), "ext.123 1");
 
             // By design, certain phone numbers are reported as valid with .NET Core, whereas .NET Framework
-            // considers them invalid. See https://github.com/dotnet/corefx/issues/17873.
+            // considers them invalid. See https://github.com/dotnet/runtime/issues/20884.
             if (PlatformDetection.IsNetFramework)
             {
                 yield return new TestCase(new PhoneAttribute(), "+4+2+5+-+5+5+5+-+1+2++1+2++");

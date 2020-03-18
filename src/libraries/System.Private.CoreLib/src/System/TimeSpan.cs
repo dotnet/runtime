@@ -200,8 +200,15 @@ namespace System
             if (double.IsNaN(value))
                 throw new ArgumentException(SR.Arg_CannotBeNaN);
             double ticks = value * scale;
-            if ((ticks > long.MaxValue) || (ticks < long.MinValue))
+            return IntervalFromDoubleTicks(ticks);
+        }
+
+        private static TimeSpan IntervalFromDoubleTicks(double ticks)
+        {
+            if ((ticks > long.MaxValue) || (ticks < long.MinValue) || double.IsNaN(ticks))
                 throw new OverflowException(SR.Overflow_TimeSpanTooLong);
+            if (ticks == long.MaxValue)
+                return TimeSpan.MaxValue;
             return new TimeSpan((long)ticks);
         }
 
@@ -447,12 +454,7 @@ namespace System
             // Rounding to the nearest tick is as close to the result we would have with unlimited
             // precision as possible, and so likely to have the least potential to surprise.
             double ticks = Math.Round(timeSpan.Ticks * factor);
-            if (ticks > long.MaxValue || ticks < long.MinValue)
-            {
-                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
-            }
-
-            return FromTicks((long)ticks);
+            return IntervalFromDoubleTicks(ticks);
         }
 
         public static TimeSpan operator *(double factor, TimeSpan timeSpan) => timeSpan * factor;
@@ -465,12 +467,7 @@ namespace System
             }
 
             double ticks = Math.Round(timeSpan.Ticks / divisor);
-            if (ticks > long.MaxValue || ticks < long.MinValue || double.IsNaN(ticks))
-            {
-                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
-            }
-
-            return FromTicks((long)ticks);
+            return IntervalFromDoubleTicks(ticks);
         }
 
         // Using floating-point arithmetic directly means that infinities can be returned, which is reasonable

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -18,13 +19,13 @@ internal static partial class Interop
             string oid,
             byte[] qx, int qxLength,
             byte[] qy, int qyLength,
-            byte[] d, int dLength);
+            byte[]? d, int dLength);
 
         internal static SafeEcKeyHandle EcKeyCreateByKeyParameters(
             string oid,
             byte[] qx, int qxLength,
             byte[] qy, int qyLength,
-            byte[] d, int dLength)
+            byte[]? d, int dLength)
         {
             SafeEcKeyHandle key;
             int rc = EcKeyCreateByKeyParameters(out key, oid, qx, qxLength, qy, qyLength, d, dLength);
@@ -41,28 +42,28 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByExplicitParameters")]
         internal static extern SafeEcKeyHandle EcKeyCreateByExplicitParameters(
             ECCurve.ECCurveType curveType,
-            byte[] qx, int qxLength,
-            byte[] qy, int qyLength,
-            byte[] d, int dLength,
+            byte[]? qx, int qxLength,
+            byte[]? qy, int qyLength,
+            byte[]? d, int dLength,
             byte[] p, int pLength,
             byte[] a, int aLength,
             byte[] b, int bLength,
             byte[] gx, int gxLength,
             byte[] gy, int gyLength,
             byte[] order, int nLength,
-            byte[] cofactor, int cofactorLength,
-            byte[] seed, int seedLength);
+            byte[]? cofactor, int cofactorLength,
+            byte[]? seed, int seedLength);
 
         internal static SafeEcKeyHandle EcKeyCreateByExplicitCurve(ECCurve curve)
         {
             byte[] p;
             if (curve.IsPrime)
             {
-                p = curve.Prime;
+                p = curve.Prime!;
             }
             else if (curve.IsCharacteristic2)
             {
-                p = curve.Polynomial;
+                p = curve.Polynomial!;
             }
             else
             {
@@ -75,12 +76,12 @@ internal static partial class Interop
                 null, 0,
                 null, 0,
                 p, p.Length,
-                curve.A, curve.A.Length,
-                curve.B, curve.B.Length,
-                curve.G.X, curve.G.X.Length,
-                curve.G.Y, curve.G.Y.Length,
-                curve.Order, curve.Order.Length,
-                curve.Cofactor, curve.Cofactor.Length,
+                curve.A!, curve.A!.Length,
+                curve.B!, curve.B!.Length,
+                curve.G.X!, curve.G.X!.Length,
+                curve.G.Y!, curve.G.Y!.Length,
+                curve.Order!, curve.Order!.Length,
+                curve.Cofactor, curve.Cofactor!.Length,
                 curve.Seed, curve.Seed == null ? 0 : curve.Seed.Length);
 
             if (key == null || key.IsInvalid)
@@ -264,22 +265,22 @@ internal static partial class Interop
 
                     var curve = parameters.Curve;
                     curve.CurveType = curveType;
-                    curve.A = Crypto.ExtractBignum(a_bn, cbFieldLength);
-                    curve.B = Crypto.ExtractBignum(b_bn, cbFieldLength);
+                    curve.A = Crypto.ExtractBignum(a_bn, cbFieldLength)!;
+                    curve.B = Crypto.ExtractBignum(b_bn, cbFieldLength)!;
                     curve.G = new ECPoint
                     {
                         X = Crypto.ExtractBignum(gx_bn, cbFieldLength),
                         Y = Crypto.ExtractBignum(gy_bn, cbFieldLength)
                     };
-                    curve.Order = Crypto.ExtractBignum(order_bn, cbSubgroupOrder);
+                    curve.Order = Crypto.ExtractBignum(order_bn, cbSubgroupOrder)!;
 
                     if (curveType == ECCurve.ECCurveType.Characteristic2)
                     {
-                        curve.Polynomial = Crypto.ExtractBignum(p_bn, pFieldLength);
+                        curve.Polynomial = Crypto.ExtractBignum(p_bn, pFieldLength)!;
                     }
                     else
                     {
-                        curve.Prime = Crypto.ExtractBignum(p_bn, pFieldLength);
+                        curve.Prime = Crypto.ExtractBignum(p_bn, pFieldLength)!;
                     }
 
                     // Optional parameters

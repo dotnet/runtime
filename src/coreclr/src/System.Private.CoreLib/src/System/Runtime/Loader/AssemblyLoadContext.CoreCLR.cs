@@ -154,8 +154,7 @@ namespace System.Runtime.Loader
                 if (ptrAssemblyLoadContext == IntPtr.Zero)
                 {
                     // If the load context is returned null, then the assembly was bound using the TPA binder
-                    // and we shall return reference to the active "Default" binder - which could be the TPA binder
-                    // or an overridden CLRPrivBinderAssemblyLoadContext instance.
+                    // and we shall return reference to the "Default" binder.
                     loadContextForAssembly = AssemblyLoadContext.Default;
                 }
                 else

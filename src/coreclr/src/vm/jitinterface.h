@@ -70,8 +70,12 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 void InitJITHelpers1();
 void InitJITHelpers2();
 
-PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODER* header,
-                        CORJIT_FLAGS flags, ULONG* sizeOfCode = NULL);
+#ifndef CROSSGEN_COMPILE
+PCODE UnsafeJitFunction(PrepareCodeConfig* config,
+                        COR_ILMETHOD_DECODER* header,
+                        CORJIT_FLAGS flags,
+                        ULONG* sizeOfCode = NULL);
+#endif // CROSSGEN_COMPILE
 
 void getMethodInfoHelper(MethodDesc * ftn,
                          CORINFO_METHOD_HANDLE ftnHnd,
@@ -209,12 +213,6 @@ extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arra
 extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 
-#ifndef JIT_Stelem_Ref
-#define JIT_Stelem_Ref JIT_Stelem_Ref_Portable
-#endif
-EXTERN_C FCDECL3(void, JIT_Stelem_Ref, PtrArray* array, unsigned idx, Object* val);
-EXTERN_C FCDECL3(void, JIT_Stelem_Ref_Portable, PtrArray* array, unsigned idx, Object* val);
-
 EXTERN_C FCDECL_MONHELPER(JITutil_MonEnterWorker, Object* obj);
 EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
 EXTERN_C FCDECL3(void, JITutil_MonTryEnter, Object* obj, INT32 timeOut, BYTE* pbLockTaken);
@@ -246,6 +244,17 @@ extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Obje
 
 extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
+extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
+
+#if defined(TARGET_ARM64) || defined(FEATURE_WRITEBARRIER_COPY)
+// ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
+// Copied write barriers must be called at a different location
+extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
+#define WriteBarrier_Helper JIT_WriteBarrier_Callable
+#else
+// in other cases the regular JIT helper is callable.
+#define WriteBarrier_Helper JIT_WriteBarrier
+#endif
 
 extern "C" FCDECL1(void, JIT_InternalThrow, unsigned exceptNum);
 extern "C" FCDECL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum);
@@ -453,7 +462,6 @@ public:
                                   BOOL fAssembly);
     BOOL isValueClass (CORINFO_CLASS_HANDLE cls);
     CorInfoInlineTypeCheck canInlineTypeCheck (CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
-    BOOL canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE cls);
 
     DWORD getClassAttribs (CORINFO_CLASS_HANDLE cls);
 
@@ -497,7 +505,6 @@ public:
     static CorInfoHelpFunc getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing, bool * pfClassMustBeRestored);
 
     CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd);
-    CorInfoHelpFunc getSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn);
     CORINFO_CLASS_HANDLE getTypeForBox(CORINFO_CLASS_HANDLE  cls);
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls);
@@ -526,6 +533,9 @@ public:
     CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE methHnd);
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId);
     void getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal);
+
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset);
 
     // "System.Int32" ==> CORINFO_TYPE_INT..
     CorInfoType getTypeForPrimitiveValueClass(
@@ -650,8 +660,6 @@ public:
     size_t findNameOfToken (CORINFO_MODULE_HANDLE module, mdToken metaTOK,
                                       __out_ecount (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
 
-    CorInfoCanSkipVerificationResult canSkipVerification(CORINFO_MODULE_HANDLE moduleHnd);
-
     // Checks if the given metadata token is valid
     BOOL isValidToken (
             CORINFO_MODULE_HANDLE       module,
@@ -661,6 +669,12 @@ public:
     BOOL isValidStringRef (
             CORINFO_MODULE_HANDLE       module,
             mdToken                    metaTOK);
+
+    // Get string length and content (can be null) for given metaTOK
+    LPCWSTR getStringLiteral (
+            CORINFO_MODULE_HANDLE       module,
+            mdToken                    metaTOK,
+            int*                        length);
 
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
                             __out_ecount (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
@@ -690,21 +704,6 @@ public:
                                  CorInfoInline inlineResult,
                                  const char * reason);
 
-    // Used by ngen
-    CORINFO_METHOD_HANDLE instantiateMethodAtObject(CORINFO_METHOD_HANDLE method);
-
-    // Loads the constraints on a typical method definition, detecting cycles;
-    // used by verifiers.
-    void initConstraintsForVerification(
-            CORINFO_METHOD_HANDLE   method,
-            BOOL *pfHasCircularClassConstraints,
-            BOOL *pfHasCircularMethodConstraints
-            );
-
-    CorInfoInstantiationVerification isInstantiationOfVerifiedGeneric (
-            CORINFO_METHOD_HANDLE  methodHnd);
-
-
     bool canTailCall (
             CORINFO_METHOD_HANDLE  callerHnd,
             CORINFO_METHOD_HANDLE  declaredCalleeHnd,
@@ -716,9 +715,6 @@ public:
                                  bool fIsTailPrefix,
                                  CorInfoTailCall tailCallResult,
                                  const char * reason);
-
-    CorInfoCanSkipVerificationResult canSkipMethodVerification(
-        CORINFO_METHOD_HANDLE ftnHnd);
 
     // Given a method descriptor ftnHnd, extract signature information into sigInfo
     // Obtain (representative) instantiation information from ftnHnd's owner class
@@ -792,12 +788,6 @@ public:
     LPVOID GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void ** ppIndirection);
     bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
 
-    // Check Visibility rules.
-
-    // should we enforce the new (for whidbey) restrictions on calling virtual methods?
-    BOOL shouldEnforceCallvirtRestriction(
-            CORINFO_MODULE_HANDLE   scope);
-
     // Check constraints on method type arguments (only).
     // The parent class should be checked separately using satisfiesClassConstraints(parent).
     BOOL satisfiesMethodConstraints(
@@ -828,14 +818,12 @@ public:
 
     unsigned getFieldOffset (CORINFO_FIELD_HANDLE field);
 
-    bool isWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field);
-
     void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection);
 
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
 
     // ICorDebugInfo stuff
-    void * allocateArray(ULONG cBytes);
+    void * allocateArray(size_t cBytes);
     void freeArray(void *array);
     void getBoundaries(CORINFO_METHOD_HANDLE ftn,
                        unsigned int *cILOffsets, DWORD **pILOffsets,
@@ -915,7 +903,6 @@ public:
     unsigned getClassDomainID (CORINFO_CLASS_HANDLE   cls, void **ppIndirection);
     CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO *sig, void **ppIndirection);
     bool canGetVarArgsHandle(CORINFO_SIG_INFO *sig);
-    void* getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void **ppIndirection);
     void* getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void **ppIndirection);
     void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP *pLookup);
     CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE **ppIndirection);
@@ -963,11 +950,11 @@ public:
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE handle,
                                             void **ppIndirection);
 
-	void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
-		BOOL                     fEmbedParent,
-		CORINFO_GENERICHANDLE_RESULT *pResult);
+    void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
+        BOOL                     fEmbedParent,
+        CORINFO_GENERICHANDLE_RESULT *pResult);
 
-    CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
+    void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
 
 
     void setOverride(ICorDynamicInfo *pOverride, CORINFO_METHOD_HANDLE currentMethod)
@@ -1002,8 +989,6 @@ public:
     // ICorJitInfo stuff - none of this should be called on this class
     //
 
-    IEEMemoryManager* getMemoryManager();
-
     void allocMem (
             ULONG               hotCodeSize,    /* IN */
             ULONG               coldCodeSize,   /* IN */
@@ -1034,8 +1019,6 @@ public:
     void * allocGCInfo (
             size_t                  size        /* IN */
             );
-
-    void yieldExecution();
 
     void setEHcount (
             unsigned		     cEH    /* IN */
@@ -1082,11 +1065,6 @@ public:
             );
 
     WORD getRelocTypeHint(void * target);
-
-    void getModuleNativeEntryPointRange(
-            void ** pStart, /* OUT */
-            void ** pEnd    /* OUT */
-            );
 
     DWORD getExpectedTargetArchitecture();
 
@@ -1289,10 +1267,6 @@ public:
 
     WORD getRelocTypeHint(void * target);
 
-    void getModuleNativeEntryPointRange(
-            void**                   pStart,
-            void**                   pEnd);
-
     DWORD getExpectedTargetArchitecture();
 
     CodeHeader* GetCodeHeader()
@@ -1326,6 +1300,15 @@ public:
         m_pOffsetMapping = NULL;
         m_iNativeVarInfo = 0;
         m_pNativeVarInfo = NULL;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (m_pPatchpointInfoFromJit != NULL)
+            delete [] ((BYTE*) m_pPatchpointInfoFromJit);
+
+        m_pPatchpointInfoFromJit = NULL;
+        m_pPatchpointInfoFromRuntime = NULL;
+        m_ilOffset = 0;
+#endif
 
 #ifdef FEATURE_EH_FUNCLETS
         m_moduleBase = NULL;
@@ -1389,6 +1372,17 @@ public:
     }
 #endif
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    // Called by the runtime to supply patchpoint information to the jit.
+    void SetOSRInfo(PatchpointInfo* patchpointInfo, unsigned ilOffset)
+    {
+        _ASSERTE(m_pPatchpointInfoFromRuntime == NULL);
+        _ASSERTE(patchpointInfo != NULL);
+        m_pPatchpointInfoFromRuntime = patchpointInfo;
+        m_ilOffset = ilOffset;
+    }
+#endif
+
     CEEJitInfo(MethodDesc* fd,  COR_ILMETHOD_DECODER* header,
                EEJitManager* jm, bool fVerifyOnly, bool allowInlining = true)
         : CEEInfo(fd, fVerifyOnly, allowInlining),
@@ -1416,6 +1410,11 @@ public:
           m_pOffsetMapping(NULL),
           m_iNativeVarInfo(0),
           m_pNativeVarInfo(NULL),
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+          m_pPatchpointInfoFromJit(NULL),
+          m_pPatchpointInfoFromRuntime(NULL),
+          m_ilOffset(0),
+#endif
           m_gphCache()
     {
         CONTRACTL
@@ -1442,6 +1441,12 @@ public:
 
         if (m_pNativeVarInfo != NULL)
             delete [] ((BYTE*) m_pNativeVarInfo);
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (m_pPatchpointInfoFromJit != NULL)
+            delete [] ((BYTE*) m_pPatchpointInfoFromJit);
+#endif
+
     }
 
     // ICorDebugInfo stuff.
@@ -1477,6 +1482,9 @@ public:
 
     void BackoutJitData(EEJitManager * jitMgr);
 
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset);
+
 protected :
     EEJitManager*           m_jitManager;   // responsible for allocating memory
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
@@ -1511,6 +1519,12 @@ protected :
 
     ULONG32                 m_iNativeVarInfo;
     ICorDebugInfo::NativeVarInfo * m_pNativeVarInfo;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    PatchpointInfo        * m_pPatchpointInfoFromJit;
+    PatchpointInfo        * m_pPatchpointInfoFromRuntime;
+    unsigned                m_ilOffset;
+#endif
 
     // The first time a call is made to CEEJitInfo::GetProfilingHandle() from this thread
     // for this method, these values are filled in.   Thereafter, these values are used

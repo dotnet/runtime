@@ -52,7 +52,7 @@ public:
 
     #endif // !defined(TARGET_X86)
 
-        CORJIT_FLAG_UNUSED6                 = 13,
+        CORJIT_FLAG_OSR                     = 13, // Generate alternate method for On Stack Replacement
 
     #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
@@ -94,7 +94,7 @@ public:
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLAG_USE_PINVOKE_HELPERS     = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE         = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        CORJIT_FLAG_DESKTOP_QUIRKS          = 38, // The JIT should generate desktop-quirk-compatible code
+        // CORJIT_FLAG_UNUSED               = 38,
         CORJIT_FLAG_TIER0                   = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         CORJIT_FLAG_TIER1                   = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
 

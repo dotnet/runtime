@@ -15,4 +15,4 @@ Get an error message for an OSStatus error from the security library.
 
 Returns NULL if no message is available for the code.
 */
-DLLEXPORT CFStringRef AppleCryptoNative_SecCopyErrorMessageString(OSStatus osStatus);
+PALEXPORT CFStringRef AppleCryptoNative_SecCopyErrorMessageString(OSStatus osStatus);

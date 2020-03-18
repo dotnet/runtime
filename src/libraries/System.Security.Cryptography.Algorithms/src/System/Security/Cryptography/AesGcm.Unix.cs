@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class AesGcm
     {
-        private SafeEvpCipherCtxHandle _ctxHandle;
+        private SafeEvpCipherCtxHandle _ctxHandle = null!;
 
         private void ImportKey(ReadOnlySpan<byte> key)
         {

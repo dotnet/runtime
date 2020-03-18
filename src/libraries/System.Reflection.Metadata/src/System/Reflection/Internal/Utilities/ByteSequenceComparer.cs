@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Internal
 {
@@ -62,7 +63,7 @@ namespace System.Reflection.Internal
             return true;
         }
 
-        internal static bool Equals(byte[] left, byte[] right)
+        internal static bool Equals(byte[]? left, byte[]? right)
         {
             if (ReferenceEquals(left, right))
             {
@@ -99,7 +100,7 @@ namespace System.Reflection.Internal
             return Hash.GetFNVHashCode(x);
         }
 
-        bool IEqualityComparer<byte[]>.Equals(byte[] x, byte[] y)
+        bool IEqualityComparer<byte[]>.Equals(byte[]? x, byte[]? y)
         {
             return Equals(x, y);
         }

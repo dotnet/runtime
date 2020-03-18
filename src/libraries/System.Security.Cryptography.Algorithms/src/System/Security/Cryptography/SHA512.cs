@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
 
         public static new SHA512 Create() => new Implementation();
 
-        public static new SHA512 Create(string hashName) => (SHA512)CryptoConfig.CreateFromName(hashName);
+        public static new SHA512? Create(string hashName) => (SHA512?)CryptoConfig.CreateFromName(hashName);
 
         private sealed class Implementation : SHA512
         {

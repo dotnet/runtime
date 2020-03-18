@@ -3,6 +3,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Needed due to the cmunged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
 
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
@@ -38,13 +39,15 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
     array.cpp
     assembly.cpp
+    assemblyloadcontext.cpp
     baseassemblyspec.cpp
     binder.cpp
     castcache.cpp
-    callcounter.cpp
+    callcounting.cpp
     ceeload.cpp
     class.cpp
     classhash.cpp
+    classlayoutinfo.cpp
     clsload.cpp
     codeman.cpp
     codeversion.cpp
@@ -95,7 +98,9 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     methodimpl.cpp
     methoditer.cpp
     methodtable.cpp
+    nativeimage.cpp
     object.cpp
+    onstackreplacement.cpp
     pefile.cpp
     peimage.cpp
     peimagelayout.cpp
@@ -139,10 +144,12 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     appdomain.inl
     array.h
     assembly.hpp
+    assemblyloadcontext.h
     baseassemblyspec.h
     baseassemblyspec.inl
     binder.h
     castcache.h
+    callcounting.h
     ceeload.h
     ceeload.inl
     class.h
@@ -201,6 +208,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     methodtable.inl
     object.h
     object.inl
+    onstackreplacement.h
     pefile.h
     pefile.inl
     peimage.h
@@ -409,7 +417,6 @@ set(VM_HEADERS_WKS
     assemblyspec.hpp
     assemblyspecbase.h
     cachelinealloc.h
-    callcounter.h
     callhelpers.h
     callsiteinspect.h
     ceemain.h
@@ -467,7 +474,6 @@ set(VM_HEADERS_WKS
     gcenv.ee.h
     gcenv.os.h
     gchelpers.h
-    hosting.h
     ibclogger.h
     ilmarshalers.h
     interopconverter.h
@@ -589,6 +595,7 @@ list(APPEND VM_SOURCES_WKS
     dispparammarshaler.cpp
     dwreport.cpp
     eventreporter.cpp
+    interoplibinterface.cpp
     mngstdinterfaces.cpp
     notifyexternals.cpp
     olecontexthelpers.cpp
@@ -617,6 +624,7 @@ list(APPEND VM_HEADERS_WKS
     dispparammarshaler.h
     dwreport.h
     eventreporter.h
+    interoplibinterface.h
     mngstdinterfaces.h
     notifyexternals.h
     olecontexthelpers.h

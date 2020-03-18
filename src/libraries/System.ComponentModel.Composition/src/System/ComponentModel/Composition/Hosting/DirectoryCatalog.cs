@@ -782,7 +782,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <value>
         ///     A <see cref="string"/> containing a human-readable display name of the <see cref="DirectoryCatalog"/>.
         /// </value>
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
         string ICompositionElement.DisplayName
         {
             get { return GetDisplayName(); }
@@ -794,7 +793,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <value>
         ///     This property always returns <see langword="null"/>.
         /// </value>
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
         ICompositionElement? ICompositionElement.Origin
         {
             get { return null; }

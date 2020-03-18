@@ -202,7 +202,7 @@ namespace System.Net.Http
 
             private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
             {
-                CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                CancellationTokenRegistration ctr = _connection!.RegisterCancellation(cancellationToken);
                 try
                 {
                     while (true)
@@ -257,7 +257,7 @@ namespace System.Net.Http
 
             private ReadOnlyMemory<byte> ReadChunkFromConnectionBuffer(int maxBytesToRead, CancellationTokenRegistration cancellationRegistration)
             {
-                Debug.Assert(maxBytesToRead > 0);
+                Debug.Assert(maxBytesToRead > 0 && _connection != null);
 
                 try
                 {
@@ -393,7 +393,7 @@ namespace System.Net.Http
                 catch (Exception)
                 {
                     // Ensure we don't try to read from the connection again (in particular, for draining)
-                    _connection.Dispose();
+                    _connection!.Dispose();
                     _connection = null;
                     throw;
                 }
@@ -432,7 +432,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(_connection != null);
 
-                CancellationTokenSource cts = null;
+                CancellationTokenSource? cts = null;
                 CancellationTokenRegistration ctr = default;
                 try
                 {
@@ -467,7 +467,7 @@ namespace System.Net.Http
                             if (drainTime != Timeout.InfiniteTimeSpan)
                             {
                                 cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
-                                ctr = cts.Token.Register(s => ((HttpConnection)s).Dispose(), _connection);
+                                ctr = cts.Token.Register(s => ((HttpConnection)s!).Dispose(), _connection);
                             }
                         }
 

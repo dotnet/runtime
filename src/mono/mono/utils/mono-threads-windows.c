@@ -292,7 +292,7 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 
 		if (!GetThreadContext (handle, &context)) {
-			THREADS_SUSPEND_DEBUG ("RESUME FAILED (GetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
+			THREADS_SUSPEND_DEBUG ("RESUME FAILED (GetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (mono_thread_info_get_tid (info)), GetLastError ());
 			return FALSE;
 		}
 
@@ -304,7 +304,7 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 		res = SetThreadContext (handle, &context);
 		if (!res) {
-			THREADS_SUSPEND_DEBUG ("RESUME FAILED (SetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
+			THREADS_SUSPEND_DEBUG ("RESUME FAILED (SetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (mono_thread_info_get_tid (info)), GetLastError ());
 			return FALSE;
 		}
 #else
@@ -313,11 +313,10 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 	}
 
 	result = ResumeThread (handle);
-	THREADS_SUSPEND_DEBUG ("RESUME %p -> %u\n", GUINT_TO_POINTER (id), result);
+	THREADS_SUSPEND_DEBUG ("RESUME %p -> %u\n", GUINT_TO_POINTER (mono_thread_info_get_tid (info)), result);
 
 	return result != (DWORD)-1;
 }
-
 
 void
 mono_threads_suspend_register (MonoThreadInfo *info)

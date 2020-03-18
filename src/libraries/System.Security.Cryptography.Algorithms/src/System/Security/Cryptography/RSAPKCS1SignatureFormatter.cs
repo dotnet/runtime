@@ -8,8 +8,8 @@ namespace System.Security.Cryptography
 {
     public class RSAPKCS1SignatureFormatter : AsymmetricSignatureFormatter
     {
-        private RSA _rsaKey;
-        private string _algName;
+        private RSA? _rsaKey;
+        private string? _algName;
 
         public RSAPKCS1SignatureFormatter() { }
 

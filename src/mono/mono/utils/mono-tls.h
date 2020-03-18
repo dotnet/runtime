@@ -200,6 +200,14 @@ extern MONO_KEYWORD_THREAD MonoDomain         *mono_tls_domain MONO_TLS_FAST;
 extern MONO_KEYWORD_THREAD SgenThreadInfo     *mono_tls_sgen_thread_info MONO_TLS_FAST;
 extern MONO_KEYWORD_THREAD MonoLMF           **mono_tls_lmf_addr MONO_TLS_FAST;
 
+#elif defined(DISABLE_THREADS)
+
+extern MonoInternalThread *mono_tls_thread;
+extern MonoJitTlsData     *mono_tls_jit_tls;
+extern MonoDomain         *mono_tls_domain;
+extern SgenThreadInfo     *mono_tls_sgen_thread_info;
+extern MonoLMF           **mono_tls_lmf_addr;
+
 #else
 
 extern MonoNativeTlsKey mono_tls_key_thread;
@@ -212,7 +220,7 @@ extern MonoNativeTlsKey mono_tls_key_lmf_addr;
 
 extern gint32 mono_tls_offsets [TLS_KEY_NUM];
 
-#ifdef MONO_KEYWORD_THREAD
+#if defined(MONO_KEYWORD_THREAD) || defined(DISABLE_THREADS)
 #define MONO_TLS_GET_VALUE(tls_var,tls_key) (tls_var)
 #define MONO_TLS_SET_VALUE(tls_var,tls_key,value) (tls_var = value)
 #else

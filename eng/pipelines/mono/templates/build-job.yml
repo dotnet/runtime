@@ -9,6 +9,9 @@ parameters:
   variables: {}
   pool: ''
   condition: true
+  llvm: false
+  isOfficialBuild: false
+  crossrootfsDir: ''
 
 ### Product build
 jobs:
@@ -21,11 +24,20 @@ jobs:
     helixType: 'build/product/'
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
+    llvm: ${{ parameters.llvm }}
+    crossrootfsDir: ${{ parameters.crossroofsDir }}
     condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters
-    name: ${{ format('mono_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('Mono Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    ${{ if ne(parameters.llvm, true) }}:
+      name: ${{ format('mono_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Mono Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+    # if LLVM enabled, set a variable we can consume
+    ${{ if eq(parameters.llvm, true) }}:
+      name: ${{ format('mono_llvm_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Mono LLVM Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -39,7 +51,25 @@ jobs:
       value: ${{ parameters.osGroup }}
     - name: osSubgroup
       value: ${{ parameters.osSubgroup }}
-
+    - name: officialBuildIdArg
+      value: ''
+    # Strip symbols only on the release build
+    - ${{ if eq(parameters.buildConfig, 'Release') }}:
+      - name: stripSymbolsArg
+        value: '-stripsymbols'
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: officialBuildIdArg
+        value: '/p:officialBuildId=$(Build.BuildNumber)'
+    - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
+      # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
+      # lowercase for RID format. (Detection normally converts, but we're preventing it.)
+      - name: OutputRidArg
+        value: /p:OutputRid=linux-musl-${{ parameters.archType }}
+      - name: _PortableBuild
+        value: true
+    - ${{ if eq(parameters.osGroup, 'iOS') }}:
+      - name: osOverride
+        value: -os iOS
     - ${{ parameters.variables }}
 
     steps:
@@ -48,7 +78,7 @@ jobs:
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -58,10 +88,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci
+      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci
+      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
 
     # Publish product output directory for consumption by tests.
@@ -75,11 +105,47 @@ jobs:
         artifactName: $(buildProductArtifactName)
         displayName: 'product build'
 
+    # Build packages
+    - ${{ if and(ne(parameters.llvm, true), ne(parameters.osGroup, 'Windows_NT')) }}:
+      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+        displayName: Build nupkg
+    - ${{ if and(ne(parameters.llvm, true), eq(parameters.osGroup, 'Windows_NT')) }}:
+      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+        displayName: Build nupkg
+
+    # Save packages using the prepare-signed-artifacts format.
+    - ${{ if eq(parameters.isOfficialBuild, true) }}:
+      - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+        parameters:
+          name: ${{ parameters.platform }}
+
+    # Publish official build
+    - ${{ if and(ne(parameters.llvm, true), eq(parameters.publishToBlobFeed, 'true')) }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__TargetOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)/artifacts/log/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
+          displayName: Publish packages to blob feed
+          env:
+            # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
+            NUGET_PACKAGES: $(Build.SourcesDirectory)/.packages
+            ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+              # Arcade uses this SDK instead of trying to restore one.
+              DotNetCoreSdkDir: /usr/local/dotnet
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        # TODO: pass publish feed url and access token in from the internal pipeline
+        - powershell: eng\common\build.ps1 -ci -restore -publish -configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__TargetOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)\artifacts\log\publish-pkgs.binlog" -projects $(Build.SourcesDirectory)\eng\empty.csproj
+          displayName: Publish packages to blob feed
+          env:
+            # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
+            NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages
+
     # Publish Logs
-    - task: PublishBuildArtifacts@1
+    - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
-        pathtoPublish: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_Mono_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        ${{ if ne(parameters.llvm, true) }}:
+          artifactName: 'BuildLogs_Mono_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        ${{ if eq(parameters.llvm, true) }}:
+          artifactName: 'BuildLogs_Mono_LLVM_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

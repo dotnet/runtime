@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,9 +12,10 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 using ILCompiler.Reflection.ReadyToRun;
+
+using Internal.Runtime;
 
 namespace R2RDump
 {
@@ -38,6 +39,7 @@ namespace R2RDump
         public bool SectionContents { get; set; }
         public bool EntryPoints { get; set; }
         public bool Normalize { get; set; }
+        public bool HideTransitions { get; set; }
         public bool Verbose { get; set; }
         public bool Diff { get; set; }
         public bool DiffHideSameDisasm { get; set; }
@@ -55,16 +57,29 @@ namespace R2RDump
         private readonly static string[] ProbeExtensions = new string[] { ".ni.exe", ".ni.dll", ".exe", ".dll" };
 
         /// <summary>
-        /// Try to locate a (reference) assembly using the list of explicit reference assemblies
+        /// Try to locate a (reference) assembly based on an AssemblyRef handle using the list of explicit reference assemblies
         /// and the list of reference paths passed to R2RDump.
         /// </summary>
-        /// <param name="simpleName">Simple name of the assembly to look up</param>
+        /// <param name="metadataReader">Containing metadata reader for the assembly reference handle</param>
+        /// <param name="assemblyReferenceHandle">Handle representing the assembly reference</param>
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
 
         public MetadataReader FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
         {
             string simpleName = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
+            return FindAssembly(simpleName, parentFile);
+        }
+
+        /// <summary>
+        /// Try to locate a (reference) assembly using the list of explicit reference assemblies
+        /// and the list of reference paths passed to R2RDump.
+        /// </summary>
+        /// <param name="simpleName">Simple name of the assembly to look up</param>
+        /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
+        /// <returns></returns>
+        public MetadataReader FindAssembly(string simpleName, string parentFile)
+        {
             foreach (FileInfo refAsm in Reference ?? Enumerable.Empty<FileInfo>())
             {
                 if (Path.GetFileNameWithoutExtension(refAsm.FullName).Equals(simpleName, StringComparison.OrdinalIgnoreCase))
@@ -80,10 +95,16 @@ namespace R2RDump
             {
                 foreach (string extension in ProbeExtensions)
                 {
-                    string probeFile = Path.Combine(refPath, simpleName + extension);
-                    if (File.Exists(probeFile))
+                    try
                     {
-                        return Open(probeFile);
+                        string probeFile = Path.Combine(refPath, simpleName + extension);
+                        if (File.Exists(probeFile))
+                        {
+                            return Open(probeFile);
+                        }
+                    }
+                    catch (BadImageFormatException)
+                    {
                     }
                 }
             }
@@ -99,7 +120,7 @@ namespace R2RDump
 
             if (!peReader.HasMetadata)
             {
-                throw new Exception($"ECMA metadata not found in file '{filename}'");
+                throw new BadImageFormatException($"ECMA metadata not found in file '{filename}'");
             }
 
             return peReader.GetMetadataReader();
@@ -121,9 +142,9 @@ namespace R2RDump
             _options = options;
         }
 
-        public IEnumerable<ReadyToRunSection> NormalizedSections()
+        public IEnumerable<ReadyToRunSection> NormalizedSections(ReadyToRunCoreHeader header)
         {
-            IEnumerable<ReadyToRunSection> sections = _r2r.ReadyToRunHeader.Sections.Values;
+            IEnumerable<ReadyToRunSection> sections = header.Sections.Values;
             if (_options.Normalize)
             {
                 sections = sections.OrderBy((s) => s.Type);
@@ -133,7 +154,7 @@ namespace R2RDump
 
         public IEnumerable<ReadyToRunMethod> NormalizedMethods()
         {
-            IEnumerable<ReadyToRunMethod> methods = _r2r.Methods;
+            IEnumerable<ReadyToRunMethod> methods = _r2r.Methods.Values.SelectMany(sectionMethods => sectionMethods);
             if (_options.Normalize)
             {
                 methods = methods.OrderBy((m) => m.SignatureString);
@@ -176,7 +197,7 @@ namespace R2RDump
     class R2RDump
     {
         private readonly DumpOptions _options;
-        private readonly Dictionary<ReadyToRunSection.SectionType, bool> _selectedSections = new Dictionary<ReadyToRunSection.SectionType, bool>();
+        private readonly Dictionary<ReadyToRunSectionType, bool> _selectedSections = new Dictionary<ReadyToRunSectionType, bool>();
         private readonly TextWriter _writer;
         private Dumper _dumper;
 
@@ -404,7 +425,7 @@ namespace R2RDump
         {
             int queryInt;
             bool isNum = ArgStringToInt(query, out queryInt);
-            string typeName = Enum.GetName(typeof(ReadyToRunSection.SectionType), section.Type);
+            string typeName = Enum.GetName(typeof(ReadyToRunSectionType), section.Type);
 
             return (isNum && (int)section.Type == queryInt) || typeName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
         }
@@ -420,7 +441,7 @@ namespace R2RDump
         public IList<ReadyToRunMethod> FindMethod(ReadyToRunReader r2r, string query, bool exact)
         {
             List<ReadyToRunMethod> res = new List<ReadyToRunMethod>();
-            foreach (ReadyToRunMethod method in r2r.Methods)
+            foreach (ReadyToRunMethod method in r2r.Methods.Values.SelectMany(sectionMethods => sectionMethods))
             {
                 if (Match(method, query, exact))
                 {
@@ -457,7 +478,7 @@ namespace R2RDump
         /// <param name="rtfQuery">The name or value to search for</param>
         public RuntimeFunction FindRuntimeFunction(ReadyToRunReader r2r, int rtfQuery)
         {
-            foreach (ReadyToRunMethod m in r2r.Methods)
+            foreach (ReadyToRunMethod m in r2r.Methods.Values.SelectMany(sectionMethods => sectionMethods))
             {
                 foreach (RuntimeFunction rtf in m.RuntimeFunctions)
                 {

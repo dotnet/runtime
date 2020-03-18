@@ -599,7 +599,7 @@ free_method_jit_info (MonoDebugMethodJitInfo *jit, gboolean stack)
 void
 mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
 {
-	return free_method_jit_info (jit, FALSE);
+	free_method_jit_info (jit, FALSE);
 }
 
 static MonoDebugMethodJitInfo *

@@ -19,6 +19,10 @@ cxxCompiler="$compiler++"
 majorVersion="$3"
 minorVersion="$4"
 
+# clear the existing CC and CXX from environment
+CC=
+CXX=
+
 if [[ "$compiler" == "gcc" ]]; then cxxCompiler="g++"; fi
 
 check_version_exists() {
@@ -102,4 +106,6 @@ if [[ -z "$CC" ]]; then
     exit 1
 fi
 
-export CC CXX
+SCAN_BUILD_COMMAND="$(command -v "scan-build$desired_version")"
+
+export CC CXX SCAN_BUILD_COMMAND

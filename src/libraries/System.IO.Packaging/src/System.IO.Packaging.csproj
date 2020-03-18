@@ -4,7 +4,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
     <TargetFrameworks>net46;netstandard1.3;netstandard2.0;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
-    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <Reference Include="System.Collections" />

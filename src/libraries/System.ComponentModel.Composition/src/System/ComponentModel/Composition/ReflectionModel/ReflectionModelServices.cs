@@ -124,7 +124,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return partCreatorImportDefinition.ProductImportDefinition;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ComposablePartDefinition CreatePartDefinition(
             Lazy<Type> partType,
             bool isDisposalRequired,
@@ -145,7 +144,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     origin));
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ExportDefinition CreateExportDefinition(
             LazyMemberInfo exportingMember,
             string contractName,
@@ -161,7 +159,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 origin);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ContractBasedImportDefinition CreateImportDefinition(
             LazyMemberInfo importingMember,
             string contractName,
@@ -175,7 +172,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return CreateImportDefinition(importingMember, contractName, requiredTypeIdentity, requiredMetadata, cardinality, isRecomposable, requiredCreationPolicy, MetadataServices.EmptyMetadata, false, origin);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ContractBasedImportDefinition CreateImportDefinition(
             LazyMemberInfo importingMember,
             string contractName,
@@ -202,7 +198,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 origin);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ContractBasedImportDefinition CreateImportDefinition(
             LazyMemberInfo importingMember,
             string contractName,
@@ -250,7 +245,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ContractBasedImportDefinition CreateImportDefinition(
             Lazy<ParameterInfo> parameter,
             string contractName,
@@ -263,7 +257,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return CreateImportDefinition(parameter, contractName, requiredTypeIdentity, requiredMetadata, cardinality, requiredCreationPolicy, MetadataServices.EmptyMetadata, false, origin);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ContractBasedImportDefinition CreateImportDefinition(
             Lazy<ParameterInfo> parameter,
             string contractName,

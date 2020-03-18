@@ -568,7 +568,6 @@ namespace System.Xml.Linq
         /// An <see cref="XElement"/> initialized with the contents of the file referenced
         /// in the passed in uri parameter.
         /// </returns>
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings", Justification = "Back-compat with System.Xml.")]
         public static XElement Load(string uri)
         {
             return Load(uri, LoadOptions.None);
@@ -598,7 +597,6 @@ namespace System.Xml.Linq
         /// in the passed uri parameter.  If LoadOptions.PreserveWhitespace is enabled then
         /// significant whitespace will be preserved.
         /// </returns>
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings", Justification = "Back-compat with System.Xml.")]
         public static XElement Load(string uri, LoadOptions options)
         {
             XmlReaderSettings rs = GetXmlReaderSettings(options);
@@ -1331,7 +1329,6 @@ namespace System.Xml.Linq
         /// The content of this <see cref="XElement"/> as a <see cref="string"/>.
         /// </returns>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator string(XElement element)
         {
             if (element == null) return null;
@@ -1354,7 +1351,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator bool(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1374,7 +1370,6 @@ namespace System.Xml.Linq
         /// Thrown if the element does not contain a valid boolean value.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator bool?(XElement element)
         {
             if (element == null) return null;
@@ -1397,7 +1392,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator int(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1417,7 +1411,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid integer value.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator int?(XElement element)
         {
             if (element == null) return null;
@@ -1440,7 +1433,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator uint(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1460,7 +1452,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid unsigned integer value.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator uint?(XElement element)
         {
             if (element == null) return null;
@@ -1483,7 +1474,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator long(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1503,7 +1493,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid long integer value.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator long?(XElement element)
         {
             if (element == null) return null;
@@ -1526,7 +1515,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator ulong(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1546,7 +1534,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid unsigned long integer value.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator ulong?(XElement element)
         {
             if (element == null) return null;
@@ -1569,7 +1556,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator float(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1589,7 +1575,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid float value.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator float?(XElement element)
         {
             if (element == null) return null;
@@ -1612,7 +1597,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator double(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1632,7 +1616,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid double value.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator double?(XElement element)
         {
             if (element == null) return null;
@@ -1655,7 +1638,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator decimal(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1675,7 +1657,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid decimal value.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator decimal?(XElement element)
         {
             if (element == null) return null;
@@ -1698,7 +1679,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator DateTime(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1718,7 +1698,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid <see cref="DateTime"/> value.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator DateTime?(XElement element)
         {
             if (element == null) return null;
@@ -1741,7 +1720,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator DateTimeOffset(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1761,7 +1739,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid <see cref="DateTimeOffset"/> value.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator DateTimeOffset?(XElement element)
         {
             if (element == null) return null;
@@ -1784,7 +1761,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator TimeSpan(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1804,7 +1780,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid <see cref="TimeSpan"/> value.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator TimeSpan?(XElement element)
         {
             if (element == null) return null;
@@ -1827,7 +1802,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element is null.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator Guid(XElement element)
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -1847,7 +1821,6 @@ namespace System.Xml.Linq
         /// Thrown if the specified element does not contain a valid guid.
         /// </exception>
         [CLSCompliant(false)]
-        [SuppressMessage("Microsoft.Usage", "CA2225:OperatorOverloadsHaveNamedAlternates", Justification = "Operator marked with CLSCompliant(false).")]
         public static explicit operator Guid?(XElement element)
         {
             if (element == null) return null;

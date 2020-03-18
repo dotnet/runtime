@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -27,9 +25,6 @@ namespace System.Text.Json
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
         public volatile Dictionary<string, JsonPropertyInfo>? PropertyCache;
-
-        // Serializable runtime/polymorphic properties, keyed on property and runtime type.
-        public ConcurrentDictionary<(JsonPropertyInfo, Type), JsonPropertyInfo>? RuntimePropertyCache;
 
         // All of the serializable properties on a POCO including the optional extension property.
         // Used for performance during serialization instead of 'PropertyCache' above.
@@ -119,19 +114,16 @@ namespace System.Text.Json
             Type = type;
             Options = options;
 
-            ClassType = GetClassType(
-                type,
-                parentClassType: type,
-                propertyInfo: null,
+            JsonConverter converter = GetConverter(
+                Type,
+                parentClassType: null, // A ClassInfo never has a "parent" class.
+                propertyInfo: null, // A ClassInfo never has a "parent" property.
                 out Type runtimeType,
-                out Type? elementType,
-                out Type? nullableUnderlyingType,
-                out MethodInfo? addMethod,
-                out JsonConverter? converter,
-                checkForAddMethod: true,
-                options);
+                Options);
 
-            // Ignore properties on enumerable.
+            ClassType = converter.ClassType;
+            PropertyInfoForClassInfo = CreatePropertyInfoForClassInfo(Type, runtimeType, converter, Options);
+
             switch (ClassType)
             {
                 case ClassType.Object:
@@ -201,29 +193,24 @@ namespace System.Text.Json
                 case ClassType.Enumerable:
                 case ClassType.Dictionary:
                     {
-                        ElementType = elementType;
-                        AddItemToObject = addMethod;
-                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType, nullableUnderlyingType, converter: null, ClassType, options);
-                        CreateObject = options.MemberAccessorStrategy.CreateConstructor(PolicyProperty.RuntimePropertyType);
+                        ElementType = converter.ElementType;
+                        CreateObject = options.MemberAccessorStrategy.CreateConstructor(runtimeType);
                     }
                     break;
                 case ClassType.Value:
+                case ClassType.NewValue:
                     {
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
-                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType: null, nullableUnderlyingType, converter, ClassType, options);
                     }
                     break;
-                case ClassType.Unknown:
+                case ClassType.None:
                     {
-                        CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
-                        PolicyProperty = CreatePolicyProperty(type, runtimeType, elementType: null, nullableUnderlyingType, converter, ClassType, options);
-                        PropertyCache = new Dictionary<string, JsonPropertyInfo>();
-                        PropertyCacheArray = Array.Empty<JsonPropertyInfo>();
+                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(type);
                     }
                     break;
                 default:
                     Debug.Fail($"Unexpected class type: {ClassType}");
-                    break;
+                    throw new InvalidOperationException();
             }
         }
 
@@ -233,13 +220,19 @@ namespace System.Text.Json
             if (jsonPropertyInfo != null)
             {
                 Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
-                if (!typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType) &&
-                    !typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType))
+                if (typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
+                    typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType))
+                {
+                    JsonConverter converter = Options.GetConverter(declaredPropertyType);
+                    Debug.Assert(converter != null);
+                }
+                else
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(this, jsonPropertyInfo);
                 }
 
                 DataExtensionProperty = jsonPropertyInfo;
+
                 return true;
             }
 
@@ -398,9 +391,23 @@ namespace System.Text.Json
             return new Dictionary<string, JsonPropertyInfo>(capacity, comparer);
         }
 
-        public JsonPropertyInfo? PolicyProperty { get; private set; }
-
-        public MethodInfo? AddItemToObject { get; private set; }
+        /// <summary>
+        /// The JsonPropertyInfo for this JsonClassInfo. It is used to obtain the converter for the ClassInfo.
+        /// </summary>
+        /// <remarks>
+        /// The returned JsonPropertyInfo does not represent a real property; instead it represents either:
+        /// a collection element type,
+        /// a generic type parameter,
+        /// a property type (if pushed to a new stack frame),
+        /// or the root type passed into the root serialization APIs.
+        /// For example, for a property returning <see cref="Collections.Generic.List{T}"/> where T is a string,
+        /// a JsonClassInfo will be created with .Type=typeof(string) and .PropertyInfoForClassInfo=JsonPropertyInfo{string}.
+        /// Without this property, a "Converter" property would need to be added to JsonClassInfo and there would be several more
+        /// `if` statements to obtain the converter from either the actual JsonPropertyInfo (for a real property) or from the
+        /// ClassInfo (for the cases mentioned above). In addition, methods that have a JsonPropertyInfo argument would also likely
+        /// need to add an argument for JsonClassInfo.
+        /// </remarks>
+        public JsonPropertyInfo PropertyInfoForClassInfo { get; private set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryIsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key, [NotNullWhen(true)] ref JsonPropertyInfo? info)
@@ -423,6 +430,8 @@ namespace System.Text.Json
         /// Get a key from the property name.
         /// The key consists of the first 7 bytes of the property name and then the length.
         /// </summary>
+        // AggressiveInlining used since this method is only called from two locations and is on a hot path.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong GetKey(ReadOnlySpan<byte> propertyName)
         {
             const int BitsInByte = 8;
@@ -514,206 +523,59 @@ namespace System.Text.Json
         // - class type,
         // - runtime type,
         // - element type (if the type is a collection),
-        // - the underlying type (if the type is nullable type e.g. int?),
-        // - the "add" method (if the type is a non-dictionary collection which doesn't implement IList
-        //   e.g. typeof(Stack<int>), where we retrieve the void Push(string) method), and
         // - the converter (either native or custom), if one exists.
-        public static ClassType GetClassType(
+        public static JsonConverter GetConverter(
             Type type,
-            Type parentClassType,
+            Type? parentClassType,
             PropertyInfo? propertyInfo,
             out Type runtimeType,
-            out Type? elementType,
-            out Type? nullableUnderlyingType,
-            out MethodInfo? addMethod,
-            out JsonConverter? converter,
-            bool checkForAddMethod,
             JsonSerializerOptions options)
         {
             Debug.Assert(type != null);
 
-            runtimeType = type;
+            JsonConverter converter = options.DetermineConverter(parentClassType, type, propertyInfo)!;
 
-            nullableUnderlyingType = Nullable.GetUnderlyingType(type);
+            // The runtimeType is the actual value being assigned to the property.
+            // There are three types to consider for the runtimeType:
+            // 1) The declared type (the actual property type).
+            // 2) The converter.TypeToConvert (the T value that the converter supports).
+            // 3) The converter.RuntimeType (used with interfaces such as IList).
 
-            // Type is nullable e.g. typeof(int?).
-            if (nullableUnderlyingType != null)
+            Type converterRuntimeType = converter.RuntimeType;
+            if (type == converterRuntimeType)
             {
-                // Check if there's a converter for this nullable type, e.g. do we have a converter that implements
-                // JsonConverter<int?> if the type is typeof(int?)?
-                converter = options.DetermineConverterForProperty(parentClassType, type, propertyInfo);
-
-                if (converter == null)
-                {
-                    // No converter. We'll check below if there's a converter for the non-nullable type e.g.
-                    // one that implements JsonConverter<int>, given the type is typeof(int?).
-                    type = nullableUnderlyingType;
-                }
-                else
-                {
-                    elementType = default;
-                    addMethod = default;
-                    // Don't treat the type as a Nullable when creating the property info later on, since we have a converter for it.
-                    nullableUnderlyingType = default;
-                    return ClassType.Value;
-                }
-            }
-
-            converter = options.DetermineConverterForProperty(parentClassType, type, propertyInfo);
-
-            if (converter != null)
-            {
-                elementType = default;
-                addMethod = default;
-                return type == typeof(object) ? ClassType.Unknown : ClassType.Value;
-            }
-
-            runtimeType = type;
-
-            if (!(typeof(IEnumerable)).IsAssignableFrom(type))
-            {
-                elementType = null;
-                addMethod = default;
-                return ClassType.Object;
-            }
-
-            if (type.IsArray)
-            {
-                elementType = type.GetElementType();
-                addMethod = default;
-                return ClassType.Enumerable;
-            }
-
-            if (type.FullName != null)
-            {
-                if (type.FullName.StartsWith("System.Collections.Generic.IEnumerable`1"))
-                {
-                    elementType = type.GetGenericArguments()[0];
-                    runtimeType = typeof(List<>).MakeGenericType(elementType);
-                    addMethod = default;
-                    return ClassType.Enumerable;
-                }
-                else if (type.FullName.StartsWith("System.Collections.Generic.IDictionary`2") ||
-                    type.FullName.StartsWith("System.Collections.Generic.IReadOnlyDictionary`2"))
-                {
-                    Type[] genericTypes = type.GetGenericArguments();
-
-                    elementType = genericTypes[1];
-                    runtimeType = typeof(Dictionary<,>).MakeGenericType(genericTypes[0], elementType);
-                    addMethod = default;
-                    return ClassType.Dictionary;
-                }
-            }
-
-
-            {
-                Type? genericIDictionaryType = type.GetInterface("System.Collections.Generic.IDictionary`2") ?? type.GetInterface("System.Collections.Generic.IReadOnlyDictionary`2");
-                if (genericIDictionaryType != null)
-                {
-                    Type[] genericTypes = genericIDictionaryType.GetGenericArguments();
-                    elementType = genericTypes[1];
-                    addMethod = default;
-
-                    if (type.IsInterface)
-                    {
-                        Type concreteDictionaryType = typeof(Dictionary<,>).MakeGenericType(genericTypes[0], genericTypes[1]);
-
-                        if (type.IsAssignableFrom(concreteDictionaryType))
-                        {
-                            runtimeType = concreteDictionaryType;
-                        }
-                    }
-
-                    return ClassType.Dictionary;
-                }
-            }
-
-            if (typeof(IDictionary).IsAssignableFrom(type))
-            {
-                elementType = typeof(object);
-                addMethod = default;
-
-                if (type.IsInterface)
-                {
-                    Type concreteDictionaryType = typeof(Dictionary<string, object>);
-
-                    if (type.IsAssignableFrom(concreteDictionaryType))
-                    {
-                        runtimeType = concreteDictionaryType;
-                    }
-                }
-
-                return ClassType.Dictionary;
-            }
-
-            {
-                Type? genericIEnumerableType = type.GetInterface("System.Collections.Generic.IEnumerable`1");
-
-                if (genericIEnumerableType != null)
-                {
-                    elementType = genericIEnumerableType.GetGenericArguments()[0];
-                }
-                else
-                {
-                    elementType = typeof(object);
-                }
-            }
-
-            if (typeof(IList).IsAssignableFrom(type))
-            {
-                addMethod = default;
-
-                if (type.IsInterface)
-                {
-                    Type concreteListType = typeof(List<>).MakeGenericType(elementType);
-                    if (type.IsAssignableFrom(concreteListType))
-                    {
-                        runtimeType = concreteListType;
-                    }
-                }
-            }
-            else if (type.IsInterface)
-            {
-                addMethod = default;
-
-                Type concreteType = typeof(List<>).MakeGenericType(elementType);
-                if (type.IsAssignableFrom(concreteType))
-                {
-                    runtimeType = concreteType;
-                }
-                else
-                {
-                    concreteType = typeof(HashSet<>).MakeGenericType(elementType);
-                    if (type.IsAssignableFrom(concreteType))
-                    {
-                        runtimeType = concreteType;
-                    }
-                }
+                runtimeType = type;
             }
             else
             {
-                addMethod = default;
-
-                if (checkForAddMethod)
+                if (type.IsInterface)
                 {
-                    Type? genericICollectionType = type.GetInterface("System.Collections.Generic.ICollection`1");
-                    if (genericICollectionType != null)
+                    runtimeType = converterRuntimeType;
+                }
+                else if (converterRuntimeType.IsInterface)
+                {
+                    runtimeType = type;
+                }
+                else
+                {
+                    // Use the most derived version from the converter.RuntimeType or converter.TypeToConvert.
+                    if (type.IsAssignableFrom(converterRuntimeType))
                     {
-                        addMethod = genericICollectionType.GetMethod("Add");
+                        runtimeType = converterRuntimeType;
+                    }
+                    else if (converterRuntimeType.IsAssignableFrom(type) || converter.TypeToConvert.IsAssignableFrom(type))
+                    {
+                        runtimeType = type;
                     }
                     else
                     {
-                        // Non-immutable stack or queue.
-                        MethodInfo? methodInfo = type.GetMethod("Push") ?? type.GetMethod("Enqueue");
-                        if (methodInfo?.ReturnType == typeof(void))
-                        {
-                            addMethod = methodInfo;
-                        }
+                        runtimeType = default!;
+                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(type);
                     }
                 }
             }
 
-            return ClassType.Enumerable;
+            return converter;
         }
     }
 }

@@ -9,7 +9,6 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Primitives
 {
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public class ExportedDelegate
     {
         private readonly object? _instance;

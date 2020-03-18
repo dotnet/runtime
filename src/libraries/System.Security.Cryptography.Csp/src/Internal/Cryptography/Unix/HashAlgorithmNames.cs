@@ -61,7 +61,7 @@ namespace Internal.Cryptography
             }
             else
             {
-                string oidValue = CryptoConfig.MapNameToOID(nameOrOid);
+                string? oidValue = CryptoConfig.MapNameToOID(nameOrOid);
                 if (oidValue == null)
                     oidValue = nameOrOid; // we were probably passed an OID value directly
 

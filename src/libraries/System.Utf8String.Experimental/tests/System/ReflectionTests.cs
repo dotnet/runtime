@@ -9,6 +9,7 @@ using static System.Tests.Utf8TestUtilities;
 
 namespace System.Tests
 {
+    [SkipOnMono("The features from System.Utf8String.Experimental namespace are experimental.")]
     public partial class ReflectionTests
     {
         [Fact]
@@ -22,15 +23,6 @@ namespace System.Tests
         public static void ActivatorCreateInstance_CannotCallParameterlessCtor()
         {
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(Utf8String)));
-        }
-
-        [Fact]
-        public static void FormatterServices_GetUninitializedObject_Throws()
-        {
-            // Like String, shouldn't be able to create an uninitialized Utf8String.
-
-            Assert.Throws<ArgumentException>(() => FormatterServices.GetSafeUninitializedObject(typeof(Utf8String)));
-            Assert.Throws<ArgumentException>(() => FormatterServices.GetUninitializedObject(typeof(Utf8String)));
         }
     }
 }

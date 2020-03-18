@@ -369,6 +369,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         /// length end, or zero if <code>positionInStream</code> is beyond stream length end, but not more than <code>length</code>.
         /// </summary>
         /// <param name="underlyingStream">A memory stream to share the data memory with the buffer being created.</param>
+        /// <param name="positionInStream">The position of the shared memory region.</param>
+        /// <param name="length">The maximum size of the shared memory region.</param>
         /// <returns>A new <code>IBuffer</code> backed by the same memory as this specified stream.</returns>
         [CLSCompliant(false)]
         public static IBuffer GetWindowsRuntimeBuffer(this MemoryStream underlyingStream, int positionInStream, int length)

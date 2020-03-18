@@ -1433,11 +1433,7 @@ HRESULT Cordb::SetTargetCLR(HMODULE hmodTargetCLR)
     // the same model because coreclr.dll isn't in this process and hmodTargetCLR
     // is the debuggee target, not the coreclr.dll to bind utilcode to..
 
-    CoreClrCallbacks cccallbacks;
-    cccallbacks.m_hmodCoreCLR               = hmodTargetCLR;
-    cccallbacks.m_pfnIEE                    = NULL;
-    cccallbacks.m_pfnGetCORSystemDirectory  = NULL;
-    InitUtilcode(cccallbacks);
+    g_hmodCoreCLR = hmodTargetCLR;
 
     return S_OK;
 }

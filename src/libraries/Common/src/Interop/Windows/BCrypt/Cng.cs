@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Text;
 using System.Diagnostics;
@@ -12,7 +13,6 @@ using static Interop;
 using static Interop.BCrypt;
 using Microsoft.Win32.SafeHandles;
 
-#nullable enable
 namespace Internal.NativeCrypto
 {
     internal static partial class BCryptNative
@@ -69,7 +69,7 @@ namespace Internal.NativeCrypto
         public const string BCRYPT_CHAIN_MODE_GCM = "ChainingModeGCM";
         public const string BCRYPT_CHAIN_MODE_CCM = "ChainingModeCCM";
 
-        public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(string pszAlgId, string pszImplementation, OpenAlgorithmProviderFlags dwFlags)
+        public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(string pszAlgId, string? pszImplementation, OpenAlgorithmProviderFlags dwFlags)
         {
             SafeAlgorithmHandle hAlgorithm;
             NTSTATUS ntStatus = Interop.BCryptOpenAlgorithmProvider(out hAlgorithm, pszAlgId, pszImplementation, (int)dwFlags);
@@ -111,7 +111,7 @@ namespace Internal.NativeCrypto
         internal static class Interop
         {
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, string pszAlgId, string pszImplementation, int dwFlags);
+            public static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, string pszAlgId, string? pszImplementation, int dwFlags);
 
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, string pszProperty, string pbInput, int cbInput, int dwFlags);

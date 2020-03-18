@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public static bool operator ==(CngAlgorithm left, CngAlgorithm right)
+        public static bool operator ==(CngAlgorithm? left, CngAlgorithm? right)
         {
             if (object.ReferenceEquals(left, null))
             {
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography
             return left.Equals(right);
         }
 
-        public static bool operator !=(CngAlgorithm left, CngAlgorithm right)
+        public static bool operator !=(CngAlgorithm? left, CngAlgorithm? right)
         {
             if (object.ReferenceEquals(left, null))
             {
@@ -56,14 +56,14 @@ namespace System.Security.Cryptography
             return !left.Equals(right);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             Debug.Assert(_algorithm != null);
 
             return Equals(obj as CngAlgorithm);
         }
 
-        public bool Equals(CngAlgorithm other)
+        public bool Equals(CngAlgorithm? other)
         {
             if (object.ReferenceEquals(other, null))
             {
@@ -201,20 +201,20 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static CngAlgorithm s_ecdh;
-        private static CngAlgorithm s_ecdhp256;
-        private static CngAlgorithm s_ecdhp384;
-        private static CngAlgorithm s_ecdhp521;
-        private static CngAlgorithm s_ecdsa;
-        private static CngAlgorithm s_ecdsap256;
-        private static CngAlgorithm s_ecdsap384;
-        private static CngAlgorithm s_ecdsap521;
-        private static CngAlgorithm s_md5;
-        private static CngAlgorithm s_sha1;
-        private static CngAlgorithm s_sha256;
-        private static CngAlgorithm s_sha384;
-        private static CngAlgorithm s_sha512;
-        private static CngAlgorithm s_rsa;
+        private static CngAlgorithm? s_ecdh;
+        private static CngAlgorithm? s_ecdhp256;
+        private static CngAlgorithm? s_ecdhp384;
+        private static CngAlgorithm? s_ecdhp521;
+        private static CngAlgorithm? s_ecdsa;
+        private static CngAlgorithm? s_ecdsap256;
+        private static CngAlgorithm? s_ecdsap384;
+        private static CngAlgorithm? s_ecdsap521;
+        private static CngAlgorithm? s_md5;
+        private static CngAlgorithm? s_sha1;
+        private static CngAlgorithm? s_sha256;
+        private static CngAlgorithm? s_sha384;
+        private static CngAlgorithm? s_sha512;
+        private static CngAlgorithm? s_rsa;
 
         private readonly string _algorithm;
     }

@@ -566,7 +566,7 @@ namespace System.Data.OleDb
                         if (DBSOURCETYPE_DATASOURCE_TDP == sourceType || DBSOURCETYPE_DATASOURCE_MDP == sourceType)
                         {
                             string progid = (string)row[column2];
-                            if (!OleDbConnectionString.IsMSDASQL(progid.ToLower(CultureInfo.InvariantCulture)))
+                            if (!OleDbConnectionString.IsMSDASQL(progid.ToLowerInvariant()))
                             {
                                 if (0 > providerNames.IndexOf(progid))
                                 {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Net.Sockets;
 
 namespace System.Net.Internals
@@ -10,9 +11,9 @@ namespace System.Net.Internals
     {
         private sealed class ExtendedSocketException : SocketException
         {
-            private readonly EndPoint _endPoint;
+            private readonly EndPoint? _endPoint;
 
-            public ExtendedSocketException(int errorCode, EndPoint endPoint)
+            public ExtendedSocketException(int errorCode, EndPoint? endPoint)
                 : base(errorCode)
             {
                 _endPoint = endPoint;
@@ -28,7 +29,7 @@ namespace System.Net.Internals
                 (_endPoint == null) ? base.Message : base.Message + " " + _endPoint.ToString();
         }
 
-        public static SocketException CreateSocketException(int socketError, EndPoint endPoint)
+        public static SocketException CreateSocketException(int socketError, EndPoint? endPoint)
         {
             return new ExtendedSocketException(socketError, endPoint);
         }

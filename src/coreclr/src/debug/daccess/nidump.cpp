@@ -6957,7 +6957,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                                    //if there is a layout, use it to compute
                                    //the size, otherwise there is just the one
                                    //entry.
-                                   DictionaryLayout::GetFirstDictionaryBucketSize(mt->GetNumGenericArgs(), layout),
+                                   DictionaryLayout::GetDictionarySizeFromLayout(mt->GetNumGenericArgs(), layout),
                                    METHODTABLES );
 
             DisplayStartArrayWithOffset( m_pEntries, NULL, Dictionary,
@@ -7983,7 +7983,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
             {
                 PTR_DictionaryLayout layout(wrapped->IsSharedByGenericMethodInstantiations()
                                             ? dac_cast<TADDR>(wrapped->GetDictLayoutRaw()) : NULL );
-                dictSize = DictionaryLayout::GetFirstDictionaryBucketSize(imd->GetNumGenericMethodArgs(),
+                dictSize = DictionaryLayout::GetDictionarySizeFromLayout(imd->GetNumGenericMethodArgs(), 
                                                                           layout);
             }
         }
@@ -8337,9 +8337,6 @@ NativeImageDumper::DumpEEClassForMethodTable( PTR_MethodTable mt )
         DisplayWriteFieldInt( m_cbNativeSize, eecli->m_cbNativeSize,
                               EEClassLayoutInfo, VERBOSE_TYPES );
         DisplayWriteFieldInt( m_cbManagedSize, eecli->m_cbManagedSize,
-                              EEClassLayoutInfo, VERBOSE_TYPES );
-        DisplayWriteFieldInt( m_LargestAlignmentRequirementOfAllMembers,
-                              eecli->m_LargestAlignmentRequirementOfAllMembers,
                               EEClassLayoutInfo, VERBOSE_TYPES );
         DisplayWriteFieldInt( m_ManagedLargestAlignmentRequirementOfAllMembers,
                               eecli->m_ManagedLargestAlignmentRequirementOfAllMembers,
@@ -8828,7 +8825,7 @@ StandardEntryDisplay:
 }
 
 #ifdef FEATURE_READYTORUN
-IMAGE_DATA_DIRECTORY * NativeImageDumper::FindReadyToRunSection(DWORD type)
+IMAGE_DATA_DIRECTORY * NativeImageDumper::FindReadyToRunSection(ReadyToRunSectionType type)
 {
     PTR_READYTORUN_SECTION pSections = dac_cast<PTR_READYTORUN_SECTION>(dac_cast<TADDR>(m_pReadyToRunHeader) + sizeof(READYTORUN_HEADER));
     for (DWORD i = 0; i < m_pReadyToRunHeader->NumberOfSections; i++)
@@ -8852,7 +8849,7 @@ void NativeImageDumper::DumpReadyToRun()
 
     m_nativeReader = NativeFormat::NativeReader(dac_cast<PTR_BYTE>(m_decoder.GetBase()), m_decoder.GetVirtualSize());
 
-    IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = FindReadyToRunSection(READYTORUN_SECTION_RUNTIME_FUNCTIONS);
+    IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = FindReadyToRunSection(ReadyToRunSectionType::RuntimeFunctions);
     if (pRuntimeFunctionsDir != NULL)
     {
         m_pRuntimeFunctions = dac_cast<PTR_RUNTIME_FUNCTION>(m_decoder.GetDirectoryData(pRuntimeFunctionsDir));
@@ -8863,7 +8860,7 @@ void NativeImageDumper::DumpReadyToRun()
         m_nRuntimeFunctions = 0;
     }
 
-    IMAGE_DATA_DIRECTORY * pEntryPointsDir = FindReadyToRunSection(READYTORUN_SECTION_METHODDEF_ENTRYPOINTS);
+    IMAGE_DATA_DIRECTORY * pEntryPointsDir = FindReadyToRunSection(ReadyToRunSectionType::MethodDefEntryPoints);
     if (pEntryPointsDir != NULL)
         m_methodDefEntryPoints = NativeFormat::NativeArray((TADDR)&m_nativeReader, pEntryPointsDir->VirtualAddress);
 

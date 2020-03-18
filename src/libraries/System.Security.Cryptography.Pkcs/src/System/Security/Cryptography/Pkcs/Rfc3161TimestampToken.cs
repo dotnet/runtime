@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
@@ -15,12 +16,12 @@ namespace System.Security.Cryptography.Pkcs
 {
     public sealed class Rfc3161TimestampToken
     {
-        private SignedCms _parsedDocument;
-        private SignerInfo _signerInfo;
+        private SignedCms _parsedDocument = null!; // Initialized by object initializer
+        private SignerInfo? _signerInfo;
         private EssCertId? _essCertId;
         private EssCertIdV2? _essCertIdV2;
 
-        public Rfc3161TimestampTokenInfo TokenInfo { get; private set; }
+        public Rfc3161TimestampTokenInfo TokenInfo { get; private set; } = null!;
 
         private Rfc3161TimestampToken()
         {
@@ -39,10 +40,10 @@ namespace System.Security.Cryptography.Pkcs
         /// </remarks>
         public SignedCms AsSignedCms() => _parsedDocument;
 
-        private X509Certificate2 GetSignerCertificate(X509Certificate2Collection extraCandidates)
+        private X509Certificate2? GetSignerCertificate(X509Certificate2Collection? extraCandidates)
         {
             Debug.Assert(_signerInfo != null, "_signerInfo != null");
-            X509Certificate2 signerCert = _signerInfo.Certificate;
+            X509Certificate2? signerCert = _signerInfo.Certificate;
 
             if (signerCert != null)
             {
@@ -73,58 +74,56 @@ namespace System.Security.Cryptography.Pkcs
 
         public bool VerifySignatureForData(
             ReadOnlySpan<byte> data,
-            out X509Certificate2 signerCertificate,
-            X509Certificate2Collection extraCandidates = null)
+            [NotNullWhen(true)] out X509Certificate2? signerCertificate,
+            X509Certificate2Collection? extraCandidates = null)
         {
             signerCertificate = null;
 
-            X509Certificate2 cert = GetSignerCertificate(extraCandidates);
+            X509Certificate2? cert = GetSignerCertificate(extraCandidates);
 
             if (cert == null)
             {
                 return false;
             }
 
-            bool ret = VerifyData(data);
-
-            if (ret)
+            if (VerifyData(data))
             {
                 signerCertificate = cert;
+                return true;
             }
 
-            return ret;
+            return false;
         }
 
         public bool VerifySignatureForHash(
             ReadOnlySpan<byte> hash,
             HashAlgorithmName hashAlgorithm,
-            out X509Certificate2 signerCertificate,
-            X509Certificate2Collection extraCandidates = null)
+            [NotNullWhen(true)] out X509Certificate2? signerCertificate,
+            X509Certificate2Collection? extraCandidates = null)
         {
             signerCertificate = null;
 
-            X509Certificate2 cert = GetSignerCertificate(extraCandidates);
+            X509Certificate2? cert = GetSignerCertificate(extraCandidates);
 
             if (cert == null)
             {
                 return false;
             }
 
-            bool ret = VerifyHash(hash, PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithm));
-
-            if (ret)
+            if (VerifyHash(hash, PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithm)))
             {
                 signerCertificate = cert;
+                return true;
             }
 
-            return ret;
+            return false;
         }
 
         public bool VerifySignatureForHash(
             ReadOnlySpan<byte> hash,
             Oid hashAlgorithmId,
-            out X509Certificate2 signerCertificate,
-            X509Certificate2Collection extraCandidates = null)
+            [NotNullWhen(true)] out X509Certificate2? signerCertificate,
+            X509Certificate2Collection? extraCandidates = null)
         {
             if (hashAlgorithmId == null)
             {
@@ -133,31 +132,30 @@ namespace System.Security.Cryptography.Pkcs
 
             signerCertificate = null;
 
-            X509Certificate2 cert = GetSignerCertificate(extraCandidates);
+            X509Certificate2? cert = GetSignerCertificate(extraCandidates);
 
             if (cert == null)
             {
                 return false;
             }
 
-            bool ret = VerifyHash(hash, hashAlgorithmId.Value);
-
-            if (ret)
+            if (VerifyHash(hash, hashAlgorithmId.Value))
             {
                 // REVIEW: Should this return the cert, or new X509Certificate2(cert.RawData)?
                 // SignedCms.SignerInfos builds new objects each call, which makes
                 // ReferenceEquals(cms.SignerInfos[0].Certificate, cms.SignerInfos[0].Certificate) be false.
                 // So maybe it's weird to give back a cert we've copied from that?
                 signerCertificate = cert;
+                return true;
             }
 
-            return ret;
+            return false;
         }
 
         public bool VerifySignatureForSignerInfo(
             SignerInfo signerInfo,
-            out X509Certificate2 signerCertificate,
-            X509Certificate2Collection extraCandidates = null)
+            [NotNullWhen(true)] out X509Certificate2? signerCertificate,
+            X509Certificate2Collection? extraCandidates = null)
         {
             if (signerInfo == null)
             {
@@ -170,7 +168,7 @@ namespace System.Security.Cryptography.Pkcs
                 extraCandidates);
         }
 
-        internal bool VerifyHash(ReadOnlySpan<byte> hash, string hashAlgorithmId)
+        internal bool VerifyHash(ReadOnlySpan<byte> hash, string? hashAlgorithmId)
         {
             return
                 hash.SequenceEqual(TokenInfo.GetMessageHash().Span) &&
@@ -290,7 +288,7 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        public static bool TryDecode(ReadOnlyMemory<byte> source, out Rfc3161TimestampToken token, out int bytesConsumed)
+        public static bool TryDecode(ReadOnlyMemory<byte> source, [NotNullWhen(true)] out Rfc3161TimestampToken? token, out int bytesConsumed)
         {
             bytesConsumed = 0;
             token = null;
@@ -361,14 +359,14 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                X509Certificate2 signerCert = signer.Certificate;
+                X509Certificate2? signerCert = signer.Certificate;
 
                 if (signerCert == null &&
                     signer.SignerIdentifier.Type == SubjectIdentifierType.IssuerAndSerialNumber)
                 {
                     // If the cert wasn't provided, but the identifier was IssuerAndSerialNumber,
                     // and the ESSCertId(V2) has specified an issuerSerial value, ensure it's a match.
-                    X509IssuerSerial issuerSerial = (X509IssuerSerial)signer.SignerIdentifier.Value;
+                    X509IssuerSerial issuerSerial = (X509IssuerSerial)signer.SignerIdentifier.Value!;
 
                     if (certId.HasValue && certId.Value.IssuerSerial != null)
                     {
@@ -393,9 +391,7 @@ namespace System.Security.Cryptography.Pkcs
                     }
                 }
 
-                Rfc3161TimestampTokenInfo tokenInfo;
-
-                if (Rfc3161TimestampTokenInfo.TryDecode(cms.ContentInfo.Content, out tokenInfo, out _))
+                if (Rfc3161TimestampTokenInfo.TryDecode(cms.ContentInfo.Content, out Rfc3161TimestampTokenInfo? tokenInfo, out _))
                 {
                     if (signerCert != null &&
                         !CheckCertificate(signerCert, signer, in certId, in certId2, tokenInfo))
@@ -481,7 +477,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             Debug.Assert(signerCert != null);
             Debug.Assert(certId.HasValue || certId2.HasValue);
-            byte[] serialNumber = null;
+            byte[]? serialNumber = null;
 
             if (certId.HasValue)
             {
@@ -574,7 +570,7 @@ namespace System.Security.Cryptography.Pkcs
 
             foreach (CryptographicAttributeObject attrSet in signer.SignedAttributes)
             {
-                string setOid = attrSet.Oid?.Value;
+                string? setOid = attrSet.Oid?.Value;
 
                 if (setOid != null &&
                     setOid != Oids.SigningCertificate &&
@@ -585,7 +581,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 foreach (AsnEncodedData attr in attrSet.Values)
                 {
-                    string attrOid = attr.Oid?.Value;
+                    string? attrOid = attr.Oid?.Value;
 
                     if (attrOid == Oids.SigningCertificate)
                     {

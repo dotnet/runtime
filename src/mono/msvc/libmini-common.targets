@@ -82,6 +82,8 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp-stubs.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\llvmonly-runtime.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvmonly-runtime.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\monovm.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\monovm.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MonoSourceLocation)\mono\mini\Makefile.am.in" />

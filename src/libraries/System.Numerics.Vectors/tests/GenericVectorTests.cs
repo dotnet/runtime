@@ -446,10 +446,13 @@ namespace System.Numerics.Tests
         #region Tests for constructors using unsupported types
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_Guid() => TestConstructorWithUnsupportedTypes<Guid>();
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_DateTime() => TestConstructorWithUnsupportedTypes<DateTime>();
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_Char() => TestConstructorWithUnsupportedTypes<Char>();
 
         private void TestConstructorWithUnsupportedTypes<T>() where T : struct
@@ -2283,12 +2286,72 @@ namespace System.Numerics.Tests
             T[] values = GenerateRandomValuesForVector<T>();
             Vector<T> vector = new Vector<T>(values);
 
-            Vector<T> SquareRootVector = Vector.SquareRoot(vector);
-            ValidateVector(SquareRootVector,
+            Vector<T> squareRootVector = Vector.SquareRoot(vector);
+            ValidateVector(squareRootVector,
                 (index, val) =>
                 {
                     T expected = Util.Sqrt(values[index]);
                     AssertEqual(expected, val, $"SquareRoot( {FullString(values[index])} )", precision);
+                });
+        }
+
+        [Fact]
+        public void CeilingSingle()
+        {
+            float[] values = GenerateRandomValuesForVector<float>();
+            Vector<float> vector = new Vector<float>(values);
+
+            Vector<float> ceilVector = Vector.Ceiling(vector);
+            ValidateVector(ceilVector,
+                (index, val) =>
+                {
+                    float expected = MathF.Ceiling(values[index]);
+                    AssertEqual(expected, val, $"Ceiling( {FullString(values[index])} )", -1);
+                });
+        }
+
+        [Fact]
+        public void CeilingDouble()
+        {
+            double[] values = GenerateRandomValuesForVector<double>();
+            Vector<double> vector = new Vector<double>(values);
+
+            Vector<double> ceilVector = Vector.Ceiling(vector);
+            ValidateVector(ceilVector,
+                (index, val) =>
+                {
+                    double expected = Math.Ceiling(values[index]);
+                    AssertEqual(expected, val, $"Ceiling( {FullString(values[index])} )", -1);
+                });
+        }
+
+        [Fact]
+        public void FloorSingle()
+        {
+            float[] values = GenerateRandomValuesForVector<float>();
+            Vector<float> vector = new Vector<float>(values);
+
+            Vector<float> ceilVector = Vector.Floor(vector);
+            ValidateVector(ceilVector,
+                (index, val) =>
+                {
+                    float expected = MathF.Floor(values[index]);
+                    AssertEqual(expected, val, $"Ceiling( {FullString(values[index])} )", -1);
+                });
+        }
+
+        [Fact]
+        public void FloorDouble()
+        {
+            double[] values = GenerateRandomValuesForVector<double>();
+            Vector<double> vector = new Vector<double>(values);
+
+            Vector<double> ceilVector = Vector.Floor(vector);
+            ValidateVector(ceilVector,
+                (index, val) =>
+                {
+                    double expected = Math.Floor(values[index]);
+                    AssertEqual(expected, val, $"Ceiling( {FullString(values[index])} )", -1);
                 });
         }
 

@@ -9,7 +9,6 @@ namespace System.ComponentModel.Composition
     /// <summary>
     ///     Specifies that a type or interface that provides a particular export.
     /// </summary>
-    [SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = true)]
     public class InheritedExportAttribute : ExportAttribute
     {

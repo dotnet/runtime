@@ -28,10 +28,10 @@ namespace System.Net.Security
 
         private readonly Stream _innerStream;
 
-        private Exception _exception;
+        private Exception? _exception;
 
-        private StreamFramer _framer;
-        private NTAuthentication _context;
+        private StreamFramer? _framer;
+        private NTAuthentication? _context;
 
         private int _nestedAuth;
 
@@ -45,7 +45,7 @@ namespace System.Net.Security
         private uint _writeSequenceNumber;
         private uint _readSequenceNumber;
 
-        private ExtendedProtectionPolicy _extendedProtectionPolicy;
+        private ExtendedProtectionPolicy? _extendedProtectionPolicy;
 
         // SSPI does not send a server ack on successful auth.
         // This is a state variable used to gracefully handle auth confirmation.
@@ -69,14 +69,14 @@ namespace System.Net.Security
         internal IIdentity GetIdentity()
         {
             CheckThrow(true);
-            return NegotiateStreamPal.GetIdentity(_context);
+            return NegotiateStreamPal.GetIdentity(_context!);
         }
 
         internal void ValidateCreateContext(
             string package,
             NetworkCredential credential,
             string servicePrincipalName,
-            ExtendedProtectionPolicy policy,
+            ExtendedProtectionPolicy? policy,
             ProtectionLevel protectionLevel,
             TokenImpersonationLevel impersonationLevel)
         {
@@ -95,15 +95,15 @@ namespace System.Net.Security
                 _extendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
             }
 
-            ValidateCreateContext(package, true, credential, servicePrincipalName, _extendedProtectionPolicy.CustomChannelBinding, protectionLevel, impersonationLevel);
+            ValidateCreateContext(package, true, credential, servicePrincipalName, _extendedProtectionPolicy!.CustomChannelBinding, protectionLevel, impersonationLevel);
         }
 
         internal void ValidateCreateContext(
             string package,
             bool isServer,
             NetworkCredential credential,
-            string servicePrincipalName,
-            ChannelBinding channelBinding,
+            string? servicePrincipalName,
+            ChannelBinding? channelBinding,
             ProtectionLevel protectionLevel,
             TokenImpersonationLevel impersonationLevel)
         {
@@ -162,7 +162,7 @@ namespace System.Net.Security
 
             if (isServer)
             {
-                if (_extendedProtectionPolicy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
+                if (_extendedProtectionPolicy!.PolicyEnforcement == PolicyEnforcement.WhenSupported)
                 {
                     flags |= ContextFlagsPal.AllowMissingBindings;
                 }
@@ -196,7 +196,7 @@ namespace System.Net.Security
 
             try
             {
-                _context = new NTAuthentication(isServer, package, credential, servicePrincipalName, flags, channelBinding);
+                _context = new NTAuthentication(isServer, package, credential, servicePrincipalName, flags, channelBinding!);
             }
             catch (Win32Exception e)
             {
@@ -216,7 +216,7 @@ namespace System.Net.Security
                 _context.CloseContext();
             }
 
-            return _exception;
+            return _exception!;
         }
 
         internal bool IsAuthenticated
@@ -237,7 +237,7 @@ namespace System.Net.Security
                 }
 
                 // Suppressing for NTLM since SSPI does not return correct value in the context flags.
-                if (_context.IsNTLM)
+                if (_context!.IsNTLM)
                 {
                     return false;
                 }
@@ -250,7 +250,7 @@ namespace System.Net.Security
         {
             get
             {
-                return IsAuthenticated && _context.IsConfidentialityFlag;
+                return IsAuthenticated && _context!.IsConfidentialityFlag;
             }
         }
 
@@ -258,7 +258,7 @@ namespace System.Net.Security
         {
             get
             {
-                return IsAuthenticated && (_context.IsIntegrityFlag || _context.IsConfidentialityFlag);
+                return IsAuthenticated && (_context!.IsIntegrityFlag || _context.IsConfidentialityFlag);
             }
         }
 
@@ -274,7 +274,7 @@ namespace System.Net.Security
         {
             get
             {
-                return (_context.IsConfidentialityFlag || _context.IsIntegrityFlag);
+                return (_context!.IsConfidentialityFlag || _context.IsIntegrityFlag);
             }
         }
 
@@ -292,7 +292,7 @@ namespace System.Net.Security
             get
             {
                 // We should suppress the delegate flag in NTLM case.
-                return (_context.IsDelegationFlag && _context.ProtocolName != NegotiationInfoClass.NTLM) ? TokenImpersonationLevel.Delegation
+                return (_context!.IsDelegationFlag && _context.ProtocolName != NegotiationInfoClass.NTLM) ? TokenImpersonationLevel.Delegation
                         : _context.IsIdentifyFlag ? TokenImpersonationLevel.Identification
                         : TokenImpersonationLevel.Impersonation;
             }
@@ -302,7 +302,7 @@ namespace System.Net.Security
         {
             get
             {
-                return _context.IsCompleted && _context.IsValidContext;
+                return _context!.IsCompleted && _context.IsValidContext;
             }
         }
 
@@ -332,7 +332,7 @@ namespace System.Net.Security
             }
         }
 
-        internal void ProcessAuthentication(LazyAsyncResult lazyResult)
+        internal void ProcessAuthentication(LazyAsyncResult? lazyResult)
         {
             CheckThrow(false);
             if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
@@ -342,7 +342,7 @@ namespace System.Net.Security
 
             try
             {
-                if (_context.IsServer)
+                if (_context!.IsServer)
                 {
                     // Listen for a client blob.
                     StartReceiveBlob(lazyResult);
@@ -375,7 +375,7 @@ namespace System.Net.Security
                 throw new ArgumentNullException("asyncResult");
             }
 
-            LazyAsyncResult lazyResult = result as LazyAsyncResult;
+            LazyAsyncResult? lazyResult = result as LazyAsyncResult;
             if (lazyResult == null)
             {
                 throw new ArgumentException(SR.Format(SR.net_io_async_result, result.GetType().FullName), "asyncResult");
@@ -389,7 +389,7 @@ namespace System.Net.Security
             // No "artificial" timeouts implemented so far, InnerStream controls that.
             lazyResult.InternalWaitForCompletion();
 
-            Exception e = lazyResult.Result as Exception;
+            Exception? e = lazyResult.Result as Exception;
 
             if (e != null)
             {
@@ -401,18 +401,18 @@ namespace System.Net.Security
 
         private bool CheckSpn()
         {
-            if (_context.IsKerberos)
+            if (_context!.IsKerberos)
             {
                 return true;
             }
 
-            if (_extendedProtectionPolicy.PolicyEnforcement == PolicyEnforcement.Never ||
+            if (_extendedProtectionPolicy!.PolicyEnforcement == PolicyEnforcement.Never ||
                     _extendedProtectionPolicy.CustomServiceNames == null)
             {
                 return true;
             }
 
-            string clientSpn = _context.ClientSpecifiedSpn;
+            string? clientSpn = _context.ClientSpecifiedSpn;
 
             if (string.IsNullOrEmpty(clientSpn))
             {
@@ -432,9 +432,9 @@ namespace System.Net.Security
         //
         // Client side starts here, but server also loops through this method.
         //
-        private void StartSendBlob(byte[] message, LazyAsyncResult lazyResult)
+        private void StartSendBlob(byte[]? message, LazyAsyncResult? lazyResult)
         {
-            Exception exception = null;
+            Exception? exception = null;
             if (message != s_emptyMessage)
             {
                 message = GetOutgoingBlob(message, ref exception);
@@ -443,13 +443,13 @@ namespace System.Net.Security
             if (exception != null)
             {
                 // Signal remote side on a failed attempt.
-                StartSendAuthResetSignal(lazyResult, message, exception);
+                StartSendAuthResetSignal(lazyResult, message!, exception);
                 return;
             }
 
             if (HandshakeComplete)
             {
-                if (_context.IsServer && !CheckSpn())
+                if (_context!.IsServer && !CheckSpn())
                 {
                     exception = new AuthenticationException(SR.net_auth_bad_client_creds_or_target_mismatch);
                     int statusCode = ERROR_TRUST_FAILURE;
@@ -500,7 +500,7 @@ namespace System.Net.Security
                 }
 
                 // Signal remote party that we are done
-                _framer.WriteHeader.MessageId = FrameHeader.HandshakeDoneId;
+                _framer!.WriteHeader.MessageId = FrameHeader.HandshakeDoneId;
                 if (_context.IsServer)
                 {
                     // Server may complete now because client SSPI would not complain at this point.
@@ -524,11 +524,11 @@ namespace System.Net.Security
                 //even if we are completed, there could be a blob for sending.
                 if (lazyResult == null)
                 {
-                    _framer.WriteMessage(message);
+                    _framer!.WriteMessage(message);
                 }
                 else
                 {
-                    IAsyncResult ar = _framer.BeginWriteMessage(message, s_writeCallback, lazyResult);
+                    IAsyncResult ar = _framer!.BeginWriteMessage(message, s_writeCallback, lazyResult);
                     if (!ar.CompletedSynchronously)
                     {
                         return;
@@ -542,7 +542,7 @@ namespace System.Net.Security
         //
         // This will check and logically complete the auth handshake.
         //
-        private void CheckCompletionBeforeNextReceive(LazyAsyncResult lazyResult)
+        private void CheckCompletionBeforeNextReceive(LazyAsyncResult? lazyResult)
         {
             if (HandshakeComplete && _remoteOk)
             {
@@ -561,9 +561,11 @@ namespace System.Net.Security
         //
         // Server side starts here, but client also loops through this method.
         //
-        private void StartReceiveBlob(LazyAsyncResult lazyResult)
+        private void StartReceiveBlob(LazyAsyncResult? lazyResult)
         {
-            byte[] message;
+            Debug.Assert(_framer != null);
+
+            byte[]? message;
             if (lazyResult == null)
             {
                 message = _framer.ReadMessage();
@@ -582,7 +584,7 @@ namespace System.Net.Security
             ProcessReceivedBlob(message, lazyResult);
         }
 
-        private void ProcessReceivedBlob(byte[] message, LazyAsyncResult lazyResult)
+        private void ProcessReceivedBlob(byte[]? message, LazyAsyncResult? lazyResult)
         {
             // This is an EOF otherwise we would get at least *empty* message but not a null one.
             if (message == null)
@@ -591,7 +593,7 @@ namespace System.Net.Security
             }
 
             // Process Header information.
-            if (_framer.ReadHeader.MessageId == FrameHeader.HandshakeErrId)
+            if (_framer!.ReadHeader.MessageId == FrameHeader.HandshakeErrId)
             {
                 if (message.Length >= 8)    // sizeof(long)
                 {
@@ -623,14 +625,14 @@ namespace System.Net.Security
         //
         // This will check and logically complete the auth handshake.
         //
-        private void CheckCompletionBeforeNextSend(byte[] message, LazyAsyncResult lazyResult)
+        private void CheckCompletionBeforeNextSend(byte[] message, LazyAsyncResult? lazyResult)
         {
             //If we are done don't go into send.
             if (HandshakeComplete)
             {
                 if (!_remoteOk)
                 {
-                    throw new AuthenticationException(SR.Format(SR.net_io_header_id, "MessageId", _framer.ReadHeader.MessageId, FrameHeader.HandshakeDoneId), null);
+                    throw new AuthenticationException(SR.Format(SR.net_io_header_id, "MessageId", _framer!.ReadHeader.MessageId, FrameHeader.HandshakeDoneId), null);
                 }
                 if (lazyResult != null)
                 {
@@ -648,9 +650,9 @@ namespace System.Net.Security
         //  This is to reset auth state on the remote side.
         //  If this write succeeds we will allow auth retrying.
         //
-        private void StartSendAuthResetSignal(LazyAsyncResult lazyResult, byte[] message, Exception exception)
+        private void StartSendAuthResetSignal(LazyAsyncResult? lazyResult, byte[] message, Exception exception)
         {
-            _framer.WriteHeader.MessageId = FrameHeader.HandshakeErrId;
+            _framer!.WriteHeader.MessageId = FrameHeader.HandshakeErrId;
 
             if (IsLogonDeniedException(exception))
             {
@@ -701,13 +703,13 @@ namespace System.Net.Security
                 return;
             }
 
-            LazyAsyncResult lazyResult = (LazyAsyncResult)transportResult.AsyncState;
+            LazyAsyncResult lazyResult = (LazyAsyncResult)transportResult.AsyncState!;
 
             // Async completion.
             try
             {
-                NegoState authState = (NegoState)lazyResult.AsyncObject;
-                authState._framer.EndWriteMessage(transportResult);
+                NegoState authState = (NegoState)lazyResult.AsyncObject!;
+                authState._framer!.EndWriteMessage(transportResult);
 
                 // Special case for an error notification.
                 if (lazyResult.Result is Exception e)
@@ -742,13 +744,13 @@ namespace System.Net.Security
                 return;
             }
 
-            LazyAsyncResult lazyResult = (LazyAsyncResult)transportResult.AsyncState;
+            LazyAsyncResult lazyResult = (LazyAsyncResult)transportResult.AsyncState!;
 
             // Async completion.
             try
             {
-                NegoState authState = (NegoState)lazyResult.AsyncObject;
-                byte[] message = authState._framer.EndReadMessage(transportResult);
+                NegoState authState = (NegoState)lazyResult.AsyncObject!;
+                byte[]? message = authState._framer!.EndReadMessage(transportResult);
                 authState.ProcessReceivedBlob(message, lazyResult);
             }
             catch (Exception e)
@@ -768,9 +770,9 @@ namespace System.Net.Security
             return ((int)status.ErrorCode >= (int)SecurityStatusPalErrorCode.OutOfMemory);
         }
 
-        private unsafe byte[] GetOutgoingBlob(byte[] incomingBlob, ref Exception e)
+        private unsafe byte[]? GetOutgoingBlob(byte[]? incomingBlob, ref Exception? e)
         {
-            byte[] message = _context.GetOutgoingBlob(incomingBlob, false, out SecurityStatusPal statusCode);
+            byte[]? message = _context!.GetOutgoingBlob(incomingBlob, false, out SecurityStatusPal statusCode);
 
             if (IsError(statusCode))
             {
@@ -793,13 +795,13 @@ namespace System.Net.Security
             return message;
         }
 
-        internal int EncryptData(byte[] buffer, int offset, int count, ref byte[] outBuffer)
+        internal int EncryptData(byte[] buffer, int offset, int count, ref byte[]? outBuffer)
         {
             CheckThrow(true);
 
             // SSPI seems to ignore this sequence number.
             ++_writeSequenceNumber;
-            return _context.Encrypt(buffer, offset, count, ref outBuffer, _writeSequenceNumber);
+            return _context!.Encrypt(buffer, offset, count, ref outBuffer, _writeSequenceNumber);
         }
 
         internal int DecryptData(byte[] buffer, int offset, int count, out int newOffset)
@@ -808,7 +810,7 @@ namespace System.Net.Security
 
             // SSPI seems to ignore this sequence number.
             ++_readSequenceNumber;
-            return _context.Decrypt(buffer, offset, count, out newOffset, _readSequenceNumber);
+            return _context!.Decrypt(buffer, offset, count, out newOffset, _readSequenceNumber);
         }
 
         internal static void ThrowCredentialException(long error)
@@ -830,7 +832,7 @@ namespace System.Net.Security
 
         internal static bool IsLogonDeniedException(Exception exception)
         {
-            Win32Exception win32exception = exception as Win32Exception;
+            Win32Exception? win32exception = exception as Win32Exception;
 
             return (win32exception != null) && (win32exception.NativeErrorCode == (int)SecurityStatusPalErrorCode.LogonDenied);
         }

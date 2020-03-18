@@ -25,9 +25,9 @@ namespace System.Security.Cryptography
             return new TripleDesImplementation();
         }
 
-        public static new TripleDES Create(string str)
+        public static new TripleDES? Create(string str)
         {
-            return (TripleDES)CryptoConfig.CreateFromName(str);
+            return (TripleDES?)CryptoConfig.CreateFromName(str);
         }
 
         public override byte[] Key

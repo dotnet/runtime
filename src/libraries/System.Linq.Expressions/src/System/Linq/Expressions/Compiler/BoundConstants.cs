@@ -43,7 +43,6 @@ namespace System.Linq.Expressions.Compiler
             {
                 return object.ReferenceEquals(Value, other.Value) && Type.Equals(other.Type);
             }
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2231:OverloadOperatorEqualsOnOverridingValueTypeEquals")]
             public override bool Equals(object? obj)
             {
                 return obj is TypedConstant typedConstant && Equals(typedConstant);
@@ -58,7 +57,7 @@ namespace System.Linq.Expressions.Compiler
         /// <summary>
         /// The index of each constant in the constant array
         /// </summary>
-        private readonly Dictionary<object, int> _indexes = new Dictionary<object, int>(ReferenceEqualityComparer<object>.Instance);
+        private readonly Dictionary<object, int> _indexes = new Dictionary<object, int>(ReferenceEqualityComparer.Instance);
 
         /// <summary>
         /// Each constant referenced within this lambda, and how often it was referenced

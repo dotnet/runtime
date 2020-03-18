@@ -43,7 +43,6 @@ namespace System.Linq.Expressions.Compiler
             _labelBlock = new LabelScopeInfo(_labelBlock, type);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kind")]
         private void PopLabelBlock(LabelScopeKind kind)
         {
             Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind);

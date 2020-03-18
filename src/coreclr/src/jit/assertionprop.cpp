@@ -5193,8 +5193,15 @@ void Compiler::optAssertionPropMain()
         }
     }
 
-    if (!optAssertionCount)
+    if (optAssertionCount == 0)
     {
+        // Zero out the bbAssertionIn values, as these can be referenced in RangeCheck::MergeAssertion
+        // and this is sharedstate with the CSE phase: bbCseIn
+        //
+        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        {
+            block->bbAssertionIn = BitVecOps::MakeEmpty(apTraits);
+        }
         return;
     }
 

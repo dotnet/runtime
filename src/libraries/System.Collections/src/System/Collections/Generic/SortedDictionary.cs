@@ -441,7 +441,6 @@ namespace System.Collections.Generic
             return new Enumerator(this, Enumerator.KeyValuePair);
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
             private TreeSet<KeyValuePair<TKey, TValue>>.Enumerator _treeEnum;
@@ -689,7 +688,6 @@ namespace System.Collections.Generic
                 get { return ((ICollection)_dictionary).SyncRoot; }
             }
 
-            [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
             public struct Enumerator : IEnumerator<TKey>, IEnumerator
             {
                 private SortedDictionary<TKey, TValue>.Enumerator _dictEnum;
@@ -873,7 +871,6 @@ namespace System.Collections.Generic
                 get { return ((ICollection)_dictionary).SyncRoot; }
             }
 
-            [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
             public struct Enumerator : IEnumerator<TValue>, IEnumerator
             {
                 private SortedDictionary<TKey, TValue>.Enumerator _dictEnum;

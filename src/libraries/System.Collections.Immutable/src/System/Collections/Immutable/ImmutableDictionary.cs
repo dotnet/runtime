@@ -12,7 +12,6 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A set of initialization methods for instances of <see cref="ImmutableDictionary{TKey, TValue}"/>.
     /// </summary>
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public static class ImmutableDictionary
     {
         /// <summary>
@@ -66,7 +65,6 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> items) where TKey : notnull
         {
             return ImmutableDictionary<TKey, TValue>.Empty.AddRange(items);
@@ -81,7 +79,6 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEqualityComparer<TKey>? keyComparer, IEnumerable<KeyValuePair<TKey, TValue>> items) where TKey : notnull
         {
             return ImmutableDictionary<TKey, TValue>.Empty.WithComparers(keyComparer).AddRange(items);
@@ -97,7 +94,6 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEqualityComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer, IEnumerable<KeyValuePair<TKey, TValue>> items) where TKey : notnull
         {
             return ImmutableDictionary<TKey, TValue>.Empty.WithComparers(keyComparer, valueComparer).AddRange(items);
@@ -250,7 +246,6 @@ namespace System.Collections.Immutable
         /// <param name="valueComparer">The value comparer to use for the immutable map.</param>
         /// <returns>An immutable map.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer) where TKey : notnull
         {
             Requires.NotNull(source, nameof(source));
@@ -273,7 +268,6 @@ namespace System.Collections.Immutable
         /// <param name="keyComparer">The key comparer to use when building the immutable map.</param>
         /// <returns>An immutable map.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
         {
             return ToImmutableDictionary(source, keyComparer, null);
@@ -287,7 +281,6 @@ namespace System.Collections.Immutable
         /// <param name="source">The sequence of key=value pairs.</param>
         /// <returns>An immutable map.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source) where TKey : notnull
         {
             return ToImmutableDictionary(source, null, null);

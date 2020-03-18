@@ -33,7 +33,7 @@ internal static partial class Interop
             }
 
             // Marshal.PtrToStringAnsi uses UTF8 on Unix.
-            return Marshal.PtrToStringAnsi((IntPtr)name);
+            return Marshal.PtrToStringAnsi((IntPtr)name)!;
         }
     }
 }

@@ -4,31 +4,34 @@ Param(
   [switch][Alias('b')]$build,
   [switch][Alias('t')]$test,
   [switch]$buildtests,
-  [string][Alias('c')]$configuration = "Debug",
+  [string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
   [string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
-  [string]$arch,
+  [string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
   [string]$subsetCategory,
   [string]$subset,
-  [string]$runtimeConfiguration,
-  [string]$librariesConfiguration,
+  [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration = "Debug",
+  [ValidateSet("Debug","Release")][string]$librariesConfiguration,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
 function Get-Help() {
   Write-Host "Common settings:"
-  Write-Host "  -subset                 Build a subset, print available subsets with -subset help"
-  Write-Host "  -subsetCategory         Build a subsetCategory, print available subsetCategories with -subset help"
-  Write-Host "  -os                     Build operating system: Windows_NT or Unix"
-  Write-Host "  -arch                   Build platform: x86, x64, arm or arm64"
-  Write-Host "  -configuration <value>  Build configuration: Debug or Release (short: -c)"
-  Write-Host "  -verbosity <value>      MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
-  Write-Host "  -binaryLog              Output binary log (short: -bl)"
-  Write-Host "  -help                   Print help and exit (short: -h)"
+  Write-Host "  -subset                   Build a subset, print available subsets with -subset help"
+  Write-Host "  -subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
+  Write-Host "  -vs                       Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
+  Write-Host "  -os                       Build operating system: Windows_NT or Unix"
+  Write-Host "  -arch                     Build platform: x86, x64, arm or arm64 (short: -a). Pass a comma-separated list to build for multiple architectures."
+  Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c). Pass a comma-separated list to build for multiple configurations"
+  Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
+  Write-Host "  -librariesConfiguration   Libraries build configuration: Debug or Release"
+  Write-Host "  -verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
+  Write-Host "  -binaryLog                Output binary log (short: -bl)"
+  Write-Host "  -help                     Print help and exit (short: -h)"
   Write-Host ""
 
   Write-Host "Actions (defaults to -restore -build):"
@@ -36,7 +39,7 @@ function Get-Help() {
   Write-Host "  -build                  Build all source projects (short: -b)"
   Write-Host "  -buildtests             Build all test projects"
   Write-Host "  -rebuild                Rebuild all source projects"
-  Write-Host "  -test                   Run all unit tests (short: -t)"
+  Write-Host "  -test                   Build and run tests (short: -t)"
   Write-Host "  -pack                   Package build outputs into NuGet packages"
   Write-Host "  -sign                   Sign build outputs"
   Write-Host "  -publish                Publish artifacts (e.g. symbols)"
@@ -44,7 +47,6 @@ function Get-Help() {
   Write-Host ""
 
   Write-Host "Libraries settings:"
-  Write-Host "  -vs                     Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
   Write-Host "  -framework              Build framework: netcoreapp5.0 or net472 (short: -f)"
   Write-Host "  -coverage               Collect code coverage when testing"
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all"
@@ -68,8 +70,11 @@ if ($vs) {
 
   # Microsoft.DotNet.CoreSetup.sln is special - hosting tests are currently meant to run on the
   # bootstrapped .NET Core, not on the live-built runtime.
-  if ([System.IO.Path]::GetFileName($vs) -ieq "Microsoft.DotNet.CoreSetup.sln") {
+  if (([System.IO.Path]::GetFileName($vs) -ieq "Microsoft.DotNet.CoreSetup.sln") -or ($vs -ieq "Microsoft.DotNet.CoreSetup")) {
     if (-Not (Test-Path $vs)) {
+      if (-Not ( $vs.endswith(".sln"))) {
+          $vs = "$vs.sln"
+      }
       $vs = Join-Path "$PSScriptRoot\..\src\installer" $vs
     }
 
@@ -96,6 +101,9 @@ if ($vs) {
 
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
+
+  # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
+  $env:RUNTIMECONFIGURATION=$runtimeConfiguration
 
   # Launch Visual Studio with the locally defined environment variables
   ."$vs"
@@ -136,16 +144,38 @@ foreach ($argument in $PSBoundParameters.Keys)
     "build"                { $arguments += " -build" }
     "buildtests"           { if ($build -eq $true) { $arguments += " /p:BuildTests=true" } else { $arguments += " -build /p:BuildTests=only" } }
     "test"                 { $arguments += " -test" }
-    "configuration"        { $configuration = (Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])); $arguments += " /p:ConfigurationGroup=$configuration -configuration $configuration" }
     "runtimeConfiguration" { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"            { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
-    "os"                   { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
+    "os"                   { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
     "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
-    "arch"                 { $arguments += " /p:ArchGroup=$($PSBoundParameters[$argument]) /p:TargetArchitecture=$($PSBoundParameters[$argument])" }
     "properties"           { $arguments += " " + $properties }
+    # configuration and arch can be specified multiple times, so they should be no-ops here
+    "configuration"        {}
+    "arch"                 {}
     default                { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
 
-Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $arguments"
-exit $lastExitCode
+$failedBuilds = @()
+
+foreach ($config in $configuration) {
+  $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
+  foreach ($singleArch in $arch) {
+    $argumentsWithArch =  "/p:ArchGroup=$singleArch /p:TargetArchitecture=$singleArch " + $argumentsWithConfig
+    $env:__DistroRid="win-$singleArch"
+    Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
+    if ($lastExitCode -ne 0) {
+        $failedBuilds += "Configuration: $config, Architecture: $singleArch"
+    }
+  }
+}
+
+if ($failedBuilds.Count -ne 0) {
+    Write-Host "Some builds failed:"
+    foreach ($failedBuild in $failedBuilds) {
+        Write-Host "`t$failedBuild"
+    }
+    exit 1
+}
+
+exit 0

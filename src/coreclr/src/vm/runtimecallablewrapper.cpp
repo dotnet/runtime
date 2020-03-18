@@ -4081,16 +4081,6 @@ BOOL RCW::AllowEagerSTACleanup()
     // with before calling this.
     _ASSERTE(GetSTAThread() != NULL);
 
-    // If the client has called CoEEShutdownCOM, then we should always try to
-    // clean up RCWs, even if they have previously opted out by calling
-    // DisableComObjectEagerCleanup. There's no way for clients to re-enable
-    // eager cleanup so, if we don't clean up now, they will be leaked. After
-    // shutting down COM, clients would not expect any RCWs to be left over.
-    if( g_fShutDownCOM )
-    {
-        return TRUE;
-    }
-
     return m_Flags.m_fAllowEagerSTACleanup;
 }
 

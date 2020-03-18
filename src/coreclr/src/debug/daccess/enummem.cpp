@@ -21,13 +21,11 @@
 #include "binder.h"
 #include "win32threadpool.h"
 
-#ifdef TARGET_UNIX
-#include <dactablerva.h>
-#endif
-
 #ifdef FEATURE_APPX
 #include "appxutil.h"
 #endif // FEATURE_APPX
+
+extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
 #if defined(DAC_MEASURE_PERF)
 
@@ -196,8 +194,13 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     ReportMem(m_globalBase + g_dacGlobals.id, sizeof(size_type));
 
 #ifdef TARGET_UNIX
+    ULONG64 dacTableAddress;
+    HRESULT hr = GetDacTableAddress(m_pTarget, m_globalBase, &dacTableAddress);
+    if (FAILED(hr)) {
+        return hr;
+    }
     // Add the dac table memory in coreclr
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_globalBase + DAC_TABLE_RVA, sizeof(g_dacGlobals)); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem((TADDR)dacTableAddress, sizeof(g_dacGlobals)); )
 #endif
 
     // Cannot use CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
@@ -265,7 +268,6 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pEnumClass.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pThreadClass.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pFreeObjectMethodTable.EnumMem(); )
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_fHostConfig.EnumMem(); )
 
     // These two static pointers are pointed to static data of byte[]
     // then run constructor in place

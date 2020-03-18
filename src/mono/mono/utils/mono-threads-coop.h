@@ -71,9 +71,7 @@ mono_threads_suspend_policy_is_multiphase_stw_enabled (MonoThreadsSuspendPolicy 
 gboolean
 mono_threads_suspend_policy_is_blocking_transition_enabled (MonoThreadsSuspendPolicy p);
 
-MONO_LLVM_INTERNAL_EXTERN_C_BEGIN
-extern char mono_threads_suspend_policy_hidden_dont_modify MONO_LLVM_INTERNAL_NO_EXTERN_C;
-MONO_LLVM_INTERNAL_EXTERN_C_END
+extern char mono_threads_suspend_policy_hidden_dont_modify;
 
 static inline MonoThreadsSuspendPolicy
 mono_threads_suspend_policy (void) {
@@ -152,5 +150,16 @@ mono_threads_enter_gc_unsafe_region_with_info (THREAD_INFO_TYPE *, MonoStackData
 G_EXTERN_C // due to THREAD_INFO_TYPE varying
 gpointer
 mono_threads_enter_gc_unsafe_region_unbalanced_with_info (THREAD_INFO_TYPE *info, MonoStackData *stackdata);
+
+extern char mono_threads_is_runtime_startup_finished_hidden_do_not_modify;
+
+static inline gboolean
+mono_threads_is_runtime_startup_finished (void)
+{
+	return mono_threads_is_runtime_startup_finished_hidden_do_not_modify != 0;
+}
+
+void
+mono_threads_set_runtime_startup_finished (void);
 
 #endif

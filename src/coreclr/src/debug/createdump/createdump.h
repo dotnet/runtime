@@ -16,6 +16,8 @@ extern bool g_diagnostics;
             printf(args); \
         }
 
+#include "config.h"
+
 #include <winternl.h>
 #include <winver.h>
 #include <windows.h>

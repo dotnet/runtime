@@ -16,8 +16,6 @@ namespace System.Collections.Immutable
     /// Mutations on this set generate new sets.  Incremental changes to a set share as much memory as possible with the prior versions of a set,
     /// while allowing garbage collection to clean up any unique set data that is no longer being referenced.
     /// </remarks>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix", Justification = "Ignored")]
     public interface IImmutableSet<T> : IReadOnlyCollection<T>
     {
         /// <summary>

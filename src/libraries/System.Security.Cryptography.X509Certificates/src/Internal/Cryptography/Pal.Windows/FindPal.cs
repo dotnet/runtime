@@ -35,7 +35,7 @@ namespace Internal.Cryptography.Pal
 
         public string NormalizeOid(string maybeOid, OidGroup expectedGroup)
         {
-            string oidValue = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, maybeOid, expectedGroup, fallBackToAllGroups: true).OID;
+            string? oidValue = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, maybeOid, expectedGroup, fallBackToAllGroups: true).OID;
 
             if (oidValue == null)
             {
@@ -158,7 +158,7 @@ namespace Internal.Cryptography.Pal
                                 {
                                     Debug.Assert(cbDecoded >= sizeof(CERT_NAME_VALUE));
                                     CERT_NAME_VALUE* pNameValue = (CERT_NAME_VALUE*)pvDecoded;
-                                    string actual = Marshal.PtrToStringUni(new IntPtr(pNameValue->Value.pbData));
+                                    string? actual = Marshal.PtrToStringUni(new IntPtr(pNameValue->Value.pbData));
                                     if (templateName.Equals(actual, StringComparison.OrdinalIgnoreCase))
                                         foundMatch = true;
                                 }))
@@ -181,8 +181,8 @@ namespace Internal.Cryptography.Pal
                                 {
                                     Debug.Assert(cbDecoded >= sizeof(CERT_TEMPLATE_EXT));
                                     CERT_TEMPLATE_EXT* pTemplateExt = (CERT_TEMPLATE_EXT*)pvDecoded;
-                                    string actual = Marshal.PtrToStringAnsi(pTemplateExt->pszObjId);
-                                    string expectedOidValue =
+                                    string? actual = Marshal.PtrToStringAnsi(pTemplateExt->pszObjId);
+                                    string? expectedOidValue =
                                         Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY, templateName,
                                             OidGroup.Template, fallBackToAllGroups: true).OID;
                                     if (expectedOidValue == null)
@@ -223,7 +223,7 @@ namespace Internal.Cryptography.Pal
                         IntPtr* pOids = (IntPtr*)pOidsPointer;
                         for (int i = 0; i < numOids; i++)
                         {
-                            string actual = Marshal.PtrToStringAnsi(pOids[i]);
+                            string actual = Marshal.PtrToStringAnsi(pOids[i])!;
                             if (oidValue.Equals(actual, StringComparison.OrdinalIgnoreCase))
                                 return true;
                         }
@@ -254,7 +254,7 @@ namespace Internal.Cryptography.Pal
                             for (int i = 0; i < pCertPoliciesInfo->cPolicyInfo; i++)
                             {
                                 CERT_POLICY_INFO* pCertPolicyInfo = &(pCertPoliciesInfo->rgPolicyInfo[i]);
-                                string actual = Marshal.PtrToStringAnsi(pCertPolicyInfo->pszPolicyIdentifier);
+                                string actual = Marshal.PtrToStringAnsi(pCertPolicyInfo->pszPolicyIdentifier)!;
                                 if (oidValue.Equals(actual, StringComparison.OrdinalIgnoreCase))
                                 {
                                     foundMatch = true;
@@ -325,7 +325,7 @@ namespace Internal.Cryptography.Pal
             FindCore(CertFindType.CERT_FIND_ANY, null, filter);
         }
 
-        private unsafe void FindCore(CertFindType dwFindType, void* pvFindPara, Func<SafeCertContextHandle, bool> filter = null)
+        private unsafe void FindCore(CertFindType dwFindType, void* pvFindPara, Func<SafeCertContextHandle, bool>? filter = null)
         {
             SafeCertStoreHandle findResults = Interop.crypt32.CertOpenStore(
                 CertStoreProvider.CERT_STORE_PROV_MEMORY,
@@ -336,7 +336,7 @@ namespace Internal.Cryptography.Pal
             if (findResults.IsInvalid)
                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
-            SafeCertContextHandle pCertContext = null;
+            SafeCertContextHandle? pCertContext = null;
             while (Interop.crypt32.CertFindCertificateInStore(_storePal.SafeCertStoreHandle, dwFindType, pvFindPara, ref pCertContext))
             {
                 if (filter != null && !filter(pCertContext))
@@ -362,7 +362,7 @@ namespace Internal.Cryptography.Pal
         {
             // This needs to be kept in sync with IsCertValid in the
             // Unix/OpenSSL PAL version (and potentially any other PALs that come about)
-            ChainPal chainPal = ChainPal.BuildChain(
+            ChainPal? chainPal = ChainPal.BuildChain(
                 false,
                 CertificatePal.FromHandle(pCertContext.DangerousGetHandle()),
                 null, //extraStore
@@ -380,7 +380,7 @@ namespace Internal.Cryptography.Pal
 
             using (chainPal)
             {
-                Exception verificationException;
+                Exception? verificationException;
                 bool? verified = chainPal.Verify(X509VerificationFlags.NoFlag, out verificationException);
                 if (!verified.GetValueOrDefault())
                     return false;

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.TypeLoading
 {
@@ -49,8 +50,9 @@ namespace System.Reflection.TypeLoading
         // Equality - this compares every bit of data in the RuntimeAssemblyName which is acceptable for use as keys in a cache
         // where semantic duplication is permissible. This method is *not* meant to define ref->def binding rules or
         // assembly binding unification rules.
-        public bool Equals(RoAssemblyName other)
+        public bool Equals(RoAssemblyName? other)
         {
+            Debug.Assert(other is object);
             if (Name != other.Name)
                 return false;
             if (Version != other.Version)

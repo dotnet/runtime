@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
         [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework rejects zero length content: https://github.com/dotnet/corefx/issues/18724")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework rejects zero length content: https://github.com/dotnet/runtime/issues/21257")]
         public static void ZeroLengthContent_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(Array.Empty<byte>());

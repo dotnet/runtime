@@ -52,7 +52,6 @@ INLINE_OBSERVATION(LOCALLOC_TOO_LARGE,        bool,   "localloc size too large",
 INLINE_OBSERVATION(LOG_REPLAY_REJECT,         bool,   "rejected by log replay",        FATAL,       CALLEE)
 INLINE_OBSERVATION(MARKED_AS_SKIPPED,         bool,   "skipped by complus request",    FATAL,       CALLEE)
 INLINE_OBSERVATION(MAXSTACK_TOO_BIG,          bool,   "maxstack too big"  ,            FATAL,       CALLEE)
-INLINE_OBSERVATION(NEEDS_SECURITY_CHECK,      bool,   "needs security check",          FATAL,       CALLEE)
 INLINE_OBSERVATION(NO_METHOD_INFO,            bool,   "cannot get method info",        FATAL,       CALLEE)
 INLINE_OBSERVATION(NOT_PROFITABLE_INLINE,     bool,   "unprofitable inline",           FATAL,       CALLEE)
 INLINE_OBSERVATION(RANDOM_REJECT,             bool,   "random reject",                 FATAL,       CALLEE)
@@ -105,7 +104,6 @@ INLINE_OBSERVATION(UNSUPPORTED_OPCODE,        bool,   "unsupported opcode",     
 
 INLINE_OBSERVATION(DEBUG_CODEGEN,             bool,   "debug codegen",                 FATAL,       CALLER)
 INLINE_OBSERVATION(IS_JIT_NOINLINE,           bool,   "noinline per JitNoInlineRange", FATAL,       CALLER)
-INLINE_OBSERVATION(NEEDS_SECURITY_CHECK,      bool,   "needs security check",          FATAL,       CALLER)
 
 // ------ Caller Information -------
 

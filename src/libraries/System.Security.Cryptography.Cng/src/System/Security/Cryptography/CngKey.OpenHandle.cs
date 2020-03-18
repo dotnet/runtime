@@ -31,7 +31,7 @@ namespace System.Security.Cryptography
             providerHandle.SetHandleValue(rawProviderHandle);
 
             // Set up a key object wrapping the handle
-            CngKey key = null;
+            CngKey? key = null;
             try
             {
                 key = new CngKey(providerHandle, keyHandleCopy);

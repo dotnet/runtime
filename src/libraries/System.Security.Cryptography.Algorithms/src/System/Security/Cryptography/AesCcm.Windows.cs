@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
     public sealed partial class AesCcm
     {
         private static readonly SafeAlgorithmHandle s_aesCcm = AesBCryptModes.OpenAesAlgorithm(Cng.BCRYPT_CHAIN_MODE_CCM);
-        private SafeKeyHandle _keyHandle;
+        private SafeKeyHandle _keyHandle = null!; // Always initialized in helper
 
         private void ImportKey(ReadOnlySpan<byte> key)
         {

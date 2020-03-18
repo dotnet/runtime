@@ -1208,6 +1208,7 @@ if test x$enable_monotouch = xyes; then
 fi
 
 AC_ARG_ENABLE(cxx, [  --enable-cxx   compile some code as C++])
+AM_CONDITIONAL(ENABLE_CXX, test x$enable_cxx = xyes)
 
 # mono/corefx/native has a lot of invalid C++98 in its headers
 # dotnet/corefx/native looks a lot better, i.e. 44e5bdafb8d989a220c9cf1b94f31a64a6e4f052
@@ -1362,7 +1363,9 @@ MONO_LLVM_PATH_OPTION=llvm-path="`pwd`/llvm/usr/bin"
 
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS_default=yes
-elif test x$with_runtime_preset = xnetcore; then
+fi
+
+if test x$with_runtime_preset = xnetcore; then
    # Keep in sync with winconfig.h netcore configuration.
    DISABLE_MCS_DOCS_default=yes
    BTLS_SUPPORTED=no
@@ -1380,7 +1383,9 @@ elif test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_gac='yes'
    mono_feature_disable_perfcounters='yes'
    mono_feature_disable_attach='yes'
-   mono_feature_disable_dllmap='yes'
+   if test "x$enable_monodroid" = "x" -a "x$enable_monotouch" = "x"; then
+     mono_feature_disable_dllmap='yes' # FIXME: the mobile products use this
+   fi
    disable_mono_native=yes
    support_boehm=no
 elif test x$with_runtime_preset = xnet_4_x; then
@@ -1756,7 +1761,7 @@ AM_CONDITIONAL(ENABLE_STATIC_GCC_LIBS, test "x$enable_static_gcc_libs" = "xyes")
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
      LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, dllmap,
      reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, interpreter, simd, soft_debug, perfcounters, normalization, desktop_loader, shared_perfcounters, remoting,
-	 security, lldb, mdb, assert_messages, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_debug_helpers, sockets, gac, threads.],
+	 security, lldb, mdb, assert_messages, config, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_debug_helpers, sockets, gac, threads, processes.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
@@ -1937,6 +1942,11 @@ if test "x$mono_feature_disable_cfgdir_config" = "xyes"; then
 	AC_MSG_NOTICE([Disabled config directories.])
 fi
 
+if test "x$mono_feature_disable_config" = "xyes"; then
+	AC_DEFINE(DISABLE_CONFIG, 1, [Disable .config file support.])
+	AC_MSG_NOTICE([Disabled .config file support.])
+fi
+
 if test "x$mono_feature_disable_cleanup" = "xyes"; then
 	AC_DEFINE(DISABLE_CLEANUP, 1, [Disable runtime cleanup.])
 	AC_MSG_NOTICE([Disabled runtime cleanup.])
@@ -1981,6 +1991,11 @@ fi
 if test "x$mono_feature_disable_threads" = "xyes"; then
 	AC_DEFINE(DISABLE_THREADS, 1, [Disable Threads])
 	AC_MSG_NOTICE([Disabled threading support])
+fi
+
+if test "x$mono_feature_disable_processes" = "xyes"; then
+	AC_DEFINE(DISABLE_PROCESSES, 1, [Disable process support])
+	AC_MSG_NOTICE([Disabled process support])
 fi
 
 AC_ARG_ENABLE(executables, [  --disable-executables disable the build of the runtime executables], enable_executables=$enableval, enable_executables=yes)
@@ -4202,6 +4217,11 @@ if test "x$enable_llvm" = "xdefault"; then
    enable_llvm=$enable_llvm_default
 fi
 
+if test "x$enable_loadedllvm" = "xyes"; then
+   AC_MSG_WARN("Loadable LLVM is no longer supported. Enabling default LLVM support instead.")
+   enable_llvm=yes
+fi
+
 enable_llvm_msvc_only="no"
 if test "x$enable_llvm" = "xyes"; then
 	if test "x$host_win32" = "xyes"; then
@@ -4215,10 +4235,6 @@ if test "x$enable_llvm" = "xyes"; then
 				AC_MSG_ERROR("LLVM for host=Windows and target=Windows is only supported for x64 builds.")
 				;;
 			esac
-		fi
-		if test "x$enable_loadedllvm" = "xyes"; then
-			AC_MSG_WARN("Loadable LLVM currently not supported on Windows. Disabling feature.")
-			enable_loadedllvm=no
 		fi
 	fi
 fi
@@ -4288,13 +4304,6 @@ if test "x$enable_llvm_asserts" != "xno"; then
 fi
 
 AM_CONDITIONAL(ENABLE_LLVM, [test x$enable_llvm = xyes && test x$enable_llvm_msvc_only != xyes])
-
-AM_CONDITIONAL(LOADED_LLVM, [test x$enable_loadedllvm = xyes && test x$enable_llvm_msvc_only != xyes])
-if test "x$enable_loadedllvm" = "xyes"; then
-	if test "x$enable_llvm_msvc_only" != "xyes"; then
-		AC_DEFINE(MONO_LLVM_LOADED, 1, [The LLVM back end is dynamically loaded])
-	fi
-fi
 
 if test "x$enable_llvm" = "xyes"; then
 	enable_llvm_runtime=yes
@@ -6750,6 +6759,7 @@ AC_COMPILE_IFELSE(
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
+AC_SUBST(CCLDFLAGS)
 AC_SUBST(ZLIB_CFLAGS)
 
 # Update all submodules recursively to ensure everything is checked out
@@ -7016,7 +7026,7 @@ echo "
 	Engine:        $jit_status
 	BigArrays:     $enable_big_arrays
 	DTrace:        $enable_dtrace
-	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm, built in-tree: $internal_llvm, assertions: $enable_llvm_asserts, msvc only: $enable_llvm_msvc_only)
+	LLVM Back End: $enable_llvm (built in-tree: $internal_llvm, assertions: $enable_llvm_asserts, msvc only: $enable_llvm_msvc_only)
 	Spectre:       $spectre_mitigation_status
 	Mono.Native:   $mono_native_text
 

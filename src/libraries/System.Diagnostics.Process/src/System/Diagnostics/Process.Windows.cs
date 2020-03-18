@@ -116,6 +116,7 @@ namespace System.Diagnostics
         private void RefreshCore()
         {
             _signaled = false;
+            _haveMainWindow = false;
         }
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
@@ -676,7 +677,7 @@ namespace System.Diagnostics
             // is the file to execute).
             StringBuilder commandLine = new StringBuilder();
             string fileName = executableFileName.Trim();
-            bool fileNameIsQuoted = (fileName.StartsWith("\"", StringComparison.Ordinal) && fileName.EndsWith("\"", StringComparison.Ordinal));
+            bool fileNameIsQuoted = (fileName.StartsWith('\"') && fileName.EndsWith('\"'));
             if (!fileNameIsQuoted)
             {
                 commandLine.Append("\"");
@@ -691,7 +692,7 @@ namespace System.Diagnostics
 
             if (!string.IsNullOrEmpty(arguments))
             {
-                commandLine.Append(" ");
+                commandLine.Append(' ');
                 commandLine.Append(arguments);
             }
 

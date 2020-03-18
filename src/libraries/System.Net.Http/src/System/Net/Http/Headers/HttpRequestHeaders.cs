@@ -7,8 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix",
-        Justification = "This is not a collection")]
     public sealed class HttpRequestHeaders : HttpHeaders
     {
         private const int AcceptSlot = 0;
@@ -21,9 +19,9 @@ namespace System.Net.Http.Headers
         private const int UserAgentSlot = 7;
         private const int NumCollectionsSlots = 8;
 
-        private object[] _specialCollectionsSlots;
-        private HttpGeneralHeaders _generalHeaders;
-        private HttpHeaderValueCollection<NameValueWithParametersHeaderValue> _expect;
+        private object[]? _specialCollectionsSlots;
+        private HttpGeneralHeaders? _generalHeaders;
+        private HttpHeaderValueCollection<NameValueWithParametersHeaderValue>? _expect;
         private bool _expectContinueSet;
 
         #region Request Headers
@@ -34,13 +32,12 @@ namespace System.Net.Http.Headers
             // Rather than having a field for each of these, store them untyped in an array that's lazily
             // allocated.  Then we only pay for the 64 bytes for those fields when any is actually accessed.
             _specialCollectionsSlots ??= new object[NumCollectionsSlots];
-            return (T)(_specialCollectionsSlots[slot] ??= creationFunc(this));
+            return (T)(_specialCollectionsSlots[slot] ??= creationFunc(this)!);
         }
 
         public HttpHeaderValueCollection<MediaTypeWithQualityHeaderValue> Accept =>
             GetSpecializedCollection(AcceptSlot, thisRef => new HttpHeaderValueCollection<MediaTypeWithQualityHeaderValue>(KnownHeaders.Accept.Descriptor, thisRef));
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Charset", Justification = "The HTTP header name is 'Accept-Charset'.")]
         public HttpHeaderValueCollection<StringWithQualityHeaderValue> AcceptCharset =>
             GetSpecializedCollection(AcceptCharsetSlot, thisRef => new HttpHeaderValueCollection<StringWithQualityHeaderValue>(KnownHeaders.AcceptCharset.Descriptor, thisRef));
 
@@ -50,9 +47,9 @@ namespace System.Net.Http.Headers
         public HttpHeaderValueCollection<StringWithQualityHeaderValue> AcceptLanguage =>
             GetSpecializedCollection(AcceptLanguageSlot, thisRef => new HttpHeaderValueCollection<StringWithQualityHeaderValue>(KnownHeaders.AcceptLanguage.Descriptor, thisRef));
 
-        public AuthenticationHeaderValue Authorization
+        public AuthenticationHeaderValue? Authorization
         {
-            get { return (AuthenticationHeaderValue)GetParsedValues(KnownHeaders.Authorization.Descriptor); }
+            get { return (AuthenticationHeaderValue?)GetParsedValues(KnownHeaders.Authorization.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Authorization.Descriptor, value); }
         }
 
@@ -65,14 +62,19 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (ExpectCore.IsSpecialValueSet)
+                // ExpectCore will force the collection into existence, so avoid accessing it if possible.
+                if (_expectContinueSet || ContainsParsedValue(KnownHeaders.Expect.Descriptor, HeaderUtilities.ExpectContinue))
                 {
-                    return true;
+                    if (ExpectCore.IsSpecialValueSet)
+                    {
+                        return true;
+                    }
+                    if (_expectContinueSet)
+                    {
+                        return false;
+                    }
                 }
-                if (_expectContinueSet)
-                {
-                    return false;
-                }
+
                 return null;
             }
             set
@@ -90,9 +92,9 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public string From
+        public string? From
         {
-            get { return (string)GetParsedValues(KnownHeaders.From.Descriptor); }
+            get { return (string?)GetParsedValues(KnownHeaders.From.Descriptor); }
             set
             {
                 // Null and empty string are equivalent. In this case it means, remove the From header value (if any).
@@ -109,9 +111,9 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public string Host
+        public string? Host
         {
-            get { return (string)GetParsedValues(KnownHeaders.Host.Descriptor); }
+            get { return (string?)GetParsedValues(KnownHeaders.Host.Descriptor); }
             set
             {
                 // Null and empty string are equivalent. In this case it means, remove the Host header value (if any).
@@ -120,8 +122,7 @@ namespace System.Net.Http.Headers
                     value = null;
                 }
 
-                string host = null;
-                if ((value != null) && (HttpRuleParser.GetHostLength(value, 0, false, out host) != value.Length))
+                if ((value != null) && (HttpRuleParser.GetHostLength(value, 0, false, out string? _) != value.Length))
                 {
                     throw new FormatException(SR.net_http_headers_invalid_host_header);
                 }
@@ -141,9 +142,9 @@ namespace System.Net.Http.Headers
         public HttpHeaderValueCollection<EntityTagHeaderValue> IfNoneMatch =>
             GetSpecializedCollection(IfNoneMatchSlot, thisRef => new HttpHeaderValueCollection<EntityTagHeaderValue>(KnownHeaders.IfNoneMatch.Descriptor, thisRef));
 
-        public RangeConditionHeaderValue IfRange
+        public RangeConditionHeaderValue? IfRange
         {
-            get { return (RangeConditionHeaderValue)GetParsedValues(KnownHeaders.IfRange.Descriptor); }
+            get { return (RangeConditionHeaderValue?)GetParsedValues(KnownHeaders.IfRange.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.IfRange.Descriptor, value); }
         }
 
@@ -157,7 +158,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                object storedValue = GetParsedValues(KnownHeaders.MaxForwards.Descriptor);
+                object? storedValue = GetParsedValues(KnownHeaders.MaxForwards.Descriptor);
                 if (storedValue != null)
                 {
                     return (int)storedValue;
@@ -168,21 +169,21 @@ namespace System.Net.Http.Headers
         }
 
 
-        public AuthenticationHeaderValue ProxyAuthorization
+        public AuthenticationHeaderValue? ProxyAuthorization
         {
-            get { return (AuthenticationHeaderValue)GetParsedValues(KnownHeaders.ProxyAuthorization.Descriptor); }
+            get { return (AuthenticationHeaderValue?)GetParsedValues(KnownHeaders.ProxyAuthorization.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ProxyAuthorization.Descriptor, value); }
         }
 
-        public RangeHeaderValue Range
+        public RangeHeaderValue? Range
         {
-            get { return (RangeHeaderValue)GetParsedValues(KnownHeaders.Range.Descriptor); }
+            get { return (RangeHeaderValue?)GetParsedValues(KnownHeaders.Range.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Range.Descriptor, value); }
         }
 
-        public Uri Referrer
+        public Uri? Referrer
         {
-            get { return (Uri)GetParsedValues(KnownHeaders.Referer.Descriptor); }
+            get { return (Uri?)GetParsedValues(KnownHeaders.Referer.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Referer.Descriptor, value); }
         }
 
@@ -199,7 +200,7 @@ namespace System.Net.Http.Headers
 
         #region General Headers
 
-        public CacheControlHeaderValue CacheControl
+        public CacheControlHeaderValue? CacheControl
         {
             get { return GeneralHeaders.CacheControl; }
             set { GeneralHeaders.CacheControl = value; }
@@ -268,7 +269,7 @@ namespace System.Net.Http.Headers
         internal override void AddHeaders(HttpHeaders sourceHeaders)
         {
             base.AddHeaders(sourceHeaders);
-            HttpRequestHeaders sourceRequestHeaders = sourceHeaders as HttpRequestHeaders;
+            HttpRequestHeaders? sourceRequestHeaders = sourceHeaders as HttpRequestHeaders;
             Debug.Assert(sourceRequestHeaders != null);
 
             // Copy special values but do not overwrite.

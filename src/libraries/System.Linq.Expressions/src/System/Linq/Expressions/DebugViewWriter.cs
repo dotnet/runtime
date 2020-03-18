@@ -11,7 +11,6 @@ using System.Reflection;
 
 namespace System.Linq.Expressions
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     internal sealed class DebugViewWriter : ExpressionVisitor
     {
         [Flags]
@@ -295,7 +294,6 @@ namespace System.Linq.Expressions
             Out(close.ToString(), Flow.Break);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected internal override Expression VisitBinary(BinaryExpression node)
         {
             if (node.NodeType == ExpressionType.ArrayIndex)
@@ -576,7 +574,6 @@ namespace System.Linq.Expressions
             return node;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static bool NeedsParentheses(Expression parent, Expression? child)
         {
             Debug.Assert(parent != null);
@@ -655,7 +652,6 @@ namespace System.Linq.Expressions
         }
 
         // the greater the higher
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static int GetOperatorPrecedence(Expression node)
         {
             // Roughly matches C# operator precedence, with some additional
@@ -902,7 +898,6 @@ namespace System.Linq.Expressions
             return node;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected internal override Expression VisitUnary(UnaryExpression node)
         {
             switch (node.NodeType)

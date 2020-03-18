@@ -68,7 +68,6 @@ namespace System.IO.Compression
         /// If the file exists and is not a Zip file, a <code>ZipArchiveException</code> will be thrown.
         /// If the file exists and is empty or does not exist, a new Zip file will be created.
         /// Note that creating a Zip file with the <code>ZipArchiveMode.Create</code> mode is more efficient when creating a new Zip file.</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]  // See comment in the body.
         public static ZipArchive Open(string archiveFileName, ZipArchiveMode mode) => Open(archiveFileName, mode, entryNameEncoding: null);
 
         /// <summary>
@@ -145,7 +144,6 @@ namespace System.IO.Compression
         ///     <para>Note that Unicode encodings other than UTF-8 may not be currently used for the <c>entryNameEncoding</c>,
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]  // See comment in the body.
         public static ZipArchive Open(string archiveFileName, ZipArchiveMode mode, Encoding? entryNameEncoding)
         {
             // Relies on FileStream's ctor for checking of archiveFileName

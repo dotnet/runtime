@@ -51,7 +51,7 @@
     <Nullable>enable</Nullable>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
-    <DefineConstants>MONO;NETCOREAPP</DefineConstants>
+    <DefineConstants>MONO;NETCOREAPP;SYSTEM_PRIVATE_CORELIB</DefineConstants>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
@@ -96,9 +96,6 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
-    <DefineConstants>TARGET_OSX;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
 
   <!-- Assembly attributes -->
   <PropertyGroup>
@@ -109,12 +106,6 @@
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
     <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
-  </PropertyGroup>
-
-  <!-- SourceLink -->
-  <PropertyGroup>
-    <!-- This is needed to embed build-time generated sources such as eventing and resource files to sourcelink PDBs. -->
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
   <!--
@@ -133,12 +124,26 @@
     <NoWarn>$(NoWarn),CS8597,CS8600,CS8601,CS8602,CS8603,CS8604,CS8609,CS8611,CS8618,CS8620,CS8625,CS8631,CS8632,CS8634</NoWarn>
     <NoWarn>$(NoWarn),618,67</NoWarn>
 
-    <DefineConstants>FEATURE_DEFAULT_INTERFACES;FEATURE_MANAGED_ETW_CHANNELS;$(DefineConstants)</DefineConstants>
     <DefineConstants>NETCORE;DISABLE_REMOTING;MONO_FEATURE_SRE;$(DefineConstants)</DefineConstants>
 
+    <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
+    <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeaturePortableTimer>true</FeaturePortableTimer>
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
     <FeaturePerfTracing>true</FeaturePerfTracing>
+    <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
+    <FeatureDefaultInterfaces>true</FeatureDefaultInterfaces>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
+    <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
+    <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
+    <DefineConstants Condition="'$(FeatureDefaultInterfaces)' == 'true'">$(DefineConstants);FEATURE_DEFAULT_INTERFACES</DefineConstants>
+    <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);TARGET_UNIX</DefineConstants>
+    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
+    <DefineConstants Condition="'$(TargetsOSX)' == 'true'">$(DefineConstants);TARGET_OSX</DefineConstants>
+    <DefineConstants Condition="'$(TargetsiOS)' == 'true'">$(DefineConstants);TARGET_IOS</DefineConstants>
   </PropertyGroup>
 
   <!-- Sources -->
@@ -176,6 +181,7 @@
       <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Utf8String.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
       <Compile Include="$(BclSourcesRoot)\System\WeakReference.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.Mono.cs" />
@@ -188,6 +194,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackTrace.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\EventPipe.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\IO\Stream.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
@@ -250,10 +257,10 @@
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyDependencyResolver.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Remoting\Contexts\Context.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.cs" />
@@ -277,13 +284,18 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMarshal.cs" />
+      <Compile Include="$(BclSourcesRoot)\Internal\Resources\PRIExceptionInfo.cs" />
+      <Compile Include="$(BclSourcesRoot)\Internal\Resources\WindowsRuntimeResourceManagerBase.cs" />
+      <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeStringMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeGPtrArrayHandle.cs" />
-
       <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />
   </ItemGroup>
 

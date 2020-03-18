@@ -18,7 +18,6 @@ endif()
 set(SKIP_VERSIONING 1)
 
 set(SOURCES
-    ../fxr/fx_ver.cpp
     ./bundle/file_entry.cpp
     ./bundle/manifest.cpp
     ./bundle/header.cpp
@@ -30,7 +29,6 @@ set(SOURCES
 )
 
 set(HEADERS
-    ../fxr/fx_ver.h
     ./bundle/file_type.h
     ./bundle/file_entry.h
     ./bundle/manifest.h

@@ -25,6 +25,7 @@
 #include <mscoree.h>
 #include <corjit.h>
 #include <utilcode.h>
+#include <patchpointinfo.h>
 
 /// Turn back on direct access to a few OS level things...
 #undef HeapCreate
@@ -35,6 +36,5 @@
 // Jit Exports
 typedef ICorJitCompiler*(__stdcall* PgetJit)();
 typedef void(__stdcall* PjitStartup)(ICorJitHost* host);
-typedef void(__stdcall* PsxsJitStartup)(CoreClrCallbacks const& cccallbacks);
 
 #endif

@@ -21,7 +21,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// An empty immutable list.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly ImmutableList<T> Empty = new ImmutableList<T>();
 
         /// <summary>

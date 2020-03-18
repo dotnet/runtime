@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            byte[] value = _keyHandle.GetProperty(name, options);
+            byte[]? value = _keyHandle.GetProperty(name, options);
             if (value == null)
                 throw ErrorCode.NTE_NOT_FOUND.ToCryptographicException();
 
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography
         {
             unsafe
             {
-                byte[] propertyValue = property.GetValueWithoutCopying();
+                byte[]? propertyValue = property.GetValueWithoutCopying();
 
                 // .NET Framework compat. It would have nicer to throw an ArgumentNull exception or something...
                 if (propertyValue == null)

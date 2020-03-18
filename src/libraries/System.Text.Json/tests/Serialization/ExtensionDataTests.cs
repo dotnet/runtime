@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -653,8 +656,9 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithInvalidExtensionPropertyStringString obj1 = new ClassWithInvalidExtensionPropertyStringString();
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj1));
 
+            // This fails with NotSupportedException since all Dictionaries currently need to have a string TKey.
             ClassWithInvalidExtensionPropertyObjectString obj2 = new ClassWithInvalidExtensionPropertyObjectString();
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj2));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj2));
         }
 
         private class ClassWithExtensionPropertyAlreadyInstantiated
@@ -686,6 +690,175 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, object> MyOverflow { get; set; }
 
             public Dictionary<string, object> ActualDictionary { get; set; }
+        }
+
+        [Fact]
+        public static void DeserializeIntoImmutableDictionaryProperty()
+        {
+            // baseline
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutable>(@"{}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutableJsonElement>(@"{}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructor>(@"{}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructorJsonElement>(@"{}");
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutable>("{\"hello\":\"world\"}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutableJsonElement>("{\"hello\":\"world\"}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructor>("{\"hello\":\"world\"}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructorJsonElement>("{\"hello\":\"world\"}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyCustomIImmutable>("{\"hello\":\"world\"}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyCustomIImmutableJsonElement>("{\"hello\":\"world\"}"));
+        }
+
+        [Fact]
+        public static void SerializeIntoImmutableDictionaryProperty()
+        {
+            // attempt to serialize a null immutable dictionary
+            string expectedJson = "{}";
+            var obj = new ClassWithExtensionPropertyAsImmutable();
+            var json = JsonSerializer.Serialize(obj);
+            Assert.Equal(expectedJson, json);
+
+            // attempt to serialize an empty immutable dictionary
+            expectedJson = "{}";
+            obj = new ClassWithExtensionPropertyAsImmutable();
+            obj.MyOverflow = ImmutableDictionary<string, object>.Empty;
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal(expectedJson, json);
+
+            // attempt to serialize a populated immutable dictionary
+            expectedJson = "{\"hello\":\"world\"}";
+            obj = new ClassWithExtensionPropertyAsImmutable();
+            var dictionaryStringObject = new Dictionary<string, object> { { "hello", "world" } };
+            obj.MyOverflow = ImmutableDictionary.CreateRange(dictionaryStringObject);
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal(expectedJson, json);
+        }
+
+        private class ClassWithExtensionPropertyAsImmutable
+        {
+            [JsonExtensionData]
+            public ImmutableDictionary<string, object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyAsImmutableJsonElement
+        {
+            [JsonExtensionData]
+            public ImmutableDictionary<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyPrivateConstructor
+        {
+            [JsonExtensionData]
+            public GenericIDictionaryWrapperPrivateConstructor<string, object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyPrivateConstructorJsonElement
+        {
+            [JsonExtensionData]
+            public GenericIDictionaryWrapperPrivateConstructor<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyCustomIImmutable
+        {
+            [JsonExtensionData]
+            public GenericIImmutableDictionaryWrapper<string, object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyCustomIImmutableJsonElement
+        {
+            [JsonExtensionData]
+            public GenericIImmutableDictionaryWrapper<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        [Fact]
+        public static void DeserializeIntoGenericDictionaryParameterCount()
+        {
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyNoGenericParameters>("{\"hello\":\"world\"}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyOneGenericParameter>("{\"hello\":\"world\"}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyThreeGenericParameters>("{\"hello\":\"world\"}");
+        }
+
+        private class ClassWithExtensionPropertyNoGenericParameters
+        {
+            [JsonExtensionData]
+            public StringToObjectIDictionaryWrapper MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyOneGenericParameter
+        {
+            [JsonExtensionData]
+            public StringToGenericIDictionaryWrapper<object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyThreeGenericParameters
+        {
+            [JsonExtensionData]
+            public GenericIDictonaryWrapperThreeGenericParameters<string, object, string> MyOverflow { get; set; }
+        }
+
+        [Fact]
+        public static void CustomObjectConverterInExtensionProperty()
+        {
+            const string Json = "{\"hello\": \"world\"}";
+
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonObjectConverter());
+
+            ClassWithExtensionPropertyAsObject obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(Json, options);
+            object overflowProp = obj.MyOverflow["hello"];
+            Assert.IsType<string>(overflowProp);
+            Assert.Equal("world!!!", ((string)overflowProp));
+
+            string newJson = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{\"hello\":\"world!!!\"}", newJson);
+        }
+
+        private class JsonObjectConverter : JsonConverter<object>
+        {
+            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return reader.GetString() + "!!!";
+            }
+
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+            {
+                // Since we are converter for object, the string converter will be called instead of this.
+                throw new InvalidOperationException();
+            }
+        }
+
+        [Fact]
+        public static void CustomJsonElementConverterInExtensionProperty()
+        {
+            const string Json = "{\"hello\": \"world\"}";
+
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonElementConverter());
+
+            ClassWithExtensionPropertyAsJsonElement obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(Json, options);
+            JsonElement overflowProp = obj.MyOverflow["hello"];
+            Assert.Equal(JsonValueKind.Undefined, overflowProp.ValueKind);
+
+            string newJson = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{\"hello\":{\"Hi\":\"There\"}}", newJson);
+        }
+
+        private class JsonElementConverter : JsonConverter<JsonElement>
+        {
+            public override JsonElement Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                // Just return an empty JsonElement.
+                reader.Skip();
+                return new JsonElement();
+            }
+
+            public override void Write(Utf8JsonWriter writer, JsonElement value, JsonSerializerOptions options)
+            {
+                // Write a string we can test against easily.
+                writer.WriteStartObject();
+                writer.WriteString("Hi", "There");
+                writer.WriteEndObject();
+            }
         }
     }
 }

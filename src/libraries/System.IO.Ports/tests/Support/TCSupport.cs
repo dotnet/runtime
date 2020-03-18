@@ -107,9 +107,9 @@ namespace Legacy.Support
             }
 
             // See Github issues:
-            // https://github.com/dotnet/corefx/issues/15961
-            // https://github.com/dotnet/corefx/issues/16033
-            // https://github.com/dotnet/corefx/issues/20764
+            // https://github.com/dotnet/runtime/issues/20149
+            // https://github.com/dotnet/runtime/issues/20174
+            // https://github.com/dotnet/runtime/issues/22159
             // hardware tests are currently insufficiently stable on master CI
             if (loopbackPortName == null && !nullModemPresent)
             {

@@ -2050,6 +2050,23 @@ ncells ) {
 		var old = System.Threading.Interlocked.CompareExchange(ref variable_with_constant_address, 1, 0);
 		return old == 0 && variable_with_constant_address == 1 ? 0 : 1;
 	}
+
+	static bool cctor_called;
+
+	class ClassAggressiveInline {
+		static ClassAggressiveInline () {
+			cctor_called = true;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void inlined () {
+		}
+	}
+
+	public static int test_0_aggressive_inline_cctor () {
+		ClassAggressiveInline.inlined ();
+		return cctor_called ? 0 : 1;
+	}
 }
 
 #if __MOBILE__

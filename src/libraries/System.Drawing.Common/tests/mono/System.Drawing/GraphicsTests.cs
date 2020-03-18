@@ -2307,7 +2307,7 @@ namespace MonoTests.System.Drawing
         {
             if (PlatformDetection.IsArmOrArm64Process)
             {
-                // [ActiveIssue("https://github.com/dotnet/corefx/issues/35744")]
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
                 throw new SkipTestException("Precision on float numbers");
             }
 
@@ -3162,7 +3162,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TransformPoints()
         {

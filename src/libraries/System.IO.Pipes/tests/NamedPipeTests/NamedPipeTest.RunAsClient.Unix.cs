@@ -27,7 +27,7 @@ namespace System.IO.Pipes.Tests
 
         [ConditionalFact(nameof(IsSuperUser))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/0")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/0")]
         public void RunAsClient_Unix()
         {
             string pipeName = Path.GetRandomFileName();

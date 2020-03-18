@@ -78,6 +78,7 @@ jobs:
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /p:ArchGroup=${{ parameters.archType }}
                     /p:Configuration=${{ parameters.buildConfig }}
+                    /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideCoreclrFromLiveDrop.binlog
             displayName: Override $(runtimeFlavorName) from live drop
 
         - template: /eng/pipelines/libraries/helix.yml

@@ -9,8 +9,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-[assembly: SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Scope = "type", Target = "System.ComponentModel.BindingList`1")]
-
 namespace System.ComponentModel
 {
     [Serializable]
@@ -305,7 +303,6 @@ namespace System.ComponentModel
         /// supply a custom item to add to the list. Otherwise an item of type T is created.
         /// The new item is then added to the end of the list.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods")]
         protected virtual object AddNewCore()
         {
             // Allow event handler to supply the new item for us

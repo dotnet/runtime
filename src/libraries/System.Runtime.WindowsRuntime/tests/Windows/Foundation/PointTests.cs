@@ -100,7 +100,7 @@ namespace Windows.Foundation.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/41849")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31197")]
         [MemberData(nameof(ToString_TestData))]
         public void ToString_Invoke_ReturnsExpected(Point point, string format, IFormatProvider formatProvider, string expected)
         {

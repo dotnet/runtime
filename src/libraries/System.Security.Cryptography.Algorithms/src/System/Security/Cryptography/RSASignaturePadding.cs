@@ -52,17 +52,17 @@ namespace System.Security.Cryptography
             return _mode.GetHashCode();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return Equals(obj as RSASignaturePadding);
         }
 
-        public bool Equals(RSASignaturePadding other)
+        public bool Equals(RSASignaturePadding? other)
         {
             return !object.ReferenceEquals(other, null) && _mode == other._mode;
         }
 
-        public static bool operator ==(RSASignaturePadding left, RSASignaturePadding right)
+        public static bool operator ==(RSASignaturePadding? left, RSASignaturePadding? right)
         {
             if (object.ReferenceEquals(left, null))
             {
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography
             return left.Equals(right);
         }
 
-        public static bool operator !=(RSASignaturePadding left, RSASignaturePadding right)
+        public static bool operator !=(RSASignaturePadding? left, RSASignaturePadding? right)
         {
             return !(left == right);
         }

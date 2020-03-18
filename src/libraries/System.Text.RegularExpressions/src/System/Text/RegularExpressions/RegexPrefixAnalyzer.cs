@@ -598,7 +598,7 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Bol:
                 case RegexNode.Eol:
                 case RegexNode.Boundary:
-                case RegexNode.Nonboundary:
+                case RegexNode.NonBoundary:
                 case RegexNode.ECMABoundary:
                 case RegexNode.NonECMABoundary:
                 case RegexNode.Beginning:

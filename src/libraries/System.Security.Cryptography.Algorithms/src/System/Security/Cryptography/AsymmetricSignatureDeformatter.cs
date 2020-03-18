@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -18,7 +19,8 @@ namespace System.Security.Cryptography
             if (hash == null)
                 throw new ArgumentNullException(nameof(hash));
 
-            SetHashAlgorithm(hash.ToAlgorithmName());
+            SetHashAlgorithm(hash.ToAlgorithmName()!);
+            Debug.Assert(hash.Hash != null);
             return VerifySignature(hash.Hash, rgbSignature);
         }
 

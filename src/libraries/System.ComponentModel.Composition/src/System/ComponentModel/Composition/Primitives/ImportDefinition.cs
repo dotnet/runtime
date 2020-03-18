@@ -79,7 +79,6 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <paramref name="cardinality"/> is not one of the <see cref="ImportCardinality"/>
         ///     values.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string? contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite)
             : this(contractName, cardinality, isRecomposable, isPrerequisite, MetadataServices.EmptyMetadata)
         {
@@ -88,7 +87,6 @@ namespace System.ComponentModel.Composition.Primitives
             _constraint = constraint;
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string? contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object?>? metadata)
             : this(contractName, cardinality, isRecomposable, isPrerequisite, metadata)
         {
@@ -200,7 +198,6 @@ namespace System.ComponentModel.Composition.Primitives
         ///         Overriders of this property should never return <see langword="null"/>.
         ///     </note>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public virtual Expression<Func<ExportDefinition, bool>> Constraint
         {
             get

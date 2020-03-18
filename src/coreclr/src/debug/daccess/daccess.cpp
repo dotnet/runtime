@@ -24,8 +24,13 @@
 #include "dwreport.h"
 #include "primitives.h"
 #include "dbgutil.h"
+
 #ifdef TARGET_UNIX
+#ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
+#else
+extern bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+#endif
 #endif
 
 #include "dwbucketmanager.hpp"
@@ -5610,12 +5615,7 @@ ClrDataAccess::Initialize(void)
     // Thus, when DAC is initialized, initialize utilcode with the base address of the runtime loaded in the
     // target process. This is similar to work done in CorDB::SetTargetCLR for mscordbi.
 
-    // Initialize UtilCode for SxS scenarios
-    CoreClrCallbacks cccallbacks;
-    cccallbacks.m_hmodCoreCLR               = (HINSTANCE)m_globalBase; // Base address of the runtime in the target process
-    cccallbacks.m_pfnIEE                    = NULL;
-    cccallbacks.m_pfnGetCORSystemDirectory  = NULL;
-    InitUtilcode(cccallbacks);
+    g_hmodCoreCLR = (HINSTANCE)m_globalBase; // Base address of the runtime in the target process
 
     return S_OK;
 }
@@ -7245,16 +7245,39 @@ bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
 #define _WIDE2(x) W(x)
 
 HRESULT
-ClrDataAccess::GetDacGlobals()
+GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress)
 {
 #ifdef TARGET_UNIX
+#ifdef USE_DAC_TABLE_RVA
 #ifdef DAC_TABLE_SIZE
     if (DAC_TABLE_SIZE != sizeof(g_dacGlobals))
     {
         return E_INVALIDARG;
     }
 #endif
-    ULONG64 dacTableAddress = m_globalBase + DAC_TABLE_RVA;
+    // On MacOS, FreeBSD or NetBSD use the RVA include file
+    *dacTableAddress = baseAddress + DAC_TABLE_RVA;
+#else
+    // On Linux try to get the dac table address via the export symbol
+    if (!TryGetSymbol(dataTarget, baseAddress, "g_dacTable", dacTableAddress))
+    {
+        return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
+    }
+#endif
+#endif
+    return S_OK;
+}
+
+HRESULT
+ClrDataAccess::GetDacGlobals()
+{
+#ifdef TARGET_UNIX
+    ULONG64 dacTableAddress;
+    HRESULT hr = GetDacTableAddress(m_pTarget, m_globalBase, &dacTableAddress);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
     if (FAILED(ReadFromDataTarget(m_pTarget, dacTableAddress, (BYTE*)&g_dacGlobals, sizeof(g_dacGlobals))))
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;

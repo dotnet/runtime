@@ -147,7 +147,7 @@ namespace System.DirectoryServices.AccountManagement
                 // It's probably a property that requires custom handling, such as an IdentityClaim.
                 if (fromWinNT != null)
                 {
-                    string winNTAttributeLower = winNTAttribute.ToLower(CultureInfo.InvariantCulture);
+                    string winNTAttributeLower = winNTAttribute.ToLowerInvariant();
 
                     foreach (Hashtable propertyMappingTableByWinNT in byWinNTTables)
                     {

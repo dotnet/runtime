@@ -76,7 +76,6 @@ namespace System.ComponentModel.Composition.Hosting
             return TryGetValue(key, false, out value);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters")]
         public bool TryGetValue<T>(object key, bool localAtomicCompositionOnly, [MaybeNullWhen(false)] out T value)
         {
             ThrowIfDisposed();

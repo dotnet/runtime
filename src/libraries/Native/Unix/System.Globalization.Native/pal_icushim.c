@@ -9,6 +9,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include "pal_icushim_internal.h"
 #include "pal_icushim.h"
 
 // Define pointers to all the used ICU functions

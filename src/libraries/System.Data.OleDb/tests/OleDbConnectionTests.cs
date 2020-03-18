@@ -357,5 +357,17 @@ namespace System.Data.OleDb.Tests
             Assert.True(connectionStringBuilder.Remove("Provider"));
             Assert.Empty(connectionStringBuilder.Provider);
         }
+
+        [ConditionalFact(Helpers.IsDriverAvailable)]
+        public void TransactionRollBackTest()
+        {
+            using (OleDbConnection connection = new OleDbConnection(ConnectionString))
+            {
+                connection.Open();
+                OleDbTransaction transaction = connection.BeginTransaction();
+                // This call shouldn't throw
+                transaction.Rollback();
+            }
+        }
     }
 }

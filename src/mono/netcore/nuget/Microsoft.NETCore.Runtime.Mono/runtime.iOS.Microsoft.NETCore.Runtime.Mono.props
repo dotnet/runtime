@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ItemGroup>
+    <NativeBinary Include="$(BinDir)libmono.dylib" />
+    <NativeBinary Include="$(BinDir)libmono.a" />
+    <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
+    <File Include="$(BinDir)include\**">
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
+      <TargetPath>tools\include\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </File>
+  </ItemGroup>
+</Project>

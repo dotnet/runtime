@@ -130,13 +130,11 @@ libmonoruntime_config_la_CPPFLAGS = $(AM_CPPFLAGS) -DMONO_BINDIR=\"$(bindir)/\" 
 #
 # Support is a separate library because it is not valid C++.
 #
-if !ENABLE_NETCORE
 support_libraries = libmonoruntime-support.la
 
 libmonoruntime_support_la_SOURCES = support.c
 libmonoruntime_support_la_LDFLAGS = $(Z_LIBS)
 libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @ZLIB_CFLAGS@
-endif
 
 #
 # This library contains the icall tables if the runtime was configured with --disable-icall-tables

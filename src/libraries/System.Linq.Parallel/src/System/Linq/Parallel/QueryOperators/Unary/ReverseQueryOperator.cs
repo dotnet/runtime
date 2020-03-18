@@ -139,7 +139,7 @@ namespace System.Linq.Parallel
                     while (_source.MoveNext(ref current!, ref key))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         _buffer.Add(new Pair<TSource, TKey>(current, key));
                         _bufferIndex.Value++;

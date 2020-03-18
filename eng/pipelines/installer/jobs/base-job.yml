@@ -68,12 +68,8 @@ jobs:
       eq(parameters.isOfficialBuild, true),
       ne(parameters.crossrootfsDir, '')) }}
 
-  # TODO: (Consolidation) Enable test signing during PR validation. https://github.com/dotnet/runtime/issues/1026
-  #
-  # CoreCLR only produces the UCRT redist file in Release config. When the redist file isn't
-  # present, signing fails. For now, only sign in official builds which only run Release mode.
   - name: SignType
-    value: ''
+    value: test
 
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:

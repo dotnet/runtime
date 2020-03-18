@@ -26,7 +26,6 @@
 
 #include "rtlfunctions.h"
 
-#include "jitperf.h"
 #include "shimload.h"
 #include "debuginfostore.h"
 #include "strsafe.h"
@@ -2264,8 +2263,8 @@ void CodeHeapRequestInfo::Init()
 
     if (m_pAllocator == NULL)
         m_pAllocator = m_pMD->GetLoaderAllocator();
-    m_isDynamicDomain = (m_pMD != NULL) ? m_pMD->IsLCGMethod() : false;
-    m_isCollectible = m_pAllocator->IsCollectible() ? true : false;
+    m_isDynamicDomain = (m_pMD != NULL) && m_pMD->IsLCGMethod();
+    m_isCollectible = m_pAllocator->IsCollectible();
     m_throwOnOutOfMemoryWithinRange = true;
 }
 
@@ -2551,7 +2550,11 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
 
     unsigned alignment = CODE_SIZE_ALIGN;
 
-    if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    {
+        alignment = max(alignment, 32);
+    }
+    else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
     {
         alignment = max(alignment, 16);
     }
@@ -2611,8 +2614,6 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
         }
 
         _ASSERTE(IS_ALIGNED(pCode, alignment));
-
-        JIT_PERF_UPDATE_X86_CODE_SIZE(totalSize);
 
         // Initialize the CodeHeader *BEFORE* we publish this code range via the nibble
         // map so that we don't have to harden readers against uninitialized data.
@@ -2838,7 +2839,6 @@ BYTE* EEJitManager::allocGCInfo(CodeHeader* pCodeHeader, DWORD blockSize, size_t
         pCodeHeader->SetGCInfo((BYTE*) (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize)));
     }
     _ASSERTE(pCodeHeader->GetGCInfo()); // AllocMem throws if there's not enough memory
-    JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
 
     * pAllocationSize = blockSize;  // Store the allocation size so we can backout later.
 
@@ -2866,8 +2866,6 @@ void* EEJitManager::allocEHInfoRaw(CodeHeader* pCodeHeader, DWORD blockSize, siz
         mem = (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize));
     }
     _ASSERTE(mem);   // AllocMem throws if there's not enough memory
-
-    JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
 
     * pAllocationSize = blockSize; // Store the allocation size so we can backout later.
 
@@ -2941,8 +2939,6 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         pBlock = (JumpStubBlockHeader *)mem;
 
         _ASSERTE(IS_ALIGNED(pBlock, CODE_SIZE_ALIGN));
-
-        JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
     }
 
     pBlock->m_next            = NULL;
@@ -3585,12 +3581,20 @@ BOOL EEJitManager::GetBoundariesAndVars(
     if (pDebugInfo == NULL)
         return FALSE;
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    BOOL hasFlagByte = TRUE;
+#else
+    BOOL hasFlagByte = FALSE;
+#endif
+
     // Uncompress. This allocates memory and may throw.
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        hasFlagByte
+    );
 
     return TRUE;
 }
@@ -4372,32 +4376,6 @@ BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
 }
 
 #ifndef DACCESS_COMPILE
-
-//**************************************************************************
-// Clear the caches for all JITs loaded.
-//
-void ExecutionManager::ClearCaches( void )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    GetEEJitManager()->ClearCache();
-}
-
-//**************************************************************************
-// Check if caches for any JITs loaded need to be cleaned
-//
-BOOL ExecutionManager::IsCacheCleanupRequired( void )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    return GetEEJitManager()->IsCacheCleanupRequired();
-}
 
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 /*********************************************************************/
@@ -5551,8 +5529,9 @@ BOOL NativeImageJitManager::GetBoundariesAndVars(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        FALSE);          // no patchpoint info
 
     return TRUE;
 }
@@ -6525,7 +6504,7 @@ UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodTo
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetImage()->GetReadyToRunHeader();
+    READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetReadyToRunHeader();
 
     return GCInfoToken::ReadyToRunVersionToGcInfoVersion(header->MajorVersion);
 }
@@ -6595,7 +6574,7 @@ unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& Method
 
     ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(MethodToken);
 
-    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->FindSection(READYTORUN_SECTION_EXCEPTION_INFO);
+    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->FindSection(ReadyToRunSectionType::ExceptionInfo);
     if (pExceptionInfoDir == NULL)
         return 0;
 
@@ -6662,7 +6641,7 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
 
     ReadyToRunInfo * pReadyToRunInfo = dac_cast<PTR_Module>(pRangeSection->pHeapListOrZapModule)->GetReadyToRunInfo();
 
-    IMAGE_DATA_DIRECTORY * pDelayLoadMethodCallThunksDir = pReadyToRunInfo->FindSection(READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS);
+    IMAGE_DATA_DIRECTORY * pDelayLoadMethodCallThunksDir = pReadyToRunInfo->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
     if (pDelayLoadMethodCallThunksDir != NULL)
     {
         if (pDelayLoadMethodCallThunksDir->VirtualAddress <= rva
@@ -6765,8 +6744,9 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        FALSE);          // no patchpoint info
 
     return TRUE;
 }

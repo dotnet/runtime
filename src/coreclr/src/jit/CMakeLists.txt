@@ -67,6 +67,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizer.cpp
+  patchpoint.cpp
   phase.cpp
   rangecheck.cpp
   rationalize.cpp
@@ -186,6 +187,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     unwind.h
     utils.h
     valuenum.h
+    valuenumfuncs.h
     valuenumtype.h
     varset.h
     vartype.h
@@ -334,7 +336,7 @@ set(JIT_ARCH_LINK_LIBRARIES
 
 if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
-       mscorrc_debug
+       mscorrc
        coreclrpal
        palrt
     )

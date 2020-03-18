@@ -119,10 +119,9 @@ template <typename ELEMENT>
 friend class ListLockBase;
 template <typename ELEMENT>
 friend class ListLockEntryBase;
-//friend class CExecutionEngine;
 friend struct SavedExceptionInfo;
-friend void EEEnterCriticalSection(CRITSEC_COOKIE cookie);
-friend void EELeaveCriticalSection(CRITSEC_COOKIE cookie);
+friend void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
+friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
 friend class CodeVersionManager;
 
 friend class Debugger;
@@ -262,9 +261,6 @@ public:
 #endif
     }
 
-    CrstBase *GetThreadsOwnedCrsts();
-    void SetThreadsOwnedCrsts(CrstBase *pCrst);
-
     NOINLINE EEThreadId GetHolderThreadId()
     {
         LIMITED_METHOD_CONTRACT;
@@ -296,9 +292,7 @@ protected:
     void DebugDestroy();
 #endif
 
-    union {
-        CRITICAL_SECTION    m_criticalsection;
-    };
+    T_CRITICAL_SECTION m_criticalsection;
 
     typedef enum
     {

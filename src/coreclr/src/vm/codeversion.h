@@ -10,7 +10,6 @@
 #ifndef CODE_VERSION_H
 #define CODE_VERSION_H
 
-class NativeCodeVersion;
 class ILCodeVersion;
 typedef DWORD NativeCodeVersionId;
 
@@ -31,15 +30,16 @@ typedef DPTR(class ILCodeVersioningState) PTR_ILCodeVersioningState;
 class CodeVersionManager;
 typedef DPTR(class CodeVersionManager) PTR_CodeVersionManager;
 
-// This HRESULT is only used as a private implementation detail. Corerror.xml has a comment in it
-//  reserving this value for our use but it doesn't appear in the public headers.
-#define CORPROF_E_RUNTIME_SUSPEND_REQUIRED _HRESULT_TYPEDEF_(0x80131381L)
-
 #endif
 
 #ifdef HAVE_GCCOVER
 class GCCoverageInfo;
 typedef DPTR(class GCCoverageInfo) PTR_GCCoverageInfo;
+#endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+struct PatchpointInfo;
+typedef DPTR(struct PatchpointInfo) PTR_PatchpointInfo;
 #endif
 
 class NativeCodeVersion
@@ -76,6 +76,7 @@ public:
     {
         OptimizationTier0,
         OptimizationTier1,
+        OptimizationTier1OSR,
         OptimizationTierOptimized, // may do less optimizations than tier 1
     };
 #ifdef FEATURE_TIERED_COMPILATION
@@ -84,6 +85,10 @@ public:
     void SetOptimizationTier(OptimizationTier tier);
 #endif
 #endif // FEATURE_TIERED_COMPILATION
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    PatchpointInfo * GetOSRInfo(unsigned * iloffset);
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 #ifdef HAVE_GCCOVER
     PTR_GCCoverageInfo GetGCCoverageInfo() const;
@@ -159,8 +164,10 @@ public:
     ReJITID GetVersionId() const;
     NativeCodeVersionCollection GetNativeCodeVersions(PTR_MethodDesc pClosedMethodDesc) const;
     NativeCodeVersion GetActiveNativeCodeVersion(PTR_MethodDesc pClosedMethodDesc) const;
+#if defined(FEATURE_TIERED_COMPILATION) && !defined(DACCESS_COMPILE)
+    bool HasAnyOptimizedNativeCodeVersion(NativeCodeVersion tier0NativeCodeVersion) const;
+#endif
     PTR_COR_ILMETHOD GetIL() const;
-    PTR_COR_ILMETHOD GetILNoThrow() const;
     DWORD GetJitFlags() const;
     const InstrumentedILOffsetMapping* GetInstrumentedILMap() const;
 
@@ -168,9 +175,10 @@ public:
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
     void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
-    HRESULT AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion);
+    HRESULT AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, 
+        NativeCodeVersion* pNativeCodeVersion, PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
     HRESULT GetOrCreateActiveNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion* pNativeCodeVersion);
-    HRESULT SetActiveNativeCodeVersion(NativeCodeVersion activeNativeCodeVersion, BOOL fEESuspended);
+    HRESULT SetActiveNativeCodeVersion(NativeCodeVersion activeNativeCodeVersion);
 #endif //DACCESS_COMPILE
 
     enum RejitFlags
@@ -247,11 +255,8 @@ class NativeCodeVersionNode
 
 public:
 #ifndef DACCESS_COMPILE
-    NativeCodeVersionNode(NativeCodeVersionId id, MethodDesc* pMethod, ReJITID parentId, NativeCodeVersion::OptimizationTier optimizationTier);
-#endif
-
-#ifdef DEBUG
-    BOOL LockOwnedByCurrentThread() const;
+    NativeCodeVersionNode(NativeCodeVersionId id, MethodDesc* pMethod, ReJITID parentId, NativeCodeVersion::OptimizationTier optimizationTier, 
+        PatchpointInfo* patchpointInfo, unsigned ilOffset);
 #endif
 
     PTR_MethodDesc GetMethodDesc() const;
@@ -277,6 +282,10 @@ public:
     void SetGCCoverageInfo(PTR_GCCoverageInfo gcCover);
 #endif
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    PatchpointInfo * GetOSRInfo(unsigned * ilOffset);
+#endif
+
 private:
     //union - could save a little memory?
     //{
@@ -292,6 +301,10 @@ private:
 #endif
 #ifdef HAVE_GCCOVER
     PTR_GCCoverageInfo m_gcCover;
+#endif
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    PTR_PatchpointInfo m_patchpointInfo;
+    unsigned m_ilOffset;
 #endif
 
     enum NativeCodeVersionNodeFlags
@@ -351,9 +364,6 @@ public:
 #ifndef DACCESS_COMPILE
     ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id);
 #endif
-#ifdef DEBUG
-    BOOL LockOwnedByCurrentThread() const;
-#endif //DEBUG
     PTR_Module GetModule() const;
     mdMethodDef GetMethodDef() const;
     ReJITID GetVersionId() const;
@@ -558,23 +568,6 @@ class CodeVersionManager
 public:
     CodeVersionManager();
 
-    void PreInit();
-
-    class TableLockHolder : public CrstHolder
-    {
-    public:
-        TableLockHolder(CodeVersionManager * pCodeVersionManager);
-    };
-    //Using the holder is preferable, but in some cases the holder can't be used
-#ifndef DACCESS_COMPILE
-    void EnterLock();
-    void LeaveLock();
-#endif
-
-#ifdef DEBUG
-    BOOL LockOwnedByCurrentThread() const;
-#endif
-
     DWORD GetNonDefaultILVersionCount();
     ILCodeVersionCollection GetILCodeVersions(PTR_MethodDesc pMethod);
     ILCodeVersionCollection GetILCodeVersions(PTR_Module pModule, mdMethodDef methodDef);
@@ -596,12 +589,17 @@ public:
     };
 
     HRESULT AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ReJITID rejitId, ILCodeVersion* pILCodeVersion);
-    HRESULT AddNativeCodeVersion(ILCodeVersion ilCodeVersion, MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion);
-    PCODE PublishVersionableCodeIfNecessary(MethodDesc* pMethodDesc, bool *doBackpatchRef, bool *doFullBackpatchRef);
-    HRESULT PublishNativeCodeVersion(MethodDesc* pMethodDesc, NativeCodeVersion nativeCodeVersion, BOOL fEESuspended);
+    HRESULT AddNativeCodeVersion(ILCodeVersion ilCodeVersion, MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion,
+        PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
+    PCODE PublishVersionableCodeIfNecessary(
+        MethodDesc* pMethodDesc,
+        CallerGCMode callerGCMode,
+        bool *doBackpatchRef,
+        bool *doFullBackpatchRef);
+    HRESULT PublishNativeCodeVersion(MethodDesc* pMethodDesc, NativeCodeVersion nativeCodeVersion);
     HRESULT GetOrCreateMethodDescVersioningState(MethodDesc* pMethod, MethodDescVersioningState** ppMethodDescVersioningState);
     HRESULT GetOrCreateILCodeVersioningState(Module* pModule, mdMethodDef methodDef, ILCodeVersioningState** ppILCodeVersioningState);
-    HRESULT SetActiveILCodeVersions(ILCodeVersion* pActiveVersions, DWORD cActiveVersions, BOOL fEESuspended, CDynArray<CodePublishError> * pPublishErrors);
+    HRESULT SetActiveILCodeVersions(ILCodeVersion* pActiveVersions, DWORD cActiveVersions, CDynArray<CodePublishError> * pPublishErrors);
     static HRESULT AddCodePublishError(Module* pModule, mdMethodDef methodDef, MethodDesc* pMD, HRESULT hrStatus, CDynArray<CodePublishError> * pErrors);
     static HRESULT AddCodePublishError(NativeCodeVersion nativeCodeVersion, HRESULT hrStatus, CDynArray<CodePublishError> * pErrors);
     static void OnAppDomainExit(AppDomain* pAppDomain);
@@ -647,8 +645,139 @@ private:
     //closed MethodDesc -> MethodDescVersioningState
     MethodDescVersioningStateHash m_methodDescVersioningStateMap;
 
-    CrstExplicitInit m_crstTable;
+private:
+    static CrstStatic s_lock;
+
+#ifndef DACCESS_COMPILE
+public:
+    static void StaticInitialize()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        s_lock.Init(
+            CrstCodeVersioning,
+            CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
+    }
+#endif
+
+#ifdef _DEBUG
+public:
+    static bool IsLockOwnedByCurrentThread();
+#endif
+
+public:
+    class LockHolder : private CrstHolderWithState
+    {
+    public:
+        LockHolder()
+        #ifndef DACCESS_COMPILE
+            : CrstHolderWithState(&s_lock)
+        #else
+            : CrstHolderWithState(nullptr)
+        #endif
+        {
+            WRAPPER_NO_CONTRACT;
+        }
+
+        LockHolder(const LockHolder &) = delete;
+        LockHolder &operator =(const LockHolder &) = delete;
+    };
 };
+
+#endif // FEATURE_CODE_VERSIONING
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// NativeCodeVersion definitions
+
+inline NativeCodeVersion::NativeCodeVersion()
+#ifdef FEATURE_CODE_VERSIONING
+    : m_storageKind(StorageKind::Unknown), m_pVersionNode(PTR_NULL)
+#else
+    : m_pMethodDesc(PTR_NULL)
+#endif
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef FEATURE_CODE_VERSIONING
+    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+#endif
+}
+
+inline NativeCodeVersion::NativeCodeVersion(const NativeCodeVersion & rhs)
+#ifdef FEATURE_CODE_VERSIONING
+    : m_storageKind(rhs.m_storageKind), m_pVersionNode(rhs.m_pVersionNode)
+#else
+    : m_pMethodDesc(rhs.m_pMethodDesc)
+#endif
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef FEATURE_CODE_VERSIONING
+    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+#endif
+}
+
+inline BOOL NativeCodeVersion::IsNull() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#ifdef FEATURE_CODE_VERSIONING
+    return m_storageKind == StorageKind::Unknown;
+#else
+    return m_pMethodDesc == NULL;
+#endif
+}
+
+inline PTR_MethodDesc NativeCodeVersion::GetMethodDesc() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#ifdef FEATURE_CODE_VERSIONING
+    return m_storageKind == StorageKind::Explicit ? m_pVersionNode->GetMethodDesc() : m_synthetic.m_pMethodDesc;
+#else
+    return m_pMethodDesc;
+#endif
+}
+
+inline NativeCodeVersionId NativeCodeVersion::GetVersionId() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#ifdef FEATURE_CODE_VERSIONING
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        return m_pVersionNode->GetVersionId();
+    }
+#endif
+    return 0;
+}
+
+inline bool NativeCodeVersion::operator==(const NativeCodeVersion & rhs) const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#ifdef FEATURE_CODE_VERSIONING
+    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+    return m_storageKind == rhs.m_storageKind && m_pVersionNode == rhs.m_pVersionNode;
+#else
+    return m_pMethodDesc == rhs.m_pMethodDesc;
+#endif
+}
+
+inline bool NativeCodeVersion::operator!=(const NativeCodeVersion & rhs) const
+{
+    WRAPPER_NO_CONTRACT;
+    return !operator==(rhs);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// NativeCodeVersionNode definitions
+
+#ifdef FEATURE_CODE_VERSIONING
+
+inline PTR_MethodDesc NativeCodeVersionNode::GetMethodDesc() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return m_pMethodDesc;
+}
 
 #endif // FEATURE_CODE_VERSIONING
 

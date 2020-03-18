@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -13,7 +14,7 @@ internal static partial class Interop
     internal static partial class BCrypt
     {
         // Note: input and output are allowed to be the same buffer. BCryptEncrypt will correctly do the encryption in place according to CNG documentation.
-        internal static int BCryptEncrypt(SafeKeyHandle hKey, byte[] input, int inputOffset, int inputCount, byte[] iv, byte[] output, int outputOffset, int outputCount)
+        internal static int BCryptEncrypt(SafeKeyHandle hKey, byte[] input, int inputOffset, int inputCount, byte[]? iv, byte[] output, int outputOffset, int outputCount)
         {
             Debug.Assert(input != null);
             Debug.Assert(inputOffset >= 0);
@@ -41,7 +42,7 @@ internal static partial class Interop
         }
 
         // Note: input and output are allowed to be the same buffer. BCryptDecrypt will correctly do the decryption in place according to CNG documentation.
-        internal static int BCryptDecrypt(SafeKeyHandle hKey, byte[] input, int inputOffset, int inputCount, byte[] iv, byte[] output, int outputOffset, int outputCount)
+        internal static int BCryptDecrypt(SafeKeyHandle hKey, byte[] input, int inputOffset, int inputCount, byte[]? iv, byte[] output, int outputOffset, int outputCount)
         {
             Debug.Assert(input != null);
             Debug.Assert(inputOffset >= 0);
@@ -69,9 +70,9 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        public static extern unsafe NTSTATUS BCryptEncrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
+        public static extern unsafe NTSTATUS BCryptEncrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[]? pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
 
         [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        public static extern unsafe NTSTATUS BCryptDecrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
+        public static extern unsafe NTSTATUS BCryptDecrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[]? pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
     }
 }

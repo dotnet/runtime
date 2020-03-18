@@ -53,7 +53,7 @@ namespace System.ConfigurationTests
 </configuration>";
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19383", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21527", TargetFrameworkMonikers.NetFramework)]
         public void SimpleSectionGroup()
         {
             using (var temp = new TempConfig(SimpleSectionGroupConfiguration))

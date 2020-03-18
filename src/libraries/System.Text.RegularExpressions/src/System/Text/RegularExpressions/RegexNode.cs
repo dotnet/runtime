@@ -69,7 +69,7 @@ namespace System.Text.RegularExpressions
         public const int Bol = RegexCode.Bol;                         //          ^
         public const int Eol = RegexCode.Eol;                         //          $
         public const int Boundary = RegexCode.Boundary;               //          \b
-        public const int Nonboundary = RegexCode.Nonboundary;         //          \B
+        public const int NonBoundary = RegexCode.NonBoundary;         //          \B
         public const int ECMABoundary = RegexCode.ECMABoundary;       // \b
         public const int NonECMABoundary = RegexCode.NonECMABoundary; // \B
         public const int Beginning = RegexCode.Beginning;             //          \A
@@ -218,7 +218,7 @@ namespace System.Text.RegularExpressions
                     case EndZ:
                     case Eol:
                     case Multi:
-                    case Nonboundary:
+                    case NonBoundary:
                     case NonECMABoundary:
                     case Nothing:
                     case Notone:
@@ -1455,7 +1455,7 @@ namespace System.Text.RegularExpressions
                     case Concatenate:
                     case Capture:
                     case Atomic:
-                    case Require:
+                    case Require when (subsequent.Options & RegexOptions.RightToLeft) == 0: // only lookaheads, not lookbehinds (represented as RTL Require nodes)
                     case Loop when subsequent.M > 0:
                     case Lazyloop when subsequent.M > 0:
                         subsequent = subsequent.Child(0);
@@ -1465,10 +1465,8 @@ namespace System.Text.RegularExpressions
                 break;
             }
 
-            // If the two nodes don't agree on case-insensitivity, don't try to optimize.
-            // If they're both case sensitive or both case insensitive, then their tokens
-            // will be comparable.
-            if ((node.Options & RegexOptions.IgnoreCase) != (subsequent.Options & RegexOptions.IgnoreCase))
+            // If the two nodes don't agree on options in any way, don't try to optimize them.
+            if (node.Options != subsequent.Options)
             {
                 return false;
             }
@@ -1514,7 +1512,7 @@ namespace System.Text.RegularExpressions
                         case EndZ when node.Ch != '\n':
                         case Eol when node.Ch != '\n':
                         case Boundary when RegexCharClass.IsWordChar(node.Ch):
-                        case Nonboundary when !RegexCharClass.IsWordChar(node.Ch):
+                        case NonBoundary when !RegexCharClass.IsWordChar(node.Ch):
                         case ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
                         case NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
                             return true;
@@ -1541,10 +1539,6 @@ namespace System.Text.RegularExpressions
                         case Onelazy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                         case Oneloop when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                         case Oneloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                        case Notone when RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                        case Notonelazy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                        case Notoneloop when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                        case Notoneloopatomic when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                         case Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
                         case Set when !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
                         case Setlazy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
@@ -1554,7 +1548,7 @@ namespace System.Text.RegularExpressions
                         case EndZ when !RegexCharClass.CharInClass('\n', node.Str!):
                         case Eol when !RegexCharClass.CharInClass('\n', node.Str!):
                         case Boundary when node.Str == RegexCharClass.WordClass || node.Str == RegexCharClass.DigitClass: // TODO: Expand these with a more inclusive overlap check that considers categories
-                        case Nonboundary when node.Str == RegexCharClass.NotWordClass || node.Str == RegexCharClass.NotDigitClass:
+                        case NonBoundary when node.Str == RegexCharClass.NotWordClass || node.Str == RegexCharClass.NotDigitClass:
                         case ECMABoundary when node.Str == RegexCharClass.ECMAWordClass || node.Str == RegexCharClass.ECMADigitClass:
                         case NonECMABoundary when node.Str == RegexCharClass.NotECMAWordClass || node.Str == RegexCharClass.NotDigitClass:
                             return true;
@@ -1655,7 +1649,7 @@ namespace System.Text.RegularExpressions
                     case End:
                     case EndZ:
                     case Eol:
-                    case Nonboundary:
+                    case NonBoundary:
                     case NonECMABoundary:
                     case Start:
                     // Difficult to glean anything meaningful from boundaries or results only known at run time.
@@ -1782,7 +1776,7 @@ namespace System.Text.RegularExpressions
                 Bol => nameof(Bol),
                 Eol => nameof(Eol),
                 Boundary => nameof(Boundary),
-                Nonboundary => nameof(Nonboundary),
+                NonBoundary => nameof(NonBoundary),
                 ECMABoundary => nameof(ECMABoundary),
                 NonECMABoundary => nameof(NonECMABoundary),
                 Beginning => nameof(Beginning),

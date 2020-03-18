@@ -20,6 +20,7 @@ namespace System
 
         public static bool IsNetCore => RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
 
@@ -33,6 +34,8 @@ namespace System
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
 
+        // Please make sure that you have the libgdiplus dependency installed.
+        // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
         public static bool IsDrawingSupported
         {
             get
@@ -102,7 +105,7 @@ namespace System
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
-        // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/corefx/issues/33016
+        // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
         public static bool SupportsAlpn => (IsWindows && !IsWindows7) ||
             ((!IsOSX && !IsWindows) &&
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));
@@ -198,6 +201,14 @@ namespace System
             }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
+        }
+
+        private static bool GetIsRunningOnMonoInterpreter()
+        {
+            // This is a temporary solution because mono does not support interpreter detection
+            // within the runtime.  
+            var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
+            return (val != null && val.Contains("--interpreter"));
         }
     }
 }

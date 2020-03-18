@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Microsoft.Internal.Collections
@@ -144,11 +145,13 @@ namespace Microsoft.Internal.Collections
         }
 
         public static List<T>? FastAppendToListAllowNulls<T>(
-                        this List<T>? source, T value,
+                        this List<T>? source, T? value,
                         IEnumerable<T>? second)
+            where T : class
         {
             if (second == null)
             {
+                Debug.Assert(value != null);
                 source = source.FastAppendToListAllowNulls(value);
             }
             else

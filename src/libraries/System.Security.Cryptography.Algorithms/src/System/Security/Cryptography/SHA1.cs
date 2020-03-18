@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
         public static new SHA1 Create() => new Implementation();
 
-        public static new SHA1 Create(string hashName) => (SHA1)CryptoConfig.CreateFromName(hashName);
+        public static new SHA1? Create(string hashName) => (SHA1?)CryptoConfig.CreateFromName(hashName);
 
         private sealed class Implementation : SHA1
         {

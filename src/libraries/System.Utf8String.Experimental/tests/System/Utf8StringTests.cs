@@ -10,6 +10,7 @@ using static System.Tests.Utf8TestUtilities;
 
 namespace System.Tests
 {
+    [SkipOnMono("The features from System.Utf8String.Experimental namespace are experimental.")]
     public unsafe partial class Utf8StringTests
     {
         [Fact]
@@ -233,7 +234,12 @@ namespace System.Tests
         [Fact]
         public static void ToByteArray_Empty()
         {
+#if NETFRAMEWORK
+            // An empty Span.ToArray doesn't return Array.Empty on netfx
+            Assert.Equal(Array.Empty<byte>(), Utf8String.Empty.ToByteArray());
+#else
             Assert.Same(Array.Empty<byte>(), Utf8String.Empty.ToByteArray());
+#endif
         }
 
         [Fact]

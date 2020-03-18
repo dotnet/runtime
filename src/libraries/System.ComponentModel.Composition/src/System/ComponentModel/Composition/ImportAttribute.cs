@@ -10,7 +10,6 @@ namespace System.ComponentModel.Composition
     /// <summary>
     ///     Specifies that a property, field, or parameter imports a particular export.
     /// </summary>
-    [SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter,
                     AllowMultiple = false, Inherited = false)]
     public class ImportAttribute : Attribute, IAttributedImport

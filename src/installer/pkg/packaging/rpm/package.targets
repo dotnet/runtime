@@ -18,7 +18,7 @@
           Condition="'$(BuildRuntimeRpms)' == 'true'" />
 
   <Target Name="BuildRpms"
-          DependsOnTargets="GenerateRuntimeRpms; GenerateRuntimeDependenciesRpm"
+          DependsOnTargets="GenerateRuntimeRpms; GenerateRuntimeDependenciesRpms"
           Condition="'$(BuildRpmPackage)'=='true' and '$(FPMPresent)'=='true'" />
 
   <Target Name="GenerateSharedHostRpm">
@@ -315,12 +315,47 @@
 
   </Target>
   
-  <Target Name="GenerateRuntimeDependenciesRpm">
+  <Target Name="GenerateRuntimeDependenciesRpms">
+
     <PropertyGroup>
+      <SharedProperties>
+        rpmPackagingConfigPath=$(rpmPackagingConfigPath);
+        DotnetRuntimeDependenciesPackageInstallerFile=$(DotnetRuntimeDependenciesPackageInstallerFile);
+        OutputRid=$(OutputRid);
+        RuntimeDependenciesRpmPkgName=$(RuntimeDependenciesRpmPkgName);
+        RuntimeDepsRpmPackageVersion=$(RuntimeDepsRpmPackageVersion);
+        RuntimeDepsRpmPackageRelease=$(RuntimeDepsRpmPackageRelease);
+        TemplatesDir=$(TemplatesDir)
+      </SharedProperties>
+      <DepsConfigFilePrefix>dotnet-runtime-deps-rpm_config_</DepsConfigFilePrefix>
+    </PropertyGroup>
+
+    <!-- non-portable build - build a single dotnet-runtime-deps package using OutputRid -->
+    <ItemGroup Condition="'$(PortableBuild)' != 'true'">
+      <DepsProjects Include="$(MSBuildProjectFullPath)">
+        <Properties>DepsRid=$(OutputRid);$(SharedProperties)</Properties>
+      </DepsProjects>
+    </ItemGroup>
+
+    <!-- portable build - build all dotnet-runtime-deps packages for all targets discovered in config filenames -->
+    <ItemGroup Condition="'$(PortableBuild)' == 'true'">
+      <ConfigJsonFilenames Include="$(rpmPackagingConfigPath)$(DepsConfigFilePrefix)*.json" />
+      <Rids Include="$([System.Text.RegularExpressions.Regex]::Match('%(ConfigJsonFilenames.Filename)', '$(DepsConfigFilePrefix)([A-Za-z0-9_\-\.]+)').Groups[1].Value)" />
+      <DepsProjects Include="$(MSBuildProjectFullPath)">
+        <Properties>DepsRid=%(Rids.Identity);$(SharedProperties)</Properties>
+      </DepsProjects>
+    </ItemGroup>
+
+    <MSBuild Projects="@(DepsProjects)" Targets="GenerateSingleRuntimeDependenciesRpm" />
+
+  </Target>
+
+  <Target Name="GenerateSingleRuntimeDependenciesRpm">
+    <PropertyGroup>
+      <RpmFile>$([System.String]::Copy('$(DotnetRuntimeDependenciesPackageInstallerFile)').Replace('$(OutputRid)', '$(DepsRid)'))</RpmFile>
       <RpmPackageName>$(RuntimeDependenciesRpmPkgName)</RpmPackageName>
       <RpmPackageVersion>$(RuntimeDepsRpmPackageVersion)</RpmPackageVersion>
-      <RpmFile>$(DotnetRuntimeDependenciesPackageInstallerFile)</RpmFile>
-      <ConfigJsonName>dotnet-runtime-deps-rpm_config_$(OutputRid).json</ConfigJsonName>
+      <ConfigJsonName>dotnet-runtime-deps-rpm_config_$(DepsRid).json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
     </PropertyGroup>
@@ -355,7 +390,7 @@
     <!-- Replace config json variables -->
     <ItemGroup>
       <RuntimeDependenciesTokenValue Include="%RUNTIME_DEPS_RPM_PACKAGE_NAME%">
-        <ReplacementString>$(RuntimeDependenciesRpmPkgName)</ReplacementString>
+        <ReplacementString>$(RpmPackageName)</ReplacementString>
       </RuntimeDependenciesTokenValue>
       <RuntimeDependenciesTokenValue Include="%RUNTIME_DEPS_VERSION%">
         <ReplacementString>$(RuntimeDepsRpmPackageVersion)</ReplacementString> 

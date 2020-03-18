@@ -109,6 +109,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15037", TestRuntimes.Mono)]
         public void RawDefaultValueFromAttribute()
         {
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "Foo2", 0);
@@ -280,7 +281,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(VerifyParameterInfoGetRealObjectWorks_TestData))]
         public void VerifyParameterInfoGetRealObjectWorks(MemberInfo pretendMember, int pretendPosition, string expectedParameterName)
         {
-            // Regression test for https://github.com/dotnet/corefx/issues/20574
+            // Regression test for https://github.com/dotnet/runtime/issues/22081
             //
             // It's easy to forget that ParameterInfo's and runtime-implemented ParameterInfo's are different objects and just because the
             // latter doesn't support serialization doesn't mean other providers won't either.

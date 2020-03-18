@@ -167,7 +167,7 @@ namespace System.Drawing {
                         // Nope.  Parse the RGBA from the text.
                         //
                         if (obj == null) {
-                            string[] tokens = text.Split(new char[] {sep});
+                            string[] tokens = text.Split(sep);
                             int[] values = new int[tokens.Length];
                             for (int i = 0; i < values.Length; i++) {
                                 values[i] = unchecked((int)intConverter.ConvertFromString(context, culture, tokens[i]));

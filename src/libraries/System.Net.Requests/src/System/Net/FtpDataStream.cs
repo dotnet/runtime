@@ -58,7 +58,6 @@ namespace System.Net
         }
 
         //TODO: Add this to FxCopBaseline.cs once https://github.com/dotnet/roslyn/issues/15728 is fixed
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity")]
         void ICloseEx.CloseEx(CloseExState closeState)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"state = {closeState}");
@@ -89,10 +88,10 @@ namespace System.Net
             catch (Exception exception)
             {
                 bool doThrow = true;
-                WebException webException = exception as WebException;
+                WebException? webException = exception as WebException;
                 if (webException != null)
                 {
-                    FtpWebResponse response = webException.Response as FtpWebResponse;
+                    FtpWebResponse? response = webException.Response as FtpWebResponse;
                     if (response != null)
                     {
                         if (!_isFullyRead
@@ -211,7 +210,7 @@ namespace System.Net
 
         private void AsyncReadCallback(IAsyncResult ar)
         {
-            LazyAsyncResult userResult = (LazyAsyncResult)ar.AsyncState;
+            LazyAsyncResult userResult = (LazyAsyncResult)ar.AsyncState!;
             try
             {
                 try
@@ -234,7 +233,7 @@ namespace System.Net
             catch { }
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             CheckError();
             LazyAsyncResult userResult = new LazyAsyncResult(this, state, callback);
@@ -254,7 +253,7 @@ namespace System.Net
         {
             try
             {
-                object result = ((LazyAsyncResult)ar).InternalWaitForCompletion();
+                object result = ((LazyAsyncResult)ar).InternalWaitForCompletion()!;
 
                 if (result is Exception e)
                 {
@@ -269,7 +268,7 @@ namespace System.Net
             }
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             CheckError();
             try

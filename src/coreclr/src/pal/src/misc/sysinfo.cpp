@@ -37,6 +37,10 @@ Revision History:
 #error Either sysctl or sysconf is required for GetSystemInfo.
 #endif
 
+#if HAVE_SYSCTLBYNAME
+#include <sys/sysctl.h>
+#endif
+
 #if HAVE_SYSINFO
 #include <sys/sysinfo.h>
 #endif

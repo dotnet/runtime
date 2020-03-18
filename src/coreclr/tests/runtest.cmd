@@ -10,7 +10,7 @@ set __ThisScriptDir="%~dp0"
 :: Set the default arguments
 set __BuildArch=x64
 set __BuildType=Debug
-set __BuildOS=Windows_NT
+set __TargetOS=Windows_NT
 
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
@@ -28,10 +28,8 @@ set __LongGCTests=
 set __GCSimulatorTests=
 set __JitDisasm=
 set __IlasmRoundTrip=
-set __CollectDumps=
 set __DoCrossgen=
 set __CrossgenAltJit=
-set __BuildXUnitWrappers=
 set __PrintLastResultsOnly=
 set RunInUnloadableContext=
 
@@ -71,7 +69,6 @@ if /i "%1" == "jitforcerelocs"                          (set COMPlus_ForceRelocs
 if /i "%1" == "jitdisasm"                               (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 
-if /i "%1" == "buildxunitwrappers"                      (set __BuildXunitWrappers=1&shift&goto Arg_Loop)
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"                        (set RunCrossGen=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=true&shift&goto Arg_Loop)
@@ -87,7 +84,6 @@ if /i "%1" == "altjitarch"                              (set __AltJitArch=%2&shi
 
 REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"                           (set COMPlus_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
-if /i "%1" == "collectdumps"                            (set __CollectDumps=true&shift&goto Arg_Loop)
 
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 
@@ -112,8 +108,8 @@ if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Env
 :: Set the remaining variables based upon the determined configuration
 set __MSBuildBuildArch=%__BuildArch%
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
 
 :: Default global test environment variables
 :: REVIEW: are these ever expected to be defined on entry to this script? Why? By whom?
@@ -151,10 +147,6 @@ if defined __TestEnv (
 
 if defined __Sequential (
     set __RuntestPyArgs=%__RuntestPyArgs% --sequential
-)
-
-if defined __BuildXUnitWrappers (
-    set __RuntestPyArgs=%__RuntestPyArgs% --build_xunit_test_wrappers
 )
 
 if defined RunCrossGen (
@@ -216,8 +208,8 @@ REM Set up the directory for MSBuild debug logs.
 set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
 
 REM These log files are created automatically by the test run process. Q: what do they depend on being set?
-set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.html
-set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.xml
+set __TestRunHtmlLog=%__LogsDir%\TestRun_%__TargetOS%__%__BuildArch%__%__BuildType%.html
+set __TestRunXmlLog=%__LogsDir%\TestRun_%__TargetOS%__%__BuildArch%__%__BuildType%.xml
 
 REM Prepare the Test Drop
 
@@ -269,22 +261,6 @@ if not exist %XunitTestBinBase% (
     exit /b 1
 )
 
-if "%__CollectDumps%"=="true" (
-    :: Install dumpling
-    set "__DumplingHelperPath=%__ProjectDir%\..\Tools\DumplingHelper.py"
-    python "!__DumplingHelperPath!" install_dumpling
-
-    :: Create the crash dump folder if necessary
-    set "__CrashDumpFolder=%tmp%\CoreCLRTestCrashDumps"
-    if not exist "!__CrashDumpFolder!" (
-        mkdir "!__CrashDumpFolder!"
-    )
-
-    :: Grab the current time before execution begins. This will be used to determine which crash dumps
-    :: will be uploaded.
-    for /f "delims=" %%a in ('python !__DumplingHelperPath! get_timestamp') do @set __StartTime=%%a
-)
-
 echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%
 echo %__MsgPrefix%Starting test run at %TIME%
 
@@ -292,9 +268,6 @@ set __BuildLogRootName=TestRunResults
 call :msbuild "%__ProjectFilesDir%\src\runtest.proj" /p:Runtests=true /clp:showcommandline
 set __errorlevel=%errorlevel%
 
-if "%__CollectDumps%"=="true" (
-    python "%__DumplingHelperPath%" collect_dump %errorlevel% "%__CrashDumpFolder%" %__StartTime% "CoreCLR_Tests"
-)
 
 if %__errorlevel% GEQ 1 (
     echo %__MsgPrefix%Test Run failed. Refer to the following:
@@ -404,9 +377,9 @@ REM ============================================================================
 
 echo %__MsgPrefix%Invoking msbuild
 
-set "__BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-set "__BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-set "__BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+set "__BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
+set "__BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
+set "__BuildErr=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
 
 set __msbuildLogArgs=^
 /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%";Append ^

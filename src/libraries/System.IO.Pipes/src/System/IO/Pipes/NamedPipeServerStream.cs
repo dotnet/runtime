@@ -184,7 +184,6 @@ namespace System.IO.Pipes
             TaskToApm.End(asyncResult);
 
         // Server can only connect from Disconnected state
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Consistent with security model")]
         private void CheckConnectOperationsServer()
         {
             // we're not checking whether already connected; this allows us to throw IOException

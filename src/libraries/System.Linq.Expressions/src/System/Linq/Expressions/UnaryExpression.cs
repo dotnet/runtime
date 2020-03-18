@@ -315,7 +315,6 @@ namespace System.Linq.Expressions
         /// <returns>The <see cref="UnaryExpression"/> that results from calling the appropriate factory method.</returns>
         /// <exception cref="ArgumentException">Thrown when <paramref name="unaryType"/> does not correspond to a unary expression.</exception>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="operand"/> is null.</exception>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         public static UnaryExpression MakeUnary(ExpressionType unaryType, Expression operand, Type type, MethodInfo? method) =>
             unaryType switch
             {

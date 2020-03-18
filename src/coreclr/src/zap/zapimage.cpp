@@ -223,7 +223,7 @@ void ZapImage::InitializeSectionsForReadyToRun()
         const char * pCompilerIdentifier = COMPILER_NAME " " FX_FILEVERSION_STR " " QUOTE_MACRO(__BUILDMACHINE__);
         ZapBlob * pCompilerIdentifierBlob = new (GetHeap()) ZapBlobPtr((PVOID)pCompilerIdentifier, strlen(pCompilerIdentifier) + 1);
 
-        GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_COMPILER_IDENTIFIER, pCompilerIdentifierBlob);
+        GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::CompilerIdentifier, pCompilerIdentifierBlob);
         m_pHeaderSection->Place(pCompilerIdentifierBlob);
     }
 
@@ -283,7 +283,7 @@ void ZapImage::InitializeSectionsForReadyToRun()
     // Make sure the import sections table is in the image, so we can find the slot for module
     //
     _ASSERTE(m_pImportSectionsTable->GetSize() != 0);
-    GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_IMPORT_SECTIONS, m_pImportSectionsTable);
+    GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::ImportSections, m_pImportSectionsTable);
 }
 #endif // FEATURE_READYTORUN_COMPILER
 
@@ -2432,15 +2432,6 @@ HRESULT ZapImage::LocateProfileData()
     if (m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR))
         return S_FALSE;
 #endif
-
-    //
-    // Don't use IBC data from untrusted assemblies--this allows us to assume that
-    // the IBC data is not malicious
-    //
-    if (m_zapper->m_pEEJitInfo->canSkipVerification(m_hModule) != CORINFO_VERIFICATION_CAN_SKIP)
-    {
-        return S_FALSE;
-    }
 
     //
     // See if there's profile data in the resource section of the PE

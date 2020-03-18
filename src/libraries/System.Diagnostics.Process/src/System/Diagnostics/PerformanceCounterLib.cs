@@ -74,7 +74,7 @@ namespace System.Diagnostics
             return PerformanceCounterLib.s_libraryTable.GetOrAdd((machineName, lcidString), (key) => new PerformanceCounterLib(key.machineName, key.lcidString));
         }
 
-        internal byte[] GetPerformanceData(string item)
+        internal byte[]? GetPerformanceData(string item)
         {
             if (_performanceMonitor == null)
             {
@@ -85,7 +85,7 @@ namespace System.Diagnostics
                 }
             }
 
-            return _performanceMonitor.GetData(item);
+            return _performanceMonitor.GetData(item)!;
         }
 
         private Dictionary<int, string> GetStringTable(bool isHelp)
@@ -113,9 +113,9 @@ namespace System.Diagnostics
                     try
                     {
                         if (!isHelp)
-                            names = (string[])libraryKey.GetValue("Counter " + _perfLcid);
+                            names = (string[]?)libraryKey.GetValue("Counter " + _perfLcid);
                         else
-                            names = (string[])libraryKey.GetValue("Explain " + _perfLcid);
+                            names = (string[]?)libraryKey.GetValue("Explain " + _perfLcid);
 
                         if ((names == null) || (names.Length == 0))
                         {
@@ -225,7 +225,7 @@ namespace System.Diagnostics
             // we wait may not be sufficient if the Win32 code keeps running into this deadlock again
             // and again. A condition very rare but possible in theory. We would get back to the user
             // in this case with InvalidOperationException after the wait time expires.
-            internal byte[] GetData(string item)
+            internal byte[]? GetData(string item)
             {
 #if FEATURE_REGISTRY
                 int waitRetries = 17;   //2^16*10ms == approximately 10mins
@@ -237,7 +237,7 @@ namespace System.Diagnostics
                 {
                     try
                     {
-                        data = (byte[])_perfDataKey.GetValue(item);
+                        data = (byte[]?)_perfDataKey.GetValue(item);
                         return data;
                     }
                     catch (IOException e)

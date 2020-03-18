@@ -64,6 +64,8 @@ namespace Internal.Runtime
         ManifestMetadata = 112, // Added in v2.3
         AttributePresence = 113, // Added in V3.1
         InliningInfo2 = 114, // Added in 4.1
+        ComponentAssemblies = 115, // Added in 4.1
+        OwnerCompositeExecutable = 116, // Added in 4.1
 
         //
         // CoreRT ReadyToRun sections

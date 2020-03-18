@@ -386,6 +386,7 @@ TESTS_CS_SRC=		\
 	interface.cs		\
 	interface-2.cs		\
 	dim-generic.cs		\
+	dim-issue-18917.cs		\
 	iface.cs		\
 	iface2.cs		\
 	iface3.cs		\
@@ -689,6 +690,7 @@ TESTS_CS_SRC=		\
 	monitor.cs	\
 	generic-xdomain.2.cs	\
 	threadpool-exceptions7.cs	\
+	threadpool-exceptions8.cs \
 	cross-domain.cs	\
 	generic-unloading.2.cs	\
 	namedmutex-destroy-race.cs	\
@@ -724,7 +726,8 @@ TESTS_CS_SRC=		\
 	bug-gh-9507.cs	\
 	async-generic-enum.cs \
 	null-blob-main.cs \
-	last-error.cs
+	last-error.cs \
+	bug-gh-17285.cs
 
 # some tests fail to compile on mcs
 if CSC_IS_ROSLYN
@@ -1108,6 +1111,12 @@ PLATFORM_DISABLED_TESTS += bug-58782-plain-throw.exe bug-58782-capture-and-throw
 
 # see https://github.com/mono/mono/issues/9739
 PLATFORM_DISABLED_TESTS += verbose.exe
+
+if ENABLE_CXX
+# see https://github.com/mono/mono/issues/18827
+PLATFORM_DISABLED_TESTS += bug-10127.exe
+endif
+
 endif
 
 
@@ -1386,6 +1395,7 @@ PROFILE_DISABLED_TESTS += \
 	monitor.exe	\
 	generic-xdomain.2.exe	\
 	threadpool-exceptions7.exe	\
+	threadpool-exceptions8.exe	\
 	cross-domain.exe	\
 	generic-unloading.2.exe	\
 	appdomain-threadpool-unload.exe
@@ -1599,6 +1609,7 @@ PROFILE_DISABLED_TESTS += \
 	suspend-stress-test.exe \
 	thread6.exe \
 	threadpool-exceptions7.exe \
+	threadpool-exceptions8.exe	\
 	unhandled-exception-7.exe \
 	unhandled-exception-test-case.2.exe \
 	unload-appdomain-on-shutdown.exe \

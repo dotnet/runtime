@@ -13,7 +13,6 @@ namespace System.ComponentModel.Composition
 {
     internal static class MetadataViewProvider
     {
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object?> metadata)
         {
             if (metadata == null)

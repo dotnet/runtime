@@ -13,7 +13,6 @@ namespace System.ComponentModel
     /// </summary>
     [Serializable]
     [TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    [SuppressMessage("Microsoft.Design", "CA1032:ImplementStandardExceptionConstructors")] // must not, a Type is required in all constructors.
     public class LicenseException : SystemException
     {
         private const int LicenseHResult = unchecked((int)0x80131901);

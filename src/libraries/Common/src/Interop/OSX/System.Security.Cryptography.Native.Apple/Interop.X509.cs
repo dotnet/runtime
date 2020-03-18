@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -125,7 +126,7 @@ internal static partial class Interop
             bool exportable,
             out SafeSecIdentityHandle identityHandle)
         {
-            SafeCreateHandle cfPassphrase = null;
+            SafeCreateHandle? cfPassphrase = null;
             bool releasePassword = false;
 
             try
@@ -158,7 +159,7 @@ internal static partial class Interop
         internal static SafeSecCertificateHandle X509ImportCertificate(
             byte[] bytes,
             X509ContentType contentType,
-            SafeCreateHandle importPassword,
+            SafeCreateHandle? importPassword,
             SafeKeychainHandle keychain,
             bool exportable,
             out SafeSecIdentityHandle identityHandle)
@@ -403,10 +404,10 @@ internal static partial class Interop
             throw new CryptographicException();
         }
 
-        internal static SafeSecIdentityHandle X509MoveToKeychain(
+        internal static SafeSecIdentityHandle? X509MoveToKeychain(
             SafeSecCertificateHandle cert,
             SafeKeychainHandle targetKeychain,
-            SafeSecKeyRefHandle privateKey)
+            SafeSecKeyRefHandle? privateKey)
         {
             SafeSecIdentityHandle identityHandle;
             int osStatus;

@@ -13,7 +13,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
-#if CORECLR && TARGET_WINDOWS
+#if (CORECLR || MONO) && TARGET_WINDOWS
 using Internal.Win32;
 #endif
 #if ES_BUILD_AGAINST_DOTNET_V35
@@ -288,10 +288,8 @@ namespace System.Diagnostics.Tracing
                             filterData = null;
 
                         // read filter data only when a session is being *added*
-                        byte[]? data;
-                        int keyIndex;
                         if (bEnabling &&
-                            GetDataFromController(etwSessionId, filterData, out command, out data, out keyIndex))
+                            GetDataFromController(etwSessionId, filterData, out command, out byte[]? data, out int keyIndex))
                         {
                             args = new Dictionary<string, string?>(4);
                             // data can be null if the filterArgs had a very large size which failed our sanity check

@@ -175,7 +175,7 @@ struct _MonoArray {
 	mono_64bitaligned_t vector [MONO_ZERO_LEN_ARRAY];
 };
 
-#define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET (MonoArray, vector))
+#define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET_CONSTANT (MonoArray, vector))
 
 struct _MonoString {
 	MonoObject object;
@@ -585,7 +585,7 @@ struct _MonoInternalThread {
 	MonoThreadName name;
 	guint32	    state;      /* must be accessed while longlived->synch_cs is locked */
 	MonoException *abort_exc;
-	int abort_state_handle;
+	MonoGCHandle abort_state_handle;
 	guint64 tid;	/* This is accessed as a gsize in the code (so it can hold a 64bit pointer on systems that need it), but needs to reserve 64 bits of space on all machines as it corresponds to a field in managed code */
 	gsize debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
 	gpointer *static_data;
@@ -1493,25 +1493,6 @@ TYPED_HANDLE_DECL (MonoReflectionGenericClass);
 typedef struct {
 	MonoObject  obj;
 	MonoString *name;
-	MonoString *codebase;
-	gint32 major, minor, build, revision;
-	MonoObject  *cultureInfo;
-	guint32     flags;
-	guint32     hashalg;
-	MonoObject  *keypair;
-	MonoArray   *publicKey;
-	MonoArray   *keyToken;
-	guint32     versioncompat;
-	MonoObject *version;
-	guint32     processor_architecture;
-} MonoReflectionAssemblyName;
-
-/* Safely access System.Reflection.AssemblyName from native code */
-TYPED_HANDLE_DECL (MonoReflectionAssemblyName);
-
-typedef struct {
-	MonoObject  obj;
-	MonoString *name;
 	MonoReflectionType *type;
 	MonoReflectionTypeBuilder *typeb;
 	MonoArray *cattrs;
@@ -2346,17 +2327,17 @@ mono_runtime_get_aotid_arr (void);
  * mono_gchandle_get_target () can be used to get the object referenced by both kinds
  * of handle: for a weakref handle, if an object has been collected, it will return NULL.
  */
-uint32_t
+MonoGCHandle
 mono_gchandle_new_internal (MonoObject *obj, mono_bool pinned);
 
-uint32_t
+MonoGCHandle
 mono_gchandle_new_weakref_internal (MonoObject *obj, mono_bool track_resurrection);
 
 ICALL_EXTERN_C
 MonoObject*
-mono_gchandle_get_target_internal (uint32_t gchandle);
+mono_gchandle_get_target_internal (MonoGCHandle gchandle);
 
-void mono_gchandle_free_internal (uint32_t gchandle);
+void mono_gchandle_free_internal (MonoGCHandle gchandle);
 
 /* Reference queue support
  *

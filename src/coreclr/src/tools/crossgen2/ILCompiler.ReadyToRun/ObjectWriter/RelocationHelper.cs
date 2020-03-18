@@ -182,6 +182,14 @@ namespace ILCompiler.PEWriter
                         delta = unchecked(targetRVA + (int)_defaultImageBase);
                         break;
                     }
+
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL:
+                    {
+                        relocationLength = 8;
+                        const uint offsetCorrection = 12;
+                        delta = unchecked(targetRVA - (sourceRVA + offsetCorrection));
+                        break;
+                    }
                     
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
                     {
@@ -193,7 +201,9 @@ namespace ILCompiler.PEWriter
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                     {
                         relocationLength = 4;
-                        delta = (targetRVA - sourceRVA) >> 12;
+                        int sourcePageRVA = sourceRVA & ~0xfff;
+                        // Page delta always fits in 21 bits as long as we use 4-byte RVAs
+                        delta = ((targetRVA - sourcePageRVA) >> 12) & 0x1f_ffff;
                         break;
                     }
 

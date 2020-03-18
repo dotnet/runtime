@@ -22,7 +22,7 @@ namespace Internal.Cryptography
         /// <summary>
         /// Map HashAlgorithm type to string; .NET Framework uses CryptoConfig functionality.
         /// </summary>
-        public static string ToAlgorithmName(this HashAlgorithm hashAlgorithm)
+        public static string? ToAlgorithmName(this HashAlgorithm hashAlgorithm)
         {
             if (hashAlgorithm is SHA1)
                 return HashAlgorithmNames.SHA1;

@@ -221,7 +221,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     if (useContentLengthUpload)
                     {
-                        // Ensure that Content-Length is populated (see https://github.com/dotnet/corefx/issues/27245)
+                        // Ensure that Content-Length is populated (see https://github.com/dotnet/runtime/issues/25086)
                         requestContent.Headers.ContentLength = requestContent.Headers.ContentLength;
                     }
                     else

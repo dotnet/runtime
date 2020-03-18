@@ -131,7 +131,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public override ComposablePart CreatePart()
         {
             if (IsDisposalRequired)

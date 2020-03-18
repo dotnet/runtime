@@ -13,7 +13,6 @@ using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
     [DebuggerTypeProxy(typeof(InstructionArray.DebugView))]
     internal readonly struct InstructionArray
     {
@@ -66,7 +65,6 @@ namespace System.Linq.Expressions.Interpreter
     }
 
     [DebuggerTypeProxy(typeof(InstructionList.DebugView))]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     internal sealed class InstructionList
     {
         private readonly List<Instruction> _instructions = new List<Instruction>();

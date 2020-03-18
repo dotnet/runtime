@@ -99,14 +99,14 @@ namespace System.Threading.Tasks.Dataflow
             // to handle multiple completion requests and to carry over only one.
             _source.Completion.ContinueWith((completed, state) =>
             {
-                var thisBlock = ((BatchedJoinBlock<T1, T2>)state) as IDataflowBlock;
+                var thisBlock = ((BatchedJoinBlock<T1, T2>)state!) as IDataflowBlock;
                 Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
-                thisBlock.Fault(completed.Exception);
+                thisBlock.Fault(completed.Exception!);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
-                dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchedJoinBlock<T1, T2>)state).CompleteEachTarget(), this);
+                dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchedJoinBlock<T1, T2>)state!).CompleteEachTarget(), this);
 #if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -126,22 +126,21 @@ namespace System.Threading.Tasks.Dataflow
         public ITargetBlock<T2> Target2 { get { return _target2; } }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public IDisposable LinkTo(ITargetBlock<Tuple<IList<T1>, IList<T2>>> target, DataflowLinkOptions linkOptions)
         {
             return _source.LinkTo(target, linkOptions);
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceive"]/*' />
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public bool TryReceive(Predicate<Tuple<IList<T1>, IList<T2>>> filter, out Tuple<IList<T1>, IList<T2>> item)
+#pragma warning disable CS8614 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/42470
+        public bool TryReceive(Predicate<Tuple<IList<T1>, IList<T2>>>? filter, [NotNullWhen(true)] out Tuple<IList<T1>, IList<T2>>? item)
+#pragma warning restore CS8614
         {
             return _source.TryReceive(filter, out item);
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceiveAll"]/*' />
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public bool TryReceiveAll(out IList<Tuple<IList<T1>, IList<T2>>> items) { return _source.TryReceiveAll(out items); }
+        public bool TryReceiveAll([NotNullWhen(true)] out IList<Tuple<IList<T1>, IList<T2>>>? items) { return _source.TryReceiveAll(out items); }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="OutputCount"]/*' />
         public int OutputCount { get { return _source.OutputCount; } }
@@ -176,6 +175,7 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ConsumeMessage"]/*' />
+        [return: MaybeNull]
         Tuple<IList<T1>, IList<T2>> ISourceBlock<Tuple<IList<T1>, IList<T2>>>.ConsumeMessage(
             DataflowMessageHeader messageHeader, ITargetBlock<Tuple<IList<T1>, IList<T2>>> target, out bool messageConsumed)
         {
@@ -212,7 +212,6 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get
@@ -258,7 +257,7 @@ namespace System.Threading.Tasks.Dataflow
             public ITargetBlock<T2> Target2 { get { return _batchedJoinBlock._target2; } }
 
             /// <summary>Gets the task being used for output processing.</summary>
-            public Task TaskForOutputProcessing { get { return _sourceDebuggingInformation.TaskForOutputProcessing; } }
+            public Task? TaskForOutputProcessing { get { return _sourceDebuggingInformation.TaskForOutputProcessing; } }
 
             /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>
             public GroupingDataflowBlockOptions DataflowBlockOptions { get { return (GroupingDataflowBlockOptions)_sourceDebuggingInformation.DataflowBlockOptions; } }
@@ -270,7 +269,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Gets the set of all targets linked from this block.</summary>
             public TargetRegistry<Tuple<IList<T1>, IList<T2>>> LinkedTargets { get { return _sourceDebuggingInformation.LinkedTargets; } }
             /// <summary>Gets the target that holds a reservation on the next message, if any.</summary>
-            public ITargetBlock<Tuple<IList<T1>, IList<T2>>> NextMessageReservedFor { get { return _sourceDebuggingInformation.NextMessageReservedFor; } }
+            public ITargetBlock<Tuple<IList<T1>, IList<T2>>>? NextMessageReservedFor { get { return _sourceDebuggingInformation.NextMessageReservedFor; } }
         }
     }
 
@@ -283,7 +282,6 @@ namespace System.Threading.Tasks.Dataflow
     /// <typeparam name="T3">Specifies the type of data accepted by the block's third target.</typeparam>
     [DebuggerDisplay("{DebuggerDisplayContent,nq}")]
     [DebuggerTypeProxy(typeof(BatchedJoinBlock<,,>.DebugView))]
-    [SuppressMessage("Microsoft.Design", "CA1005:AvoidExcessiveParametersOnGenericTypes")]
     public sealed class BatchedJoinBlock<T1, T2, T3> : IReceivableSourceBlock<Tuple<IList<T1>, IList<T2>, IList<T3>>>, IDebuggerDisplay
     {
         /// <summary>The size of the batches generated by this BatchedJoin.</summary>
@@ -362,14 +360,14 @@ namespace System.Threading.Tasks.Dataflow
             // to handle multiple completion requests and to carry over only one.
             _source.Completion.ContinueWith((completed, state) =>
             {
-                var thisBlock = ((BatchedJoinBlock<T1, T2, T3>)state) as IDataflowBlock;
+                var thisBlock = ((BatchedJoinBlock<T1, T2, T3>)state!) as IDataflowBlock;
                 Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
-                thisBlock.Fault(completed.Exception);
+                thisBlock.Fault(completed.Exception!);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
-                dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchedJoinBlock<T1, T2, T3>)state).CompleteEachTarget(), this);
+                dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchedJoinBlock<T1, T2, T3>)state!).CompleteEachTarget(), this);
 #if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -398,15 +396,15 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceive"]/*' />
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public bool TryReceive(Predicate<Tuple<IList<T1>, IList<T2>, IList<T3>>> filter, out Tuple<IList<T1>, IList<T2>, IList<T3>> item)
+#pragma warning disable CS8614 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/42470
+        public bool TryReceive(Predicate<Tuple<IList<T1>, IList<T2>, IList<T3>>>? filter, [NotNullWhen(true)] out Tuple<IList<T1>, IList<T2>, IList<T3>>? item)
+#pragma warning restore CS8614
         {
             return _source.TryReceive(filter, out item);
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceiveAll"]/*' />
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public bool TryReceiveAll(out IList<Tuple<IList<T1>, IList<T2>, IList<T3>>> items) { return _source.TryReceiveAll(out items); }
+        public bool TryReceiveAll([NotNullWhen(true)] out IList<Tuple<IList<T1>, IList<T2>, IList<T3>>>? items) { return _source.TryReceiveAll(out items); }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="OutputCount"]/*' />
         public int OutputCount { get { return _source.OutputCount; } }
@@ -443,6 +441,7 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="ConsumeMessage"]/*' />
+        [return: MaybeNull]
         Tuple<IList<T1>, IList<T2>, IList<T3>> ISourceBlock<Tuple<IList<T1>, IList<T2>, IList<T3>>>.ConsumeMessage(
             DataflowMessageHeader messageHeader, ITargetBlock<Tuple<IList<T1>, IList<T2>, IList<T3>>> target, out bool messageConsumed)
         {
@@ -480,7 +479,6 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get
@@ -528,7 +526,7 @@ namespace System.Threading.Tasks.Dataflow
             public ITargetBlock<T3> Target3 { get { return _batchedJoinBlock._target3; } }
 
             /// <summary>Gets the task being used for output processing.</summary>
-            public Task TaskForOutputProcessing { get { return _sourceDebuggingInformation.TaskForOutputProcessing; } }
+            public Task? TaskForOutputProcessing { get { return _sourceDebuggingInformation.TaskForOutputProcessing; } }
 
             /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>
             public GroupingDataflowBlockOptions DataflowBlockOptions { get { return (GroupingDataflowBlockOptions)_sourceDebuggingInformation.DataflowBlockOptions; } }
@@ -540,7 +538,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Gets the set of all targets linked from this block.</summary>
             public TargetRegistry<Tuple<IList<T1>, IList<T2>, IList<T3>>> LinkedTargets { get { return _sourceDebuggingInformation.LinkedTargets; } }
             /// <summary>Gets the target that holds a reservation on the next message, if any.</summary>
-            public ITargetBlock<Tuple<IList<T1>, IList<T2>, IList<T3>>> NextMessageReservedFor { get { return _sourceDebuggingInformation.NextMessageReservedFor; } }
+            public ITargetBlock<Tuple<IList<T1>, IList<T2>, IList<T3>>>? NextMessageReservedFor { get { return _sourceDebuggingInformation.NextMessageReservedFor; } }
         }
     }
 }
@@ -588,7 +586,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
-        public DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, bool consumeToAccept)
+        public DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T>? source, bool consumeToAccept)
         {
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
@@ -610,7 +608,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     messageValue = source.ConsumeMessage(messageHeader, this, out consumed);
                     if (!consumed) return DataflowMessageStatus.NotAvailable;
                 }
-                _messages.Add(messageValue);
+                _messages.Add(messageValue!);
 
                 // If this message makes a batch, notify the shared resources that a batch has been completed
                 if (--_sharedResources._remainingItemsInBatch == 0) _sharedResources._batchSizeReachedAction();
@@ -651,7 +649,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         Task IDataflowBlock.Completion { get { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); } }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get

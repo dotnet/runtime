@@ -39,7 +39,10 @@ void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
+void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
+void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
 void emitDispArrangement(insOpts opt);
+void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
 void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm);
@@ -445,6 +448,10 @@ static emitAttr optGetSrcsize(insOpts conversion);
 //    for an element of size 'elemsize' in a vector register of size 'datasize'
 static bool isValidVectorIndex(emitAttr datasize, emitAttr elemsize, ssize_t index);
 
+// For a given Load/Store Vector instruction 'ins' returns a number of consecutive SIMD registers
+// the instruction loads to/store from.
+static unsigned insGetLoadStoreRegisterListSize(instruction ins);
+
 /************************************************************************/
 /*           Public inline informational methods                        */
 /************************************************************************/
@@ -737,7 +744,8 @@ void emitIns_R_R_R_Ext(instruction ins,
                        insOpts     opt         = INS_OPTS_NONE,
                        int         shiftAmount = -1);
 
-void emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2);
+void emitIns_R_R_I_I(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4);
 

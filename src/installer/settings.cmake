@@ -21,71 +21,14 @@ if (NOT CLR_CMAKE_HOST_WIN32)
         if (STRIP STREQUAL "STRIP-NOTFOUND")
             message(FATAL_ERROR "strip not found")
         endif()
-    else (CLR_CMAKE_HOST_DARWIN)
-        # Ensure that objcopy is present
-        if(DEFINED ENV{ROOTFS_DIR})
-            if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_I386)
-                find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
-            else()
-                message(FATAL_ERROR "Only AMD64, X86, ARM64 and ARM are supported")
-            endif()
-        else()
-            find_program(OBJCOPY objcopy)
-        endif()
-        if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND" AND NOT CLR_CMAKE_TARGET_ARCH_I386)
-            message(FATAL_ERROR "objcopy not found")
-        endif()
     endif (CLR_CMAKE_HOST_DARWIN)
 endif ()
-
-function(strip_symbols targetName outputFilename)
-    if(CLR_CMAKE_TARGET_UNIX)
-        if(STRIP_SYMBOLS)
-
-            # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
-            # generator expression doesn't work correctly returning the wrong path and on
-            # the newer cmake versions the LOCATION property isn't supported anymore.
-            if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
-                set(strip_source_file $<TARGET_FILE:${targetName}>)
-            else()
-                get_property(strip_source_file TARGET ${targetName} PROPERTY LOCATION)
-            endif()
-
-            if(CLR_CMAKE_TARGET_DARWIN)
-                set(strip_destination_file ${strip_source_file}.dwarf)
-
-                add_custom_command(
-                    TARGET ${targetName}
-                    POST_BUILD
-                    VERBATIM
-                    COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
-                    COMMAND ${STRIP} -u -r ${strip_source_file}
-                    COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
-                )
-            else(CLR_CMAKE_TARGET_DARWIN)
-                set(strip_destination_file ${strip_source_file}.dbg)
-
-                add_custom_command(
-                    TARGET ${targetName}
-                    POST_BUILD
-                    VERBATIM
-                    COMMAND ${OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-                    COMMAND ${OBJCOPY} --strip-unneeded ${strip_source_file}
-                    COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
-                    COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
-                )
-            endif(CLR_CMAKE_TARGET_DARWIN)
-
-            set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
-        endif(STRIP_SYMBOLS)
-    endif(CLR_CMAKE_TARGET_UNIX)
-endfunction()
 
 function(install_symbols targetName destination_path)
     if(CLR_CMAKE_TARGET_WIN32)
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION ${destination_path})
     else()
-        strip_symbols(${targetName} strip_destination_file)
+        strip_symbols(${targetName} strip_destination_file NO)
         install(FILES ${strip_destination_file} DESTINATION ${destination_path})
     endif()
 endfunction()
@@ -168,12 +111,27 @@ else()
         # compiling with -std=c++11.
         # add_compile_options(-Weverything)
     endif()
-    add_compile_options(-Werror)
+    # Suppress warnings-as-errors in release branches to reduce servicing churn
+    if (PRERELEASE)
+        add_compile_options(-Werror)
+    endif()
     add_compile_options(-Wno-missing-field-initializers)
     add_compile_options(-Wno-unused-function)
     add_compile_options(-Wno-unused-local-typedef)
     add_compile_options(-Wno-unused-macros)
     add_compile_options(-Wno-unused-parameter)
+
+    if(CLR_CMAKE_TARGET_ARCH_ARM)
+        if (NOT DEFINED CLR_ARM_FPU_TYPE)
+            set(CLR_ARM_FPU_TYPE vfpv3)
+        endif(NOT DEFINED CLR_ARM_FPU_TYPE)
+
+        if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+            set(CLR_ARM_FPU_CAPABILITY 0x7)
+        endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+
+        add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
+    endif()
 endif()
 
 # Older CMake doesn't support CMAKE_CXX_STANDARD and GCC/Clang need a switch to enable C++ 11
@@ -192,6 +150,10 @@ elseif(CLR_CMAKE_TARGET_DARWIN)
 elseif(CLR_CMAKE_TARGET_FREEBSD)
     add_link_options(-fuse-ld=lld -Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
     add_compile_options(-fstack-protector)
+endif()
+
+if(CLR_CMAKE_TARGET_ANDROID)
+    add_compile_options(-Wno-user-defined-warnings)
 endif()
 
 add_definitions(-D_NO_ASYNCRTIMP)
