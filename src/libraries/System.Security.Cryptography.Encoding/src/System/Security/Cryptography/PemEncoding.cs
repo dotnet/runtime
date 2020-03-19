@@ -86,7 +86,7 @@ namespace System.Security.Cryptography
 
                 // If there are any previous characters, the one prior to the PreEB
                 // must be a white space character.
-                if (preebIndex > 0 && !char.IsWhiteSpace(pemData[preebIndex - 1]))
+                if (preebIndex > 0 && !IsWhiteSpaceCharacter(pemData[preebIndex - 1]))
                 {
                     areaOffset += labelStartIndex;
                     continue;
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography
                 // The PostEB must either end at the end of the string, or
                 // have at least one white space character after it.
                 if (pemEndIndex < pemData.Length - 1 &&
-                    !char.IsWhiteSpace(pemData[pemEndIndex]))
+                    !IsWhiteSpaceCharacter(pemData[pemEndIndex]))
                 {
                     goto NextAfterLabel;
                 }
@@ -249,8 +249,7 @@ namespace System.Security.Cryptography
             {
                 char ch = str[i];
 
-                // Match white space characters from Convert.Base64
-                if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r')
+                if (IsWhiteSpaceCharacter(ch))
                 {
                     if (significantCharacters == 0)
                     {
@@ -299,6 +298,13 @@ namespace System.Security.Cryptography
             uint c = (uint)ch;
             return c == '+' || c == '/' ||
                    c - '0' < 10 || c - 'A' < 26 || c - 'a' < 26;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsWhiteSpaceCharacter(char ch)
+        {
+            // Match white space characters from Convert.Base64
+            return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
         }
 
         /// <summary>

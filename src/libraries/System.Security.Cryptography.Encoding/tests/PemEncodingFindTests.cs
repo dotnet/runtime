@@ -191,6 +191,34 @@ namespace System.Security.Cryptography.Encoding.Tests
                 expectedLabel: 11..20);
         }
 
+        [Theory]
+        [InlineData(" ")]
+        [InlineData("\n")]
+        [InlineData("\r")]
+        [InlineData("\t")]
+        public void Find_Success_WhiteSpaceBeforePreebSeparatesFromPriorContent(string whiteSpace)
+        {
+            string content = $"blah{whiteSpace}-----BEGIN TEST-----\nZn9v\n-----END TEST-----";
+            PemFields fields = AssertPemFound(content,
+                expectedLocation: 5..49,
+                expectedBase64: 26..30,
+                expectedLabel: 16..20);
+        }
+
+        [Theory]
+        [InlineData(" ")]
+        [InlineData("\n")]
+        [InlineData("\r")]
+        [InlineData("\t")]
+        public void Find_Success_WhiteSpaceAfterPpostebSeparatesFromSubsequentContent(string whiteSpace)
+        {
+            string content = $"-----BEGIN TEST-----\nZn9v\n-----END TEST-----{whiteSpace}blah";
+            PemFields fields = AssertPemFound(content,
+                expectedLocation: 0..44,
+                expectedBase64: 21..25,
+                expectedLabel: 11..15);
+        }
+
         [Fact]
         public void Find_Success_Base64SurroundingWhiteSpaceStripped()
         {
@@ -274,6 +302,27 @@ Zm9v
         public void Find_Fail_PrecedingLinesAndSignificantCharsBeforePreeb()
         {
             string content = "boop\nbeep-----BEGIN TEST-----\nZm9v\n-----END TEST-----";
+            AssertNoPemFound(content);
+        }
+
+
+        [Theory]
+        [InlineData("\u200A")] // hair space
+        [InlineData("\v")]
+        [InlineData("\f")]
+        public void Find_Fail_NotPermittedWhiteSpaceSeparatorsForPreeb(string whiteSpace)
+        {
+            string content = $"boop{whiteSpace}-----BEGIN TEST-----\nZm9v\n-----END TEST-----";
+            AssertNoPemFound(content);
+        }
+
+        [Theory]
+        [InlineData("\u200A")] // hair space
+        [InlineData("\v")]
+        [InlineData("\f")]
+        public void Find_Fail_NotPermittedWhiteSpaceSeparatorsForPosteb(string whiteSpace)
+        {
+            string content = $"-----BEGIN TEST-----\nZm9v\n-----END TEST-----{whiteSpace}boop";
             AssertNoPemFound(content);
         }
 
