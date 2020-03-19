@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System.Collections
 {
@@ -162,6 +163,37 @@ namespace System.Collections
                         int upperPackedIsFalse = Sse2.MoveMask(upperIsFalse);
 
                         m_array[i / 32] = ~((upperPackedIsFalse << 16) | lowerPackedIsFalse);
+                    }
+                }
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                Vector128<byte> elementMask = Vector128.Create(0x01020408_10204080).AsByte();
+                fixed (bool* ptr = values)
+                {
+                    for (; (i + Vector128<byte>.Count * 2) <= values.Length; i += Vector128<byte>.Count * 2)
+                    {
+                        // Same logic as SSE2 path, however we lack MoveMask (equivalent) instruction
+                        // As a workaround, mask out the relevant bit after comparison
+                        // and combine by ORing all of them together (In this case, adding all of them does the same thing)
+                        Vector128<byte> lowerVector = AdvSimd.LoadVector128((byte*)ptr + i);
+                        Vector128<byte> lowerIsFalse = AdvSimd.CompareEqual(lowerVector, Vector128<byte>.Zero);
+                        Vector128<byte> bitsExtracted1 = AdvSimd.And(lowerIsFalse, elementMask);
+                        bitsExtracted1 = AdvSimd.Arm64.AddPairwise(bitsExtracted1, bitsExtracted1);
+                        bitsExtracted1 = AdvSimd.Arm64.AddPairwise(bitsExtracted1, bitsExtracted1);
+                        bitsExtracted1 = AdvSimd.Arm64.AddPairwise(bitsExtracted1, bitsExtracted1);
+                        Vector128<short> lowerPackedIsFalse = bitsExtracted1.AsInt16();
+
+                        Vector128<byte> upperVector = AdvSimd.LoadVector128((byte*)ptr + i + Vector128<byte>.Count);
+                        Vector128<byte> upperIsFalse = AdvSimd.CompareEqual(upperVector, Vector128<byte>.Zero);
+                        Vector128<byte> bitsExtracted2 = AdvSimd.And(upperIsFalse, elementMask);
+                        bitsExtracted2 = AdvSimd.Arm64.AddPairwise(bitsExtracted2, bitsExtracted2);
+                        bitsExtracted2 = AdvSimd.Arm64.AddPairwise(bitsExtracted2, bitsExtracted2);
+                        bitsExtracted2 = AdvSimd.Arm64.AddPairwise(bitsExtracted2, bitsExtracted2);
+                        Vector128<short> upperPackedIsFalse = bitsExtracted2.AsInt16();
+
+                        int result = AdvSimd.Arm64.ZipLow(lowerPackedIsFalse, upperPackedIsFalse).AsInt32().ToScalar();
+                        m_array[i / 32] = ~result;
                     }
                 }
             }
@@ -354,6 +386,19 @@ namespace System.Collections
                     }
                 }
             }
+            else if (AdvSimd.IsSupported)
+            {
+                fixed (int* leftPtr = thisArray)
+                fixed (int* rightPtr = valueArray)
+                {
+                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    {
+                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
+                        Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
+                        AdvSimd.Store(leftPtr + i, AdvSimd.And(leftVec, rightVec));
+                    }
+                }
+            }
 
             for (; i < count; i++)
                 thisArray[i] &= valueArray[i];
@@ -424,6 +469,19 @@ namespace System.Collections
                         Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
                         Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
                         Sse2.Store(leftPtr + i, Sse2.Or(leftVec, rightVec));
+                    }
+                }
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                fixed (int* leftPtr = thisArray)
+                fixed (int* rightPtr = valueArray)
+                {
+                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    {
+                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
+                        Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
+                        AdvSimd.Store(leftPtr + i, AdvSimd.Or(leftVec, rightVec));
                     }
                 }
             }
@@ -500,6 +558,19 @@ namespace System.Collections
                     }
                 }
             }
+            else if (AdvSimd.IsSupported)
+            {
+                fixed (int* leftPtr = thisArray)
+                fixed (int* rightPtr = valueArray)
+                {
+                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    {
+                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
+                        Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
+                        AdvSimd.Store(leftPtr + i, AdvSimd.Xor(leftVec, rightVec));
+                    }
+                }
+            }
 
             for (; i < count; i++)
                 thisArray[i] ^= valueArray[i];
@@ -560,6 +631,17 @@ namespace System.Collections
                     {
                         Vector128<int> vec = Sse2.LoadVector128(ptr + i);
                         Sse2.Store(ptr + i, Sse2.Xor(vec, ones));
+                    }
+                }
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                fixed (int* leftPtr = thisArray)
+                {
+                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    {
+                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
+                        AdvSimd.Store(leftPtr + i, AdvSimd.Not(leftVec));
                     }
                 }
             }
@@ -739,7 +821,7 @@ namespace System.Collections
         // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
         // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
         private static readonly Vector128<byte> s_lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
-        private static readonly Vector128<byte> s_upperShuffleMask_CopyToBoolArray = Vector128.Create(0x_02020202_02020202, 0x03030303_03030303).AsByte();
+        private static readonly Vector128<byte> s_upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
 
         public unsafe void CopyTo(Array array, int index)
         {
@@ -857,7 +939,7 @@ namespace System.Collections
                 {
                     Vector128<byte> lowerShuffleMask = s_lowerShuffleMask_CopyToBoolArray;
                     Vector128<byte> upperShuffleMask = s_upperShuffleMask_CopyToBoolArray;
-                    Vector128<byte> bitMask = Vector128.Create(0x80402010_08040201).AsByte(); ;
+                    Vector128<byte> bitMask = Vector128.Create(0x80402010_08040201).AsByte();
                     Vector128<byte> ones = Vector128.Create((byte)1);
 
                     fixed (bool* destination = &boolArray[index])
@@ -876,6 +958,43 @@ namespace System.Collections
                             Vector128<byte> extractedHigher = Sse2.And(shuffledHigher, bitMask);
                             Vector128<byte> normalizedHigher = Sse2.Min(extractedHigher, ones);
                             Sse2.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
+                        }
+                    }
+                }
+                else if (AdvSimd.IsSupported)
+                {
+                    Vector128<byte> bitMask = Vector128.Create(0x80402010_08040201).AsByte();
+                    Vector128<byte> ones = Vector128.Create((byte)1);
+                    fixed (bool* destination = &boolArray[index])
+                    {
+                        for (; (i + Vector128<byte>.Count * 2) <= m_length; i += Vector128<byte>.Count * 2)
+                        {
+                            int bits = m_array[i / BitsPerInt32];
+                            // Same logic as SSSE3 path, except we do not have Shuffle instruction.
+                            // (TableVectorLookup could be an alternative - dotnet/runtime#1277)
+                            // Instead we use chained ZIP1/2 instructions:
+                            // (A0 is the byte containing LSB, A3 is the byte containing MSB)
+                            // bits                             - A3 A2 A1 A0
+                            // Byte reversal                    - A0 A1 A2 A3
+                            // v1 = Vector128.Create            - A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3
+                            // v2 = ZipLow(v1, v1)              - A0 A0 A1 A1 A2 A2 A3 A3 A0 A0 A1 A1 A2 A2 A3 A3
+                            // v3 = ZipLow(v2, v2)              - A0 A0 A0 A0 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3 A3
+                            // shuffledLower = ZipLow(v3, v3)   - A0 A0 A0 A0 A0 A0 A0 A0 A1 A1 A1 A1 A1 A1 A1 A1
+                            // shuffledHigher = ZipHigh(v3, v3) - A2 A2 A2 A2 A2 A2 A2 A2 A3 A3 A3 A3 A3 A3 A3 A3
+
+                            Vector128<byte> vector = Vector128.Create(BinaryPrimitives.ReverseEndianness(bits)).AsByte();
+                            vector = AdvSimd.Arm64.ZipLow(vector, vector);
+                            vector = AdvSimd.Arm64.ZipLow(vector, vector);
+
+                            Vector128<byte> shuffledLower = AdvSimd.Arm64.ZipLow(vector, vector);
+                            Vector128<byte> extractedLower = AdvSimd.And(shuffledLower, bitMask);
+                            Vector128<byte> normalizedLower = AdvSimd.Min(extractedLower, ones);
+                            AdvSimd.Store((byte*)destination + i, normalizedLower);
+
+                            Vector128<byte> shuffledHigher = AdvSimd.Arm64.ZipHigh(vector, vector);
+                            Vector128<byte> extractedHigher = AdvSimd.And(shuffledHigher, bitMask);
+                            Vector128<byte> normalizedHigher = AdvSimd.Min(extractedHigher, ones);
+                            AdvSimd.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
                         }
                     }
                 }
