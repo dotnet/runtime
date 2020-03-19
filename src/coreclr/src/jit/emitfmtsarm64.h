@@ -138,8 +138,8 @@ IF_DEF(LS_2D, IS_NONE, NONE) // LS_2D   .Q.............. ....ssnnnnnttttt      V
                              //                                                         Load single structure and replicate  base register
 IF_DEF(LS_2E, IS_NONE, NONE) // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn    Load/Store multiple structures       post-indexed by an immediate
                              //                                                         Load single structure and replicate  post-indexed by an immediate
-IF_DEF(LS_2F, IS_NONE, NONE) // LS_2F   .Q.............. ...Sssnnnnnttttt      Vt[] Rn  Load/Store single structure          base register
-IF_DEF(LS_2G, IS_NONE, NONE) // LS_2G   .Q.............. ...Sssnnnnnttttt      Vt[] Rn  Load/Store single structure          post-indexed by an immediate
+IF_DEF(LS_2F, IS_NONE, NONE) // LS_2F   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn  Load/Store single structure          base register
+IF_DEF(LS_2G, IS_NONE, NONE) // LS_2G   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn  Load/Store single structure          post-indexed by an immediate
 IF_DEF(LS_3A, IS_NONE, NONE) // LS_3A   .X.......X.mmmmm xxxS..nnnnnttttt      Rt Rn Rm ext(Rm) LSL {}
 IF_DEF(LS_3B, IS_NONE, NONE) // LS_3B   X............... .aaaaannnnnddddd      Rd Ra Rn
 IF_DEF(LS_3C, IS_NONE, NONE) // LS_3C   X.........iiiiii iaaaaannnnnddddd      Rd Ra Rn imm(im7,sh)

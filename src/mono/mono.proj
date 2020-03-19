@@ -578,7 +578,7 @@
 
   <Target Name="ValidateLocalDotnet">
     <Error Condition="$([System.IO.Directory]::GetDirectories('$(LocalDotnetDir)\shared\Microsoft.NETCore.App').Length) > 1" Text="$(LocalDotnetDir) contains more than one SDK, please delete unused ones." />
-    <Error Condition="$([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App').Length) > 1" Text="$(LocalMonoDotnetDir) contains more than one SDK, please delete unused ones." />
+    <Error Condition="Exists('$(LocalMonoDotnetDir)') AND $([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App').Length) > 1" Text="$(LocalMonoDotnetDir) contains more than one SDK, please delete unused ones." />
     <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
   </Target>
 

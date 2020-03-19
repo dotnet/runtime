@@ -200,6 +200,7 @@ register_dllmap (void)
 
 void mono_jit_set_aot_mode (MonoAotMode mode);
 
+#if DEVICE
 extern void *mono_aot_module_Program_info;
 extern void *mono_aot_module_System_Private_CoreLib_info;
 extern void *mono_aot_module_System_Runtime_info;
@@ -239,6 +240,7 @@ void mono_ios_setup_execution_mode (void)
 {
     mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
 }
+#endif
 
 void
 mono_ios_runtime_init (void)
@@ -256,9 +258,11 @@ mono_ios_runtime_init (void)
 
     register_dllmap ();
 
+#if DEVICE
     // register modules
     mono_ios_register_modules ();
     mono_ios_setup_execution_mode ();
+#endif
     
     mono_debug_init (MONO_DEBUG_FORMAT_MONO);
     mono_install_assembly_preload_hook (assembly_preload_hook, NULL);
@@ -274,7 +278,11 @@ mono_ios_runtime_init (void)
         mono_jit_parse_options (1, options);
     }
     mono_jit_init_version ("dotnet.ios", "mobile");
+
+#if DEVICE
+    // device runtimes are configured to use lazy gc thread creation
     mono_gc_init_finalizer_thread ();
+#endif
 
     MonoAssembly *assembly = load_assembly (executable, NULL);
     assert (assembly);

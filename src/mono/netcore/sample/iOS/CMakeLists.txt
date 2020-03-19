@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.14.5)
 
 project(HelloiOS)
 
-# make sure "make all" is executed first
 file(GLOB DLLS *.dll)
 file(GLOB DLLS_AOT *.dll.o)
 
@@ -10,7 +9,6 @@ set(APP_RESOURCES
     ${DLLS}
 )
 
-# add the executable
 add_executable(
     HelloiOS
     main.m
@@ -18,6 +16,10 @@ add_executable(
     runtime.m
     ${APP_RESOURCES}
 )
+
+if (MONO_ARCH STREQUAL arm64)
+    add_definitions(-DDEVICE)
+endif()
 
 include_directories("../../../../../artifacts/bin/mono/iOS.${MONO_ARCH}.${MONO_CONFIG}/include/mono-2.0")
 
