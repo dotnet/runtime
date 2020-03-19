@@ -2883,9 +2883,7 @@ namespace Internal.JitInterface
             else if (targetArchitecture == TargetArchitecture.X64)
             {
                 flags.Set(InstructionSet.X64_SSE);
-                flags.Set(InstructionSet.X64_SSE_X64);
                 flags.Set(InstructionSet.X64_SSE2);
-                flags.Set(InstructionSet.X64_SSE2_X64);
 #if !READYTORUN
                 // This list needs to match the list of intrinsics we can generate detection code for
                 // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
@@ -2901,14 +2899,10 @@ namespace Internal.JitInterface
                     flags.Set(InstructionSet.X64_SSE3);
                     flags.Set(InstructionSet.X64_SSSE3);
                     flags.Set(InstructionSet.X64_LZCNT);
-                    flags.Set(InstructionSet.X64_LZCNT_X64);
 #if READYTORUN
                     flags.Set(InstructionSet.X64_SSE41);
-                    flags.Set(InstructionSet.X64_SSE41_X64);
                     flags.Set(InstructionSet.X64_SSE42);
-                    flags.Set(InstructionSet.X64_SSE42_X64);
                     flags.Set(InstructionSet.X64_POPCNT);
-                    flags.Set(InstructionSet.X64_POPCNT_X64);
 #endif
                 }
             }
@@ -2917,6 +2911,8 @@ namespace Internal.JitInterface
                 flags.Set(InstructionSet.ARM64_ArmBase);
                 flags.Set(InstructionSet.ARM64_AdvSimd);
             }
+
+            flags.Set64BitInstructionSetVariants(targetArchitecture);
 
             if (this.MethodBeingCompiled.IsNativeCallable)
             {

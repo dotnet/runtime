@@ -5285,9 +5285,8 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
         CORINFO_InstructionSetFlags defaultArm64Flags;
         defaultArm64Flags.AddInstructionSet(InstructionSet_ArmBase);
-        defaultArm64Flags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
         defaultArm64Flags.AddInstructionSet(InstructionSet_AdvSimd);
-        defaultArm64Flags.AddInstructionSet(InstructionSet_AdvSimd_Arm64);
+        defaultArm64Flags.Set64BitInstructionSetVariants();
         compileFlags->SetInstructionSetFlags(defaultArm64Flags);
 #endif // defined(TARGET_ARM64)
     }

@@ -1502,6 +1502,8 @@ void EEJitManager::SetCpuInfo()
 #endif // HOST_64BIT
 #endif // TARGET_ARM64
 
+    CPUCompileFlags.Set64BitInstructionSetVariants();
+
     m_CPUCompileFlags = CPUCompileFlags;
 }
 

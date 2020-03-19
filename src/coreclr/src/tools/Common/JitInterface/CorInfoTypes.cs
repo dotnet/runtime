@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
@@ -1354,19 +1355,9 @@ namespace Internal.JitInterface
             return (_corJitFlags & (1UL << (int)flag)) != 0;
         }
 
-        public void Add(ref CORJIT_FLAGS other)
+        public void Set64BitInstructionSetVariants(TargetArchitecture architecture)
         {
-            _corJitFlags |= other._corJitFlags;
-        }
-
-        public void Remove(ref CORJIT_FLAGS other)
-        {
-            _corJitFlags &= ~other._corJitFlags;
-        }
-
-        public bool IsEmpty()
-        {
-            return _corJitFlags == 0;
+            _instructionSetFlags.Set64BitInstructionSetVariants(architecture);
         }
     }
 }

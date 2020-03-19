@@ -143,6 +143,7 @@ public:
     void Reset()
     {
         corJitFlags = 0;
+        instructionSetFlags.Reset();
     }
 
     void Set(CORINFO_InstructionSet instructionSet)
@@ -153,6 +154,11 @@ public:
     void Clear(CORINFO_InstructionSet instructionSet)
     {
         instructionSetFlags.RemoveInstructionSet(instructionSet);
+    }
+
+    void Set64BitInstructionSetVariants()
+    {
+        instructionSetFlags.Set64BitInstructionSetVariants();
     }
 
     void Set(CorJitFlag flag)
@@ -173,16 +179,12 @@ public:
     void Add(const CORJIT_FLAGS& other)
     {
         corJitFlags |= other.corJitFlags;
-    }
-
-    void Remove(const CORJIT_FLAGS& other)
-    {
-        corJitFlags &= ~other.corJitFlags;
+        instructionSetFlags.Add(other.instructionSetFlags);
     }
 
     bool IsEmpty() const
     {
-        return corJitFlags == 0;
+        return corJitFlags == 0 && instructionSetFlags.IsEmpty();
     }
 
     void EnsureValidInstructionSetSupport()

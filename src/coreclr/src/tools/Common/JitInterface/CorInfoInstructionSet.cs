@@ -266,5 +266,44 @@ namespace Internal.JitInterface
 
             }
         }
+
+        public void Set64BitInstructionSetVariants(TargetArchitecture architecture)
+        {
+            switch (architecture)
+            {
+
+                case TargetArchitecture.ARM64:
+                    if (HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        AddInstructionSet(InstructionSet.ARM64_ArmBase_Arm64);
+                    if (HasInstructionSet(InstructionSet.ARM64_AdvSimd))
+                        AddInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64);
+                    if (HasInstructionSet(InstructionSet.ARM64_Crc32))
+                        AddInstructionSet(InstructionSet.ARM64_Crc32_Arm64);
+                    break;
+
+                case TargetArchitecture.X64:
+                    if (HasInstructionSet(InstructionSet.X64_SSE))
+                        AddInstructionSet(InstructionSet.X64_SSE_X64);
+                    if (HasInstructionSet(InstructionSet.X64_SSE2))
+                        AddInstructionSet(InstructionSet.X64_SSE2_X64);
+                    if (HasInstructionSet(InstructionSet.X64_SSE41))
+                        AddInstructionSet(InstructionSet.X64_SSE41_X64);
+                    if (HasInstructionSet(InstructionSet.X64_SSE42))
+                        AddInstructionSet(InstructionSet.X64_SSE42_X64);
+                    if (HasInstructionSet(InstructionSet.X64_BMI1))
+                        AddInstructionSet(InstructionSet.X64_BMI1_X64);
+                    if (HasInstructionSet(InstructionSet.X64_BMI2))
+                        AddInstructionSet(InstructionSet.X64_BMI2_X64);
+                    if (HasInstructionSet(InstructionSet.X64_LZCNT))
+                        AddInstructionSet(InstructionSet.X64_LZCNT_X64);
+                    if (HasInstructionSet(InstructionSet.X64_POPCNT))
+                        AddInstructionSet(InstructionSet.X64_POPCNT_X64);
+                    break;
+
+                case TargetArchitecture.X86:
+                    break;
+
+            }
+        }
     }
 }

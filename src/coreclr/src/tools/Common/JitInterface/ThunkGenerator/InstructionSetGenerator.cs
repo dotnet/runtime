@@ -398,6 +398,33 @@ namespace Internal.JitInterface
             tr.Write(@"
             }
         }
+
+        public void Set64BitInstructionSetVariants(TargetArchitecture architecture)
+        {
+            switch (architecture)
+            {
+");
+            foreach (string architecture in _architectures)
+            {
+                tr.Write($@"
+                case TargetArchitecture.{architecture}:
+");
+                foreach (var instructionSet in _instructionSets)
+                {
+                    if (instructionSet.Architecture != architecture) continue;
+
+                    if (_64bitVariants[architecture].Contains(instructionSet.JitName))
+                    {
+                        tr.WriteLine($"                    if (HasInstructionSet(InstructionSet.{architecture}_{instructionSet.JitName}))");
+                        tr.WriteLine($"                        AddInstructionSet(InstructionSet.{architecture}_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)});");
+                    }
+                }
+
+                tr.WriteLine("                    break;");
+            }
+            tr.Write(@"
+            }
+        }
     }
 }
 ");
@@ -457,13 +484,51 @@ public:
         _flags = _flags & ~(((uint64_t)1) << instructionSet);
     }
 
-    bool HasInstructionSet(CORINFO_InstructionSet instructionSet)
+    bool HasInstructionSet(CORINFO_InstructionSet instructionSet) const
     {
         return _flags & (((uint64_t)1) << instructionSet);
     }
-    bool Equals(CORINFO_InstructionSetFlags other)
+
+    bool Equals(CORINFO_InstructionSetFlags other) const
     {
         return _flags == other._flags;
+    }
+
+    void Add(CORINFO_InstructionSetFlags other)
+    {
+        _flags |= other._flags;
+    }
+
+    bool IsEmpty() const
+    {
+        return _flags == 0;
+    }
+
+    void Reset()
+    {
+        _flags = 0;
+    }
+
+    void Set64BitInstructionSetVariants()
+    {
+");
+            foreach (string architecture in _architectures)
+            {
+                tr.WriteLine($"#ifdef TARGET_{ArchToIfDefArch(architecture)}");
+                foreach (var instructionSet in _instructionSets)
+                {
+                    if (instructionSet.Architecture != architecture) continue;
+
+                    if (_64bitVariants[architecture].Contains(instructionSet.JitName))
+                    {
+                        tr.WriteLine($"        if (HasInstructionSet(InstructionSet_{instructionSet.JitName}))");
+                        tr.WriteLine($"            AddInstructionSet(InstructionSet_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)});");
+                    }
+                }
+
+                tr.WriteLine($"#endif // TARGET_{ArchToIfDefArch(architecture)}");
+            }
+            tr.Write(@"
     }
 
     uint64_t GetFlagsRaw()

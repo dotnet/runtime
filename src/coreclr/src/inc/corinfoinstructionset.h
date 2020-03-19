@@ -92,13 +92,62 @@ public:
         _flags = _flags & ~(((uint64_t)1) << instructionSet);
     }
 
-    bool HasInstructionSet(CORINFO_InstructionSet instructionSet)
+    bool HasInstructionSet(CORINFO_InstructionSet instructionSet) const
     {
         return _flags & (((uint64_t)1) << instructionSet);
     }
-    bool Equals(CORINFO_InstructionSetFlags other)
+
+    bool Equals(CORINFO_InstructionSetFlags other) const
     {
         return _flags == other._flags;
+    }
+
+    void Add(CORINFO_InstructionSetFlags other)
+    {
+        _flags |= other._flags;
+    }
+
+    bool IsEmpty() const
+    {
+        return _flags == 0;
+    }
+
+    void Reset()
+    {
+        _flags = 0;
+    }
+
+    void Set64BitInstructionSetVariants()
+    {
+#ifdef TARGET_ARM64
+        if (HasInstructionSet(InstructionSet_ArmBase))
+            AddInstructionSet(InstructionSet_ArmBase_Arm64);
+        if (HasInstructionSet(InstructionSet_AdvSimd))
+            AddInstructionSet(InstructionSet_AdvSimd_Arm64);
+        if (HasInstructionSet(InstructionSet_Crc32))
+            AddInstructionSet(InstructionSet_Crc32_Arm64);
+#endif // TARGET_ARM64
+#ifdef TARGET_AMD64
+        if (HasInstructionSet(InstructionSet_SSE))
+            AddInstructionSet(InstructionSet_SSE_X64);
+        if (HasInstructionSet(InstructionSet_SSE2))
+            AddInstructionSet(InstructionSet_SSE2_X64);
+        if (HasInstructionSet(InstructionSet_SSE41))
+            AddInstructionSet(InstructionSet_SSE41_X64);
+        if (HasInstructionSet(InstructionSet_SSE42))
+            AddInstructionSet(InstructionSet_SSE42_X64);
+        if (HasInstructionSet(InstructionSet_BMI1))
+            AddInstructionSet(InstructionSet_BMI1_X64);
+        if (HasInstructionSet(InstructionSet_BMI2))
+            AddInstructionSet(InstructionSet_BMI2_X64);
+        if (HasInstructionSet(InstructionSet_LZCNT))
+            AddInstructionSet(InstructionSet_LZCNT_X64);
+        if (HasInstructionSet(InstructionSet_POPCNT))
+            AddInstructionSet(InstructionSet_POPCNT_X64);
+#endif // TARGET_AMD64
+#ifdef TARGET_X86
+#endif // TARGET_X86
+
     }
 
     uint64_t GetFlagsRaw()
