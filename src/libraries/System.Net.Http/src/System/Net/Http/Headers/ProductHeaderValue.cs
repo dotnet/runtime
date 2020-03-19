@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -92,14 +93,14 @@ namespace System.Net.Http.Headers
             return (ProductHeaderValue)GenericHeaderParser.SingleValueProductParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, out ProductHeaderValue? parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out ProductHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
 
             if (GenericHeaderParser.SingleValueProductParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (ProductHeaderValue)output;
+                parsedValue = (ProductHeaderValue)output!;
                 return true;
             }
             return false;

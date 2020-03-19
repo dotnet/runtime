@@ -7344,10 +7344,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // Also, popping arguments in a varargs function is more work and NYI
     // If we have a security object, we have to keep our frame around for callers
     // to see any imperative security.
+    // Reverse P/Invokes need a call to CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
+    // at the end, so tailcalls should be disabled.
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
         canTailCall             = false;
         szCanTailCallFailReason = "Caller is synchronized";
+    }
+    else if (opts.IsReversePInvoke())
+    {
+        canTailCall             = false;
+        szCanTailCallFailReason = "Caller is Reverse P/Invoke";
     }
 #if !FEATURE_FIXED_OUT_ARGS
     else if (info.compIsVarArgs)
@@ -11477,6 +11484,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     /* CEE_JMP does not make sense in some "protected" regions. */
 
                     BADCODE("Jmp not allowed in protected region");
+                }
+
+                if (opts.IsReversePInvoke())
+                {
+                    BADCODE("Jmp not allowed in reverse P/Invoke");
                 }
 
                 if (verCurrentState.esStackDepth != 0)

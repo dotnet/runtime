@@ -171,12 +171,13 @@ namespace System.Net.Http
             Debug.Assert(_proxyConfig != null);
             if (_currentIndex < _proxyConfig.Length)
             {
-                bool hasProxy = TryParseProxyConfigPart(_proxyConfig.AsSpan(_currentIndex), _secure, out uri, out int charactersConsumed);
+                bool hasProxy = TryParseProxyConfigPart(_proxyConfig.AsSpan(_currentIndex), _secure, out uri!, out int charactersConsumed);
 
                 _currentIndex += charactersConsumed;
                 Debug.Assert(_currentIndex <= _proxyConfig.Length);
 
                 isFinalProxy = _currentIndex == _proxyConfig.Length;
+
                 return hasProxy;
             }
 

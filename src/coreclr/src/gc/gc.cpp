@@ -12198,7 +12198,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
         uint8_t* obj_start = acontext->alloc_ptr;
         assert(start >= obj_start);
         uint8_t* obj_end = obj_start + size - plug_skew;
-        assert(obj_end > clear_start);
+        assert(obj_end >= clear_start);
 
         // if clearing at the object start, clear the syncblock.
         if(obj_start == start)
@@ -37204,7 +37204,9 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
 #endif //_PREFAST_
 #endif //MULTIPLE_HEAPS
 
-    if (size >= loh_size_threshold || (flags & GC_ALLOC_LARGE_OBJECT_HEAP))
+    assert(size < loh_size_threshold || (flags & GC_ALLOC_LARGE_OBJECT_HEAP));
+
+    if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
         // The LOH always guarantees at least 8-byte alignment, regardless of platform. Moreover it doesn't
         // support mis-aligned object headers so we can't support biased headers. Luckily for us
@@ -37213,7 +37215,8 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         ASSERT((flags & GC_ALLOC_ALIGN8_BIAS) == 0);
         ASSERT(65536 < loh_size_threshold);
 
-        newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
+        int gen_num = (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? poh_generation : loh_generation;
+        newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, gen_num, acontext->alloc_bytes_uoh);
         ASSERT(((size_t)newAlloc & 7) == 0);
 
 #ifdef FEATURE_STRUCTALIGN

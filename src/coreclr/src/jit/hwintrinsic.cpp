@@ -61,12 +61,11 @@ var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
 {
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
 
-    if (category == HW_Category_MemoryStore || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic) ||
-        HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
+    if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
     {
         CORINFO_ARG_LIST_HANDLE arg = sig->args;
 
-        if ((category == HW_Category_MemoryStore) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
+        if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
         {
             arg = info.compCompHnd->getArgNext(arg);
         }

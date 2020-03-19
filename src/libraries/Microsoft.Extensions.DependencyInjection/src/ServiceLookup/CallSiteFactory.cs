@@ -134,7 +134,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 if (serviceType.IsConstructedGenericType &&
                     serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
-                    var itemType = serviceType.GenericTypeArguments.Single();
+                    var itemType = serviceType.GenericTypeArguments[0];
                     var cacheLocation = CallSiteResultCacheLocation.Root;
 
                     var callSites = new List<ServiceCallSite>();

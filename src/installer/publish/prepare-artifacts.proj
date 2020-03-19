@@ -28,29 +28,6 @@
       Properties="DownloadDirectory=$(DownloadDirectory)" />
   </Target>
 
-  <Target Name="UploadPreparedArtifactsToPipeline"
-          DependsOnTargets="
-            FindDownloadedArtifacts;
-            SignPackages;
-            CreateChecksums">
-    <PropertyGroup>
-      <PreparedFileUploadDir>$(ArtifactsObjDir)PreparedFileUpload\</PreparedFileUploadDir>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <AllFilesToBlobStorage Include="@(UploadToBlobStorageFile);@(UploadToBlobStorageFile)" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(AllFilesToBlobStorage)" DestinationFolder="$(PreparedFileUploadDir)">
-      <Output TaskParameter="CopiedFiles" ItemName="CopiedUploadToBlobStorageFile" />
-    </Copy>
-
-    <Message Importance="High" Text="Uploading PreparedArtifacts to pipeline" />
-    <Message
-      Text="##vso[artifact.upload containerfolder=PreparedArtifacts;artifactname=PreparedArtifacts]%(CopiedUploadToBlobStorageFile.Identity)"
-      Importance="High" />
-  </Target>
-
   <Target Name="PreparePublishToAzureBlobFeed">
     <Error Condition="'$(PackagesUrl)'==''" Text="Missing property PackagesUrl" />
 
@@ -159,7 +136,9 @@
   -->
   <Target Name="Build"
           DependsOnTargets="
-            UploadPreparedArtifactsToPipeline;
+            FindDownloadedArtifacts;
+            SignPackages;
+            CreateChecksums;
             PreparePublishToAzureBlobFeed;
             PreparePublishFilesToAzureBlobFeed">
     <Message Importance="High" Text="Complete!" />

@@ -216,7 +216,7 @@ namespace System.Net.Http.Headers
 
             if (GenericHeaderParser.ContentDispositionParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (ContentDispositionHeaderValue)output;
+                parsedValue = (ContentDispositionHeaderValue)output!;
                 return true;
             }
             return false;

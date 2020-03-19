@@ -607,6 +607,18 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<float> Divide(Vector128<float> left, Vector128<float> right) => Divide(left, right);
 
             /// <summary>
+            /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+            ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> FusedMultiplyAdd(Vector128<double> acc, Vector128<double> left, Vector128<double> right) => FusedMultiplyAdd(acc, left, right);
+
+            /// <summary>
+            /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+            ///   A64: FMLS Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> FusedMultiplySubtract(Vector128<double> acc, Vector128<double> left, Vector128<double> right) => FusedMultiplySubtract(acc, left, right);
+
+            /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FMAX Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -1021,18 +1033,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: FSQRT Vd.4S, Vn.4S
             /// </summary>
             public static Vector128<float> Sqrt(Vector128<float> value) => Sqrt(value);
-
-            /// <summary>
-            /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
-            ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
-            /// </summary>
-            public static Vector128<double> FusedMultiplyAdd(Vector128<double> acc, Vector128<double> left, Vector128<double> right) => FusedMultiplyAdd(acc, left, right);
-
-            /// <summary>
-            /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
-            ///   A64: FMLS Vd.2D, Vn.2D, Vm.2D
-            /// </summary>
-            public static Vector128<double> FusedMultiplySubtract(Vector128<double> acc, Vector128<double> left, Vector128<double> right) => FusedMultiplySubtract(acc, left, right);
 
             /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
@@ -4657,6 +4657,146 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> SqrtScalar(Vector64<float> value) => SqrtScalar(value);
+
+        /// <summary>
+        /// void vst1_u8 (uint8_t * ptr, uint8x8_t val)
+        ///   A32: VST1.8 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.8B }, [Xn]
+        /// </summary>
+        public static unsafe void Store(byte* address, Vector64<byte> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_f64 (float64_t * ptr, float64x1_t val)
+        ///   A32: VST1.64 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.1D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(double* address, Vector64<double> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_s16 (int16_t * ptr, int16x4_t val)
+        ///   A32: VST1.16 { Dd }, [Rn]
+        ///   A64: ST1 {Vt.4H }, [Xn]
+        /// </summary>
+        public static unsafe void Store(short* address, Vector64<short> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_s32 (int32_t * ptr, int32x2_t val)
+        ///   A32: VST1.32 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.2S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(int* address, Vector64<int> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_s64 (int64_t * ptr, int64x1_t val)
+        ///   A32: VST1.64 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.1D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(long* address, Vector64<long> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_s8 (int8_t * ptr, int8x8_t val)
+        ///   A32: VST1.8 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.8B }, [Xn]
+        /// </summary>
+        public static unsafe void Store(sbyte* address, Vector64<sbyte> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_f32 (float32_t * ptr, float32x2_t val)
+        ///   A32: VST1.32 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.2S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(float* address, Vector64<float> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_u16 (uint16_t * ptr, uint16x4_t val)
+        ///   A32: VST1.16 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.4H }, [Xn]
+        /// </summary>
+        public static unsafe void Store(ushort* address, Vector64<ushort> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_u32 (uint32_t * ptr, uint32x2_t val)
+        ///   A32: VST1.32 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.2S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(uint* address, Vector64<uint> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1_u64 (uint64_t * ptr, uint64x1_t val)
+        ///   A32: VST1.64 { Dd }, [Rn]
+        ///   A64: ST1 { Vt.1D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(ulong* address, Vector64<ulong> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_u8 (uint8_t * ptr, uint8x16_t val)
+        ///   A32: VST1.8 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.16B }, [Xn]
+        /// </summary>
+        public static unsafe void Store(byte* address, Vector128<byte> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_f64 (float64_t * ptr, float64x2_t val)
+        ///   A32: VST1.64 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.2D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(double* address, Vector128<double> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_s16 (int16_t * ptr, int16x8_t val)
+        ///   A32: VST1.16 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.8H }, [Xn]
+        /// </summary>
+        public static unsafe void Store(short* address, Vector128<short> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_s32 (int32_t * ptr, int32x4_t val)
+        ///   A32: VST1.32 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.4S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(int* address, Vector128<int> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_s64 (int64_t * ptr, int64x2_t val)
+        ///   A32: VST1.64 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.2D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(long* address, Vector128<long> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_s8 (int8_t * ptr, int8x16_t val)
+        ///   A32: VST1.8 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.16B }, [Xn]
+        /// </summary>
+        public static unsafe void Store(sbyte* address, Vector128<sbyte> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_f32 (float32_t * ptr, float32x4_t val)
+        ///   A32: VST1.32 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.4S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(float* address, Vector128<float> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_u16 (uint16_t * ptr, uint16x8_t val)
+        ///   A32: VST1.16 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.8H }, [Xn]
+        /// </summary>
+        public static unsafe void Store(ushort* address, Vector128<ushort> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_u32 (uint32_t * ptr, uint32x4_t val)
+        ///   A32: VST1.32 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.4S }, [Xn]
+        /// </summary>
+        public static unsafe void Store(uint* address, Vector128<uint> source) => Store(address, source);
+
+        /// <summary>
+        /// void vst1q_u64 (uint64_t * ptr, uint64x2_t val)
+        ///   A32: VST1.64 { Dd, Dd+1 }, [Rn]
+        ///   A64: ST1 { Vt.2D }, [Xn]
+        /// </summary>
+        public static unsafe void Store(ulong* address, Vector128<ulong> source) => Store(address, source);
 
         /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)

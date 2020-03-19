@@ -5230,7 +5230,7 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     //
-    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
 
     genDefineTempLabel(genCreateTempLabel());
@@ -5413,7 +5413,7 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     //
-    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
 
     genDefineTempLabel(genCreateTempLabel());
@@ -5596,7 +5596,7 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     //
-    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
 
     genDefineTempLabel(genCreateTempLabel());
@@ -5779,7 +5779,7 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     //
-    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
 
     genDefineTempLabel(genCreateTempLabel());
@@ -5836,7 +5836,7 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     //
-    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
 
     genDefineTempLabel(genCreateTempLabel());
@@ -5893,7 +5893,7 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     //
-    // Loads to /Stores from one, two, three, or four SIMD&FP registers
+    // Loads to and Stores from one, two, three, or four SIMD&FP registers
     //
 
     genDefineTempLabel(genCreateTempLabel());

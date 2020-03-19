@@ -4329,6 +4329,12 @@ bool Compiler::fgMayExplicitTailCall()
         return false;
     }
 
+    if (opts.IsReversePInvoke())
+    {
+        // Reverse P/Invoke
+        return false;
+    }
+
 #if !FEATURE_FIXED_OUT_ARGS
     if (info.compIsVarArgs)
     {
