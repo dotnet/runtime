@@ -206,8 +206,6 @@ endfunction()
 
 include(configure.cmake)
 
-include_directories(../AnyOS/Common)
-
 add_subdirectory(System.IO.Compression.Native)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -224,7 +222,7 @@ add_subdirectory(System.Native)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
 if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
-    add_subdirectory(../AnyOS/System.Globalization.Native System.Globalization.Native)
+    add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
 endif()
 if (NOT CLR_CMAKE_TARGET_IOS)

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
-#include "compiler.h"
+#include "pal_compiler.h"
 #include "opensslshim.h"
 
 // The shim API here is slightly less than 1:1 with underlying API so that:

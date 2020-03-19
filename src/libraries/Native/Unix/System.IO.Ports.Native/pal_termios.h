@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
-#include "compiler.h"
+#include "pal_compiler.h"
 
 PALEXPORT int32_t SystemIoPortsNative_TermiosGetSignal(intptr_t fd, int32_t signal);
 PALEXPORT int32_t SystemIoPortsNative_TermiosSetSignal(intptr_t fd, int32_t signal, int32_t set);

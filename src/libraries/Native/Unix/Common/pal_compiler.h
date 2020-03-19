@@ -31,6 +31,6 @@
 #ifdef __cplusplus
 #define EXTERN_C extern "C"
 #else
-#define EXTERN_C
+#define EXTERN_C extern
 #endif // __cplusplus
 #endif // EXTERN_C

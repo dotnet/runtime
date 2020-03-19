@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #pragma once
-#include "compiler.h"
+#include "pal_compiler.h"
 
 #if HAVE_GSSFW_HEADERS || HAVE_HEIMDAL_HEADERS
 typedef struct gss_name_t_desc_struct GssName;

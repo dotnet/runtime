@@ -8,8 +8,8 @@
 #include "pal_icushim_internal.h"
 #include "pal_idna.h"
 
-#ifndef TARGET_UNIX
-// Windows icu headers doesn't define this member.
+#if defined(TARGET_WINDOWS)
+// Windows icu headers doesn't define this member as it is marked as deprecated as of ICU 55.
 enum {
     UIDNA_ALLOW_UNASSIGNED=1
 };

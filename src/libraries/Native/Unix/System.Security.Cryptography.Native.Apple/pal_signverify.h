@@ -6,7 +6,7 @@
 
 #include "pal_digest.h"
 #include "pal_seckey.h"
-#include "compiler.h"
+#include "pal_compiler.h"
 
 #include <Security/Security.h>
 

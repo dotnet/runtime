@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "compiler.h"
+#include "pal_compiler.h"
 #include "pal_maphardwaretype.h"
 #include "pal_types.h"
 

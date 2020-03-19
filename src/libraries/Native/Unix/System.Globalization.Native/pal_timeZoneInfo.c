@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX)
 #include <unistd.h>
 #endif
 

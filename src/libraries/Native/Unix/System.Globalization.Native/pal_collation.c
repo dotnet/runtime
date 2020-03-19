@@ -12,10 +12,7 @@
 
 #include "pal_errors_internal.h"
 #include "pal_collation.h"
-
-#ifndef TARGET_UNIX
-#include <atomic>
-#endif
+#include "pal_atomic.h"
 
 c_static_assert_msg(UCOL_EQUAL == 0, "managed side requires 0 for equal strings");
 c_static_assert_msg(UCOL_LESS < 0, "managed side requires less than zero for a < b");
@@ -407,12 +404,7 @@ static const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32
         pCollator = CloneCollatorWithOptions(pSortHandle->collatorsPerOption[0], options, pErr);
         UCollator* pNull = NULL;
 
-#ifdef TARGET_UNIX
-        // we are not using the standard atomic_compare_exchange_strong to workaround bugs in clang 5.0 (https://bugs.llvm.org/show_bug.cgi?id=37457)
-        if (!__atomic_compare_exchange_n(&pSortHandle->collatorsPerOption[options], &pNull, pCollator, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-#else
-        if (!::std::atomic_compare_exchange_strong_explicit((volatile ::std::atomic<UCollator*> *const)&pSortHandle->collatorsPerOption[options], &pNull, pCollator, ::std::memory_order_seq_cst, ::std::memory_order_seq_cst))
-#endif
+        if (!pal_atomic_cas_ptr((void* volatile*)&pSortHandle->collatorsPerOption[options], &pNull, pCollator))
         {
             ucol_close(pCollator);
             pCollator = pSortHandle->collatorsPerOption[options];
@@ -427,7 +419,7 @@ int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
 {
     UErrorCode err = U_ZERO_ERROR;
     const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, 0, &err);
-    int32_t result = 0xFFFFFFFF;
+    int32_t result = -1;
 
     if (U_SUCCESS(err))
     {

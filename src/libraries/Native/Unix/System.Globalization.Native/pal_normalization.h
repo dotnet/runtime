@@ -6,7 +6,7 @@
 #pragma once
 
 #include "pal_locale.h"
-#include "compiler.h"
+#include "pal_compiler.h"
 
 /*
  * These values should be kept in sync with System.Text.NormalizationForm
@@ -19,11 +19,11 @@ typedef enum
     FormKD = 0x6
 } NormalizationForm;
 
-EXTERN_C PALEXPORT int32_t GlobalizationNative_IsNormalized(NormalizationForm normalizationForm,
+PALEXPORT int32_t GlobalizationNative_IsNormalized(NormalizationForm normalizationForm,
                                                    const UChar* lpStr,
                                                    int32_t cwStrLength);
 
-EXTERN_C PALEXPORT int32_t GlobalizationNative_NormalizeString(NormalizationForm normalizationForm,
+PALEXPORT int32_t GlobalizationNative_NormalizeString(NormalizationForm normalizationForm,
                                                       const UChar* lpSrc,
                                                       int32_t cwSrcLength,
                                                       UChar* lpDst,

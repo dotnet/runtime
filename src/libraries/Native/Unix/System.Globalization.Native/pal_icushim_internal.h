@@ -8,7 +8,7 @@
 
 #pragma once
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX)
 
 #include "config.h"
 
@@ -35,7 +35,7 @@
 #include <unicode/urename.h>
 #include <unicode/ustring.h>
 
-#else
+#elif defined(TARGET_WINDOWS)
 
 #include "icu.h"
 
@@ -48,7 +48,7 @@
 
 #endif
 
-#include "compiler.h"
+#include "pal_compiler.h"
 
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \

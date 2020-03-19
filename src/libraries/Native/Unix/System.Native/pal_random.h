@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "compiler.h"
+#include "pal_compiler.h"
 #include "pal_types.h"
 
 PALEXPORT void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int32_t bufferLength);

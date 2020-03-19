@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
-#include "compiler.h"
+#include "pal_compiler.h"
 #include "opensslshim.h"
 
 PALEXPORT EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreate(EVP_PKEY* pkey, EVP_PKEY* peerkey, uint32_t* secretLength);

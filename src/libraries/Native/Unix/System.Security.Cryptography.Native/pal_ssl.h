@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_crypto_types.h"
-#include "compiler.h"
+#include "pal_compiler.h"
 #include "opensslshim.h"
 
 /*

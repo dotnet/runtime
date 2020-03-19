@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "compiler.h"
+#include "pal_compiler.h"
 #include "pal_config.h"
 #include "pal_errno.h"
 #include "pal_io.h"

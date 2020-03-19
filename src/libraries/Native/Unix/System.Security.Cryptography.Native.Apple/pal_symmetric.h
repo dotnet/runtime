@@ -5,7 +5,7 @@
 #pragma once
 
 #include "pal_types.h"
-#include "compiler.h"
+#include "pal_compiler.h"
 
 #include <CommonCrypto/CommonCrypto.h>
 #include <CommonCrypto/CommonCryptor.h>

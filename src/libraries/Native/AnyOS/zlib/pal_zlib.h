@@ -9,7 +9,7 @@
     #define FUNCTIONCALLINGCONVENCTION WINAPI
 #else
     #include "pal_types.h"
-    #include "compiler.h"
+    #include "pal_compiler.h"
     #define FUNCTIONEXPORT PALEXPORT
     #define FUNCTIONCALLINGCONVENCTION
 #endif
