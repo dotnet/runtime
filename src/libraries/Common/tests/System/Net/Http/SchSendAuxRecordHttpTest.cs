@@ -19,30 +19,34 @@ namespace System.Net.Http.Functional.Tests
     {
         public SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
 
-        class CyrcularBuffer
+        class CircularBuffer
         {
-            private char[] _buffer = new char[4];
-            private int lastBytesWriteIndex = 0;
-            private int size = 0;
+
+            public CircularBuffer(int size) => _buffer = new char[size];
+
+            private char[] _buffer;
+            private int _lastBytesWriteIndex = 0;
+            private int _size = 0;
+
             public void Add(string value)
             {
                 foreach (char ch in value)
                 {
-                    _buffer[lastBytesWriteIndex] = ch;
+                    _buffer[_lastBytesWriteIndex] = ch;
 
-                    lastBytesWriteIndex = ++lastBytesWriteIndex % _buffer.Length;
-                    size = Math.Min(_buffer.Length, ++size);
+                    _lastBytesWriteIndex = ++_lastBytesWriteIndex % _buffer.Length;
+                    _size = Math.Min(_buffer.Length, ++_size);
                 }
             }
 
             public bool Equals(string value)
             {
-                if (value.Length != size)
+                if (value.Length != _size)
                     return false;
 
-                for (int i = 0; i < size; i++)
+                for (int i = 0; i < _size; i++)
                 {
-                    if (_buffer[(lastBytesWriteIndex + i) % _buffer.Length] != value[i])
+                    if (_buffer[(_lastBytesWriteIndex + i) % _buffer.Length] != value[i])
                         return false;
                 }
 
@@ -71,7 +75,7 @@ namespace System.Net.Http.Functional.Tests
                 int serverTotalBytesReceived = 0;
                 int serverChunks = 0;
 
-                CyrcularBuffer buffer = new CyrcularBuffer();
+                CircularBuffer buffer = new CircularBuffer(4);
 
                 tasks[0] = server.AcceptHttpsClientAsync((requestString) =>
                 {
@@ -95,6 +99,7 @@ namespace System.Net.Http.Functional.Tests
                         serverAuxRecordDetectedInconclusive = true;
                     }
 
+                    // Detect end of HTML request
                     if (buffer.Equals("\r\n\r\n"))
                     {
                         return Task.FromResult(HttpsTestServer.Options.DefaultResponseString);
