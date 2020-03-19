@@ -347,6 +347,12 @@ namespace Mono.Linker {
 
 							continue;
 
+						case "--output-pinvokes":
+							if (!GetStringParam (token, l => context.PInvokesListFile = l))
+								return false;
+
+							continue;
+
 						case "--version":
 							Version ();
 							return true;
@@ -872,6 +878,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("  --ignore-descriptors      Skips reading embedded descriptors (short -z). Defaults to false");
 			Console.WriteLine ("  --keep-facades            Keep assemblies with type-forwarders (short -t). Defaults to false");
 			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to false");
+			Console.WriteLine ("  --output-pinvokes PATH    Output a JSON file with all modules and entry points of the P/Invokes found");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Linking");
