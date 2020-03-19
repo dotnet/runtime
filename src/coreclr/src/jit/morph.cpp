@@ -7527,11 +7527,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             {
                 callType = TYP_I_IMPL;
             }
-            else if (howToReturnStruct == SPK_ByValueAsHfa)
+            else if (howToReturnStruct == SPK_ByValueAsHfa || varTypeIsSIMD(callType))
             {
                 callType = TYP_FLOAT;
             }
-            assert((callType != TYP_UNKNOWN) && (callType != TYP_STRUCT));
+            assert((callType != TYP_UNKNOWN) && !varTypeIsStruct(callType));
         }
         else
         {

@@ -119,7 +119,7 @@ namespace System.Net.Http.Headers
             if (GenericHeaderParser.SingleValueStringWithQualityParser.TryParseValue(
                 input, null, ref index, out object? output))
             {
-                parsedValue = (StringWithQualityHeaderValue)output;
+                parsedValue = (StringWithQualityHeaderValue)output!;
                 return true;
             }
             return false;

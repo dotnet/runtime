@@ -198,6 +198,66 @@ jobs:
 #         asArray: []
 #       ${{ insert }}: ${{ parameters.jobParameters }}
 
+# iOS x64
+
+- ${{ if or(containsValue(parameters.platforms, 'iOS_x64'), eq(parameters.platformGroup, 'all')) }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: iOS
+      archType: x64
+      platform: iOS_x64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# iOS arm
+
+- ${{ if or(containsValue(parameters.platforms, 'iOS_arm'), eq(parameters.platformGroup, 'all')) }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: iOS
+      archType: arm
+      platform: iOS_x64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# iOS arm64
+
+- ${{ if or(containsValue(parameters.platforms, 'iOS_arm64'), eq(parameters.platformGroup, 'all')) }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: iOS
+      archType: arm64
+      platform: iOS_x64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # macOS x64
 
 - ${{ if or(containsValue(parameters.platforms, 'OSX_x64'), eq(parameters.platformGroup, 'all')) }}:

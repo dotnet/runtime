@@ -129,7 +129,7 @@ namespace System.Net.Http.Headers
 
             if (GenericHeaderParser.SingleValueNameValueParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (NameValueHeaderValue)output;
+                parsedValue = (NameValueHeaderValue)output!;
                 return true;
             }
             return false;

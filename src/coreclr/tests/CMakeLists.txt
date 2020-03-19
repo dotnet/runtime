@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.14.2)
 cmake_policy(SET CMP0042 NEW)
 project(Tests)
 
-include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Platform)
 if (CLR_CMAKE_TARGET_WIN32)
@@ -12,7 +12,6 @@ endif()
 
 # Include global configure settings
 include(${CMAKE_CURRENT_SOURCE_DIR}/../configurecompiler.cmake)
-include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 # Compile options
 
 if (CLR_CMAKE_HOST_WIN32)

@@ -226,6 +226,9 @@ jobs:
     runtimeFlavor: mono
     buildConfig: debug
     platforms:
+    - iOS_x64
+    - iOS_arm
+    - iOS_arm64
     - OSX_x64
     - Linux_x64
     - Linux_arm
@@ -253,6 +256,9 @@ jobs:
     runtimeFlavor: mono
     buildConfig: release
     platforms:
+    - iOS_x64
+    - iOS_arm
+    - iOS_arm64
     - OSX_x64
     - Linux_x64
     - Linux_arm
@@ -357,6 +363,34 @@ jobs:
     - Windows_NT_x64
     jobParameters:
       liveRuntimeBuildConfig: release
+
+#
+# Build libraries using Mono CoreLib only
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - iOS_arm
+    - iOS_arm64
+    - iOS_x64
+    jobParameters:
+      liveRuntimeBuildConfig: release
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Debug
+    runtimeFlavor: mono
+    platforms:
+    - iOS_arm
+    - iOS_arm64
+    - iOS_x64
+    jobParameters:
+      liveRuntimeBuildConfig: debug
+
 #
 # Libraries Build that only run when libraries is changed
 #

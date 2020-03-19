@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
@@ -424,7 +425,8 @@ namespace System.Tests
         public static void LatencyRoundtrips_LowLatency(GCLatencyMode value) => LatencyRoundtrips(value);
     }
 
-    public class GCExtendedTests    {
+    public class GCExtendedTests
+    {
         private const int TimeoutMilliseconds = 10 * 30 * 1000; //if full GC is triggered it may take a while
 
         /// <summary>
@@ -890,6 +892,179 @@ namespace System.Tests
             {
                 stash = new byte[1234];
                 previous = CallGetTotalAllocatedBytes(previous);
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
+        private static void AllocateUninitializedArray()
+        {
+            // allocate a bunch of SOH byte arrays and touch them.
+            var r = new Random(1234);
+            for (int i = 0; i < 10000; i++)
+            {
+                int size = r.Next(10000);
+                var arr = GC.AllocateUninitializedArray<byte>(size, pinned: i % 2 == 1);
+
+                if (size > 1)
+                {
+                    arr[0] = 5;
+                    arr[size - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+                }
+            }
+
+            // allocate a bunch of LOH int arrays and touch them.
+            for (int i = 0; i < 1000; i++)
+            {
+                int size = r.Next(100000, 1000000);
+                var arr = GC.AllocateUninitializedArray<int>(size, pinned: i % 2 == 1);
+
+                arr[0] = 5;
+                arr[size - 1] = 17;
+                Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+            }
+
+            // allocate a string array
+            {
+                int i = 100;
+                var arr = GC.AllocateUninitializedArray<string>(i);
+
+                arr[0] = "5";
+                arr[i - 1] = "17";
+                Assert.True(arr[0] == "5" && arr[i - 1] == "17");
+            }
+
+            // allocate max size byte array
+            {
+                if (IntPtr.Size == 8)
+                {
+                    int i = 0x7FFFFFC7;
+                    var arr = GC.AllocateUninitializedArray<byte>(i);
+
+                    arr[0] = 5;
+                    arr[i - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[i - 1] == 17);
+                }
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
+        private static void AllocateArray()
+        {
+            // allocate a bunch of SOH byte arrays and touch them.
+            var r = new Random(1234);
+            for (int i = 0; i < 10000; i++)
+            {
+                int size = r.Next(10000);
+                var arr = GC.AllocateArray<byte>(size, pinned: i % 2 == 1);
+
+                if (size > 1)
+                {
+                    arr[0] = 5;
+                    arr[size - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+                }
+            }
+
+            // allocate a bunch of LOH int arrays and touch them.
+            for (int i = 0; i < 1000; i++)
+            {
+                int size = r.Next(100000, 1000000);
+                var arr = GC.AllocateArray<int>(size, pinned: i % 2 == 1);
+
+                arr[0] = 5;
+                arr[size - 1] = 17;
+                Assert.True(arr[0] == 5 && arr[size - 1] == 17);
+            }
+
+            // allocate a string array
+            {
+                int i = 100;
+                var arr = GC.AllocateArray<string>(i);
+
+                arr[0] = "5";
+                arr[i - 1] = "17";
+                Assert.True(arr[0] == "5" && arr[i - 1] == "17");
+            }
+
+            // allocate max size byte array
+            {
+                if (IntPtr.Size == 8)
+                {
+                    int i = 0x7FFFFFC7;
+                    var arr = GC.AllocateArray<byte>(i);
+
+                    arr[0] = 5;
+                    arr[i - 1] = 17;
+                    Assert.True(arr[0] == 5 && arr[i - 1] == 17);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
+        private static void AllocateArrayNegativeSize(int negValue)
+        {
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1));
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(negValue));
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1, pinned: true));
+            Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(negValue, pinned: true));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
+        private static void AllocateArrayTooLarge()
+        {
+            Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue));
+            Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue, pinned: true));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
+        private static void AllocateArrayRefType()
+        {
+            GC.AllocateUninitializedArray<string>(100);
+            Assert.Throws<ArgumentException>(() => GC.AllocateUninitializedArray<string>(100, pinned: true));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33583", TestRuntimes.Mono)]
+        private unsafe static void AllocateArrayCheckPinning()
+        {
+            var list = new List<long[]>();
+
+            var r = new Random(1234);
+            for (int i = 0; i < 10000; i++)
+            {
+                int size = r.Next(2, 100);
+                var arr = i % 2 == 1 ?
+                    GC.AllocateArray<long>(size, pinned: true) :
+                    GC.AllocateUninitializedArray<long>(size, pinned: true) ;
+
+                fixed (long* pElem = &arr[0])
+                {
+                    *pElem = (long)pElem;
+                }
+
+                if (r.Next(100) % 2 == 0)
+                {
+                    list.Add(arr);
+                }
+            }
+
+            GC.Collect();
+
+            foreach (var arr in list)
+            {
+                fixed (long* pElem = &arr[0])
+                {
+                    Assert.Equal(*pElem, (long)pElem);
+                }
             }
         }
     }

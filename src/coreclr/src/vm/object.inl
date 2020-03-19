@@ -175,24 +175,6 @@ inline DWORD ArrayBase::GetNumComponents() const
     return m_NumComponents;
 }
 
-#ifndef DACCESS_COMPILE
-inline void ArrayBase::SetArrayMethodTable(MethodTable *pArrayMT)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    SetMethodTable(pArrayMT
-                   DEBUG_ARG(TRUE));
-}
-
-inline void ArrayBase::SetArrayMethodTableForLargeObject(MethodTable *pArrayMT)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    SetMethodTableForLargeObject(pArrayMT
-                                 DEBUG_ARG(TRUE));
-}
-#endif // !DACCESS_COMPILE
-
 inline /* static */ unsigned ArrayBase::GetDataPtrOffset(MethodTable* pMT)
 {
     LIMITED_METHOD_CONTRACT;

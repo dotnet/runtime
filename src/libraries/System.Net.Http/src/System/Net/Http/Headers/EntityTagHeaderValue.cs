@@ -116,7 +116,7 @@ namespace System.Net.Http.Headers
 
             if (GenericHeaderParser.SingleValueEntityTagParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (EntityTagHeaderValue)output;
+                parsedValue = (EntityTagHeaderValue)output!;
                 return true;
             }
             return false;

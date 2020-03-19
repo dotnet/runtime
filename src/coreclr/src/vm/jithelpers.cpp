@@ -2609,7 +2609,7 @@ HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, IN
 
         _ASSERTE(allocPtr != nullptr);
         ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
-        array->SetArrayMethodTable(pArrayMT);
+        array->SetMethodTable(pArrayMT);
         _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
         array->m_NumComponents = static_cast<DWORD>(componentCount);
 
@@ -2668,7 +2668,7 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, I
 
         _ASSERTE(allocPtr != nullptr);
         ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
-        array->SetArrayMethodTable(pArrayMT);
+        array->SetMethodTable(pArrayMT);
         _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
         array->m_NumComponents = static_cast<DWORD>(componentCount);
 

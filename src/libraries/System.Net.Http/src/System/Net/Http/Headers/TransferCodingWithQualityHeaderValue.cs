@@ -57,7 +57,7 @@ namespace System.Net.Http.Headers
             if (TransferCodingHeaderParser.SingleValueWithQualityParser.TryParseValue(
                 input, null, ref index, out object? output))
             {
-                parsedValue = (TransferCodingWithQualityHeaderValue)output;
+                parsedValue = (TransferCodingWithQualityHeaderValue)output!;
                 return true;
             }
             return false;

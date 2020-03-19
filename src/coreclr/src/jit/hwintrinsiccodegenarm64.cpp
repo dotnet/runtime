@@ -301,6 +301,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, op1Reg);
                 break;
 
+            case NI_AdvSimd_Store:
+                GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
+                break;
+
             default:
                 unreached();
         }

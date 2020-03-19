@@ -3595,7 +3595,6 @@ main_loop:
 					THROW_EX (ex, ip);
 				EXCEPTION_CHECKPOINT;
 			}
-			ip += 2;
 			const gboolean realloc_frame = new_method->alloca_size > frame->imethod->alloca_size;
 			frame->imethod = new_method;
 			/*
@@ -5022,10 +5021,12 @@ call:;
 
 		MINT_IN_CASE(MINT_NEWOBJ_VT_FAST)
 		MINT_IN_CASE(MINT_NEWOBJ_VTST_FAST) {
+			guint16 imethod_index = ip [1];
+			gboolean is_inlined = imethod_index == INLINED_METHOD_FLAG;
+
+			guint16 const param_count = ip [2];
 
 			frame->ip = ip;
-			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
-			guint16 const param_count = ip [2];
 
 			// Make room for extra parameter and result.
 			if (param_count) {
@@ -5049,6 +5050,14 @@ call:;
 				memset (sp, 0, sizeof (*sp));
 				sp [1].data.p = &sp [0].data; // valuetype_this == result
 			}
+
+			if (is_inlined) {
+				if (vtst)
+					vt_sp += ALIGN_TO (ip [-1], MINT_VT_ALIGNMENT);
+				sp += param_count + 2;
+				MINT_IN_BREAK;
+			}
+			cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
 			}
 			// call_newobj captures the pattern where the return value is placed
 			// on the stack before the call, instead of the call forming it.

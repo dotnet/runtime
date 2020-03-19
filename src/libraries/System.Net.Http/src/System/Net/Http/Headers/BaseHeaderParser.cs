@@ -25,8 +25,10 @@ namespace System.Net.Http.Headers
         protected abstract int GetParsedValueLength(string value, int startIndex, object? storeValue,
             out object? parsedValue);
 
+#pragma warning disable CS8765 // Doesn't match overriden member nullable attribute on out parameter
         public sealed override bool TryParseValue(string? value, object? storeValue, ref int index,
-            [NotNullWhen(true)] out object? parsedValue)
+            out object? parsedValue)
+#pragma warning restore CS8765
         {
             parsedValue = null;
 

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the https://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Extensions.Caching.Distributed
 {
@@ -20,7 +23,6 @@ namespace Microsoft.Extensions.Caching.Distributed
     public static partial class DistributedCacheExtensions
     {
         public static string GetString(this Microsoft.Extensions.Caching.Distributed.IDistributedCache cache, string key) { throw null; }
-        [System.Diagnostics.DebuggerStepThroughAttribute]
         public static System.Threading.Tasks.Task<string> GetStringAsync(this Microsoft.Extensions.Caching.Distributed.IDistributedCache cache, string key, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) { throw null; }
         public static void Set(this Microsoft.Extensions.Caching.Distributed.IDistributedCache cache, string key, byte[] value) { }
         public static System.Threading.Tasks.Task SetAsync(this Microsoft.Extensions.Caching.Distributed.IDistributedCache cache, string key, byte[] value, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) { throw null; }
@@ -59,7 +61,6 @@ namespace Microsoft.Extensions.Caching.Memory
     public static partial class CacheExtensions
     {
         public static object Get(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key) { throw null; }
-        [System.Diagnostics.DebuggerStepThroughAttribute]
         public static System.Threading.Tasks.Task<TItem> GetOrCreateAsync<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, System.Func<Microsoft.Extensions.Caching.Memory.ICacheEntry, System.Threading.Tasks.Task<TItem>> factory) { throw null; }
         public static TItem GetOrCreate<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key, System.Func<Microsoft.Extensions.Caching.Memory.ICacheEntry, TItem> factory) { throw null; }
         public static TItem Get<TItem>(this Microsoft.Extensions.Caching.Memory.IMemoryCache cache, object key) { throw null; }
@@ -120,17 +121,17 @@ namespace Microsoft.Extensions.Caching.Memory
         public MemoryCacheEntryOptions() { }
         public System.DateTimeOffset? AbsoluteExpiration { get { throw null; } set { } }
         public System.TimeSpan? AbsoluteExpirationRelativeToNow { get { throw null; } set { } }
-        public System.Collections.Generic.IList<Microsoft.Extensions.Primitives.IChangeToken> ExpirationTokens { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public System.Collections.Generic.IList<Microsoft.Extensions.Caching.Memory.PostEvictionCallbackRegistration> PostEvictionCallbacks { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
-        public Microsoft.Extensions.Caching.Memory.CacheItemPriority Priority { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.Collections.Generic.IList<Microsoft.Extensions.Primitives.IChangeToken> ExpirationTokens { get { throw null; } }
+        public System.Collections.Generic.IList<Microsoft.Extensions.Caching.Memory.PostEvictionCallbackRegistration> PostEvictionCallbacks { get { throw null; } }
+        public Microsoft.Extensions.Caching.Memory.CacheItemPriority Priority { get { throw null; } set { } }
         public long? Size { get { throw null; } set { } }
         public System.TimeSpan? SlidingExpiration { get { throw null; } set { } }
     }
     public partial class PostEvictionCallbackRegistration
     {
         public PostEvictionCallbackRegistration() { }
-        public Microsoft.Extensions.Caching.Memory.PostEvictionDelegate EvictionCallback { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public object State { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public Microsoft.Extensions.Caching.Memory.PostEvictionDelegate EvictionCallback { get { throw null; } set { } }
+        public object State { get { throw null; } set { } }
     }
     public delegate void PostEvictionDelegate(object key, object value, Microsoft.Extensions.Caching.Memory.EvictionReason reason, object state);
 }

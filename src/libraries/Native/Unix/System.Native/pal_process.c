@@ -227,12 +227,15 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     int stdinFds[2] = {-1, -1}, stdoutFds[2] = {-1, -1}, stderrFds[2] = {-1, -1}, waitForChildToExecPipe[2] = {-1, -1};
     pid_t processId = -1;
     uint32_t* getGroupsBuffer = NULL;
-    int thread_cancel_state;
     sigset_t signal_set;
     sigset_t old_signal_set;
 
+#ifndef HAVE_PTHREAD_SETCANCELSTATE
+    int thread_cancel_state;
+
     // None of this code can be canceled without leaking handles, so just don't allow it
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &thread_cancel_state);
+#endif
 
     // Validate arguments
     if (NULL == filename || NULL == argv || NULL == envp || NULL == stdinFd || NULL == stdoutFd ||
@@ -498,9 +501,11 @@ done:;
         errno = priorErrno;
     }
 
+#ifndef HAVE_PTHREAD_SETCANCELSTATE
     // Restore thread cancel state
     pthread_setcancelstate(thread_cancel_state, &thread_cancel_state);
-  
+#endif
+
     free(getGroupsBuffer);
 
     return success ? 0 : -1;
@@ -593,7 +598,7 @@ static void ConvertFromPalRLimitToManaged(const struct rlimit* native, RLimit* p
     pal->MaximumLimit = ConvertFromNativeRLimitInfinityToManagedIfNecessary(native->rlim_max);
 }
 
-#if defined __USE_GNU && !defined __cplusplus
+#if defined(__USE_GNU) && !defined(__cplusplus) && !defined(TARGET_ANDROID)
 typedef __rlimit_resource_t rlimitResource;
 typedef __priority_which_t priorityWhich;
 #else
@@ -788,7 +793,7 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
     cpu_set_t set;
     CPU_ZERO(&set);
 
-    intptr_t bits = *mask; 
+    intptr_t bits = *mask;
     for (int cpu = 0; cpu < maxCpu; cpu++)
     {
         if ((bits & (((intptr_t)1u) << cpu)) != 0)
@@ -796,7 +801,7 @@ int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
             CPU_SET(cpu, &set);
         }
     }
- 
+
     return sched_setaffinity(pid, sizeof(cpu_set_t), &set);
 }
 #endif
