@@ -256,13 +256,6 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
         public void DirectoryLongerThanMaxPath_Succeeds()
         {
-            while (!System.Diagnostics.Debugger.IsAttached)
-            {
-                Console.WriteLine($" = = = = ATTACH {System.Diagnostics.Process.GetCurrentProcess().Id} = = = =");
-                Threading.Thread.Sleep(1000);
-            }
-            System.Diagnostics.Debugger.Break();
-
             var paths = IOInputs.GetPathsLongerThanMaxPath(GetTestFilePath());
             Assert.All(paths, (path) =>
             {
