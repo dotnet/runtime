@@ -135,13 +135,21 @@ namespace System.Buffers
                 }
 
                 // No buffer available.  Allocate a new buffer with a size corresponding to the appropriate bucket.
+#if !MONO
                 buffer = GC.AllocateUninitializedArray<T>(_bucketArraySizes[bucketIndex], pinned: !RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+#else
+                buffer = GC.AllocateUninitializedArray<T>(_bucketArraySizes[bucketIndex], pinned: false);
+#endif
             }
             else
             {
                 // The request was for a size too large for the pool.  Allocate an array of exactly the requested length.
                 // When it's returned to the pool, we'll simply throw it away.
+#if !MONO
                 buffer = GC.AllocateUninitializedArray<T>(minimumLength, pinned: !RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+#else
+                buffer = GC.AllocateUninitializedArray<T>(minimumLength, pinned: false);
+#endif
             }
 
             if (log.IsEnabled())
