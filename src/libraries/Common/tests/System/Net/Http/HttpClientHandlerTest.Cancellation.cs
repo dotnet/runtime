@@ -522,6 +522,12 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
         public async Task PostAsync_Cancel_CancellationTokenPassedToContent(HttpContent content, CancellationTokenSource cancellationTokenSource)
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion > HttpVersion.Version11)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {

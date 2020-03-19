@@ -757,7 +757,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
 #if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion.Version11)
+            if (UseVersion > HttpVersion.Version11)
             {
                 throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
             }

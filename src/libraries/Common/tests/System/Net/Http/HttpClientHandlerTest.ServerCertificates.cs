@@ -35,7 +35,7 @@ namespace System.Net.Http.Functional.Tests
         public void Ctor_ExpectedDefaultValues()
         {
 #if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion.Version11)
+            if (UseVersion > HttpVersion.Version11)
             {
                 throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
             }
@@ -51,7 +51,7 @@ namespace System.Net.Http.Functional.Tests
         public void ServerCertificateCustomValidationCallback_SetGet_Roundtrips()
         {
 #if WINHTTPHANDLER_TEST
-            if (UseVersion >= HttpVersion.Version11)
+            if (UseVersion > HttpVersion.Version11)
             {
                 throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
             }
