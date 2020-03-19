@@ -13156,9 +13156,6 @@ static void aot_dump (MonoAotCompile *acfg)
 
 static const MonoJitICallId preinited_jit_icalls [] = {
 	MONO_JIT_ICALL_mini_llvm_init_method,
-	MONO_JIT_ICALL_mini_llvm_init_gshared_method_this,
-	MONO_JIT_ICALL_mini_llvm_init_gshared_method_mrgctx,
-	MONO_JIT_ICALL_mini_llvm_init_gshared_method_vtable,
 	MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception,
 	MONO_JIT_ICALL_mono_llvm_throw_corlib_exception,
 	MONO_JIT_ICALL_mono_threads_state_poll,

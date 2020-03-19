@@ -130,9 +130,6 @@ MONO_JIT_ICALL (cominterop_set_ccw_object_domain) \
 MONO_JIT_ICALL (cominterop_type_from_handle) \
 MONO_JIT_ICALL (g_free) \
 MONO_JIT_ICALL (interp_to_native_trampoline)	\
-MONO_JIT_ICALL (mini_llvm_init_gshared_method_mrgctx) \
-MONO_JIT_ICALL (mini_llvm_init_gshared_method_this) \
-MONO_JIT_ICALL (mini_llvm_init_gshared_method_vtable) \
 MONO_JIT_ICALL (mini_llvm_init_method) \
 MONO_JIT_ICALL (mini_llvmonly_init_delegate) \
 MONO_JIT_ICALL (mini_llvmonly_init_delegate_virtual) \
