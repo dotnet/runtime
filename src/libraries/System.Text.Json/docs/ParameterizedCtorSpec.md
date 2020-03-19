@@ -319,7 +319,7 @@ public class Point
 }
 ```
 
-The `int X` property matches with the `int x` parameter, and the `int Y` property matches with the `int x` property.
+The `int X` property matches with the `int x` parameter, and the `int Y` property matches with the `int y` property.
 With default serializer options, the properties would normally match with their exact pascal case representations. The
 constructor arguments will be configured to bind with the JSON instead:
 
