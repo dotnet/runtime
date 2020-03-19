@@ -164,12 +164,21 @@ namespace System.Security.Cryptography.Encoding.Tests
         [InlineData("H E L L O")]
         [InlineData("H-E-L-L-O")]
         [InlineData("HEL-LO")]
-        [InlineData("H")]
-        public void TryFind_True_LabelsWithHyphenSpace(string label)
+        public void Find_Success_LabelsWithHyphenSpace(string label)
         {
             string content = $"-----BEGIN {label}-----\nZm9v\n-----END {label}-----";
             PemFields fields = FindPem(content);
             Assert.Equal(label, content[fields.Label]);
+        }
+
+        [Fact]
+        public void Find_Success_SingleLetterLabel()
+        {
+            string content = "-----BEGIN H-----\nZm9v\n-----END H-----";
+            AssertPemFound(content,
+                expectedLocation: 0..38,
+                expectedBase64: 18..22,
+                expectedLabel: 11..12);
         }
 
         [Fact]
