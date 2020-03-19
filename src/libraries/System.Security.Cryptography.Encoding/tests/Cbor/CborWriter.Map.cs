@@ -22,7 +22,22 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteEndMap()
         {
+            if (!_remainingDataItems.HasValue)
+            {
+                // indefinite-length map, add break byte
+                EnsureWriteCapacity(1);
+                WriteInitialByte(new CborInitialByte(CborInitialByte.IndefiniteLengthBreakByte));
+            }
+
             PopDataItem(CborMajorType.Map);
+        }
+
+        public void WriteStartMap()
+        {
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
+            DecrementRemainingItemCount();
+            PushDataItem(CborMajorType.Map, expectedNestedItems: null);
         }
     }
 }
