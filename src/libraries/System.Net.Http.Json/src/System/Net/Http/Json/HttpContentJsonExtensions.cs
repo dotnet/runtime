@@ -15,25 +15,25 @@ namespace System.Net.Http.Json
     public static class HttpContentJsonExtensions
     {
         public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            return ReadFromJsonAsyncCore(content, type, options, cancellationToken);
-        }
+            => ReadFromJsonAsyncCore(content, type, options, cancellationToken);
 
         public static Task<T> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
-        {
-            return ReadFromJsonAsyncCore<T>(content, options, cancellationToken);
-        }
+            => ReadFromJsonAsyncCore<T>(content, options, cancellationToken);
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            Stream contentStream = await GetJsonStreamFromContentAsync(content).ConfigureAwait(false);
-            return await JsonSerializer.DeserializeAsync(contentStream, type, options, cancellationToken);
+            using (Stream contentStream = await GetJsonStreamFromContentAsync(content).ConfigureAwait(false))
+            {
+                return await JsonSerializer.DeserializeAsync(contentStream, type, options, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         private static async Task<T> ReadFromJsonAsyncCore<T>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            Stream contentStream = await GetJsonStreamFromContentAsync(content).ConfigureAwait(false);
-            return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken).ConfigureAwait(false);
+            using (Stream contentStream = await GetJsonStreamFromContentAsync(content).ConfigureAwait(false))
+            {
+                return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         private static async Task<Stream> GetJsonStreamFromContentAsync(HttpContent content)
@@ -57,7 +57,7 @@ namespace System.Net.Http.Json
         private static void ValidateMediaType(string? mediaType)
         {
             if (mediaType != JsonContent.JsonMediaType &&
-                 mediaType != MediaTypeNames.Text.Plain)
+                mediaType != MediaTypeNames.Text.Plain)
             {
                 throw new NotSupportedException(SR.ContentTypeNotSupported);
             }

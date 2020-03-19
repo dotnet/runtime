@@ -21,45 +21,27 @@ namespace System.Net.Http.Json
         public Type ObjectType { get; }
         public object? Value { get; }
 
-        private JsonContent(object? value, Type inputType, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options)
+        private JsonContent(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options)
         {
-            if (mediaType == null)
-            {
-                throw new ArgumentNullException(nameof(mediaType));
-            }
-
             if (inputType == null)
             {
                 throw new ArgumentNullException(nameof(inputType));
             }
 
-            Value = value;
+            Value = inputValue;
             ObjectType = inputType;
-            Headers.ContentType = mediaType;
+            Headers.ContentType = mediaType ?? DefaultMediaType;
             _jsonSerializerOptions = options;
         }
 
-        public static JsonContent Create<T>(T value, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options = null)
-        {
-            return Create(value, typeof(T), mediaType, options);
-        }
+        public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options = null)
+            => Create(inputValue, typeof(T), mediaType, options);
 
-        public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options = null)
-        {
-            if (mediaType == null)
-            {
-                throw new ArgumentNullException(nameof(mediaType));
-            }
-
-            return new JsonContent(inputValue, inputType, mediaType, options);
-        }
+        public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options = null)
+            => new JsonContent(inputValue, inputType, mediaType, options);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
-#if !NETSTANDARD2_0
-            => SerializeToStreamAsync(stream, context, CancellationToken.None);
-#else
-            => JsonSerializer.SerializeAsync(GetStreamToWriteTo(stream), Value, ObjectType, _jsonSerializerOptions);
-#endif
+            => SerializeToStreamAsyncCore(stream, CancellationToken.None);
 
         protected override bool TryComputeLength(out long length)
         {
@@ -67,18 +49,23 @@ namespace System.Net.Http.Json
             return false;
         }
 
-        private Stream GetStreamToWriteTo(Stream targetStream)
+        private async Task SerializeToStreamAsyncCore(Stream targetStream, CancellationToken cancellationToken)
         {
-            Stream jsonStream = targetStream;
             Encoding? targetEncoding = GetEncoding(Headers.ContentType.CharSet);
 
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
             if (targetEncoding != null && targetEncoding != Encoding.UTF8)
             {
-                jsonStream = new TranscodingWriteStream(jsonStream, targetEncoding);
+                using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
+                {
+                    await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await transcodingStream.FinalWriteAsync(cancellationToken).ConfigureAwait(false);
+                }
             }
-
-            return jsonStream;
+            else
+            {
+                await JsonSerializer.SerializeAsync(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         private static Encoding? GetEncoding(string charset)

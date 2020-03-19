@@ -5,7 +5,6 @@
 // Taken from https://github.com/dotnet/aspnetcore/blob/master/src/Mvc/Mvc.Core/test/Formatters/TranscodingReadStreamTest.cs
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -27,7 +26,7 @@ namespace System.Net.Http.Json.Functional.Tests
             var bytes = new byte[4];
 
             // Act
-            var readBytes = await stream.ReadAsync(bytes, 0, 1);
+            int readBytes = await stream.ReadAsync(bytes, 0, 1);
 
             // Assert
             Assert.Equal(1, readBytes);
@@ -35,30 +34,29 @@ namespace System.Net.Http.Json.Functional.Tests
             Assert.Equal(0, bytes[1]);
 
             Assert.Equal(0, stream.ByteBufferCount);
-            Assert.Equal(10, stream.CharBufferCount);
-            Assert.Equal(0, stream.OverflowCount);
+            Assert.Equal(0, stream.CharBufferCount);
+            Assert.Equal(10, stream.OverflowCount);
         }
 
         [Fact]
         public async Task ReadAsync_FillsBuffer()
         {
-            Debugger.Launch();
             // Arrange
-            var input = "Hello world";
-            var encoding = Encoding.Unicode;
-            using var stream = new TranscodingReadStream(new MemoryStream(encoding.GetBytes(input)), encoding);
-            var bytes = new byte[3];
-            var expected = Encoding.UTF8.GetBytes(input.Substring(0, bytes.Length));
+            string input = "Hello world";
+            Encoding encoding = Encoding.Unicode;
+            using TranscodingReadStream stream = new TranscodingReadStream(new MemoryStream(encoding.GetBytes(input)), encoding);
+            byte[] bytes = new byte[3];
+            byte[] expected = Encoding.UTF8.GetBytes(input.Substring(0, bytes.Length));
 
             // Act
-            var readBytes = await stream.ReadAsync(bytes, 0, bytes.Length);
+            int readBytes = await stream.ReadAsync(bytes, 0, bytes.Length);
 
             // Assert
             Assert.Equal(3, readBytes);
             Assert.Equal(expected, bytes);
             Assert.Equal(0, stream.ByteBufferCount);
-            Assert.Equal(8, stream.CharBufferCount);
-            Assert.Equal(0, stream.OverflowCount);
+            Assert.Equal(0, stream.CharBufferCount);
+            Assert.Equal(8, stream.OverflowCount);
         }
 
         [Fact]
@@ -243,12 +241,14 @@ namespace System.Net.Http.Json.Functional.Tests
             var input = $"{{ \"Message\": \"{message}\" }}";
             var stream = new MemoryStream(sourceEncoding.GetBytes(input));
 
-            var transcodingStream = new TranscodingReadStream(stream, sourceEncoding);
+            using (var transcodingStream = new TranscodingReadStream(stream, sourceEncoding))
+            {
 
-            var model = await JsonSerializer.DeserializeAsync(transcodingStream, typeof(TestModel));
-            var testModel = Assert.IsType<TestModel>(model);
+                var model = await JsonSerializer.DeserializeAsync(transcodingStream, typeof(TestModel));
+                var testModel = Assert.IsType<TestModel>(model);
 
-            Assert.Equal(message, testModel.Message);
+                Assert.Equal(message, testModel.Message);
+            }
         }
 
         public class TestModel
@@ -256,5 +256,18 @@ namespace System.Net.Http.Json.Functional.Tests
             public string Message { get; set; }
         }
 
+        [Fact]
+        public async Task TestOneToOneTranscodingAsync()
+        {
+            Encoding sourceEncoding = Encoding.GetEncoding(28591);
+            string message = '"' + new string('A', TranscodingReadStream.MaxByteBufferSize - 2 + 1) + '"';
+
+            Stream stream = new MemoryStream(sourceEncoding.GetBytes(message));
+            using (Stream transcodingStream = new TranscodingReadStream(stream, sourceEncoding))
+            {
+                string deserializedMessage = await JsonSerializer.DeserializeAsync<string>(transcodingStream);
+                Assert.Equal(message.Trim('"'), deserializedMessage);
+            }
+        }
     }
 }
