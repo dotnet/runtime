@@ -19,9 +19,8 @@ namespace System.Net.Http.Functional.Tests
     {
         public SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
 
-        class CircularBuffer
+        private class CircularBuffer
         {
-
             public CircularBuffer(int size) => _buffer = new char[size];
 
             private char[] _buffer;
