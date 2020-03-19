@@ -25,11 +25,6 @@ namespace System.IO.Tests
             // Create directories and their files using "\\?\C:\" paths
             foreach (string dirPath in dirPaths)
             {
-                if (Directory.Exists(dirPath))
-                {
-                    Directory.Delete(dirPath, recursive: true);
-                }
-
                 Directory.CreateDirectory(dirPath);
 
                 // Directory.Exists should work with directories containing trailing dots and prefixed with \\?\
@@ -74,6 +69,7 @@ namespace System.IO.Tests
             {
                 foreach (string dirPath in dirPaths)
                 {
+                    // Workaround for .NET Framework since it does not know how to handle paths with special names (prefixed with "\\?\").
                     Directory.Delete(dirPath, recursive: true);
                 }
             }

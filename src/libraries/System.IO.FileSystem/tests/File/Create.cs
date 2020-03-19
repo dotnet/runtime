@@ -67,8 +67,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
+        [ConditionalFact(nameof(AreAllLongPathsAvailable), nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix, long path
         public void ValidCreation_LongPathExtendedSyntax()
         {

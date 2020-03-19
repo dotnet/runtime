@@ -42,8 +42,7 @@ namespace System.IO.Tests
             Assert.Equal(0, GetEntries(containingFolder.FullName).Count());
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
+        [ConditionalFact(nameof(AreAllLongPathsAvailable), nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
         public void EnumerateFilesOverLegacyMaxPath()
         {
             // We want to test that directories under the legacy MAX_PATH (260 characters, including the null) can iterate files
@@ -63,8 +62,7 @@ namespace System.IO.Tests
             Assert.Equal(6, files.Length);
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
+        [ConditionalFact(nameof(AreAllLongPathsAvailable), nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
         public void EnumerateFilesDirectoryOverLegacyMaxPath()
         {
             // Check enumerating when the entire path is over MAX_PATH

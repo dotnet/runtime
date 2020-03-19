@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -65,9 +64,9 @@ namespace System.IO.Tests
         }
 
         [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
-        public void PathWithInvalidCharactersAsPath_Core(string invalidPath)
+        public void PathWithInvalidCharactersAsPath(string invalidPath)
         {
-            if (invalidPath.Contains('\0'))
+            if (invalidPath.Contains("\0"))
             {
                 string argName = (PlatformDetection.IsNetFramework) ? null : "path";
                 Assert.Throws<ArgumentException>(argName, () => Create(invalidPath));
@@ -253,11 +252,17 @@ namespace System.IO.Tests
         }
 
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
+        [ConditionalFact(nameof(AreAllLongPathsAvailable), nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
-        public void DirectoryLongerThanMaxPath_Succeeds_Core()
+        public void DirectoryLongerThanMaxPath_Succeeds()
         {
+            while (!System.Diagnostics.Debugger.IsAttached)
+            {
+                Console.WriteLine($" = = = = ATTACH {System.Diagnostics.Process.GetCurrentProcess().Id} = = = =");
+                Threading.Thread.Sleep(1000);
+            }
+            System.Diagnostics.Debugger.Break();
+
             var paths = IOInputs.GetPathsLongerThanMaxPath(GetTestFilePath());
             Assert.All(paths, (path) =>
             {
@@ -298,10 +303,9 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
+        [ConditionalFact(nameof(AreAllLongPathsAvailable), nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
-        public void DirectoryLongerThanMaxDirectoryAsPath_Succeeds_Core()
+        public void DirectoryLongerThanMaxDirectoryAsPath_Succeeds()
         {
             var paths = IOInputs.GetPathsLongerThanMaxDirectory(GetTestFilePath());
             Assert.All(paths, (path) =>
