@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 using System.Net.Mime;
 using System.Text;
@@ -11,21 +10,20 @@ namespace System.Net.Mail
 {
     public class AlternateView : AttachmentBase
     {
-        private LinkedResourceCollection _linkedResources;
+        private LinkedResourceCollection? _linkedResources;
 
         internal AlternateView()
         { }
-
 
         public AlternateView(string fileName) :
             base(fileName)
         { }
 
-        public AlternateView(string fileName, string mediaType) :
+        public AlternateView(string fileName, string? mediaType) :
             base(fileName, mediaType)
         { }
 
-        public AlternateView(string fileName, ContentType contentType) :
+        public AlternateView(string fileName, ContentType? contentType) :
             base(fileName, contentType)
         { }
 
@@ -33,11 +31,11 @@ namespace System.Net.Mail
             base(contentStream)
         { }
 
-        public AlternateView(Stream contentStream, string mediaType) :
+        public AlternateView(Stream contentStream, string? mediaType) :
             base(contentStream, mediaType)
         { }
 
-        public AlternateView(Stream contentStream, ContentType contentType) :
+        public AlternateView(Stream contentStream, ContentType? contentType) :
             base(contentStream, contentType)
         { }
 
@@ -50,16 +48,11 @@ namespace System.Net.Mail
                     throw new ObjectDisposedException(GetType().FullName);
                 }
 
-
-                if (_linkedResources == null)
-                {
-                    _linkedResources = new LinkedResourceCollection();
-                }
-                return _linkedResources;
+                return _linkedResources ??= new LinkedResourceCollection();
             }
         }
 
-        public Uri BaseUri
+        public Uri? BaseUri
         {
             get
             {
@@ -78,14 +71,14 @@ namespace System.Net.Mail
             return a;
         }
 
-        public static AlternateView CreateAlternateViewFromString(string content, Encoding contentEncoding, string mediaType)
+        public static AlternateView CreateAlternateViewFromString(string content, Encoding? contentEncoding, string? mediaType)
         {
             AlternateView a = new AlternateView();
             a.SetContentFromString(content, contentEncoding, mediaType);
             return a;
         }
 
-        public static AlternateView CreateAlternateViewFromString(string content, ContentType contentType)
+        public static AlternateView CreateAlternateViewFromString(string content, ContentType? contentType)
         {
             AlternateView a = new AlternateView();
             a.SetContentFromString(content, contentType);
