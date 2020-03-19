@@ -7259,7 +7259,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         }
 
         // On x86 we have a faster mechanism than the general one which we use
-        // in almost all cases.
+        // in almost all cases. See fgCanTailCallViaJitHelper for more information.
         if (fgCanTailCallViaJitHelper())
         {
             tailCallViaJitHelper = true;
@@ -7912,6 +7912,16 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     return comma;
 }
 
+//------------------------------------------------------------------------
+// getMethodPointerTree: get a method pointer tree
+//
+// Arguments:
+//    pResolvedToken - resolved token of the call
+//    pCallInfo - the call info of the call
+//
+// Return Value:
+//    A node representing the method pointer
+//
 GenTree* Compiler::getMethodPointerTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
 {
     switch (pCallInfo->kind)
@@ -7926,6 +7936,18 @@ GenTree* Compiler::getMethodPointerTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, 
     }
 }
 
+//------------------------------------------------------------------------
+// getLookupTree: get a lookup tree
+//
+// Arguments:
+//    pResolvedToken - resolved token of the call
+//    pLookup - the lookup to get the tree for
+//    handleFlags - flags to set on the result node
+//    compileTimeHandle - compile-time handle corresponding to the lookup
+//
+// Return Value:
+//    A node representing the lookup tree
+//
 GenTree* Compiler::getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                  CORINFO_LOOKUP*         pLookup,
                                  unsigned                handleFlags,
@@ -7955,24 +7977,39 @@ GenTree* Compiler::getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     return getRuntimeLookupTree(pResolvedToken, pLookup, compileTimeHandle);
 }
 
+//------------------------------------------------------------------------
+// getRuntimeLookupTree: get a tree for a runtime lookup
+//
+// Arguments:
+//    pResolvedToken - resolved token of the call
+//    pLookup - the lookup to get the tree for
+//    compileTimeHandle - compile-time handle corresponding to the lookup
+//
+// Return Value:
+//    A node representing the runtime lookup tree
+//
 GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         CORINFO_LOOKUP*         pLookup,
                                         void*                   compileTimeHandle)
 {
-    // This method can only be called from the importer instance of the Compiler.
-    // In other word, it cannot be called by the instance of the Compiler for the inlinee.
     assert(!compIsForInlining());
 
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
-    // It's available only via the run-time helper function
-    if (pRuntimeLookup->indirections == CORINFO_USEHELPER)
-    {
-        GenTree* argNode =
-            gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
-        GenTreeCall::Use* helperArgs =
-            gtNewCallArgs(getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind), argNode);
 
-        return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
+    // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
+    // used; otherwise, it specifies the number of indirections via pRuntimeLookup->offsets array.
+    if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || pRuntimeLookup->testForNull ||
+        pRuntimeLookup->testForFixup)
+    {
+        // If the first condition is true, runtime lookup tree is available only via the run-time helper function.
+        // TODO-CQ If the second or third condition is true, we are always using the slow path since we can't
+        // introduce control flow at this point. See impRuntimeLookupToTree for the logic to avoid calling the helper.
+        // The long-term solution is to introduce a new node representing a runtime lookup, create instances
+        // of that node both in the importer and here, and expand the node in lower (introducing control flow if
+        // necessary).
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
+                                                getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind),
+                                                compileTimeHandle);
     }
 
     GenTree* result = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
@@ -7996,7 +8033,7 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         return gtNewLclvNode(temp, lvaGetActualType(temp));
     };
 
-    // Applied repeated indirections
+    // Apply repeated indirections
     for (WORD i = 0; i < pRuntimeLookup->indirections; i++)
     {
         GenTree* preInd = nullptr;
@@ -8023,83 +8060,12 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         }
     }
 
-    // No null test required
-    if (!pRuntimeLookup->testForNull)
+    assert(!pRuntimeLookup->testForNull);
+    if (pRuntimeLookup->indirections > 0)
     {
-        if (pRuntimeLookup->indirections > 0)
-        {
-            result = gtNewOperNode(GT_IND, TYP_I_IMPL, result);
-            result->gtFlags |= GTF_IND_NONFAULTING;
-
-            if (pRuntimeLookup->testForFixup)
-            {
-                unsigned slotLclNum = lvaGrabTemp(true DEBUGARG("getRuntimeLookupTree test"));
-                stmts.Push(gtNewTempAssign(slotLclNum, result));
-
-                GenTree* slot = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-                // downcast the pointer to a TYP_INT on 64-bit targets
-                slot = impImplicitIorI4Cast(slot, TYP_INT);
-                // Use a GT_AND to check for the lowest bit and indirect if it is set
-                GenTree* test  = gtNewOperNode(GT_AND, TYP_INT, slot, gtNewIconNode(1));
-                GenTree* relop = gtNewOperNode(GT_EQ, TYP_INT, test, gtNewIconNode(0));
-
-                // slot = GT_IND(slot - 1)
-                slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-                GenTree* add   = gtNewOperNode(GT_ADD, TYP_I_IMPL, slot, gtNewIconNode(-1, TYP_I_IMPL));
-                GenTree* indir = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
-                indir->gtFlags |= GTF_IND_NONFAULTING;
-                indir->gtFlags |= GTF_IND_INVARIANT;
-
-                slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-                GenTree* asg   = gtNewAssignNode(slot, indir);
-                GenTree* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), asg);
-                GenTree* qmark = gtNewQmarkNode(TYP_VOID, relop, colon);
-                stmts.Push(qmark);
-
-                result = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-            }
-        }
-    }
-    else
-    {
-        assert(pRuntimeLookup->indirections != 0);
-
-        // Extract the handle
-        GenTree* handle = gtNewOperNode(GT_IND, TYP_I_IMPL, result);
-        handle->gtFlags |= GTF_IND_NONFAULTING;
-
-        GenTree* handleCopy = cloneTree(&handle DEBUGARG("getRuntimeLookupTree handle"));
-
-        // Call to helper
-        GenTree* argNode =
-            gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
-
-        GenTreeCall::Use* helperArgs =
-            gtNewCallArgs(getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind), argNode);
-        GenTree* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
-
-        result = helperCall;
-        //// Check for null and possibly call helper
-        // GenTree* relop = gtNewOperNode(GT_NE, TYP_INT, handle, gtNewIconNode(0, TYP_I_IMPL));
-
-        // GenTree* colon = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL,
-        //                                                gtNewNothingNode(), // do nothing if nonnull
-        //                                                helperCall);
-
-        // GenTree* qmark = gtNewQmarkNode(TYP_I_IMPL, relop, colon);
-
-        // unsigned tmp;
-        // if (handleCopy->IsLocal())
-        //{
-        //    tmp = handleCopy->gtLclVarCommon.GetLclNum();
-        //}
-        // else
-        //{
-        //    tmp = lvaGrabTemp(true DEBUGARG("spilling QMark1"));
-        //}
-
-        // stmts.Push(gtNewTempAssign(tmp, qmark));
-        // result = gtNewLclvNode(tmp, TYP_I_IMPL);
+        assert(!pRuntimeLookup->testForFixup);
+        result = gtNewOperNode(GT_IND, TYP_I_IMPL, result);
+        result->gtFlags |= GTF_IND_NONFAULTING;
     }
 
     // Produces GT_COMMA(stmt1, GT_COMMA(stmt2, ... GT_COMMA(stmtN, result)))

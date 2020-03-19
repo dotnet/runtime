@@ -2035,11 +2035,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                              gtNewCallArgs(ctxTree), &pLookup->lookupKind);
         }
 #endif
-        GenTree* argNode =
-            gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
-        GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
-
-        return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
     }
 
     // Slot pointer

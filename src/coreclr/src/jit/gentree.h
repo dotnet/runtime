@@ -3503,24 +3503,32 @@ class TailCallSiteInfo
     CORINFO_RESOLVED_TOKEN m_token;
 
 public:
+    // Is the tailcall a callvirt instruction?
     bool IsCallvirt()
     {
         return m_isCallvirt;
     }
+
+    // Is the tailcall a calli instruction?
     bool IsCalli()
     {
         return m_isCalli;
     }
+
+    // Get the token of the callee
     CORINFO_RESOLVED_TOKEN* GetToken()
     {
         assert(!IsCalli());
         return &m_token;
     }
+
+    // Get the signature of the callee
     CORINFO_SIG_INFO* GetSig()
     {
         return &m_sig;
     }
 
+    // Mark the tailcall as a calli with the given signature
     void SetCalli(CORINFO_SIG_INFO* sig)
     {
         m_isCallvirt = false;
@@ -3528,6 +3536,7 @@ public:
         m_sig        = *sig;
     }
 
+    // Mark the tailcall as a callvirt with the given signature and token
     void SetCallvirt(CORINFO_SIG_INFO* sig, CORINFO_RESOLVED_TOKEN* token)
     {
         m_isCallvirt = true;
@@ -3536,6 +3545,7 @@ public:
         m_token      = *token;
     }
 
+    // Mark the tailcall as a call with the given signature and token
     void SetCall(CORINFO_SIG_INFO* sig, CORINFO_RESOLVED_TOKEN* token)
     {
         m_isCallvirt = false;
