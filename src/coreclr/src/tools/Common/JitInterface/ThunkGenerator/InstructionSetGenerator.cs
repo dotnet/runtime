@@ -125,6 +125,10 @@ namespace Thunkerator
                     }
 
                     string[] command = currentLine.Split(',');
+                    for (int i = 0; i < command.Length; i++)
+                    {
+                        command[i] = command[i].Trim();
+                    }
                     switch(command[0])
                     {
                         case "instructionset":

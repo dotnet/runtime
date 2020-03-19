@@ -21,11 +21,11 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 {
     _ASSERTE(flags);
 
+    CORJIT_FLAGS &CPUCompileFlags = *flags;
 #if defined(HOST_ARM64)
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
 
-    CORJIT_FLAGS &CPUCompileFlags = *flags;
 // HWCAP_* flags are introduced by ARM into the Linux kernel as new extensions are published.
 // For a given kernel, some of these flags may not be present yet.
 // Use ifdef for each to allow for compilation with any vintage kernel.
