@@ -8,7 +8,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
 
-using AbstractionResources = Microsoft.Extensions.DependencyInjection.Abstractions.Resources;
+// TODO: Fix
+using AbstractionsSR = Microsoft.Extensions.DependencyInjection.Abstractions.SR;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -350,7 +351,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ExceptionAssert.ThrowsArgument(
                 () => collection.TryAddEnumerable(descriptor),
                 "descriptor",
-                AbstractionResources.FormatTryAddIndistinguishableTypeToEnumerable(implementationType, serviceType));
+                AbstractionsSR.Format(AbstractionsSR.TryAddIndistinguishableTypeToEnumerable, implementationType, serviceType));
         }
 
         [Fact]
