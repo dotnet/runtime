@@ -8422,7 +8422,7 @@ typedef struct _EventPipeEventInstanceData {
 gconstpointer
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (MonoStringHandle provider_name, MonoDelegateHandle callback_func, MonoError *error)
 {
-	return EVENT_PIPE_DUMMY_PROVIDER_ID;
+	return GUINT_TO_POINTER (EVENT_PIPE_DUMMY_PROVIDER_ID);
 }
 
 intptr_t
