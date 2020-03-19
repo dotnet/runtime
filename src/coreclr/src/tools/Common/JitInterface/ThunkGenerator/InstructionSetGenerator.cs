@@ -82,6 +82,8 @@ namespace Thunkerator
         SortedDictionary<int,string> _r2rNamesByNumber = new SortedDictionary<int,string>();
         SortedSet<string> _architectures = new SortedSet<string>();
         Dictionary<string,List<string>> _architectureJitNames = new Dictionary<string,List<string>>();
+        HashSet<string> _64BitArchitectures = new HashSet<string>();
+        Dictionary<string,string> _64BitVariantArchitectureJitNameSuffix = new Dictionary<string,string>();
 
         void ArchitectureEncountered(string arch)
         {
@@ -90,6 +92,12 @@ namespace Thunkerator
             _architectures.Add(arch);
             if (!_architectureJitNames.ContainsKey(arch))
                 _architectureJitNames.Add(arch, new List<string>());
+        }
+
+        void ValidateArchitectureEncountered(string arch)
+        {
+            if (!_architectures.Contains(arch))
+                throw new Exception("Architecture not defined");
         }
 
         private string ArchToIfDefArch(string arch)
@@ -102,9 +110,7 @@ namespace Thunkerator
 
         private string ArchToInstructionSetSuffixArch(string arch)
         {
-            if (arch == "ARM64")
-                return "Arm64";
-            return arch;
+            return _64BitVariantArchitectureJitNameSuffix[arch];
         }
 
         public bool ParseInput(TextReader tr)
@@ -131,31 +137,45 @@ namespace Thunkerator
                     }
                     switch(command[0])
                     {
+                        case "definearch":
+                            if (command.Length != 4)
+                                throw new Exception($"Incorrect number of args for definearch {command.Length}");
+                            ArchitectureEncountered(command[1]);
+                            if (command[2] == "64Bit")
+                            {
+                                _64BitArchitectures.Add(command[1]);
+                            }
+                            else if (command[2] != "32Bit")
+                            {
+                                throw new Exception("Architecture must be 32Bit or 64Bit");
+                            }
+                            _64BitVariantArchitectureJitNameSuffix[command[1]] = command[3];
+                            break;
                         case "instructionset":
                             if (command.Length != 6)
                                 throw new Exception("Incorrect number of args for instructionset");
-                            ArchitectureEncountered(command[1]);
+                            ValidateArchitectureEncountered(command[1]);
                             _architectureJitNames[command[1]].Add(command[5]);
                             _instructionSets.Add(new InstructionSetInfo(command[1],command[2],command[3],command[4],command[5]));
                             break;
                         case "instructionset64bit":
                             if (command.Length != 3)
                                 throw new Exception("Incorrect number of args for instructionset");
-                            ArchitectureEncountered(command[1]);
+                            ValidateArchitectureEncountered(command[1]);
                             _64bitVariants[command[1]].Add(command[2]);
                             _architectureJitNames[command[1]].Add(command[2] + "_" + ArchToInstructionSetSuffixArch(command[1]));
                             break;
                         case "implication":
                             if (command.Length != 4)
                                 throw new Exception("Incorrect number of args for instructionset");
-                            ArchitectureEncountered(command[1]);
+                            ValidateArchitectureEncountered(command[1]);
                             _implications.Add(new InstructionSetImplication(command[1],command[2], command[3]));
                             break;
                         case "copyinstructionsets":
                             if (command.Length != 3)
                                 throw new Exception("Incorrect number of args for instructionset");
-                            ArchitectureEncountered(command[1]);
-                            ArchitectureEncountered(command[2]);
+                            ValidateArchitectureEncountered(command[1]);
+                            ValidateArchitectureEncountered(command[2]);
                             string arch = command[1];
                             string targetarch = command[2];
                             foreach (var val in _instructionSets.ToArray())
@@ -170,6 +190,11 @@ namespace Thunkerator
                                 if (val.Architecture != arch)
                                     continue;
                                 _implications.Add(new InstructionSetImplication(targetarch, val));
+                            }
+                            foreach (var val in _64bitVariants[arch])
+                            {
+                                _64bitVariants[targetarch].Add(val);
+                                _architectureJitNames[targetarch].Add(val + "_" + ArchToInstructionSetSuffixArch(targetarch));
                             }
                             break;
                         default:
@@ -267,7 +292,7 @@ namespace Internal.ReadyToRunConstants
                         r2rEnumerationValue = $"null";
 
                     tr.WriteLine($"                            case InstructionSet.{architecture}_{instructionSet.JitName}: return {r2rEnumerationValue};");
-                    if (_64bitVariants[architecture].Contains(instructionSet.JitName))
+                    if (_64BitArchitectures.Contains(architecture) && _64bitVariants[architecture].Contains(instructionSet.JitName))
                         tr.WriteLine($"                            case InstructionSet.{architecture}_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}: return {r2rEnumerationValue};");
                 }
 
@@ -365,7 +390,7 @@ namespace Internal.JitInterface
                 foreach (var instructionSet in _instructionSets)
                 {
                     if (instructionSet.Architecture != architecture) continue;
-                    if (_64bitVariants[architecture].Contains(instructionSet.JitName))
+                    if (_64BitArchitectures.Contains(architecture) && _64bitVariants[architecture].Contains(instructionSet.JitName))
                         AddImplication(architecture, instructionSet.JitName, $"{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}");
                 }
                 foreach (var implication in _implications)
@@ -417,7 +442,7 @@ namespace Internal.JitInterface
                 {
                     if (instructionSet.Architecture != architecture) continue;
 
-                    if (_64bitVariants[architecture].Contains(instructionSet.JitName))
+                    if (_64BitArchitectures.Contains(architecture) && _64bitVariants[architecture].Contains(instructionSet.JitName))
                     {
                         tr.WriteLine($"                    if (HasInstructionSet(InstructionSet.{architecture}_{instructionSet.JitName}))");
                         tr.WriteLine($"                        AddInstructionSet(InstructionSet.{architecture}_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)});");
@@ -523,7 +548,7 @@ public:
                 {
                     if (instructionSet.Architecture != architecture) continue;
 
-                    if (_64bitVariants[architecture].Contains(instructionSet.JitName))
+                    if (_64BitArchitectures.Contains(architecture) && _64bitVariants[architecture].Contains(instructionSet.JitName))
                     {
                         tr.WriteLine($"        if (HasInstructionSet(InstructionSet_{instructionSet.JitName}))");
                         tr.WriteLine($"            AddInstructionSet(InstructionSet_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)});");
@@ -560,7 +585,7 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
                 foreach (var instructionSet in _instructionSets)
                 {
                     if (instructionSet.Architecture != architecture) continue;
-                    if (_64bitVariants[architecture].Contains(instructionSet.JitName))
+                    if (_64BitArchitectures.Contains(architecture) && _64bitVariants[architecture].Contains(instructionSet.JitName))
                         AddImplication(architecture, instructionSet.JitName, $"{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}");
                 }
                 foreach (var implication in _implications)

@@ -72,6 +72,14 @@ namespace Internal.JitInterface
         X86_POPCNT=15,
         X86_Vector128=16,
         X86_Vector256=17,
+        X86_BMI1_X64=18,
+        X86_BMI2_X64=19,
+        X86_LZCNT_X64=20,
+        X86_POPCNT_X64=21,
+        X86_SSE_X64=22,
+        X86_SSE2_X64=23,
+        X86_SSE41_X64=24,
+        X86_SSE42_X64=25,
 
     }
 

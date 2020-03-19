@@ -15,6 +15,7 @@
 
 ; Definition of X86 instruction sets
 
+definearch         ,X86   ,32Bit     ,X64
 instructionset     ,X86   ,Sse       ,        ,1  ,SSE
 instructionset     ,X86   ,Sse2      ,        ,2  ,SSE2
 implication        ,X86   ,SSE2      ,SSE
@@ -46,18 +47,21 @@ implication        ,X86   ,POPCNT    ,SSE42
 instructionset     ,X86   ,          ,        ,   ,Vector128
 instructionset     ,X86   ,          ,        ,   ,Vector256
 
-; Definition of X64 instruction sets
+; Definition of X64 instruction sets (Define )
+definearch         ,X64   ,64Bit     ,X64
+instructionset64bit,X86   ,BMI1
+instructionset64bit,X86   ,BMI2
+instructionset64bit,X86   ,LZCNT
+instructionset64bit,X86   ,POPCNT
+instructionset64bit,X86   ,SSE
+instructionset64bit,X86   ,SSE2
+instructionset64bit,X86   ,SSE41
+instructionset64bit,X86   ,SSE42
+
 copyinstructionsets,X86   ,X64
-instructionset64bit,X64   ,BMI1
-instructionset64bit,X64   ,BMI2
-instructionset64bit,X64   ,LZCNT
-instructionset64bit,X64   ,POPCNT
-instructionset64bit,X64   ,SSE
-instructionset64bit,X64   ,SSE2
-instructionset64bit,X64   ,SSE41
-instructionset64bit,X64   ,SSE42
 
 ; Definition of the Arm64 instruction sets
+definearch         ,ARM64 ,64Bit     ,Arm64
 instructionset     ,ARM64 ,ArmBase   ,        ,16 ,ArmBase
 instructionset64bit,ARM64 ,ArmBase
 instructionset     ,ARM64 ,AdvSimd   ,        ,17 ,AdvSimd
