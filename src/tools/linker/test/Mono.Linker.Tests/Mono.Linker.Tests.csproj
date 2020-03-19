@@ -64,6 +64,12 @@
     <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="TestCases\Dependencies\PInvokesExpectations.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <Target Name="RunTestsOnMono" Condition="'$(MonoBuild)' != ''">
     <Exec Command="mono $(PkgNUnit_ConsoleRunner)/tools/nunit3-console.exe --result=TestResults.xml $(OutputPath)Mono.Linker.Tests.dll" />
   </Target>
@@ -72,8 +78,7 @@
 
   <!-- Arcade's custom test imports assume that we are using xunit. -->
   <!-- Map the Arcade "Test" target to the "VSTest" target used by "dotnet test" -->
-  <Target Name="Test"
-          Condition="'$(MonoBuild)' == ''">
+  <Target Name="Test" Condition="'$(MonoBuild)' == ''">
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="VSTest" />
   </Target>
 
