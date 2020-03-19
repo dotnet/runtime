@@ -250,11 +250,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalTheory]
-#else
-        [Theory]
-#endif
         [MemberData(nameof(GetAsync_IPBasedUri_Success_MemberData))]
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
         {
@@ -572,11 +568,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalTheory]
-#else
-        [Theory]
-#endif
         [InlineData("WWW-Authenticate", "CustomAuth")]
         [InlineData("", "")] // RFC7235 requires servers to send this header with 401 but some servers don't.
         public async Task GetAsync_ServerNeedsNonStandardAuthAndSetCredential_StatusCodeUnauthorized(string authHeadrName, string authHeaderValue)
@@ -1447,11 +1439,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalFact]
-#else
-        [Fact]
-#endif
         public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
         {
 #if WINHTTPHANDLER_TEST
@@ -1542,11 +1530,7 @@ namespace System.Net.Http.Functional.Tests
             },
             server => server.AcceptConnectionSendResponseAndCloseAsync());
         }
-#if WINHTTPHANDLER_TEST
         [ConditionalFact]
-#else
-        [Fact]
-#endif
         public async Task Dispose_DisposingHandlerCancelsActiveOperationsWithoutResponses()
         {
 #if WINHTTPHANDLER_TEST
@@ -1917,11 +1901,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalFact]
-#else
-        [Fact]
-#endif
         public async Task GetAsync_ExpectContinueTrue_NoContent_StillSendsHeader()
         {
 #if WINHTTPHANDLER_TEST
@@ -1966,11 +1946,7 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { (HttpStatusCode) 199 };
         }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalTheory]
-#else
-        [Theory]
-#endif
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_1xxResponsesWithHeaders_InterimResponsesHeadersIgnored(HttpStatusCode responseStatusCode)
         {
@@ -2040,11 +2016,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalTheory]
-#else
-        [Theory]
-#endif
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(HttpStatusCode responseStatusCode)
         {
@@ -2090,11 +2062,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalFact]
-#else
-        [Fact]
-#endif
         public async Task SendAsync_MultipleExpected100Responses_ReceivesCorrectResponse()
         {
 #if WINHTTPHANDLER_TEST
@@ -2139,11 +2107,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalFact]
-#else
-        [Fact]
-#endif
         public async Task SendAsync_No100ContinueReceived_RequestBodySentEventually()
         {
 #if WINHTTPHANDLER_TEST
@@ -2578,11 +2542,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalFact]
-#else
-        [Fact]
-#endif
         public async Task SendAsync_RequestVersion20_HttpNotHttps_NoUpgradeRequest()
         {
 #if WINHTTPHANDLER_TEST
@@ -2665,11 +2625,7 @@ namespace System.Net.Http.Functional.Tests
         #endregion
 
         #region Uri wire transmission encoding tests
-#if WINHTTPHANDLER_TEST
         [ConditionalFact]
-#else
-        [Fact]
-#endif
         public async Task SendRequest_UriPathHasReservedChars_ServerReceivedExpectedPath()
         {
 #if WINHTTPHANDLER_TEST

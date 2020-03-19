@@ -28,11 +28,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalTheory]
-#else
-        [Theory]
-#endif
         [InlineData(false, CancellationMode.Token)]
         [InlineData(true, CancellationMode.Token)]
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
@@ -200,11 +196,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalTheory]
-#else
-        [Theory]
-#endif
         [MemberData(nameof(ThreeBools))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
@@ -266,11 +258,7 @@ namespace System.Net.Http.Functional.Tests
                 });
             }
         }
-#if WINHTTPHANDLER_TEST
         [ConditionalTheory]
-#else
-        [Theory]
-#endif
         [InlineData(CancellationMode.CancelPendingRequests, false)]
         [InlineData(CancellationMode.DisposeHttpClient, false)]
         [InlineData(CancellationMode.CancelPendingRequests, true)]

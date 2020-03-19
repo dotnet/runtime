@@ -47,11 +47,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-#if WINHTTPHANDLER_TEST
         [ConditionalFact]
-#else
-        [Fact]
-#endif
         public async Task SetAfterUse_Throws()
         {
 #if WINHTTPHANDLER_TEST
