@@ -52,7 +52,10 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("name", () => new RegionInfo(name));
         }
 
-        [Fact]
+        private static bool IcuIsNotLoaded => PlatformDetection.ICUVersion.Equals(new Version(0, 0, 0, 0));
+        private static bool IcuIsLoaded =>  !IcuIsNotLoaded;
+
+        [ConditionalFact(nameof(RegionInfoPropertyTests.IcuIsLoaded))]
         public void CurrentRegion()
         {
             using (new ThreadCultureChange("en-US"))
@@ -60,6 +63,19 @@ namespace System.Globalization.Tests
                 RegionInfo ri = new RegionInfo(new RegionInfo(CultureInfo.CurrentCulture.Name).TwoLetterISORegionName);
                 Assert.True(RegionInfo.CurrentRegion.Equals(ri) || RegionInfo.CurrentRegion.Equals(new RegionInfo(CultureInfo.CurrentCulture.Name)));
                 Assert.Same(RegionInfo.CurrentRegion, RegionInfo.CurrentRegion);
+            }
+        }
+
+        [ConditionalFact(nameof(RegionInfoPropertyTests.IcuIsNotLoaded))]
+        public void TestCurrentRegion()
+        {
+            RegionInfo ri = RegionInfo.CurrentRegion;
+            CultureInfo.CurrentCulture.ClearCachedData(); // clear the current region cached data
+
+            using (new ThreadCultureChange("ja-JP"))
+            {
+                // Changing the current culture shouldn't affect the default current region as we get it from Windows settings.
+                Assert.Equal(ri.TwoLetterISORegionName, RegionInfo.CurrentRegion.TwoLetterISORegionName);
             }
         }
 

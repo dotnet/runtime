@@ -714,5 +714,29 @@ namespace System.Globalization
                 return false;
             }
         }
+
+        internal static unsafe CultureData GetCurrentRegionData()
+        {
+            const int BUFF_LENGTH = 10;
+            char* geoIso2Letters = stackalloc char[BUFF_LENGTH];
+
+            int geoId = Interop.Kernel32.GetUserGeoID(Interop.Kernel32.GEOCLASS_NATION);
+            if (geoId != Interop.Kernel32.GEOID_NOT_AVAILABLE)
+            {
+                int geoIsoIdLength = Interop.Kernel32.GetGeoInfoW(geoId, Interop.Kernel32.GEO_ISO2, geoIso2Letters, BUFF_LENGTH, Interop.Kernel32.EN_LANG_ID);
+                if (geoIsoIdLength != 0)
+                {
+                    geoIsoIdLength -= geoIso2Letters[geoIsoIdLength - 1] == 0 ? 1 : 0; // handle null termination and exclude it.
+                    CultureData? cd = GetCultureDataForRegion(new string(geoIso2Letters, 0, geoIsoIdLength), true);
+                    if (cd != null)
+                    {
+                        return cd;
+                    }
+                }
+            }
+
+            // Fallback to current locale data.
+            return CultureInfo.CurrentCulture._cultureData;
+        }
     }
 }
