@@ -2193,122 +2193,168 @@ void Compiler::compSetProcessor()
 
 #endif // TARGET_X86
 
-// Instruction set flags for Intel hardware intrinsics
+    CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
+
 #ifdef TARGET_XARCH
+    // Instruction set flags for Intel hardware intrinsics
     opts.compSupportsISA = 0;
 
     if (JitConfig.EnableHWIntrinsic())
     {
         // Dummy ISAs for simplifying the JIT code
-        opts.setSupportedISA(InstructionSet_Vector128);
-        opts.setSupportedISA(InstructionSet_Vector256);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
 
-    if (JitConfig.EnableSSE())
+    if (!JitConfig.EnableSSE())
     {
-        opts.setSupportedISA(InstructionSet_SSE);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE);
 #ifdef TARGET_AMD64
-        opts.setSupportedISA(InstructionSet_SSE_X64);
-#endif // TARGET_AMD64
-
-        if (JitConfig.EnableSSE2())
-        {
-            opts.setSupportedISA(InstructionSet_SSE2);
-#ifdef TARGET_AMD64
-            opts.setSupportedISA(InstructionSet_SSE2_X64);
-#endif // TARGET_AMD64
-
-            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AES) && JitConfig.EnableAES())
-            {
-                opts.setSupportedISA(InstructionSet_AES);
-            }
-
-            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_PCLMULQDQ) && JitConfig.EnablePCLMULQDQ())
-            {
-                opts.setSupportedISA(InstructionSet_PCLMULQDQ);
-            }
-
-            // We need to additionaly check that COMPlus_EnableSSE3_4 is set, as that
-            // is a prexisting config flag that controls the SSE3+ ISAs
-            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE3) && JitConfig.EnableSSE3() && JitConfig.EnableSSE3_4())
-            {
-                opts.setSupportedISA(InstructionSet_SSE3);
-
-                if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSSE3) && JitConfig.EnableSSSE3())
-                {
-                    opts.setSupportedISA(InstructionSet_SSSE3);
-
-                    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41) && JitConfig.EnableSSE41())
-                    {
-                        opts.setSupportedISA(InstructionSet_SSE41);
-#ifdef TARGET_AMD64
-                        opts.setSupportedISA(InstructionSet_SSE41_X64);
-#endif // TARGET_AMD64
-
-                        if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42) && JitConfig.EnableSSE42())
-                        {
-                            opts.setSupportedISA(InstructionSet_SSE42);
-#ifdef TARGET_AMD64
-                            opts.setSupportedISA(InstructionSet_SSE42_X64);
-#endif // TARGET_AMD64
-
-                            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_POPCNT) && JitConfig.EnablePOPCNT())
-                            {
-                                opts.setSupportedISA(InstructionSet_POPCNT);
-#ifdef TARGET_AMD64
-                                opts.setSupportedISA(InstructionSet_POPCNT_X64);
-#endif // TARGET_AMD64
-                            }
-
-                            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX) && JitConfig.EnableAVX())
-                            {
-                                opts.setSupportedISA(InstructionSet_AVX);
-
-                                if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FMA) && JitConfig.EnableFMA())
-                                {
-                                    opts.setSupportedISA(InstructionSet_FMA);
-                                }
-
-                                if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2) && JitConfig.EnableAVX2())
-                                {
-                                    opts.setSupportedISA(InstructionSet_AVX2);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE_X64);
+#endif
     }
 
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_LZCNT) && JitConfig.EnableLZCNT())
+    if (!JitConfig.EnableSSE2())
     {
-        opts.setSupportedISA(InstructionSet_LZCNT);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2);
 #ifdef TARGET_AMD64
-        opts.setSupportedISA(InstructionSet_LZCNT_X64);
-#endif // TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2_X64);
+#endif
     }
 
-    // We currently need to also check that AVX is supported as that controls the support for the VEX encoding
-    // in the emitter.
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1) && JitConfig.EnableBMI1() && compSupports(InstructionSet_AVX))
+    if (!JitConfig.EnableAES())
     {
-        opts.setSupportedISA(InstructionSet_BMI1);
-#ifdef TARGET_AMD64
-        opts.setSupportedISA(InstructionSet_BMI1_X64);
-#endif // TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AES);
     }
 
-    // We currently need to also check that AVX is supported as that controls the support for the VEX encoding
-    // in the emitter.
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2) && JitConfig.EnableBMI2() && compSupports(InstructionSet_AVX))
+    if (!JitConfig.EnablePCLMULQDQ())
     {
-        opts.setSupportedISA(InstructionSet_BMI2);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
+    }
+
+    // We need to additionaly check that COMPlus_EnableSSE3_4 is set, as that
+    // is a prexisting config flag that controls the SSE3+ ISAs
+    if (!JitConfig.EnableSSE3() || !JitConfig.EnableSSE3_4())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE3);
+    }
+
+    if (!JitConfig.EnableSSSE3())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSSE3);
+    }
+
+    if (!JitConfig.EnableSSE41())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41);
 #ifdef TARGET_AMD64
-        opts.setSupportedISA(InstructionSet_BMI2_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41_X64);
+#endif
+    }
+
+    if (!JitConfig.EnableSSE42())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42);
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42_X64);
+#endif
+    }
+
+    if (!JitConfig.EnablePOPCNT())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT);
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT_X64);
+#endif
+    }
+
+    if (!JitConfig.EnableAVX())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX);
+    }
+
+    if (!JitConfig.EnableFMA())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_FMA);
+    }
+
+    if (!JitConfig.EnableAVX2())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX2);
+    }
+
+    if (!JitConfig.EnableLZCNT())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT);
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT_X64);
 #endif // TARGET_AMD64
     }
 
+    if (!JitConfig.EnableBMI1())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1);
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1_X64);
+#endif // TARGET_AMD64
+    }
+
+    if (!JitConfig.EnableBMI2())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2);
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2_X64);
+#endif // TARGET_AMD64
+    }
+
+#endif // TARGET_XARCH
+#if defined(TARGET_ARM64)
+    if (JitConfig.EnableHWIntrinsic())
+    {
+        // Dummy ISAs for simplifying the JIT code
+        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    }
+
+    if (!JitConfig.EnableArm64Aes())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Aes);
+    }
+
+    if (!JitConfig.EnableArm64Atomics())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Atomics);
+    }
+
+    if (!JitConfig.EnableArm64Crc32())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32_Arm64);
+    }
+
+    if (!JitConfig.EnableArm64Sha1())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha1);
+    }
+
+    if (!JitConfig.EnableArm64Sha256())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha256);
+    }
+
+    if (!JitConfig.EnableArm64AdvSimd())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd_Arm64);
+    }
+#endif
+
+    instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
+    opts.setSupportedISAs(jitFlags.GetInstructionSetFlags());
+
+#ifdef TARGET_XARCH
     if (!compIsForInlining())
     {
         if (canUseVexEncoding())
@@ -2320,123 +2366,6 @@ void Compiler::compSetProcessor()
         }
     }
 #endif // TARGET_XARCH
-
-#if defined(TARGET_ARM64)
-    if (JitConfig.EnableHWIntrinsic())
-    {
-        // Dummy ISAs for simplifying the JIT code
-        opts.setSupportedISA(InstructionSet_ArmBase);
-        opts.setSupportedISA(InstructionSet_ArmBase_Arm64);
-        opts.setSupportedISA(InstructionSet_Vector64);
-        opts.setSupportedISA(InstructionSet_Vector128);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_AES) && JitConfig.EnableArm64Aes())
-    {
-        opts.setSupportedISA(InstructionSet_Aes);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_ATOMICS) && JitConfig.EnableArm64Atomics())
-    {
-        opts.setSupportedISA(InstructionSet_Atomics);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_CRC32) && JitConfig.EnableArm64Crc32())
-    {
-        opts.setSupportedISA(InstructionSet_Crc32);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_DCPOP) && JitConfig.EnableArm64Dcpop())
-    {
-        opts.setSupportedISA(InstructionSet_Dcpop);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_DP) && JitConfig.EnableArm64Dp())
-    {
-        opts.setSupportedISA(InstructionSet_Dp);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_FCMA) && JitConfig.EnableArm64Fcma())
-    {
-        opts.setSupportedISA(InstructionSet_Fcma);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_FP) && JitConfig.EnableArm64Fp())
-    {
-        opts.setSupportedISA(InstructionSet_Fp);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_FP16) && JitConfig.EnableArm64Fp16())
-    {
-        opts.setSupportedISA(InstructionSet_Fp16);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_JSCVT) && JitConfig.EnableArm64Jscvt())
-    {
-        opts.setSupportedISA(InstructionSet_Jscvt);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_LRCPC) && JitConfig.EnableArm64Lrcpc())
-    {
-        opts.setSupportedISA(InstructionSet_Lrcpc);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_PMULL) && JitConfig.EnableArm64Pmull())
-    {
-        opts.setSupportedISA(InstructionSet_Pmull);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SHA1) && JitConfig.EnableArm64Sha1())
-    {
-        opts.setSupportedISA(InstructionSet_Sha1);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SHA256) && JitConfig.EnableArm64Sha256())
-    {
-        opts.setSupportedISA(InstructionSet_Sha256);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SHA512) && JitConfig.EnableArm64Sha512())
-    {
-        opts.setSupportedISA(InstructionSet_Sha512);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SHA3) && JitConfig.EnableArm64Sha3())
-    {
-        opts.setSupportedISA(InstructionSet_Sha3);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD) && JitConfig.EnableArm64AdvSimd())
-    {
-        opts.setSupportedISA(InstructionSet_AdvSimd);
-        opts.setSupportedISA(InstructionSet_AdvSimd_Arm64);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD_V81) && JitConfig.EnableArm64AdvSimd_v81())
-    {
-        opts.setSupportedISA(InstructionSet_AdvSimd_v81);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD_FP16) && JitConfig.EnableArm64AdvSimd_Fp16())
-    {
-        opts.setSupportedISA(InstructionSet_AdvSimd_Fp16);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SM3) && JitConfig.EnableArm64Sm3())
-    {
-        opts.setSupportedISA(InstructionSet_Sm3);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SM4) && JitConfig.EnableArm64Sm4())
-    {
-        opts.setSupportedISA(InstructionSet_Sm4);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SVE) && JitConfig.EnableArm64Sve())
-    {
-        opts.setSupportedISA(InstructionSet_Sve);
-    }
-#endif
 }
 
 #ifdef PROFILING_SUPPORTED
@@ -5354,28 +5283,11 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         // target default. Currently this is disabling all ARM64 architecture features except FP and SIMD, but this
         // should be altered to possibly enable all of them, when they are known to all work.
 
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_AES);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_ATOMICS);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_CRC32);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_DCPOP);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_DP);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_FCMA);
-        compileFlags->Set(JitFlags::JIT_FLAG_HAS_ARM64_FP);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_FP16);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_JSCVT);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_LRCPC);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_PMULL);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA1);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA256);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA512);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA3);
-        compileFlags->Set(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD_V81);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD_FP16);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SM3);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SM4);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SVE);
-
+        CORINFO_InstructionSetFlags defaultArm64Flags;
+        defaultArm64Flags.AddInstructionSet(InstructionSet_ArmBase);
+        defaultArm64Flags.AddInstructionSet(InstructionSet_AdvSimd);
+        defaultArm64Flags.Set64BitInstructionSetVariants();
+        compileFlags->SetInstructionSetFlags(defaultArm64Flags);
 #endif // defined(TARGET_ARM64)
     }
 
