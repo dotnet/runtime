@@ -513,11 +513,11 @@ namespace System.Diagnostics
         /// </summary>
         private sealed class HttpWebRequestArrayList : ArrayListWrapper
         {
-            private readonly object _Connection;
+            private readonly object _connection;
 
             public HttpWebRequestArrayList(object connection, ArrayList list) : base(list)
             {
-                _Connection = connection;
+                _connection = connection;
             }
 
             public override int Add(object value)
@@ -588,10 +588,10 @@ namespace System.Diagnostics
                     }
 
                     // If an Exception is thrown opening a connection (ex: DNS issues, TLS issue) or something is aborted really early on we will reach here.
-                    var error = s_errorField.GetValue(_Connection) as WebExceptionStatus?;
+                    var error = s_errorField.GetValue(_connection) as WebExceptionStatus?;
                     if (error.HasValue)
                     {
-                        s_instance.RaiseExceptionEvent(request, error.Value, s_innerExceptionField.GetValue(_Connection) as Exception);
+                        s_instance.RaiseExceptionEvent(request, error.Value, s_innerExceptionField.GetValue(_connection) as Exception);
                     }
                 }
             }
@@ -621,6 +621,10 @@ namespace System.Diagnostics
                 var activity = new Activity(ActivityName);
 
                 activity.Start();
+
+                // We don't call StartActivity here because it will fire into user code before the headers are added.
+                // In the case where user code cancels or aborts the request, this can lead to a Stop or Exception
+                // event NOT firing because IsRequestInstrumented will return false without the headers.
 
                 if (activity.IdFormat == ActivityIdFormat.W3C)
                 {

@@ -112,7 +112,13 @@ namespace System.Diagnostics.Tests
         [Fact]
         public async Task TestBasicReceiveAndResponseEvents()
         {
-            using (var eventRecords = new EventObserverAndRecorder())
+            using (var eventRecords = new EventObserverAndRecorder(e =>
+            {
+                // Verify header is available when start event is fired.
+                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(e.Value, "Request");
+                Assert.NotNull(startRequest);
+                VerifyHeaders(startRequest);
+            }))
             {
                 // Send a random Http request to generate some events
                 using (var client = new HttpClient())
@@ -121,19 +127,14 @@ namespace System.Diagnostics.Tests
                 }
 
                 // We should have exactly one Start and one Stop event
+                Assert.Equal(2, eventRecords.Records.Count);
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
-                Assert.Equal(2, eventRecords.Records.Count);
 
                 // Check to make sure: The first record must be a request, the next record must be a response.
-                KeyValuePair<string, object> startEvent;
-                Assert.True(eventRecords.Records.TryDequeue(out startEvent));
-                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Start", startEvent.Key);
-                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(startEvent.Value, "Request");
-                Assert.NotNull(startRequest);
-                Assert.NotNull(startRequest.Headers["Request-Id"]);
-                Assert.Null(startRequest.Headers["traceparent"]);
-                Assert.Null(startRequest.Headers["tracestate"]);
+                HttpWebRequest startRequest = AssertFirstEventWasStart(eventRecords);
+
+                VerifyHeaders(startRequest);
 
                 KeyValuePair<string, object> stopEvent;
                 Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
@@ -151,7 +152,13 @@ namespace System.Diagnostics.Tests
         {
             try
             {
-                using (var eventRecords = new EventObserverAndRecorder())
+                using (var eventRecords = new EventObserverAndRecorder(e =>
+                {
+                    // Verify W3C header is available when start event is fired.
+                    HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(e.Value, "Request");
+                    Assert.NotNull(startRequest);
+                    VerifyW3CHeaders(startRequest);
+                }))
                 {
                     Activity.DefaultIdFormat = ActivityIdFormat.W3C;
                     Activity.ForceDefaultIdFormat = true;
@@ -164,17 +171,9 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(2, eventRecords.Records.Count());
 
                     // Check to make sure: The first record must be a request, the next record must be a response.
-                    KeyValuePair<string, object> startEvent;
-                    Assert.True(eventRecords.Records.TryDequeue(out startEvent));
-                    Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Start", startEvent.Key);
-                    HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(startEvent.Value, "Request");
-                    Assert.NotNull(startRequest);
+                    HttpWebRequest startRequest = AssertFirstEventWasStart(eventRecords);
 
-                    var traceparent = startRequest.Headers["traceparent"];
-                    Assert.NotNull(traceparent);
-                    Assert.Matches("^[0-9a-f][0-9a-f]-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f][0-9a-f]$", traceparent);
-                    Assert.Null(startRequest.Headers["tracestate"]);
-                    Assert.Null(startRequest.Headers["Request-Id"]);
+                    VerifyW3CHeaders(startRequest);
 
                     KeyValuePair<string, object> stopEvent;
                     Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
@@ -184,6 +183,49 @@ namespace System.Diagnostics.Tests
 
                     HttpWebResponse stopResponse = ReadPublicProperty<HttpWebResponse>(stopEvent.Value, "Response");
                     Assert.NotNull(stopResponse);
+                }
+            }
+            finally
+            {
+                CleanUp();
+            }
+        }
+
+        [OuterLoop]
+        [Fact]
+        public async Task TestW3CHeadersWithoutContent()
+        {
+            try
+            {
+                using (var eventRecords = new EventObserverAndRecorder())
+                {
+                    Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+                    Activity.ForceDefaultIdFormat = true;
+                    // Send a random Http request to generate some events
+                    using (var client = new HttpClient())
+                    {
+                        (await client.GetAsync(Configuration.Http.RemoteEmptyContentServer)).Dispose();
+                    }
+
+                    Assert.Equal(2, eventRecords.Records.Count());
+
+                    // Check to make sure: The first record must be a request, the next record must be a response.
+                    HttpWebRequest startRequest = AssertFirstEventWasStart(eventRecords);
+
+                    var traceparent = startRequest.Headers["traceparent"];
+                    Assert.NotNull(traceparent);
+                    Assert.Matches("^[0-9a-f][0-9a-f]-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f][0-9a-f]$", traceparent);
+                    Assert.Null(startRequest.Headers["tracestate"]);
+                    Assert.Null(startRequest.Headers["Request-Id"]);
+
+                    KeyValuePair<string, object> stopEvent;
+                    Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
+                    Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Ex.Stop", stopEvent.Key);
+                    HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
+                    Assert.NotNull(stopRequest);
+
+                    HttpStatusCode status = ReadPublicProperty<HttpStatusCode>(stopEvent.Value, "StatusCode");
+                    Assert.Equal(HttpStatusCode.OK, status);
                 }
             }
             finally
@@ -217,10 +259,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(2, eventRecords.Records.Count());
 
                     // Check to make sure: The first record must be a request, the next record must be a response.
-                    Assert.True(eventRecords.Records.TryDequeue(out var evnt));
-                    Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Start", evnt.Key);
-                    HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(evnt.Value, "Request");
-                    Assert.NotNull(startRequest);
+                    HttpWebRequest startRequest = AssertFirstEventWasStart(eventRecords);
 
                     var traceparent = startRequest.Headers["traceparent"];
                     var tracestate = startRequest.Headers["tracestate"];
@@ -314,16 +353,12 @@ namespace System.Diagnostics.Tests
                 }
 
                 // We should have exactly one Start and one Stop event
+                Assert.Equal(2, eventRecords.Records.Count);
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
-                Assert.Equal(2, eventRecords.Records.Count);
 
                 // Check to make sure: The first record must be a request, the next record must be a response.
-                KeyValuePair<string, object> startEvent;
-                Assert.True(eventRecords.Records.TryDequeue(out startEvent));
-                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Start", startEvent.Key);
-                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(startEvent.Value, "Request");
-                Assert.NotNull(startRequest);
+                HttpWebRequest startRequest = AssertFirstEventWasStart(eventRecords);
                 Assert.NotNull(startRequest.Headers["Request-Id"]);
 
                 KeyValuePair<string, object> stopEvent;
@@ -384,6 +419,18 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(2, eventRecords.Records.Count());
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Exception")));
+
+                // Check to make sure: The first record must be a request, the next record must be an exception.
+                HttpWebRequest startRequest = AssertFirstEventWasStart(eventRecords);
+
+                Assert.True(eventRecords.Records.TryDequeue(out KeyValuePair<string, object> exceptionEvent));
+                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Exception", exceptionEvent.Key);
+                HttpWebRequest exceptionRequest = ReadPublicProperty<HttpWebRequest>(exceptionEvent.Value, "Request");
+                Assert.Equal(startRequest, exceptionRequest);
+                WebExceptionStatus? exceptionStatus = ReadPublicProperty<WebExceptionStatus?>(exceptionEvent.Value, "Status");
+                Assert.Equal(WebExceptionStatus.NameResolutionFailure, exceptionStatus);
+                Exception exceptionException = ReadPublicProperty<Exception>(exceptionEvent.Value, "Exception");
+                Assert.Equal(webException, exceptionException);
             }
         }
 
@@ -695,6 +742,31 @@ namespace System.Diagnostics.Tests
             Type type = obj.GetType();
             PropertyInfo property = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
             return (T)property.GetValue(obj);
+        }
+
+        private static HttpWebRequest AssertFirstEventWasStart(EventObserverAndRecorder eventRecords)
+        {
+            Assert.True(eventRecords.Records.TryDequeue(out KeyValuePair<string, object> startEvent));
+            Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Start", startEvent.Key);
+            HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(startEvent.Value, "Request");
+            Assert.NotNull(startRequest);
+            return startRequest;
+        }
+
+        private static void VerifyHeaders(HttpWebRequest startRequest)
+        {
+            Assert.NotNull(startRequest.Headers["Request-Id"]);
+            Assert.Null(startRequest.Headers["traceparent"]);
+            Assert.Null(startRequest.Headers["tracestate"]);
+        }
+
+        private static void VerifyW3CHeaders(HttpWebRequest startRequest)
+        {
+            var traceparent = startRequest.Headers["traceparent"];
+            Assert.NotNull(traceparent);
+            Assert.Matches("^[0-9a-f][0-9a-f]-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f][0-9a-f]$", traceparent);
+            Assert.Null(startRequest.Headers["tracestate"]);
+            Assert.Null(startRequest.Headers["Request-Id"]);
         }
 
         /// <summary>
