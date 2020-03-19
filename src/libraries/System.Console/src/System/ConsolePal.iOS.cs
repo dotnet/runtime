@@ -1,0 +1,201 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.IO;
+using System.Text;
+using System.Runtime.InteropServices;
+
+namespace System
+{
+    internal class NSLogStream : Stream
+    {
+        private bool _error;
+
+        public NSLogStream(bool error)
+        {
+            _error = error;
+        }
+
+        public override void Flush() { }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new PlatformNotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new PlatformNotSupportedException();
+
+        public override void SetLength(long value) => throw new PlatformNotSupportedException();
+
+        // call NSLog
+        [DllImport("__Internal")]
+        private static unsafe extern void mono_log(byte* str, int count, bool isError);
+
+        public override unsafe void Write(byte[] buffer, int offset, int count)
+        {
+            fixed (byte* ptr = buffer)
+            {
+                mono_log(ptr + offset, count, _error);
+            }
+        }
+
+        public override bool CanRead => false;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => true;
+
+        public override long Length => throw new PlatformNotSupportedException();
+
+        public override long Position
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+    }
+
+    // Provides Windows-based support for System.Console.
+    internal static class ConsolePal
+    {
+        public static Stream OpenStandardInput() => throw new PlatformNotSupportedException();
+
+        public static Stream OpenStandardOutput() => new NSLogStream(false);
+
+        public static Stream OpenStandardError() => new NSLogStream(true);
+
+        public static Encoding InputEncoding => throw new PlatformNotSupportedException();
+
+        public static void SetConsoleInputEncoding(Encoding enc) => throw new PlatformNotSupportedException();
+
+        public static Encoding OutputEncoding => Encoding.UTF8;
+
+        public static void SetConsoleOutputEncoding(Encoding enc) => throw new PlatformNotSupportedException();
+
+        /// <summary>Gets whether Console.In is targeting a terminal display.</summary>
+        public static bool IsInputRedirectedCore() => throw new PlatformNotSupportedException();
+
+        /// <summary>Gets whether Console.Out is targeting a terminal display.</summary>
+        public static bool IsOutputRedirectedCore() => throw new PlatformNotSupportedException();
+
+        /// <summary>Gets whether Console.In is targeting a terminal display.</summary>
+        public static bool IsErrorRedirectedCore() => throw new PlatformNotSupportedException();
+
+        internal static TextReader GetOrCreateReader() => throw new PlatformNotSupportedException();
+
+        public static bool NumberLock => throw new PlatformNotSupportedException();
+
+        public static bool CapsLock => throw new PlatformNotSupportedException();
+
+        public static bool KeyAvailable => throw new PlatformNotSupportedException();
+
+        public static ConsoleKeyInfo ReadKey(bool intercept) => throw new PlatformNotSupportedException();
+
+        public static bool TreatControlCAsInput
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static ConsoleColor BackgroundColor
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static ConsoleColor ForegroundColor
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static void ResetColor() => throw new PlatformNotSupportedException();
+
+        public static int CursorSize
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static bool CursorVisible
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static int CursorLeft => throw new PlatformNotSupportedException();
+
+        public static int CursorTop => throw new PlatformNotSupportedException();
+
+        public static string Title
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static void Beep() => throw new PlatformNotSupportedException();
+
+        public static void Beep(int frequency, int duration) => throw new PlatformNotSupportedException();
+
+        public static void MoveBufferArea(int sourceLeft, int sourceTop,
+            int sourceWidth, int sourceHeight, int targetLeft, int targetTop,
+            char sourceChar, ConsoleColor sourceForeColor,
+            ConsoleColor sourceBackColor) => throw new PlatformNotSupportedException();
+
+        public static void Clear() => throw new PlatformNotSupportedException();
+
+        public static void SetCursorPosition(int left, int top) => throw new PlatformNotSupportedException();
+
+        public static int BufferWidth
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static int BufferHeight
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static void SetBufferSize(int width, int height) => throw new PlatformNotSupportedException();
+
+        public static int LargestWindowWidth => throw new PlatformNotSupportedException();
+
+        public static int LargestWindowHeight => throw new PlatformNotSupportedException();
+
+        public static int WindowLeft
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static int WindowTop
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static int WindowWidth
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static int WindowHeight
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public static void SetWindowPosition(int left, int top) => throw new PlatformNotSupportedException();
+
+        public static void SetWindowSize(int width, int height) => throw new PlatformNotSupportedException();
+
+        internal sealed class ControlCHandlerRegistrar
+        {
+            internal ControlCHandlerRegistrar() => throw new PlatformNotSupportedException();
+
+            internal void Register() => throw new PlatformNotSupportedException();
+
+            internal void Unregister() => throw new PlatformNotSupportedException();
+        }
+    }
+}

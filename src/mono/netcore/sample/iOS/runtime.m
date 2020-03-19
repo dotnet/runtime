@@ -247,6 +247,8 @@ mono_ios_runtime_init (void)
 {
     // for now, only Invariant Mode is supported (FIXME: integrate ICU)
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
+    //setenv ("MONO_LOG_LEVEL", "debug", TRUE);
+    //setenv ("MONO_LOG_MASK", "all", TRUE);
 
     stdout_log = os_log_create ("net.dot.mono", "stdout");
 
@@ -293,3 +295,14 @@ mono_ios_runtime_init (void)
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
 }
 
+// icalls for BCL:
+
+// NSLogStream.mono_log (ConsolePal.iOS.cs)
+void mono_log(char* str, int len, bool is_error)
+{
+    NSString *msg = [NSString stringWithUTF8String:(char *)str];
+    if (is_error)
+        os_log_error (stdout_log, "%{public}@", msg);
+    else
+        os_log_info (stdout_log, "%{public}@", msg);
+}
