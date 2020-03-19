@@ -200,7 +200,7 @@ jobs:
 
 # iOS x64
 
-- ${{ if or(containsValue(parameters.platforms, 'iOS_x64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if containsValue(parameters.platforms, 'iOS_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
@@ -220,7 +220,7 @@ jobs:
 
 # iOS arm
 
-- ${{ if or(containsValue(parameters.platforms, 'iOS_arm'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if containsValue(parameters.platforms, 'iOS_arm') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
@@ -240,7 +240,7 @@ jobs:
 
 # iOS arm64
 
-- ${{ if or(containsValue(parameters.platforms, 'iOS_arm64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if containsValue(parameters.platforms, 'iOS_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
