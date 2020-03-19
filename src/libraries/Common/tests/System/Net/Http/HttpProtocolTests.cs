@@ -460,7 +460,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpMessageInvoker client = new HttpMessageInvoker(CreateHttpClientHandler()))
-                using (HttpResponseMessage resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, CancellationToken.None))
+                using (HttpResponseMessage resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = base.UseVersion }, CancellationToken.None))
                 using (Stream respStream = await resp.Content.ReadAsStreamAsync())
                 {
                     var actualData = new MemoryStream();
@@ -491,12 +491,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await connection.ReadRequestHeaderAsync();
 
-                    string text = $"HTTP/1.1 200 OK{lineEnding}Transfer-Encoding: chunked{lineEnding}{lineEnding}";
-#if !NETFRAMEWORK
-                    await connection.Writer.WriteAsync(text);
-#else
-                    await connection.Writer.WriteAsync(text.ToCharArray(), 0, text.Length);
-#endif
+                    await connection.Writer.WriteAsync($"HTTP/1.1 200 OK{lineEnding}Transfer-Encoding: chunked{lineEnding}{lineEnding}");
                     for (int bytesSent = 0; bytesSent < expectedData.Length;)
                     {
                         int bytesRemaining = expectedData.Length - bytesSent;

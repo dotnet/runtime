@@ -267,10 +267,6 @@ namespace System.Net.Test.Common
 
     public static class HttpVersion20
     {
-#if !NETFRAMEWORK
-        public static readonly Version Value = HttpVersion.Version20;
-#else
         public static readonly Version Value = new Version(2, 0);
-#endif
     }
 }

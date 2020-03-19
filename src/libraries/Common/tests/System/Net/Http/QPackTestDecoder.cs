@@ -210,7 +210,7 @@ namespace System.Net.Test.Common
             new HttpHeaderData("x-frame-options", "sameorigin"),
         };
 
-//#if NETFRAMEWORK
+#if NETFRAMEWORK
         private static class BitOperations
         {
             public static int LeadingZeroCount(byte value)
@@ -235,6 +235,6 @@ namespace System.Net.Test.Common
                 return count;
             }
         }
-//#endif
+#endif
     }
 }
