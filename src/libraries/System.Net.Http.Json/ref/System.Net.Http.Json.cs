@@ -38,7 +38,7 @@ namespace System.Net.Http.Json
         public object? Value { get { throw null; } }
         public static System.Net.Http.Json.JsonContent Create(object? inputValue, System.Type inputType, System.Net.Http.Headers.MediaTypeHeaderValue? mediaType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static System.Net.Http.Json.JsonContent Create<T>(T inputValue, System.Net.Http.Headers.MediaTypeHeaderValue? mediaType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
-        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
         protected override bool TryComputeLength(out long length) { throw null; }
     }
 }
