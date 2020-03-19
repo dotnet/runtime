@@ -26,11 +26,6 @@ internal static partial class Interop
 
         private static IntPtr CreateBignumPtr(ReadOnlySpan<byte> bigEndianValue)
         {
-            if (bigEndianValue.IsEmpty)
-            {
-                return IntPtr.Zero;
-            }
-
             IntPtr ret = BigNumFromBinary(ref MemoryMarshal.GetReference(bigEndianValue), bigEndianValue.Length);
 
             if (ret == IntPtr.Zero)
