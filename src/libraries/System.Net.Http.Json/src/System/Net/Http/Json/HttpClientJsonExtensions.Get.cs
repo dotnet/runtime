@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -74,6 +75,7 @@ namespace System.Net.Http.Json
             using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
             {
                 response.EnsureSuccessStatusCode();
+                Debug.Assert(response.Content != null);
 
                 return await response.Content.ReadFromJsonAsync(type, options, cancellationToken).ConfigureAwait(false);
             }
@@ -84,6 +86,7 @@ namespace System.Net.Http.Json
             using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
             {
                 response.EnsureSuccessStatusCode();
+                Debug.Assert(response.Content != null);
 
                 return await response.Content.ReadFromJsonAsync<T>(options, cancellationToken).ConfigureAwait(false);
             }

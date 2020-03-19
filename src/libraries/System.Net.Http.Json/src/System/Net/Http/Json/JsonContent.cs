@@ -40,7 +40,7 @@ namespace System.Net.Http.Json
         public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options = null)
             => new JsonContent(inputValue, inputType, mediaType, options);
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             => SerializeToStreamAsyncCore(stream, CancellationToken.None);
 
         protected override bool TryComputeLength(out long length)
@@ -51,7 +51,7 @@ namespace System.Net.Http.Json
 
         private async Task SerializeToStreamAsyncCore(Stream targetStream, CancellationToken cancellationToken)
         {
-            Encoding? targetEncoding = GetEncoding(Headers.ContentType.CharSet);
+            Encoding? targetEncoding = GetEncoding(Headers.ContentType!.CharSet);
 
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
             if (targetEncoding != null && targetEncoding != Encoding.UTF8)
@@ -68,7 +68,7 @@ namespace System.Net.Http.Json
             }
         }
 
-        private static Encoding? GetEncoding(string charset)
+        private static Encoding? GetEncoding(string? charset)
         {
             Encoding? encoding = null;
 

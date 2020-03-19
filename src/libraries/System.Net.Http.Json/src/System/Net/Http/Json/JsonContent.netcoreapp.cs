@@ -12,7 +12,7 @@ namespace System.Net.Http.Json
 {
     public partial class JsonContent
     {
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             => SerializeToStreamAsyncCore(stream, cancellationToken);
     }
 }

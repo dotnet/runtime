@@ -63,7 +63,7 @@ namespace System.Net.Http.Json
             }
         }
 
-        private static Encoding? GetEncoding(string charset)
+        private static Encoding? GetEncoding(string? charset)
         {
             Encoding? encoding = null;
 
