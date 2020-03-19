@@ -577,7 +577,7 @@ namespace System.IO.Tests
             ValidatePatternMatch(expected, GetEntries(testDir, pattern));
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable), nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsSearchPatternLongSegment()
         {
@@ -585,10 +585,18 @@ namespace System.IO.Tests
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string longName = new string('k', 257);
 
-            GetEntries(testDir.FullName, longName);
+            // Long path segment in search pattern throws PathTooLongException on .NET Framework
+            if (PlatformDetection.IsNetFramework)
+            {
+                Assert.Throws<PathTooLongException>(() => GetEntries(testDir.FullName, longName));
+            }
+            else
+            {
+                GetEntries(testDir.FullName, longName);
+            }
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable), nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
+        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
         public void SearchPatternLongPath()
         {
             // Create a destination path longer than the traditional Windows limit of 256 characters

@@ -67,7 +67,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable), nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
+        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix, long path
         public void ValidCreation_LongPathExtendedSyntax()
         {

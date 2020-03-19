@@ -206,7 +206,7 @@ namespace System.IO.Tests
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable), nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
+        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long directory path doesn't throw on Exists
         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
         {
