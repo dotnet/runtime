@@ -438,7 +438,6 @@ namespace System.Globalization
         internal virtual int GetDatePart(long ticks, int part)
         {
             // The Gregorian year, month, day value for ticks.
-            int gregorianYear, gregorianMonth, gregorianDay;
             int hebrewYearType;                // lunar year type
             long AbsoluteDate;                // absolute date - absolute date 1/1/1600
 
@@ -449,7 +448,7 @@ namespace System.Globalization
             DateTime time = new DateTime(ticks);
 
             // Save the Gregorian date values.
-            time.GetDate(out gregorianYear, out gregorianMonth, out gregorianDay);
+            time.GetDate(out int gregorianYear, out int gregorianMonth, out int gregorianDay);
 
             DateBuffer lunarDate = new DateBuffer();    // lunar month and day for Jan 1
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Net
@@ -13,7 +14,7 @@ namespace System.Net
     //
     internal abstract class DebugSafeHandleMinusOneIsInvalid : SafeHandleMinusOneIsInvalid
     {
-        private string _trace;
+        private string _trace = null!; // initialized by helper called from ctor
 
         protected DebugSafeHandleMinusOneIsInvalid(bool ownsHandle) : base(ownsHandle)
         {

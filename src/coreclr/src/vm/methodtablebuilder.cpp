@@ -1198,7 +1198,6 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
                 bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
                 if (HasLayout())
                 {
-                    GetLayoutInfo()->m_cbNativeSize = intrinsicSIMDVectorLength;
                     GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
                 }
                 return true;
@@ -1778,8 +1777,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
         _ASSERTE(HasLayout());
 
-        bmtFP->NumInstanceFieldBytes = IsBlittable() ? GetLayoutInfo()->m_cbNativeSize
-                                                     : GetLayoutInfo()->m_cbManagedSize;
+        bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
 
         // For simple Blittable types we still need to check if they have any overlapping
         // fields and call the method SetHasOverLayedFields() when they are detected.
@@ -1881,23 +1879,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #endif // UNIX_AMD64_ABI
     }
 
-#ifdef UNIX_AMD64_ABI
-#ifdef FEATURE_HFA
-#error "Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time."
-#endif // FEATURE_HFA
-    if (HasLayout())
-    {
-        SystemVAmd64CheckForPassNativeStructInRegister();
-    }
-#endif // UNIX_AMD64_ABI
-#ifdef FEATURE_HFA
-    if (HasLayout())
-    {
-        GetHalfBakedClass()->CheckForNativeHFA();
-    }
-#endif
-
-#ifdef _DEBUG
+#ifdef _DEBUG 
     pMT->SetDebugClassName(GetDebugClassName());
 #endif
 
@@ -3724,13 +3706,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     DWORD i;
     IMDInternalImport * pInternalImport = GetMDImport(); // to avoid multiple dereferencings
 
-    NativeFieldDescriptor * pNextNativeFieldDescriptor = NULL;
-    if (HasLayout())
-    {
-        pNextNativeFieldDescriptor = GetLayoutInfo()->GetNativeFieldDescriptors();
-    }
-
-
 //========================================================================
 // BEGIN:
 //    Go thru all fields and initialize their FieldDescs.
@@ -4188,15 +4163,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 if (pwalk->m_MD == bmtMetaData->pFields[i])
                 {
                     pLayoutFieldInfo = pwalk;
-
-                    const NativeFieldDescriptor *pSrcFieldDescriptor = &pwalk->m_nfd;
-
-                    *pNextNativeFieldDescriptor = *pSrcFieldDescriptor;
-
-                    pNextNativeFieldDescriptor->SetFieldDesc(pFD);
-                    pNextNativeFieldDescriptor->SetExternalOffset(pwalk->m_nativePlacement.m_offset);
-
-                    pNextNativeFieldDescriptor++;
                     break;
                 }
                 pwalk++;
@@ -4232,7 +4198,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                     (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
 
                 if (pLayoutFieldInfo)
-                    IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_nativePlacement.m_offset));
+                    IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
                 else
                     pFD->SetOffset(FIELD_OFFSET_VALUE_CLASS);
             }
@@ -4241,7 +4207,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 (DWORD_PTR &)pFD->m_pMTOfEnclosingClass =
                     (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
 
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_managedPlacement.m_offset));
+                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
             }
             else
             {
@@ -4262,9 +4228,9 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             // mark it as either GC or non-GC and as unplaced; it will get placed later on in an optimized way.
 
             if ((IsBlittable() || HasExplicitFieldOffsetLayout()) && !fIsStatic)
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_nativePlacement.m_offset));
+                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
             else if (IsManagedSequential() && !fIsStatic)
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_managedPlacement.m_offset));
+                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
             else if (bCurrentFieldIsGCPointer)
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED_GC_PTR);
             else
@@ -8231,41 +8197,6 @@ void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister()
     }
 }
 
-// checks whether the struct is enregisterable.
-void MethodTableBuilder::SystemVAmd64CheckForPassNativeStructInRegister()
-{
-    STANDARD_VM_CONTRACT;
-    DWORD totalStructSize = 0;
-
-    // If not a native value type, return.
-    if (!IsValueClass())
-    {
-        return;
-    }
-
-    totalStructSize = GetLayoutInfo()->GetNativeSize();
-
-    // If num of bytes for the fields is bigger than CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS
-    // pass through stack
-    if (totalStructSize > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS)
-    {
-        LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassNativeStructInRegister: struct %s is too big to pass in registers (%d bytes)\n",
-            this->GetDebugClassName(), totalStructSize));
-        return;
-    }
-
-    _ASSERTE(HasLayout());
-
-    // Classify the native layout for this struct.
-    const bool useNativeLayout = true;
-    // Iterate through the fields and make sure they meet requirements to pass in registers
-    SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
-    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout))
-    {
-        GetLayoutInfo()->SetNativeStructPassedInRegisters();
-    }
-}
-
 // Store the eightbyte classification into the EEClass
 void MethodTableBuilder::StoreEightByteClassification(SystemVStructRegisterPassingHelper* helper)
 {
@@ -9612,7 +9543,6 @@ void MethodTableBuilder::CheckForSystemTypes()
                     // The System V ABI for i386 defaults to 8-byte alignment for __m64, except for parameter passing,
                     // where it has an alignment of 4.
 
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 8; // sizeof(__m64)
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8; // sizeof(__m64)
                 }
                 else if (strcmp(name, g_Vector128Name) == 0)
@@ -9620,10 +9550,8 @@ void MethodTableBuilder::CheckForSystemTypes()
     #ifdef TARGET_ARM
                     // The Procedure Call Standard for ARM defaults to 8-byte alignment for __m128
 
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 8;
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
     #else
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 16; // sizeof(__m128)
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__m128)
     #endif // TARGET_ARM
                 }
@@ -9633,16 +9561,13 @@ void MethodTableBuilder::CheckForSystemTypes()
                     // No such type exists for the Procedure Call Standard for ARM. We will default
                     // to the same alignment as __m128, which is supported by the ABI.
 
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 8;
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
     #elif defined(TARGET_ARM64)
                     // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
                     // 16-byte alignment for __m256.
 
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 16;
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
     #else
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 32; // sizeof(__m256)
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 32; // sizeof(__m256)
     #endif // TARGET_ARM elif TARGET_ARM64
                 }
@@ -9722,7 +9647,6 @@ void MethodTableBuilder::CheckForSystemTypes()
                 case ELEMENT_TYPE_R8:
                 {
                     EEClassLayoutInfo * pLayout = pClass->GetLayoutInfo();
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 4;
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 4;
                     break;
                 }
@@ -9773,7 +9697,6 @@ void MethodTableBuilder::CheckForSystemTypes()
             // data misalignent exceptions if Decimal is embedded in another type.
 
             EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
-            pLayout->m_LargestAlignmentRequirementOfAllMembers        = sizeof(ULONGLONG);
             pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = sizeof(ULONGLONG);
 
 #ifdef FEATURE_64BIT_ALIGNMENT
@@ -10163,7 +10086,7 @@ MethodTableBuilder::SetupMethodTable2(
     EEClass *pClass = GetHalfBakedClass();
 
     DWORD cbDict = bmtGenerics->HasInstantiation()
-                   ?  DictionaryLayout::GetFirstDictionaryBucketSize(
+                   ?  DictionaryLayout::GetDictionarySizeFromLayout(
                           bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout())
                    : 0;
 
@@ -10435,11 +10358,6 @@ MethodTableBuilder::SetupMethodTable2(
     }
     _ASSERTE((pMT->IsInterface() == 0) == (IsInterface() == 0));
 
-    if (HasLayout())
-    {
-        pClass->SetNativeSize(GetLayoutInfo()->GetNativeSize());
-    }
-
     FieldDesc *pFieldDescList = pClass->GetFieldDescList();
     // Set all field slots to point to the newly created MethodTable
     for (i = 0; i < (bmtEnumFields->dwNumStaticFields + bmtEnumFields->dwNumInstanceFields); i++)
@@ -10460,6 +10378,16 @@ MethodTableBuilder::SetupMethodTable2(
         for (DWORD j = 0; j < bmtGenerics->GetNumGenericArgs(); j++)
         {
             pInstDest[j] = inst[j];
+        }
+
+        PTR_DictionaryLayout pLayout = pClass->GetDictionaryLayout();
+        if (pLayout != NULL)
+        {
+            _ASSERTE(pLayout->GetMaxSlots() > 0);
+
+            PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1].GetValue();
+            DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + bmtGenerics->GetNumGenericArgs());
+            *pSizeSlot = cbDict;
         }
     }
 

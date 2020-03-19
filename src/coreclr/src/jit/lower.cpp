@@ -299,35 +299,58 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_STORE_LCL_FLD:
         {
             GenTreeLclVarCommon* const store = node->AsLclVarCommon();
-            GenTree*                   op1   = store->gtGetOp1();
-            if ((varTypeUsesFloatReg(store) != varTypeUsesFloatReg(op1)) && !store->IsPhiDefn() &&
-                (op1->TypeGet() != TYP_STRUCT))
+            GenTree*                   src   = store->gtGetOp1();
+            if ((varTypeUsesFloatReg(store) != varTypeUsesFloatReg(src)) && !store->IsPhiDefn() &&
+                (src->TypeGet() != TYP_STRUCT))
             {
                 if (m_lsra->isRegCandidate(comp->lvaGetDesc(store->GetLclNum())))
                 {
-                    GenTreeUnOp* bitcast =
-                        new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), store->gtOp1, nullptr);
-                    store->gtOp1 = bitcast;
+                    GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), src, nullptr);
+                    store->gtOp1         = bitcast;
+                    src                  = store->gtGetOp1();
                     BlockRange().InsertBefore(store, bitcast);
                     ContainCheckBitCast(bitcast);
                 }
                 else
                 {
                     // This is an actual store, we'll just retype it.
-                    store->gtType = op1->TypeGet();
+                    store->gtType = src->TypeGet();
                 }
             }
-            // TODO-1stClassStructs: Once we remove the requirement that all struct stores
-            // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
-            // store under a block store if codegen will require it.
-            if ((node->TypeGet() == TYP_STRUCT) && (node->gtGetOp1()->OperGet() != GT_PHI))
+
+            if ((node->TypeGet() == TYP_STRUCT) && (src->OperGet() != GT_PHI))
             {
+                LclVarDsc* varDsc = comp->lvaGetDesc(store);
 #if FEATURE_MULTIREG_RET
-                GenTree* src = node->gtGetOp1();
-                assert((src->OperGet() == GT_CALL) && src->AsCall()->HasMultiRegRetVal());
-#else  // !FEATURE_MULTIREG_RET
-                assert(!"Unexpected struct local store in Lowering");
-#endif // !FEATURE_MULTIREG_RET
+                if (src->OperGet() == GT_CALL)
+                {
+                    assert(src->AsCall()->HasMultiRegRetVal());
+                }
+                else
+#endif // FEATURE_MULTIREG_RET
+                    if (!src->OperIs(GT_LCL_VAR) || varDsc->GetLayout()->GetRegisterType() == TYP_UNDEF)
+                {
+                    GenTreeLclVar* addr = comp->gtNewLclVarAddrNode(store->GetLclNum(), TYP_BYREF);
+
+                    addr->gtFlags |= GTF_VAR_DEF;
+                    assert(!addr->IsPartialLclFld(comp));
+                    addr->gtFlags |= GTF_DONT_CSE;
+
+                    // Create the assignment node.
+                    store->ChangeOper(GT_STORE_OBJ);
+
+                    store->gtFlags = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
+#ifndef JIT32_GCENCODER
+                    store->AsObj()->gtBlkOpGcUnsafe = false;
+#endif
+                    store->AsObj()->gtBlkOpKind = GenTreeObj::BlkOpKindInvalid;
+                    store->AsObj()->SetLayout(varDsc->GetLayout());
+                    store->AsObj()->SetAddr(addr);
+                    store->AsObj()->SetData(src);
+                    BlockRange().InsertBefore(store, addr);
+                    LowerBlockStore(store->AsObj());
+                    break;
+                }
             }
             LowerStoreLoc(node->AsLclVarCommon());
             break;
@@ -1786,6 +1809,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // Most of these checks are already done by importer or fgMorphTailCall().
     // This serves as a double sanity check.
     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0); // tail calls from synchronized methods
+    assert(!comp->opts.IsReversePInvoke());                  // tail calls reverse pinvoke
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
 
@@ -3149,7 +3173,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 #else  // !TARGET_X86
         // In case of helper dispatched tail calls, "thisptr" will be the third arg.
         // The first two args are: real call target and addr of args copy routine.
-        const unsigned argNum  = 2;
+        const unsigned    argNum  = 2;
 #endif // !TARGET_X86
 
         fgArgTabEntry* thisArgTabEntry = comp->gtArgEntryByArgNum(call, argNum);
@@ -3416,7 +3440,7 @@ void Lowering::InsertPInvokeMethodProlog()
 #if defined(TARGET_X86) || defined(TARGET_ARM)
     GenTreeCall::Use* argList = comp->gtNewCallArgs(frameAddr);
 #else
-    GenTreeCall::Use*  argList = comp->gtNewCallArgs(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
+    GenTreeCall::Use*     argList = comp->gtNewCallArgs(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
 #endif
 
     GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, argList);
@@ -3597,9 +3621,18 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         GenTree* frameAddr =
             new (comp, GT_LCL_VAR_ADDR) GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar);
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+        // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
+        // This is because the callee pops stack arguments, and we need to keep track of this during stack
+        // walking
+        const unsigned    numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
+        GenTree*          stackBytes     = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
+        GenTreeCall::Use* args           = comp->gtNewCallArgs(frameAddr, stackBytes);
+#else
+        GenTreeCall::Use* args    = comp->gtNewCallArgs(frameAddr);
+#endif
         // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
-        GenTree* helperCall =
-            comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, comp->gtNewCallArgs(frameAddr));
+        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, args);
 
         comp->fgMorphTree(helperCall);
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, helperCall));

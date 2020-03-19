@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.IO
@@ -47,8 +49,7 @@ namespace System.IO
         /// </summary>
         public string GetNextValue(string key)
         {
-            string value;
-            if (!TryGetNextValue(key, out value))
+            if (!TryGetNextValue(key, out string? value))
             {
                 throw new InvalidOperationException("Couldn't get next value with key " + key);
             }
@@ -62,7 +63,7 @@ namespace System.IO
         /// Tries to get the next occurrence of the given key from the current position of the reader.
         /// If successful, returns true and stores the result in 'value'. Otherwise, returns false.
         /// </summary>
-        public bool TryGetNextValue(string key, out string value)
+        public bool TryGetNextValue(string key, [NotNullWhen(true)] out string? value)
         {
             Debug.Assert(_buffer != null);
             if (_currentIndex >= _buffer.Length)

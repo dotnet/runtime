@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "stacklevelsetter.h"
 #include "jittelemetry.h"
+#include "patchpointinfo.h"
 
 #if defined(DEBUG)
 // Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
@@ -1299,7 +1300,7 @@ size_t genFlowNodeCnt;
 
 #ifdef DEBUG
 /* static */
-unsigned Compiler::s_compMethodsCount = 0; // to produce unique label names
+LONG Compiler::s_compMethodsCount = 0; // to produce unique label names
 #endif
 
 #if MEASURE_MEM_ALLOC
@@ -2192,122 +2193,168 @@ void Compiler::compSetProcessor()
 
 #endif // TARGET_X86
 
-// Instruction set flags for Intel hardware intrinsics
+    CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
+
 #ifdef TARGET_XARCH
+    // Instruction set flags for Intel hardware intrinsics
     opts.compSupportsISA = 0;
 
     if (JitConfig.EnableHWIntrinsic())
     {
         // Dummy ISAs for simplifying the JIT code
-        opts.setSupportedISA(InstructionSet_Vector128);
-        opts.setSupportedISA(InstructionSet_Vector256);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
 
-    if (JitConfig.EnableSSE())
+    if (!JitConfig.EnableSSE())
     {
-        opts.setSupportedISA(InstructionSet_SSE);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE);
 #ifdef TARGET_AMD64
-        opts.setSupportedISA(InstructionSet_SSE_X64);
-#endif // TARGET_AMD64
-
-        if (JitConfig.EnableSSE2())
-        {
-            opts.setSupportedISA(InstructionSet_SSE2);
-#ifdef TARGET_AMD64
-            opts.setSupportedISA(InstructionSet_SSE2_X64);
-#endif // TARGET_AMD64
-
-            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AES) && JitConfig.EnableAES())
-            {
-                opts.setSupportedISA(InstructionSet_AES);
-            }
-
-            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_PCLMULQDQ) && JitConfig.EnablePCLMULQDQ())
-            {
-                opts.setSupportedISA(InstructionSet_PCLMULQDQ);
-            }
-
-            // We need to additionaly check that COMPlus_EnableSSE3_4 is set, as that
-            // is a prexisting config flag that controls the SSE3+ ISAs
-            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE3) && JitConfig.EnableSSE3() && JitConfig.EnableSSE3_4())
-            {
-                opts.setSupportedISA(InstructionSet_SSE3);
-
-                if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSSE3) && JitConfig.EnableSSSE3())
-                {
-                    opts.setSupportedISA(InstructionSet_SSSE3);
-
-                    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41) && JitConfig.EnableSSE41())
-                    {
-                        opts.setSupportedISA(InstructionSet_SSE41);
-#ifdef TARGET_AMD64
-                        opts.setSupportedISA(InstructionSet_SSE41_X64);
-#endif // TARGET_AMD64
-
-                        if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42) && JitConfig.EnableSSE42())
-                        {
-                            opts.setSupportedISA(InstructionSet_SSE42);
-#ifdef TARGET_AMD64
-                            opts.setSupportedISA(InstructionSet_SSE42_X64);
-#endif // TARGET_AMD64
-
-                            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_POPCNT) && JitConfig.EnablePOPCNT())
-                            {
-                                opts.setSupportedISA(InstructionSet_POPCNT);
-#ifdef TARGET_AMD64
-                                opts.setSupportedISA(InstructionSet_POPCNT_X64);
-#endif // TARGET_AMD64
-                            }
-
-                            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX) && JitConfig.EnableAVX())
-                            {
-                                opts.setSupportedISA(InstructionSet_AVX);
-
-                                if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_FMA) && JitConfig.EnableFMA())
-                                {
-                                    opts.setSupportedISA(InstructionSet_FMA);
-                                }
-
-                                if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2) && JitConfig.EnableAVX2())
-                                {
-                                    opts.setSupportedISA(InstructionSet_AVX2);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE_X64);
+#endif
     }
 
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_LZCNT) && JitConfig.EnableLZCNT())
+    if (!JitConfig.EnableSSE2())
     {
-        opts.setSupportedISA(InstructionSet_LZCNT);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2);
 #ifdef TARGET_AMD64
-        opts.setSupportedISA(InstructionSet_LZCNT_X64);
-#endif // TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2_X64);
+#endif
     }
 
-    // We currently need to also check that AVX is supported as that controls the support for the VEX encoding
-    // in the emitter.
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1) && JitConfig.EnableBMI1() && compSupports(InstructionSet_AVX))
+    if (!JitConfig.EnableAES())
     {
-        opts.setSupportedISA(InstructionSet_BMI1);
-#ifdef TARGET_AMD64
-        opts.setSupportedISA(InstructionSet_BMI1_X64);
-#endif // TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AES);
     }
 
-    // We currently need to also check that AVX is supported as that controls the support for the VEX encoding
-    // in the emitter.
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2) && JitConfig.EnableBMI2() && compSupports(InstructionSet_AVX))
+    if (!JitConfig.EnablePCLMULQDQ())
     {
-        opts.setSupportedISA(InstructionSet_BMI2);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
+    }
+
+    // We need to additionaly check that COMPlus_EnableSSE3_4 is set, as that
+    // is a prexisting config flag that controls the SSE3+ ISAs
+    if (!JitConfig.EnableSSE3() || !JitConfig.EnableSSE3_4())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE3);
+    }
+
+    if (!JitConfig.EnableSSSE3())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSSE3);
+    }
+
+    if (!JitConfig.EnableSSE41())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41);
 #ifdef TARGET_AMD64
-        opts.setSupportedISA(InstructionSet_BMI2_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41_X64);
+#endif
+    }
+
+    if (!JitConfig.EnableSSE42())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42);
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42_X64);
+#endif
+    }
+
+    if (!JitConfig.EnablePOPCNT())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT);
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT_X64);
+#endif
+    }
+
+    if (!JitConfig.EnableAVX())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX);
+    }
+
+    if (!JitConfig.EnableFMA())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_FMA);
+    }
+
+    if (!JitConfig.EnableAVX2())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX2);
+    }
+
+    if (!JitConfig.EnableLZCNT())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT);
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT_X64);
 #endif // TARGET_AMD64
     }
 
+    if (!JitConfig.EnableBMI1())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1);
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1_X64);
+#endif // TARGET_AMD64
+    }
+
+    if (!JitConfig.EnableBMI2())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2);
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2_X64);
+#endif // TARGET_AMD64
+    }
+
+#endif // TARGET_XARCH
+#if defined(TARGET_ARM64)
+    if (JitConfig.EnableHWIntrinsic())
+    {
+        // Dummy ISAs for simplifying the JIT code
+        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    }
+
+    if (!JitConfig.EnableArm64Aes())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Aes);
+    }
+
+    if (!JitConfig.EnableArm64Atomics())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Atomics);
+    }
+
+    if (!JitConfig.EnableArm64Crc32())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32_Arm64);
+    }
+
+    if (!JitConfig.EnableArm64Sha1())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha1);
+    }
+
+    if (!JitConfig.EnableArm64Sha256())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha256);
+    }
+
+    if (!JitConfig.EnableArm64AdvSimd())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd_Arm64);
+    }
+#endif
+
+    instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
+    opts.setSupportedISAs(jitFlags.GetInstructionSetFlags());
+
+#ifdef TARGET_XARCH
     if (!compIsForInlining())
     {
         if (canUseVexEncoding())
@@ -2319,123 +2366,6 @@ void Compiler::compSetProcessor()
         }
     }
 #endif // TARGET_XARCH
-
-#if defined(TARGET_ARM64)
-    if (JitConfig.EnableHWIntrinsic())
-    {
-        // Dummy ISAs for simplifying the JIT code
-        opts.setSupportedISA(InstructionSet_ArmBase);
-        opts.setSupportedISA(InstructionSet_ArmBase_Arm64);
-        opts.setSupportedISA(InstructionSet_Vector64);
-        opts.setSupportedISA(InstructionSet_Vector128);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_AES) && JitConfig.EnableArm64Aes())
-    {
-        opts.setSupportedISA(InstructionSet_Aes);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_ATOMICS) && JitConfig.EnableArm64Atomics())
-    {
-        opts.setSupportedISA(InstructionSet_Atomics);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_CRC32) && JitConfig.EnableArm64Crc32())
-    {
-        opts.setSupportedISA(InstructionSet_Crc32);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_DCPOP) && JitConfig.EnableArm64Dcpop())
-    {
-        opts.setSupportedISA(InstructionSet_Dcpop);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_DP) && JitConfig.EnableArm64Dp())
-    {
-        opts.setSupportedISA(InstructionSet_Dp);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_FCMA) && JitConfig.EnableArm64Fcma())
-    {
-        opts.setSupportedISA(InstructionSet_Fcma);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_FP) && JitConfig.EnableArm64Fp())
-    {
-        opts.setSupportedISA(InstructionSet_Fp);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_FP16) && JitConfig.EnableArm64Fp16())
-    {
-        opts.setSupportedISA(InstructionSet_Fp16);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_JSCVT) && JitConfig.EnableArm64Jscvt())
-    {
-        opts.setSupportedISA(InstructionSet_Jscvt);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_LRCPC) && JitConfig.EnableArm64Lrcpc())
-    {
-        opts.setSupportedISA(InstructionSet_Lrcpc);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_PMULL) && JitConfig.EnableArm64Pmull())
-    {
-        opts.setSupportedISA(InstructionSet_Pmull);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SHA1) && JitConfig.EnableArm64Sha1())
-    {
-        opts.setSupportedISA(InstructionSet_Sha1);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SHA256) && JitConfig.EnableArm64Sha256())
-    {
-        opts.setSupportedISA(InstructionSet_Sha256);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SHA512) && JitConfig.EnableArm64Sha512())
-    {
-        opts.setSupportedISA(InstructionSet_Sha512);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SHA3) && JitConfig.EnableArm64Sha3())
-    {
-        opts.setSupportedISA(InstructionSet_Sha3);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD) && JitConfig.EnableArm64AdvSimd())
-    {
-        opts.setSupportedISA(InstructionSet_AdvSimd);
-        opts.setSupportedISA(InstructionSet_AdvSimd_Arm64);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD_V81) && JitConfig.EnableArm64AdvSimd_v81())
-    {
-        opts.setSupportedISA(InstructionSet_AdvSimd_v81);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD_FP16) && JitConfig.EnableArm64AdvSimd_Fp16())
-    {
-        opts.setSupportedISA(InstructionSet_AdvSimd_Fp16);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SM3) && JitConfig.EnableArm64Sm3())
-    {
-        opts.setSupportedISA(InstructionSet_Sm3);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SM4) && JitConfig.EnableArm64Sm4())
-    {
-        opts.setSupportedISA(InstructionSet_Sm4);
-    }
-
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_HAS_ARM64_SVE) && JitConfig.EnableArm64Sve())
-    {
-        opts.setSupportedISA(InstructionSet_Sve);
-    }
-#endif
 }
 
 #ifdef PROFILING_SUPPORTED
@@ -3228,6 +3158,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             printf("OPTIONS: Tier-1/FullOpts compilation, switched to MinOpts\n");
         }
 
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+        {
+            printf("OPTIONS: OSR variant with entry point 0x%x\n", info.compILEntry);
+        }
+
         printf("OPTIONS: compCodeOpt = %s\n",
                (opts.compCodeOpt == BLENDED_CODE)
                    ? "BLENDED_CODE"
@@ -3795,6 +3730,7 @@ _SetMinOpts:
         !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) && !opts.compDbgCode)
     {
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_MIN_OPT);
+        opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER1);
         compSwitchedToMinOpts = true;
     }
 
@@ -4232,49 +4168,61 @@ void Compiler::EndPhase(Phases phase)
 //
 void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags)
 {
-    if (compIsForInlining())
-    {
-        // Notify root instance that an inline attempt is about to import IL
-        impInlineRoot()->m_inlineStrategy->NoteImport();
-    }
+    // Prepare for importation
+    //
+    auto preImportPhase = [this]() {
+        if (compIsForInlining())
+        {
+            // Notify root instance that an inline attempt is about to import IL
+            impInlineRoot()->m_inlineStrategy->NoteImport();
+        }
 
-    hashBv::Init(this);
+        hashBv::Init(this);
 
-    VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
+        VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
 
-    // The temp holding the secret stub argument is used by fgImport() when importing the intrinsic.
-    if (info.compPublishStubParam)
-    {
-        assert(lvaStubArgumentVar == BAD_VAR_NUM);
-        lvaStubArgumentVar                  = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
-        lvaTable[lvaStubArgumentVar].lvType = TYP_I_IMPL;
-    }
-
-    EndPhase(PHASE_PRE_IMPORT);
+        // The temp holding the secret stub argument is used by fgImport() when importing the intrinsic.
+        if (info.compPublishStubParam)
+        {
+            assert(lvaStubArgumentVar == BAD_VAR_NUM);
+            lvaStubArgumentVar                  = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
+            lvaTable[lvaStubArgumentVar].lvType = TYP_I_IMPL;
+        }
+    };
+    DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
     compFunctionTraceStart();
 
-    // Convert the instrs in each basic block to a tree based intermediate representation
-    fgImport();
+    // Import: convert the instrs in each basic block to a tree based intermediate representation
+    //
+    auto importPhase = [this]() {
+        fgImport();
 
-    assert(!fgComputePredsDone);
-    if (fgCheapPredsValid)
-    {
-        // Remove cheap predecessors before inlining and fat call transformation;
-        // allowing the cheap predecessor lists to be inserted causes problems
-        // with splitting existing blocks.
-        fgRemovePreds();
-    }
+        assert(!fgComputePredsDone);
+        if (fgCheapPredsValid)
+        {
+            // Remove cheap predecessors before inlining and fat call transformation;
+            // allowing the cheap predecessor lists to be inserted causes problems
+            // with splitting existing blocks.
+            fgRemovePreds();
+        }
+    };
+    DoPhase(this, PHASE_IMPORTATION, importPhase);
 
     // Transform indirect calls that require control flow expansion.
-    fgTransformIndirectCalls();
+    //
+    DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
 
-    EndPhase(PHASE_IMPORTATION);
+    // Expand any patchpoints
+    //
+    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
 
-    if (compIsForInlining())
-    {
-        // Abandon inlining if fgImport() failed for any reason
-        if (!compDonotInline())
+    // PostImportPhase: cleanup inlinees
+    //
+    auto postImportPhase = [this]() {
+
+        // If this is a viable inline candidate
+        if (compIsForInlining() && !compDonotInline())
         {
             // Filter out unimported BBs
             fgRemoveEmptyBlocks();
@@ -4297,8 +4245,12 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
                 }
             }
         }
+    };
+    DoPhase(this, PHASE_POST_IMPORT, postImportPhase);
 
-        EndPhase(PHASE_POST_IMPORT);
+    // If we're importing for inlining, we're done.
+    if (compIsForInlining())
+    {
 
 #ifdef FEATURE_JIT_METHOD_PERF
         if (pCompJitTimer != nullptr)
@@ -4333,7 +4285,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
-        fgInstrumentMethod();
+        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
 
     // We could allow ESP frames. Just need to reserve space for
@@ -4352,94 +4304,84 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         // compLocallocUsed            = true;
     }
 
-    EndPhase(PHASE_POST_IMPORT);
-
-    // Initialize the BlockSet epoch
-    NewBasicBlockEpoch();
-
     // Start phases that are broadly called morphing, and includes
     // global morph, as well as other phases that massage the trees so
     // that we can generate code out of them.
-    fgOutgoingArgTemps = nullptr;
+    //
+    auto morphInitPhase = [this]() {
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgMorph()\n");
-    }
-    if (verboseTrees)
-    {
-        fgDispBasicBlocks(true);
-    }
-#endif // DEBUG
+        // Initialize the BlockSet epoch
+        NewBasicBlockEpoch();
 
-    // Insert call to class constructor as the first basic block if
-    // we were asked to do so.
-    if (info.compCompHnd->initClass(nullptr /* field */, info.compMethodHnd /* method */,
-                                    impTokenLookupContextHandle /* context */) &
-        CORINFO_INITCLASS_USE_HELPER)
-    {
-        fgEnsureFirstBBisScratch();
-        fgNewStmtAtBeg(fgFirstBB, fgInitThisClass());
-    }
+        fgOutgoingArgTemps = nullptr;
 
-#ifdef DEBUG
-    if (opts.compGcChecks)
-    {
-        for (unsigned i = 0; i < info.compArgsCount; i++)
+        // Insert call to class constructor as the first basic block if
+        // we were asked to do so.
+        if (info.compCompHnd->initClass(nullptr /* field */, info.compMethodHnd /* method */,
+                                        impTokenLookupContextHandle /* context */) &
+            CORINFO_INITCLASS_USE_HELPER)
         {
-            if (lvaTable[i].TypeGet() == TYP_REF)
+            fgEnsureFirstBBisScratch();
+            fgNewStmtAtBeg(fgFirstBB, fgInitThisClass());
+        }
+
+#ifdef DEBUG
+        if (opts.compGcChecks)
+        {
+            for (unsigned i = 0; i < info.compArgsCount; i++)
             {
-                // confirm that the argument is a GC pointer (for debugging (GC stress))
-                GenTree*          op   = gtNewLclvNode(i, TYP_REF);
-                GenTreeCall::Use* args = gtNewCallArgs(op);
-                op                     = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, args);
-
-                fgEnsureFirstBBisScratch();
-                fgNewStmtAtEnd(fgFirstBB, op);
-
-                if (verbose)
+                if (lvaTable[i].TypeGet() == TYP_REF)
                 {
-                    printf("\ncompGcChecks tree:\n");
-                    gtDispTree(op);
+                    // confirm that the argument is a GC pointer (for debugging (GC stress))
+                    GenTree*          op   = gtNewLclvNode(i, TYP_REF);
+                    GenTreeCall::Use* args = gtNewCallArgs(op);
+                    op                     = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, args);
+
+                    fgEnsureFirstBBisScratch();
+                    fgNewStmtAtEnd(fgFirstBB, op);
+
+                    if (verbose)
+                    {
+                        printf("\ncompGcChecks tree:\n");
+                        gtDispTree(op);
+                    }
                 }
             }
         }
-    }
 #endif // DEBUG
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
-    if (opts.compStackCheckOnRet)
-    {
-        lvaReturnSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
-        lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
-    }
+        if (opts.compStackCheckOnRet)
+        {
+            lvaReturnSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
+            lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
+        }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #if defined(DEBUG) && defined(TARGET_X86)
-    if (opts.compStackCheckOnCall)
-    {
-        lvaCallSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
-        lvaTable[lvaCallSpCheck].lvType = TYP_I_IMPL;
-    }
+        if (opts.compStackCheckOnCall)
+        {
+            lvaCallSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
+            lvaTable[lvaCallSpCheck].lvType = TYP_I_IMPL;
+        }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-    // Filter out unimported BBs
-    fgRemoveEmptyBlocks();
+        // Filter out unimported BBs
+        fgRemoveEmptyBlocks();
+    };
+    DoPhase(this, PHASE_MORPH_INIT, morphInitPhase);
 
 #ifdef DEBUG
     // Inliner could add basic blocks. Check that the flowgraph data is up-to-date
     fgDebugCheckBBlist(false, false);
 #endif // DEBUG
 
-    EndPhase(PHASE_MORPH_INIT);
-
     // Inline callee methods into this root method
-    fgInline();
+    //
+    DoPhase(this, PHASE_MORPH_INLINE, &Compiler::fgInline);
 
-    RecordStateAtEndOfInlining(); // Record "start" values for post-inlining cycles and elapsed time.
-
-    EndPhase(PHASE_MORPH_INLINE);
+    // Record "start" values for post-inlining cycles and elapsed time.
+    RecordStateAtEndOfInlining();
 
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
     // local variable allocation on the stack.
@@ -4453,31 +4395,28 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     objectAllocator.Run();
 
     // Add any internal blocks/trees we may need
-    fgAddInternal();
+    //
+    DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
 
-#ifdef DEBUG
-    // Inliner could add basic blocks. Check that the flowgraph data is up-to-date
-    fgDebugCheckBBlist(false, false);
-    // Inliner could clone some trees.
-    fgDebugCheckNodesUniqueness();
-#endif // DEBUG
+    // Remove empty try regions
+    //
+    DoPhase(this, PHASE_EMPTY_TRY, &Compiler::fgRemoveEmptyTry);
 
-    fgRemoveEmptyTry();
+    // Remove empty finally regions
+    //
+    DoPhase(this, PHASE_EMPTY_FINALLY, &Compiler::fgRemoveEmptyFinally);
 
-    EndPhase(PHASE_EMPTY_TRY);
+    // Streamline chains of finally invocations
+    //
+    DoPhase(this, PHASE_MERGE_FINALLY_CHAINS, &Compiler::fgMergeFinallyChains);
 
-    fgRemoveEmptyFinally();
-
-    EndPhase(PHASE_EMPTY_FINALLY);
-
-    fgMergeFinallyChains();
-
-    EndPhase(PHASE_MERGE_FINALLY_CHAINS);
-
-    fgCloneFinally();
-    fgUpdateFinallyTargetFlags();
-
-    EndPhase(PHASE_CLONE_FINALLY);
+    // Clone code in finallys to reduce overhead for non-exceptional paths
+    //
+    auto cloneFinallyPhase = [this]() {
+        fgCloneFinally();
+        fgUpdateFinallyTargetFlags();
+    };
+    DoPhase(this, PHASE_CLONE_FINALLY, cloneFinallyPhase);
 
 #if DEBUG
     if (lvaEnregEHVars)
@@ -4512,40 +4451,49 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     // Compute bbNum, bbRefs and bbPreds
     //
-    JITDUMP("\nRenumbering the basic blocks for fgComputePreds\n");
-    fgRenumberBlocks();
-
     // This is the first time full (not cheap) preds will be computed
     //
-    noway_assert(!fgComputePredsDone);
-    fgComputePreds();
+    auto computePredsPhase = [this]() {
+        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
+        fgRenumberBlocks();
+        noway_assert(!fgComputePredsDone);
+        fgComputePreds();
+    };
+    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
     // Run an early flow graph simplification pass
     if (opts.OptimizationEnabled())
     {
-        fgUpdateFlowGraph();
+        auto earlyUpdateFlowGraphPhase = [this]() {
+            const bool doTailDup = false;
+            fgUpdateFlowGraph(doTailDup);
+        };
+        DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
     }
-
-    EndPhase(PHASE_COMPUTE_PREDS);
 
     // From this point on the flowgraph information such as bbNum,
     // bbRefs or bbPreds has to be kept updated
+    //
+    // Promote struct locals
+    //
+    auto promoteStructsPhase = [this]() {
 
-    // For x64 and ARM64 we need to mark irregular parameters
-    lvaRefCountState = RCS_EARLY;
-    fgResetImplicitByRefRefCount();
+        // For x64 and ARM64 we need to mark irregular parameters
+        lvaRefCountState = RCS_EARLY;
+        fgResetImplicitByRefRefCount();
 
-    // Promote struct locals if necessary
-    fgPromoteStructs();
+        fgPromoteStructs();
+    };
+    DoPhase(this, PHASE_PROMOTE_STRUCTS, promoteStructsPhase);
 
-    // Figure out what locals are address exposed
-    fgMarkAddressExposedLocals();
+    // Figure out what locals are address-taken.
+    //
+    DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
 
-    EndPhase(PHASE_STR_ADRLCL);
-
-    // Apply type updates to implicit byref parameters; also choose (based on address-exposed
+    // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
-    fgRetypeImplicitByRefArgs();
+    //
+    DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
 
 #ifdef DEBUG
     // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
@@ -4553,124 +4501,108 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     fgStress64RsltMul();
 #endif // DEBUG
 
-    EndPhase(PHASE_MORPH_IMPBYREF);
-
     // Morph the trees in all the blocks of the method
-    fgMorphBlocks();
+    //
+    auto morphGlobalPhase = [this]() {
+        fgMorphBlocks();
 
-    // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
-    fgMarkDemotedImplicitByRefArgs();
-    lvaRefCountState = RCS_INVALID;
-
-    EndPhase(PHASE_MORPH_GLOBAL);
-
-#if 0
-    JITDUMP("trees after fgMorphBlocks\n");
-    DBEXEC(VERBOSE, fgDispBasicBlocks(true));
-#endif
+        // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
+        fgMarkDemotedImplicitByRefArgs();
+        lvaRefCountState = RCS_INVALID;
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (fgNeedToAddFinallyTargetBits)
-    {
-        // We previously wiped out the BBF_FINALLY_TARGET bits due to some morphing; add them back.
-        fgAddFinallyTargetFlags();
-        fgNeedToAddFinallyTargetBits = false;
-    }
+        if (fgNeedToAddFinallyTargetBits)
+        {
+            // We previously wiped out the BBF_FINALLY_TARGET bits due to some morphing; add them back.
+            fgAddFinallyTargetFlags();
+            fgNeedToAddFinallyTargetBits = false;
+        }
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-    // Decide the kind of code we want to generate
-    fgSetOptions();
+        // Decide the kind of code we want to generate
+        fgSetOptions();
 
-    fgExpandQmarkNodes();
+        fgExpandQmarkNodes();
 
 #ifdef DEBUG
-    compCurBB = nullptr;
+        compCurBB = nullptr;
 #endif // DEBUG
 
-    // End of the morphing phases
-    //
-    // We can now enable all phase checking
-    EndPhase(PHASE_MORPH_END);
-    activePhaseChecks = PhaseChecks::CHECK_ALL;
+        // We can now enable all phase checking
+        activePhaseChecks = PhaseChecks::CHECK_ALL;
+    };
+    DoPhase(this, PHASE_MORPH_GLOBAL, morphGlobalPhase);
 
     // GS security checks for unsafe buffers
-    if (getNeedsGSSecurityCookie())
-    {
-#ifdef DEBUG
-        if (verbose)
+    //
+    auto gsPhase = [this]() {
+        if (getNeedsGSSecurityCookie())
         {
-            printf("\n*************** -GS checks for unsafe buffers \n");
+            gsGSChecksInitCookie();
+
+            if (compGSReorderStackLayout)
+            {
+                gsCopyShadowParams();
+            }
         }
-#endif
-
-        gsGSChecksInitCookie();
-
-        if (compGSReorderStackLayout)
+        else
         {
-            gsCopyShadowParams();
+            JITDUMP("No GS security needed\n");
         }
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            fgDispBasicBlocks(true);
-            printf("\n");
-        }
-#endif
-    }
-    EndPhase(PHASE_GS_COOKIE);
-
-    // GC Poll marking assumes block bbnums match lexical block order,
-    // so make sure this is the case.
-    fgRenumberBlocks();
+    };
+    DoPhase(this, PHASE_GS_COOKIE, gsPhase);
 
     // If we need to emit GC Poll calls, mark the blocks that need them now.
     // This is conservative and can be optimized later.
-    fgMarkGCPollBlocks();
-    EndPhase(PHASE_MARK_GC_POLL_BLOCKS);
+    //
+    // GC Poll marking assumes block bbnums match lexical block order,
+    // so make sure this is the case.
+    //
+    auto gcPollPhase = [this]() {
+        fgRenumberBlocks();
+        fgMarkGCPollBlocks();
+    };
+    DoPhase(this, PHASE_MARK_GC_POLL_BLOCKS, gcPollPhase);
 
     // Compute the block and edge weights
-    fgComputeBlockAndEdgeWeights();
-    EndPhase(PHASE_COMPUTE_EDGE_WEIGHTS);
+    //
+    DoPhase(this, PHASE_COMPUTE_EDGE_WEIGHTS, &Compiler::fgComputeBlockAndEdgeWeights);
 
 #if defined(FEATURE_EH_FUNCLETS)
 
     // Create funclets from the EH handlers.
-    fgCreateFunclets();
-    EndPhase(PHASE_CREATE_FUNCLETS);
+    //
+    DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
 
 #endif // FEATURE_EH_FUNCLETS
 
     if (opts.OptimizationEnabled())
     {
-        fgTailMergeThrows();
-        EndPhase(PHASE_MERGE_THROWS);
-
-        optOptimizeLayout();
-        EndPhase(PHASE_OPTIMIZE_LAYOUT);
-
+        // Merge common throw blocks
+        //
+        DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
+        // Optimize block order
+        //
+        DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
         // Compute reachability sets and dominators.
-        fgComputeReachability();
-        EndPhase(PHASE_COMPUTE_REACHABILITY);
-    }
+        //
+        DoPhase(this, PHASE_COMPUTE_REACHABILITY, &Compiler::fgComputeReachability);
 
-    if (opts.OptimizationEnabled())
-    {
         // Perform loop inversion (i.e. transform "while" loops into
         // "repeat" loops) and discover and classify natural loops
         // (e.g. mark iterative loops as such). Also marks loop blocks
         // and sets bbWeight to the loop nesting levels
-        optOptimizeLoops();
-        EndPhase(PHASE_OPTIMIZE_LOOPS);
+        //
+        DoPhase(this, PHASE_OPTIMIZE_LOOPS, &Compiler::optOptimizeLoops);
 
         // Clone loops with optimization opportunities, and
         // choose the one based on dynamic condition evaluation.
-        optCloneLoops();
-        EndPhase(PHASE_CLONE_LOOPS);
+        //
+        DoPhase(this, PHASE_CLONE_LOOPS, &Compiler::optCloneLoops);
 
         // Unroll loops
-        optUnrollLoops();
-        EndPhase(PHASE_UNROLL_LOOPS);
+        //
+        DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
     }
 
 #ifdef DEBUG
@@ -4678,8 +4610,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 #endif
 
     // Create the variable table (and compute variable ref counts)
-    lvaMarkLocalVars();
-    EndPhase(PHASE_MARK_LOCAL_VARS);
+    //
+    DoPhase(this, PHASE_MARK_LOCAL_VARS, &Compiler::lvaMarkLocalVars);
 
     // IMPORTANT, after this point, locals are ref counted.
     // However, ref counts are not kept incrementally up to date.
@@ -4688,37 +4620,22 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     if (opts.OptimizationEnabled())
     {
         // Optimize boolean conditions
-        optOptimizeBools();
-        EndPhase(PHASE_OPTIMIZE_BOOLS);
+        //
+        DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
 
         // optOptimizeBools() might have changed the number of blocks; the dominators/reachability might be bad.
     }
 
     // Figure out the order in which operators are to be evaluated
-    fgFindOperOrder();
-    EndPhase(PHASE_FIND_OPER_ORDER);
+    //
+    DoPhase(this, PHASE_FIND_OPER_ORDER, &Compiler::fgFindOperOrder);
 
     // Weave the tree lists. Anyone who modifies the tree shapes after
     // this point is responsible for calling fgSetStmtSeq() to keep the
     // nodes properly linked.
     // This can create GC poll calls, and create new BasicBlocks (without updating dominators/reachability).
-    fgSetBlockOrder();
-    EndPhase(PHASE_SET_BLOCK_ORDER);
-
-    // IMPORTANT, after this point, every place where tree topology changes must redo evaluation
-    // order (gtSetStmtInfo) and relink nodes (fgSetStmtSeq) if required.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-    // Now  we have determined the order of evaluation and the gtCosts for every node.
-    // If verbose, dump the full set of trees here before the optimization phases mutate them
     //
-    if (verbose)
-    {
-        fgDispBasicBlocks(true); // 'true' will call fgDumpTrees() after dumping the BasicBlocks
-        printf("\n");
-    }
-#endif
+    DoPhase(this, PHASE_SET_BLOCK_ORDER, &Compiler::fgSetBlockOrder);
 
     // At this point we know if we are fully interruptible or not
     if (opts.OptimizationEnabled())
@@ -4751,68 +4668,79 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         {
             if (doSsa)
             {
-                fgSsaBuild();
-                EndPhase(PHASE_BUILD_SSA);
+                // Build up SSA form for the IR
+                //
+                DoPhase(this, PHASE_BUILD_SSA, &Compiler::fgSsaBuild);
             }
 
             if (doEarlyProp)
             {
                 // Propagate array length and rewrite getType() method call
-                optEarlyProp();
-                EndPhase(PHASE_EARLY_PROP);
+                //
+                DoPhase(this, PHASE_EARLY_PROP, &Compiler::optEarlyProp);
             }
 
             if (doValueNum)
             {
-                fgValueNumber();
-                EndPhase(PHASE_VALUE_NUMBER);
+                // Value number the trees
+                //
+                DoPhase(this, PHASE_VALUE_NUMBER, &Compiler::fgValueNumber);
             }
 
             if (doLoopHoisting)
             {
                 // Hoist invariant code out of loops
-                optHoistLoopCode();
-                EndPhase(PHASE_HOIST_LOOP_CODE);
+                //
+                DoPhase(this, PHASE_HOIST_LOOP_CODE, &Compiler::optHoistLoopCode);
             }
 
             if (doCopyProp)
             {
                 // Perform VN based copy propagation
-                optVnCopyProp();
-                EndPhase(PHASE_VN_COPY_PROP);
+                //
+                DoPhase(this, PHASE_VN_COPY_PROP, &Compiler::optVnCopyProp);
             }
 
 #if FEATURE_ANYCSE
             // Remove common sub-expressions
-            optOptimizeCSEs();
+            //
+            DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
 #endif // FEATURE_ANYCSE
 
 #if ASSERTION_PROP
             if (doAssertionProp)
             {
                 // Assertion propagation
-                optAssertionPropMain();
-                EndPhase(PHASE_ASSERTION_PROP_MAIN);
+                //
+                DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
             }
 
             if (doRangeAnalysis)
             {
-                // Optimize array index range checks
-                RangeCheck rc(this);
-                rc.OptimizeRangeChecks();
-                EndPhase(PHASE_OPTIMIZE_INDEX_CHECKS);
+                auto rangePhase = [this]() {
+                    RangeCheck rc(this);
+                    rc.OptimizeRangeChecks();
+                };
+
+                // Bounds check elimination via range analysis
+                //
+                DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, rangePhase);
             }
 #endif // ASSERTION_PROP
 
-            // update the flowgraph if we modified it during the optimization phase
             if (fgModified)
             {
-                fgUpdateFlowGraph();
-                EndPhase(PHASE_UPDATE_FLOW_GRAPH);
+                // update the flowgraph if we modified it during the optimization phase
+                //
+                auto optUpdateFlowGraphPhase = [this]() {
+                    const bool doTailDup = false;
+                    fgUpdateFlowGraph(doTailDup);
+                };
+                DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, optUpdateFlowGraphPhase);
 
                 // Recompute the edge weight if we have modified the flow graph
-                fgComputeEdgeWeights();
-                EndPhase(PHASE_COMPUTE_EDGE_WEIGHTS2);
+                //
+                DoPhase(this, PHASE_COMPUTE_EDGE_WEIGHTS2, &Compiler::fgComputeEdgeWeights);
             }
 
             // Iterate if requested, resetting annotations first.
@@ -4830,8 +4758,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     compQuirkForPPPflag = compQuirkForPPP();
 #endif
 
-    fgDetermineFirstColdBlock();
-    EndPhase(PHASE_DETERMINE_FIRST_COLD_BLOCK);
+    // Determine start of cold region if we are hot/cold splitting
+    //
+    DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
 
 #ifdef DEBUG
     fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
@@ -4860,8 +4789,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // platforms, this will be part of the more general lowering phase.  For now, though, we do a separate
     // pass of "final lowering."  We must do this before (final) liveness analysis, because this creates
     // range check throw blocks, in which the liveness must be correct.
-    fgSimpleLowering();
-    EndPhase(PHASE_SIMPLE_LOWERING);
+    //
+    DoPhase(this, PHASE_SIMPLE_LOWERING, &Compiler::fgSimpleLowering);
 
 #ifdef DEBUG
     fgDebugCheckBBlist();
@@ -4894,18 +4823,22 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     m_pLinearScan = getLinearScanAllocator(this);
 
     // Lower
+    //
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-    StackLevelSetter stackLevelSetter(this); // PHASE_STACK_LEVEL_SETTER
+    // Set stack levels
+    //
+    StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
 
     // Now that lowering is completed we can proceed to perform register allocation
-    m_pLinearScan->doLinearScan();
-    EndPhase(PHASE_LINEAR_SCAN);
+    //
+    auto linearScanPhase = [this]() { m_pLinearScan->doLinearScan(); };
+    DoPhase(this, PHASE_LINEAR_SCAN, linearScanPhase);
 
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
@@ -4917,6 +4850,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
+    // We're done -- set the active phase to the last phase
+    // (which isn't really a phase)
+    mostRecentlyActivePhase = PHASE_POST_EMIT;
+
 #ifdef FEATURE_JIT_METHOD_PERF
     if (pCompJitTimer)
     {
@@ -4926,6 +4863,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         pCompJitTimer->Terminate(this, CompTimeSummaryInfo::s_compTimeSummary, true);
     }
 #endif
+
+    // Generate PatchpointInfo
+    generatePatchpointInfo();
 
     RecordStateAtEndOfCompilation();
 
@@ -4952,6 +4892,86 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         fprintf(compJitFuncInfoFile, ""); // in our logic this causes a flush
     }
 #endif // FUNC_INFO_LOGGING
+}
+
+//------------------------------------------------------------------------
+// generatePatchpointInfo: allocate and fill in patchpoint info data,
+//    and report it to the VM
+//
+void Compiler::generatePatchpointInfo()
+{
+    if (!doesMethodHavePatchpoints())
+    {
+        // Nothing to report
+        return;
+    }
+
+    // Patchpoints are only found in Tier0 code, which is unoptimized, and so
+    // should always have frame pointer.
+    assert(codeGen->isFramePointerUsed());
+
+    // Allocate patchpoint info storage from runtime, and fill in initial bits of data.
+    const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(info.compLocalsCount);
+    PatchpointInfo* const patchpointInfo     = (PatchpointInfo*)info.compCompHnd->allocateArray(patchpointInfoSize);
+
+    // The +TARGET_POINTER_SIZE here is to account for the extra slot the runtime
+    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
+    patchpointInfo->Initialize(info.compLocalsCount, codeGen->genSPtoFPdelta() + TARGET_POINTER_SIZE);
+
+    JITDUMP("--OSR--- FP-SP delta is %d\n", patchpointInfo->FpToSpDelta());
+
+    // We record offsets for all the "locals" here. Could restrict
+    // this to just the IL locals with some extra logic, and save a bit of space,
+    // but would need to adjust all consumers, too.
+    for (unsigned lclNum = 0; lclNum < info.compLocalsCount; lclNum++)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+
+        // We expect all these to have stack homes, and be FP relative
+        assert(varDsc->lvOnFrame);
+        assert(varDsc->lvFramePointerBased);
+
+        // Record FramePtr relative offset (no localloc yet)
+        patchpointInfo->SetOffset(lclNum, varDsc->lvStkOffs);
+
+        // Note if IL stream contained an address-of that potentially leads to exposure.
+        // This bit of IL may be skipped by OSR partial importation.
+        if (varDsc->lvHasLdAddrOp)
+        {
+            patchpointInfo->SetIsExposed(lclNum);
+        }
+
+        JITDUMP("--OSR-- V%02u is at offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
+                patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "");
+    }
+
+    // Special offsets
+
+    if (lvaReportParamTypeArg() || lvaKeepAliveAndReportThis())
+    {
+        const int offset = lvaToCallerSPRelativeOffset(lvaCachedGenericContextArgOffset(), true);
+        patchpointInfo->SetGenericContextArgOffset(offset);
+        JITDUMP("--OSR-- cached generic context offset is CallerSP %d\n", patchpointInfo->GenericContextArgOffset());
+    }
+
+    if (lvaKeepAliveAndReportThis())
+    {
+        const int offset = lvaCachedGenericContextArgOffset();
+        patchpointInfo->SetKeptAliveThisOffset(offset);
+        JITDUMP("--OSR-- kept-alive this offset is FP %d\n", patchpointInfo->KeptAliveThisOffset());
+    }
+
+    if (compGSReorderStackLayout)
+    {
+        assert(lvaGSSecurityCookie != BAD_VAR_NUM);
+        LclVarDsc* const varDsc = lvaGetDesc(lvaGSSecurityCookie);
+        patchpointInfo->SetSecurityCookieOffset(varDsc->lvStkOffs);
+        JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
+                patchpointInfo->SecurityCookieOffset());
+    }
+
+    // Register this with the runtime.
+    info.compCompHnd->setPatchpointInfo(patchpointInfo);
 }
 
 //------------------------------------------------------------------------
@@ -5210,6 +5230,19 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     info.compMethodHnd  = methodHnd;
     info.compMethodInfo = methodInfo;
 
+    if (compIsForInlining())
+    {
+        compileFlags->Clear(JitFlags::JIT_FLAG_OSR);
+        info.compILEntry        = 0;
+        info.compPatchpointInfo = nullptr;
+    }
+    else if (compileFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    {
+        // Fetch OSR info from the runtime
+        info.compPatchpointInfo = info.compCompHnd->getOSRInfo(&info.compILEntry);
+        assert(info.compPatchpointInfo != nullptr);
+    }
+
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
@@ -5250,28 +5283,11 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         // target default. Currently this is disabling all ARM64 architecture features except FP and SIMD, but this
         // should be altered to possibly enable all of them, when they are known to all work.
 
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_AES);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_ATOMICS);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_CRC32);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_DCPOP);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_DP);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_FCMA);
-        compileFlags->Set(JitFlags::JIT_FLAG_HAS_ARM64_FP);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_FP16);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_JSCVT);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_LRCPC);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_PMULL);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA1);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA256);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA512);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA3);
-        compileFlags->Set(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD_V81);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_ADVSIMD_FP16);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SM3);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SM4);
-        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SVE);
-
+        CORINFO_InstructionSetFlags defaultArm64Flags;
+        defaultArm64Flags.AddInstructionSet(InstructionSet_ArmBase);
+        defaultArm64Flags.AddInstructionSet(InstructionSet_AdvSimd);
+        defaultArm64Flags.Set64BitInstructionSetVariants();
+        compileFlags->SetInstructionSetFlags(defaultArm64Flags);
 #endif // defined(TARGET_ARM64)
     }
 
@@ -6000,11 +6016,11 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     if (opts.disAsm || opts.dspEmit || verbose)
     {
-        s_compMethodsCount = ~info.compMethodHash() & 0xffff;
+        compMethodID = ~info.compMethodHash() & 0xffff;
     }
     else
     {
-        s_compMethodsCount++;
+        compMethodID = InterlockedIncrement(&s_compMethodsCount);
     }
 #endif
 
@@ -6021,9 +6037,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if ((JitConfig.DumpJittedMethods() == 1) && !compIsForInlining())
     {
-        printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s\n", Compiler::jitTotalMethodCompiled,
+        printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s%s\n", Compiler::jitTotalMethodCompiled,
                info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName(), compGetStressMessage());
+               compGetTieringName(), opts.IsOSR() ? " OSR" : "", compGetStressMessage());
     }
     if (compIsForInlining())
     {
@@ -8655,10 +8671,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 
             case GT_INDEX:
 
-                if (tree->gtFlags & GTF_INX_REFARR_LAYOUT)
-                {
-                    chars += printf("[INX_REFARR_LAYOUT]");
-                }
                 if (tree->gtFlags & GTF_INX_STRING_LAYOUT)
                 {
                     chars += printf("[INX_STRING_LAYOUT]");
@@ -9185,6 +9197,39 @@ bool Compiler::killGCRefs(GenTree* tree)
     else if (tree->OperIs(GT_START_PREEMPTGC))
     {
         return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// lvaIsOSRLocal: check if this local var is one that requires special
+//     treatment for OSR compilations.
+//
+// Arguments:
+//    varNum     - variable of interest
+//
+// Return Value:
+//    true       - this is an OSR compile and this local requires special treatment
+//    false      - not an OSR compile, or not an interesting local for OSR
+
+bool Compiler::lvaIsOSRLocal(unsigned varNum)
+{
+    if (!opts.IsOSR())
+    {
+        return false;
+    }
+
+    if (varNum < info.compLocalsCount)
+    {
+        return true;
+    }
+
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+    if (varDsc->lvIsStructField)
+    {
+        return (varDsc->lvParentLcl < info.compLocalsCount);
     }
 
     return false;

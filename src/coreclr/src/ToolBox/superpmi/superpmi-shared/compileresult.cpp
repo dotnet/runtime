@@ -326,6 +326,38 @@ bool CompileResult::repSetVars(CORINFO_METHOD_HANDLE* ftn, ULONG32* cVars, ICorD
     return true;
 }
 
+// Note - Ownership of patchpointInfo is transfered with this call. In replay icorjitinfo we should free it.
+void CompileResult::recSetPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    if (SetPatchpointInfo == nullptr)
+        SetPatchpointInfo = new LightWeightMap<DWORD, Agnostic_SetPatchpointInfo>();
+
+    Agnostic_SetPatchpointInfo value;
+    value.index = (DWORD)SetPatchpointInfo->AddBuffer((const unsigned char*) patchpointInfo, patchpointInfo->PatchpointInfoSize());
+    SetPatchpointInfo->Add(0, value);
+}
+void CompileResult::dmpSetPatchpointInfo(DWORD key, const Agnostic_SetPatchpointInfo& value)
+{
+    PatchpointInfo* patchpointInfo = (PatchpointInfo*)SetPatchpointInfo->GetBuffer(value.index);
+    printf("SetPatchpointInfo key %u, index %u{", key, value.index);
+    // todo -- dump contents
+    printf("}");
+    SetPatchpointInfo->Unlock();
+}
+bool CompileResult::repSetPatchpointInfo(PatchpointInfo** patchpointInfo)
+{
+    if ((SetPatchpointInfo == nullptr) || (SetPatchpointInfo->GetCount() == 0))
+    {
+        *patchpointInfo = nullptr;
+        return false;
+    }
+
+    Agnostic_SetPatchpointInfo value;
+    value = SetPatchpointInfo->Get(0);
+    *patchpointInfo = (PatchpointInfo*)SetPatchpointInfo->GetBuffer(value.index);
+    return true;
+}
+
 void CompileResult::recAllocGCInfo(size_t size, void* retval)
 {
     allocGCInfoDets.size   = size;

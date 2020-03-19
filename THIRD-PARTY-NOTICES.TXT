@@ -32,10 +32,10 @@ http://www.opensource.org/licenses/bsd-license.html.
 License notice for Unicode data
 -------------------------------
 
-http://www.unicode.org/copyright.html#License
+https://www.unicode.org/license.html
 
-Copyright © 1991-2017 Unicode, Inc. All rights reserved.
-Distributed under the Terms of Use in http://www.unicode.org/copyright.html.
+Copyright © 1991-2020 Unicode, Inc. All rights reserved.
+Distributed under the Terms of Use in https://www.unicode.org/copyright.html.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of the Unicode data files and any associated documentation

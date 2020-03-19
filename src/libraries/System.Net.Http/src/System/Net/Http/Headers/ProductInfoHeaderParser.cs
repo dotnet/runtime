@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -21,7 +22,7 @@ namespace System.Net.Http.Headers
         {
         }
 
-        public override bool TryParseValue(string value, object storeValue, ref int index, out object parsedValue)
+        public override bool TryParseValue(string? value, object? storeValue, ref int index, [NotNullWhen(true)] out object? parsedValue)
         {
             parsedValue = null;
 
@@ -38,8 +39,7 @@ namespace System.Net.Http.Headers
                 return false; // whitespace-only values are not valid
             }
 
-            ProductInfoHeaderValue result = null;
-            int length = ProductInfoHeaderValue.GetProductInfoLength(value, current, out result);
+            int length = ProductInfoHeaderValue.GetProductInfoLength(value, current, out ProductInfoHeaderValue? result);
 
             if (length == 0)
             {
@@ -65,7 +65,7 @@ namespace System.Net.Http.Headers
             // Separators for "User-Agent" and "Server" headers are whitespace. This is different from most other headers
             // where comma/semicolon is used as separator.
             index = current;
-            parsedValue = result;
+            parsedValue = result!;
             return true;
         }
     }

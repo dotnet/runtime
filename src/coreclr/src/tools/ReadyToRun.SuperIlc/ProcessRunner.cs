@@ -17,6 +17,11 @@ public class ProcessParameters
     public const int DefaultIlcTimeout = 10 * 60 * 1000;
 
     /// <summary>
+    /// Increase compilation timeout for composite builds.
+    /// </summary>
+    public const int DefaultIlcCompositeTimeout = 30 * 60 * 1000;
+
+    /// <summary>
     /// Test execution timeout.
     /// </summary>
     public const int DefaultExeTimeout = 5 * 60 * 1000;

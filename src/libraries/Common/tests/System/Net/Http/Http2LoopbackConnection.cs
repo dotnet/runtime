@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http.Functional.Tests;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -28,6 +28,7 @@ namespace System.Net.Test.Common
         private readonly byte[] _prefix;
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
         public bool IsInvalid => _connectionSocket == null;
+        public Stream Stream => _connectionStream;
 
         public Http2LoopbackConnection(Socket socket, Http2Options httpOptions)
         {
@@ -40,6 +41,7 @@ namespace System.Net.Test.Common
 
                 using (var cert = Configuration.Certificates.GetServerCertificate())
                 {
+#if !NETFRAMEWORK
                     SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
 
                     options.EnabledSslProtocols = httpOptions.SslProtocols;
@@ -51,9 +53,12 @@ namespace System.Net.Test.Common
 
                     options.ServerCertificate = cert;
 
-                    options.ClientCertificateRequired = false;
+                    options.ClientCertificateRequired = httpOptions.ClientCertificateRequired;
 
                     sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).Wait();
+#else
+                    sslStream.AuthenticateAsServerAsync(cert, httpOptions.ClientCertificateRequired, httpOptions.SslProtocols, checkCertificateRevocation: false).Wait();
+#endif
                 }
 
                 _connectionStream = sslStream;
@@ -63,6 +68,10 @@ namespace System.Net.Test.Common
             if (!FillBufferAsync(_prefix).Result)
             {
                 throw new Exception("Connection stream closed while attempting to read connection preface.");
+            }
+            else if (Text.Encoding.ASCII.GetString(_prefix).Contains("HTTP/1.1"))
+            {
+                throw new Exception("HTTP 1.1 request received.");
             }
         }
 
@@ -331,7 +340,7 @@ namespace System.Net.Test.Common
             }
             else
             {
-                string value = Encoding.ASCII.GetString(headerBlock.Slice(bytesConsumed, stringLength));
+                string value = Encoding.ASCII.GetString(headerBlock.Slice(bytesConsumed, stringLength).ToArray());
                 return (bytesConsumed + stringLength, value);
             }
         }

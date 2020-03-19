@@ -123,7 +123,7 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	size_t basename_len = strlen (basename);
 
 	for (int i = 0; i < a->assembly_count; ++i) {
-		if (basename_len == a->basename_lens [i] && !strncmp (basename, a->basenames [i], a->basename_lens [i])) {
+		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, default_alc);
 			req.request.predicate = predicate;
@@ -149,7 +149,7 @@ leave:
 	if (!result) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "netcore preload hook: did not find '%s'.", aname->name);
 	} else {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "netcore preload hook: loading '%s' from '%s'.", aname->name, result->image->name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "netcore preload hook: loading '%s' from '%s'.", aname->name, result->image->name);
 	}
 	return result;
 }

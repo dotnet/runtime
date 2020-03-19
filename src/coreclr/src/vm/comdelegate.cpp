@@ -1132,6 +1132,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     GCPROTECT_END();
 }
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 // Marshals a managed method to an unmanaged callback provided the
 // managed method is static and it's parameters require no marshalling.
 PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
@@ -1139,29 +1140,18 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
     CONTRACTL
     {
         THROWS;
-    GC_TRIGGERS;
-    INJECT_FAULT(COMPlusThrowOM());
+        GC_TRIGGERS;
+        PRECONDITION(pMD != NULL);
+        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
     PCODE pCode = NULL;
 
-    // only static methods are allowed
-    if (!pMD->IsStatic())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_NonStaticMethod"));
-
-    // no generic methods
-    if (pMD->IsGenericMethodDefinition())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_GenericMethod"));
-
-    // Arguments
-    if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
-        COMPlusThrow(kNotSupportedException, W("NotSupported_NonBlittableTypes"));
-
     // Get UMEntryThunk from the thunk cache.
     UMEntryThunk *pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
+#if !defined(FEATURE_STUBS_AS_IL)
 
     // System.Runtime.InteropServices.NativeCallableAttribute
     BYTE* pData = NULL;
@@ -1193,12 +1183,13 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
             pUMThunkMarshalInfo->SetCallingConvention(callConv);
         }
 }
-#endif  //TARGET_X86 && !FEATURE_STUBS_AS_IL
+#endif  // !FEATURE_STUBS_AS_IL
 
     pCode = (PCODE)pUMEntryThunk->GetCode();
     _ASSERTE(pCode != NULL);
     return pCode;
 }
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 // Marshals a delegate to a unmanaged callback.
 LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)

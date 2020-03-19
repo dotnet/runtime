@@ -340,6 +340,17 @@ namespace System.Runtime.InteropServices
         internal static extern IntPtr /* IUnknown* */ GetRawIUnknownForComObjectNoAddRef(object o);
 
         /// <summary>
+        /// Return the IDispatch* for an Object.
+        /// </summary>
+        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o)
+        {
+            return GetIDispatchForObjectNative(o, false);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr /* IDispatch* */ GetIDispatchForObjectNative(object o, bool onlyInContext);
+
+        /// <summary>
         /// Return the IUnknown* representing the interface for the Object.
         /// Object o should support Type T
         /// </summary>

@@ -23,11 +23,15 @@
 
 #ifndef DACCESS_COMPILE
 
-#ifndef __GNUC__
-EXTERN_C __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
-#else // !__GNUC__
+#ifdef HOST_WINDOWS
+EXTERN_C UINT32 _tls_index;
+#endif
+
+#ifdef _MSC_VER
+__declspec(selectany) __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
+#else
 EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo;
-#endif // !__GNUC__
+#endif
 
 EXTERN_C inline Thread* STDCALL GetThread()
 {
@@ -40,22 +44,6 @@ EXTERN_C inline AppDomain* STDCALL GetAppDomain()
 }
 
 #endif // !DACCESS_COMPILE
-
-inline void Thread::IncLockCount()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(GetThread() == this);
-    m_dwLockCount++;
-    _ASSERTE(m_dwLockCount != 0 || HasThreadStateNC(TSNC_UnbalancedLocks));
-}
-
-inline void Thread::DecLockCount()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(GetThread() == this);
-    _ASSERTE(m_dwLockCount > 0 || HasThreadStateNC(TSNC_UnbalancedLocks));
-    m_dwLockCount--;
-}
 
 inline
 Frame* Thread::FindFrame(SIZE_T StackPointer)
@@ -207,6 +195,19 @@ inline Thread::CurrentPrepareCodeConfigHolder::~CurrentPrepareCodeConfigHolder()
     m_thread->m_currentPrepareCodeConfig = config->GetNextInSameThread();
     config->SetNextInSameThread(nullptr);
 }
+
+#ifdef HOST_WINDOWS
+inline size_t Thread::GetOffsetOfThreadStatic(void* pThreadStatic)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    PTEB Teb = NtCurrentTeb();
+    BYTE** tlsArray = (BYTE**)Teb->ThreadLocalStoragePointer;
+    BYTE* tlsData = (BYTE*)tlsArray[_tls_index];
+
+    return (BYTE*)pThreadStatic - tlsData;
+}
+#endif
 
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 

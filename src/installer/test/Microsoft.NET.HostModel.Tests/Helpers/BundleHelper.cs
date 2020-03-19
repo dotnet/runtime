@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.Bundle;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml.Linq;
 
@@ -52,17 +55,46 @@ namespace BundleTests.Helpers
             return Directory.CreateDirectory(Path.Combine(fixture.TestProject.ProjectDirectory, "extract"));
         }
 
+        /// Generate a bundle containind the (embeddable) files in sourceDir
+        public static string GenerateBundle(Bundler bundler, string sourceDir)
+        {
+            // Convert sourceDir to absolute path
+            sourceDir = Path.GetFullPath(sourceDir);
+
+            // Get all files in the source directory and all sub-directories.
+            string[] sources = Directory.GetFiles(sourceDir, searchPattern: "*", searchOption: SearchOption.AllDirectories);
+
+            // Sort the file names to keep the bundle construction deterministic.
+            Array.Sort(sources, StringComparer.Ordinal);
+
+            List<FileSpec> fileSpecs = new List<FileSpec>(sources.Length);
+            foreach (var file in sources)
+            {
+                fileSpecs.Add(new FileSpec(file, Path.GetRelativePath(sourceDir, file)));
+            }
+
+            return bundler.GenerateBundle(fileSpecs);
+        }
+
         // Bundle to a single-file
-        // This step should be removed in favor of publishing with /p:PublishSingleFile=true
-        // once core-setup tests use 3.0 SDK 
-        public static string BundleApp(TestProjectFixture fixture)
+        // In several tests, the single-file bundle is created explicitly using Bundle API
+        // instead of the SDK via /p:PublishSingleFile=true.
+        // This is necessary when the test needs the latest changes in the AppHost, 
+        // which may not (yet) be available in the SDK.
+        //
+        // Currently, AppHost can only handle bundles if all content is extracted to disk on startup.
+        // Therefore, the BundleOption is BundleAllContent by default.
+        // The default should be BundleOptions.None once host/runtime no longer requires full-extraction.
+        public static string BundleApp(TestProjectFixture fixture,
+                                       BundleOptions options = BundleOptions.BundleAllContent,
+                                       Version targetFrameworkVersion = null)
         {
             var hostName = GetHostName(fixture);
             string publishPath = GetPublishPath(fixture);
             var bundleDir = GetBundleDir(fixture);
 
-            var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
-            string singleFile = bundler.GenerateBundle(publishPath);
+            var bundler = new Bundler(hostName, bundleDir.FullName, options, targetFrameworkVersion: targetFrameworkVersion);
+            string singleFile = GenerateBundle(bundler, publishPath);
             return singleFile;
         }
 

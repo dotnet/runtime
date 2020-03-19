@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter factory for all IEnumerable types.
     /// </summary>
-    internal class JsonIEnumerableConverterFactory : JsonConverterFactory
+    internal class IEnumerableConverterFactory : JsonConverterFactory
     {
         private static readonly IDictionaryConverter<IDictionary> s_converterForIDictionary = new IDictionaryConverter<IDictionary>();
         private static readonly IEnumerableConverter<IEnumerable> s_converterForIEnumerable = new IEnumerableConverter<IEnumerable>();
@@ -43,10 +43,9 @@ namespace System.Text.Json.Serialization.Converters
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ListOfTConverter`2")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.QueueOfTConverter`2")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.StackOfTConverter`2")]
-        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            JsonConverter? converter = null;
-            Type converterType;
+            Type converterType = null!;
             Type[] genericArgs;
             Type? elementType = null;
             Type? actualTypeToConvert;
@@ -57,7 +56,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Verify that we don't have a multidimensional array.
                 if (typeToConvert.GetArrayRank() > 1)
                 {
-                    return null;
+                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(typeToConvert);
                 }
 
                 converterType = typeof(ArrayConverter<,>);
@@ -80,7 +79,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    return null;
+                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(typeToConvert);
                 }
             }
             // Immutable dictionaries from System.Collections.Immutable, e.g. ImmutableDictionary<string, TValue>
@@ -94,7 +93,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    return null;
+                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(typeToConvert);
                 }
             }
             // IDictionary<string,> or deriving from IDictionary<string,>
@@ -108,7 +107,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    return null;
+                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(typeToConvert);
                 }
             }
             // IReadOnlyDictionary<string,> or deriving from IReadOnlyDictionary<string,>
@@ -122,7 +121,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    return null;
+                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(typeToConvert);
                 }
             }
             // Immutable non-dictionaries from System.Collections.Immutable, e.g. ImmutableStack<T>
@@ -213,25 +212,24 @@ namespace System.Text.Json.Serialization.Converters
                 converterType = typeof(IEnumerableConverter<>);
             }
 
-            if (converterType != null)
-            {
-                Type genericType;
-                if (converterType.GetGenericArguments().Length == 1)
-                {
-                    genericType = converterType.MakeGenericType(typeToConvert);
-                }
-                else
-                {
-                    genericType = converterType.MakeGenericType(typeToConvert, elementType!);
-                }
+            Debug.Assert(converterType != null);
 
-                converter = (JsonConverter)Activator.CreateInstance(
-                    genericType,
-                    BindingFlags.Instance | BindingFlags.Public,
-                    binder: null,
-                    args: null,
-                    culture: null)!;
+            Type genericType;
+            if (converterType.GetGenericArguments().Length == 1)
+            {
+                genericType = converterType.MakeGenericType(typeToConvert);
             }
+            else
+            {
+                genericType = converterType.MakeGenericType(typeToConvert, elementType!);
+            }
+
+            JsonConverter converter = (JsonConverter)Activator.CreateInstance(
+                genericType,
+                BindingFlags.Instance | BindingFlags.Public,
+                binder: null,
+                args: null,
+                culture: null)!;
 
             return converter;
         }

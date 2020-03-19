@@ -8,7 +8,7 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 namespace System.Drawing.Imaging
 {
     [StructLayout(LayoutKind.Sequential)]
-    public sealed class EncoderParameter : IDisposable
+    public sealed unsafe class EncoderParameter : IDisposable
     {
 #pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
         [MarshalAs(UnmanagedType.Struct)]
@@ -91,12 +91,9 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeByte;
             _numberOfValues = 1;
-            _parameterValue = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(byte)));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(byte));
 
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-
-            Marshal.WriteByte(_parameterValue, value);
+            *(byte*)_parameterValue = value;
             GC.KeepAlive(this);
         }
 
@@ -109,12 +106,9 @@ namespace System.Drawing.Imaging
             else
                 _parameterValueType = EncoderParameterValueType.ValueTypeByte;
             _numberOfValues = 1;
-            _parameterValue = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(byte)));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(byte));
 
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-
-            Marshal.WriteByte(_parameterValue, value);
+            *(byte*)_parameterValue = value;
             GC.KeepAlive(this);
         }
 
@@ -124,12 +118,9 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeShort;
             _numberOfValues = 1;
-            _parameterValue = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(short)));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(short));
 
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-
-            Marshal.WriteInt16(_parameterValue, value);
+            *(short*)_parameterValue = value;
             GC.KeepAlive(this);
         }
 
@@ -139,12 +130,9 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLong;
             _numberOfValues = 1;
-            _parameterValue = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(int)));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(int));
 
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-
-            Marshal.WriteInt32(_parameterValue, unchecked((int)value));
+            *(int*)_parameterValue = unchecked((int)value);
             GC.KeepAlive(this);
         }
 
@@ -154,14 +142,10 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRational;
             _numberOfValues = 1;
-            int size = Marshal.SizeOf(typeof(int));
-            _parameterValue = Marshal.AllocHGlobal(2 * size);
+            _parameterValue = Marshal.AllocHGlobal(2 * sizeof(int));
 
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-
-            Marshal.WriteInt32(_parameterValue, numerator);
-            Marshal.WriteInt32(Add(_parameterValue, size), denominator);
+            ((int*)_parameterValue)[0] = numerator;
+            ((int*)_parameterValue)[1] = denominator;
             GC.KeepAlive(this);
         }
 
@@ -171,14 +155,10 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLongRange;
             _numberOfValues = 1;
-            int size = Marshal.SizeOf(typeof(int));
-            _parameterValue = Marshal.AllocHGlobal(2 * size);
+            _parameterValue = Marshal.AllocHGlobal(2 * sizeof(int));
 
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-
-            Marshal.WriteInt32(_parameterValue, unchecked((int)rangebegin));
-            Marshal.WriteInt32(Add(_parameterValue, size), unchecked((int)rangeend));
+            ((int*)_parameterValue)[0] = unchecked((int)rangebegin);
+            ((int*)_parameterValue)[1] = unchecked((int)rangeend);
             GC.KeepAlive(this);
         }
 
@@ -190,16 +170,12 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRationalRange;
             _numberOfValues = 1;
-            int size = Marshal.SizeOf(typeof(int));
-            _parameterValue = Marshal.AllocHGlobal(4 * size);
+            _parameterValue = Marshal.AllocHGlobal(4 * sizeof(int));
 
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-
-            Marshal.WriteInt32(_parameterValue, numerator1);
-            Marshal.WriteInt32(Add(_parameterValue, size), demoninator1);
-            Marshal.WriteInt32(Add(_parameterValue, 2 * size), numerator2);
-            Marshal.WriteInt32(Add(_parameterValue, 3 * size), demoninator2);
+            ((int*)_parameterValue)[0] = numerator1;
+            ((int*)_parameterValue)[1] = demoninator1;
+            ((int*)_parameterValue)[2] = numerator2;
+            ((int*)_parameterValue)[3] = demoninator2;
             GC.KeepAlive(this);
         }
 
@@ -211,9 +187,6 @@ namespace System.Drawing.Imaging
             _numberOfValues = value.Length;
             _parameterValue = Marshal.StringToHGlobalAnsi(value);
             GC.KeepAlive(this);
-
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
         }
 
         public EncoderParameter(Encoder encoder, byte[] value)
@@ -224,9 +197,6 @@ namespace System.Drawing.Imaging
             _numberOfValues = value.Length;
 
             _parameterValue = Marshal.AllocHGlobal(_numberOfValues);
-
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
 
             Marshal.Copy(value, 0, _parameterValue, _numberOfValues);
             GC.KeepAlive(this);
@@ -244,9 +214,6 @@ namespace System.Drawing.Imaging
             _numberOfValues = value.Length;
             _parameterValue = Marshal.AllocHGlobal(_numberOfValues);
 
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-
             Marshal.Copy(value, 0, _parameterValue, _numberOfValues);
             GC.KeepAlive(this);
         }
@@ -257,29 +224,19 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeShort;
             _numberOfValues = value.Length;
-            int size = Marshal.SizeOf(typeof(short));
-
-            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * size));
-
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
+            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * sizeof(short)));
 
             Marshal.Copy(value, 0, _parameterValue, _numberOfValues);
             GC.KeepAlive(this);
         }
 
-        public unsafe EncoderParameter(Encoder encoder, long[] value)
+        public EncoderParameter(Encoder encoder, long[] value)
         {
             _parameterGuid = encoder.Guid;
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLong;
             _numberOfValues = value.Length;
-            int size = Marshal.SizeOf(typeof(int));
-
-            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * size));
-
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
+            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * sizeof(int)));
 
             int* dest = (int*)_parameterValue;
             fixed (long* source = value)
@@ -301,17 +258,12 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRational;
             _numberOfValues = numerator.Length;
-            int size = Marshal.SizeOf(typeof(int));
-
-            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 2 * size));
-
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
+            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 2 * sizeof(int)));
 
             for (int i = 0; i < _numberOfValues; i++)
             {
-                Marshal.WriteInt32(Add(i * 2 * size, _parameterValue), (int)numerator[i]);
-                Marshal.WriteInt32(Add((i * 2 + 1) * size, _parameterValue), (int)denominator[i]);
+                ((int*)_parameterValue)[i * 2 + 0] = numerator[i];
+                ((int*)_parameterValue)[i * 2 + 1] = denominator[i];
             }
             GC.KeepAlive(this);
         }
@@ -325,17 +277,12 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLongRange;
             _numberOfValues = rangebegin.Length;
-            int size = Marshal.SizeOf(typeof(int));
-
-            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 2 * size));
-
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
+            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 2 * sizeof(int)));
 
             for (int i = 0; i < _numberOfValues; i++)
             {
-                Marshal.WriteInt32(Add(i * 2 * size, _parameterValue), unchecked((int)rangebegin[i]));
-                Marshal.WriteInt32(Add((i * 2 + 1) * size, _parameterValue), unchecked((int)rangeend[i]));
+                ((int*)_parameterValue)[i * 2 + 0] = unchecked((int)rangebegin[i]);
+                ((int*)_parameterValue)[i * 2 + 1] = unchecked((int)rangeend[i]);
             }
             GC.KeepAlive(this);
         }
@@ -353,19 +300,14 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRationalRange;
             _numberOfValues = numerator1.Length;
-            int size = Marshal.SizeOf(typeof(int));
-
-            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 4 * size));
-
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
+            _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 4 * sizeof(int)));
 
             for (int i = 0; i < _numberOfValues; i++)
             {
-                Marshal.WriteInt32(Add(_parameterValue, 4 * i * size), numerator1[i]);
-                Marshal.WriteInt32(Add(_parameterValue, (4 * i + 1) * size), denominator1[i]);
-                Marshal.WriteInt32(Add(_parameterValue, (4 * i + 2) * size), numerator2[i]);
-                Marshal.WriteInt32(Add(_parameterValue, (4 * i + 3) * size), denominator2[i]);
+                ((int*)_parameterValue)[i * 4 + 0] = numerator1[i];
+                ((int*)_parameterValue)[i * 4 + 1] = denominator1[i];
+                ((int*)_parameterValue)[i * 4 + 2] = numerator2[i];
+                ((int*)_parameterValue)[i * 4 + 3] = denominator2[i];
             }
             GC.KeepAlive(this);
         }
@@ -405,13 +347,7 @@ namespace System.Drawing.Imaging
 
             _parameterValue = Marshal.AllocHGlobal(bytes);
 
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-
-            for (int i = 0; i < bytes; i++)
-            {
-                Marshal.WriteByte(Add(_parameterValue, i), Marshal.ReadByte((IntPtr)(Value + i)));
-            }
+            new ReadOnlySpan<byte>((void*)Value, bytes).CopyTo(new Span<byte>((void*)_parameterValue, bytes));
 
             _parameterValueType = (EncoderParameterValueType)Type;
             _numberOfValues = NumberOfValues;
@@ -445,6 +381,9 @@ namespace System.Drawing.Imaging
                 case EncoderParameterValueType.ValueTypeRationalRange:
                     size = 2 * 2 * 4;
                     break;
+                case EncoderParameterValueType.ValueTypePointer:
+                    size = IntPtr.Size;
+                    break;
                 default:
                     throw Gdip.StatusException(Gdip.WrongState);
             }
@@ -453,28 +392,12 @@ namespace System.Drawing.Imaging
 
             _parameterValue = Marshal.AllocHGlobal(bytes);
 
-            if (_parameterValue == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-
-            for (int i = 0; i < bytes; i++)
-            {
-                Marshal.WriteByte(Add(_parameterValue, i), Marshal.ReadByte((IntPtr)(value + i)));
-            }
+            new ReadOnlySpan<byte>((void*)value, bytes).CopyTo(new Span<byte>((void*)_parameterValue, bytes));
 
             _parameterValueType = type;
             _numberOfValues = numberValues;
             _parameterGuid = encoder.Guid;
             GC.KeepAlive(this);
-        }
-
-        private static IntPtr Add(IntPtr a, int b)
-        {
-            return (IntPtr)((long)a + (long)b);
-        }
-
-        private static IntPtr Add(int a, IntPtr b)
-        {
-            return (IntPtr)((long)a + (long)b);
         }
     }
 }

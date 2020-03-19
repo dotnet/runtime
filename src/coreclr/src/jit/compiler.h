@@ -883,7 +883,7 @@ public:
                (lvIsParam || lvAddrExposed || lvIsStructField);
     }
 
-    bool lvNormalizeOnStore()
+    bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
@@ -925,7 +925,7 @@ public:
     }
 
     // Returns the layout of a struct variable.
-    ClassLayout* GetLayout()
+    ClassLayout* GetLayout() const
     {
         assert(varTypeIsStruct(lvType));
         return m_layout;
@@ -946,6 +946,35 @@ public:
     LclSsaVarDsc* GetPerSsaData(unsigned ssaNum)
     {
         return lvPerSsaData.GetSsaDef(ssaNum);
+    }
+
+    //------------------------------------------------------------------------
+    // GetRegisterType: Determine register type for that local var.
+    //
+    // Arguments:
+    //    tree - node that uses the local, its type is checked first.
+    //
+    // Return Value:
+    //    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+    //
+    var_types GetRegisterType(const GenTreeLclVarCommon* tree) const
+    {
+        var_types targetType = tree->gtType;
+
+#ifdef DEBUG
+        // Ensure that lclVar nodes are typed correctly.
+        if (tree->OperIs(GT_STORE_LCL_VAR) && lvNormalizeOnStore())
+        {
+            // TODO: update that assert to work with TypeGet() == TYP_STRUCT case.
+            // assert(targetType == genActualType(TypeGet()));
+        }
+#endif
+
+        if (targetType != TYP_STRUCT)
+        {
+            return targetType;
+        }
+        return GetLayout()->GetRegisterType();
     }
 
 #ifdef DEBUG
@@ -2377,6 +2406,8 @@ public:
 
     EHblkDsc* ehInitTryBlockRange(BasicBlock* blk, BasicBlock** tryBeg, BasicBlock** tryLast);
 
+    void fgSetTryBeg(EHblkDsc* handlerTab, BasicBlock* newTryBeg);
+
     void fgSetTryEnd(EHblkDsc* handlerTab, BasicBlock* newTryLast);
 
     void fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast);
@@ -2578,6 +2609,10 @@ public:
         var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID);
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
     CORINFO_CLASS_HANDLE gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType);
+    var_types getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
+                                         CORINFO_CLASS_HANDLE clsHnd,
+                                         CORINFO_SIG_INFO*    sig,
+                                         var_types            baseType);
 #endif // FEATURE_HW_INTRINSICS
 
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
@@ -3170,6 +3205,10 @@ public:
     int lvaToInitialSPRelativeOffset(unsigned offset, bool isFpBased);
     int lvaGetInitialSPRelativeOffset(unsigned varNum);
 
+    // True if this is an OSR compilation and this local is potentially
+    // located on the original method stack frame.
+    bool lvaIsOSRLocal(unsigned varNum);
+
     //------------------------ For splitting types ----------------------------
 
     void lvaInitTypeRef();
@@ -3492,8 +3531,7 @@ public:
 
 public:
     void impInit();
-
-    void impImport(BasicBlock* method);
+    void impImport();
 
     CORINFO_CLASS_HANDLE impGetRefAnyClass();
     CORINFO_CLASS_HANDLE impGetRuntimeArgumentHandle();
@@ -3634,13 +3672,12 @@ protected:
                                        bool                  mustExpand);
 
 protected:
-    bool compSupportsHWIntrinsic(InstructionSet isa);
+    bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
-                                 CORINFO_SIG_INFO*     sig,
-                                 bool                  mustExpand);
+                                 CORINFO_SIG_INFO*     sig);
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
@@ -3650,48 +3687,12 @@ protected:
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
                               CORINFO_CLASS_HANDLE  clsHnd,
                               CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig,
-                              bool                  mustExpand);
-    GenTree* impSSEIntrinsic(NamedIntrinsic        intrinsic,
-                             CORINFO_METHOD_HANDLE method,
-                             CORINFO_SIG_INFO*     sig,
-                             bool                  mustExpand);
-    GenTree* impSSE2Intrinsic(NamedIntrinsic        intrinsic,
-                              CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig,
-                              bool                  mustExpand);
-    GenTree* impSSE42Intrinsic(NamedIntrinsic        intrinsic,
-                               CORINFO_METHOD_HANDLE method,
-                               CORINFO_SIG_INFO*     sig,
-                               bool                  mustExpand);
-    GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
-                                   CORINFO_METHOD_HANDLE method,
-                                   CORINFO_SIG_INFO*     sig,
-                                   bool                  mustExpand);
-    GenTree* impAESIntrinsic(NamedIntrinsic        intrinsic,
-                             CORINFO_METHOD_HANDLE method,
-                             CORINFO_SIG_INFO*     sig,
-                             bool                  mustExpand);
-    GenTree* impBMI1OrBMI2Intrinsic(NamedIntrinsic        intrinsic,
-                                    CORINFO_METHOD_HANDLE method,
-                                    CORINFO_SIG_INFO*     sig,
-                                    bool                  mustExpand);
-    GenTree* impFMAIntrinsic(NamedIntrinsic        intrinsic,
-                             CORINFO_METHOD_HANDLE method,
-                             CORINFO_SIG_INFO*     sig,
-                             bool                  mustExpand);
-    GenTree* impLZCNTIntrinsic(NamedIntrinsic        intrinsic,
-                               CORINFO_METHOD_HANDLE method,
-                               CORINFO_SIG_INFO*     sig,
-                               bool                  mustExpand);
-    GenTree* impPCLMULQDQIntrinsic(NamedIntrinsic        intrinsic,
-                                   CORINFO_METHOD_HANDLE method,
-                                   CORINFO_SIG_INFO*     sig,
-                                   bool                  mustExpand);
-    GenTree* impPOPCNTIntrinsic(NamedIntrinsic        intrinsic,
-                                CORINFO_METHOD_HANDLE method,
-                                CORINFO_SIG_INFO*     sig,
-                                bool                  mustExpand);
+                              CORINFO_SIG_INFO*     sig);
+    GenTree* impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
@@ -4146,6 +4147,7 @@ public:
     BasicBlock* fgFirstBB;        // Beginning of the basic block list
     BasicBlock* fgLastBB;         // End of the basic block list
     BasicBlock* fgFirstColdBlock; // First block to be placed in the cold section
+    BasicBlock* fgEntryBB;        // For OSR, the original method's entry point
 #if defined(FEATURE_EH_FUNCLETS)
     BasicBlock* fgFirstFuncletBB; // First block of outlined funclets (to allow block insertion before the funclets)
 #endif
@@ -4358,6 +4360,8 @@ public:
     void fgImport();
 
     void fgTransformIndirectCalls();
+
+    void fgTransformPatchpoints();
 
     void fgInline();
 
@@ -4645,6 +4649,16 @@ public:
     // Does value-numbering for an intrinsic tree.
     void fgValueNumberIntrinsic(GenTree* tree);
 
+#ifdef FEATURE_SIMD
+    // Does value-numbering for a GT_SIMD tree
+    void fgValueNumberSimd(GenTree* tree);
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+    // Does value-numbering for a GT_HWINTRINSIC tree
+    void fgValueNumberHWIntrinsic(GenTree* tree);
+#endif // FEATURE_HW_INTRINSICS
+
     // Does value-numbering for a call.  We interpret some helper calls.
     void fgValueNumberCall(GenTreeCall* call);
 
@@ -4668,6 +4682,9 @@ public:
 
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
+
+    // Adds the exception set for the current tree node which is performing a bounds check operation
+    void fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree);
 
     // Adds the exception set for the current tree node which is performing a ckfinite operation
     void fgValueNumberAddExceptionSetForCkFinite(GenTree* tree);
@@ -5255,11 +5272,10 @@ public:
 public:
     void fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt);
     Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree);
+    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree);
 
 private:
     void fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt);
-    Statement* fgNewStmtNearEnd(BasicBlock* block, GenTree* tree);
-
     void fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt);
     Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree);
 
@@ -6161,6 +6177,12 @@ protected:
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
 
+        // ToDo: This can be removed when gtGetStructHandleIfPresent stops guessing
+        // and GT_IND nodes always have valid struct handle.
+        //
+        CORINFO_CLASS_HANDLE csdStructHnd; // The class handle, currently needed to create a SIMD LclVar in PerformCSE
+        bool                 csdStructHndMismatch;
+
         ValueNum defExcSetPromise; // The exception set that is now required for all defs of this CSE.
                                    // This will be set to NoVN if we decide to abandon this CSE
 
@@ -6333,6 +6355,7 @@ public:
 #define OMF_HAS_OBJSTACKALLOC 0x00000040    // Method contains an object allocated on the stack.
 #define OMF_HAS_GUARDEDDEVIRT 0x00000080    // Method contains guarded devirtualization candidate
 #define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
+#define OMF_HAS_PATCHPOINT 0x00000200       // Method contains patchpoints
 
     bool doesMethodHaveFatPointer()
     {
@@ -6388,6 +6411,16 @@ public:
     }
 
     void addExpRuntimeLookupCandidate(GenTreeCall* call);
+
+    bool doesMethodHavePatchpoints()
+    {
+        return (optMethodFlags & OMF_HAS_PATCHPOINT) != 0;
+    }
+
+    void setMethodHasPatchpoint()
+    {
+        optMethodFlags |= OMF_HAS_PATCHPOINT;
+    }
 
     unsigned optMethodFlags;
 
@@ -8160,6 +8193,13 @@ public:
 #endif // !FEATURE_SIMD
     }
 
+#ifdef FEATURE_SIMD
+    static bool vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId);
+#endif // !FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+    static bool vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID);
+#endif // FEATURE_HW_INTRINSICS
+
 private:
     // These routines need not be enclosed under FEATURE_SIMD since lvIsSIMDType()
     // is defined for both FEATURE_SIMD and !FEATURE_SIMD apropriately. The use
@@ -8230,7 +8270,7 @@ private:
         return false;
     }
 
-    bool compSupports(InstructionSet isa) const
+    bool compSupports(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (opts.compSupportsISA & (1ULL << isa)) != 0;
@@ -8339,11 +8379,13 @@ public:
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         uint64_t compSupportsISA;
-        void setSupportedISA(InstructionSet isa)
-        {
-            compSupportsISA |= 1ULL << isa;
-        }
 #endif
+        void setSupportedISAs(CORINFO_InstructionSetFlags isas)
+        {
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+            compSupportsISA = isas.GetFlagsRaw();
+#endif
+        }
 
         unsigned compFlags; // method attributes
         unsigned instrCount;
@@ -8420,6 +8462,18 @@ public:
         }
 #else
         bool IsReadyToRun()
+        {
+            return false;
+        }
+#endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        bool IsOSR() const
+        {
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_OSR);
+        }
+#else
+        bool IsOSR() const
         {
             return false;
         }
@@ -8761,11 +8815,13 @@ public:
         // The following holds the class attributes for the method we're compiling.
         unsigned compClassAttr;
 
-        const BYTE*    compCode;
-        IL_OFFSET      compILCodeSize;     // The IL code size
-        IL_OFFSET      compILImportSize;   // Estimated amount of IL actually imported
-        UNATIVE_OFFSET compNativeCodeSize; // The native code size, after instructions are issued. This
-                                           // is less than (compTotalHotCodeSize + compTotalColdCodeSize) only if:
+        const BYTE*     compCode;
+        IL_OFFSET       compILCodeSize;     // The IL code size
+        IL_OFFSET       compILImportSize;   // Estimated amount of IL actually imported
+        IL_OFFSET       compILEntry;        // The IL entry point (normally 0)
+        PatchpointInfo* compPatchpointInfo; // Patchpoint data for OSR (normally nullptr)
+        UNATIVE_OFFSET  compNativeCodeSize; // The native code size, after instructions are issued. This
+        // is less than (compTotalHotCodeSize + compTotalColdCodeSize) only if:
         // (1) the code is not hot/cold split, and we issued less code than we expected, or
         // (2) the code is hot/cold split, and we issued less code than we expected
         // in the cold section (the hot section will always be padded out to compTotalHotCodeSize).
@@ -8937,10 +8993,16 @@ public:
 //-------------------------- Global Compiler Data ------------------------------------
 
 #ifdef DEBUG
-    static unsigned s_compMethodsCount; // to produce unique label names
-    unsigned        compGenTreeID;
-    unsigned        compStatementID;
-    unsigned        compBasicBlockID;
+private:
+    static LONG s_compMethodsCount; // to produce unique label names
+#endif
+
+public:
+#ifdef DEBUG
+    LONG     compMethodID;
+    unsigned compGenTreeID;
+    unsigned compStatementID;
+    unsigned compBasicBlockID;
 #endif
 
     BasicBlock* compCurBB;   // the current basic block in process
@@ -9041,6 +9103,8 @@ public:
                           JitFlags*             compileFlag);
 
     ArenaAllocator* compGetArenaAllocator();
+
+    void generatePatchpointInfo();
 
 #if MEASURE_MEM_ALLOC
     static bool s_dspMemStats; // Display per-phase memory statistics for every function

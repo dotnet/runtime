@@ -242,8 +242,8 @@ parse_debug_options (const char* p)
 }
 
 typedef struct {
-	const char name [6];
-	const char desc [18];
+	char name [6];
+	char desc [18];
 	MonoGraphOptions value;
 } GraphName;
 
@@ -2391,7 +2391,7 @@ mono_main (int argc, char* argv[])
 				enable_debugging = FALSE;
 			}
 #endif
- 		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
+		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
 			sdb_options = g_strdup (argv [i] + 17);

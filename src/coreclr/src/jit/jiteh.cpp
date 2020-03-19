@@ -1213,6 +1213,25 @@ EHblkDsc* Compiler::ehInitTryBlockRange(BasicBlock* blk, BasicBlock** tryBeg, Ba
 }
 
 /*****************************************************************************
+ *  This method updates the value of ebdTryBeg
+ */
+
+void Compiler::fgSetTryBeg(EHblkDsc* handlerTab, BasicBlock* newTryBeg)
+{
+    assert(newTryBeg != nullptr);
+
+    // Check if we are going to change the existing value of endTryLast
+    //
+    if (handlerTab->ebdTryBeg != newTryBeg)
+    {
+        // Update the EH table with the newTryLast block
+        handlerTab->ebdTryBeg = newTryBeg;
+
+        JITDUMP("EH#%u: New first block of try: " FMT_BB "\n", ehGetIndex(handlerTab), handlerTab->ebdTryBeg->bbNum);
+    }
+}
+
+/*****************************************************************************
  *  This method updates the value of ebdTryLast.
  */
 

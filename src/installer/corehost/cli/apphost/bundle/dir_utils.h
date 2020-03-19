@@ -17,6 +17,7 @@ namespace bundle
         static void remove_directory_tree(const pal::string_t &path);
         static void create_directory_tree(const pal::string_t &path);
         static void fixup_path_separator(pal::string_t& path);
+        static bool rename_with_retries(pal::string_t& old_name, pal::string_t& new_name, bool &new_dir_exists);
     };
 }
 

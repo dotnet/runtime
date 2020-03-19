@@ -49,7 +49,7 @@ target_precompile_header(TARGET superpmi-shim-simple HEADER standardpch.h)
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-simple
         utilcodestaticnohost
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )

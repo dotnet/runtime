@@ -51,7 +51,7 @@ target_precompile_header(TARGET mcs HEADER standardpch.h)
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(mcs
         utilcodestaticnohost
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )

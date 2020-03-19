@@ -2379,8 +2379,7 @@ namespace System.Globalization
                 ch = Culture.TextInfo.ToLower(ch);
                 if (IsHebrewChar(ch) && TokenMask == TokenType.RegularTokenMask)
                 {
-                    bool badFormat;
-                    if (TryParseHebrewNumber(ref str, out badFormat, out tokenValue))
+                    if (TryParseHebrewNumber(ref str, out bool badFormat, out tokenValue))
                     {
                         if (badFormat)
                         {

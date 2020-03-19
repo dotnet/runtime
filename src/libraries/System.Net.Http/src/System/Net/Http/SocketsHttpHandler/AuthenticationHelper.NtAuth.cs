@@ -23,7 +23,7 @@ namespace System.Net.Http
 
         private static bool ProxySupportsConnectionAuth(HttpResponseMessage response)
         {
-            if (!response.Headers.TryGetValues(KnownHeaders.ProxySupport.Descriptor, out IEnumerable<string> values))
+            if (!response.Headers.TryGetValues(KnownHeaders.ProxySupport.Descriptor, out IEnumerable<string>? values))
             {
                 return false;
             }
@@ -64,14 +64,16 @@ namespace System.Net.Http
                         if (response.Headers.ConnectionClose.GetValueOrDefault())
                         {
                             // Server is closing the connection and asking us to authenticate on a new connection.
+#pragma warning disable CS8600 // expression returns null connection on error, was not able to use '!' for the expression
                             (connection, response) = await connectionPool.CreateHttp11ConnectionAsync(request, cancellationToken).ConfigureAwait(false);
+#pragma warning restore CS8600
                             if (response != null)
                             {
                                 return response;
                             }
 
                             connectionPool.IncrementConnectionCount();
-                            connection.Acquire();
+                            connection!.Acquire();
                             isNewConnection = true;
                             needDrain = false;
                         }
@@ -119,14 +121,14 @@ namespace System.Net.Http
                             NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, SPN: {spn}");
                         }
 
-                        ChannelBinding channelBinding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
+                        ChannelBinding? channelBinding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
                         NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection, channelBinding);
-                        string challengeData = challenge.ChallengeData;
+                        string? challengeData = challenge.ChallengeData;
                         try
                         {
                             while (true)
                             {
-                                string challengeResponse = authContext.GetOutgoingBlob(challengeData);
+                                string? challengeResponse = authContext.GetOutgoingBlob(challengeData);
                                 if (challengeResponse == null)
                                 {
                                     // Response indicated denial even after login, so stop processing and return current response.
@@ -135,7 +137,7 @@ namespace System.Net.Http
 
                                 if (needDrain)
                                 {
-                                    await connection.DrainResponseAsync(response, cancellationToken).ConfigureAwait(false);
+                                    await connection.DrainResponseAsync(response!, cancellationToken).ConfigureAwait(false);
                                 }
 
                                 SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(challenge.SchemeName, challengeResponse), isProxyAuth);
@@ -158,13 +160,13 @@ namespace System.Net.Http
                     {
                         if (isNewConnection)
                         {
-                            connection.Release();
+                            connection!.Release();
                         }
                     }
                 }
             }
 
-            return response;
+            return response!;
         }
 
         public static Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, ICredentials proxyCredentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
@@ -174,6 +176,7 @@ namespace System.Net.Http
 
         public static Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpRequestMessage request, ICredentials credentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
+            Debug.Assert(request.RequestUri != null);
             return SendWithNtAuthAsync(request, request.RequestUri, credentials, isProxyAuth: false, connection, connectionPool, cancellationToken);
         }
     }

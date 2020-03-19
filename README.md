@@ -37,7 +37,7 @@ This repo should contain issues that are tied to the runtime, the class librarie
 
 For other issues, please use the following repos:
 
-- For overall .NET Core SDK issues, file in the [dotnet/toolset](https://github.com/dotnet/toolset) repo
+- For overall .NET Core SDK issues, file in the [dotnet/sdk](https://github.com/dotnet/sdk) repo
 - For ASP.NET issues, file in the [dotnet/aspnetcore](https://github.com/dotnet/aspnetcore) repo.
 
 ## Useful Links

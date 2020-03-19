@@ -2445,9 +2445,9 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
     EmitBytes(code, sizeof(code));
     Emit32(offsetof(TEB, ThreadLocalStoragePointer));
 
-    X86EmitIndexRegLoad(dstreg, dstreg, sizeof(void *) * (g_TlsIndex & 0xFFFF));
+    X86EmitIndexRegLoad(dstreg, dstreg, sizeof(void *) * _tls_index);
 
-    X86EmitIndexRegLoad(dstreg, dstreg, (g_TlsIndex & 0x7FFF0000) >> 16);
+    X86EmitIndexRegLoad(dstreg, dstreg, (int)Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo));
 
 #endif // TARGET_UNIX
 }
@@ -4398,7 +4398,6 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
 
             // Try to call the fast helper first ( ObjIsInstanceOfCached ).
             // If that fails we will fall back to calling the slow helper ( ArrayStoreCheck ) that erects a frame.
-            // See also JitInterfaceX86::JIT_Stelem_Ref
 
 #ifdef TARGET_AMD64
             // RCX contains pointer to object to check (Object*)

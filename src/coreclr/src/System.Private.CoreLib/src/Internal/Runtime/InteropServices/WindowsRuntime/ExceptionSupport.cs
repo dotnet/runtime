@@ -29,14 +29,10 @@ namespace Internal.Runtime.InteropServices.WindowsRuntime
                     IRestrictedErrorInfo restrictedErrorInfo = UnsafeNativeMethods.GetRestrictedErrorInfo();
                     if (restrictedErrorInfo != null)
                     {
-                        string description;
-                        string restrictedDescription;
-                        string capabilitySid;
-                        int restrictedErrorInfoHResult;
-                        restrictedErrorInfo.GetErrorDetails(out description,
-                                                            out restrictedErrorInfoHResult,
-                                                            out restrictedDescription,
-                                                            out capabilitySid);
+                        restrictedErrorInfo.GetErrorDetails(out string description,
+                                                            out int restrictedErrorInfoHResult,
+                                                            out string restrictedDescription,
+                                                            out string capabilitySid);
 
                         // Since this is a special case where by convention there may be a correlation, there is not a
                         // guarantee that the restricted error info does belong to the async error code.  In order to
@@ -46,8 +42,7 @@ namespace Internal.Runtime.InteropServices.WindowsRuntime
                         // for the IAsyncInfo case.
                         if (e.HResult == restrictedErrorInfoHResult)
                         {
-                            string errorReference;
-                            restrictedErrorInfo.GetReference(out errorReference);
+                            restrictedErrorInfo.GetReference(out string errorReference);
 
                             e.AddExceptionDataForRestrictedErrorInfo(restrictedDescription,
                                                                      errorReference,

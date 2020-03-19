@@ -635,12 +635,12 @@ typedef struct _DOTNET_TRACE_CONTEXT
         clrproviders = os.path.join(incDir, "clrproviders.h")
         with open_for_update(clrproviders) as Clrproviders:
             Clrproviders.write("""
-    typedef struct _EVENT_DESCRIPTOR
-    {
-        int const Level;
-        ULONGLONG const Keyword;
-    } EVENT_DESCRIPTOR;
-    """)
+typedef struct _EVENT_DESCRIPTOR
+{
+    int const Level;
+    ULONGLONG const Keyword;
+} EVENT_DESCRIPTOR;
+""")
 
             if not is_windows:
                 Clrproviders.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT

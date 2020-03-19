@@ -34,6 +34,7 @@ int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 
     return error;
 #else
+    (void)windowSize; // unused
     errno = ENOTSUP;
     return -1;
 #endif

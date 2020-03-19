@@ -939,16 +939,16 @@ namespace System
             Interop.Kernel32.SMALL_RECT srWindow = csbi.srWindow;
 
             // Check for arithmetic underflows & overflows.
-            int newRight = left + srWindow.Right - srWindow.Left + 1;
-            if (left < 0 || newRight > csbi.dwSize.X || newRight < 0)
+            int newRight = left + srWindow.Right - srWindow.Left;
+            if (left < 0 || newRight > csbi.dwSize.X - 1 || newRight < left)
                 throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleWindowPos);
-            int newBottom = top + srWindow.Bottom - srWindow.Top + 1;
-            if (top < 0 || newBottom > csbi.dwSize.Y || newBottom < 0)
+            int newBottom = top + srWindow.Bottom - srWindow.Top;
+            if (top < 0 || newBottom > csbi.dwSize.Y - 1 || newBottom < top)
                 throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleWindowPos);
 
             // Preserve the size, but move the position.
-            srWindow.Bottom -= (short)(srWindow.Top - top);
-            srWindow.Right -= (short)(srWindow.Left - left);
+            srWindow.Bottom = (short)newBottom;
+            srWindow.Right = (short)newRight;
             srWindow.Left = (short)left;
             srWindow.Top = (short)top;
 
@@ -1189,7 +1189,7 @@ namespace System
 
                 // For pipes that are closing or broken, just stop.
                 // (E.g. ERROR_NO_DATA ("pipe is being closed") is returned when we write to a console that is closing;
-                // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is mot an error, but EOF.)
+                // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is not an error, but EOF.)
                 int errorCode = Marshal.GetLastWin32Error();
                 if (errorCode == Interop.Errors.ERROR_NO_DATA || errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
                     return Interop.Errors.ERROR_SUCCESS;

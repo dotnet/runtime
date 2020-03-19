@@ -781,7 +781,7 @@ clear_domain_process_object (GCObject *obj, MonoDomain *domain)
 	remove = need_remove_object_for_domain (obj, domain);
 
 	if (remove && obj->synchronisation) {
-		guint32 dislink = mono_monitor_get_object_monitor_gchandle (obj);
+		MonoGCHandle dislink = mono_monitor_get_object_monitor_gchandle (obj);
 		if (dislink)
 			mono_gchandle_free_internal (dislink);
 	}
@@ -2679,10 +2679,10 @@ sgen_client_metadata_for_object (GCObject *obj)
  *
  * \returns a handle that can be used to access the object from unmanaged code.
  */
-guint32
+MonoGCHandle
 mono_gchandle_new_internal (MonoObject *obj, gboolean pinned)
 {
-	return sgen_gchandle_new (obj, pinned);
+	return MONO_GC_HANDLE_FROM_UINT (sgen_gchandle_new (obj, pinned));
 }
 
 /**
@@ -2706,10 +2706,10 @@ mono_gchandle_new_internal (MonoObject *obj, gboolean pinned)
  * \returns a handle that can be used to access the object from
  * unmanaged code.
  */
-guint32
+MonoGCHandle
 mono_gchandle_new_weakref_internal (GCObject *obj, gboolean track_resurrection)
 {
-	return sgen_gchandle_new_weakref (obj, track_resurrection);
+	return MONO_GC_HANDLE_FROM_UINT (sgen_gchandle_new_weakref (obj, track_resurrection));
 }
 
 /**
@@ -2719,9 +2719,9 @@ mono_gchandle_new_weakref_internal (GCObject *obj, gboolean track_resurrection)
  * \returns TRUE if the object wrapped by the \p gchandle belongs to the specific \p domain.
  */
 gboolean
-mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
+mono_gchandle_is_in_domain (MonoGCHandle gchandle, MonoDomain *domain)
 {
-	MonoDomain *gchandle_domain = (MonoDomain *)sgen_gchandle_get_metadata (gchandle);
+	MonoDomain *gchandle_domain = (MonoDomain *)sgen_gchandle_get_metadata (MONO_GC_HANDLE_TO_UINT (gchandle));
 	return domain->domain_id == gchandle_domain->domain_id;
 }
 
@@ -2734,9 +2734,9 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
  * object wrapped.
  */
 void
-mono_gchandle_free_internal (guint32 gchandle)
+mono_gchandle_free_internal (MonoGCHandle gchandle)
 {
-	sgen_gchandle_free (gchandle);
+	sgen_gchandle_free (MONO_GC_HANDLE_TO_UINT (gchandle));
 }
 
 /**
@@ -2762,9 +2762,9 @@ mono_gchandle_free_domain (MonoDomain *unloading)
  * NULL for a collected object if using a weakref handle.
  */
 MonoObject*
-mono_gchandle_get_target_internal (guint32 gchandle)
+mono_gchandle_get_target_internal (MonoGCHandle gchandle)
 {
-	return sgen_gchandle_get_target (gchandle);
+	return sgen_gchandle_get_target (MONO_GC_HANDLE_TO_UINT (gchandle));
 }
 
 static gpointer
@@ -2793,9 +2793,9 @@ sgen_null_links_for_domain (MonoDomain *domain)
 }
 
 void
-mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
+mono_gchandle_set_target (MonoGCHandle gchandle, MonoObject *obj)
 {
-	sgen_gchandle_set_target (gchandle, obj);
+	sgen_gchandle_set_target (MONO_GC_HANDLE_TO_UINT (gchandle), obj);
 }
 
 void
@@ -2884,18 +2884,18 @@ mono_gc_add_memory_pressure (gint64 value)
 void
 sgen_client_degraded_allocation (void)
 {
+	//The WASM target aways triggers degrated allocation before collecting. So no point in printing the warning as it will just confuse users
+#ifndef HOST_WASM
 	static gint32 last_major_gc_warned = -1;
 	static gint32 num_degraded = 0;
 
 	gint32 major_gc_count = mono_atomic_load_i32 (&mono_gc_stats.major_gc_count);
-	//The WASM target aways triggers degrated allocation before collecting. So no point in printing the warning as it will just confuse users
-#if !defined (TARGET_WASM)
 	if (mono_atomic_load_i32 (&last_major_gc_warned) < major_gc_count) {
 		gint32 num = mono_atomic_inc_i32 (&num_degraded);
 		if (num == 1 || num == 3)
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
 		else if (num == 10)
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
 
 		mono_atomic_store_i32 (&last_major_gc_warned, major_gc_count);
 	}
@@ -2970,9 +2970,9 @@ sgen_client_init (void)
 void
 mono_gc_init_icalls (void)
 {
-	mono_register_jit_icall (mono_gc_alloc_obj, mono_icall_sig_object_ptr_int, FALSE);
-	mono_register_jit_icall (mono_gc_alloc_vector, mono_icall_sig_object_ptr_int_int, FALSE);
-	mono_register_jit_icall (mono_gc_alloc_string, mono_icall_sig_object_ptr_int_int32, FALSE);
+	mono_register_jit_icall (mono_gc_alloc_obj, mono_icall_sig_object_ptr_sizet, FALSE);
+	mono_register_jit_icall (mono_gc_alloc_vector, mono_icall_sig_object_ptr_sizet_ptr, FALSE);
+	mono_register_jit_icall (mono_gc_alloc_string, mono_icall_sig_object_ptr_sizet_int32, FALSE);
 	mono_register_jit_icall (mono_profiler_raise_gc_allocation, mono_icall_sig_void_object, FALSE);
 }
 

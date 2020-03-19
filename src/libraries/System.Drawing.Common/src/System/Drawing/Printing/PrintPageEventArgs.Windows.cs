@@ -13,7 +13,7 @@ namespace System.Drawing.Printing
         private bool _hasMorePages;
         private bool _cancel;
 
-        private Graphics _graphics;
+        private Graphics? _graphics;
         private readonly Rectangle _marginBounds;
         private readonly Rectangle _pageBounds;
         private readonly PageSettings _pageSettings;
@@ -25,7 +25,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Initializes a new instance of the <see cref='PrintPageEventArgs'/> class.
         /// </summary>
-        public PrintPageEventArgs(Graphics graphics, Rectangle marginBounds, Rectangle pageBounds, PageSettings pageSettings)
+        public PrintPageEventArgs(Graphics? graphics, Rectangle marginBounds, Rectangle pageBounds, PageSettings pageSettings)
         {
             _graphics = graphics; // may be null, see PrintController
             _marginBounds = marginBounds;
@@ -45,7 +45,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Gets the <see cref='System.Drawing.Graphics'/> used to paint the item.
         /// </summary>
-        public Graphics Graphics
+        public Graphics? Graphics
         {
             get
             {
@@ -100,10 +100,10 @@ namespace System.Drawing.Printing
         /// </summary>
         internal void Dispose()
         {
-            _graphics.Dispose();
+            _graphics!.Dispose();
         }
 
-        internal void SetGraphics(Graphics value)
+        internal void SetGraphics(Graphics? value)
         {
             _graphics = value;
         }

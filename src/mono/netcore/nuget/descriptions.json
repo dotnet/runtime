@@ -13,5 +13,10 @@
         "Name": "Microsoft.NETCore.Runtime.Mono",
         "Description": "The Mono .NET Core runtime and the base library, called System.Private.CoreLib. It includes the garbage collector, JIT compiler, base .NET data types and many low-level classes.",
         "CommonTypes": [ ]
+    },
+    {
+        "Name": "Microsoft.NETCore.Tool.MonoAOT",
+        "Description": "The Mono .NET Core AOT compiler for compiling IL into native code targetting a specific platform and architecture.",
+        "CommonTypes": [ ]
     }
 ]

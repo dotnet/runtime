@@ -5,13 +5,13 @@ We currently only support running tests against coreclr.  There are additional m
 have not been moved over yet. Simply run the following command:
 
 ``` 
-dotnet msbuild /t:RunCoreClrTests $(REPO_ROOT)/src/mono/mono.proj
+dotnet build /t:RunCoreClrTests $(REPO_ROOT)/src/mono/mono.proj
 ```
 
 If you want to run individual tests, execute this command:
 
 ```
-dotnet msbuild /t:RunCoreClrTest /p:CoreClrTest="<TestName>" $(REPO_ROOT)/src/mono/mono.proj
+dotnet build /t:RunCoreClrTest /p:CoreClrTest="<TestName>" $(REPO_ROOT)/src/mono/mono.proj
 ```
 
 ## Running Library Tests
@@ -32,7 +32,7 @@ build.cmd /p:RuntimeFlavor=mono
 3. Run the tests
 
 ```
-dotnet msbuild /t:BuildAndTest /p:RuntimeFlavor=mono
+dotnet build /t:Test /p:RuntimeFlavor=mono
 ```
 
 # Patching Local dotnet (.dotnet-mono)
@@ -42,7 +42,7 @@ test programs and get a glimpse of how mono will work with the dotnet tooling.
 To generate a local .dotnet-mono, execute this command:
 
 ```
-dotnet msbuild /t:PatchLocalMonoDotnet $(REPO_ROOT)/src/mono/mono.proj
+dotnet build /t:PatchLocalMonoDotnet $(REPO_ROOT)/src/mono/mono.proj
 ```
 
 You can then, for example, run our HelloWorld sample via:

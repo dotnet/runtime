@@ -51,13 +51,13 @@ namespace System.Net.Http
                 // processing method. ProcessResponse() is only called if the task wasn't canceled before.
                 sendAsyncTask.ContinueWithStandard(tcs, (task, state) =>
                 {
-                    var sendState = (SendState)state;
+                    var sendState = (SendState)state!;
                     MessageProcessingHandler self = sendState._handler;
                     CancellationToken token = sendState._token;
 
                     if (task.IsFaulted)
                     {
-                        sendState.TrySetException(task.Exception.GetBaseException());
+                        sendState.TrySetException(task.Exception!.GetBaseException());
                         return;
                     }
 

@@ -135,6 +135,7 @@ CONFIG_INTEGER(ShouldInjectFault, W("InjectFault"), 0)
 CONFIG_INTEGER(StressCOMCall, W("StressCOMCall"), 0)
 CONFIG_INTEGER(TailcallStress, W("TailcallStress"), 0)
 CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, display each tree before/after morphing
+
 CONFIG_METHODSET(JitBreak, W("JitBreak")) // Stops in the importer when compiling a specified method
 CONFIG_METHODSET(JitDebugBreak, W("JitDebugBreak"))
 CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembly for specified method
@@ -275,6 +276,14 @@ CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
 
 // clang-format on
 
+#ifdef FEATURE_SIMD
+CONFIG_INTEGER(JitDisableSimdVN, W("JitDisableSimdVN"), 0) // Default 0, ValueNumbering of SIMD nodes and HW Intrinsic
+                                                           // nodes enabled
+                                                           // If 1, then disable ValueNumbering of SIMD nodes
+                                                           // If 2, then disable ValueNumbering of HW Intrinsic nodes
+                                                           // If 3, disable both SIMD and HW Intrinsic nodes
+#endif                                                     // FEATURE_SIMD
+
 ///
 /// JIT
 ///
@@ -384,6 +393,11 @@ CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualiza
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessUniqueInterface, W("JitGuardedDevirtualizationGuessUniqueInterface"), 1)
 CONFIG_INTEGER(JitGuardedDevirtualizationGuessBestClass, W("JitGuardedDevirtualizationGuessBestClass"), 1)
 #endif // DEBUG
+
+// Enable insertion of patchpoints into Tier0 methods with loops.
+CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
+// Initial patchpoint counter value used by jitted code
+CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

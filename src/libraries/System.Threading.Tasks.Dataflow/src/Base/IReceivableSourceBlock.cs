@@ -12,6 +12,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading.Tasks.Dataflow
 {
@@ -22,11 +23,11 @@ namespace System.Threading.Tasks.Dataflow
         // IMPLEMENT IMPLICITLY
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceive"]/*' />
-        bool TryReceive(Predicate<TOutput> filter, out TOutput item);
+        bool TryReceive(Predicate<TOutput>? filter, [MaybeNullWhen(false)] out TOutput item);
 
         // IMPLEMENT IMPLICITLY IF BLOCK SUPPORTS RECEIVING MORE THAN ONE ITEM, OTHERWISE EXPLICITLY
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="TryReceiveAll"]/*' />
-        bool TryReceiveAll(out IList<TOutput> items);
+        bool TryReceiveAll([NotNullWhen(true)] out IList<TOutput>? items);
     }
 }
