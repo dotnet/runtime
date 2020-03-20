@@ -1246,7 +1246,7 @@ namespace System.Data.OleDb
             if (null != _icommandText)
             {
                 OleDbHResult hr;
-                tagDBPROP[] dbprops;
+                ItagDBPROP[] dbprops;
                 UnsafeNativeMethods.ICommandProperties icommandProperties = ICommandProperties();
 
                 using (PropertyIDSet propidset = new PropertyIDSet(propertySet, propertyID))
@@ -1329,22 +1329,22 @@ namespace System.Data.OleDb
             {
                 propSet = new DBPropSet(1);
 
-                tagDBPROP[] dbprops = new tagDBPROP[count];
+                ItagDBPROP[] dbprops = new ItagDBPROP[count];
 
-                dbprops[0] = new tagDBPROP(ODB.DBPROP_COMMANDTIMEOUT, false, CommandTimeout);
+                dbprops[0] = ArchitectureSpecificHelpers.CreateTagDbProp(ODB.DBPROP_COMMANDTIMEOUT, false, CommandTimeout);
 
                 if (_executeQuery)
                 {
                     // 'Microsoft.Jet.OLEDB.4.0' default is DBPROPVAL_AO_SEQUENTIAL
-                    dbprops[1] = new tagDBPROP(ODB.DBPROP_ACCESSORDER, false, ODB.DBPROPVAL_AO_RANDOM);
+                    dbprops[1] = ArchitectureSpecificHelpers.CreateTagDbProp(ODB.DBPROP_ACCESSORDER, false, ODB.DBPROPVAL_AO_RANDOM);
 
                     if (keyInfo)
                     {
                         // 'Unique Rows' property required for SQLOLEDB to retrieve things like 'BaseTableName'
-                        dbprops[2] = new tagDBPROP(ODB.DBPROP_UNIQUEROWS, false, keyInfo);
+                        dbprops[2] = ArchitectureSpecificHelpers.CreateTagDbProp(ODB.DBPROP_UNIQUEROWS, false, keyInfo);
 
                         // otherwise 'Microsoft.Jet.OLEDB.4.0' doesn't support IColumnsRowset
-                        dbprops[3] = new tagDBPROP(ODB.DBPROP_IColumnsRowset, false, true);
+                        dbprops[3] = ArchitectureSpecificHelpers.CreateTagDbProp(ODB.DBPROP_IColumnsRowset, false, true);
                     }
                 }
                 propSet.SetPropertySet(0, OleDbPropertySetGuid.Rowset, dbprops);
@@ -1383,7 +1383,7 @@ namespace System.Data.OleDb
         private void ValidateConnectionAndTransaction(string method)
         {
             ValidateConnection(method);
-            _transaction = _connection.ValidateTransaction(Transaction, method);
+            _transaction = _connection.ValidateTransaction(Transaction as OleDbTransaction, method);
             this.canceling = false;
         }
     }

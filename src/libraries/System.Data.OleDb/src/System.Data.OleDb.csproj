@@ -17,6 +17,7 @@
       <Link>Common\System\Data\Common\MultipartIdentifier.cs</Link>
     </Compile>
     <Compile Include="AdapterSwitches.cs" />
+    <Compile Include="ArchitectureSpecificHelpers.cs" />
     <Compile Include="ColumnBinding.cs" />
     <Compile Include="DbBindings.cs" />
     <Compile Include="DbConnectionOptions.cs" />

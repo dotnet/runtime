@@ -306,12 +306,33 @@ namespace System.Data.OleDb
         VARIANT vValue;
     }
 #endif
-#if (WIN32 && !ARCH_arm)
-    [StructLayoutAttribute(LayoutKind.Sequential, Pack = 2)]
-#else
+
+    [StructLayout(LayoutKind.Sequential, Pack = 2)]
+    internal sealed partial class tagDBPROP_x86
+    {
+        internal int dwPropertyID;
+        internal int dwOptions;
+        internal OleDbPropertyStatus dwStatus;
+
+        internal tagDBIDX columnid;
+
+        // Variant
+        [MarshalAs(UnmanagedType.Struct)] internal object vValue;
+
+        internal tagDBPROP_x86()
+        {
+        }
+
+        internal tagDBPROP_x86(int propertyID, bool required, object value)
+        {
+            dwPropertyID = propertyID;
+            dwOptions = ((required) ? ODB.DBPROPOPTIONS_REQUIRED : ODB.DBPROPOPTIONS_OPTIONAL);
+            vValue = value;
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
-#endif
-    internal sealed class tagDBPROP
+    internal sealed partial class tagDBPROP
     {
         internal int dwPropertyID;
         internal int dwOptions;
@@ -449,12 +470,26 @@ namespace System.Data.OleDb
         VARIANT vValues;
     }
 #endif
-#if (WIN32 && !ARCH_arm)
-    [StructLayoutAttribute(LayoutKind.Sequential, Pack = 2)]
-#else
+
+    [StructLayout(LayoutKind.Sequential, Pack = 2)]
+    internal sealed partial class tagDBPROPINFO_x86
+    {
+        [MarshalAs(UnmanagedType.LPWStr)] internal string pwszDescription;
+
+        internal int dwPropertyID;
+        internal int dwFlags;
+
+        internal short vtType;
+
+        [MarshalAs(UnmanagedType.Struct)] internal object vValue;
+
+        internal tagDBPROPINFO_x86()
+        {
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
-#endif
-    internal sealed class tagDBPROPINFO
+    internal sealed partial class tagDBPROPINFO
     {
         [MarshalAs(UnmanagedType.LPWStr)] internal string pwszDescription;
 
