@@ -89,7 +89,6 @@ elseif (CLR_CMAKE_TARGET_ARCH_ARM)
 endif ()
 
 if(CLR_CMAKE_TARGET_ANDROID)
-    add_definitions(-DTARGET_ANDROID)
     include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
 endif()
 
@@ -158,17 +157,6 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 if(CLR_CMAKE_TARGET_UNIX)
     if (CLR_CMAKE_TARGET_DARWIN)
         add_link_options(-Wl,-bind_at_load)
-
-        # Ensure that dsymutil and strip are present
-        find_program(DSYMUTIL dsymutil)
-        if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
-            message(FATAL_ERROR "dsymutil not found")
-        endif()
-
-        find_program(STRIP strip)
-        if (STRIP STREQUAL "STRIP-NOTFOUND")
-            message(FATAL_ERROR "strip not found")
-        endif()
     elseif (CLR_CMAKE_TARGET_IOS)
         # No object stripping for iOS
     elseif (CLR_CMAKE_TARGET_ARCH_WASM)
@@ -184,23 +172,9 @@ if(CLR_CMAKE_TARGET_UNIX)
 endif(CLR_CMAKE_TARGET_UNIX)
 
 function(install_library_and_symbols targetName)
-    strip_symbols(${targetName} strip_destination_file NO)
-
-    # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
-    # generator expression doesn't work correctly returning the wrong path and on
-    # the newer cmake versions the LOCATION property isn't supported anymore.
-    if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
-        set(install_source_file $<TARGET_FILE:${targetName}>)
-    else()
-        get_property(install_source_file TARGET ${targetName} PROPERTY LOCATION)
-    endif()
-
+    install_symbols(${targetName} .)
+    set(install_source_file $<TARGET_FILE:${targetName}>)
     install(PROGRAMS ${install_source_file} DESTINATION .)
-    if(CLR_CMAKE_TARGET_WIN32)
-        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION PDB)
-    else()
-        install(FILES ${strip_destination_file} DESTINATION .)
-    endif()
 endfunction()
 
 include(configure.cmake)

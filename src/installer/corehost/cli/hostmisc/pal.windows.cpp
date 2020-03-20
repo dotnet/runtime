@@ -226,7 +226,7 @@ void pal::unload_library(dll_t library)
 static
 bool get_wow_mode_program_files(pal::string_t* recv)
 {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     pal::char_t* env_key = _X("ProgramFiles(x86)");
 #else
     pal::char_t* env_key = _X("ProgramFiles");
@@ -322,7 +322,7 @@ namespace
 
 bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
 {
-#if !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
+#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
     return false;
 #else
     HKEY key_hive;
@@ -337,7 +337,7 @@ bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
-#if !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
+#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
     //  Self-registered SDK installation directory is only supported for x64 and x86 architectures.
     return false;
 #else
