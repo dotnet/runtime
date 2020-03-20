@@ -89,6 +89,7 @@ elseif (CLR_CMAKE_TARGET_ARCH_ARM)
 endif ()
 
 if(CLR_CMAKE_TARGET_ANDROID)
+    add_definitions(-DTARGET_ANDROID)
     include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
 endif()
 
