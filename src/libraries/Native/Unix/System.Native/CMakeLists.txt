@@ -1,7 +1,6 @@
 project(System.Native C)
 
 set(NATIVE_SOURCES
-    pal_console.c
     pal_errno.c
     pal_interfaceaddresses.c
     pal_io.c
@@ -24,7 +23,7 @@ set(NATIVE_SOURCES
 )
 
 if (CLR_CMAKE_TARGET_IOS)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES} ios/pal_sys.m)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_log.m)
 else ()
     set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_console.c)
 endif ()

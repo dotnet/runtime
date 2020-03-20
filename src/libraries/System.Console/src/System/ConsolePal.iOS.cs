@@ -19,7 +19,7 @@ namespace System
 
         public override unsafe void Write(byte[] buffer, int offset, int count)
         {
-            if (count > 0 && buffer.Length >= offset + count)
+            if (count > 0 && count <= buffer.Length - offset)
             {
                 fixed (byte* ptr = buffer)
                 {
