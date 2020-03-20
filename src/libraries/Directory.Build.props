@@ -11,6 +11,8 @@
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.CommandLine\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.EnvironmentVariables\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.FileExtensions\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Ini\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection.Abstractions\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.*\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileSystemGlobbing\**\*csproj" />
