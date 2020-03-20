@@ -44,6 +44,9 @@ namespace System
                 100000,     // 10^5
                 1000000,    // 10^6
                 10000000,   // 10^7
+                // These last two are accessed only by MultiplyPow10.
+                100000000,  // 10^8
+                1000000000  // 10^9
             };
 
             private static readonly int[] s_Pow10BigNumTableIndices = new int[]
@@ -1068,13 +1071,15 @@ namespace System
 
             public void MultiplyPow10(uint exponent)
             {
-                if (IsZero())
+                if (exponent <= 9)
                 {
-                    return;
+                    Multiply(s_Pow10UInt32Table[exponent]);
                 }
-
-                Pow10(exponent, out BigInteger poweredValue);
-                Multiply(ref poweredValue);
+                else if (!IsZero())
+                {
+                    Pow10(exponent, out BigInteger poweredValue);
+                    Multiply(ref poweredValue);
+                }
             }
 
             public static void SetUInt32(out BigInteger result, uint value)
