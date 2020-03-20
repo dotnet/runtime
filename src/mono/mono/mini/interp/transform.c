@@ -176,7 +176,6 @@ static int stack_type [] = {
 	STACK_TYPE_R4, /*R4*/
 	STACK_TYPE_R8, /*R8*/
 	STACK_TYPE_O,  /*O*/
-	STACK_TYPE_MP, /*P*/
 	STACK_TYPE_VT
 };
 
@@ -594,7 +593,7 @@ load_arg(TransformData *td, int n)
 			size = mono_class_value_size (klass, NULL);
 
 		if (hasthis && n == 0) {
-			mt = MINT_TYPE_P;
+			mt = MINT_TYPE_I;
 			interp_add_ins (td, MINT_LDARG_P0);
 			klass = NULL;
 		} else {
@@ -604,8 +603,10 @@ load_arg(TransformData *td, int n)
 			WRITE32_INS (td->last_ins, 1, &size);
 		}
 	} else {
-		if ((hasthis || mt == MINT_TYPE_P) && n == 0) {
-			mt = MINT_TYPE_P;
+		if ((hasthis || mt == MINT_TYPE_I) && n == 0) {
+			// Special case loading of the first ptr sized argument
+			if (mt != MINT_TYPE_O)
+				mt = MINT_TYPE_I;
 			interp_add_ins (td, MINT_LDARG_P0);
 		} else {
 			interp_add_ins (td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
@@ -2256,7 +2257,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			 * to it is identical to the internal pointer that is passed on the stack
 			 * when using the value type, not needing any dereferencing.
 			 */
-			g_assert ((td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP);
+			int this_type = (td->sp - csignature->param_count - 1)->type;
+			g_assert (this_type == STACK_TYPE_I || this_type == STACK_TYPE_MP);
 			if (mint_type (m_class_get_byval_arg (constrained_class)) != MINT_TYPE_VT) {
 				/* Always load the entire stackval, to handle also the case where the enum has long storage */
 				interp_add_ins (td, MINT_LDIND_I8);
@@ -2272,7 +2274,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				 * but that type doesn't override the method we're
 				 * calling, so we need to box `this'.
 				 */
-				g_assert ((td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP);
+				int this_type = (td->sp - csignature->param_count - 1)->type;
+				g_assert (this_type == STACK_TYPE_I || this_type == STACK_TYPE_MP);
 				if (mint_type (m_class_get_byval_arg (constrained_class)) != MINT_TYPE_VT) {
 					/* managed pointer on the stack, we need to deref that puppy */
 					/* Always load the entire stackval, to handle also the case where the enum has long storage */
@@ -3096,11 +3099,7 @@ interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
 static gboolean
 interp_emit_load_const (TransformData *td, gpointer field_addr, int mt)
 {
-	if ((mt >= MINT_TYPE_I1 && mt <= MINT_TYPE_I4)
-#if SIZEOF_VOID_P == 4
-		|| mt == MINT_TYPE_P
-#endif
-		) {
+	if ((mt >= MINT_TYPE_I1 && mt <= MINT_TYPE_I4)) {
 		gint32 val;
 		switch (mt) {
 		case MINT_TYPE_I1:
@@ -3119,11 +3118,7 @@ interp_emit_load_const (TransformData *td, gpointer field_addr, int mt)
 			val = *(gint32*)field_addr;
 		}
 		interp_get_ldc_i4_from_const (td, NULL, val);
-	} else if (mt == MINT_TYPE_I8
-#if SIZEOF_VOID_P == 8
-		|| mt == MINT_TYPE_P
-#endif
-		) {
+	} else if (mt == MINT_TYPE_I8) {
 		gint64 val = *(gint64*)field_addr;
 		interp_add_ins (td, MINT_LDC_I8);
 		WRITE64_INS (td->last_ins, 0, &val);
@@ -3414,8 +3409,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		if (signature->hasthis) {
 			/*
 			 * If this is value type, it is passed by address and not by value.
-			 * Valuetype this local gets integer type MINT_TYPE_I. Maybe it could
-			 * be MINT_TYPE_P for better clarity, as when not inlining.
+			 * Valuetype this local gets integer type MINT_TYPE_I.
 			 */
 			MonoType *type;
 			if (m_class_is_valuetype (method->klass))
@@ -6660,7 +6654,6 @@ get_movloc_for_type (int mt)
 	case MINT_TYPE_R8:
 		return MINT_MOVLOC_8;
 	case MINT_TYPE_O:
-	case MINT_TYPE_P:
 #if SIZEOF_VOID_P == 8
 		return MINT_MOVLOC_8;
 #else
@@ -7068,7 +7061,7 @@ retry:
 						replace_op = MINT_STLOC_NP_R4;
 					else if (mt == MINT_TYPE_R8)
 						replace_op = MINT_STLOC_NP_R8;
-					else if (mt == MINT_TYPE_O || mt == MINT_TYPE_P)
+					else if (mt == MINT_TYPE_O)
 						replace_op = MINT_STLOC_NP_O;
 					if (replace_op) {
 						int stored_local = prev_ins->data [0];
@@ -7306,7 +7299,7 @@ retry:
 		} else if (MINT_IS_BINOP (ins->opcode)) {
 			ins = interp_fold_binop (td, sp, ins);
 			sp--;
-		} else if (ins->opcode >= MINT_STFLD_I1 && ins->opcode <= MINT_STFLD_P && (mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS)) {
+		} else if (ins->opcode >= MINT_STFLD_I1 && ins->opcode <= MINT_STFLD_O && (mono_interp_opt & INTERP_OPT_SUPER_INSTRUCTIONS)) {
 			StackContentInfo *src = &sp [-2];
 			if (src->ins) {
 				if (src->val.type == STACK_VALUE_LOCAL) {
@@ -7387,7 +7380,7 @@ interp_super_instructions (TransformData *td)
 			prev2_ins = NULL;
 			prev1_ins = NULL;
 		}
-		if (ins->opcode >= MINT_LDFLD_I1 && ins->opcode <= MINT_LDFLD_P && prev1_ins) {
+		if (ins->opcode >= MINT_LDFLD_I1 && ins->opcode <= MINT_LDFLD_O && prev1_ins) {
 			if (prev1_ins->opcode == MINT_LDLOC_O) {
 				int loc_index = prev1_ins->data [0];
 				int fld_offset = ins->data [0];
