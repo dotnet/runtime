@@ -19,12 +19,11 @@ namespace System
 
         public override unsafe void Write(byte[] buffer, int offset, int count)
         {
-            if (count > 0 && count <= buffer.Length - offset)
+            ValidateWrite(buffer, offset, count);
+
+            fixed (byte* ptr = buffer)
             {
-                fixed (byte* ptr = buffer)
-                {
-                    Interop.Sys.Log(ptr + offset, count);
-                }
+                Interop.Sys.Log(ptr + offset, count);
             }
         }
 
