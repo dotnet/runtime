@@ -53,7 +53,7 @@ namespace System.Globalization.Tests
         }
 
         private static bool IcuIsNotLoaded => PlatformDetection.ICUVersion.Equals(new Version(0, 0, 0, 0));
-        private static bool IcuIsLoaded =>  !IcuIsNotLoaded;
+        private static bool IcuIsLoaded => !IcuIsNotLoaded;
 
         [ConditionalFact(nameof(RegionInfoPropertyTests.IcuIsLoaded))]
         public void CurrentRegion()
