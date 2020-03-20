@@ -770,12 +770,16 @@ namespace System.Text.Json.Serialization.Tests
             public GenericIImmutableDictionaryWrapper<string, JsonElement> MyOverflow { get; set; }
         }
 
-        [Fact]
-        public static void DeserializeIntoGenericDictionaryParameterCount()
+        [Theory]
+        [InlineData(typeof(ClassWithExtensionPropertyNoGenericParameters))]
+        [InlineData(typeof(ClassWithExtensionPropertyOneGenericParameter))]
+        [InlineData(typeof(ClassWithExtensionPropertyThreeGenericParameters))]
+        public static void DeserializeIntoGenericDictionaryParameterCount(Type type)
         {
-            JsonSerializer.Deserialize<ClassWithExtensionPropertyNoGenericParameters>("{\"hello\":\"world\"}");
-            JsonSerializer.Deserialize<ClassWithExtensionPropertyOneGenericParameter>("{\"hello\":\"world\"}");
-            JsonSerializer.Deserialize<ClassWithExtensionPropertyThreeGenericParameters>("{\"hello\":\"world\"}");
+            object obj = JsonSerializer.Deserialize("{\"hello\":\"world\"}", type);
+
+            IDictionary<string, object> extData = (IDictionary<string, object>)type.GetProperty("MyOverflow").GetValue(obj)!;
+            Assert.Equal("world", ((JsonElement)extData["hello"]).GetString());
         }
 
         private class ClassWithExtensionPropertyNoGenericParameters
