@@ -9,10 +9,10 @@
 #include "windows.h"
 #endif
 
-static int pal_atomic_cas_ptr(void* volatile *dest, void* exchange, void* comperand)
+static int pal_atomic_cas_ptr(void* volatile* dest, void* exchange, void* comperand)
 {
 #if defined(TARGET_UNIX)
-    return atomic_compare_exchange_strong_explicit((_Atomic(void*)volatile*)dest, exchange, comperand,  __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+    return __atomic_compare_exchange_n(dest, exchange, comperand, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
 #elif defined(TARGET_WINDOWS)
     return InterlockedCompareExchangePointer(dest, exchange, comperand) == comperand;
 #endif

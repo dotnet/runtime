@@ -12,13 +12,13 @@
 #if defined(TARGET_UNIX)
 #include <strings.h>
 
-#define STRING_COPY(localeNamePtr, size, locale, capacity) \
-    strncpy(localeNamePtr, locale, capacity); \
-    localeNamePtr[capacity - 1] = 0;
+#define STRING_COPY(destination, numberOfElements, source, count) \
+    strncpy(destination, source, count); \
+    destination[count - 1] = 0;
 
 #elif defined(TARGET_WINDOWS)
 #define strcasecmp _stricmp
-#define STRING_COPY(localeNamePtr, size, locale, capacity) strncpy_s(localeNamePtr, size, locale, _TRUNCATE);
+#define STRING_COPY(destination, numberOfElements, source, count) strncpy_s(destination, numberOfElements, source, _TRUNCATE);
 #endif
 
 #define GREGORIAN_NAME "gregorian"
@@ -316,7 +316,7 @@ static int32_t EnumSymbols(const char* locale,
         return FALSE;
 
     char localeWithCalendarName[ULOC_FULLNAME_CAPACITY];
-    STRING_COPY(localeWithCalendarName, sizeof(locale), locale, ULOC_FULLNAME_CAPACITY);
+    STRING_COPY(localeWithCalendarName, strlen(locale), locale, ULOC_FULLNAME_CAPACITY);
 
     uloc_setKeywordValue("calendar", GetCalendarName(calendarId), localeWithCalendarName, ULOC_FULLNAME_CAPACITY, &err);
 
@@ -423,7 +423,7 @@ static int32_t EnumAbbrevEraNames(const char* locale,
 
     char* localeNamePtr = localeNameBuf;
     char* parentNamePtr = parentNameBuf;
-    STRING_COPY(localeNamePtr, sizeof(locale), locale, ULOC_FULLNAME_CAPACITY);
+    STRING_COPY(localeNamePtr, strlen(locale), locale, ULOC_FULLNAME_CAPACITY);
 
     while (TRUE)
     {
