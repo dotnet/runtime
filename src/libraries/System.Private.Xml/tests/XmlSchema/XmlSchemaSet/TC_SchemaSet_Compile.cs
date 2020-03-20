@@ -176,5 +176,48 @@ namespace System.Xml.Tests
             Assert.Contains("fractionDigits", ex.Message);
             Assert.DoesNotContain("totalDigits", ex.Message);
         }
+
+        /// <summary>
+        /// Test for issue #30218, resource Sch_MinLengthGtBaseMinLength
+        /// </summary>
+        [Fact]
+        public void MinLengthGtBaseMinLength_Throws()
+        {
+            string schema = @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:minLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:minLength value='4'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+";
+
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception exception;
+
+            try
+            {
+                ss.Compile();
+                exception = null;
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+
+            Assert.NotNull(exception);
+            Assert.IsType<XmlSchemaException>(exception);
+            Assert.Equal("Error:  'minLength' is among the facets of {0} and its value ({1}) is less than the value ({2}) of the parent 'minLength'.",
+                exception.Message);
+        }
     }
 }
