@@ -660,7 +660,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // TARGET_X86
 
-            if (compExactlyDependsOn(InstructionSet_SSE2) || (compExactlyDependsOn(InstructionSet_SSE) && (baseType == TYP_FLOAT)))
+            if (compExactlyDependsOn(InstructionSet_SSE2) ||
+                (compExactlyDependsOn(InstructionSet_SSE) && (baseType == TYP_FLOAT)))
             {
                 op1     = impPopStack().val;
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);

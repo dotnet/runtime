@@ -2194,8 +2194,8 @@ void Compiler::compSetProcessor()
 #endif // TARGET_X86
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
-    opts.compSupportsISA         = 0;
-    opts.compSupportsISAReported = 0;
+    opts.compSupportsISA                            = 0;
+    opts.compSupportsISAReported                    = 0;
 
 #ifdef TARGET_XARCH
     bool avxSupported = false;

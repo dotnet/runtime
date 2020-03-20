@@ -8275,7 +8275,7 @@ private:
 #ifdef DEBUG
     // Answer the question: Is a particular ISA supported?
     // Use this api when asking the question so that future
-    // ISA questions can be asked correctly or when asserting 
+    // ISA questions can be asked correctly or when asserting
     // support/nonsupport for an instruction set
     bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
     {
@@ -8296,8 +8296,8 @@ private:
     {
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        uint64_t isaBit = (1ULL << isa);
-        bool isaSupported = (opts.compSupportsISA & (1ULL << isa)) != 0;
+        uint64_t isaBit       = (1ULL << isa);
+        bool     isaSupported = (opts.compSupportsISA & (1ULL << isa)) != 0;
         if ((opts.compSupportsISAReported & isaBit) == 0)
         {
             notifyInstructionSetUsage(isa, isaSupported);
@@ -8316,9 +8316,13 @@ private:
     bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
     {
         if ((opts.compSupportsISA & (1ULL << isa)) != 0)
+        {
             return compExactlyDependsOn(isa);
+        }
         else
+        {
             return false;
+        }
     }
 
     bool canUseVexEncoding() const
