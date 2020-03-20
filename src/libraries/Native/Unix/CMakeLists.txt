@@ -5,10 +5,6 @@ project(CoreFX C)
 
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
-if(CLR_CMAKE_TARGET_IOS)
-    cmake_minimum_required(VERSION 3.14.5)
-endif()
-
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
     cmake_policy(SET CMP0083 NEW)
 endif(NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -131,7 +127,7 @@ else ()
 endif ()
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
-elseif (CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_IOS)
+elseif (CLR_CMAKE_TARGET_DARWIN)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -158,8 +154,6 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 if(CLR_CMAKE_TARGET_UNIX)
     if (CLR_CMAKE_TARGET_DARWIN)
         add_link_options(-Wl,-bind_at_load)
-    elseif (CLR_CMAKE_TARGET_IOS)
-        # No object stripping for iOS
     elseif (CLR_CMAKE_TARGET_ARCH_WASM)
         # No object stripping for WASM
     else (CLR_CMAKE_TARGET_DARWIN)
@@ -194,18 +188,15 @@ endif()
 
 add_subdirectory(System.Native)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
-if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable for iOS
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
-endif()
-if (NOT CLR_CMAKE_TARGET_IOS)
+
     # disable System.Security.Cryptography.Native build on iOS,
     # only used for interacting with OpenSSL which isn't useful there
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
-endif()
 
-if(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_IOS)
+if(CLR_CMAKE_TARGET_DARWIN)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()
