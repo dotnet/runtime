@@ -23,6 +23,12 @@ set(NATIVE_SOURCES
     pal_sysctl.c
 )
 
+if (CLR_CMAKE_TARGET_IOS)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES} ios/pal_sys.m)
+else ()
+    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_console.c)
+endif ()
+
 if (CLR_CMAKE_TARGET_LINUX)
     set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
 
@@ -61,6 +67,10 @@ add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}
 )
+
+if (CLR_CMAKE_TARGET_IOS)
+    target_link_libraries(System.Native "-framework Foundation")
+endif ()
 
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 

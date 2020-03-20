@@ -24,6 +24,12 @@
   <!-- iOS -->
   <ItemGroup Condition="'$(TargetsiOS)' == 'true'">
     <Compile Include="System\ConsolePal.iOS.cs" />
+    <Compile Include="$(CommonPath)Interop\iOS\System.Native\Interop.Log.cs">
+      <Link>Common\Interop\iOS\Interop.iOS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

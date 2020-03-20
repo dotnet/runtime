@@ -4,36 +4,27 @@
 
 using System.IO;
 using System.Text;
-using System.Runtime.InteropServices;
 
 namespace System
 {
     internal class NSLogStream : Stream
     {
-        private bool _error;
-
-        public NSLogStream(bool error)
-        {
-            _error = error;
-        }
-
         public override void Flush() { }
 
-        public override int Read(byte[] buffer, int offset, int count) => throw new PlatformNotSupportedException();
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
-        public override long Seek(long offset, SeekOrigin origin) => throw new PlatformNotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
-        public override void SetLength(long value) => throw new PlatformNotSupportedException();
-
-        // call NSLog
-        [DllImport("__Internal")]
-        private static unsafe extern void mono_log(byte* str, int count, bool isError);
+        public override void SetLength(long value) => throw new NotSupportedException();
 
         public override unsafe void Write(byte[] buffer, int offset, int count)
         {
-            fixed (byte* ptr = buffer)
+            if (count > 0 && buffer.Length >= offset + count)
             {
-                mono_log(ptr + offset, count, _error);
+                fixed (byte* ptr = buffer)
+                {
+                    Interop.Sys.Log((IntPtr)(ptr + offset), count);
+                }
             }
         }
 
@@ -43,39 +34,35 @@ namespace System
 
         public override bool CanWrite => true;
 
-        public override long Length => throw new PlatformNotSupportedException();
+        public override long Length => throw new NotSupportedException();
 
         public override long Position
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
         }
     }
 
-    // Provides Windows-based support for System.Console.
     internal static class ConsolePal
     {
         public static Stream OpenStandardInput() => throw new PlatformNotSupportedException();
 
-        public static Stream OpenStandardOutput() => new NSLogStream(false);
+        public static Stream OpenStandardOutput() => new NSLogStream();
 
-        public static Stream OpenStandardError() => new NSLogStream(true);
+        public static Stream OpenStandardError() => new NSLogStream();
 
         public static Encoding InputEncoding => throw new PlatformNotSupportedException();
 
         public static void SetConsoleInputEncoding(Encoding enc) => throw new PlatformNotSupportedException();
 
-        public static Encoding OutputEncoding => Encoding.UTF8;
+        public static Encoding OutputEncoding => Encoding.Unicode;
 
         public static void SetConsoleOutputEncoding(Encoding enc) => throw new PlatformNotSupportedException();
 
-        /// <summary>Gets whether Console.In is targeting a terminal display.</summary>
         public static bool IsInputRedirectedCore() => throw new PlatformNotSupportedException();
 
-        /// <summary>Gets whether Console.Out is targeting a terminal display.</summary>
         public static bool IsOutputRedirectedCore() => throw new PlatformNotSupportedException();
 
-        /// <summary>Gets whether Console.In is targeting a terminal display.</summary>
         public static bool IsErrorRedirectedCore() => throw new PlatformNotSupportedException();
 
         internal static TextReader GetOrCreateReader() => throw new PlatformNotSupportedException();
