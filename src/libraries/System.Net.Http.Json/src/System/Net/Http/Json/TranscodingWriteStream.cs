@@ -49,10 +49,8 @@ namespace System.Net.Http.Json
         public override void Flush()
             => throw new NotSupportedException();
 
-        public override async Task FlushAsync(CancellationToken cancellationToken)
-        {
-            await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-        }
+        public override Task FlushAsync(CancellationToken cancellationToken)
+            => _stream.FlushAsync(cancellationToken);
 
         public override int Read(byte[] buffer, int offset, int count)
             => throw new NotSupportedException();

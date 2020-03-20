@@ -14,7 +14,7 @@ namespace System.Net.Http.Json
     /// </summary>
     public static partial class HttpClientJsonExtensions
     {
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, string? requestUri, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, string? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -25,7 +25,7 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -36,7 +36,7 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
-        public static Task<TValue> GetFromJsonAsync<TValue>(this HttpClient client, string? requestUri, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<TValue> GetFromJsonAsync<TValue>(this HttpClient client, string? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -47,7 +47,7 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
         }
 
-        public static Task<TValue> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<TValue> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -75,9 +75,10 @@ namespace System.Net.Http.Json
             using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
             {
                 response.EnsureSuccessStatusCode();
-                Debug.Assert(response.Content != null);
-
-                return await response.Content.ReadFromJsonAsync(type, options, cancellationToken).ConfigureAwait(false);
+                // Nullable forgiving reason:
+                // GetAsync will usually return Content as not-null.
+                // If Content happens to be null, the extension will throw.
+                return await response.Content!.ReadFromJsonAsync(type, options, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -86,9 +87,10 @@ namespace System.Net.Http.Json
             using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
             {
                 response.EnsureSuccessStatusCode();
-                Debug.Assert(response.Content != null);
-
-                return await response.Content.ReadFromJsonAsync<T>(options, cancellationToken).ConfigureAwait(false);
+                // Nullable forgiving reason:
+                // GetAsync will usually return Content as not-null.
+                // If Content happens to be null, the extension will throw.
+                return await response.Content!.ReadFromJsonAsync<T>(options, cancellationToken).ConfigureAwait(false);
             }
         }
     }

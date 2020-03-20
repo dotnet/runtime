@@ -3,14 +3,14 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <!--<Compile Include="HttpClientJsonExtensionsTests.cs" />-->
-    <!--<Compile Include="HttpContentJsonExtensionsTests.cs" />-->
-    <!--<Compile Include="JsonContentTests.cs" />-->
+    <Compile Include="HttpClientJsonExtensionsTests.cs" />
+    <Compile Include="HttpContentJsonExtensionsTests.cs" />
+    <Compile Include="JsonContentTests.cs" />
     <Compile Include="Person.cs" />
     <Compile Include="TranscodingReadStreamTests.cs" />
     <Compile Include="TranscodingWriteStreamTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs">
       <Link>Common\System\Net\Capability.Security.cs</Link>
     </Compile>

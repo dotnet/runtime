@@ -15,52 +15,80 @@ namespace System.Net.Http.Json
     public static class HttpContentJsonExtensions
     {
         public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
-            => ReadFromJsonAsyncCore(content, type, options, cancellationToken);
-
-        public static Task<T> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
-            => ReadFromJsonAsyncCore<T>(content, options, cancellationToken);
-
-        private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            using (Stream contentStream = await GetJsonStreamFromContentAsync(content).ConfigureAwait(false))
-            {
-                return await JsonSerializer.DeserializeAsync(contentStream, type, options, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        private static async Task<T> ReadFromJsonAsyncCore<T>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
-        {
-            using (Stream contentStream = await GetJsonStreamFromContentAsync(content).ConfigureAwait(false))
-            {
-                return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        private static async Task<Stream> GetJsonStreamFromContentAsync(HttpContent content)
-        {
-            ValidateMediaType(content.Headers.ContentType?.MediaType);
+            ValidateContent(content);
             Debug.Assert(content.Headers.ContentType != null);
-
             Encoding? sourceEncoding = GetEncoding(content.Headers.ContentType.CharSet);
 
-            Stream jsonStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
+            return ReadFromJsonAsyncCore(content, type, sourceEncoding, options, cancellationToken);
+        }
+
+        public static Task<T> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            ValidateContent(content);
+            Debug.Assert(content.Headers.ContentType != null);
+            Encoding? sourceEncoding = GetEncoding(content.Headers.ContentType.CharSet);
+
+            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options, cancellationToken);
+        }
+
+        private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
+        {
+            Stream contentStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
 
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
             {
-                jsonStream = new TranscodingReadStream(jsonStream, sourceEncoding);
+                using (Stream transcodingStream = new TranscodingReadStream(contentStream, sourceEncoding))
+                {
+                    return await JsonSerializer.DeserializeAsync(transcodingStream, type, options, cancellationToken).ConfigureAwait(false);
+                }
             }
-
-            return jsonStream;
+            else
+            {
+                using (contentStream)
+                {
+                    return await JsonSerializer.DeserializeAsync(contentStream, type, options, cancellationToken).ConfigureAwait(false);
+                }
+            }
         }
 
-        private static void ValidateMediaType(string? mediaType)
+        private static async Task<T> ReadFromJsonAsyncCore<T>(HttpContent content, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
+            Stream contentStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
+
+            // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
+            if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
+            {
+                using (Stream transcodingStream = new TranscodingReadStream(contentStream, sourceEncoding))
+                {
+                    return await JsonSerializer.DeserializeAsync<T>(transcodingStream, options, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                using (contentStream)
+                {
+                    return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private static void ValidateContent(HttpContent content)
+        {
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
+            string? mediaType = content.Headers.ContentType?.MediaType;
+
             if (mediaType != JsonContent.JsonMediaType &&
                 mediaType != MediaTypeNames.Text.Plain)
             {
                 throw new NotSupportedException(SR.ContentTypeNotSupported);
             }
+
         }
 
         private static Encoding? GetEncoding(string? charset)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Test.Common;
 using System.Text;
@@ -15,6 +16,14 @@ namespace System.Net.Http.Json.Functional.Tests
     public class HttpContentJsonExtensionsTests
     {
         private readonly List<HttpHeaderData> _headers = new List<HttpHeaderData> { new HttpHeaderData("Content-Type", "application/json") };
+
+        [Fact]
+        public async Task ThrowOnNull()
+        {
+            HttpContent content = null;
+            await Assert.ThrowsAsync<ArgumentNullException>(() => content.ReadFromJsonAsync<Person>());
+            await Assert.ThrowsAsync<ArgumentNullException>(() => content.ReadFromJsonAsync(typeof(Person)));
+        }
 
         [Fact]
         public async Task HttpContentGetThenReadFromJsonAsync()
@@ -46,7 +55,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
-        public async Task HttpContentObjectIsNull()
+        public async Task HttpContentReturnValueIsNull()
         {
             const int NumRequests = 2;
             await LoopbackServer.CreateClientAndServerAsync(
@@ -74,15 +83,18 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
-        public async Task TestGetFromJsonNoMessageBodyAsync()
+        public async Task TestReadFromJsonNoMessageBodyAsync()
         {
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
                     using (HttpClient client = new HttpClient())
                     {
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        var response = await client.SendAsync(request);
+
                         // As of now, we pass the message body to the serializer even when its empty which causes the serializer to throw.
-                        JsonException ex = await Assert.ThrowsAsync<JsonException>(() => client.GetFromJsonAsync(uri, typeof(Person)));
+                        JsonException ex = await Assert.ThrowsAsync<JsonException>(() => response.Content.ReadFromJsonAsync(typeof(Person)));
                         Assert.Contains("Path: $ | LineNumber: 0 | BytePositionInLine: 0", ex.Message);
                     }
                 },
@@ -90,14 +102,17 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
-        public async Task TestGetFromJsonNoContentTypeAsync()
+        public async Task TestReadFromJsonNoContentTypeAsync()
         {
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
                     using (HttpClient client = new HttpClient())
                     {
-                        await Assert.ThrowsAsync<NotSupportedException>(() => client.GetFromJsonAsync<Person>(uri));
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        var response = await client.SendAsync(request);
+
+                        await Assert.ThrowsAsync<NotSupportedException>(() => response.Content.ReadFromJsonAsync<Person>());
                     }
                 },
                 server => server.HandleRequestAsync(content: "{}"));
@@ -116,7 +131,10 @@ namespace System.Net.Http.Json.Functional.Tests
                 {
                     using (HttpClient client = new HttpClient())
                     {
-                        Person person = await client.GetFromJsonAsync<Person>(uri);
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        var response = await client.SendAsync(request);
+
+                        Person person = await response.Content.ReadFromJsonAsync<Person>();
                         person.Validate();
                     }
                 },
@@ -136,14 +154,17 @@ namespace System.Net.Http.Json.Functional.Tests
                 {
                     using (HttpClient client = new HttpClient())
                     {
-                        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => client.GetFromJsonAsync<Person>(uri));
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        var response = await client.SendAsync(request);
+
+                        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => response.Content.ReadFromJsonAsync<Person>());
                         Assert.IsType<ArgumentException>(ex.InnerException);
                     }
                 },
                 server => server.HandleRequestAsync(headers: customHeaders, content: Person.Create().Serialize()));
         }
 
-        [Fact(Skip ="Disable temporarily until transcode support is added.")]
+        [Fact]
         public async Task TestGetFromJsonAsyncTextPlainUtf16Async()
         {
             const string json = @"{""Name"":""David"",""Age"":24}";
@@ -153,14 +174,21 @@ namespace System.Net.Http.Json.Functional.Tests
                 {
                     using (HttpClient client = new HttpClient())
                     {
-                        Person per = Assert.IsType<Person>(await client.GetFromJsonAsync(uri, typeof(Person)));
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        var response = await client.SendAsync(request);
+
+                        Person per = Assert.IsType<Person>(await response.Content.ReadFromJsonAsync(typeof(Person)));
                         per.Validate();
 
-                        per = await client.GetFromJsonAsync<Person>(uri);
+                        request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        response = await client.SendAsync(request);
+
+                        per = await response.Content.ReadFromJsonAsync<Person>();
                         per.Validate();
                     }
                 },
-                async server => {
+                async server =>
+                {
                     byte[] utf16Content = Encoding.Unicode.GetBytes(json);
                     byte[] bytes =
                         Encoding.ASCII.GetBytes(
@@ -172,7 +200,7 @@ namespace System.Net.Http.Json.Functional.Tests
 
                     var buffer = new MemoryStream();
                     buffer.Write(bytes, 0, bytes.Length);
-                    buffer.Write(utf16Content, bytes.Length - 1, utf16Content.Length);
+                    buffer.Write(utf16Content, 0, utf16Content.Length);
 
                     for (int i = 0; i < NumRequests; i++)
                     {

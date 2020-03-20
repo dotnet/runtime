@@ -17,7 +17,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = JsonContent.Create(value, JsonContent.DefaultMediaType, options);
+            JsonContent content = JsonContent.Create(value, null, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
@@ -28,7 +28,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = JsonContent.Create(value, JsonContent.DefaultMediaType, options);
+            JsonContent content = JsonContent.Create(value, null, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 

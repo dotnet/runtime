@@ -15,7 +15,7 @@ namespace System.Net.Http.Json
     public partial class JsonContent : HttpContent
     {
         internal const string JsonMediaType = "application/json";
-        internal static readonly MediaTypeHeaderValue DefaultMediaType = MediaTypeHeaderValue.Parse(string.Format("{0} {1}", JsonMediaType, Encoding.UTF8.WebName));
+        private static MediaTypeHeaderValue DefaultMediaType => MediaTypeHeaderValue.Parse(string.Format("{0}; charset={1}", JsonMediaType, Encoding.UTF8.WebName));
 
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
         public Type ObjectType { get; }
