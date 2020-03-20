@@ -470,6 +470,10 @@ if (MSVC)
   add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler processed source files.
   add_compile_options(/source-charset:utf-8) # Force MSVC to compile source as UTF-8.
 
+  if (CLR_CMAKE_HOST_ARCH_I386)
+    add_compile_options(/Gz)
+  endif (CLR_CMAKE_HOST_ARCH_I386)
+
   add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
   add_compile_options($<$<OR:$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>,$<CONFIG:Checked>>:/O1>)
 

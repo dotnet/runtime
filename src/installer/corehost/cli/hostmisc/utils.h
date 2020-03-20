@@ -61,7 +61,7 @@ bool test_only_getenv(const pal::char_t* name, pal::string_t* recv);
 class propagate_error_writer_t
 {
 public:
-    typedef trace::error_writer_fn(*set_error_writer_fn)(trace::error_writer_fn error_writer);
+    typedef trace::error_writer_fn(__cdecl *set_error_writer_fn)(trace::error_writer_fn error_writer);
 
 private:
     set_error_writer_fn m_set_error_writer;

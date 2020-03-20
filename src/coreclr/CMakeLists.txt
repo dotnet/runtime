@@ -14,9 +14,6 @@ endif (CLR_CMAKE_HOST_WIN32)
 
 if(MSVC)
   set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
-  if (CLR_CMAKE_HOST_ARCH_I386)
-    add_compile_options(/Gz)
-  endif (CLR_CMAKE_HOST_ARCH_I386)
 endif (MSVC)
 
 # Set commonly used directory names

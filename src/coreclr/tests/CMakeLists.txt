@@ -8,9 +8,6 @@ include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Platform)
 if (CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DWINDOWS)
-    if (CLR_CMAKE_HOST_ARCH_I386)
-        add_compile_options(/Gz)
-    endif (CLR_CMAKE_HOST_ARCH_I386)
 endif()
 
 # Compile options

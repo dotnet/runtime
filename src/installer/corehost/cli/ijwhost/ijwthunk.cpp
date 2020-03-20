@@ -26,7 +26,7 @@ namespace
     bootstrap_thunk_chunk* g_pVtableBootstrapThunkChunkList;
 
     // We swallow the trace messages so we don't output to a stderr of a process that we do not own unless tracing is enabled.
-    void swallow_trace(const pal::char_t* msg)
+    void __cdecl swallow_trace(const pal::char_t* msg)
     {
         (void)msg;
     }
