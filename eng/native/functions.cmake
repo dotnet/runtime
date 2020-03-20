@@ -250,62 +250,52 @@ function(target_precompile_header)
   endif(MSVC)
 endfunction()
 
-function(strip_symbols targetName outputFilename skipStrip)
+function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
-    if (STRIP_SYMBOLS)
-      set(strip_source_file $<TARGET_FILE:${targetName}>)
+    set(strip_source_file $<TARGET_FILE:${targetName}>)
 
-      if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-        set(strip_destination_file ${strip_source_file}.dwarf)
+    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+      set(strip_destination_file ${strip_source_file}.dwarf)
 
-        if(NOT ${skipStrip})
-          # Ensure that dsymutil and strip are present
-          find_program(DSYMUTIL dsymutil)
-          if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
-            message(FATAL_ERROR "dsymutil not found")
-          endif()
+      # Ensure that dsymutil and strip are present
+      find_program(DSYMUTIL dsymutil)
+      if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
+        message(FATAL_ERROR "dsymutil not found")
+      endif()
 
-          find_program(STRIP strip)
-          if (STRIP STREQUAL "STRIP-NOTFOUND")
-            message(FATAL_ERROR "strip not found")
-          endif()
+      find_program(STRIP strip)
+      if (STRIP STREQUAL "STRIP-NOTFOUND")
+        message(FATAL_ERROR "strip not found")
+      endif()
 
-          add_custom_command(
-            TARGET ${targetName}
-            POST_BUILD
-            VERBATIM
-            COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
-            COMMAND ${STRIP} -S ${strip_source_file}
-            COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
-            )
-        endif()
-      else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-        set(strip_destination_file ${strip_source_file}.dbg)
+      add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        VERBATIM
+        COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
+        COMMAND ${STRIP} -S ${strip_source_file}
+        COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
+        )
+    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+      set(strip_destination_file ${strip_source_file}.dbg)
 
-        if(NOT ${skipStrip})
-            add_custom_command(
-            TARGET ${targetName}
-            POST_BUILD
-            VERBATIM
-            COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-            COMMAND ${CMAKE_OBJCOPY} --strip-debug ${strip_source_file}
-            COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
-            COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
-            )
-        endif()
-      endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+      add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        VERBATIM
+        COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
+        COMMAND ${CMAKE_OBJCOPY} --strip-debug ${strip_source_file}
+        COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+        COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
+        )
+    endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
-      set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
-    endif (STRIP_SYMBOLS)
+    set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
   endif(CLR_CMAKE_HOST_UNIX)
 endfunction()
 
 function(install_symbols targetName destination_path)
-  install_symbols_with_skip(${targetName} ${destination_path} NO)
-endfunction()
-
-function(install_symbols_with_skip targetName destination_path skipStrip)
-  strip_symbols(${targetName} strip_destination_file ${skipStrip})
+  strip_symbols(${targetName} strip_destination_file)
 
   if(CLR_CMAKE_TARGET_WIN32)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION ${destination_path}/PDB)
@@ -314,9 +304,8 @@ function(install_symbols_with_skip targetName destination_path skipStrip)
   endif()
 endfunction()
 
-# install_clr(TARGETS TARGETS targetName [targetName2 ...] [DESTINATION destination] [SKIP_STRIP])
+# install_clr(TARGETS TARGETS targetName [targetName2 ...] [DESTINATION destination])
 function(install_clr)
-  set(options SKIP_STRIP)
   set(oneValueArgs DESTINATION)
   set(multiValueArgs TARGETS)
   cmake_parse_arguments(PARSE_ARGV 0 INSTALL_CLR "${options}" "${oneValueArgs}" "${multiValueArgs}")
@@ -332,11 +321,7 @@ function(install_clr)
   foreach(targetName ${INSTALL_CLR_TARGETS})
     list(FIND CLR_CROSS_COMPONENTS_LIST ${targetName} INDEX)
     if (NOT DEFINED CLR_CROSS_COMPONENTS_LIST OR NOT ${INDEX} EQUAL -1)
-        if("${INSTALL_CLR_SKIP_STRIP}" STREQUAL "")
-            set(INSTALL_CLR_SKIP_STRIP FALSE)
-        endif()
-
-        install_symbols_with_skip(${targetName} ${INSTALL_CLR_DESTINATION} ${INSTALL_CLR_SKIP_STRIP})
+        install_symbols(${targetName} ${INSTALL_CLR_DESTINATION})
 
         # We don't need to install the export libraries for our DLLs
         # since they won't be directly linked against.
