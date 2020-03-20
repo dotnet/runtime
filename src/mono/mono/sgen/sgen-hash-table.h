@@ -9,7 +9,7 @@
 
 #ifdef HAVE_SGEN_GC
 
-#include <glib.h>
+#include <mono-glib.h>
 
 /* hash tables */
 

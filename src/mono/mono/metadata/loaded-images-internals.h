@@ -5,7 +5,7 @@
 #ifndef _MONO_METADATA_IMAGE_HASHES_H_
 #define _MONO_METADATA_IMAGE_HASHES_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/utils/mono-forward.h>

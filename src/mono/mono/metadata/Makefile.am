@@ -437,7 +437,7 @@ libmonoruntimeincludedir = $(includedir)/mono-$(API_VER)/mono/metadata
 
 # This list is sorted for easier searching.
 # These are public headers.
-# They may not use G_BEGIN_DECLS, guint, glib.h, etc.
+# They may not use G_BEGIN_DECLS, guint, mono-glib.h, etc.
 # debug-mono-symfile.h is an exception. It is only semi-public.
 libmonoruntimeinclude_HEADERS = \
 	appdomain.h		\

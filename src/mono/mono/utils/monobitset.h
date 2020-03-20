@@ -5,7 +5,7 @@
 #ifndef __MONO_BITSET_H__
 #define __MONO_BITSET_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-publib.h>
 
 #define MONO_BITSET_BITS_PER_CHUNK (8 * sizeof (gsize))

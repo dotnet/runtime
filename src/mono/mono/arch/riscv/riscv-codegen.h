@@ -8,7 +8,7 @@
 #define __MONO_RISCV_CODEGEN_H__
 
 #include "config.h"
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef MONO_RISCV_CODEGEN_TEST
 

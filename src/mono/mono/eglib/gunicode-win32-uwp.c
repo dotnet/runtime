@@ -5,7 +5,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
 */
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
 #define CODESET 1

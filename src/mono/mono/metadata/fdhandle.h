@@ -3,7 +3,7 @@
 #define __MONO_METADATA_FDHANDLE_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "utils/refcount.h"
 

@@ -7,7 +7,7 @@
 #define __MONO_COREE_INTERNALS_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef HOST_WIN32
 #include <windows.h>

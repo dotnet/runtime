@@ -12,7 +12,7 @@
 #define _MONO_METADATA_W32PROCESS_H_
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>

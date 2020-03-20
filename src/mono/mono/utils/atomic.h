@@ -14,7 +14,7 @@
 #define _WAPI_ATOMIC_H_
 
 #include "config.h"
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-compiler.h>
 

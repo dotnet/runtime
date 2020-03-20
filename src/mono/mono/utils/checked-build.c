@@ -22,7 +22,7 @@
 #include <mono/metadata/loaded-images-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/reflection-internals.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef HAVE_BACKTRACE_SYMBOLS
 #include <execinfo.h>

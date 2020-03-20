@@ -334,7 +334,7 @@ libmonomath_la_CFLAGS = @CXX_REMOVE_CFLAGS@
 endif # !ENABLE_MSVC_ONLY
 
 # These are public headers.
-# They should not use glib.h, G_BEGIN_DECLS, guint, etc.
+# They should not use mono-glib.h, G_BEGIN_DECLS, guint, etc.
 # They should be wrapped in MONO_BEGIN_DECLS / MONO_END_DECLS.
 libmonoutilsinclude_HEADERS = 	\
 	mono-logger.h		\

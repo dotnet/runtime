@@ -11,7 +11,7 @@
 #ifndef _MONO_METADATA_RUNTIME_H_
 #define _MONO_METADATA_RUNTIME_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/metadata.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>

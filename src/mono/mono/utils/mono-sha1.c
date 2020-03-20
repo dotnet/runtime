@@ -73,7 +73,7 @@ A million repetitions of "a"
 
 #include <stdio.h>
 #include <string.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include "mono-digest.h"
 
 #if HAVE_COMMONCRYPTO_COMMONDIGEST_H

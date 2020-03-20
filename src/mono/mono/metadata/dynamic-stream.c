@@ -7,7 +7,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono/metadata/dynamic-stream-internals.h"
 #include "mono/metadata/metadata-internals.h"

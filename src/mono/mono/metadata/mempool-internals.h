@@ -5,7 +5,7 @@
 #ifndef _MONO_MEMPOOL_INTERNALS_H_
 #define _MONO_MEMPOOL_INTERNALS_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono/utils/mono-compiler.h"
 #include "mono/metadata/mempool.h"

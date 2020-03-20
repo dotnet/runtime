@@ -6,7 +6,7 @@
  */
 
 #include <stdlib.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include "config.h"
 #include "mono-counters.h"
 #include "mono-proclib.h"

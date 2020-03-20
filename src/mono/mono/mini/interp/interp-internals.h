@@ -2,7 +2,7 @@
 #define __MONO_MINI_INTERPRETER_INTERNALS_H__
 
 #include <setjmp.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/domain-internals.h>

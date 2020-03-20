@@ -7,6 +7,6 @@
 #define _MONO_METADATA_W32FILE_INTERNALS_H_
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #endif /* _MONO_METADATA_W32FILE_INTERNALS_H_ */

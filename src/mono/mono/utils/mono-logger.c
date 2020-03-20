@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono-compiler.h"
 #include "mono-logger-internals.h"

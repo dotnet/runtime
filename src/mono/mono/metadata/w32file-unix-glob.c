@@ -43,7 +43,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <ctype.h>
 #include <errno.h>
 #include <mono/utils/mono-errno.h>

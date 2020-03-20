@@ -28,7 +28,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <stdio.h>
 #include <string.h>
 #ifdef HAVE_UNISTD_H

@@ -12,7 +12,7 @@
 #define __MONO_DEBUGGER_STATE_MACHINE__
 
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/metadata.h>
 #include <mono/utils/json.h>
 #include "debugger-agent.h"

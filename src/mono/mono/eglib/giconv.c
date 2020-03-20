@@ -23,7 +23,7 @@
  *  DEALINGS IN THE SOFTWARE.
  */
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <string.h>
 #ifdef HAVE_ICONV_H
 #include <iconv.h>

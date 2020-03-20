@@ -11,7 +11,7 @@
 #define __MONO_UTILS_MEMFUNCS_H__
 
 #include <stdlib.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 /*
 These functions must be used when it's possible that either destination is not

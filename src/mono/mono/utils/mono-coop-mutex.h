@@ -6,7 +6,7 @@
 #define __MONO_COOP_MUTEX_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono-os-mutex.h"
 #include "mono-threads-api.h"

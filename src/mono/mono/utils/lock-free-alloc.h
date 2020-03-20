@@ -27,7 +27,7 @@
 #ifndef __MONO_LOCKFREEALLOC_H__
 #define __MONO_LOCKFREEALLOC_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/lock-free-queue.h>
 #include <mono/utils/mono-mmap.h>
 

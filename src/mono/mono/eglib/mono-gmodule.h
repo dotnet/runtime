@@ -1,7 +1,7 @@
 #ifndef __GLIB_GMODULE_H
 #define __GLIB_GMODULE_H
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #define G_MODULE_IMPORT extern
 #ifdef G_OS_WIN32

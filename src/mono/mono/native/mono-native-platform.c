@@ -1,5 +1,5 @@
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include "mono/utils/mono-threads-api.h"
 #include "mono/utils/atomic.h"
 #include "mono/metadata/icall-internals.h"

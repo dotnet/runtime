@@ -1,7 +1,7 @@
 #ifndef __MONO_PROFLOG_H__
 #define __MONO_PROFLOG_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/callspec.h>
 

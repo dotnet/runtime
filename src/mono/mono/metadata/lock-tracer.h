@@ -6,7 +6,7 @@
 #define __MONO_METADATA_LOCK_TRACER_H__
 
 /*This is a private header*/
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono/utils/mono-os-mutex.h"
 #include "mono/utils/mono-coop-mutex.h"

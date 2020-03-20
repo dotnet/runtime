@@ -13,7 +13,7 @@
 #define _MONO_METADATA_CONSOLEIO_H
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/metadata/object.h>
 #include <mono/utils/mono-compiler.h>

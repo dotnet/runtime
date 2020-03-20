@@ -6,7 +6,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
 */
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include "mono/utils/mono-compiler.h"
 #include <windows.h>
 #include "mono/metadata/w32file-win32-internals.h"

@@ -9,7 +9,7 @@
  *
  */
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-flight-recorder.h>
 
 // Need to make lockless because mutex is really slow

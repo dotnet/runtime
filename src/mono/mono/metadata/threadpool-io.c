@@ -14,7 +14,7 @@
 
 #ifndef ENABLE_NETCORE
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/threadpool-io.h>
 
 #ifndef DISABLE_SOCKETS

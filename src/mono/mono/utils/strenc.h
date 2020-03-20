@@ -11,7 +11,7 @@
 #ifndef _MONO_STRENC_H_
 #define _MONO_STRENC_H_ 1
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-publib.h>
 
 MONO_API gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes);

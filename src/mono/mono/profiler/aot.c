@@ -30,7 +30,7 @@
 #ifndef HOST_WIN32
 #include <sys/socket.h>
 #endif
-#include <glib.h>
+#include <mono-glib.h>
 
 struct _MonoProfiler {
 	GHashTable *classes;

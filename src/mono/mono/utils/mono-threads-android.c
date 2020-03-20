@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include "glib.h"
+#include "mono-glib.h"
 #include <mono/utils/mono-threads.h>
 #include <sys/syscall.h>
 

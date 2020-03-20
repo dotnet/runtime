@@ -93,7 +93,7 @@
 #endif
 
 #include <fcntl.h>
-#include <gmodule.h>
+#include <mono-gmodule.h>
 #if HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif

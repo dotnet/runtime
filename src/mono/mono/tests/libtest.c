@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <glib.h>
-#include <gmodule.h>
+#include <mono-glib.h>
+#include <mono-gmodule.h>
 #include <errno.h>
 #include <time.h>
 #include <math.h>

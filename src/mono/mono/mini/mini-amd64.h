@@ -8,7 +8,7 @@
 #include <mono/arch/amd64/amd64-codegen.h>
 #include <mono/utils/mono-sigcontext.h>
 #include <mono/utils/mono-context.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef HOST_WIN32
 #include <windows.h>

@@ -29,7 +29,7 @@
  */
 #include "config.h"
 #include <stdio.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 gpointer
 g_queue_pop_head (GQueue *queue)

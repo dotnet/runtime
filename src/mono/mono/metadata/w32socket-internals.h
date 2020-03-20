@@ -8,7 +8,7 @@
 #define __MONO_METADATA_W32SOCKET_INTERNALS_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>

@@ -13,7 +13,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>

@@ -7,7 +7,7 @@
 
 #include "config.h"
 #if defined(__MACH__)
-#include <glib.h>
+#include <mono-glib.h>
 #include <pthread.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-context.h"

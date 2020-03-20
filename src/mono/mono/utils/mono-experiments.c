@@ -1,6 +1,6 @@
 
 #include "config.h"
-#include <glib.h>
+#include <mono-glib.h>
 #include "mono/utils/mono-lazy-init.h"
 #include "mono/utils/mono-experiments.h"
 

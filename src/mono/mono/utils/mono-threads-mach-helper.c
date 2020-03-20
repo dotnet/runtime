@@ -11,7 +11,7 @@
 #if defined(__MACH__)
 
 #include "config.h"
-#include <glib.h>
+#include <mono-glib.h>
 #include <stdio.h>
 #include <objc/runtime.h>
 #include <objc/message.h>

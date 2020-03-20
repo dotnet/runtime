@@ -10,7 +10,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-error.h>
 #include <mono/utils/mono-publib.h>
-#include <mono/eglib/glib.h>
+#include <mono/eglib/mono-glib.h>
 
 #ifndef __MONO_EE_H__
 #define __MONO_EE_H__

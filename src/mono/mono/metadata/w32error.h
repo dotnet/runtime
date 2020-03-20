@@ -6,7 +6,7 @@
 #define _MONO_METADATA_W32ERROR_H_
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #if !defined(HOST_WIN32)
 

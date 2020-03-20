@@ -8,7 +8,7 @@
  * Utility functions to access processes information and other info about the system.
  */
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-publib.h>
 

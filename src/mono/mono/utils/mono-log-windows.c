@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <errno.h>
 #include <time.h>
 #include <process.h>

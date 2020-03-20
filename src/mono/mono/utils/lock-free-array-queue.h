@@ -9,7 +9,7 @@
 #ifndef __MONO_LOCK_FREE_ARRAY_QUEUE_H__
 #define __MONO_LOCK_FREE_ARRAY_QUEUE_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-mmap.h>
 

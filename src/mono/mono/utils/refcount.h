@@ -5,7 +5,7 @@
 #ifndef __MONO_UTILS_REFCOUNT_H__
 #define __MONO_UTILS_REFCOUNT_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <config.h>
 
 #include "atomic.h"

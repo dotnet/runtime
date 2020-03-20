@@ -5,7 +5,7 @@
 #ifndef _MONO_UTILS_RAND_H_
 #define _MONO_UTILS_RAND_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono-compiler.h"
 #include "mono-error.h"

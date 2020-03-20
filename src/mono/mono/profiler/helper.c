@@ -14,7 +14,7 @@
 #include <unistd.h>
 #endif
 #include <errno.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifndef HOST_WIN32
 #include <netinet/in.h>

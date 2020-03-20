@@ -4,7 +4,7 @@
 
 #ifndef __MONO_CALLSPEC_H__
 #define __MONO_CALLSPEC_H__
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-compiler.h>
 
 typedef enum {

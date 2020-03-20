@@ -28,7 +28,7 @@
 #define __MONO_DIGEST_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-publib.h>
 
 #if HAVE_COMMONCRYPTO_COMMONDIGEST_H

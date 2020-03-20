@@ -11,7 +11,7 @@
 #ifndef __MONO_UTILITY_THREAD_H__
 #define __MONO_UTILITY_THREAD_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/lock-free-queue.h>
 #include <mono/utils/lock-free-alloc.h>

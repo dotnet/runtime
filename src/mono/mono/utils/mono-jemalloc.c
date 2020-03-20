@@ -4,7 +4,7 @@
  * Jemalloc registration code
  */
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-jemalloc.h>
 
 #ifdef MONO_JEMALLOC_ENABLED

@@ -1,7 +1,7 @@
 #include <config.h>
 #include "llvm-runtime.h"
 
-#include <glib.h>
+#include <mono-glib.h>
 
 extern "C" {
 

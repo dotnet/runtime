@@ -2,7 +2,7 @@
  * \file
  */
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "w32process.h"
 #include "w32process-internals.h"

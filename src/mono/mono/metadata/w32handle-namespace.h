@@ -6,7 +6,7 @@
 #define _MONO_METADATA_W32HANDLE_NAMESPACE_H_
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono/metadata/w32handle.h"
 

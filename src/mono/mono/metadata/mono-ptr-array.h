@@ -11,8 +11,7 @@
 #ifndef __MONO_PTR_ARRAY_H__
 #define __MONO_PTR_ARRAY_H__
 
-
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono/metadata/gc-internals.h"
 

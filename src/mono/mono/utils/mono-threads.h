@@ -23,7 +23,7 @@
 #include <mono/utils/refcount.h>
 #include <mono/utils/mono-error-internals.h>
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <config.h>
 #ifdef HOST_WIN32
 

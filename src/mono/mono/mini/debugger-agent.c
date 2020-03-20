@@ -33,7 +33,7 @@
 #include <unistd.h>
 #endif
 #include <errno.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>

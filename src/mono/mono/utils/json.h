@@ -12,7 +12,7 @@
 #ifndef __MONO_UTILS_JSON_H__
 #define __MONO_UTILS_JSON_H__
 
- #include <glib.h>
+ #include <mono-glib.h>
 
 #define JSON_INDENT_VALUE 2
 

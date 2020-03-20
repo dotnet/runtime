@@ -12,7 +12,7 @@
  */
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <signal.h>
 #include <string.h>
 #include <stddef.h>

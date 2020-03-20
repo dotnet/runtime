@@ -18,7 +18,7 @@
 #define MINGW_HAS_SECURE_API 1
 #endif
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <string.h>
 #include <signal.h>
 #ifdef HAVE_UCONTEXT_H

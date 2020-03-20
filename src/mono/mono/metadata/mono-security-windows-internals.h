@@ -7,7 +7,7 @@
 #define __MONO_METADATA_MONO_SECURITY_WINDOWS_INTERNALS_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef HOST_WIN32
 #include "mono/metadata/security.h"

@@ -9,7 +9,7 @@
 #include <config.h>
 #include <stdio.h>
 #include <math.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include "mono-conc-hash.h"
 #include "metadata/gc-internals.h"
 #include <mono/utils/checked-build.h>

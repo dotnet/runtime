@@ -11,7 +11,7 @@
 #define __MONO_METADATA_GCINTERNALAGNOSTIC_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <stdio.h>
 
 #include "mono/utils/ward.h"

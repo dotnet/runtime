@@ -1,5 +1,5 @@
 #include "config.h"
-#include "glib.h"
+#include "mono-glib.h"
 
 typedef enum {
 	Black = 0,

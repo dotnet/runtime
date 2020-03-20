@@ -6,7 +6,7 @@
 #define __MONO_UTILS_HWCAP_H__
 
 #include <stdio.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "config.h"
 

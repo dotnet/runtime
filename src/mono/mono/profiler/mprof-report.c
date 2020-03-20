@@ -23,7 +23,7 @@
 #if defined (HAVE_SYS_ZLIB)
 #include <zlib.h>
 #endif
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/debug-helpers.h>

@@ -27,14 +27,14 @@ endif
 libeglib_la_SOURCES = \
 	eglib-remap.h	\
 	sort.frag.h	\
-	glib.h	     	\
+	mono-glib.h	\
 	garray.c	\
 	gbytearray.c	\
 	gerror.c	\
 	ghashtable.c 	\
 	giconv.c	\
 	gmem.c       	\
-	gmodule.h	\
+	mono-gmodule.h	\
 	goutput.c    	\
 	gqsort.c	\
 	gstr.c       	\

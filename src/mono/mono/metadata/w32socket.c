@@ -24,7 +24,7 @@
 #define __APPLE_USE_RFC_3542
 #endif
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <string.h>
 #include <stdlib.h>
 #ifdef HOST_WIN32

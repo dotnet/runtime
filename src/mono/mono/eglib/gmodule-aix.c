@@ -36,8 +36,8 @@
 #if defined(_AIX) && !defined(HAVE_DLADDR)
 #include <config.h>
 
-#include <glib.h>
-#include <gmodule.h>
+#include <mono-glib.h>
+#include <mono-gmodule.h>
 
 #include <stdio.h>
 #include <string.h>

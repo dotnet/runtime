@@ -14,7 +14,7 @@
 
 #if defined(__MACH__)
 #include <stdint.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <pthread.h>
 #include "utils/mono-sigcontext.h"
 #include "utils/mono-compiler.h"

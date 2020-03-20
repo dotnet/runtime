@@ -16,7 +16,7 @@
 #ifndef _UNLOCKED_H_
 #define _UNLOCKED_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-compiler.h>
 
 #if MONO_HAS_CLANG_THREAD_SANITIZER

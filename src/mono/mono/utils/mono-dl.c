@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 // Contains LIBC_SO definition
 #ifdef HAVE_GNU_LIB_NAMES_H

@@ -9,7 +9,7 @@
  *
  */
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/utils/json.h>
 #include <mono/mini/debugger-state-machine.h>

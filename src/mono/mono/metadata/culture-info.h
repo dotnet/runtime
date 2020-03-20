@@ -5,7 +5,7 @@
 #ifndef _MONO_METADATA_CULTURE_INFO_H_
 #define _MONO_METADATA_CULTURE_INFO_H_ 1
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/object.h>
 
 #define NUM_DAYS 7

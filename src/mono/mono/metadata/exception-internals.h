@@ -5,7 +5,7 @@
 #ifndef _MONO_METADATA_EXCEPTION_INTERNALS_H_
 #define _MONO_METADATA_EXCEPTION_INTERNALS_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/handle.h>

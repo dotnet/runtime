@@ -6,7 +6,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
 */
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #ifdef HOST_WIN32
 #include "mono-error.h"
 #include "mono-error-internals.h"

@@ -13,7 +13,7 @@
 #define __MONO_NETWORKING_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>

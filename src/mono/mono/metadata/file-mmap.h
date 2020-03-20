@@ -13,7 +13,7 @@
 #define _MONO_METADATA_FILE_MMAP_H_
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/metadata/object-internals.h>
 #include <mono/utils/mono-compiler.h>

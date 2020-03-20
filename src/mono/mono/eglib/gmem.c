@@ -28,7 +28,7 @@
 #include <config.h>
 #include <stdio.h>
 #include <string.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <eglib-remap.h> // Remove the cast macros and restore the rename macros.
 #undef malloc
 #undef realloc

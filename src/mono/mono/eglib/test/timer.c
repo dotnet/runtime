@@ -1,5 +1,5 @@
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <string.h>
 #include <math.h>
 #ifdef HAVE_UNISTD_H

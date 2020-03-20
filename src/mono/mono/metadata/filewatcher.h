@@ -13,7 +13,7 @@
 
 #include <mono/metadata/object.h>
 #include "mono/utils/mono-compiler.h"
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/icalls.h>
 
 #ifdef HAVE_UNISTD_H

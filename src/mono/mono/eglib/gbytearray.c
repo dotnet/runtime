@@ -27,7 +27,7 @@
  */
 #include "config.h"
 #include <stdlib.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 GByteArray *
 g_byte_array_new (void)

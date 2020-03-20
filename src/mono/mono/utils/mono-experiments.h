@@ -2,7 +2,7 @@
 #ifndef _MONO_EXPERIMENTS_H_
 #define _MONO_EXPERIMENTS_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono/utils/mono-lazy-init.h"
 

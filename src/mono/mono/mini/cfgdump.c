@@ -10,7 +10,7 @@
 
 #if !defined(DISABLE_LOGGING) && !defined(DISABLE_JIT) && !defined(HOST_WIN32)
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/class-internals.h>
 
 #include <sys/socket.h>

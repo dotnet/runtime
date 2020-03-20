@@ -26,7 +26,7 @@
  */
 #include "config.h"
 #include <stdlib.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 /* Any segment <= this threshold will be sorted using insertion
  * sort. OpenBSD seems to use a value of 7 so we'll go with that for

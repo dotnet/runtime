@@ -27,7 +27,7 @@
  */
 #include "config.h"
 #include <stdio.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 static int
 split_cmdline (const gchar *cmdline, GPtrArray *array, GError **gerror)

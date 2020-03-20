@@ -8,7 +8,7 @@
 #include <mono/arch/sparc/sparc-codegen.h>
 #include <mono/utils/mono-context.h>
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #define MONO_ARCH_CPU_SPEC sparc_desc
 

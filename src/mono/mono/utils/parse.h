@@ -8,7 +8,7 @@
 #ifndef __MONO_UTILS_PARSE_H__
 #define __MONO_UTILS_PARSE_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <stdlib.h>
 
 gboolean mono_gc_parse_environment_string_extract_number (const char *str, size_t *out);

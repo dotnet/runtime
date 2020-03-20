@@ -11,7 +11,7 @@
 #ifndef __MONO_FLIGHT_RECORDER__
 #define __MONO_FLIGHT_RECORDER__
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/utils/mono-coop-mutex.h>
 
 typedef struct {

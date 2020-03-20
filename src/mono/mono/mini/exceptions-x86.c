@@ -10,7 +10,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <signal.h>
 #include <string.h>
 #ifdef HAVE_UCONTEXT_H

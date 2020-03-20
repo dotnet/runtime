@@ -9,7 +9,7 @@
 #include <mono/utils/mono-sigcontext.h>
 #include <mono/utils/mono-context.h>
 #include <mono/metadata/object.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifdef __mono_ppc64__
 #define MONO_ARCH_CPU_SPEC mono_ppc64_cpu_desc

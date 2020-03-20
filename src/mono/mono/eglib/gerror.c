@@ -29,7 +29,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 GError *
 g_error_new (gpointer domain, gint code, const char *format, ...)
 {

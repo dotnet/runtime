@@ -13,7 +13,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <mono-glib.h>
 
 /*
  * Memory barrier which only affects the compiler.

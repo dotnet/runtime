@@ -12,7 +12,7 @@
 #define _USE_MATH_DEFINES // needed by MSVC to define math constants
 #include <math.h>
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #ifndef ENABLE_NETCORE
 

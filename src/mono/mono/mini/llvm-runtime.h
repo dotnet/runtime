@@ -11,7 +11,7 @@
 #ifndef __MONO_LLVM_RUNTIME_H__
 #define __MONO_LLVM_RUNTIME_H__
 
-#include <glib.h>
+#include <mono-glib.h>
 
 G_BEGIN_DECLS
 

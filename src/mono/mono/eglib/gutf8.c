@@ -9,7 +9,7 @@
  */
 #include "config.h"
 #include <stdio.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 /*
  * Index into the table below with the first byte of a UTF-8 sequence to get

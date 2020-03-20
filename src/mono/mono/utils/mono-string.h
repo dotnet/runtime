@@ -4,7 +4,9 @@
 
 #ifndef __UTILS_MONO_STRING_H__
 #define __UTILS_MONO_STRING_H__
-#include <glib.h>
+
+#include <mono-glib.h>
+
 /*
  * This definition is used to we remember later to implement this properly
  *

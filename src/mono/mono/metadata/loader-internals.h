@@ -5,7 +5,7 @@
 #ifndef _MONO_METADATA_LOADER_INTERNALS_H_
 #define _MONO_METADATA_LOADER_INTERNALS_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/object-forward.h>

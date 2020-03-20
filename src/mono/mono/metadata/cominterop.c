@@ -8,7 +8,7 @@
  */
 
 #include "config.h"
-#include <glib.h>
+#include <mono-glib.h>
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif

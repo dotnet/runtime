@@ -6,7 +6,7 @@
  *   Bernie Solomon (bernard@ugsolutions.com)
  *
  */
-#include <glib.h>
+#include <mono-glib.h>
 #include <stdio.h>
 #include "mintops.h"
 

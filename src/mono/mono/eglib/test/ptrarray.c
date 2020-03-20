@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include "test.h"
 
 /* Redefine the private structure only to verify proper allocations */

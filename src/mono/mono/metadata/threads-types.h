@@ -13,7 +13,7 @@
 #ifndef _MONO_METADATA_THREADS_TYPES_H_
 #define _MONO_METADATA_THREADS_TYPES_H_
 
-#include <glib.h>
+#include <mono-glib.h>
 
 #include <mono/utils/mono-forward-internal.h>
 #include <mono/metadata/object.h>

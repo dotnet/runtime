@@ -7,7 +7,7 @@
 #define __MONO_METADATA_ICALL_INTERNALS_H__
 
 #include <config.h>
-#include <glib.h>
+#include <mono-glib.h>
 #include <mono/metadata/object-internals.h>
 
 // On Windows platform implementation of bellow methods are hosted in separate source file

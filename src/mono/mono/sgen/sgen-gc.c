@@ -177,7 +177,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <glib.h>
+#include <mono-glib.h>
 
 #include "mono/sgen/sgen-gc.h"
 #include "mono/sgen/sgen-cardtable.h"
