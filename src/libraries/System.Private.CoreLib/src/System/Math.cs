@@ -548,17 +548,17 @@ namespace System
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            if ((val1 > val2) || double.IsNaN(val1))
+            if (val1 != val2)
             {
+                if (!double.IsNaN(val1))
+                {
+                    return val2 < val1 ? val1 : val2;
+                }
+
                 return val1;
             }
 
-            if (val1 == val2)
-            {
-                return double.IsNegative(val1) ? val2 : val1;
-            }
-
-            return val2;
+            return double.IsNegative(val2) ? val1 : val2;
         }
 
         [NonVersionable]
@@ -595,17 +595,17 @@ namespace System
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            if ((val1 > val2) || float.IsNaN(val1))
+            if (val1 != val2)
             {
+                if (!float.IsNaN(val1))
+                {
+                    return val2 < val1 ? val1 : val2;
+                }
+
                 return val1;
             }
 
-            if (val1 == val2)
-            {
-                return float.IsNegative(val1) ? val2 : val1;
-            }
-
-            return val2;
+            return float.IsNegative(val2) ? val1 : val2;
         }
 
         [CLSCompliant(false)]
@@ -674,20 +674,12 @@ namespace System
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            if (val1 < val2)
+            if (val1 != val2 && !double.IsNaN(val1))
             {
-                goto Exit;
+                return val1 < val2 ? val1 : val2;
             }
 
-            if (val1 == val2 && IsNegative(val1))
-            {
-                goto Exit;
-            }
-
-            val1 = val2;
-
-        Exit:
-            return val1;
+            return double.IsNegative(val1) ? val1 : val2;
         }
 
         [NonVersionable]
@@ -724,17 +716,12 @@ namespace System
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            if ((val1 < val2) || float.IsNaN(val1))
+            if (val1 != val2 && !float.IsNaN(val1))
             {
-                return val1;
+                return val1 < val2 ? val1 : val2;
             }
 
-            if (val1 == val2)
-            {
-                return float.IsNegative(val1) ? val1 : val2;
-            }
-
-            return val2;
+            return float.IsNegative(val1) ? val1 : val2;
         }
 
         [CLSCompliant(false)]
