@@ -25,6 +25,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\ref\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\src\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.*\tests\**\*.csproj" Exclude="@(PortedExtensionsProject)" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.*\tests\FunctionalTests\Microsoft.Extensions.Configuration.Functional.Tests.csproj"/>
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Common\tests\Extensions\**\*.csproj" />
   </ItemGroup>
 
