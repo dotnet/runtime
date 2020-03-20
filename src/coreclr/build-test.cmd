@@ -616,17 +616,17 @@ set __TotalPrecompiled=0
 set __FailedToPrecompile=0
 set __FailedAssemblies=
 for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll") do (
-    if "%%~nxF"=="Microsoft.CodeAnalysis.dll" goto :SkipAssembly
-    if "%%~nxF"=="Microsoft.CodeAnalysis.CSharp.dll" goto :SkipAssembly
-    if "%%~nxF"=="Microsoft.CodeAnalysis.VisualBasic.dll" goto :SkipAssembly
-    if "%%~nxF"=="Microsoft.Extensions.Options.ConfigurationExtensions.dll" goto :SkipAssembly
-    if "%%~nxF"=="Microsoft.Extensions.Options.DataAnnotations.dll" goto :SkipAssembly
-    if "%%~nxF"=="System.Runtime.WindowsRuntime.dll" goto :SkipAssembly
-
-    call :PrecompileAssembly "%%F" %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
-    echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
-
-    :SkipAssembly
+    set __SkipIssue=
+    if "%%~nxF"=="Microsoft.Extensions.Options.ConfigurationExtensions.dll" (set __SkipIssue=NotAFrameworkAssembly)
+    if "%%~nxF"=="Microsoft.Extensions.Options.DataAnnotations.dll" (set __SkipIssue=NotAFrameworkAssembly)
+    if "%%~nxF"=="System.Runtime.WindowsRuntime.dll" (set __SkipIssue=https://github.com/dotnet/runtime/issues/33885)
+    if "%%~nxF"=="Microsoft.CodeAnalysis.dll" if defined __DoCrossgen2 (set __SkipIssue=https://github.com/dotnet/runtime/issues/33884)
+    if not defined __SkipIssue (
+      call :PrecompileAssembly "%%F" %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
+      echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
+    ) else (
+      echo Skipped %%~nxF: !__SkipIssue!
+    )
 )
 
 if !__FailedToPrecompile! NEQ 0 (

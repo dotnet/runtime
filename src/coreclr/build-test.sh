@@ -154,8 +154,11 @@ precompile_coreroot_fx()
 
     # Read the exclusion file for this platform
     skipCrossGenFiles=($(grep -v '^#' "$(dirname "$0")/tests/skipCrossGenFiles.${__BuildArch}.txt" 2> /dev/null))
+    # Not a framework assembly
     skipCrossGenFiles+=('Microsoft.Extensions.Options.ConfigurationExtensions.dll')
+    # Not a framework assembly
     skipCrossGenFiles+=('Microsoft.Extensions.Options.DataAnnotations.dll')
+    # https://github.com/dotnet/runtime/issues/33885
     skipCrossGenFiles+=('System.Runtime.WindowsRuntime.dll')
 
     # Temporary output folder for Crossgen2-compiled assemblies
@@ -172,9 +175,8 @@ precompile_coreroot_fx()
 
         mkdir "$outputDir"
 
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.CSharp.dll')
+        # https://github.com/dotnet/runtime/issues/33884
         skipCrossGenFiles+=('Microsoft.CodeAnalysis.dll')
-        skipCrossGenFiles+=('Microsoft.CodeAnalysis.VisualBasic.dll')
 
         for reference in "$overlayDir"/*.dll; do
             crossgen2References+=" -r:${reference}"
