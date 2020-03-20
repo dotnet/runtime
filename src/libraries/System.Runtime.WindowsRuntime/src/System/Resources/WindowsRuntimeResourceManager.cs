@@ -29,34 +29,34 @@ namespace System.Resources
         // invariant name is an empty string. We will use the private invariant culture name x-VL instead.
         private const string c_InvariantCulturePrivateName = "x-VL";
 
-        private ResourceMap _resourceMap;
-        private ResourceContext _clonedResourceContext;
-        private string _clonedResourceContextFallBackList;
+        private ResourceMap? _resourceMap;
+        private ResourceContext? _clonedResourceContext;
+        private string? _clonedResourceContextFallBackList;
 
-        private static char[] s_charCultureSeparator;
+        private static char[]? s_charCultureSeparator;
 
         private struct PackageInfo
         {
-            public string Path;
-            public string Name;
-            public string FullName;
+            public string? Path;
+            public string? Name;
+            public string? FullName;
         }
 
         private static PackageInfo s_currentPackageInfo;
 
-        private static List<PackageInfo> s_dependentPackageInfoList;
+        private static List<PackageInfo>? s_dependentPackageInfoList;
 
-        private static ResourceContext s_globalResourceContext; // Read from it but do not modify it or call Reset() on it as that would affect the app-wide state
+        private static ResourceContext? s_globalResourceContext; // Read from it but do not modify it or call Reset() on it as that would affect the app-wide state
 
-        private static volatile string s_globalResourceContextFallBackList;
-        private static volatile CultureInfo s_globalResourceContextBestFitCultureInfo;
-        private static volatile global::Windows.ApplicationModel.Resources.Core.ResourceManager s_globalResourceManager;
+        private static volatile string? s_globalResourceContextFallBackList;
+        private static volatile CultureInfo? s_globalResourceContextBestFitCultureInfo;
+        private static volatile global::Windows.ApplicationModel.Resources.Core.ResourceManager? s_globalResourceManager;
 
         private static readonly object s_objectForLock = new object(); // Used by InitializeStatics
 
         private static bool InitializeStatics()
         {
-            global::Windows.ApplicationModel.Resources.Core.ResourceManager globalResourceManager = null;
+            global::Windows.ApplicationModel.Resources.Core.ResourceManager? globalResourceManager = null;
 
             if (s_globalResourceManager == null)
             {
@@ -104,7 +104,7 @@ namespace System.Resources
             return s_globalResourceManager != null;
         }
 
-        private static void InitializeStaticGlobalResourceContext(global::Windows.ApplicationModel.Resources.Core.ResourceManager resourceManager)
+        private static void InitializeStaticGlobalResourceContext(global::Windows.ApplicationModel.Resources.Core.ResourceManager? resourceManager)
         {
             if (s_globalResourceContext == null)
             {
@@ -137,7 +137,7 @@ namespace System.Resources
 
         // Returns the CultureInfo representing the first language in the list that we can construct a CultureInfo for or null if
         // no such culture exists.
-        private static unsafe CultureInfo GetBestFitCultureFromLanguageList(List<string> languages)
+        private static unsafe CultureInfo? GetBestFitCultureFromLanguageList(List<string> languages)
         {
             char* localeNameBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH]; // LOCALE_NAME_MAX_LENGTH includes null terminator
 
@@ -285,7 +285,7 @@ namespace System.Resources
         }
 #endif
 
-        private static string FindPackageSimpleNameForFilename(string libpath)
+        private static string? FindPackageSimpleNameForFilename(string libpath)
         {
             Debug.Assert(libpath != null);
             Debug.Assert(s_currentPackageInfo.Path != null); // Set in InitializeStatics()
@@ -298,9 +298,9 @@ namespace System.Resources
                 InitializeStaticsForDependentPackages();
 
                 // s_dependentPackageInfoList is empty (but non-null) if there are no dependent packages.
-                foreach (PackageInfo dependentPackageInfo in s_dependentPackageInfoList)
+                foreach (PackageInfo dependentPackageInfo in s_dependentPackageInfoList!)
                 {
-                    if (LibpathMatchesPackagepath(libpath, dependentPackageInfo.Path))
+                    if (LibpathMatchesPackagepath(libpath, dependentPackageInfo.Path!))
                         return dependentPackageInfo.Name; // This may be null, in which case we failed to get the name (in InitializeStaticsForDependentPackages), but matched the path, so stop looking.
                 }
             }
@@ -312,14 +312,14 @@ namespace System.Resources
                package name as subfolder in its path. Based on this assumption we can find the package
                to which an NI belongs. Below code does that.
               */
-            if (LibpathContainsPackagename(libpath, s_currentPackageInfo.FullName))
+            if (LibpathContainsPackagename(libpath, s_currentPackageInfo.FullName!))
                 return s_currentPackageInfo.Name;
             else // Look at dependent packages
             {
                 // s_dependentPackageInfoList is empty (but non-null) if there are no dependent packages.
                 foreach (PackageInfo dependentPackageInfo in s_dependentPackageInfoList)
                 {
-                    if (LibpathContainsPackagename(libpath, dependentPackageInfo.FullName))
+                    if (LibpathContainsPackagename(libpath, dependentPackageInfo.FullName!))
                         return dependentPackageInfo.Name;
                 }
             }
@@ -339,7 +339,7 @@ namespace System.Resources
         // Only returns true if the function succeeded completely.
         // Outputs exceptionInfo since it may be needed for debugging purposes
         // if an exception is thrown by one of Initialize's callees.
-        public override bool Initialize(string libpath, string reswFilename, out PRIExceptionInfo exceptionInfo)
+        public override bool Initialize(string libpath, string reswFilename, out PRIExceptionInfo? exceptionInfo)
         {
             Debug.Assert(libpath != null);
             Debug.Assert(reswFilename != null);
@@ -357,11 +357,11 @@ namespace System.Resources
                 // reliable information to include in it.
 
                 IReadOnlyDictionary<string, ResourceMap>
-                    resourceMapDictionary = s_globalResourceManager.AllResourceMaps;
+                    resourceMapDictionary = s_globalResourceManager!.AllResourceMaps;
 
                 if (resourceMapDictionary != null)
                 {
-                    string packageSimpleName = FindPackageSimpleNameForFilename(libpath);
+                    string? packageSimpleName = FindPackageSimpleNameForFilename(libpath);
 
 #if NETSTANDARD2_0 || NETCOREAPP
                     // If we have found a simple package name for the assembly, lets make sure it is not *.resource.dll that
@@ -379,7 +379,7 @@ namespace System.Resources
 #endif
                     if (packageSimpleName != null)
                     {
-                        ResourceMap packageResourceMap = null;
+                        ResourceMap? packageResourceMap = null;
 
                         // Win8 enforces that package simple names are unique (for example, the App Store will not
                         // allow two apps with the same package simple name). That is why the Modern Resource Manager
@@ -391,7 +391,7 @@ namespace System.Resources
                                 // GetSubtree returns null when it cannot find resource strings
                                 // named "reswFilename/*" for the package we are looking up.
 
-                                reswFilename = UriUtility.UriEncode(reswFilename);
+                                reswFilename = UriUtility.UriEncode(reswFilename)!;
                                 _resourceMap = packageResourceMap.GetSubtree(reswFilename);
 
                                 if (_resourceMap == null)
@@ -402,7 +402,7 @@ namespace System.Resources
                                 }
                                 else
                                 {
-                                    _clonedResourceContext = s_globalResourceContext.Clone();
+                                    _clonedResourceContext = s_globalResourceContext!.Clone();
 
                                     if (_clonedResourceContext != null)
                                     {
@@ -443,7 +443,7 @@ namespace System.Resources
             get
             {
                 InitializeStaticGlobalResourceContext(null);
-                return s_globalResourceContextBestFitCultureInfo;
+                return s_globalResourceContextBestFitCultureInfo!;
             }
         }
 
@@ -501,15 +501,14 @@ namespace System.Resources
         // continue to be thread-safe.
 
         // Throws exceptions
-        public override string GetString(string stringName,
-                 string startingCulture, string neutralResourcesCulture)
+        public override string? GetString(string stringName, string? startingCulture, string? neutralResourcesCulture)
         {
             Debug.Assert(stringName != null);
             Debug.Assert(_resourceMap != null); // Should have been initialized by now
 
-            ResourceCandidate resourceCandidate = null;
+            ResourceCandidate? resourceCandidate = null;
 
-            stringName = UriUtility.UriEncode(stringName);
+            stringName = UriUtility.UriEncode(stringName)!;
 
             if (startingCulture == null && neutralResourcesCulture == null)
             {
@@ -528,7 +527,7 @@ namespace System.Resources
                 // The starting culture has to be looked up first, and neutral resources culture has
                 // to be looked up last.
 
-                string newResourceFallBackList = null;
+                string? newResourceFallBackList = null;
 
                 newResourceFallBackList =
                     (startingCulture == null ? "" : startingCulture + ";") +
@@ -577,7 +576,7 @@ namespace System.Resources
         // Adapted from the UrlEncode methods originally
         // in file:ndp\fx\src\xsp\system\web\httpserverutility.cs
         // and file:ndp\fx\src\xsp\system\web\util\httpencoder.cs
-        public static string UriEncode(string str)
+        public static string? UriEncode(string str)
         {
             if (str == null)
                 return null;
@@ -598,7 +597,7 @@ namespace System.Resources
                     cBytesToEncode++;
             }
 
-            byte[] expandedBytes = null;
+            byte[]? expandedBytes = null;
 
             // nothing to expand?
             if (cBytesToEncode == 0)
