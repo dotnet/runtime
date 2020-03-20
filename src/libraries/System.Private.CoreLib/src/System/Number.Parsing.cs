@@ -9,6 +9,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
+#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#if TARGET_64BIT
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System
 {
     // The Parse methods provided by the numeric classes convert a
@@ -523,131 +530,144 @@ namespace System
         internal static ParsingStatus TryParseInt32IntegerStyle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out int result)
         {
             Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
+            Debug.Assert(info != null);
 
             if (value.IsEmpty)
                 goto FalseExit;
 
-            int index = 0;
-            int num = value[0];
+            int sign = 0;
+            nuint index = 0;
+            char firstChar = value[0];
 
-            // Skip past any whitespace at the beginning.
-            if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
+            // Need to check 'HasInvariantNumberSigns' up-front because the supplied NumberFormatInfo
+            // could be using a decimal digit character as a leading sign. Otherwise we optimistically
+            // assume that the incoming string has no leading whitespace or sign, falling back to
+            // those checks only when we see a character outside the range ['0' .. '9'].
+
+            if (!TryConvertToDigit(firstChar, out int answer) || !info.HasInvariantNumberSigns)
+            {
+                // Skip past any whitespace at the beginning.
+                if ((styles & NumberStyles.AllowLeadingWhite) != 0)
+                {
+                    while (IsWhite(firstChar))
+                    {
+                        if (!value.TryGetElementAt(++index, out firstChar))
+                            goto FalseExit;
+                    }
+                }
+
+                // Parse leading sign.
+                if ((styles & NumberStyles.AllowLeadingSign) != 0)
+                {
+                    if (info.HasInvariantNumberSigns)
+                    {
+                        if (firstChar == '-')
+                        {
+                            sign = -1;
+                            if (!value.TryGetElementAt(++index, out firstChar))
+                                goto FalseExit;
+                        }
+                        else if (firstChar == '+')
+                        {
+                            if (!value.TryGetElementAt(++index, out firstChar))
+                                goto FalseExit;
+                        }
+                    }
+                    else
+                    {
+                        value = value.Slice((int)index);
+                        index = 0;
+                        string positiveSign = info.PositiveSign, negativeSign = info.NegativeSign;
+                        if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
+                        {
+                            index += (uint)positiveSign.Length;
+                        }
+                        else if (!string.IsNullOrEmpty(negativeSign) && value.StartsWith(negativeSign))
+                        {
+                            sign = -1;
+                            index += (uint)negativeSign.Length;
+                        }
+
+                        if (!value.TryGetElementAt(index, out firstChar))
+                            goto FalseExit;
+                    }
+                }
+
+                if (!TryConvertToDigit(firstChar, out answer))
+                {
+                    goto FalseExit;
+                }
+            }
+
+            Debug.Assert(answer >= 0 && answer <= 9);
+
+            bool overflow = false;
+            int num;
+            char nextChar;
+
+            // Skip past leading zeros.
+            if (answer == 0)
             {
                 do
                 {
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto FalseExit;
-                    num = value[index];
-                }
-                while (IsWhite(num));
-            }
-
-            // Parse leading sign.
-            int sign = 1;
-            if ((styles & NumberStyles.AllowLeadingSign) != 0)
-            {
-                if (info.HasInvariantNumberSigns)
-                {
-                    if (num == '-')
-                    {
-                        sign = -1;
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (num == '+')
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-                else
-                {
-                    value = value.Slice(index);
-                    index = 0;
-                    string positiveSign = info.PositiveSign, negativeSign = info.NegativeSign;
-                    if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
-                    {
-                        index += positiveSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (!string.IsNullOrEmpty(negativeSign) && value.StartsWith(negativeSign))
-                    {
-                        sign = -1;
-                        index += negativeSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-            }
-
-            bool overflow = false;
-            int answer = 0;
-
-            if (IsDigit(num))
-            {
-                // Skip past leading zeros.
-                if (num == '0')
-                {
-                    do
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto DoneAtEnd;
-                        num = value[index];
-                    } while (num == '0');
-                    if (!IsDigit(num))
-                        goto HasTrailingChars;
-                }
-
-                // Parse most digits, up to the potential for overflow, which can't happen until after 9 digits.
-                answer = num - '0'; // first digit
-                index++;
-                for (int i = 0; i < 8; i++) // next 8 digits can't overflow
-                {
-                    if ((uint)index >= (uint)value.Length)
+                    if (!value.TryGetElementAt(++index, out nextChar))
                         goto DoneAtEnd;
-                    num = value[index];
-                    if (!IsDigit(num))
-                        goto HasTrailingChars;
-                    index++;
-                    answer = 10 * answer + num - '0';
-                }
+                } while (nextChar == '0');
+                if (!TryConvertToDigit(nextChar, out num))
+                    goto HasTrailingChars;
+                answer = num;
+            }
 
-                if ((uint)index >= (uint)value.Length)
+            Debug.Assert(answer >= 1 && answer <= 9);
+
+            // Parse most digits, up to the potential for overflow, which can't happen until after 9 digits.
+            index++;
+            for (int i = 0; i < 8; i++)
+            {
+                if (!value.TryGetElementAt(index, out nextChar))
                     goto DoneAtEnd;
-                num = value[index];
-                if (!IsDigit(num))
+                if (!TryConvertToDigit(nextChar, out num))
                     goto HasTrailingChars;
                 index++;
-                // Potential overflow now processing the 10th digit.
-                overflow = answer > int.MaxValue / 10;
-                answer = answer * 10 + num - '0';
-                overflow |= (uint)answer > int.MaxValue + (((uint)sign) >> 31);
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-
-                // At this point, we're either overflowing or hitting a formatting error.
-                // Format errors take precedence for compatibility.
-                num = value[index];
-                while (IsDigit(num))
-                {
-                    overflow = true;
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto OverflowExit;
-                    num = value[index];
-                }
-                goto HasTrailingChars;
+                answer = 10 * answer + num;
             }
-            goto FalseExit;
+
+            if (!value.TryGetElementAt(index, out nextChar))
+                goto DoneAtEnd;
+            if (!TryConvertToDigit(nextChar, out num))
+                goto HasTrailingChars;
+            index++;
+            // Potential overflow now processing the 10th digit.
+            overflow = answer > int.MaxValue / 10;
+            answer = answer * 10 + num;
+            overflow |= (uint)answer > (uint)(int.MaxValue - sign);
+            if (!value.TryGetElementAt(index, out nextChar))
+                goto DoneAtEndButPotentialOverflow;
+
+            // At this point, we're either overflowing or hitting a formatting error.
+            // Format errors take precedence for compatibility.
+            while (IsDigit(nextChar))
+            {
+                overflow = true;
+                if (!value.TryGetElementAt(++index, out nextChar))
+                    goto OverflowExit;
+            }
+
+        HasTrailingChars: // we've successfully parsed, but there are still remaining characters in the span
+            // Skip past trailing whitespace, then past trailing zeros, and if anything else remains, fail.
+            if (IsWhite(nextChar))
+            {
+                if ((styles & NumberStyles.AllowTrailingWhite) == 0)
+                    goto FalseExit;
+                while (value.TryGetElementAt(++index, out nextChar))
+                {
+                    if (!IsWhite(nextChar))
+                        break;
+                }
+            }
+
+            if (EndsWithAnythingOtherThanTrailingNulls(value, index))
+                goto FalseExit;
 
         DoneAtEndButPotentialOverflow:
             if (overflow)
@@ -655,7 +675,10 @@ namespace System
                 goto OverflowExit;
             }
         DoneAtEnd:
-            result = answer * sign;
+            // If sign = 0, value = (answer ^ 0) - 0 = answer
+            // If sign = -1, value = (answer ^ -1) - (-1) = ~answer + 1 = -answer
+            Debug.Assert(sign == 0 || sign == -1);
+            result = (answer ^ sign) - sign;
             ParsingStatus status = ParsingStatus.OK;
         Exit:
             return status;
@@ -668,26 +691,6 @@ namespace System
             result = 0;
             status = ParsingStatus.Overflow;
             goto Exit;
-
-        HasTrailingChars: // we've successfully parsed, but there are still remaining characters in the span
-            // Skip past trailing whitespace, then past trailing zeros, and if anything else remains, fail.
-            if (IsWhite(num))
-            {
-                if ((styles & NumberStyles.AllowTrailingWhite) == 0)
-                    goto FalseExit;
-                for (index++; index < value.Length; index++)
-                {
-                    if (!IsWhite(value[index]))
-                        break;
-                }
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-            }
-
-            if (!TrailingZeros(value, index))
-                goto FalseExit;
-
-            goto DoneAtEndButPotentialOverflow;
         }
 
         /// <summary>Parses long inputs limited to styles that make up NumberStyles.Integer.</summary>
@@ -1888,6 +1891,20 @@ namespace System
             return true;
         }
 
+        private static bool EndsWithAnythingOtherThanTrailingNulls(ReadOnlySpan<char> value, nuint index)
+        {
+            // For compatibility, we need to allow trailing null chars at the end of a number string
+            while (value.TryGetElementAt(index++, out char nextChar))
+            {
+                if (nextChar != '\0')
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
 
         private static unsafe char* MatchChars(char* p, char* pEnd, string value)
@@ -1923,6 +1940,13 @@ namespace System
         private static bool IsWhite(int ch) => ch == 0x20 || (uint)(ch - 0x09) <= (0x0D - 0x09) ? true : false;
 
         private static bool IsDigit(int ch) => ((uint)ch - '0') <= 9;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryConvertToDigit(int charValue, out int digit)
+        {
+            digit = charValue - '0';
+            return (uint)digit <= 9;
+        }
 
         internal enum ParsingStatus
         {
