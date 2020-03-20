@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
@@ -172,6 +171,17 @@ namespace System.Net.Http.Json.Functional.Tests
                     HttpRequestData req = await server.HandleRequestAsync();
                     Assert.Equal("application/json; charset=utf-16", req.GetSingleHeaderValue("Content-Type"));
                 });
+        }
+
+        [Fact]
+        public void EnsureDefaultJsonSerializerOptions()
+        {
+            HttpClient client = new HttpClient();
+            EnsureDefaultOptions obj = new EnsureDefaultOptions();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://example.com");
+            request.Content = JsonContent.Create(obj, mediaType: null);
+            client.SendAsync(request);
         }
     }
 }

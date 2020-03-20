@@ -20,7 +20,7 @@ namespace System.Net.Http.Json
             Debug.Assert(content.Headers.ContentType != null);
             Encoding? sourceEncoding = GetEncoding(content.Headers.ContentType.CharSet);
 
-            return ReadFromJsonAsyncCore(content, type, sourceEncoding, options, cancellationToken);
+            return ReadFromJsonAsyncCore(content, type, sourceEncoding, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken);
         }
 
         public static Task<T> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
@@ -29,7 +29,7 @@ namespace System.Net.Http.Json
             Debug.Assert(content.Headers.ContentType != null);
             Encoding? sourceEncoding = GetEncoding(content.Headers.ContentType.CharSet);
 
-            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options, cancellationToken);
+            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken);
         }
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)

@@ -15,7 +15,8 @@ namespace System.Net.Http.Json
     public partial class JsonContent : HttpContent
     {
         internal const string JsonMediaType = "application/json";
-        private static MediaTypeHeaderValue DefaultMediaType => MediaTypeHeaderValue.Parse(string.Format("{0}; charset={1}", JsonMediaType, Encoding.UTF8.WebName));
+        private static MediaTypeHeaderValue s_defaultMediaType => MediaTypeHeaderValue.Parse(string.Format("{0}; charset={1}", JsonMediaType, Encoding.UTF8.WebName));
+        internal static JsonSerializerOptions s_defaultSerializerOptions => new JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
         public Type ObjectType { get; }
@@ -30,8 +31,8 @@ namespace System.Net.Http.Json
 
             Value = inputValue;
             ObjectType = inputType;
-            Headers.ContentType = mediaType ?? DefaultMediaType;
-            _jsonSerializerOptions = options;
+            Headers.ContentType = mediaType ?? s_defaultMediaType;
+            _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
         }
 
         public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options = null)

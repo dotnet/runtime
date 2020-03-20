@@ -208,5 +208,21 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                 });
         }
+
+        [Fact]
+        public async Task EnsureDefaultJsonSerializerOptionsAsync()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        var response = await client.SendAsync(request);
+                        await response.Content.ReadFromJsonAsync(typeof(EnsureDefaultOptions));
+                    }
+                },
+                server => server.HandleRequestAsync(headers: _headers, content: "{}"));
+        }
     }
 }
