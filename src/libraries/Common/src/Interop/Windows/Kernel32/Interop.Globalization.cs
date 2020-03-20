@@ -142,7 +142,7 @@ internal static partial class Interop
         internal static extern int GetUserGeoID(int geoClass);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal static unsafe extern int GetGeoInfoW(int location, int geoType, char *lpGeoData, int cchData, int LangId);
+        internal static extern int GetGeoInfo(int location, int geoType, ref char lpGeoData, int cchData, int LangId);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern bool EnumCalendarInfoExEx(EnumCalendarInfoProcExEx pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string? lpReserved, uint CalType, void* lParam);

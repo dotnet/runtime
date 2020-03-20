@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Internal.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -715,19 +716,18 @@ namespace System.Globalization
             }
         }
 
-        internal static unsafe CultureData GetCurrentRegionData()
+        internal static CultureData GetCurrentRegionData()
         {
-            const int BUFF_LENGTH = 10;
-            char* geoIso2Letters = stackalloc char[BUFF_LENGTH];
+            Span<char> geoIso2Letters = stackalloc char[10];
 
             int geoId = Interop.Kernel32.GetUserGeoID(Interop.Kernel32.GEOCLASS_NATION);
             if (geoId != Interop.Kernel32.GEOID_NOT_AVAILABLE)
             {
-                int geoIsoIdLength = Interop.Kernel32.GetGeoInfoW(geoId, Interop.Kernel32.GEO_ISO2, geoIso2Letters, BUFF_LENGTH, Interop.Kernel32.EN_LANG_ID);
+                int geoIsoIdLength = Interop.Kernel32.GetGeoInfo(geoId, Interop.Kernel32.GEO_ISO2, ref MemoryMarshal.GetReference(geoIso2Letters), geoIso2Letters.Length, Interop.Kernel32.EN_LANG_ID);
                 if (geoIsoIdLength != 0)
                 {
                     geoIsoIdLength -= geoIso2Letters[geoIsoIdLength - 1] == 0 ? 1 : 0; // handle null termination and exclude it.
-                    CultureData? cd = GetCultureDataForRegion(new string(geoIso2Letters, 0, geoIsoIdLength), true);
+                    CultureData? cd = GetCultureDataForRegion(geoIso2Letters.Slice(0, geoIsoIdLength).ToString(), true);
                     if (cd != null)
                     {
                         return cd;
