@@ -1383,7 +1383,7 @@ namespace System.Data.OleDb
         private void ValidateConnectionAndTransaction(string method)
         {
             ValidateConnection(method);
-            _transaction = _connection.ValidateTransaction(Transaction as OleDbTransaction, method);
+            _transaction = _connection.ValidateTransaction(Transaction, method);
             this.canceling = false;
         }
     }
