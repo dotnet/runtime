@@ -7,7 +7,6 @@
 
 void SystemNative_Log (uint8_t* buffer, int32_t length)
 {
-    // COOP: no managed memory access: any mode.
     NSString *msg = [[NSString alloc] initWithBytes: buffer length: length encoding: NSUTF16LittleEndianStringEncoding];
     if (length > 4096)
     {

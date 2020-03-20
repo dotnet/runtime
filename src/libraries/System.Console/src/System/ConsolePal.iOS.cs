@@ -23,7 +23,7 @@ namespace System
             {
                 fixed (byte* ptr = buffer)
                 {
-                    Interop.Sys.Log((IntPtr)(ptr + offset), count);
+                    Interop.Sys.Log(ptr + offset, count);
                 }
             }
         }
