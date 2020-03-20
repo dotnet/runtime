@@ -430,6 +430,11 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
 
 inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet r2rSet)
 {
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4065) // disable warning for switch statement with only default label.
+#endif
+
     switch (r2rSet)
     {
 #ifdef TARGET_ARM64
@@ -479,6 +484,9 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         default:
             return InstructionSet_ILLEGAL;
     }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 }
 
 #endif // CORINFOINSTRUCTIONSET_H
