@@ -6,14 +6,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
     internal unsafe struct Ssl
     {
         private static readonly int managedInterfaceIndex =
-            GetExNewIndex(Interop.OpenSsl.CRYPTO_EX_INDEX_SSL, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            GetExNewIndex(Interop.OpenSslQuic.CRYPTO_EX_INDEX_SSL, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
 
         public static Ssl Null => default(Ssl);
 
         private readonly IntPtr handle;
 
         public string Version =>
-            Marshal.PtrToStringUTF8(new IntPtr(Interop.OpenSsl.SSL_get_version(handle)))!;
+            Marshal.PtrToStringUTF8(new IntPtr(Interop.OpenSslQuic.SslGetVersion(handle)))!;
 
         public TlsVersion MinProtoVersion
         {
@@ -29,7 +29,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
 
         private Ssl(SslContext ctx)
         {
-            handle = Interop.OpenSsl.SSL_new(ctx);
+            handle = Interop.OpenSslQuic.SslNew(ctx);
         }
 
         public static Ssl New(SslContext ctx)
@@ -39,65 +39,65 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
 
         public static void Free(Ssl ssl)
         {
-            Interop.OpenSsl.SSL_free(ssl.handle);
+            Interop.OpenSslQuic.SslFree(ssl.handle);
         }
 
         public int UseCertificateFile(string file, SslFiletype type)
         {
-            return Interop.OpenSsl.SSL_use_certificate_file(handle, file, type);
+            return Interop.OpenSslQuic.SslUseCertificateFile(handle, file, type);
         }
 
         public int UsePrivateKeyFile(string file, SslFiletype type)
         {
-            return Interop.OpenSsl.SSL_use_PrivateKey_file(handle, file, type);
+            return Interop.OpenSslQuic.SslUsePrivateKeyFile(handle, file, type);
         }
 
         public int SetQuicMethod(ref QuicMethods methods)
         {
-            return Interop.OpenSsl.SSL_set_quic_method(handle, ref methods);
+            return Interop.OpenSslQuic.SslSetQuicMethod(handle, ref methods);
         }
 
         public int SetAcceptState()
         {
-            return Interop.OpenSsl.SSL_set_accept_state(handle);
+            return Interop.OpenSslQuic.SslSetAcceptState(handle);
         }
 
         public int SetConnectState()
         {
-            return Interop.OpenSsl.SSL_set_connect_state(handle);
+            return Interop.OpenSslQuic.SslSetConnectState(handle);
         }
 
         public int DoHandshake()
         {
-            return Interop.OpenSsl.SSL_do_handshake(handle);
+            return Interop.OpenSslQuic.SslDoHandshake(handle);
         }
 
         public int Ctrl(SslCtrlCommand cmd, long larg, IntPtr parg)
         {
-            return Interop.OpenSsl.SSL_ctrl(handle, cmd, larg, parg);
+            return Interop.OpenSslQuic.SslCtrl(handle, cmd, larg, parg);
         }
 
         public SslError GetError(int code)
         {
-            return (SslError) Interop.OpenSsl.SSL_get_error(handle, code);
+            return (SslError) Interop.OpenSslQuic.SslGetError(handle, code);
         }
 
         public int ProvideQuicData(SslEncryptionLevel level, ReadOnlySpan<byte> data)
         {
             fixed (byte* pData = data)
             {
-                return Interop.OpenSsl.SSL_provide_quic_data(handle, level, pData, new IntPtr(data.Length));
+                return Interop.OpenSslQuic.SslProvideQuicData(handle, level, pData, new IntPtr(data.Length));
             }
         }
 
         public int SetExData(int idx, IntPtr data)
         {
-            return Interop.OpenSsl.SSL_set_ex_data(handle, idx, data);
+            return Interop.OpenSslQuic.SslSetExData(handle, idx, data);
         }
 
         public IntPtr GetExData(int idx)
         {
-            return Interop.OpenSsl.SSL_get_ex_data(handle, idx);
+            return Interop.OpenSslQuic.SslGetExData(handle, idx);
         }
 
         public void SetCallbackInterface(IntPtr address)
@@ -121,7 +121,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
         public static int GetExNewIndex(long argl, IntPtr argp, IntPtr newFunc, IntPtr dupFunc,
             IntPtr freeFunc)
         {
-            return Interop.OpenSsl.CRYPTO_get_ex_new_index(Interop.OpenSsl.CRYPTO_EX_INDEX_SSL, argl, argp, newFunc, dupFunc, freeFunc);
+            return Interop.OpenSslQuic.CryptoGetExNewIndex(Interop.OpenSslQuic.CRYPTO_EX_INDEX_SSL, argl, argp, newFunc, dupFunc, freeFunc);
         }
 
         public override string ToString()

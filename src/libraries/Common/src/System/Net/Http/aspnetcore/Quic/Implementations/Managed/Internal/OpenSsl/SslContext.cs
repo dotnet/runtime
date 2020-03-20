@@ -13,12 +13,12 @@
 
         public static SslContext New(SslMethod method)
         {
-            return new SslContext(Interop.OpenSsl.SSL_CTX_new(method));
+            return new SslContext(Interop.OpenSslQuic.SslCtxNew(method));
         }
 
         public static void Free(SslContext ctx)
         {
-            Interop.OpenSsl.SSL_CTX_free(ctx._handle);
+            Interop.OpenSslQuic.SslCtxFree(ctx._handle);
         }
 
         public override string ToString()

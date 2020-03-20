@@ -6,79 +6,78 @@ using System.Runtime.InteropServices;
 internal static partial class Interop
 {
     // TODO-RZ: remove this and use System.Security.Cryptography.Native
-    internal static unsafe partial class OpenSsl
+    internal static unsafe class OpenSslQuic
     {
-        [DllImport(Interop.Libraries.Crypto)]
-        internal static extern int CRYPTO_get_ex_new_index(int classIndex, long argl, IntPtr argp, IntPtr newFunc,
+        [DllImport(Libraries.Crypto, EntryPoint = "CRYPTO_get_ex_new_index")]
+        internal static extern int CryptoGetExNewIndex(int classIndex, long argl, IntPtr argp, IntPtr newFunc,
             IntPtr dupFunc, IntPtr freeFunc);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate int ErrorPrintCallback(byte* str, UIntPtr len, IntPtr u);
 
-        [DllImport(Libraries.Crypto)]
-        internal static extern int ERR_print_errors_cb(ErrorPrintCallback callback, IntPtr u);
+        [DllImport(Libraries.Crypto, EntryPoint = "ERR_print_errors_cb")]
+        internal static extern int ErrPrintErrorsCb(ErrorPrintCallback callback, IntPtr u);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern IntPtr SSL_CTX_new(SslMethod method);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_CTX_new")]
+        internal static extern IntPtr SslCtxNew(SslMethod method);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern void SSL_CTX_free(IntPtr ctx);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_CTX_free")]
+        internal static extern void SslCtxFree(IntPtr ctx);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern IntPtr SSL_CTX_set_client_cert_cb(SslMethod method);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_CTX_set_client_cert_cb")]
+        internal static extern IntPtr SslCtxSetClientCertCb(SslMethod method);
 
         internal const int CRYPTO_EX_INDEX_SSL = 0;
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern IntPtr SSL_new(SslContext ctx);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_new")]
+        internal static extern IntPtr SslNew(SslContext ctx);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern void SSL_free(IntPtr ssl);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_free")]
+        internal static extern void SslFree(IntPtr ssl);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern int SSL_use_certificate_file(IntPtr ssl, [MarshalAs(UnmanagedType.LPStr
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_use_certificate_file")]
+        internal static extern int SslUseCertificateFile(IntPtr ssl, [MarshalAs(UnmanagedType.LPStr
             )]
             string file, SslFiletype type);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern int SSL_use_PrivateKey_file(IntPtr ssl, [MarshalAs(UnmanagedType.LPStr
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_use_PrivateKey_file")]
+        internal static extern int SslUsePrivateKeyFile(IntPtr ssl, [MarshalAs(UnmanagedType.LPStr
             )]
             string file, SslFiletype type);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern byte* SSL_get_version(IntPtr ssl);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_version")]
+        internal static extern byte* SslGetVersion(IntPtr ssl);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern int SSL_set_quic_method(IntPtr ssl, ref QuicMethods methods);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_quic_method")]
+        internal static extern int SslSetQuicMethod(IntPtr ssl, ref QuicMethods methods);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern int SSL_set_accept_state(IntPtr ssl);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_accept_state")]
+        internal static extern int SslSetAcceptState(IntPtr ssl);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern int SSL_set_connect_state(IntPtr ssl);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_connect_state")]
+        internal static extern int SslSetConnectState(IntPtr ssl);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern int SSL_do_handshake(IntPtr ssl);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_do_handshake")]
+        internal static extern int SslDoHandshake(IntPtr ssl);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern int SSL_ctrl(IntPtr ssl, SslCtrlCommand cmd, long larg, IntPtr parg);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_ctrl")]
+        internal static extern int SslCtrl(IntPtr ssl, SslCtrlCommand cmd, long larg, IntPtr parg);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern int SSL_get_error(IntPtr ssl, int code);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_error")]
+        internal static extern int SslGetError(IntPtr ssl, int code);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern int
-            SSL_provide_quic_data(IntPtr ssl, SslEncryptionLevel level, byte* data, IntPtr len);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_provide_quic_data")]
+        internal static extern int SslProvideQuicData(IntPtr ssl, SslEncryptionLevel level, byte* data, IntPtr len);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern int SSL_set_ex_data(IntPtr ssl, int idx, IntPtr data);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_ex_data")]
+        internal static extern int SslSetExData(IntPtr ssl, int idx, IntPtr data);
 
-        [DllImport(Libraries.Ssl)]
-        internal static extern IntPtr SSL_get_ex_data(IntPtr ssl, int idx);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_ex_data")]
+        internal static extern IntPtr SslGetExData(IntPtr ssl, int idx);
 
-        static OpenSsl()
+        static OpenSslQuic()
         {
-            ERR_print_errors_cb(PrintErrors, IntPtr.Zero);
+            ErrPrintErrorsCb(PrintErrors, IntPtr.Zero);
         }
 
         private static int PrintErrors(byte* str, UIntPtr len, IntPtr _)
