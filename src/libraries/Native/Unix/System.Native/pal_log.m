@@ -13,7 +13,7 @@ void SystemNative_Log (uint8_t* buffer, int32_t length)
         // Write in chunks of max 4096 characters; older versions of iOS seems to have a bug where NSLog may hang with long strings (!).
         // https://github.com/xamarin/maccore/issues/1014
         const char* utf8 = [msg UTF8String];
-        size_t len = strlen (utf8);
+        size_t len = utf8 == NULL ? 0 : strlen (utf8);
         const size_t max_size = 4096;
         while (len > 0)
         {
