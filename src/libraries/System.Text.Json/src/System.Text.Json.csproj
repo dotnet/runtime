@@ -54,7 +54,6 @@
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.MultiSegment.cs" />
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.TryGet.cs" />
     <Compile Include="System\Text\Json\Serialization\Arguments.cs" />
-    <Compile Include="System\Text\Json\Serialization\ArgumentStateCache.cs" />
     <Compile Include="System\Text\Json\Serialization\ClassType.cs" />
     <Compile Include="System\Text\Json\Serialization\ArgumentState.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterList.cs" />

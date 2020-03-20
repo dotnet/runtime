@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -26,6 +27,9 @@ namespace System.Text.Json
 
         private List<ReadStackFrame> _previous;
 
+        // State cache when deserializing objects with parameterized constructors.
+        private List<ArgumentState>? _ctorArgStateCache;
+
         /// <summary>
         /// Bytes consumed in the current loop.
         /// </summary>
@@ -44,22 +48,6 @@ namespace System.Text.Json
 
         // The bag of preservable references.
         public DefaultReferenceResolver ReferenceResolver;
-
-        // Constructor argument statee.
-        private ArgumentStateCache? _argumentStateCache;
-
-        private ArgumentStateCache ArgumentStateCache
-        {
-            get
-            {
-                if (_argumentStateCache == null)
-                {
-                    _argumentStateCache = new ArgumentStateCache();
-                }
-
-                return _argumentStateCache;
-            }
-        }
 
         /// <summary>
         /// Whether we need to read ahead in the inner read loop.
@@ -166,11 +154,7 @@ namespace System.Text.Json
                 }
             }
 
-            if (Current.JsonClassInfo.ParameterCount > 0)
-            {
-                (Current.CtorArgumentStateIndex, Current.CtorArgumentState) =
-                    ArgumentStateCache.GetState(Current.CtorArgumentStateIndex);
-            }
+            SetConstrutorArgumentState();
         }
 
         public void Pop(bool success)
@@ -221,11 +205,7 @@ namespace System.Text.Json
                 Current = _previous[--_count -1];
             }
 
-            if (Current.JsonClassInfo.ParameterCount > 0)
-            {
-                (Current.CtorArgumentStateIndex, Current.CtorArgumentState) =
-                    ArgumentStateCache.GetState(Current.CtorArgumentStateIndex);
-            }
+            SetConstrutorArgumentState();
         }
 
         // Return a JSONPath using simple dot-notation when possible. When special characters are present, bracket-notation is used:
@@ -334,6 +314,31 @@ namespace System.Text.Json
                 }
 
                 return propertyName;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void SetConstrutorArgumentState()
+        {
+            if (Current.JsonClassInfo.ParameterCount > 0)
+            {
+                // A zero index indicates a new stack frame.
+                if (Current.CtorArgumentStateIndex == 0)
+                {
+                    if (_ctorArgStateCache == null)
+                    {
+                        _ctorArgStateCache = new List<ArgumentState>();
+                    }
+
+                    var newState = new ArgumentState();
+                    _ctorArgStateCache.Add(newState);
+
+                    (Current.CtorArgumentStateIndex, Current.CtorArgumentState) = (_ctorArgStateCache.Count, newState);
+                }
+                else
+                {
+                    Current.CtorArgumentState = _ctorArgStateCache![Current.CtorArgumentStateIndex - 1];
+                }
             }
         }
     }
