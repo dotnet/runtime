@@ -135,6 +135,11 @@ jobs:
         parameters:
           installDotnet: true
 
+    # Debug tool restore
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - powershell: type $env:userprofile\.dotnet\toolResolverCache\1\coverlet.console
+        displayName: tool restore
+
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) $(stripSymbolsArg) $(officialBuildIdArg)
