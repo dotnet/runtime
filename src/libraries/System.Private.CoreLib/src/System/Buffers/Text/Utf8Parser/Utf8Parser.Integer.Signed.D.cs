@@ -6,9 +6,9 @@ using System.Diagnostics;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
-using nint = System.Int64;
+using nuint = System.UInt64;
 #else
-using nint = System.Int32;
+using nuint = System.UInt32;
 #endif
 
 namespace System.Buffers.Text
@@ -207,7 +207,7 @@ namespace System.Buffers.Text
                 goto FalseExit;
 
             int sign = 0;
-            nint index = 0;
+            nuint index = 0;
             int answer = source[0];
 
         TryAgain:

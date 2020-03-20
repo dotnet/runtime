@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -317,16 +318,16 @@ namespace System
         /// Otherwise returns <see langword="false"/>.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe bool TryGetElementAt(nint index, out T value)
+        internal unsafe bool TryGetElementAt(nuint index, [MaybeNullWhen(false)] out T value)
         {
-            if ((nuint)index >= (uint)_length)
+            if (index >= (uint)_length)
             {
                 value = default!;
                 return false;
             }
             else
             {
-                value = Unsafe.Add(ref _pointer.Value, index);
+                value = Unsafe.Add(ref _pointer.Value, (nint)index);
                 return true;
             }
         }

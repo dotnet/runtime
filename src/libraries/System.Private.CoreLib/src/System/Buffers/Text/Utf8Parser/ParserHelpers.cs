@@ -9,9 +9,9 @@ using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
-using nint = System.Int64;
+using nuint = System.UInt64;
 #else
-using nint = System.Int32;
+using nuint = System.UInt32;
 #endif
 
 namespace System.Buffers.Text
@@ -70,7 +70,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryGetDigitAt(ReadOnlySpan<byte> source, nint index, out int digit)
+        public static bool TryGetDigitAt(ReadOnlySpan<byte> source, nuint index, out int digit)
         {
             if (source.TryGetElementAt(index, out byte tempByte) && TryConvertToDigit(tempByte, out digit))
             {
