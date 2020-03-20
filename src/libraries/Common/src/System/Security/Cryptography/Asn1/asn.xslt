@@ -213,7 +213,7 @@ namespace <xsl:value-of select="@namespace" />
   </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldDef">
-        private static readonly byte[] <xsl:call-template name="DefaultValueField"/> = { <xsl:value-of select="@defaultDerInit"/> };
+        private static ReadOnlySpan&lt;byte&gt; <xsl:call-template name="DefaultValueField"/> =&gt; new byte[] { <xsl:value-of select="@defaultDerInit"/> };
 </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldVerify">
@@ -909,7 +909,7 @@ namespace <xsl:value-of select="@namespace" />
 
   <xsl:template name="ContextTag">new Asn1Tag(TagClass.ContextSpecific, <xsl:value-of select="@implicitTag | @explicitTag"/>)</xsl:template>
 
-  <xsl:template name="DefaultValueField">s_default<xsl:value-of select="@name"/></xsl:template>
+  <xsl:template name="DefaultValueField">Default<xsl:value-of select="@name"/></xsl:template>
 
   <xsl:template name="DefaultValueDecoder"><xsl:if test="@defaultDerInit">
             else
