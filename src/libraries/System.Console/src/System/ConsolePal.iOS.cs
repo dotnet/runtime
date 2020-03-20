@@ -57,21 +57,22 @@ namespace System
 
         public static Encoding OutputEncoding => Encoding.Unicode;
 
+        // underlying API expects only utf-16
         public static void SetConsoleOutputEncoding(Encoding enc) => throw new PlatformNotSupportedException();
 
-        public static bool IsInputRedirectedCore() => throw new PlatformNotSupportedException();
+        public static bool IsInputRedirectedCore() => false;
 
-        public static bool IsOutputRedirectedCore() => throw new PlatformNotSupportedException();
+        public static bool IsOutputRedirectedCore() => false;
 
-        public static bool IsErrorRedirectedCore() => throw new PlatformNotSupportedException();
+        public static bool IsErrorRedirectedCore() => false;
 
         internal static TextReader GetOrCreateReader() => throw new PlatformNotSupportedException();
 
-        public static bool NumberLock => throw new PlatformNotSupportedException();
+        public static bool NumberLock => false;
 
-        public static bool CapsLock => throw new PlatformNotSupportedException();
+        public static bool CapsLock => false;
 
-        public static bool KeyAvailable => throw new PlatformNotSupportedException();
+        public static bool KeyAvailable => false;
 
         public static ConsoleKeyInfo ReadKey(bool intercept) => throw new PlatformNotSupportedException();
 
