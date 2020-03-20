@@ -29,6 +29,11 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(inputType));
             }
 
+            if (inputValue != null && !inputType.IsAssignableFrom(inputValue.GetType()))
+            {
+                throw new ArgumentException(SR.Format(SR.SerializeWrongType, inputType, inputValue.GetType()));
+            }
+
             Value = inputValue;
             ObjectType = inputType;
             Headers.ContentType = mediaType ?? s_defaultMediaType;

@@ -126,4 +126,7 @@
   <data name="ContentTypeNotSupported" xml:space="preserve">
     <value>The provided ContentType is not supported; the supported types are 'application/json' and 'text/plain'.</value>
   </data>
+  <data name="SerializeWrongType" xml:space="preserve">
+    <value>The specified type {0} must derive from the specific value's type {1}.</value>
+  </data>
 </root>

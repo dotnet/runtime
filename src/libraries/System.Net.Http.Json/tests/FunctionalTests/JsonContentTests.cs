@@ -137,20 +137,20 @@ namespace System.Net.Http.Json.Functional.Tests
             Assert.Equal("inputType", ex.ParamName);
         }
 
-        [Fact(Skip = "Should we throw when !inputType,IsAssignableFrom(inputValue.GetType()) on instantiation or let the JsonSerializer throw later?")]
-        public async Task JsonContentThrowsOnIncompatibleTypeAsync()
+        [Fact]
+        public void JsonContentThrowsOnIncompatibleTypeAsync()
         {
             HttpClient client = new HttpClient();
             var foo = new Foo();
             Type typeOfBar = typeof(Bar);
 
-            var request = new HttpRequestMessage(HttpMethod.Post, "http://example.com");
-            request.Content = JsonContent.Create(foo, typeOfBar, null);
-            await Assert.ThrowsAsync<ArgumentException>(() => client.SendAsync(request));
+            Exception ex = Assert.Throws<ArgumentException>(() => JsonContent.Create(foo, typeOfBar, null));
 
-            request = new HttpRequestMessage(HttpMethod.Post, "http://example.com");
-            request.Content = JsonContent.Create(foo, typeOfBar, MediaTypeHeaderValue.Parse("application/json; charset=utf-8"));
-            await Assert.ThrowsAsync<ArgumentException>(() => client.SendAsync(request));
+            string strTypeOfBar = typeOfBar.ToString();
+            Assert.Contains(strTypeOfBar, ex.Message);
+
+            string afterInputTypeMessage = ex.Message.Split(strTypeOfBar.ToCharArray())[1];
+            Assert.Contains(afterInputTypeMessage, ex.Message);
         }
 
         [Fact]
