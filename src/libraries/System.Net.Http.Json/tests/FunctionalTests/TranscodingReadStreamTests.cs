@@ -97,7 +97,7 @@ namespace System.Net.Http.Json.Functional.Tests
         {
             // Arrange
             // Test ensures that the overflow buffer works correctly
-            var input = "☀";
+            var input = "\u2600";
             var encoding = Encoding.Unicode;
             using (TranscodingReadStream stream = new TranscodingReadStream(new MemoryStream(encoding.GetBytes(input)), encoding))
             {
@@ -128,9 +128,9 @@ namespace System.Net.Http.Json.Functional.Tests
 
         public static TheoryData<string> ReadAsync_WithOverflowBuffer_AtBoundariesData => new TheoryData<string>
         {
-            new string('a', TranscodingReadStream.MaxCharBufferSize - 1) + "☀",
-            new string('a', TranscodingReadStream.MaxCharBufferSize - 2) + "☀",
-            new string('a', TranscodingReadStream.MaxCharBufferSize) + "☀",
+            new string('a', TranscodingReadStream.MaxCharBufferSize - 1) + '\u2600',
+            new string('a', TranscodingReadStream.MaxCharBufferSize - 2) + '\u2600',
+            new string('a', TranscodingReadStream.MaxCharBufferSize) + '\u2600',
         };
 
         [Theory]
