@@ -9,7 +9,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
 
-// TODO: Fix
 using AbstractionsSR = DIAbstractions::System.SR;
 
 namespace Microsoft.Extensions.DependencyInjection
