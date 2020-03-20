@@ -30,6 +30,15 @@
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\KeyDerivation.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\KeyDerivation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\FrameType.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\FrameType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportErrorCode.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportErrorCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportParameter.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportParameter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Handshake.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Handshake.cs</Link>
     </Compile>
