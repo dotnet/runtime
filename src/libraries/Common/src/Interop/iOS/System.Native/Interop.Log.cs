@@ -10,6 +10,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Log")]
-        internal static extern unsafe bool Log(IntPtr buffer, int count);
+        internal static extern bool Log(IntPtr buffer, int count);
     }
 }

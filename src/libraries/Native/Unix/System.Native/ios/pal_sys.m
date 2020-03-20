@@ -10,18 +10,6 @@ void SystemNative_Log (uint8_t* buffer, int32_t length)
 {
     // COOP: no managed memory access: any mode.
     NSString *msg = [[NSString alloc] initWithBytes: buffer length: length encoding: NSUTF16LittleEndianStringEncoding];
-
-// TODO: TARGET_OS_WATCH is not supported yet
-#if TARGET_OS_WATCH && defined (__arm__)
-    const char* utf8 = [msg UTF8String];
-    size_t len = strlen (utf8);
-    fwrite (utf8, 1, len, stdout);
-    if (len == 0 || utf8 [len - 1] != '\n')
-    {
-        fwrite ("\n", 1, 1, stdout);
-    }
-    fflush (stdout);
-#else
     if (length > 4096)
     {
         // Write in chunks of max 4096 characters; older versions of iOS seems to have a bug where NSLog may hang with long strings (!).
@@ -52,6 +40,5 @@ void SystemNative_Log (uint8_t* buffer, int32_t length)
     {
         NSLog (@"%@", msg);
     }
-#endif
     [msg release];
 }

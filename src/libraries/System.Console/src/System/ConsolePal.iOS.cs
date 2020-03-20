@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System
 {
-    internal class NSLogStream : Stream
+    internal sealed class NSLogStream : Stream
     {
         public override void Flush() { }
 
