@@ -215,8 +215,8 @@ jobs:
       condition: >-
         and(
           or(
-            eq(variables['Build.SourceBranch'], 'refs/heads/master'),
-            eq(variables['System.PullRequest.TargetBranch'], 'refs/heads/master')),
+            eq(variables['Build.SourceBranchName'], 'master'),
+            eq(variables['System.PullRequest.TargetBranch'], 'master')),
           or(
             eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
             eq(variables['isFullMatrix'], true)))
