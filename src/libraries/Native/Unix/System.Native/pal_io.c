@@ -913,18 +913,20 @@ int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t mi
         return Error_EINVAL;
     }
 
-    size_t bufferSize;
-    if (!multiply_s(sizeof(struct pollfd), (size_t)eventCount, &bufferSize))
+    struct pollfd stackBuffer[(uint32_t)(2048/sizeof(struct pollfd))];
+    int useStackBuffer = eventCount <= (sizeof(stackBuffer)/sizeof(stackBuffer[0]));
+    struct pollfd* pollfds = NULL;
+    if (useStackBuffer)
     {
-        return SystemNative_ConvertErrorPlatformToPal(EOVERFLOW);
+        pollfds = (struct pollfd*)&stackBuffer[0];
     }
-
-
-    int useStackBuffer = bufferSize <= 2048;
-    struct pollfd* pollfds = (struct pollfd*)(useStackBuffer ? alloca(bufferSize) : malloc(bufferSize));
-    if (pollfds == NULL)
+    else
     {
-        return Error_ENOMEM;
+        pollfds = (struct pollfd*)calloc(eventCount, sizeof(*pollfds));
+        if (pollfds == NULL)
+        {
+            return Error_ENOMEM;
+        }
     }
 
     for (uint32_t i = 0; i < eventCount; i++)
