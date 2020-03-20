@@ -43,11 +43,13 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.Tls11 | SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12)]
+#if !NETFRAMEWORK
         [InlineData(SslProtocols.Tls13)]
         [InlineData(SslProtocols.Tls11 | SslProtocols.Tls13)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls13)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls13)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13)]
+#endif
         public void SetGetProtocols_Roundtrips(SslProtocols protocols)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -90,7 +92,9 @@ namespace System.Net.Http.Functional.Tests
 #pragma warning disable 0618
             if (PlatformDetection.SupportsSsl3)
             {
+#if !NETFRAMEWORK
                 yield return new object[] { SslProtocols.Ssl3, true };
+#endif
             }
             if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater)
             {
@@ -100,8 +104,10 @@ namespace System.Net.Http.Functional.Tests
             // These protocols are new, and might not be enabled everywhere yet
             if (PlatformDetection.IsUbuntu1810OrHigher)
             {
+#if !NETFRAMEWORK
                 yield return new object[] { SslProtocols.Tls13, false };
                 yield return new object[] { SslProtocols.Tls13, true };
+#endif
             }
         }
 
@@ -124,7 +130,11 @@ namespace System.Net.Http.Functional.Tests
                     // restrictions on minimum TLS/SSL version
                     // We currently know that some platforms like Debian 10 OpenSSL
                     // will by default block < TLS 1.2
+#if !NETFRAMEWORK
                     handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
+#else
+                    handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+#endif
                 }
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };

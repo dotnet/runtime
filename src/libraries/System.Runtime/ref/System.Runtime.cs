@@ -5618,6 +5618,21 @@ namespace System.Diagnostics.CodeAnalysis
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
     }
+    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
+    [System.CLSCompliant(false)]
+    public sealed class MemberNotNullAttribute : System.Attribute
+    {
+        public MemberNotNullAttribute(params string[] members) { }
+        public string[] Members { get { throw null; } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
+    [System.CLSCompliant(false)]
+    public sealed class MemberNotNullWhenAttribute : System.Attribute
+    {
+        public MemberNotNullWhenAttribute(bool returnValue, params string[] members) { }
+        public bool ReturnValue { get { throw null; } }
+        public string[] Members { get { throw null; } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
     [System.Diagnostics.ConditionalAttribute("CODE_ANALYSIS")]
     public sealed partial class SuppressMessageAttribute : System.Attribute

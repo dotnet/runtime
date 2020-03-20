@@ -6607,13 +6607,12 @@ mono_string_empty_handle (MonoDomain *domain)
 MonoString *
 mono_string_new_utf16 (MonoDomain *domain, const mono_unichar2 *text, gint32 len)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	ERROR_DECL (error);
 	MonoString *res = NULL;
+	MONO_ENTER_GC_UNSAFE;
+	ERROR_DECL (error);
 	res = mono_string_new_utf16_checked (domain, text, len, error);
 	mono_error_cleanup (error);
-
+	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
 
@@ -6710,10 +6709,12 @@ mono_string_new_utf32 (MonoDomain *domain, const mono_unichar4 *text, gint32 len
 MonoString *
 mono_string_new_size (MonoDomain *domain, gint32 len)
 {
+	MonoString *str;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoString *str = mono_string_new_size_checked (domain, len, error);
+	str = mono_string_new_size_checked (domain, len, error);
 	mono_error_cleanup (error);
-
+	MONO_EXIT_GC_UNSAFE;
 	return str;
 }
 
@@ -7546,9 +7547,12 @@ mono_string_intern (MonoString *str_raw)
 MonoString*
 mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 {
+	MonoString *result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoString *result = mono_ldstr_checked (domain, image, idx, error);
+	result = mono_ldstr_checked (domain, image, idx, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
