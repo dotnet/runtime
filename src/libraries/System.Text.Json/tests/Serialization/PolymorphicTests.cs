@@ -74,14 +74,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadPrimitivesFail()
+        public void ReadPrimitivesFail()
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<object>(@""));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<object>(@"a"));
         }
 
         [Fact]
-        public static void ParseUntyped()
+        public void ParseUntyped()
         {
             object obj = JsonSerializer.Deserialize<object>(@"""hello""");
             Assert.IsType<JsonElement>(obj);
@@ -326,7 +326,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void NestedObjectAsRootObject()
         {
-            static void Verify(string json)
+            void Verify(string json)
             {
                 Assert.Contains(@"""Address"":{""City"":""MyCity""}", json);
                 Assert.Contains(@"""List"":[""Hello"",""World""]", json);
@@ -466,32 +466,32 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void PolymorphicInterface_NotSupported()
+        public void PolymorphicInterface_NotSupported()
         {
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MyClass>(@"{ ""Value"": ""A value"", ""Thing"": { ""Number"": 123 } }"));
         }
 
         [Fact]
-        public static void GenericListOfInterface_WithInvalidJson_ThrowsJsonException()
+        public void GenericListOfInterface_WithInvalidJson_ThrowsJsonException()
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<MyThingCollection>("false"));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<MyThingCollection>("{}"));
         }
 
         [Fact]
-        public static void GenericListOfInterface_WithValidJson_ThrowsNotSupportedException()
+        public void GenericListOfInterface_WithValidJson_ThrowsNotSupportedException()
         {
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MyThingCollection>("[{}]"));
         }
 
         [Fact]
-        public static void GenericDictionaryOfInterface_WithInvalidJson_ThrowsJsonException()
+        public void GenericDictionaryOfInterface_WithInvalidJson_ThrowsJsonException()
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<MyThingDictionary>(@"{"""":1}"));
         }
 
         [Fact]
-        public static void GenericDictionaryOfInterface_WithValidJson_ThrowsNotSupportedException()
+        public void GenericDictionaryOfInterface_WithValidJson_ThrowsNotSupportedException()
         {
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MyThingDictionary>(@"{"""":{}}"));
         }
