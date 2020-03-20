@@ -4848,7 +4848,7 @@ inline T* InterlockedExchangeT(
     int             value) // When NULL is provided as argument.
 {
     //STATIC_ASSERT(value == 0);
-    return InterlockedExchangeT(target, reinterpret_cast<T*>(value));
+    return InterlockedExchangeT(target, nullptr);
 }
 
 template <typename T>
@@ -4858,7 +4858,7 @@ inline T* InterlockedCompareExchangeT(
     T*              comparand)
 {
     //STATIC_ASSERT(exchange == 0);
-    return InterlockedCompareExchangeT(destination, reinterpret_cast<T*>(exchange), comparand);
+    return InterlockedCompareExchangeT(destination, nullptr, comparand);
 }
 
 template <typename T>
@@ -4868,7 +4868,7 @@ inline T* InterlockedCompareExchangeT(
     int             comparand) // When NULL is provided as argument.
 {
     //STATIC_ASSERT(comparand == 0);
-    return InterlockedCompareExchangeT(destination, exchange, reinterpret_cast<T*>(comparand));
+    return InterlockedCompareExchangeT(destination, exchange, nullptr);
 }
 
 // NULL pointer variants of the above to avoid having to cast NULL
