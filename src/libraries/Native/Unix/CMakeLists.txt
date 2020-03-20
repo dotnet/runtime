@@ -157,6 +157,7 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 #
 if(CLR_CMAKE_TARGET_UNIX)
     if (CLR_CMAKE_TARGET_DARWIN)
+        add_definitions(-DTARGET_DARWIN)
         add_link_options(-Wl,-bind_at_load)
 
         # Ensure that dsymutil and strip are present
