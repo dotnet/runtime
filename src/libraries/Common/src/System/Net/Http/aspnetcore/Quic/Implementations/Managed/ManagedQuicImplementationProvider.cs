@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices.WindowsRuntime;
-
 namespace System.Net.Quic.Implementations.Managed
 {
     internal class ManagedQuicImplementationProvider : QuicImplementationProvider

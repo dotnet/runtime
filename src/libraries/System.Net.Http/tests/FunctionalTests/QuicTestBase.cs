@@ -15,7 +15,7 @@ namespace System.Net.Quic.Tests
         {
             return new SslServerAuthenticationOptions()
             {
-                ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") }
+                ApplicationProtocols = new List<SslApplicationProtocol>() {new SslApplicationProtocol("quictest")}
             };
         }
 
@@ -23,7 +23,7 @@ namespace System.Net.Quic.Tests
         {
             return new SslClientAuthenticationOptions()
             {
-                ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") }
+                ApplicationProtocols = new List<SslApplicationProtocol>() {new SslApplicationProtocol("quictest")}
             };
         }
 
@@ -44,7 +44,8 @@ namespace System.Net.Quic.Tests
             return listener;
         }
 
-        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000)
+        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction,
+            Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000)
         {
             using QuicListener listener = CreateQuicListener();
 

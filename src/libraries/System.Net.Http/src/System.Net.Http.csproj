@@ -21,6 +21,72 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\Encoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\Encoder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\Encryption.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\Encryption.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\KeyDerivation.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\KeyDerivation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Handshake.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Handshake.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\IQuicCallback.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\IQuicCallback.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\OpenSslInitFlags.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\OpenSslInitFlags.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\QuicMethods.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\QuicMethods.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\Ssl.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\Ssl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslContext.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslCtrlCommand.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslCtrlCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslError.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslFiletype.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslFiletype.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslMethod.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\TlsAlert.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\TlsAlert.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\TlsVersion.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\TlsVersion.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicTransportParams.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicTransportParams.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\SslEncryptionLevel.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\SslEncryptionLevel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\ManagedQuicConnection.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\ManagedQuicConnection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\ManagedQuicImplementationProvider.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\ManagedQuicImplementationProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\ManagedQuicListener.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\ManagedQuicListener.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\ManagedQuicStream.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\ManagedQuicStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Interop\Interop.OpenSsl.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\Interop.OpenSsl.cs</Link>
+    </Compile>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
     <Compile Include="System\Net\Http\CancellationHelper.cs" />
