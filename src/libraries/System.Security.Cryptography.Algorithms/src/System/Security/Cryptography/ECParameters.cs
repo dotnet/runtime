@@ -36,14 +36,12 @@ namespace System.Security.Cryptography
         /// </exception>
         public void Validate()
         {
-            bool hasErrors = false;
-
-            if (Q.X == null ||
-                Q.Y == null ||
-                Q.X.Length != Q.Y.Length)
+            bool hasErrors = (Q.X, Q.Y, D) switch
             {
-                hasErrors = true;
-            }
+                (null, null, {}) => false,
+                (byte[] x, byte[] y, _) when x.Length == y.Length => false,
+                _ => true
+            };
 
             if (!hasErrors)
             {
@@ -52,10 +50,10 @@ namespace System.Security.Cryptography
                     // Explicit curves require D length to match Curve.Order
                     hasErrors = (D != null && (D.Length != Curve.Order!.Length));
                 }
-                else if (Curve.IsNamed)
+                else if (Curve.IsNamed && Q.X != null)
                 {
                     // Named curves require D length to match Q.X and Q.Y
-                    hasErrors = (D != null && (D.Length != Q.X!.Length));
+                    hasErrors = (D != null && (D.Length != Q.X.Length));
                 }
             }
 

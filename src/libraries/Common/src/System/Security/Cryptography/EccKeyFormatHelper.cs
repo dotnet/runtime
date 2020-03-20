@@ -105,30 +105,33 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            // Implementation limitation
-            if (key.PublicKey == null)
-            {
-                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-            }
+            byte[]? x = null;
+            byte[]? y = null;
 
-            ReadOnlySpan<byte> publicKeyBytes = key.PublicKey.Value.Span;
-
-            if (publicKeyBytes.Length == 0)
+            if (key.PublicKey != null)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
+                ReadOnlySpan<byte> publicKeyBytes = key.PublicKey.Value.Span;
 
-            // Implementation limitation
-            // 04 (Uncompressed ECPoint) is almost always used.
-            if (publicKeyBytes[0] != 0x04)
-            {
-                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-            }
+                if (publicKeyBytes.Length == 0)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
 
-            // https://www.secg.org/sec1-v2.pdf, 2.3.4, #3 (M has length 2 * CEIL(log2(q)/8) + 1)
-            if (publicKeyBytes.Length != 2 * key.PrivateKey.Length + 1)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                // Implementation limitation
+                // 04 (Uncompressed ECPoint) is almost always used.
+                if (publicKeyBytes[0] != 0x04)
+                {
+                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+                }
+
+                // https://www.secg.org/sec1-v2.pdf, 2.3.4, #3 (M has length 2 * CEIL(log2(q)/8) + 1)
+                if (publicKeyBytes.Length != 2 * key.PrivateKey.Length + 1)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                x = publicKeyBytes.Slice(1, key.PrivateKey.Length).ToArray();
+                y = publicKeyBytes.Slice(1 + key.PrivateKey.Length).ToArray();
             }
 
             ECDomainParameters domainParameters;
@@ -142,13 +145,15 @@ namespace System.Security.Cryptography
                 domainParameters = ECDomainParameters.Decode(algId.Parameters!.Value, AsnEncodingRules.DER);
             }
 
+            Debug.Assert((x == null) == (y == null));
+
             ret = new ECParameters
             {
                 Curve = GetCurve(domainParameters),
                 Q =
                 {
-                    X = publicKeyBytes.Slice(1, key.PrivateKey.Length).ToArray(),
-                    Y = publicKeyBytes.Slice(1 + key.PrivateKey.Length).ToArray(),
+                    X = x,
+                    Y = y,
                 },
                 D = key.PrivateKey.ToArray(),
             };
@@ -776,7 +781,9 @@ namespace System.Security.Cryptography
                 }
 
                 // publicKey
+                if (ecParameters.Q.X != null)
                 {
+                    Debug.Assert(ecParameters.Q.Y != null);
                     Asn1Tag explicit1 = new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true);
                     writer.PushSequence(explicit1);
 

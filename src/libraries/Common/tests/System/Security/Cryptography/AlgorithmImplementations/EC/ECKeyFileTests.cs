@@ -387,7 +387,7 @@ f+ESRyxDnBgKz6H2RKeenyrwVhxF98SyJzAdP637vR3QmDNAWWAgoUhg",
                 new PbeParameters(
                     PbeEncryptionAlgorithm.Aes256Cbc,
                     HashAlgorithmName.SHA256,
-                    7), 
+                    7),
                 EccTestData.Sect163k1Key1,
                 SupportsSect163k1);
         }
@@ -446,7 +446,7 @@ z2NFvWcpK0Fh9fCVGuXV9sjJ5qE=",
                 new PbeParameters(
                     PbeEncryptionAlgorithm.Aes128Cbc,
                     HashAlgorithmName.SHA256,
-                    12), 
+                    12),
                 EccTestData.Sect163k1Key1Explicit,
                 SupportsSect163k1);
         }
@@ -772,6 +772,24 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
 
                 Assert.Equal(-1, bytesRead);
             }
+        }
+
+        [Fact]
+        public void PrivateKeyOnlyReconstructsPublicKey()
+        {
+            using T key = CreateKey();
+            ECParameters parameters = EccTestData.GetNistP521Key2();
+            ImportParameters(key, parameters);
+            byte[] pubKeyInfo = key.ExportSubjectPublicKeyInfo();
+            byte[] privateKeyInfo = key.ExportPkcs8PrivateKey();
+
+            parameters.Q = default; // clear out public parameters
+            ImportParameters(key, parameters);
+            byte[] pubKeyDerived = key.ExportSubjectPublicKeyInfo();
+            byte[] privateKeyDerived = key.ExportPkcs8PrivateKey();
+
+            Assert.Equal(pubKeyInfo, pubKeyDerived);
+            Assert.Equal(privateKeyInfo, privateKeyDerived);
         }
 
         [Fact]

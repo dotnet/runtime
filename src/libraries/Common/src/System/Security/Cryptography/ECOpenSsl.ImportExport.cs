@@ -114,8 +114,8 @@ namespace System.Security.Cryptography
 
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByKeyParameters(
                 oid,
-                parameters.Q.X!, parameters.Q.X!.Length,
-                parameters.Q.Y!, parameters.Q.Y!.Length,
+                parameters.Q.X, parameters.Q.X?.Length ?? 0,
+                parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length);
 
             return key;
