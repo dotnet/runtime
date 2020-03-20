@@ -47,6 +47,11 @@ namespace System.Text.Json.Serialization
             return new JsonPropertyInfo<T>();
         }
 
+        internal override sealed JsonParameterInfo CreateJsonParameterInfo()
+        {
+            return new JsonParameterInfo<T>();
+        }
+
         internal override Type? ElementType => null;
 
         // Allow a converter that can't be null to return a null value representation, such as JsonElement or Nullable<>.

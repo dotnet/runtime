@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
+
 namespace System.Text.Json.Serialization
 {
     /// <summary>
@@ -33,6 +35,8 @@ namespace System.Text.Json.Serialization
         internal bool CanBePolymorphic { get; set; }
 
         internal abstract JsonPropertyInfo CreateJsonPropertyInfo();
+
+        internal abstract JsonParameterInfo CreateJsonParameterInfo();
 
         internal abstract Type? ElementType { get; }
 
@@ -70,5 +74,12 @@ namespace System.Text.Json.Serialization
         /// Loosely-typed WriteCore() that forwards to strongly-typed WriteCore().
         /// </summary>
         internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
+
+        // Whether a type (ClassType.Object) is deserialized using a parameterized constructor.
+        internal virtual bool ConstructorIsParameterized => false;
+
+        internal ConstructorInfo ConstructorInfo { get; set; } = null!;
+
+        internal virtual void CreateConstructorDelegate(JsonSerializerOptions options) { }
     }
 }
