@@ -9,14 +9,14 @@
 
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>False</ILEmitBackendSaveAssemblies>
-    <DefineConstants Condition="'$(TargetFramework)' == 'net461' AND '$(ILEmitBackendSaveAssemblies)' == 'True'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>
+    <DefineConstants Condition="'$(TargetsNetFx)' == 'true' AND '$(ILEmitBackendSaveAssemblies)' == 'True'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true' Or '$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
