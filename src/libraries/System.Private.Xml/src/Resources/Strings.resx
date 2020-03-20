@@ -1723,7 +1723,7 @@
     <value>It is an error if 'length' is among the members of {facets} of {base type definition} and {value} is greater than the {value} of the parent 'length'.</value>
   </data>
   <data name="Sch_MinLengthGtBaseMinLength" xml:space="preserve">
-    <value>It is an error if 'minLength' is among the members of {facets} of {base type definition} and {value} is less than the {value} of the parent 'minLength'.</value>
+    <value>It is an error if the derived 'minLength' facet value is less than the parent 'minLength' facet value.</value>
   </data>
   <data name="Sch_MaxLengthGtBaseMaxLength" xml:space="preserve">
     <value>It is an error if 'maxLength' is among the members of {facets} of {base type definition} and {value} is greater than the {value} of the parent 'maxLength'.</value>

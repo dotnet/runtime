@@ -216,7 +216,7 @@ namespace System.Xml.Tests
 
             Assert.NotNull(exception);
             Assert.IsType<XmlSchemaException>(exception);
-            Assert.Equal("Error:  'minLength' is among the facets of {0} and its value ({1}) is less than the value ({2}) of the parent 'minLength'.",
+            Assert.Equal("It is an error if the derived 'minLength' facet value is less than the parent 'minLength' facet value.",
                 exception.Message);
         }
     }
