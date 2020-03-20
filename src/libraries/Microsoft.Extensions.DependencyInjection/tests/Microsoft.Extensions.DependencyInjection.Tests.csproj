@@ -16,7 +16,7 @@
 
   <ItemGroup>
     <ReferenceFromRuntime Include="Microsoft.Extensions.DependencyInjection" />
-    <ReferenceFromRuntime Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <ReferenceFromRuntime Include="Microsoft.Extensions.DependencyInjection.Abstractions" Aliases="DIAbstractions" />
     <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

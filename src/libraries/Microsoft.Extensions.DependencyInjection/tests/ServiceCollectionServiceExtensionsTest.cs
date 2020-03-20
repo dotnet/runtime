@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+extern alias DIAbstractions;
 
 using System;
 using Microsoft.AspNetCore.Testing;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
 
 // TODO: Fix
-using AbstractionsSR = Microsoft.Extensions.DependencyInjection.Abstractions.SR;
+using AbstractionsSR = DIAbstractions::System.SR;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
