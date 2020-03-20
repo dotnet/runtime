@@ -21,9 +21,6 @@
 # StackOverflow somewhere here
 -nonamespace System.Threading.Tasks.Tests
 
-# Stack overflow, might need tuning or reduce stack space used compared to CoreCLR
--nomethod  Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderCompilationTest.CompilesInLimitedStackSpace
-
 # Requires precise GC (should be ignored in dotnet/corefx for mono)
 -nomethod System.Collections.Concurrent.Tests.ConcurrentQueueTests.ReferenceTypes_NulledAfterDequeue
 -nomethod System.Threading.Tests.ThreadLocalTests.RunThreadLocalTest7_WeakReference
