@@ -46,10 +46,8 @@ namespace System.Text.Json.Serialization.Converters
                         break;
                     }
 
-                    if (tokenType != JsonTokenType.PropertyName)
-                    {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
-                    }
+                    // Read method would have thrown if otherwise.
+                    Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj,
@@ -151,10 +149,9 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             break;
                         }
-                        else if (tokenType != JsonTokenType.PropertyName)
-                        {
-                            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
-                        }
+
+                        // Read method would have thrown if otherwise.
+                        Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj,

@@ -36,20 +36,13 @@ namespace System.Text.Json.Serialization.Tests
                     options = _optionsWithSmallBuffer;
                 }
 
-                try
+                return Task.Run(async () =>
                 {
-                    return Task.Run(async () =>
+                    using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                     {
-                        using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                        {
-                            return await JsonSerializer.DeserializeAsync<T>(stream, options);
-                        }
-                    }).Result;
-                }
-                catch (Exception e)
-                {
-                    throw e.InnerException;
-                }
+                        return await JsonSerializer.DeserializeAsync<T>(stream, options);
+                    }
+                }).GetAwaiter().GetResult();
             }
         }
     }

@@ -191,6 +191,20 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotHonored(
+            ReadOnlySpan<byte> propertyName,
+            ref Utf8JsonReader reader,
+            ref ReadStack state)
+        {
+            state.Current.JsonPropertyName = propertyName.ToArray();
+
+            NotSupportedException ex = new NotSupportedException(
+                SR.Format(SR.ObjectWithParameterizedCtorRefMetadataNotHonored, state.Current.JsonClassInfo.Type));
+            ThrowNotSupportedException(state, reader, ex);
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ReThrowWithPath(in ReadStack state, JsonReaderException ex)
         {
             Debug.Assert(ex.Path == null);
@@ -499,13 +513,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotHonored(Type type)
-        {
-            throw new NotSupportedException(SR.Format(SR.ObjectWithParameterizedCtorRefMetadataNotHonored, type));
-        }
-
-        [DoesNotReturn]
         internal static void ThrowUnexpectedMetadataException(
             ReadOnlySpan<byte> propertyName,
             ref Utf8JsonReader reader,
@@ -513,7 +520,7 @@ namespace System.Text.Json
         {
             if (state.Current.JsonClassInfo.PropertyInfoForClassInfo.ConverterBase.ConstructorIsParameterized)
             {
-                ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotHonored(state.Current.JsonClassInfo.Type);
+                ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotHonored(propertyName, ref reader, ref state);
             }
 
             MetadataPropertyName name = JsonSerializer.GetMetadataPropertyName(propertyName);

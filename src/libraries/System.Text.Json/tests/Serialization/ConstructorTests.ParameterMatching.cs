@@ -948,5 +948,55 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, point.Y);
             Assert.Equal(66, point.Z);
         }
+
+        [Fact]
+        public void ArgumentStateNotOverwritten()
+        {
+            ClassWithNestedClass obj = new ClassWithNestedClass(myClass: null, myPoint: default);
+            ClassWithNestedClass obj1 = new ClassWithNestedClass(myClass: obj, myPoint: new Point_2D_Struct_WithAttribute(1, 2));
+            ClassWithNestedClass obj2 = new ClassWithNestedClass(myClass: obj1, myPoint: new Point_2D_Struct_WithAttribute(3, 4));
+
+            string json = JsonSerializer.Serialize(obj2);
+
+            obj2 = Serializer.Deserialize<ClassWithNestedClass>(json);
+            Assert.Equal(3, obj2.MyPoint.X);
+            Assert.Equal(4, obj2.MyPoint.Y);
+
+            obj1 = obj2.MyClass;
+            Assert.Equal(1, obj1.MyPoint.X);
+            Assert.Equal(2, obj1.MyPoint.Y);
+
+            obj = obj1.MyClass;
+            Assert.Equal(0, obj.MyPoint.X);
+            Assert.Equal(0, obj.MyPoint.Y);
+
+            Assert.Null(obj.MyClass);
+        }
+
+        [Fact]
+        public void FourArgsWork()
+        {
+            string json = JsonSerializer.Serialize(new StructWithFourArgs(1, 2, 3, 4));
+
+            var obj = Serializer.Deserialize<StructWithFourArgs>(json);
+            Assert.Equal(1, obj.W);
+            Assert.Equal(2, obj.X);
+            Assert.Equal(3, obj.Y);
+            Assert.Equal(4, obj.Z);
+        }
+
+        [Fact]
+        public void InvalidJsonFails()
+        {
+            Assert.Throws<JsonException>(() => Serializer.Deserialize<Point_2D>("{1"));
+            Assert.Throws<JsonException>(() => Serializer.Deserialize<Point_2D>("{x"));
+            Assert.Throws<JsonException>(() => Serializer.Deserialize<Point_2D>("{{"));
+            Assert.Throws<JsonException>(() => Serializer.Deserialize<Point_2D>("{true"));
+
+            // Also test deserialization of objects with parameterless ctors
+            Assert.Throws<JsonException>(() => Serializer.Deserialize<Point_2D_Struct>("{1"));
+            Assert.Throws<JsonException>(() => Serializer.Deserialize<Point_2D_Struct>("{x"));
+            Assert.Throws<JsonException>(() => Serializer.Deserialize<Point_2D_Struct>("{true"));
+        }
     }
 }

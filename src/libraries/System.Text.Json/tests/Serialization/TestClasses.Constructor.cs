@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -453,7 +452,7 @@ namespace System.Text.Json.Serialization.Tests
         [JsonConstructor]
         public Point_2D(int x, int y) => (X, Y) = (x, y);
 
-        public void Initialize() {}
+        public void Initialize() { }
 
         public void Verify()
         {
@@ -2041,6 +2040,13 @@ namespace System.Text.Json.Serialization.Tests
         public Point_With_MismatchedMembers(int x, int y) { }
     }
 
+    public class WrapperFor_Point_With_MismatchedMembers
+    {
+        public int MyInt { get; set; }
+        public Point_With_MismatchedMembers MyPoint { get; set; }
+    }
+
+
     public class Point_ExtendedPropNames
     {
         public int XValue { get; }
@@ -2183,8 +2189,6 @@ namespace System.Text.Json.Serialization.Tests
                 FutureEvents = Enumerable.Repeat(MyEventsListerItem.Instance, 9).ToList(),
                 PastEvents = Enumerable.Repeat(MyEventsListerItem.Instance, 60).ToList() // usually  there is a lot of historical data
             };
-
-
     }
 
     public class MyEventsListerItem
@@ -2242,5 +2246,29 @@ namespace System.Text.Json.Serialization.Tests
                 return string.Format($"From {startDateString} to {endDateString}");
             }
         }
+    }
+
+    public class ClassWithNestedClass
+    {
+        public ClassWithNestedClass MyClass { get; }
+
+        public Point_2D_Struct_WithAttribute MyPoint { get; }
+
+        public ClassWithNestedClass(ClassWithNestedClass myClass, Point_2D_Struct_WithAttribute myPoint)
+        {
+            MyClass = myClass;
+            MyPoint = myPoint;
+        }
+    }
+
+    public struct StructWithFourArgs
+    {
+        public int W { get; }
+        public int X { get; }
+        public int Y { get; }
+        public int Z { get; }
+
+        [JsonConstructor]
+        public StructWithFourArgs(int w, int x, int y, int z) => (W, X, Y, Z) = (w, x, y, z);
     }
 }

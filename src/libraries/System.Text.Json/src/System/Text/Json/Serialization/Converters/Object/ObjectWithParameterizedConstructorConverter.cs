@@ -166,10 +166,8 @@ namespace System.Text.Json.Serialization.Converters
                     return;
                 }
 
-                if (tokenType != JsonTokenType.PropertyName)
-                {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
-                }
+                // Read method would have thrown if otherwise.
+                Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
                 if (TryLookupConstructorParameter(ref state, ref reader, options, out JsonParameterInfo? jsonParameterInfo))
                 {
@@ -255,14 +253,14 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.PropertyState = StackFramePropertyState.Name;
 
                     JsonTokenType tokenType = reader.TokenType;
+
                     if (tokenType == JsonTokenType.EndObject)
                     {
                         return true;
                     }
-                    else if (tokenType != JsonTokenType.PropertyName)
-                    {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
-                    }
+
+                    // Read method would have thrown if otherwise.
+                    Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
                     if (TryLookupConstructorParameter(
                         ref state,

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -27,27 +28,30 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
+            // Array size is the count of the following tests.
+            Task[] tasks = new Task[14];
+
             // Simple models can be deserialized.
-            Task.Run(async () => await RunTest<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_data));
+            tasks[0] = Task.Run(async () => await RunTest<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_data));
             // Complex models can be deserialized.
-            Task.Run(async () => await RunTest<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_data));
-            Task.Run(async () => await RunTest<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_data));
+            tasks[1] = Task.Run(async () => await RunTest<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_data));
+            tasks[2] = Task.Run(async () => await RunTest<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_data));
             // JSON that doesn't bind to ctor args are matched with properties or ignored (as appropriate).
-            Task.Run(async () => await RunTest<Person_Class>(Person_Class.s_data));
-            Task.Run(async () => await RunTest<Person_Struct>(Person_Struct.s_data));
+            tasks[3] = Task.Run(async () => await RunTest<Person_Class>(Person_Class.s_data));
+            tasks[4] = Task.Run(async () => await RunTest<Person_Struct>(Person_Struct.s_data));
             // JSON that doesn't bind to ctor args or properties are sent to ext data if avaiable.
-            Task.Run(async () => await RunTest<Parameterized_Person>(Parameterized_Person.s_data));
-            Task.Run(async () => await RunTest<Parameterized_Person_ObjExtData>(Parameterized_Person_ObjExtData.s_data));
+            tasks[5] = Task.Run(async () => await RunTest<Parameterized_Person>(Parameterized_Person.s_data));
+            tasks[6] = Task.Run(async () => await RunTest<Parameterized_Person_ObjExtData>(Parameterized_Person_ObjExtData.s_data));
             // Up to 64 ctor args are supported.
-            Task.Run(async () => await RunTest<Class_With_Ctor_With_64_Params>(Class_With_Ctor_With_64_Params.Data));
+            tasks[7] = Task.Run(async () => await RunTest<Class_With_Ctor_With_64_Params>(Class_With_Ctor_With_64_Params.Data));
             // Arg deserialization honors attributes on matching property.
-            Task.Run(async () => await RunTest<Point_MembersHave_JsonPropertyName>(Point_MembersHave_JsonPropertyName.s_data));
-            Task.Run(async () => await RunTest<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_data));
-            Task.Run(async () => await RunTest<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_data));
+            tasks[8] = Task.Run(async () => await RunTest<Point_MembersHave_JsonPropertyName>(Point_MembersHave_JsonPropertyName.s_data));
+            tasks[9] = Task.Run(async () => await RunTest<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_data));
+            tasks[10] = Task.Run(async () => await RunTest<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_data));
             // Complex JSON as last argument works
-            Task.Run(async () => await RunTest<Point_With_Array>(Point_With_Array.s_data));
-            Task.Run(async () => await RunTest<Point_With_Dictionary>(Point_With_Dictionary.s_data));
-            Task.Run(async () => await RunTest<Point_With_Object>(Point_With_Object.s_data));
+            tasks[11] = Task.Run(async () => await RunTest<Point_With_Array>(Point_With_Array.s_data));
+            tasks[12] = Task.Run(async () => await RunTest<Point_With_Dictionary>(Point_With_Dictionary.s_data));
+            tasks[13] = Task.Run(async () => await RunTest<Point_With_Object>(Point_With_Object.s_data));
         }
 
         [Fact]
@@ -69,27 +73,32 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
+            // Array size is the count of the following tests.
+            Task[] tasks = new Task[14];
+
             // Simple models can be deserialized.
-            Task.Run(async () => await RunTest<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_json));
+            tasks[0] = Task.Run(async () => await RunTest<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_json));
             // Complex models can be deserialized.
-            Task.Run(async () => await RunTest<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_json));
-            Task.Run(async () => await RunTest<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_json));
+            tasks[1] = Task.Run(async () => await RunTest<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_json));
+            tasks[2] = Task.Run(async () => await RunTest<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_json));
             // JSON that doesn't bind to ctor args are matched with properties or ignored (as appropriate).
-            Task.Run(async () => await RunTest<Person_Class>(Person_Class.s_json));
-            Task.Run(async () => await RunTest<Person_Struct>(Person_Struct.s_json));
+            tasks[3] = Task.Run(async () => await RunTest<Person_Class>(Person_Class.s_json));
+            tasks[4] = Task.Run(async () => await RunTest<Person_Struct>(Person_Struct.s_json));
             // JSON that doesn't bind to ctor args or properties are sent to ext data if avaiable.
-            Task.Run(async () => await RunTest<Parameterized_Person>(Parameterized_Person.s_json));
-            Task.Run(async () => await RunTest<Parameterized_Person_ObjExtData>(Parameterized_Person_ObjExtData.s_json));
+            tasks[5] = Task.Run(async () => await RunTest<Parameterized_Person>(Parameterized_Person.s_json));
+            tasks[6] = Task.Run(async () => await RunTest<Parameterized_Person_ObjExtData>(Parameterized_Person_ObjExtData.s_json));
             // Up to 64 ctor args are supported.
-            Task.Run(async () => await RunTest<Class_With_Ctor_With_64_Params>(Encoding.UTF8.GetString(Class_With_Ctor_With_64_Params.Data)));
-            // Arg deserialization honors attributes on matching property.
-            Task.Run(async () => await RunTest<Point_MembersHave_JsonPropertyName>(Point_MembersHave_JsonPropertyName.s_json));
-            Task.Run(async () => await RunTest<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_json));
-            Task.Run(async () => await RunTest<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_json));
+            tasks[7] = Task.Run(async () => await RunTest<Class_With_Ctor_With_64_Params>(Encoding.UTF8.GetString(Class_With_Ctor_With_64_Params.Data)));
+            // Arg8deserialization honors attributes on matching property.
+            tasks[8] = Task.Run(async () => await RunTest<Point_MembersHave_JsonPropertyName>(Point_MembersHave_JsonPropertyName.s_json));
+            tasks[9] = Task.Run(async () => await RunTest<Point_MembersHave_JsonConverter>(Point_MembersHave_JsonConverter.s_json));
+            tasks[10] = Task.Run(async () => await RunTest<Point_MembersHave_JsonIgnore>(Point_MembersHave_JsonIgnore.s_json));
             // Complex JSON as last argument works
-            Task.Run(async () => await RunTest<Point_With_Array>(Point_With_Array.s_json));
-            Task.Run(async () => await RunTest<Point_With_Dictionary>(Point_With_Dictionary.s_json));
-            Task.Run(async () => await RunTest<Point_With_Object>(Point_With_Object.s_json));
+            tasks[11] = Task.Run(async () => await RunTest<Point_With_Array>(Point_With_Array.s_json));
+            tasks[12] = Task.Run(async () => await RunTest<Point_With_Dictionary>(Point_With_Dictionary.s_json));
+            tasks[13] = Task.Run(async () => await RunTest<Point_With_Object>(Point_With_Object.s_json));
+
+            Task.WaitAll(tasks);
         }
 
         [Fact]
@@ -129,8 +138,186 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
-            Task.Run(async () => await RunTest<Class_With_Ctor_With_65_Params>());
-            Task.Run(async () => await RunTest<Struct_With_Ctor_With_65_Params>());
+            Task[] tasks = new Task[2];
+
+            tasks[0] = Task.Run(async () => await RunTest<Class_With_Ctor_With_65_Params>());
+            tasks[1] = Task.Run(async () => await RunTest<Struct_With_Ctor_With_65_Params>());
+
+            Task.WaitAll(tasks);
+        }
+
+        [Fact]
+        public async Task ExerciseStreamCodePaths()
+        {
+            static string GetPropertyName(int index) =>
+                new string(new char[] { Convert.ToChar(index + 65), 'V', 'a', 'l', 'u', 'e' });
+
+            static byte[] GeneratePayload(int i, string value)
+            {
+                string whiteSpace = new string(' ', 16 );
+
+                StringBuilder sb;
+
+                string prefix = "";
+
+                sb = new StringBuilder();
+                sb.Append("{");
+
+                for (int j = 0; j < i; j++)
+                {
+                    sb.Append(prefix);
+                    sb.Append($@"""{GetPropertyName(j)}"":""{value}""");
+                    prefix = ",";
+                }
+
+                sb.Append(prefix);
+                sb.Append($@"{whiteSpace}""{GetPropertyName(i)}"":{whiteSpace}""{value}""");
+                prefix = ",";
+
+                for (int j = 0; j < 10; j++)
+                {
+                    sb.Append(prefix);
+                    string keyPair = $@"""rand"":[""{value}""]";
+                    sb.Append($@"""Value{j}"":{{{keyPair},{keyPair},{keyPair}}}");
+                }
+
+                for (int j = i + 1; j < 20; j++)
+                {
+                    sb.Append(prefix);
+                    sb.Append($@"""{GetPropertyName(j)}"":""{value}""");
+                }
+
+                sb.Append("}");
+
+                return Encoding.UTF8.GetBytes(sb.ToString());
+            }
+
+            const string value = "ul4Oolt4VgbNm5Y1qPX911wxhyHFEQmmWBcIBR6BfUaNuIn3YOJ8vqtqz2WAh924rEILMzlh6JUhQDcmH00SI6Kv4iGTHQfGXxqWul4Oolt4VgbNm5Y1qPX911wxhyHFEQmmWBcIBR6";
+
+            for (int i = 0; i < 20; i++)
+            {
+                using (MemoryStream stream = new MemoryStream(GeneratePayload(i, value)))
+                {
+                    JsonSerializerOptions options = new JsonSerializerOptions
+                    {
+                        DefaultBufferSize = 1
+                    };
+
+                    ClassWithStrings obj = await JsonSerializer.DeserializeAsync<ClassWithStrings>(stream, options);
+                    obj.Verify(value);
+                }
+            }
+        }
+
+        public class ClassWithStrings
+        {
+            // Ctor args.
+
+            // Ignored.
+
+            [JsonIgnore]
+            public string AValue { get; }
+            [JsonIgnore]
+            public string EValue { get; }
+            [JsonIgnore]
+            public string IValue { get; }
+            [JsonIgnore]
+            public string MValue { get; }
+            [JsonIgnore]
+            public string QValue { get; }
+
+            // Populated.
+
+            public string CValue { get; }
+            public string GValue { get; }
+            public string KValue { get; }
+            public string OValue { get; }
+            public string SValue { get; }
+
+            // Properties.
+
+            // Ignored - no setter.
+
+            public string BValue { get; }
+            public string FValue { get; }
+            public string JValue { get; }
+            public string NValue { get; }
+            public string RValue { get; }
+
+            // Populated.
+
+            public string DValue { get; set; }
+            public string HValue { get; set; }
+            public string LValue { get; set; }
+            public string PValue { get; set; }
+            public string TValue { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, JsonElement> ExtensionData { get; set; }
+
+            public ClassWithStrings(
+                string aValue,
+                string cValue,
+                string eValue,
+                string gValue,
+                string iValue,
+                string kValue,
+                string mValue,
+                string oValue,
+                string qValue,
+                string sValue)
+            {
+                AValue = aValue;
+                CValue = cValue;
+                EValue = eValue;
+                GValue = gValue;
+                IValue = iValue;
+                KValue = kValue;
+                MValue = mValue;
+                OValue = oValue;
+                QValue = qValue;
+                SValue = sValue;
+            }
+
+            public void Verify(string expectedStr)
+            {
+                // Ctor args.
+
+                // Ignored
+                Assert.Null(AValue);
+                Assert.Null(EValue);
+                Assert.Null(IValue);
+                Assert.Null(MValue);
+                Assert.Null(QValue);
+
+                Assert.Equal(expectedStr, CValue);
+                Assert.Equal(expectedStr, GValue);
+                Assert.Equal(expectedStr, KValue);
+                Assert.Equal(expectedStr, OValue);
+                Assert.Equal(expectedStr, SValue);
+
+                // Getter only members - skipped.
+                Assert.Null(BValue);
+                Assert.Null(FValue);
+                Assert.Null(JValue);
+                Assert.Null(NValue);
+                Assert.Null(RValue);
+
+                // Members with setters
+                Assert.Equal(expectedStr, DValue);
+                Assert.Equal(expectedStr, HValue);
+                Assert.Equal(expectedStr, LValue);
+                Assert.Equal(expectedStr, PValue);
+                Assert.Equal(expectedStr, TValue);
+
+                Assert.Equal(10, ExtensionData.Count);
+
+                foreach (JsonElement value in ExtensionData.Values)
+                {
+                    string keyPair = $@"""rand"":[""{expectedStr}""]";
+                    Assert.Equal($@"{{{keyPair},{keyPair},{keyPair}}}", value.GetRawText());
+                }
+            }
         }
     }
 }

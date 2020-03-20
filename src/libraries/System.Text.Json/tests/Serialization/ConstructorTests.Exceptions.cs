@@ -46,6 +46,12 @@ namespace System.Text.Json.Serialization.Tests
             exStr = ex.ToString();
             Assert.Contains("(Int32, Int32)", exStr);
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_With_MismatchedMembers", exStr);
+
+            ex = Assert.Throws<InvalidOperationException>(
+                () => Serializer.Deserialize<WrapperFor_Point_With_MismatchedMembers>(@"{""MyInt"":1,""MyPoint"":{}}"));
+            exStr = ex.ToString();
+            Assert.Contains("(Int32, Int32)", exStr);
+            Assert.Contains("System.Text.Json.Serialization.Tests.Point_With_MismatchedMembers", exStr);
         }
 
         [Fact]
@@ -67,7 +73,9 @@ namespace System.Text.Json.Serialization.Tests
             NotSupportedException ex = Assert.Throws<NotSupportedException>(
                 () => Serializer.Deserialize<Employee>(json, options));
 
-            Assert.Contains("System.Text.Json.Serialization.Tests.ConstructorTests+Employee", ex.ToString());
+            string exStr = ex.ToString();
+            Assert.Contains("System.Text.Json.Serialization.Tests.ConstructorTests+Employee", exStr);
+            Assert.Contains("$.$id", exStr);
         }
 
         private class Employee
@@ -86,11 +94,20 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""Name"":""Jet"",""$random"":10}";
 
+            // Baseline, preserve ref feature off.
+
+            var employee = JsonSerializer.Deserialize<Employee>(json);
+
+            Assert.Equal("Jet", employee.Name);
+
             // Metadata not supported with preserve ref feature on.
 
             var options = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
 
-            Assert.Throws<NotSupportedException>(() => Serializer.Deserialize<Employee>(json, options));
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => Serializer.Deserialize<Employee>(json, options));
+            string exStr = ex.ToString();
+            Assert.Contains("System.Text.Json.Serialization.Tests.ConstructorTests+Employee", exStr);
+            Assert.Contains("$.$random", exStr);
         }
 
         [Fact]
@@ -109,6 +126,20 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, JsonElement> ExtensionData { get; set; }
 
             public Class_ExtData_CtorParam(Dictionary<string, JsonElement> extensionData) { }
+        }
+
+        [Fact]
+        public void AnonymousObject_InvalidOperationException()
+        {
+            var obj = new { Prop = 5 };
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", obj.GetType()));
+
+            // We expect property 'Prop' to bind with a ctor arg called 'prop', but the ctor arg is called 'Prop'.
+            string exStr = ex.ToString();
+            Assert.Contains("AnonymousType", exStr);
+            Assert.Contains("(Int32)", exStr);
+            Assert.Contains("[System.Int32]", exStr);
         }
 
         [Fact]
