@@ -202,7 +202,7 @@ jobs:
 
 #
 # Build CoreCLR Formatting Job
-# Only when CoreCLR is changed
+# Only when CoreCLR is changed, and only in the 'master' branch (no release branches).
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -212,9 +212,11 @@ jobs:
     - Windows_NT_x64
     jobParameters:
       condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        and(
+          eq(variables['Build.SourceBranch'], 'refs/heads/master'),
+          or(
+            eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+            eq(variables['isFullMatrix'], true)))
 
 #
 # Build Mono debug
