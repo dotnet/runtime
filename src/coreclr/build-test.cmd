@@ -616,13 +616,17 @@ set __TotalPrecompiled=0
 set __FailedToPrecompile=0
 set __FailedAssemblies=
 for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll") do (
-    if not "%%~nxF"=="Microsoft.CodeAnalysis.VisualBasic.dll" (
-    if not "%%~nxF"=="Microsoft.CodeAnalysis.CSharp.dll" (
-    if not "%%~nxF"=="Microsoft.CodeAnalysis.dll" (
-    if not "%%~nxF"=="System.Runtime.WindowsRuntime.dll" (
-        call :PrecompileAssembly "%%F" %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
-        echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
-    )))))
+    if "%%~nxF"=="Microsoft.CodeAnalysis.dll" goto :SkipAssembly
+    if "%%~nxF"=="Microsoft.CodeAnalysis.CSharp.dll" goto :SkipAssembly
+    if "%%~nxF"=="Microsoft.CodeAnalysis.VisualBasic.dll" goto :SkipAssembly
+    if "%%~nxF"=="Microsoft.Extensions.Options.ConfigurationExtensions.dll" goto :SkipAssembly
+    if "%%~nxF"=="Microsoft.Extensions.Options.DataAnnotations.dll" goto :SkipAssembly
+    if "%%~nxF"=="System.Runtime.WindowsRuntime.dll" goto :SkipAssembly
+
+    call :PrecompileAssembly "%%F" %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
+    echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
+
+    :SkipAssembly
 )
 
 if !__FailedToPrecompile! NEQ 0 (

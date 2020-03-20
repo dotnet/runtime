@@ -154,6 +154,8 @@ precompile_coreroot_fx()
 
     # Read the exclusion file for this platform
     skipCrossGenFiles=($(grep -v '^#' "$(dirname "$0")/tests/skipCrossGenFiles.${__BuildArch}.txt" 2> /dev/null))
+    skipCrossGenFiles+=('Microsoft.Extensions.Options.ConfigurationExtensions.dll')
+    skipCrossGenFiles+=('Microsoft.Extensions.Options.DataAnnotations.dll')
     skipCrossGenFiles+=('System.Runtime.WindowsRuntime.dll')
 
     # Temporary output folder for Crossgen2-compiled assemblies
