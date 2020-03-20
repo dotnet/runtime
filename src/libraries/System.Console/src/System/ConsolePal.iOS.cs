@@ -7,15 +7,11 @@ using System.Text;
 
 namespace System
 {
-    internal sealed class NSLogStream : Stream
+    internal sealed class NSLogStream : ConsoleStream
     {
-        public override void Flush() { }
+        public NSLogStream() : base(FileAccess.Write) {}
 
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-
-        public override void SetLength(long value) => throw new NotSupportedException();
+        public override int Read(byte[] buffer, int offset, int count) => throw Error.GetReadNotSupported();
 
         public override unsafe void Write(byte[] buffer, int offset, int count)
         {
@@ -25,20 +21,6 @@ namespace System
             {
                 Interop.Sys.Log(ptr + offset, count);
             }
-        }
-
-        public override bool CanRead => false;
-
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => true;
-
-        public override long Length => throw new NotSupportedException();
-
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
         }
     }
 
