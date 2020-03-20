@@ -126,6 +126,16 @@
 
 //#define MONO_DEBUG_ICALLARRAY
 
+// Inline with CoreCLR heuristics, https://github.com/dotnet/runtime/blob/385b4d4296f9c5cb82363565aa210a1a37f92d90/src/coreclr/src/vm/threads.cpp#L6344.
+// Minimum stack size should be sufficient to allow a typical non-recursive call chain to execute,
+// including potential exception handling and garbage collection. Used for probing for available
+// stack space through RuntimeHelpers.EnsureSufficientExecutionStack.
+#if TARGET_SIZEOF_VOID_P == 8
+#define MONO_MIN_EXECUTION_STACK_SIZE (128 * 1024)
+#else
+#define MONO_MIN_EXECUTION_STACK_SIZE (64 * 1024)
+#endif
+
 #ifdef MONO_DEBUG_ICALLARRAY
 
 static char debug_icallarray; // 0:uninitialized 1:true 2:false
@@ -1293,6 +1303,27 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunModuleConstructor (M
 	mono_runtime_class_init_full (vtable, error);
 }
 
+#ifdef ENABLE_NETCORE
+MonoBoolean
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void)
+{
+	MonoThreadInfo *thread = mono_thread_info_current ();
+	void *current = &thread;
+
+	// Stack upper/lower bound should have been calculated and set as part of register_thread.
+	// If not, we are optimistic and assume there is enough room.
+	if (!thread->stack_start_limit || !thread->stack_end)
+		return TRUE;
+
+	// Stack start limit is stack lower bound. Make sure there is enough room left.
+	void *limit = ((uint8_t *)thread->stack_start_limit) + MONO_MIN_EXECUTION_STACK_SIZE;
+
+	if (current < limit)
+		return FALSE;
+
+	return TRUE;
+}
+#else
 MonoBoolean
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void)
 {
@@ -1331,6 +1362,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 #endif
 	return TRUE;
 }
+#endif
 
 #ifdef ENABLE_NETCORE
 MonoObjectHandle
