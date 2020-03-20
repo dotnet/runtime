@@ -461,6 +461,7 @@ namespace System.Net.Security
 
             async ValueTask WaitAndWriteAsync(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer, Task waitTask, byte[] rentedBuffer)
             {
+                byte[]? bufferToReturn = rentedBuffer;
                 byte[] outBuffer = rentedBuffer;
                 try
                 {
@@ -470,9 +471,12 @@ namespace System.Net.Security
                     SecurityStatusPal status = EncryptData(buffer, ref outBuffer, out int encryptedBytes);
                     if (status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
                     {
+                        // No need to hold on the buffer any more.
+                        ArrayPool<byte>.Shared.Return(bufferToReturn);
+                        bufferToReturn = null;
                         // Call WriteSingleChunk() recursively to avoid code duplication.
                         // This should be extremely rare in cases when second renegotiation happens concurrently with Write.
-                        await WriteSingleChunk(writeAdapter, buffer);
+                        await WriteSingleChunk(writeAdapter, buffer).ConfigureAwait(false);
                     }
                     else if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
                     {
@@ -485,7 +489,10 @@ namespace System.Net.Security
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                    if (bufferToReturn != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(bufferToReturn);
+                    }
                 }
             }
 
@@ -613,6 +620,17 @@ namespace System.Net.Security
                         status = DecryptData();
                         if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                         {
+                            // The status indicates that peer wants to renegotiate. (Windows only)
+                            // In practice, there can be some other reasons too - like TLS1.3 session creation
+                            // of alert handling. We need to pass the data to lsass and it is not safe to do parallel
+                            // write any more as that can change TLS state and the EncryptData() can fail in strange ways.
+
+                            // To handle this we call DecryptData() under lock and we create TCS waiter.
+                            // EncryptData() checks that under same lock and if it exist it will not call low-level crypto.
+                            // Instead it will wait synchronously or asynchronously and it will try again after the wait.
+                            // The result will be set when ReplyOnReAuthenticationAsync() is finished e.g. lsass business is over
+                            // or if we bail to continue. If either one happen before EncryptData(), _handshakeWaiter will be set to null
+                            // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
                             _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                         }
                     }
