@@ -34,6 +34,26 @@ public: // Lifetime management for COM Wrappers
     static void DestroyManagedObjectComWrapper(_In_ void* wrapper);
     static void DestroyExternalComObjectContext(_In_ void* context);
     static void MarkExternalComObjectContextCollected(_In_ void* context);
+
+public: // COM activation
+    static void MarkWrapperAsComActivated(_In_ IUnknown* wrapper);
+};
+
+class GlobalComWrappers
+{
+public:
+    static void QCALLTYPE SetGlobalInstanceRegistered();
+
+public: // Functions operating on a registered global instance
+    static bool TryGetOrCreateComInterfaceForObject(
+        _In_ OBJECTREF instance,
+        _In_ INT32 flags,
+        _Outptr_ void** wrapperRaw);
+
+    static bool TryGetOrCreateObjectForComInstance(
+        _In_ IUnknown* externalComObject,
+        _In_ INT32 flags,
+        _Out_ OBJECTREF* objRef);
 };
 
 #endif // FEATURE_COMWRAPPERS

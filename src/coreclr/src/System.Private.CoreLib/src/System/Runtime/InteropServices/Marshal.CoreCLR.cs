@@ -331,16 +331,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(o));
             }
 
-            if (ComWrappers.IsGlobalInstanceRegistered())
-            {
-                // Passing null as the ComWrapper implementation will use the globally registered wrappper (if available)
-                IntPtr ptrMaybe;
-                if (ComWrappers.TryGetOrCreateComInterfaceForObjectInternal(impl: null, o, CreateComInterfaceFlags.TrackerSupport, out ptrMaybe))
-                {
-                    return ptrMaybe;
-                }
-            }
-
             return GetIUnknownForObjectNative(o, false);
         }
 
@@ -425,15 +415,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(pUnk));
             }
 
-            if (ComWrappers.IsGlobalInstanceRegistered())
-            {
-                // Passing null as the ComWrapper implementation will use the globally registered wrappper (if available)
-                object? objMaybe;
-                if (ComWrappers.TryGetOrCreateObjectForComInstanceInternal(impl: null, pUnk, CreateObjectFlags.TrackerObject, wrapperMaybe: null, out objMaybe))
-                {
-                    return objMaybe!;
-                }
-            }
 
             return GetObjectForIUnknownNative(pUnk);
         }
@@ -448,15 +429,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(unknown));
             }
 
-            if (ComWrappers.IsGlobalInstanceRegistered())
-            {
-                // Passing null as the ComWrapper implementation will use the globally registered wrappper (if available)
-                object? objMaybe;
-                if (ComWrappers.TryGetOrCreateObjectForComInstanceInternal(impl: null, unknown, CreateObjectFlags.TrackerObject | CreateObjectFlags.UniqueInstance, wrapperMaybe: null, out objMaybe))
-                {
-                    return objMaybe!;
-                }
-            }
 
             return GetUniqueObjectForIUnknownNative(unknown);
         }

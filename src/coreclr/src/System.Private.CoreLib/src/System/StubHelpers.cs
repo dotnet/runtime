@@ -686,61 +686,11 @@ namespace System.StubHelpers
 #if FEATURE_COMINTEROP
     internal static class InterfaceMarshaler
     {
-        // See interopconverter.h
-        [Flags]
-        private enum ItfMarshalFlags
-        {
-            ITF_MARSHAL_INSP_ITF        = 0x01,
-            ITF_MARSHAL_SUPPRESS_ADDREF = 0x02,
-            ITF_MARSHAL_CLASS_IS_HINT   = 0x04,
-            ITF_MARSHAL_DISP_ITF        = 0x08,
-            ITF_MARSHAL_USE_BASIC_ITF   = 0x10,
-            ITF_MARSHAL_WINRT_SCENARIO  = 0x20,
-        };
-
-        private static bool IsForIUnknown(int flags)
-        {
-            ItfMarshalFlags interfaceFlags = (ItfMarshalFlags)flags;
-            return (interfaceFlags & ItfMarshalFlags.ITF_MARSHAL_USE_BASIC_ITF) != 0
-                && (interfaceFlags & ItfMarshalFlags.ITF_MARSHAL_INSP_ITF) == 0
-                && (interfaceFlags & ItfMarshalFlags.ITF_MARSHAL_DISP_ITF) == 0;
-        }
-
-        internal static IntPtr ConvertToNative(object objSrc, IntPtr itfMT, IntPtr classMT, int flags)
-        {
-            if (ComWrappers.IsGlobalInstanceRegistered() && IsForIUnknown(flags))
-            {
-                // Passing null as the ComWrapper implementation will use the globally registered wrappper (if available)
-                IntPtr ptrMaybe;
-                if (ComWrappers.TryGetOrCreateComInterfaceForObjectInternal(impl: null, objSrc, CreateComInterfaceFlags.TrackerSupport, out ptrMaybe))
-                {
-                    return ptrMaybe;
-                }
-            }
-
-            return ConvertToNativeInternal(objSrc, itfMT, classMT, flags);
-        }
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr ConvertToNative(object objSrc, IntPtr itfMT, IntPtr classMT, int flags);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr ConvertToNativeInternal(object objSrc, IntPtr itfMT, IntPtr classMT, int flags);
-
-        internal static object ConvertToManaged(IntPtr pUnk, IntPtr itfMT, IntPtr classMT, int flags)
-        {
-            if (ComWrappers.IsGlobalInstanceRegistered() && IsForIUnknown(flags))
-            {
-                // Passing null as the ComWrapper implementation will use the globally registered wrappper (if available)
-                object? objMaybe;
-                if (ComWrappers.TryGetOrCreateObjectForComInstanceInternal(impl: null, Marshal.ReadIntPtr(pUnk), CreateObjectFlags.TrackerObject, wrapperMaybe: null, out objMaybe))
-                {
-                    return objMaybe!;
-                }
-            }
-
-            return ConvertToManagedInternal(pUnk, itfMT, classMT, flags);
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ConvertToManagedInternal(IntPtr pUnk, IntPtr itfMT, IntPtr classMT, int flags);
+        internal static extern object ConvertToManaged(IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags);
 
         [DllImport(RuntimeHelpers.QCall)]
         internal static extern void ClearNative(IntPtr pUnk);

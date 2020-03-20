@@ -958,8 +958,8 @@ FCFuncStart(gObjectMarshalerFuncs)
 FCFuncEnd()
 
 FCFuncStart(gInterfaceMarshalerFuncs)
-    FCFuncElement("ConvertToNativeInternal", StubHelpers::InterfaceMarshaler__ConvertToNative)
-    FCFuncElement("ConvertToManagedInternal", StubHelpers::InterfaceMarshaler__ConvertToManaged)
+    FCFuncElement("ConvertToNative", StubHelpers::InterfaceMarshaler__ConvertToNative)
+    FCFuncElement("ConvertToManaged", StubHelpers::InterfaceMarshaler__ConvertToManaged)
     QCFuncElement("ClearNative", StubHelpers::InterfaceMarshaler__ClearNative)
     FCFuncElement("ConvertToManagedWithoutUnboxing", StubHelpers::InterfaceMarshaler__ConvertToManagedWithoutUnboxing)
 FCFuncEnd()
@@ -999,6 +999,7 @@ FCFuncStart(gComWrappersFuncs)
     QCFuncElement("GetIUnknownImplInternal", ComWrappersNative::GetIUnknownImpl)
     QCFuncElement("TryGetOrCreateComInterfaceForObjectInternal", ComWrappersNative::TryGetOrCreateComInterfaceForObject)
     QCFuncElement("TryGetOrCreateObjectForComInstanceInternal", ComWrappersNative::TryGetOrCreateObjectForComInstance)
+    QCFuncElement("SetGlobalInstanceRegistered", GlobalComWrappers::SetGlobalInstanceRegistered)
 FCFuncEnd()
 #endif // FEATURE_COMWRAPPERS
 

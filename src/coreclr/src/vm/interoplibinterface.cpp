@@ -596,6 +596,7 @@ namespace
         _In_opt_ OBJECTREF impl,
         _In_ IUnknown* identity,
         _In_ CreateObjectFlags flags,
+        _In_ bool unwrap,
         _In_opt_ OBJECTREF wrapperMaybe,
         _Out_ OBJECTREF* objRef)
     {
@@ -624,6 +625,7 @@ namespace
         gc.wrapperMaybeRef = wrapperMaybe;
 
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
+        InteropLib::OBJECTHANDLE handle = NULL;
 
         // Check if the user requested a unique instance.
         bool uniqueInstance = !!(flags & CreateObjectFlags::CreateObjectFlags_UniqueInstance);
@@ -632,21 +634,41 @@ namespace
             // Query the external object cache
             ExtObjCxtCache::LockHolder lock(cache);
             extObjCxt = cache->Find(identity);
+
+            if (extObjCxt == NULL && unwrap)
+            {
+                InteropLib::OBJECTHANDLE handleLocal;
+                if (InteropLib::Com::GetObjectForWrapper(identity, &handleLocal) ==  S_OK
+                    && InteropLib::Com::IsComActivated(identity) == S_FALSE)
+                {
+                    handle = handleLocal;
+                }
+            }
         }
 
         if (extObjCxt != NULL)
         {
             gc.objRefMaybe = extObjCxt->GetObjectRef();
         }
+        else if (handle != NULL)
+        {
+            ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+            gc.objRefMaybe = ObjectFromHandle(objectHandle);
+        }
         else
         {
             // Create context instance for the possibly new external object.
             ExternalWrapperResultHolder resultHolder;
-            hr = InteropLib::Com::CreateWrapperForExternal(
-                identity,
-                flags,
-                sizeof(ExternalObjectContext),
-                &resultHolder);
+
+            {
+                GCX_PREEMP();
+                hr = InteropLib::Com::CreateWrapperForExternal(
+                    identity,
+                    flags,
+                    sizeof(ExternalObjectContext),
+                    &resultHolder);
+            }
+
             if (FAILED(hr))
                 COMPlusThrowHR(hr);
 
@@ -725,6 +747,8 @@ namespace
         *objRef = gc.objRefMaybe;
         RETURN (gc.objRefMaybe != NULL);
     }
+
+    bool g_IsGlobalComWrappersRegistered;
 }
 
 namespace InteropLibImports
@@ -962,6 +986,7 @@ namespace InteropLibImports
                 gc.implRef,
                 externalComObject,
                 externalObjectFlags,
+                false /*unwrap*/,
                 gc.wrapperMaybeRef,
                 &gc.objRef);
 
@@ -1130,6 +1155,7 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
             ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
             identity,
             (CreateObjectFlags)flags,
+            false /*unwrap*/,
             ObjectToOBJECTREF(*wrapperMaybe.m_ppObject),
             &newObj);
 
@@ -1218,6 +1244,78 @@ void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* context
     {
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
         cache->Remove(context);
+    }
+}
+
+void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapper)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_ANY;
+        PRECONDITION(wrapper != NULL);
+    }
+    CONTRACTL_END;
+
+    InteropLib::Com::MarkComActivated(wrapper);
+}
+
+void QCALLTYPE GlobalComWrappers::SetGlobalInstanceRegistered()
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(!g_IsGlobalComWrappersRegistered);
+
+    BEGIN_QCALL;
+
+    g_IsGlobalComWrappersRegistered = true;;
+
+    END_QCALL;
+}
+
+bool GlobalComWrappers::TryGetOrCreateComInterfaceForObject(
+    _In_ OBJECTREF instance,
+    _In_ INT32 flags,
+    _Outptr_ void** wrapperRaw)
+{
+    if (!g_IsGlobalComWrappersRegistered)
+        return false;
+
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    {
+        GCX_COOP();
+
+        // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
+        return TryGetOrCreateComInterfaceForObjectInternal(
+            NULL,
+            instance,
+            (CreateComInterfaceFlags)flags,
+            wrapperRaw);
+    }
+}
+
+bool GlobalComWrappers::TryGetOrCreateObjectForComInstance(
+    _In_ IUnknown* externalComObject,
+    _In_ INT32 flags,
+    _Out_ OBJECTREF* objRef)
+{
+    if (!g_IsGlobalComWrappersRegistered)
+        return false;
+
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    {
+        GCX_COOP();
+
+        // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
+        return TryGetOrCreateObjectForComInstanceInternal(
+            NULL /*comWrappersImpl*/,
+            externalComObject,
+            (CreateObjectFlags)flags,
+            true /*unwrap*/,
+            NULL /*wrapperMaybe*/,
+            objRef);
     }
 }
 

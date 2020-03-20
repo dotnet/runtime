@@ -17,8 +17,9 @@ enum class CreateComInterfaceFlagsEx : int32_t
 
     // Highest bit is reserved for internal usage
     IsPegged = 1 << 31,
+    IsComActivated = 2 << 31,
 
-    InternalMask = IsPegged,
+    InternalMask = IsPegged | IsComActivated,
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CreateComInterfaceFlagsEx);

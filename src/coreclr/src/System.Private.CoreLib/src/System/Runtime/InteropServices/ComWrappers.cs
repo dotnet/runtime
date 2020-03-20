@@ -137,7 +137,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// If <paramref name="impl" /> is <c>null</c>, the global instance (if registered) will be used.
         /// </remarks>
-        internal static bool TryGetOrCreateComInterfaceForObjectInternal(ComWrappers? impl, object instance, CreateComInterfaceFlags flags, out IntPtr retValue)
+        private static bool TryGetOrCreateComInterfaceForObjectInternal(ComWrappers? impl, object instance, CreateComInterfaceFlags flags, out IntPtr retValue)
         {
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
@@ -247,7 +247,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// If <paramref name="impl" /> is <c>null</c>, the global instance (if registered) will be used.
         /// </remarks>
-        internal static bool TryGetOrCreateObjectForComInstanceInternal(ComWrappers? impl, IntPtr externalComObject, CreateObjectFlags flags, object? wrapperMaybe, out object? retValue)
+        private static bool TryGetOrCreateObjectForComInstanceInternal(ComWrappers? impl, IntPtr externalComObject, CreateObjectFlags flags, object? wrapperMaybe, out object? retValue)
         {
             if (externalComObject == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(externalComObject));
@@ -287,15 +287,12 @@ namespace System.Runtime.InteropServices
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalComWrappersInstance);
             }
+
+            SetGlobalInstanceRegistered();
         }
 
-        /// <summary>
-        /// Get whether or not a global <see cref="ComWrappers" /> instance has been registered.
-        /// </summary>
-        internal static bool IsGlobalInstanceRegistered()
-        {
-            return s_globalInstance != null;
-        }
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern void SetGlobalInstanceRegistered();
 
         /// <summary>
         /// Get the runtime provided IUnknown implementation.
