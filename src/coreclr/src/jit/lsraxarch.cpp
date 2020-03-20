@@ -2970,7 +2970,6 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
         compiler->GetEmitter()->SetContainsAVX(true);
         if (sizeOfSIMDVector == 32)
         {
-            compiler->compExactlyDependsOn(InstructionSet_AVX2);
             compiler->GetEmitter()->SetContains256bitAVX(true);
         }
     }
