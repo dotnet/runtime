@@ -52,10 +52,7 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("name", () => new RegionInfo(name));
         }
 
-        private static bool IcuIsNotLoaded => PlatformDetection.ICUVersion.Equals(new Version(0, 0, 0, 0));
-        private static bool IcuIsLoaded => !IcuIsNotLoaded;
-
-        [ConditionalFact(nameof(RegionInfoPropertyTests.IcuIsLoaded))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
         public void CurrentRegion()
         {
             using (new ThreadCultureChange("en-US"))
@@ -66,7 +63,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalFact(nameof(RegionInfoPropertyTests.IcuIsNotLoaded))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public void TestCurrentRegion()
         {
             RemoteExecutor.Invoke(() =>

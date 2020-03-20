@@ -716,14 +716,19 @@ namespace System.Globalization
             }
         }
 
-        internal static CultureData GetCurrentRegionData()
+        internal static unsafe CultureData GetCurrentRegionData()
         {
             Span<char> geoIso2Letters = stackalloc char[10];
 
             int geoId = Interop.Kernel32.GetUserGeoID(Interop.Kernel32.GEOCLASS_NATION);
             if (geoId != Interop.Kernel32.GEOID_NOT_AVAILABLE)
             {
-                int geoIsoIdLength = Interop.Kernel32.GetGeoInfo(geoId, Interop.Kernel32.GEO_ISO2, ref MemoryMarshal.GetReference(geoIso2Letters), geoIso2Letters.Length, Interop.Kernel32.EN_LANG_ID);
+                int geoIsoIdLength;
+                fixed (char* pGeoIsoId = geoIso2Letters)
+                {
+                    geoIsoIdLength = Interop.Kernel32.GetGeoInfo(geoId, Interop.Kernel32.GEO_ISO2, pGeoIsoId, geoIso2Letters.Length, 0);
+                }
+
                 if (geoIsoIdLength != 0)
                 {
                     geoIsoIdLength -= geoIso2Letters[geoIsoIdLength - 1] == 0 ? 1 : 0; // handle null termination and exclude it.
