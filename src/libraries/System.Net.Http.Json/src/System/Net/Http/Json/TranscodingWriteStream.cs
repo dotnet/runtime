@@ -90,7 +90,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentOutOfRangeException();
             }
 
-            ArraySegment<byte> bufferSegment = new ArraySegment<byte>(buffer, offset, count);
+            var bufferSegment = new ArraySegment<byte>(buffer, offset, count);
             return WriteAsyncCore(bufferSegment, cancellationToken);
         }
 

@@ -39,10 +39,8 @@ namespace System.Net.Http.Json
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
             {
-                using (Stream transcodingStream = new TranscodingReadStream(contentStream, sourceEncoding))
-                {
-                    return await JsonSerializer.DeserializeAsync(transcodingStream, type, options, cancellationToken).ConfigureAwait(false);
-                }
+                using Stream transcodingStream = new TranscodingReadStream(contentStream, sourceEncoding);
+                return await JsonSerializer.DeserializeAsync(transcodingStream, type, options, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -60,10 +58,8 @@ namespace System.Net.Http.Json
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
             {
-                using (Stream transcodingStream = new TranscodingReadStream(contentStream, sourceEncoding))
-                {
-                    return await JsonSerializer.DeserializeAsync<T>(transcodingStream, options, cancellationToken).ConfigureAwait(false);
-                }
+                using Stream transcodingStream = new TranscodingReadStream(contentStream, sourceEncoding);
+                return await JsonSerializer.DeserializeAsync<T>(transcodingStream, options, cancellationToken).ConfigureAwait(false);
             }
             else
             {
