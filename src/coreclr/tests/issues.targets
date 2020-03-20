@@ -70,7 +70,7 @@
             <Issue>19441;22020</Issue>
         </ExcludeList>
 
-       <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Methods/Method002/*">
+	<ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Methods/Method002/*">
             <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Methods/Method003/*">
@@ -108,7 +108,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- All Unix all runtime -->
+    <!-- All Unix targets on all runtimes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true'">
          <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg/*">
             <Issue>Native varargs not supported on unix</Issue>
@@ -1700,10 +1700,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Generics/GenericsTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-	<ExcludeList Include = "$(XunitTestBinBase)/Interop/DllImportAttribute/ExactSpelling/ExactSpellingTest/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/DllImportAttribute/ExactSpelling/ExactSpellingTest/**">
 	    <Issue>needs triage</Issue>
-	</ExcludeList>
-	<ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Aes/Aes_r/**">
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Aes/Aes_r/**">
 	    <Issue>needs triage</Issue>
 	</ExcludeList>
 	<ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Aes/Aes_ro/**">
