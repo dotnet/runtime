@@ -114,6 +114,9 @@ namespace System.Collections
             _version = 0;
         }
 
+        private static readonly Vector128<byte> s_bitMask128 = BitConverter.IsLittleEndian ?
+                                                Vector128.Create(0x80402010_08040201).AsByte() :
+                                                Vector128.Create(0x01020408_10204080).AsByte();
         public unsafe BitArray(bool[] values)
         {
             if (values == null)
@@ -168,7 +171,6 @@ namespace System.Collections
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
-                Vector128<byte> elementMask = Vector128.Create(0x01020408_10204080).AsByte();
                 fixed (bool* ptr = values)
                 {
                     for (; (i + Vector128<byte>.Count * 2) <= values.Length; i += Vector128<byte>.Count * 2)
@@ -178,7 +180,7 @@ namespace System.Collections
                         // and combine by ORing all of them together (In this case, adding all of them does the same thing)
                         Vector128<byte> lowerVector = AdvSimd.LoadVector128((byte*)ptr + i);
                         Vector128<byte> lowerIsFalse = AdvSimd.CompareEqual(lowerVector, Vector128<byte>.Zero);
-                        Vector128<byte> bitsExtracted1 = AdvSimd.And(lowerIsFalse, elementMask);
+                        Vector128<byte> bitsExtracted1 = AdvSimd.And(lowerIsFalse, s_bitMask128);
                         bitsExtracted1 = AdvSimd.Arm64.AddPairwise(bitsExtracted1, bitsExtracted1);
                         bitsExtracted1 = AdvSimd.Arm64.AddPairwise(bitsExtracted1, bitsExtracted1);
                         bitsExtracted1 = AdvSimd.Arm64.AddPairwise(bitsExtracted1, bitsExtracted1);
@@ -186,13 +188,17 @@ namespace System.Collections
 
                         Vector128<byte> upperVector = AdvSimd.LoadVector128((byte*)ptr + i + Vector128<byte>.Count);
                         Vector128<byte> upperIsFalse = AdvSimd.CompareEqual(upperVector, Vector128<byte>.Zero);
-                        Vector128<byte> bitsExtracted2 = AdvSimd.And(upperIsFalse, elementMask);
+                        Vector128<byte> bitsExtracted2 = AdvSimd.And(upperIsFalse, s_bitMask128);
                         bitsExtracted2 = AdvSimd.Arm64.AddPairwise(bitsExtracted2, bitsExtracted2);
                         bitsExtracted2 = AdvSimd.Arm64.AddPairwise(bitsExtracted2, bitsExtracted2);
                         bitsExtracted2 = AdvSimd.Arm64.AddPairwise(bitsExtracted2, bitsExtracted2);
                         Vector128<short> upperPackedIsFalse = bitsExtracted2.AsInt16();
 
                         int result = AdvSimd.Arm64.ZipLow(lowerPackedIsFalse, upperPackedIsFalse).AsInt32().ToScalar();
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            result = BinaryPrimitives.ReverseEndianness(result);
+                        }
                         m_array[i / 32] = ~result;
                     }
                 }
@@ -939,7 +945,6 @@ namespace System.Collections
                 {
                     Vector128<byte> lowerShuffleMask = s_lowerShuffleMask_CopyToBoolArray;
                     Vector128<byte> upperShuffleMask = s_upperShuffleMask_CopyToBoolArray;
-                    Vector128<byte> bitMask = Vector128.Create(0x80402010_08040201).AsByte();
                     Vector128<byte> ones = Vector128.Create((byte)1);
 
                     fixed (bool* destination = &boolArray[index])
@@ -950,12 +955,12 @@ namespace System.Collections
                             Vector128<int> scalar = Vector128.CreateScalarUnsafe(bits);
 
                             Vector128<byte> shuffledLower = Ssse3.Shuffle(scalar.AsByte(), lowerShuffleMask);
-                            Vector128<byte> extractedLower = Sse2.And(shuffledLower, bitMask);
+                            Vector128<byte> extractedLower = Sse2.And(shuffledLower, s_bitMask128);
                             Vector128<byte> normalizedLower = Sse2.Min(extractedLower, ones);
                             Sse2.Store((byte*)destination + i, normalizedLower);
 
                             Vector128<byte> shuffledHigher = Ssse3.Shuffle(scalar.AsByte(), upperShuffleMask);
-                            Vector128<byte> extractedHigher = Sse2.And(shuffledHigher, bitMask);
+                            Vector128<byte> extractedHigher = Sse2.And(shuffledHigher, s_bitMask128);
                             Vector128<byte> normalizedHigher = Sse2.Min(extractedHigher, ones);
                             Sse2.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
                         }
@@ -963,7 +968,6 @@ namespace System.Collections
                 }
                 else if (AdvSimd.IsSupported)
                 {
-                    Vector128<byte> bitMask = Vector128.Create(0x80402010_08040201).AsByte();
                     Vector128<byte> ones = Vector128.Create((byte)1);
                     fixed (bool* destination = &boolArray[index])
                     {
@@ -974,25 +978,28 @@ namespace System.Collections
                             // (TableVectorLookup could be an alternative - dotnet/runtime#1277)
                             // Instead we use chained ZIP1/2 instructions:
                             // (A0 is the byte containing LSB, A3 is the byte containing MSB)
-                            // bits                             - A3 A2 A1 A0
-                            // Byte reversal                    - A0 A1 A2 A3
-                            // v1 = Vector128.Create            - A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3
-                            // v2 = ZipLow(v1, v1)              - A0 A0 A1 A1 A2 A2 A3 A3 A0 A0 A1 A1 A2 A2 A3 A3
-                            // v3 = ZipLow(v2, v2)              - A0 A0 A0 A0 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3 A3
-                            // shuffledLower = ZipLow(v3, v3)   - A0 A0 A0 A0 A0 A0 A0 A0 A1 A1 A1 A1 A1 A1 A1 A1
-                            // shuffledHigher = ZipHigh(v3, v3) - A2 A2 A2 A2 A2 A2 A2 A2 A3 A3 A3 A3 A3 A3 A3 A3
-
-                            Vector128<byte> vector = Vector128.Create(BinaryPrimitives.ReverseEndianness(bits)).AsByte();
+                            // bits (on Little endian)           - A3 A2 A1 A0
+                            // Byte reversal / bits (Big endian) - A0 A1 A2 A3
+                            // v1 = Vector128.Create             - A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3
+                            // v2 = ZipLow(v1, v1)               - A0 A0 A1 A1 A2 A2 A3 A3 A0 A0 A1 A1 A2 A2 A3 A3
+                            // v3 = ZipLow(v2, v2)               - A0 A0 A0 A0 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3 A3
+                            // shuffledLower = ZipLow(v3, v3)    - A0 A0 A0 A0 A0 A0 A0 A0 A1 A1 A1 A1 A1 A1 A1 A1
+                            // shuffledHigher = ZipHigh(v3, v3)  - A2 A2 A2 A2 A2 A2 A2 A2 A3 A3 A3 A3 A3 A3 A3 A3
+                            if (BitConverter.IsLittleEndian)
+                            {
+                                bits = BinaryPrimitives.ReverseEndianness(bits);
+                            }
+                            Vector128<byte> vector = Vector128.Create(bits).AsByte();
                             vector = AdvSimd.Arm64.ZipLow(vector, vector);
                             vector = AdvSimd.Arm64.ZipLow(vector, vector);
 
                             Vector128<byte> shuffledLower = AdvSimd.Arm64.ZipLow(vector, vector);
-                            Vector128<byte> extractedLower = AdvSimd.And(shuffledLower, bitMask);
+                            Vector128<byte> extractedLower = AdvSimd.And(shuffledLower, s_bitMask128);
                             Vector128<byte> normalizedLower = AdvSimd.Min(extractedLower, ones);
                             AdvSimd.Store((byte*)destination + i, normalizedLower);
 
                             Vector128<byte> shuffledHigher = AdvSimd.Arm64.ZipHigh(vector, vector);
-                            Vector128<byte> extractedHigher = AdvSimd.And(shuffledHigher, bitMask);
+                            Vector128<byte> extractedHigher = AdvSimd.And(shuffledHigher, s_bitMask128);
                             Vector128<byte> normalizedHigher = AdvSimd.Min(extractedHigher, ones);
                             AdvSimd.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
                         }
