@@ -28,9 +28,6 @@ namespace System.Text.RegularExpressions.Tests
             // Testing control character escapes???: "2", "(\u0032)"
             yield return new object[] { "(\u0034)", "4", RegexOptions.None, 0, 1, true, "4", };
 
-            // Using *, +, ?, {}: Actual - "a+\\.?b*\\.?c{2}"
-            yield return new object[] { @"a+\.?b*\.+c{2}", "ab.cc", RegexOptions.None, 0, 5, true, "ab.cc" };
-
             // Using long loop prefix
             yield return new object[] { @"a{10}", new string('a', 10), RegexOptions.None, 0, 10, true, new string('a', 10) };
             yield return new object[] { @"a{100}", new string('a', 100), RegexOptions.None, 0, 100, true, new string('a', 100) };
