@@ -82,9 +82,6 @@
 
   <!-- Language configuration -->
   <PropertyGroup>
-    <!-- default to allowing all language features -->
-    <LangVersion>latest</LangVersion>
-    <LangVersion Condition="'$(Language)' == 'C#'">preview</LangVersion>
     <Deterministic>true</Deterministic>
 
     <!-- Resource naming bug: https://github.com/microsoft/msbuild/issues/4740 -->
