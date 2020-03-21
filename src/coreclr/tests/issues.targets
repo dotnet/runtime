@@ -292,7 +292,7 @@
     </ItemGroup>
 
     <!-- Arm64 All OS -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(BuildArch)' == 'arm64' or '$(AltJitArch)' == 'arm64' and '$(RuntimeFlavor)' == 'coreclr' )">
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(BuildArch)' == 'arm64' or '$(AltJitArch)' == 'arm64') and '$(RuntimeFlavor)' == 'coreclr'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/hugeexpr1/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
