@@ -115,8 +115,10 @@ jobs:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
     - ${{ if eq(parameters.crossgen2, true) }}:
-        - name: timeoutPerTestInMinutes
+        - name: timeoutPerTestCollectionInMinutes
           value: 90
+        - name: timeoutPerTestInMinutes
+          value: 30
     - ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 360
