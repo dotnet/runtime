@@ -1,6 +1,7 @@
 using System;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -30,7 +31,7 @@ internal static partial class Interop
         internal const int CRYPTO_EX_INDEX_SSL = 0;
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_new")]
-        internal static extern IntPtr SslNew(SslContext ctx);
+        internal static extern IntPtr SslNew(IntPtr ctx);
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_free")]
         internal static extern void SslFree(IntPtr ssl);
@@ -49,7 +50,7 @@ internal static partial class Interop
         internal static extern byte* SslGetVersion(IntPtr ssl);
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_quic_method")]
-        internal static extern int SslSetQuicMethod(IntPtr ssl, ref QuicMethods methods);
+        internal static extern int SslSetQuicMethod(IntPtr ssl, ref OpenSslQuicMethods.NativeCallbacks methods);
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_accept_state")]
         internal static extern int SslSetAcceptState(IntPtr ssl);
@@ -69,11 +70,27 @@ internal static partial class Interop
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_provide_quic_data")]
         internal static extern int SslProvideQuicData(IntPtr ssl, SslEncryptionLevel level, byte* data, IntPtr len);
 
+        internal static int SslProvideQuicData(IntPtr ssl, SslEncryptionLevel level, Span<byte> data)
+        {
+            fixed (byte* pData = data)
+            {
+                return SslProvideQuicData(ssl, level, pData, new IntPtr(data.Length));
+            }
+        }
+
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_ex_data")]
         internal static extern int SslSetExData(IntPtr ssl, int idx, IntPtr data);
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_ex_data")]
         internal static extern IntPtr SslGetExData(IntPtr ssl, int idx);
+
+        internal static int SslSetTlsExHostName(IntPtr ssl, string hostname)
+        {
+            var addr = Marshal.StringToHGlobalAnsi(hostname);
+            int res = SslCtrl(ssl, SslCtrlCommand.SetTlsextHostname, 0, addr);
+            Marshal.FreeHGlobal(addr);
+            return res;
+        }
 
         static OpenSslQuic()
         {

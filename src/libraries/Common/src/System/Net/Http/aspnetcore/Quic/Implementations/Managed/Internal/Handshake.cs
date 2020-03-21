@@ -8,49 +8,42 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     [StructLayout(LayoutKind.Sequential)]
     internal class Handshake : IQuicCallback, IDisposable
     {
-        private readonly Ssl _ssl;
+        private readonly IntPtr _ssl;
 
-        public Handshake(SslContext ctx, string? address = null, string? cert = null, string? privateKey = null)
+        public Handshake(IntPtr ctx, string? address = null, string? cert = null, string? privateKey = null)
         {
             var gcHandle = GCHandle.Alloc(this);
             ToSend = new List<(SslEncryptionLevel, byte[])>();
 
-            _ssl = Ssl.New(ctx);
+            _ssl = Interop.OpenSslQuic.SslNew(ctx);
 
-            _ssl.SetCallbackInterface(GCHandle.ToIntPtr(gcHandle));
-            _ssl.MinProtoVersion = TlsVersion.Tls13;
-            _ssl.MaxProtoVersion = TlsVersion.Tls13;
+            QuicMethods.InitCallbacks(this, _ssl);
 
-            _ssl.SetQuicMethod(ref QuicMethods.Instance);
+            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMinProtoVersion, (long)TlsVersion.Tls13, IntPtr.Zero);
+            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMaxProtoVersion, (long)TlsVersion.Tls13, IntPtr.Zero);
 
             if (cert != null)
-                Ssl.UseCertificateFile(cert, SslFiletype.Pem);
+                Interop.OpenSslQuic.SslUseCertificateFile(_ssl, cert, SslFiletype.Pem);
             if (privateKey != null)
-                Ssl.UsePrivateKeyFile(privateKey, SslFiletype.Pem);
+                Interop.OpenSslQuic.SslUsePrivateKeyFile(_ssl, privateKey, SslFiletype.Pem);
 
             if (address == null)
             {
-                _ssl.SetAcceptState();
+                Interop.OpenSslQuic.SslSetAcceptState(_ssl);
             }
             else
             {
-                _ssl.SetConnectState();
-                _ssl.SetTlsexHostName(address);
+                Interop.OpenSslQuic.SslSetConnectState(_ssl);
+                Interop.OpenSslQuic.SslSetTlsExHostName(_ssl, address);
             }
         }
-
-        public Ssl Ssl => _ssl;
 
         public List<(SslEncryptionLevel, byte[])> ToSend { get; }
 
         public void Dispose()
         {
-            var ptr = Ssl.GetCallbackInterface();
-            var gcHandle = GCHandle.FromIntPtr(ptr);
-
-            gcHandle.Free();
-
-            Ssl.Free(Ssl);
+            QuicMethods.DeinitCallbacks(_ssl);
+            Interop.OpenSslQuic.SslFree(_ssl);
         }
 
         public int SetEncryptionSecrets(SslEncryptionLevel level, byte[] readSecret, byte[] writeSecret)
@@ -83,12 +76,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         public int DoHandshake()
         {
-            return Ssl.DoHandshake();
+            return Interop.OpenSslQuic.SslDoHandshake(_ssl);
         }
 
         public int OnDataReceived(SslEncryptionLevel level, byte[] data)
         {
-            return Ssl.ProvideQuicData(level, data);
+            return Interop.OpenSslQuic.SslProvideQuicData(_ssl, level, data);
         }
     }
 }
