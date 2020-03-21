@@ -187,7 +187,7 @@ namespace System.Data.OleDb
                 properties = new ItagDBPROP[propset.cProperties];
                 for (int i = 0; i < properties.Length; ++i)
                 {
-                    properties[i] = ArchitectureSpecificHelpers.CreateTagDbProp();
+                    properties[i] = OleDbStructHelpers.CreateTagDbProp();
                     IntPtr ptr = ADP.IntPtrOffset(propset.rgProperties, i * ODB.SizeOf_tagDBPROP);
                     Marshal.PtrToStructure(ptr, properties[i]);
                 }
@@ -271,7 +271,7 @@ namespace System.Data.OleDb
 
         internal static DBPropSet CreateProperty(Guid propertySet, int propertyId, bool required, object value)
         {
-            ItagDBPROP dbprop = ArchitectureSpecificHelpers.CreateTagDbProp(propertyId, required, value);
+            ItagDBPROP dbprop = OleDbStructHelpers.CreateTagDbProp(propertyId, required, value);
             DBPropSet propertyset = new DBPropSet(1);
             propertyset.SetPropertySet(0, propertySet, new ItagDBPROP[1] { dbprop });
             return propertyset;

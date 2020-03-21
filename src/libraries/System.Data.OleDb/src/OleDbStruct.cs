@@ -570,7 +570,7 @@ namespace System.Data.OleDb
         internal Guid guidPropertySet;
     }
 
-    internal static class ArchitectureSpecificHelpers
+    internal static class OleDbStructHelpers
     {
         internal static ItagDBPROPINFO CreateTagDbPropInfo()
         {

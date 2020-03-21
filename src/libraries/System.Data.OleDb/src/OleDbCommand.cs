@@ -1331,20 +1331,20 @@ namespace System.Data.OleDb
 
                 ItagDBPROP[] dbprops = new ItagDBPROP[count];
 
-                dbprops[0] = ArchitectureSpecificHelpers.CreateTagDbProp(ODB.DBPROP_COMMANDTIMEOUT, false, CommandTimeout);
+                dbprops[0] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_COMMANDTIMEOUT, false, CommandTimeout);
 
                 if (_executeQuery)
                 {
                     // 'Microsoft.Jet.OLEDB.4.0' default is DBPROPVAL_AO_SEQUENTIAL
-                    dbprops[1] = ArchitectureSpecificHelpers.CreateTagDbProp(ODB.DBPROP_ACCESSORDER, false, ODB.DBPROPVAL_AO_RANDOM);
+                    dbprops[1] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_ACCESSORDER, false, ODB.DBPROPVAL_AO_RANDOM);
 
                     if (keyInfo)
                     {
                         // 'Unique Rows' property required for SQLOLEDB to retrieve things like 'BaseTableName'
-                        dbprops[2] = ArchitectureSpecificHelpers.CreateTagDbProp(ODB.DBPROP_UNIQUEROWS, false, keyInfo);
+                        dbprops[2] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_UNIQUEROWS, false, keyInfo);
 
                         // otherwise 'Microsoft.Jet.OLEDB.4.0' doesn't support IColumnsRowset
-                        dbprops[3] = ArchitectureSpecificHelpers.CreateTagDbProp(ODB.DBPROP_IColumnsRowset, false, true);
+                        dbprops[3] = OleDbStructHelpers.CreateTagDbProp(ODB.DBPROP_IColumnsRowset, false, true);
                     }
                 }
                 propSet.SetPropertySet(0, OleDbPropertySetGuid.Rowset, dbprops);
