@@ -2503,7 +2503,7 @@ namespace System.Data.OleDb
                     visibleCount--;
                 }
                 else if ((ODB.IsRunningOnX86 && 0 >= (int)info.ordinal) || (!ODB.IsRunningOnX86 && 0 >= (long)info.ordinal))
-                { 
+                {
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
                     {
