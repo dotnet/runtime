@@ -149,7 +149,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
             var candidatePn = (expectedPn & ~pnMask) | truncatedPn;
 
-            if (candidatePn <= expectedPn - pnHwin &&
+            if (candidatePn + pnHwin <= expectedPn &&
                 candidatePn < (1ul << 62) - pnWin)
                 return candidatePn + pnWin;
 

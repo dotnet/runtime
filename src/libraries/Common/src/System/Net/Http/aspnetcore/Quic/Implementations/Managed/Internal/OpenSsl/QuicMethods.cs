@@ -17,7 +17,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
             sendAlert = Marshal.GetFunctionPointerForDelegate(new OpenSslQuicMethods.SendAlertFunc(SendAlertImpl))
         };
 
-        public static ref OpenSslQuicMethods.NativeCallbacks Callbacks => ref _callbacks;
+        private static ref OpenSslQuicMethods.NativeCallbacks Callbacks => ref _callbacks;
 
         internal static void InitCallbacks(IQuicCallback callback, IntPtr ssl)
         {

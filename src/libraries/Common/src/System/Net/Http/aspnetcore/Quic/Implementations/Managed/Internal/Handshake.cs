@@ -19,8 +19,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             QuicMethods.InitCallbacks(this, _ssl);
 
-            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMinProtoVersion, (long)TlsVersion.Tls13, IntPtr.Zero);
-            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMaxProtoVersion, (long)TlsVersion.Tls13, IntPtr.Zero);
+            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMinProtoVersion, (long)OpenSslTlsVersion.Tls13, IntPtr.Zero);
+            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMaxProtoVersion, (long)OpenSslTlsVersion.Tls13, IntPtr.Zero);
 
             if (cert != null)
                 Interop.OpenSslQuic.SslUseCertificateFile(_ssl, cert, SslFiletype.Pem);

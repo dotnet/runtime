@@ -1,5 +1,3 @@
-using System.Net.Quic.Implementations.Managed.Internal;
-using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
 using System.Runtime.InteropServices;
 
 namespace System.Net.Quic.Implementations.Managed.Internal

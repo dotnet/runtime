@@ -51,9 +51,6 @@
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\QuicMethods.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\QuicMethods.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\Ssl.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\Ssl.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslContext.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\SslContext.cs</Link>
     </Compile>
@@ -95,6 +92,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Interop\Interop.OpenSsl.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\Interop.OpenSsl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Interop\OpenSslQuicMethods.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\OpenSslQuicMethods.cs</Link>
     </Compile>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
