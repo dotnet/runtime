@@ -16,7 +16,7 @@ if(CLR_CMAKE_HOST_WIN32)
     )
 
     install_clr(TARGETS mscorrc)
-    install_clr(TARGETS mscorrc DESTINATION sharedFramework SKIP_STRIP)
+    install_clr(TARGETS mscorrc DESTINATION sharedFramework)
 else()
     build_resources(${CMAKE_CURRENT_SOURCE_DIR}/include.rc mscorrc TARGET_CPP_FILE)
 

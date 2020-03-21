@@ -5,12 +5,16 @@ cmake_policy(SET CMP0042 NEW)
 # Set the project name
 project(CoreCLR)
 
-include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 if (CLR_CMAKE_HOST_WIN32)
   message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
   message(STATUS "VS_PLATFORM_NAME is ${CMAKE_VS_PLATFORM_NAME}")
 endif (CLR_CMAKE_HOST_WIN32)
+
+if(MSVC)
+  set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
+endif (MSVC)
 
 # Set commonly used directory names
 set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -30,93 +34,6 @@ if(CORECLR_SET_RPATH)
 endif(CORECLR_SET_RPATH)
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
-
-# Ensure other tools are present
-if (CLR_CMAKE_HOST_WIN32)
-    if(CLR_CMAKE_HOST_ARCH_ARM)
-
-      # Confirm that Windows SDK is present
-      if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
-	      message(FATAL_ERROR "Windows SDK is required for the Arm32 build.")
-      else()
-	      message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
-      endif()
-
-      # Explicitly specify the assembler to be used for Arm32 compile
-      file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm\\armasm.exe" CMAKE_ASM_COMPILER)
-
-      set(CMAKE_ASM_MASM_COMPILER ${CMAKE_ASM_COMPILER})
-      message("CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}")
-
-      # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
-      # use ml[64].exe as the assembler.
-      enable_language(ASM)
-    elseif(CLR_CMAKE_HOST_ARCH_ARM64)
-
-      # Confirm that Windows SDK is present
-      if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
-	      message(FATAL_ERROR "Windows SDK is required for the ARM64 build.")
-      else()
-	      message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
-      endif()
-
-      # Explicitly specify the assembler to be used for Arm64 compile
-      file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm64\\armasm64.exe" CMAKE_ASM_COMPILER)
-
-      set(CMAKE_ASM_MASM_COMPILER ${CMAKE_ASM_COMPILER})
-      message("CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}")
-
-      # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
-      # use ml[64].exe as the assembler.
-      enable_language(ASM)
-    else()
-      enable_language(ASM_MASM)
-    endif()
-
-    # Ensure that MC is present
-    find_program(MC mc)
-    if (MC STREQUAL "MC-NOTFOUND")
-        message(FATAL_ERROR "MC not found")
-    endif()
-
-else (CLR_CMAKE_HOST_WIN32)
-    enable_language(ASM)
-
-    # Ensure that awk is present
-    find_program(AWK awk)
-    if (AWK STREQUAL "AWK-NOTFOUND")
-        message(FATAL_ERROR "AWK not found")
-    endif()
-
-    # Try to locate the paxctl tool. Failure to find it is not fatal,
-    # but the generated executables won't work on a system where PAX is set
-    # to prevent applications to create executable memory mappings.
-    find_program(PAXCTL paxctl)
-
-    if (CLR_CMAKE_HOST_DARWIN)
-
-      # Ensure that dsymutil and strip are present
-      find_program(DSYMUTIL dsymutil)
-      if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
-          message(FATAL_ERROR "dsymutil not found")
-      endif()
-
-      find_program(STRIP strip)
-      if (STRIP STREQUAL "STRIP-NOTFOUND")
-          message(FATAL_ERROR "strip not found")
-      endif()
-
-    endif()
-endif(CLR_CMAKE_HOST_WIN32)
-
-if(CLR_CMAKE_TARGET_ANDROID)
-  add_definitions(-DTARGET_ANDROID)
-endif()
-
-#----------------------------------------------------
-# Configure compiler settings for environment
-#----------------------------------------------------
-include(configurecompiler.cmake)
 
 #----------------------------------------------------
 # Cross target Component build specific configuration

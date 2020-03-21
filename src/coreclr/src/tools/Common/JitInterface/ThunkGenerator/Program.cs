@@ -493,49 +493,16 @@ public:
 
         static void Main(string[] args)
         {
-            if (args[0] == "InstructionSetGenerator")
+            IEnumerable<FunctionDecl> functions = ParseInput(new StreamReader(args[0]));
+            using (TextWriter tw = new StreamWriter(args[1]))
             {
-                InstructionSetGenerator generator = new InstructionSetGenerator();
-                if (!generator.ParseInput(new StreamReader(args[1])))
-                    return;
-
-                using (TextWriter tw = new StreamWriter(args[2]))
-                {
-                    Console.WriteLine("Generating {0}", args[2]);
-                    generator.WriteManagedReadyToRunInstructionSet(tw);
-                }
-
-                using (TextWriter tw = new StreamWriter(args[3]))
-                {
-                    Console.WriteLine("Generating {0}", args[3]);
-                    generator.WriteManagedJitInstructionSet(tw);
-                }
-
-                using (TextWriter tw = new StreamWriter(args[4]))
-                {
-                    Console.WriteLine("Generating {0}", args[4]);
-                    generator.WriteNativeCorInfoInstructionSet(tw);
-                }
-
-                using (TextWriter tw = new StreamWriter(args[5]))
-                {
-                    Console.WriteLine("Generating {0}", args[5]);
-                    generator.WriteNativeReadyToRunInstructionSet(tw);
-                }
+                Console.WriteLine("Generating {0}", args[1]);
+                WriteManagedThunkInterface(tw, functions);
             }
-            else
+            using (TextWriter tw = new StreamWriter(args[2]))
             {
-                IEnumerable<FunctionDecl> functions = ParseInput(new StreamReader(args[0]));
-                using (TextWriter tw = new StreamWriter(args[1]))
-                {
-                    Console.WriteLine("Generating {0}", args[1]);
-                    WriteManagedThunkInterface(tw, functions);
-                }
-                using (TextWriter tw = new StreamWriter(args[2]))
-                {
-                    Console.WriteLine("Generating {0}", args[2]);
-                    WriteNativeWrapperInterface(tw, functions);
-                }
+                Console.WriteLine("Generating {0}", args[2]);
+                WriteNativeWrapperInterface(tw, functions);
             }
         }
     }
