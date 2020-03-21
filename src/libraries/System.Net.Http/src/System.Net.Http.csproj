@@ -72,8 +72,8 @@
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\TlsAlert.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\TlsAlert.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\TlsVersion.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\TlsVersion.cs</Link>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\OpenSslTlsVersion.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\OpenSsl\OpenSslTlsVersion.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicTransportParams.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicTransportParams.cs</Link>

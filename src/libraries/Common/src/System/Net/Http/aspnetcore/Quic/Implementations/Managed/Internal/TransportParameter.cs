@@ -3,7 +3,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     /// <summary>
     ///     Identifying codes of QUIC transport parameters.
     /// </summary>
-    public enum TransportParameter
+    internal enum TransportParameter
     {
         OriginalConnectionId = 0x00,
         MaxIdleTimeout = 0x01,

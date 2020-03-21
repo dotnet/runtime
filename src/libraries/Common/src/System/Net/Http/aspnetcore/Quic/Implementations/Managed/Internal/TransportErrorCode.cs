@@ -1,6 +1,6 @@
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
-    public enum TransportErrorCode
+    internal enum TransportErrorCode
     {
         /// <summary>No error</summary>
         NoError = 0x0,

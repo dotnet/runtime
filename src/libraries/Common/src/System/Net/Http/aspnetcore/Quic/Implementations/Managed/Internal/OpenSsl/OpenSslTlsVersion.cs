@@ -1,6 +1,6 @@
 ﻿namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
 {
-    internal enum TlsVersion : short
+    internal enum OpenSslTlsVersion : short
     {
         Tls1 = 0x0301,
         Tls11 = 0x0302,
