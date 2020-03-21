@@ -68,6 +68,13 @@ namespace System.Security.Cryptography.Csp.Tests
                 "TryExportSubjectPublicKeyInfo",
                 "TryExportPkcs8PrivateKey",
                 "TryExportEncryptedPkcs8PrivateKey",
+                // DSASignatureFormat methods defer to older methods.
+                "CreateSignatureCore",
+                "SignDataCore",
+                "TryCreateSignatureCore",
+                "TrySignDataCore",
+                "VerifyDataCore",
+                "VerifySignatureCore",
             };
 
             IEnumerable<MethodInfo> baseMethods = shimType.

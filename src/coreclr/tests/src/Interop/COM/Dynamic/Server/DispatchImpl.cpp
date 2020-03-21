@@ -26,7 +26,7 @@ DispatchImpl::DispatchImpl(GUID guid, void *instance, const wchar_t* tlb)
 
 DispatchImpl::~DispatchImpl()
 {
-    if (_typeInfo != nullptr)
+    if (_typeLib != nullptr)
         _typeLib->Release();
 
     if (_typeInfo != nullptr)
@@ -44,8 +44,8 @@ HRESULT DispatchImpl::DoGetTypeInfo(UINT iTInfo, ITypeInfo** ppTInfo)
     if (iTInfo != 0)
         return DISP_E_BADINDEX;
 
-    *ppTInfo = _typeInfo;
-    return S_OK;
+    assert(_typeInfo != nullptr);
+    return _typeInfo->QueryInterface(__uuidof(*ppTInfo), (void**)ppTInfo);
 }
 
 HRESULT DispatchImpl::DoGetIDsOfNames(LPOLESTR* rgszNames, UINT cNames, DISPID* rgDispId)

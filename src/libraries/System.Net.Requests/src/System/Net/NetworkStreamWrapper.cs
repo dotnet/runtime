@@ -32,7 +32,7 @@ namespace System.Net
         {
             get
             {
-                return ((IPEndPoint)Socket.RemoteEndPoint).Address;
+                return ((IPEndPoint)Socket.RemoteEndPoint!).Address;
             }
         }
 
@@ -175,7 +175,7 @@ namespace System.Net
             _client.Dispose();
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             return _networkStream.BeginRead(buffer, offset, size, callback, state);
         }
@@ -190,7 +190,7 @@ namespace System.Net
             return _networkStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             return _networkStream.BeginWrite(buffer, offset, size, callback, state);
         }

@@ -27,6 +27,7 @@
 CompPhaseNameMacro(PHASE_PRE_IMPORT,             "Pre-import",                     "PRE-IMP",  false, -1, false)
 CompPhaseNameMacro(PHASE_IMPORTATION,            "Importation",                    "IMPORT",   false, -1, true)
 CompPhaseNameMacro(PHASE_INDXCALL,               "Indirect call transform",        "INDXCALL", false, -1, true)
+CompPhaseNameMacro(PHASE_PATCHPOINTS,            "Expand patchpoints",             "PPOINT",   false, -1, true)
 CompPhaseNameMacro(PHASE_POST_IMPORT,            "Post-import",                    "POST-IMP", false, -1, false)
 CompPhaseNameMacro(PHASE_IBCINSTR,               "IBC instrumentation",            "IBCINSTR", false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_INIT,             "Morph - Init",                   "MOR-INIT" ,false, -1, false)

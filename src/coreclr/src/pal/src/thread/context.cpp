@@ -203,7 +203,7 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
         ucontext_t registers;
 #if HAVE_PT_REGS
         struct pt_regs ptrace_registers;
-        if (ptrace((__ptrace_request)PT_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
+        if (ptrace((__ptrace_request)PTRACE_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
         struct reg ptrace_registers;
         if (PAL_PTRACE(PT_GETREGS, processId, &ptrace_registers, 0) == -1)
@@ -352,7 +352,7 @@ CONTEXT_SetThreadContext(
         (CONTEXT_CONTROL | CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
     {
 #if HAVE_PT_REGS
-        if (ptrace((__ptrace_request)PT_GETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+        if (ptrace((__ptrace_request)PTRACE_GETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
         if (PAL_PTRACE(PT_GETREGS, dwProcessId, &ptrace_registers, 0) == -1)
 #endif
@@ -383,7 +383,7 @@ CONTEXT_SetThreadContext(
 #undef ASSIGN_REG
 
 #if HAVE_PT_REGS
-        if (ptrace((__ptrace_request)PT_SETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+        if (ptrace((__ptrace_request)PTRACE_SETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
         if (PAL_PTRACE(PT_SETREGS, dwProcessId, &ptrace_registers, 0) == -1)
 #endif

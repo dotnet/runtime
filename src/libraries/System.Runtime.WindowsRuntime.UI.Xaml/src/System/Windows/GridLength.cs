@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-//
-
 using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -87,7 +83,7 @@ namespace Windows.UI.Xaml
                     || gl1.Value != gl2.Value);
         }
 
-        public override bool Equals(object oCompare)
+        public override bool Equals(object? oCompare)
         {
             if (oCompare is GridLength)
             {
@@ -113,7 +109,7 @@ namespace Windows.UI.Xaml
             return this.ToString(CultureInfo.InvariantCulture);
         }
 
-        internal string ToString(CultureInfo cultureInfo)
+        internal string ToString(CultureInfo? cultureInfo)
         {
             char listSeparator = TokenizerHelper.GetNumericListSeparator(cultureInfo);
 

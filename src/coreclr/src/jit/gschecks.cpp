@@ -24,7 +24,7 @@ void Compiler::gsGSChecksInitCookie()
 {
     var_types type = TYP_I_IMPL;
 
-    lvaGSSecurityCookie = lvaGrabTemp(false DEBUGARG("GSSecurityCookie"));
+    lvaGSSecurityCookie = lvaGrabTempWithImplicitUse(false DEBUGARG("GSSecurityCookie"));
 
     // Prevent cookie init/check from being optimized
     lvaSetVarAddrExposed(lvaGSSecurityCookie);

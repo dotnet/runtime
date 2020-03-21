@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -32,7 +32,7 @@ namespace System.Net
                 ServicePointManager.CheckCertificateRevocationList);
         }
 
-        public IAsyncResult BeginAuthenticateAsClient(AsyncCallback asyncCallback, object state)
+        public IAsyncResult BeginAuthenticateAsClient(AsyncCallback? asyncCallback, object? state)
         {
             return _sslStream.BeginAuthenticateAsClient(
                 _host,
@@ -48,7 +48,7 @@ namespace System.Net
             _sslStream.EndAuthenticateAsClient(asyncResult);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             return _sslStream.BeginWrite(buffer, offset, size, callback, state);
         }
@@ -68,7 +68,7 @@ namespace System.Net
             return _sslStream.Read(buffer, offset, size);
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             return _sslStream.BeginRead(buffer, offset, count, callback, state);
         }

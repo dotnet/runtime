@@ -123,6 +123,9 @@ mono_crash_save_failfast_msg (char *msg);
 const char*
 mono_crash_get_failfast_msg (void);
 
+void
+mono_create_crash_hash_breadcrumb (MonoThreadSummary *thread);
+
 #endif // DISABLE_CRASH_REPORTING
 
 // Dump context functions (enter/leave)

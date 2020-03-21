@@ -2372,14 +2372,6 @@ if test x$host_win32 = xno; then
 	dnl *****************************
 	AC_CHECK_LIB(socket, socket, LIBS="$LIBS -lsocket")
 
-	case "$host" in
-		*-*-*freebsd*)
-			dnl *****************************
-			dnl *** Checks for libinotify ***
-			dnl *****************************
-			AC_CHECK_LIB(inotify, inotify_init, LIBS="$LIBS -linotify")
-	esac
-
 	dnl *****************************
 	dnl *** Checks for IPPROTO_IP ***
 	dnl *****************************
@@ -3647,6 +3639,35 @@ if test x$host_win32 = xno; then
 	], [
 		AC_MSG_RESULT(no)
 	])
+
+	case "$host" in
+		*-*-*freebsd*)
+			dnl *****************************
+			dnl *** Checks for libinotify ***
+			dnl *****************************
+			AC_CHECK_LIB(inotify, inotify_init, LIBS="$LIBS -linotify")
+			if test "x$ac_cv_lib_inotify_inotify_init" = "xyes" ; then
+				AC_DEFINE(HAVE_LIBINOTIFY, 1, [FreeBSD libinotify kqueue shim])
+				dnl Needs to be done this way to avoid collision with various 
+				dnl ports including glib and llvm*
+				METADATA_CFLAGS="-I/usr/local/include"
+				AC_SUBST(METADATA_CFLAGS)
+			fi
+			dnl Workaround due to inotify_rm_watch check failing without -I
+			AC_MSG_CHECKING(for inotify_rm_watch with unsigned wd in libinotify)
+			AC_TRY_LINK([
+				#include </usr/local/include/sys/inotify.h>
+			], [
+				intptr_t fd;
+				uint32_t wd;
+				int result = inotify_rm_watch(fd, wd);
+			],[
+			   AC_MSG_RESULT(yes)
+			   AC_DEFINE(INOTIFY_RM_WATCH_WD_UNSIGNED, 1, [inotify_rm_watch with unsigned wd])
+			], [
+				AC_MSG_RESULT(no)
+			])
+	esac
 
 	CFLAGS="$ORIG_CFLAGS"
 
@@ -6565,7 +6586,7 @@ elif case $host_os in freebsd*) true;; *) false;; esac; then
 	MONO_NATIVE_CXX=$CXX
 	MONO_NATIVE_CPPFLAGS=$CPPFLAGS
 	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
-	MONO_NATIVE_CFLAGS=$CFLAGS
+	MONO_NATIVE_CFLAGS="$CFLAGS -I/usr/local/include"
 	MONO_NATIVE_LDFLAGS=$LDFLAGS
 
 	mono_native=yes

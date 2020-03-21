@@ -650,13 +650,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         ParseString(pr, objectPr);
                         var = pr._value;
                     }
-                    else if (ReferenceEquals(pr._dtTypeCode, InternalPrimitiveTypeE.Invalid))
-                    {
-                        Debug.Assert(pr._dtType != null);
-                        CheckSerializable(pr._dtType);
-                        // Not nested and invalid, so it is an empty object
-                        var = FormatterServices.GetUninitializedObject(pr._dtType);
-                    }
                     else
                     {
                         var = pr._varValue != null ?

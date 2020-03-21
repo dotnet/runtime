@@ -1,6 +1,4 @@
-if(NOT CLR_CMAKE_CONFIGURE_PLATFORM_INCLUDED)
-  message(FATAL_ERROR "configuretools.cmake needs to be included after configureplatform.cmake")
-endif()
+include(${CMAKE_CURRENT_LIST_DIR}/configureplatform.cmake)
 
 # Get the version of the compiler that is in the file name for tool location.
 set (CLR_CMAKE_COMPILER_FILE_NAME_VERSION "")
@@ -52,7 +50,9 @@ if(NOT WIN32)
   if(NOT CLR_CMAKE_TARGET_DARWIN AND NOT CLR_CMAKE_TARGET_IOS)
     locate_toolchain_exec(objdump CMAKE_OBJDUMP)
 
-    if(CMAKE_CROSSCOMPILING AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR
+    if(CMAKE_SYSTEM_NAME STREQUAL Android)
+      set(TOOSET_PREFIX ${ANDROID_TOOLCHAIN_PREFIX})
+    elseif(CMAKE_CROSSCOMPILING AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR
        CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm))
       set(TOOLSET_PREFIX "${TOOLCHAIN}-")
     else()

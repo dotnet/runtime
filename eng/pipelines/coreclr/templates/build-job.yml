@@ -1,20 +1,20 @@
 parameters:
-  buildConfig: ''
   archType: ''
+  buildConfig: ''
+  compilerName: 'clang'
+  condition: true
+  container: ''
+  crossrootfsDir: ''
+  isOfficialBuild: false
   osGroup: ''
   osSubgroup: ''
   platform: ''
-  container: ''
-  testGroup: ''
-  crossrootfsDir: ''
-  timeoutInMinutes: ''
+  pool: ''
   signBinaries: false
   stagedBuild: false
+  testGroup: ''
+  timeoutInMinutes: ''
   variables: {}
-  pool: ''
-  isOfficialBuild: false
-  condition: true
-  useGCC: false
 
 ### Product build
 jobs:
@@ -33,10 +33,10 @@ jobs:
     condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters
-    ${{ if eq(parameters.useGCC, true) }}:
-      name: ${{ format('coreclr_gcc_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    ${{ if eq(parameters.compilerName, 'gcc') }}:
+      name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    ${{ if eq(parameters.useGCC, false) }}:
+    ${{ if eq(parameters.compilerName, 'clang') }}:
       name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
@@ -60,17 +60,13 @@ jobs:
     - ${{ if eq(parameters.buildConfig, 'Release') }}:
       - name: stripSymbolsArg
         value: '-stripsymbols'
-    - name: clangArg
-      value: ''
-    - name: gccArg
+    - name: compilerArg
       value: ''
     - name: publishLogsArtifactPrefix
       value: 'BuildLogs_CoreCLR'
-    - ${{ if eq(parameters.useGCC, true) }}:
-      - name: gccArg
+    - ${{ if eq(parameters.compilerName, 'gcc') }}:
+      - name: compilerArg
         value: '-gcc'
-      - name: clangArg
-        value: ''
       - name: publishLogsArtifactPrefix
         value: 'BuildLogs_CoreCLR_GCC'
       # workaround for gcc directory not in PATH
@@ -78,20 +74,20 @@ jobs:
         value: /opt/rh/devtoolset-7/root/usr/bin/gcc
       - name: CLR_CXX
         value: /opt/rh/devtoolset-7/root/usr/bin/g++
-    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), not(parameters.useGCC)) }}:
-      - name: clangArg
+    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), eq(parameters.compilerName, 'clang')) }}:
+      - name: compilerArg
         value: '-clang9'
       # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
       - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
-        - name: clangArg
+        - name: compilerArg
           value: '-clang6.0'
       # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
-        - name: clangArg
+        - name: compilerArg
           value: ''
       # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
       - ${{ if eq(parameters.osGroup, 'OSX') }}:
-        - name: clangArg
+        - name: compilerArg
           value: ''
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       # Variables used to publish packages to blob feed
@@ -141,7 +137,7 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(gccArg) $(stripSymbolsArg) $(officialBuildIdArg)
+      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
@@ -156,7 +152,7 @@ jobs:
       displayName: Build managed product components and packages
 
     # Build native test components
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg) $(gccArg) skipgeneratelayout
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(compilerArg) skipgeneratelayout
       displayName: Build native test components
 
     # Sign on Windows
@@ -173,7 +169,7 @@ jobs:
         condition: always()
 
     # We only test on clang binaries.
-    - ${{ if eq(parameters.useGCC, false) }}:
+    - ${{ if eq(parameters.compilerName, 'clang') }}:
       # Publish product output directory for consumption by tests.
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:

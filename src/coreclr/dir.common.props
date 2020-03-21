@@ -33,14 +33,12 @@
 
   <!-- Common properties -->
   <PropertyGroup>
-    <RootRepoDir>$(MSBuildThisFileDirectory)..\..\</RootRepoDir>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
 
-    <BaseIntermediateOutputPath>$(RootRepoDir)artifacts\obj\coreclr\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(RepoRoot)artifacts\obj\coreclr\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
 
     <SourceDir>$(ProjectDir)src\</SourceDir>
-    <RootBinDir>$(RootRepoDir)artifacts\</RootBinDir>
-    <BinDir>$(RootBinDir)bin\coreclr\$(PlatformConfigPathPart)\</BinDir>
+    <BinDir>$(ArtifactsDir)bin\coreclr\$(PlatformConfigPathPart)\</BinDir>
 
     <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
          fails to write packages to it if the path contains the forward slash.
@@ -55,8 +53,6 @@
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
-
-    <PreReleaseLabel>preview8</PreReleaseLabel>
   </PropertyGroup>
 
   <!-- Set up common target properties that we use to conditionally include sources -->
@@ -81,21 +77,6 @@
   <!-- Set the kind of PDB to Portable -->
   <PropertyGroup>
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
-  </PropertyGroup>
-
-  <!-- Common properties -->
-  <PropertyGroup>
-
-    <!-- This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging -->
-    <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">coreclr</GitHubRepositoryName>
-
-    <!-- Default to portable build if not explicitly set -->
-    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
-
-    <!-- If true, indicates that this is not an officially supported release -->
-    <!-- It is important to flip this to false in official release branches -->
-    <!-- Keep it in sync with PRERELEASE in clrdefinitions.cmake -->
-    <IsPrerelease>true</IsPrerelease>
   </PropertyGroup>
 
   <!-- Output paths -->

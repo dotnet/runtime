@@ -997,10 +997,13 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 
     // The profiler may have changed the code on the callback.  Need to
     // pick up the new code.
+    //
+    // (don't want this for OSR, need to see how it works)
     COR_ILMETHOD_DECODER ilDecoderTemp;
     COR_ILMETHOD_DECODER *pilHeader = GetAndVerifyILHeader(pConfig, &ilDecoderTemp);
     *pFlags = pConfig->GetJitCompilationFlags();
     PCODE pOtherCode = NULL;
+
     EX_TRY
     {
 #ifndef CROSSGEN_COMPILE
@@ -1287,6 +1290,9 @@ PrepareCodeConfig::JitOptimizationTier PrepareCodeConfig::GetJitOptimizationTier
                 case NativeCodeVersion::OptimizationTier1:
                     return JitOptimizationTier::OptimizedTier1;
 
+                case NativeCodeVersion::OptimizationTier1OSR:
+                    return JitOptimizationTier::OptimizedTier1OSR;
+
                 case NativeCodeVersion::OptimizationTierOptimized:
                     return JitOptimizationTier::Optimized;
 
@@ -1311,6 +1317,7 @@ const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *conf
         case JitOptimizationTier::Optimized: return "Optimized";
         case JitOptimizationTier::QuickJitted: return "QuickJitted";
         case JitOptimizationTier::OptimizedTier1: return "OptimizedTier1";
+        case JitOptimizationTier::OptimizedTier1OSR: return "OptimizedTier1OSR";
 
         default:
             UNREACHABLE();

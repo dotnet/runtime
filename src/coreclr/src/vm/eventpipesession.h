@@ -8,7 +8,6 @@
 #ifdef FEATURE_PERFTRACING
 
 #include "common.h"
-#include "hosting.h"
 #include "threadsuspend.h"
 
 class EventPipeBufferManager;

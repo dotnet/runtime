@@ -418,5 +418,7 @@ namespace System.Globalization
         internal bool IsWin32Installed => false;
 
         internal bool IsReplacementCulture => false;
+
+        internal static CultureData GetCurrentRegionData() => CultureInfo.CurrentCulture._cultureData;
     }
 }

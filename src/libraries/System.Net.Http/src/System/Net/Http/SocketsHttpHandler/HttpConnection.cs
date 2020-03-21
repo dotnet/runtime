@@ -44,12 +44,12 @@ namespace System.Net.Http
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.1"));
 
         private readonly HttpConnectionPool _pool;
-        private readonly Socket _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
+        private readonly Socket? _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
         private readonly Stream _stream;
-        private readonly TransportContext _transportContext;
+        private readonly TransportContext? _transportContext;
         private readonly WeakReference<HttpConnection> _weakThisRef;
 
-        private HttpRequestMessage _currentRequest;
+        private HttpRequestMessage? _currentRequest;
         private readonly byte[] _writeBuffer;
         private int _writeOffset;
         private int _allowedReadLineBytes;
@@ -69,9 +69,9 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
-            Socket socket,
+            Socket? socket,
             Stream stream,
-            TransportContext transportContext)
+            TransportContext? transportContext)
         {
             Debug.Assert(pool != null);
             Debug.Assert(stream != null);
@@ -178,7 +178,7 @@ namespace System.Net.Http
             return null;
         }
 
-        public TransportContext TransportContext => _transportContext;
+        public TransportContext? TransportContext => _transportContext;
 
         public HttpConnectionKind Kind => _pool.Kind;
 
@@ -192,7 +192,7 @@ namespace System.Net.Http
             _readOffset += bytesToConsume;
         }
 
-        private async ValueTask WriteHeadersAsync(HttpHeaders headers, string cookiesFromContainer)
+        private async ValueTask WriteHeadersAsync(HttpHeaders headers, string? cookiesFromContainer)
         {
             if (headers.HeaderStore != null)
             {
@@ -225,11 +225,11 @@ namespace System.Net.Http
                         // Some headers such as User-Agent and Server use space as a separator (see: ProductInfoHeaderParser)
                         if (headerValuesCount > 1)
                         {
-                            HttpHeaderParser parser = header.Key.Parser;
+                            HttpHeaderParser? parser = header.Key.Parser;
                             string separator = HttpHeaderParser.DefaultSeparator;
                             if (parser != null && parser.SupportsMultipleValues)
                             {
-                                separator = parser.Separator;
+                                separator = parser.Separator!;
                             }
 
                             for (int i = 1; i < headerValuesCount; i++)
@@ -318,8 +318,8 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            TaskCompletionSource<bool> allowExpect100ToContinue = null;
-            Task sendRequestContentTask = null;
+            TaskCompletionSource<bool>? allowExpect100ToContinue = null;
+            Task? sendRequestContentTask = null;
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in read buffer");
 
@@ -334,6 +334,7 @@ namespace System.Net.Http
             CancellationTokenRegistration cancellationRegistration = RegisterCancellation(cancellationToken);
             try
             {
+                Debug.Assert(request.RequestUri != null);
                 // Write request line
                 await WriteStringAsync(normalizedMethod.Method).ConfigureAwait(false);
                 await WriteByteAsync((byte)' ').ConfigureAwait(false);
@@ -385,10 +386,10 @@ namespace System.Net.Http
                 await WriteBytesAsync(isHttp10 ? s_spaceHttp10NewlineAsciiBytes : s_spaceHttp11NewlineAsciiBytes).ConfigureAwait(false);
 
                 // Determine cookies to send
-                string cookiesFromContainer = null;
+                string? cookiesFromContainer = null;
                 if (_pool.Settings._useCookies)
                 {
-                    cookiesFromContainer = _pool.Settings._cookieContainer.GetCookieHeader(request.RequestUri);
+                    cookiesFromContainer = _pool.Settings._cookieContainer!.GetCookieHeader(request.RequestUri);
                     if (cookiesFromContainer == "")
                     {
                         cookiesFromContainer = null;
@@ -455,7 +456,7 @@ namespace System.Net.Http
                         // Then kick off the request.  The TCS' result indicates whether content should be sent or not.
                         allowExpect100ToContinue = new TaskCompletionSource<bool>();
                         var expect100Timer = new Timer(
-                            s => ((TaskCompletionSource<bool>)s).TrySetResult(true),
+                            s => ((TaskCompletionSource<bool>)s!).TrySetResult(true),
                             allowExpect100ToContinue, _pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
                         sendRequestContentTask = SendRequestContentWithExpect100ContinueAsync(
                             request, allowExpect100ToContinue.Task, CreateRequestContentStream(request), expect100Timer, cancellationToken);
@@ -648,7 +649,7 @@ namespace System.Net.Http
                 // Process Set-Cookie headers.
                 if (_pool.Settings._useCookies)
                 {
-                    CookieHelper.ProcessReceivedCookies(response, _pool.Settings._cookieContainer);
+                    CookieHelper.ProcessReceivedCookies(response, _pool.Settings._cookieContainer!);
                 }
 
                 return response;
@@ -739,8 +740,8 @@ namespace System.Net.Http
             //   artificially keeping this connection alive.
             return cancellationToken.Register(s =>
             {
-                var weakThisRef = (WeakReference<HttpConnection>)s;
-                if (weakThisRef.TryGetTarget(out HttpConnection strongThisRef))
+                var weakThisRef = (WeakReference<HttpConnection>)s!;
+                if (weakThisRef.TryGetTarget(out HttpConnection? strongThisRef))
                 {
                     if (NetEventSource.IsEnabled) strongThisRef.Trace("Cancellation requested. Disposing of the connection.");
                     strongThisRef.Dispose();
@@ -756,7 +757,7 @@ namespace System.Net.Http
             _canRetry = false;
 
             // Copy all of the data to the server.
-            await request.Content.CopyToAsync(stream, _transportContext, cancellationToken).ConfigureAwait(false);
+            await request.Content!.CopyToAsync(stream, _transportContext, cancellationToken).ConfigureAwait(false);
 
             // Finish the content; with a chunked upload, this includes writing the terminating chunk.
             await stream.FinishAsync().ConfigureAwait(false);
@@ -845,7 +846,7 @@ namespace System.Net.Http
             else if (line[MinStatusLineLength] == ' ')
             {
                 Span<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
-                string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
+                string? knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
                 if (knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes))
                 {
                     response.SetReasonPhraseWithoutValidation(knownReasonPhrase);
@@ -941,7 +942,7 @@ namespace System.Net.Http
             }
             else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
             {
-                response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
+                response.Content!.Headers.TryAddWithoutValidation(descriptor, headerValue);
             }
             else
             {
@@ -1637,7 +1638,7 @@ namespace System.Net.Http
             // use a temporary buffer from the ArrayPool so that the connection doesn't hog large
             // buffers from the pool for extended durations, especially if it's going to sit in the
             // connection pool for a prolonged period.
-            byte[] origReadBuffer = null;
+            byte[]? origReadBuffer = null;
             try
             {
                 while (true)
@@ -1754,8 +1755,9 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_authconnectionfailure);
             }
 
+            Debug.Assert(response.Content != null);
             Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            HttpContentReadStream responseStream = stream as HttpContentReadStream;
+            HttpContentReadStream? responseStream = stream as HttpContentReadStream;
 
             Debug.Assert(responseStream != null || stream is EmptyReadStream);
 
@@ -1823,7 +1825,7 @@ namespace System.Net.Http
 
         public sealed override string ToString() => $"{nameof(HttpConnection)}({_pool})"; // Description for diagnostic purposes
 
-        public sealed override void Trace(string message, [CallerMemberName] string memberName = null) =>
+        public sealed override void Trace(string message, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessage(
                 _pool?.GetHashCode() ?? 0,           // pool ID
                 GetHashCode(),                       // connection ID
@@ -1834,7 +1836,7 @@ namespace System.Net.Http
 
     internal sealed class HttpConnectionWithFinalizer : HttpConnection
     {
-        public HttpConnectionWithFinalizer(HttpConnectionPool pool, Socket socket, Stream stream, TransportContext transportContext) : base(pool, socket, stream, transportContext) { }
+        public HttpConnectionWithFinalizer(HttpConnectionPool pool, Socket? socket, Stream stream, TransportContext? transportContext) : base(pool, socket, stream, transportContext) { }
 
         // This class is separated from HttpConnection so we only pay the price of having a finalizer
         // when it's actually needed, e.g. when MaxConnectionsPerServer is enabled.

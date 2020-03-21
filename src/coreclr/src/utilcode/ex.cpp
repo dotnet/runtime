@@ -30,7 +30,7 @@ GVAL_IMPL_INIT(HRESULT, g_hrFatalError, S_OK);
 // Helper function to get an exception object from outside the exception.  In
 //  the CLR, it may be from the Thread object.  Non-CLR users have no thread object,
 //  and it will do nothing.
-void GetLastThrownObjectExceptionFromThread(void **ppvException);
+void GetLastThrownObjectExceptionFromThread(Exception **ppException);
 
 Exception *Exception::g_OOMException = NULL;
 
@@ -865,7 +865,7 @@ Exception* DelegatingException::GetDelegate()
     {
         // .. get it now.  NULL in case there isn't one and we take default action.
         m_delegatedException = NULL;
-        GetLastThrownObjectExceptionFromThread(reinterpret_cast<void**>(&m_delegatedException));
+        GetLastThrownObjectExceptionFromThread(&m_delegatedException);
     }
 
     return m_delegatedException;

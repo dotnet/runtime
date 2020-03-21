@@ -681,11 +681,12 @@ private:
         }
 
         //------------------------------------------------------------------------
-        // CreateThen: create else block with direct call to method
+        // CreateThen: create then block with direct call to method
         //
         virtual void CreateThen()
         {
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
+            thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
 
             InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->clsHandle;
@@ -758,7 +759,8 @@ private:
         //
         virtual void CreateElse()
         {
-            elseBlock            = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
+            elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
+            elseBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
             GenTreeCall* call    = origCall;
             Statement*   newStmt = compiler->gtNewStmt(call);
 

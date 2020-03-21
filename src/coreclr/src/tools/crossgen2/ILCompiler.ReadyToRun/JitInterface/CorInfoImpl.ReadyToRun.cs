@@ -2126,7 +2126,10 @@ namespace Internal.JitInterface
             {
                 if (pMT.IsValueType)
                 {
-                    throw new NotImplementedException("https://github.com/dotnet/runtime/issues/32630: ENCODE_CHECK_FIELD_OFFSET: root field check import");
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    pResult->offset = 0;
+                    pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
+                    pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                 }
                 else
                 {
@@ -2173,6 +2176,24 @@ namespace Internal.JitInterface
         {
             *pCookieVal = IntPtr.Zero;
             *ppCookieVal = (IntPtr *)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.GSCookie));
+        }
+
+        /// <summary>
+        /// Record patchpoint info for the method
+        /// </summary>
+        private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
+        {
+            // No patchpoint info when prejitting
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Retrieve OSR info for the method
+        /// </summary>
+        private PatchpointInfo* getOSRInfo(ref uint ilOffset)
+        {
+            // No patchpoint info when prejitting
+            throw new NotImplementedException();
         }
 
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)

@@ -727,6 +727,7 @@ void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags)
     info->locals.pSig  = (PCCOR_SIGNATURE)CompileMethod->GetBuffer(value.info.locals.pSig_Index);
     info->locals.scope = (CORINFO_MODULE_HANDLE)value.info.locals.scope;
     info->locals.token = (mdToken)value.info.locals.token;
+
     *flags             = (unsigned)value.flags;
     DEBUG_REP(dmpCompileMethod(0, value));
 }
@@ -1124,7 +1125,7 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
     CORJIT_FLAGS* jitflags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
-    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX", key, value.B, jitflags->GetFlagsRaw());
+    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-%016llX", key, value.B, jitflags->GetFlagsRaw(), jitflags->GetInstructionSetFlagsRaw());
     GetJitFlags->Unlock();
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
@@ -3963,6 +3964,39 @@ void MethodContext::repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
         *pCookieVal = (GSCookie)value.A;
     if (ppCookieVal != nullptr)
         *ppCookieVal = (GSCookie*)value.B;
+}
+
+void MethodContext::recGetOSRInfo(PatchpointInfo* patchpointInfo, unsigned* ilOffset)
+{
+    if (GetOSRInfo == nullptr)
+    {
+        GetOSRInfo = new LightWeightMap<DWORD, Agnostic_GetOSRInfo>();
+    }
+
+    Agnostic_GetOSRInfo value;
+
+    value.index = (DWORD)GetOSRInfo->AddBuffer((const unsigned char*) patchpointInfo, patchpointInfo->PatchpointInfoSize());
+    value.ilOffset = *ilOffset;
+
+    // use 0 for key
+    DWORD key = 0;
+    GetOSRInfo->Add(key, value);
+    DEBUG_REC(dmpGetOSRInfo(key, value));
+}
+
+void MethodContext::dmpGetOSRInfo(DWORD key, const Agnostic_GetOSRInfo& value)
+{
+    // todo - dump patchpoint info?
+    printf("GetOSRInfo key %u, value patchpointInfo-%u {...} iloffset-%u\n",
+        key, value.index, value.ilOffset);
+}
+
+PatchpointInfo* MethodContext::repGetOSRInfo(unsigned* ilOffset)
+{
+    DWORD key = 0;
+    Agnostic_GetOSRInfo value = GetOSRInfo->Get(key);
+    *ilOffset = value.ilOffset;
+    return (PatchpointInfo*)GetOSRInfo->GetBuffer(value.index);
 }
 
 void MethodContext::recGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,

@@ -5,7 +5,7 @@ cmake_policy(SET CMP0042 NEW)
 # Set the project name
 project(CoreCLR)
 
-include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 if (CLR_CMAKE_HOST_WIN32)
   message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
@@ -30,7 +30,6 @@ if(CORECLR_SET_RPATH)
 endif(CORECLR_SET_RPATH)
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
-OPTION(CLR_CMAKE_WARNINGS_ARE_ERRORS "Warnings are errors" ON)
 
 # Ensure other tools are present
 if (CLR_CMAKE_HOST_WIN32)
@@ -110,11 +109,14 @@ else (CLR_CMAKE_HOST_WIN32)
     endif()
 endif(CLR_CMAKE_HOST_WIN32)
 
+if(CLR_CMAKE_TARGET_ANDROID)
+  add_definitions(-DTARGET_ANDROID)
+endif()
+
 #----------------------------------------------------
 # Configure compiler settings for environment
 #----------------------------------------------------
 include(configurecompiler.cmake)
-include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 #----------------------------------------------------
 # Cross target Component build specific configuration
@@ -141,6 +143,18 @@ endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 #     - do not depend on clr's compile definitions
 #-----------------------------------------
 if(CLR_CMAKE_HOST_UNIX)
+    if(CLR_CMAKE_TARGET_ANDROID)
+        find_library(LZMA NAMES lzma)
+        if(LZMA STREQUAL LZMA-NOTFOUND)
+           message(FATAL_ERROR "Cannot find liblzma.")
+        endif(LZMA STREQUAL LZMA-NOTFOUND)
+
+        find_library(ANDROID_GLOB NAMES android-glob)
+        if(ANDROID_GLOB STREQUAL ANDROID_GLOB-NOTFOUND)
+          message(FATAL_ERROR "Cannot find android-glob.")
+        endif()
+    endif()
+
     add_subdirectory(src/pal)
     add_subdirectory(src/hosts)
 endif(CLR_CMAKE_HOST_UNIX)

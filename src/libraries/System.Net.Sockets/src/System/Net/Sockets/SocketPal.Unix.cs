@@ -1846,7 +1846,7 @@ namespace System.Net.Sockets
             asyncResult.SocketAddress = socketAddress;
 
             bool isIPv4, isIPv6;
-            Socket.GetIPProtocolInformation(((Socket)asyncResult.AsyncObject).AddressFamily, socketAddress, out isIPv4, out isIPv6);
+            Socket.GetIPProtocolInformation(((Socket)asyncResult.AsyncObject!).AddressFamily, socketAddress, out isIPv4, out isIPv6);
 
             int socketAddressSize = socketAddress.InternalSize;
             int bytesReceived;

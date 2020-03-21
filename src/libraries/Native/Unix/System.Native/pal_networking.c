@@ -394,7 +394,7 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entr
                 }
 
                 // Skip loopback addresses if at least one interface has non-loopback one.
-                if ((!includeIPv4Loopback && ifa->ifa_addr->sa_family == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) || 
+                if ((!includeIPv4Loopback && ifa->ifa_addr->sa_family == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) ||
                     (!includeIPv6Loopback && ifa->ifa_addr->sa_family == AF_INET6 && (ifa->ifa_flags & IFF_LOOPBACK) != 0))
                 {
                     entry->IPAddressCount--;
@@ -904,7 +904,7 @@ static void ConvertMessageHeaderToMsghdr(struct msghdr* header, const MessageHea
         iovlen = (int)IOV_MAX;
     }
     header->msg_name = messageHeader->SocketAddress;
-    header->msg_namelen = (unsigned int)messageHeader->SocketAddressLen;
+    header->msg_namelen = (socklen_t)messageHeader->SocketAddressLen;
     header->msg_iov = (struct iovec*)messageHeader->IOVectors;
     header->msg_iovlen = (__typeof__(header->msg_iovlen))iovlen;
     header->msg_control = messageHeader->ControlBuffer;
@@ -1474,7 +1474,7 @@ int32_t SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8_t* socket
     if (socketAddress == NULL || socketAddressLen < 0)
     {
         return Error_EFAULT;
-    }   
+    }
 
     int fd = ToFileDescriptor(socket);
 

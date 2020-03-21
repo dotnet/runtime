@@ -180,6 +180,15 @@ void getGSCookie(GSCookie*  pCookieVal, // OUT
                  GSCookie** ppCookieVal // OUT
                  );
 
+// Provide patchpoint info for the method currently being jitted.
+void setPatchpointInfo(
+            PatchpointInfo* patchpointInfo
+            );
+
+PatchpointInfo* getOSRInfo(
+           unsigned * ilOffset   // OUT
+           );
+
 /**********************************************************************************/
 //
 // ICorModuleInfo

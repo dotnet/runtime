@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (constructorDelegate == null)
             {
-                ThrowHelper.ThrowNotSupportedException_DeserializeNoParameterlessConstructor(TypeToConvert);
+                ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(TypeToConvert);
             }
 
             state.Current.ReturnValue = constructorDelegate();

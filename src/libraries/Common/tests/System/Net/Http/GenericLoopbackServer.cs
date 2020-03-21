@@ -86,7 +86,7 @@ namespace System.Net.Test.Common
         public IPAddress Address { get; set; } = IPAddress.Loopback;
         public bool UseSsl { get; set; } = PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback();
         public SslProtocols SslProtocols { get; set; } =
-#if !NETSTANDARD2_0
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
                 SslProtocols.Tls13 |
 #endif
                 SslProtocols.Tls12;

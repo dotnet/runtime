@@ -3595,7 +3595,6 @@ main_loop:
 					THROW_EX (ex, ip);
 				EXCEPTION_CHECKPOINT;
 			}
-			ip += 2;
 			const gboolean realloc_frame = new_method->alloca_size > frame->imethod->alloca_size;
 			frame->imethod = new_method;
 			/*
@@ -5022,10 +5021,12 @@ call:;
 
 		MINT_IN_CASE(MINT_NEWOBJ_VT_FAST)
 		MINT_IN_CASE(MINT_NEWOBJ_VTST_FAST) {
+			guint16 imethod_index = ip [1];
+			gboolean is_inlined = imethod_index == INLINED_METHOD_FLAG;
+
+			guint16 const param_count = ip [2];
 
 			frame->ip = ip;
-			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
-			guint16 const param_count = ip [2];
 
 			// Make room for extra parameter and result.
 			if (param_count) {
@@ -5049,6 +5050,14 @@ call:;
 				memset (sp, 0, sizeof (*sp));
 				sp [1].data.p = &sp [0].data; // valuetype_this == result
 			}
+
+			if (is_inlined) {
+				if (vtst)
+					vt_sp += ALIGN_TO (ip [-1], MINT_VT_ALIGNMENT);
+				sp += param_count + 2;
+				MINT_IN_BREAK;
+			}
+			cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
 			}
 			// call_newobj captures the pattern where the return value is placed
 			// on the stack before the call, instead of the call forming it.
@@ -5323,7 +5332,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_LDFLD_R4) LDFLD(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_R8) LDFLD(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_O) LDFLD(p, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_P) LDFLD(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_I8_UNALIGNED) LDFLD_UNALIGNED(l, gint64, TRUE); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLD_R8_UNALIGNED) LDFLD_UNALIGNED(f, double, TRUE); MINT_IN_BREAK;
 
@@ -5371,7 +5379,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_LDARGFLD_R4) LDARGFLD(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDARGFLD_R8) LDARGFLD(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDARGFLD_O) LDARGFLD(p, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDARGFLD_P) LDARGFLD(p, gpointer); MINT_IN_BREAK;
 
 #define LDLOCFLD(datamem, fieldtype) do { \
 	MonoObject *o = *(MonoObject**)(locals + ip [1]); \
@@ -5389,7 +5396,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_LDLOCFLD_R4) LDLOCFLD(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDLOCFLD_R8) LDLOCFLD(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDLOCFLD_O) LDLOCFLD(p, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDLOCFLD_P) LDLOCFLD(p, gpointer); MINT_IN_BREAK;
 
 #define STFLD_UNALIGNED(datamem, fieldtype, unaligned) do { \
 	MonoObject* const o = sp [-2].data.o; \
@@ -5412,7 +5418,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_STFLD_I8) STFLD(l, gint64); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_R4) STFLD(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_R8) STFLD(f, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STFLD_P) STFLD(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_O) {
 			MonoObject* const o = sp [-2].data.o;
 			NULL_CHECK (o);
@@ -5483,7 +5488,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_STARGFLD_I8) STARGFLD(l, gint64); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STARGFLD_R4) STARGFLD(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STARGFLD_R8) STARGFLD(f, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STARGFLD_P) STARGFLD(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STARGFLD_O) {
 			MonoObject *o = frame->stack_args [ip [1]].data.o;
 			NULL_CHECK (o);
@@ -5508,7 +5512,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_STLOCFLD_I8) STLOCFLD(l, gint64); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STLOCFLD_R4) STLOCFLD(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STLOCFLD_R8) STLOCFLD(f, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STLOCFLD_P) STLOCFLD(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STLOCFLD_O) {
 			MonoObject *o = *(MonoObject**)(locals + ip [1]);
 			NULL_CHECK (o);
@@ -5553,7 +5556,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_LDSFLD_R4) LDSFLD(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDSFLD_R8) LDSFLD(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDSFLD_O) LDSFLD(p, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDSFLD_P) LDSFLD(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDSFLD_VT) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [1]];
@@ -5586,7 +5588,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_LDTSFLD_R4) LDTSFLD(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDTSFLD_R8) LDTSFLD(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDTSFLD_O) LDTSFLD(p, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_P) LDTSFLD(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDSSFLD) {
 			guint32 offset = READ32(ip + 2);
@@ -5625,7 +5626,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_STSFLD_I8) STSFLD(l, gint64); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STSFLD_R4) STSFLD(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STSFLD_R8) STSFLD(f, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STSFLD_P) STSFLD(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STSFLD_O) STSFLD(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_STSFLD_VT) {
@@ -5658,7 +5658,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_STTSFLD_I8) STTSFLD(l, gint64); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STTSFLD_R4) STTSFLD(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STTSFLD_R8) STTSFLD(f, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_P) STTSFLD(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STTSFLD_O) STTSFLD(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_STSSFLD) {
@@ -6700,7 +6699,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_LDARG_R4) LDARG(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDARG_R8) LDARG(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDARG_O) LDARG(p, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDARG_P) LDARG(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDARG_P0) LDARGn(p, gpointer, 0); MINT_IN_BREAK;
 
@@ -6728,7 +6726,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_STARG_R4) STARG(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STARG_R8) STARG(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STARG_O) STARG(p, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STARG_P) STARG(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_STARG_VT) {
 			int const i32 = READ32 (ip + 2);
@@ -6830,7 +6827,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_LDLOC_R4) LDLOC(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDLOC_R8) LDLOC(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDLOC_O) LDLOC(p, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDLOC_P) LDLOC(p, gpointer); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDLOC_VT) {
 			sp->data.p = vt_sp;
@@ -6861,7 +6857,6 @@ call_newobj:
 		MINT_IN_CASE(MINT_STLOC_R4) STLOC(f_r4, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STLOC_R8) STLOC(f, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STLOC_O) STLOC(p, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STLOC_P) STLOC(p, gpointer); MINT_IN_BREAK;
 
 #define STLOC_NP(datamem, argtype) \
 	* (argtype *)(locals + ip [1]) = sp [-1].data.datamem; \

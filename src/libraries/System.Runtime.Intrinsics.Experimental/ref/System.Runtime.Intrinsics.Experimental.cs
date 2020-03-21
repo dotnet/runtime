@@ -433,6 +433,26 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<sbyte> PopCount(System.Runtime.Intrinsics.Vector64<sbyte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> SqrtScalar(System.Runtime.Intrinsics.Vector64<double> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> SqrtScalar(System.Runtime.Intrinsics.Vector64<float> value) { throw null; }
+        public unsafe static void Store(byte* address, System.Runtime.Intrinsics.Vector128<byte> source) { }
+        public unsafe static void Store(byte* address, System.Runtime.Intrinsics.Vector64<byte> source) { }
+        public unsafe static void Store(double* address, System.Runtime.Intrinsics.Vector128<double> source) { }
+        public unsafe static void Store(double* address, System.Runtime.Intrinsics.Vector64<double> source) { }
+        public unsafe static void Store(short* address, System.Runtime.Intrinsics.Vector128<short> source) { }
+        public unsafe static void Store(short* address, System.Runtime.Intrinsics.Vector64<short> source) { }
+        public unsafe static void Store(int* address, System.Runtime.Intrinsics.Vector128<int> source) { }
+        public unsafe static void Store(int* address, System.Runtime.Intrinsics.Vector64<int> source) { }
+        public unsafe static void Store(long* address, System.Runtime.Intrinsics.Vector128<long> source) { }
+        public unsafe static void Store(long* address, System.Runtime.Intrinsics.Vector64<long> source) { }
+        public unsafe static void Store(sbyte* address, System.Runtime.Intrinsics.Vector128<sbyte> source) { }
+        public unsafe static void Store(sbyte* address, System.Runtime.Intrinsics.Vector64<sbyte> source) { }
+        public unsafe static void Store(float* address, System.Runtime.Intrinsics.Vector128<float> source) { }
+        public unsafe static void Store(float* address, System.Runtime.Intrinsics.Vector64<float> source) { }
+        public unsafe static void Store(ushort* address, System.Runtime.Intrinsics.Vector128<ushort> source) { }
+        public unsafe static void Store(ushort* address, System.Runtime.Intrinsics.Vector64<ushort> source) { }
+        public unsafe static void Store(uint* address, System.Runtime.Intrinsics.Vector128<uint> source) { }
+        public unsafe static void Store(uint* address, System.Runtime.Intrinsics.Vector64<uint> source) { }
+        public unsafe static void Store(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> source) { }
+        public unsafe static void Store(ulong* address, System.Runtime.Intrinsics.Vector64<ulong> source) { }
         public static System.Runtime.Intrinsics.Vector128<byte> Subtract(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> Subtract(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> Subtract(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }

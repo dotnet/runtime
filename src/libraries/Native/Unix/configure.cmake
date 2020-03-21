@@ -6,6 +6,7 @@ include(CheckPrototypeDefinition)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
+include(CheckFunctionExists)
 
 if (CLR_CMAKE_TARGET_LINUX)
     set(PAL_UNIX_NAME \"LINUX\")
@@ -898,6 +899,8 @@ check_c_source_compiles(
     }
     "
     HAVE_BUILTIN_MUL_OVERFLOW)
+
+check_function_exists(pthread_setcancelstate HAVE_PTHREAD_SETCANCELSTATE)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in

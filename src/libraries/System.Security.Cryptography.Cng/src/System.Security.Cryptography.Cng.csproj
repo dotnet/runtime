@@ -277,6 +277,9 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDsaCng.SignVerify.cs">
       <Link>Common\System\Security\Cryptography\ECDsaCng.SignVerify.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs">
+      <Link>Common\System\Security\Cryptography\KeyBlobHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs">
       <Link>Common\System\Security\Cryptography\KeyFormatHelper.cs</Link>
     </Compile>

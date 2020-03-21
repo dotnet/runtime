@@ -15,11 +15,10 @@
 
   <!-- Common properties -->
   <PropertyGroup>
-    <RootBinDir>$(MSBuildThisFileDirectory)..\..\..\artifacts\</RootBinDir>
-    <BinDir>$(RootBinDir)bin\coreclr\$(TargetOS).$(BuildArch).$(BuildType)\</BinDir>
+    <BinDir>$(ArtifactsDir)bin\coreclr\$(TargetOS).$(BuildArch).$(BuildType)\</BinDir>
 
     <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
-    <TestWorkingDir>$(RootBinDir)tests\coreclr\$(TargetOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
+    <TestWorkingDir>$(ArtifactsDir)tests\coreclr\$(TargetOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
 
     <AltJitArch>$(__AltJitArch)</AltJitArch>
   </PropertyGroup>
@@ -28,14 +27,14 @@
   <PropertyGroup>
     <!-- When not using the SDK, we want to set this property here so
          that BuildVersionFile gets the correct value. -->
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == '' Or '$(UsingMicrosoftNETSdk)' != 'true'">$(RootBinDir)obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == '' Or '$(UsingMicrosoftNETSdk)' != 'true'">$(ArtifactsDir)obj\</BaseIntermediateOutputPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\$(TargetOS).$(BuildArch).$(BuildType)</IntermediateOutputPath>
     <OutputPath Condition="'$(OutputPath)' == ''">$(BaseIntermediateOutputPath)\coreclr\$(TargetOS).$(BuildArch).$(BuildType)</OutputPath>
   </PropertyGroup>
 
     <!-- Targeting Package paths -->
   <PropertyGroup>
-    <TargetingPackPath Condition="'$(BaseTargetingPackPath)' == ''">$(RootBinDir)TargetingPack\</TargetingPackPath>
+    <TargetingPackPath Condition="'$(BaseTargetingPackPath)' == ''">$(ArtifactsDir)TargetingPack\</TargetingPackPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">

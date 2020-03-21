@@ -288,10 +288,10 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
   endif(CLR_CMAKE_HOST_DARWIN)
 
-  if (CLR_CMAKE_WARNINGS_ARE_ERRORS)
-    # All warnings that are not explicitly disabled are reported as errors
+  # Suppress warnings-as-errors in release branches to reduce servicing churn
+  if (PRERELEASE)
     add_compile_options(-Werror)
-  endif(CLR_CMAKE_WARNINGS_ARE_ERRORS)
+  endif(PRERELEASE)
 
   # Disabled common warnings
   add_compile_options(-Wno-unused-variable)

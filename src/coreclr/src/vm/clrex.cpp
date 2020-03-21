@@ -2489,7 +2489,7 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
 // Helper function to get an exception from outside the exception.
 //  Create and return a LastThrownObjectException.  Its virtual destructor
 //  will clean up properly.
-void GetLastThrownObjectExceptionFromThread_Internal(Exception **ppException)
+void GetLastThrownObjectExceptionFromThread(Exception **ppException)
 {
     CONTRACTL
     {
@@ -2511,7 +2511,7 @@ void GetLastThrownObjectExceptionFromThread_Internal(Exception **ppException)
         *ppException = NULL;
     }
 
-} // void GetLastThrownObjectExceptionFromThread_Internal()
+} // void GetLastThrownObjectExceptionFromThread()
 
 #endif // CROSSGEN_COMPILE
 

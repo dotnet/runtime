@@ -290,34 +290,11 @@ if(CLR_CMAKE_TARGET_LINUX)
       pthread
       rt
     )
-  endif()
-
-  if(CLR_CMAKE_TARGET_ANDROID)
-    find_library(LZMA NAMES lzma)
-
-    if(LZMA STREQUAL LZMA-NOTFOUND)
-      message(FATAL_ERROR "Cannot find liblzma.")
-    endif(LZMA STREQUAL LZMA-NOTFOUND)
-
+  else(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
-      gnustl_shared
-      android-support
-      android-glob
+      ${ANDROID_GLOB}
       ${LZMA})
-  endif()
-
-  if(CLR_MAKE_TARGET_ANDROID)
-    find_library(ANDROID_SUPPORT NAMES android-support)
-    find_library(ANDROID_GLOB NAMES android-glob)
-
-    if(ANDROID_SUPPORT STREQUAL ANDROID_SUPPORT-NOTFOUND)
-      message(FATAL_ERROR "Cannot find android-support.")
-    endif()
-
-    if(ANDROID_GLOB STREQUAL ANDROID_GLOB-NOTFOUND)
-      message(FATAL_ERROR "Cannot find android-glob.")
-    endif()
-  endif()
+  endif(NOT CLR_CMAKE_TARGET_ANDROID)
 
   target_link_libraries(coreclrpal
     dl

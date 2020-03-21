@@ -12921,10 +12921,6 @@ acfg_create (MonoAssembly *ass, guint32 jit_opts)
 	acfg->globals = g_ptr_array_new ();
 	acfg->image = image;
 	acfg->jit_opts = jit_opts;
-	/* TODO: Write out set of SIMD instructions used, rather than just those available */
-#ifndef MONO_CROSS_COMPILE
-	acfg->simd_opts = mono_arch_cpu_enumerate_simd_versions ();
-#endif
 	acfg->mempool = mono_mempool_new ();
 	acfg->extra_methods = g_ptr_array_new ();
 	acfg->unwind_info_offsets = g_hash_table_new (NULL, NULL);

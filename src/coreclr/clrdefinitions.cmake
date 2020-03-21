@@ -1,9 +1,5 @@
 include(clrfeatures.cmake)
 
-# If set, indicates that this is not an officially supported release
-# Keep in sync with IsPrerelease in dir.props
-set(PRERELEASE 1)
-
 # Features we're currently flighting, but don't intend to ship in officially supported releases
 if (PRERELEASE)
   add_definitions(-DFEATURE_UTF8STRING)
@@ -197,6 +193,9 @@ endif(FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
 add_definitions(-DFEATURE_SVR_GC)
 add_definitions(-DFEATURE_SYMDIFF)
 add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:FEATURE_TIERED_COMPILATION>)
+if (CLR_CMAKE_TARGET_ARCH_AMD64)
+   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:FEATURE_ON_STACK_REPLACEMENT>)
+endif (CLR_CMAKE_TARGET_ARCH_AMD64)
 if (CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DFEATURE_TYPEEQUIVALENCE)
 endif(CLR_CMAKE_TARGET_WIN32)

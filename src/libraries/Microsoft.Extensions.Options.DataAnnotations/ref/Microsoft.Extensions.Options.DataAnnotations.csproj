@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="System.ComponentModel.Annotations"  />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Options.DataAnnotations.cs" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions"  />
-    <Reference Include="Microsoft.Extensions.Options"  />
+    <ProjectReference Include="..\..\Microsoft.Extensions.DependencyInjection.Abstractions\ref\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Options\ref\Microsoft.Extensions.Options.csproj" />
   </ItemGroup>
 </Project>

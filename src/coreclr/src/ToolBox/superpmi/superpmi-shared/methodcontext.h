@@ -176,6 +176,11 @@ public:
         DWORD targetAbi;
         DWORD osType;
     };
+    struct Agnostic_GetOSRInfo
+    {
+        DWORD index;
+        unsigned ilOffset;
+    };
     struct Agnostic_GetFieldAddress
     {
         DWORDLONG ppIndirection;
@@ -1000,6 +1005,10 @@ public:
     void dmpGetGSCookie(DWORD key, DLDL value);
     void repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
 
+    void recGetOSRInfo(PatchpointInfo* patchpointInfo, unsigned* ilOffset);
+    void dmpGetOSRInfo(DWORD key, const Agnostic_GetOSRInfo& value);
+    PatchpointInfo* repGetOSRInfo(unsigned* ilOffset);
+
     void recGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
                                        CORINFO_MODULE_HANDLE* pModule,
                                        void**                 ppIndirection,
@@ -1335,7 +1344,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 175
+// Highest packet number: 177
 // *************************************************************************************
 enum mcPackets
 {
@@ -1446,6 +1455,7 @@ enum mcPackets
     Packet_GetMethodVTableOffset                         = 78,
     Packet_GetNewArrHelper                               = 79,
     Packet_GetNewHelper                                  = 80,
+    Packet_GetOSRInfo                                    = 177, // Added 3/5/2020
     Packet_GetParentType                                 = 81,
     Packet_GetPInvokeUnmanagedTarget                     = 82, // Retired 2/18/2020
     Packet_GetProfilingHandle                            = 83,
@@ -1514,6 +1524,7 @@ enum mcPackets
     PacketCR_SetEHinfo                         = 128,
     PacketCR_SetMethodAttribs                  = 129,
     PacketCR_SetVars                           = 130,
+    PacketCR_SetPatchpointInfo                 = 176, // added 8/5/2019
     PacketCR_RecordCallSite                    = 146, // Added 10/28/2013 - to support indirect calls
 };
 

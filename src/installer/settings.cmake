@@ -111,7 +111,10 @@ else()
         # compiling with -std=c++11.
         # add_compile_options(-Weverything)
     endif()
-    add_compile_options(-Werror)
+    # Suppress warnings-as-errors in release branches to reduce servicing churn
+    if (PRERELEASE)
+        add_compile_options(-Werror)
+    endif()
     add_compile_options(-Wno-missing-field-initializers)
     add_compile_options(-Wno-unused-function)
     add_compile_options(-Wno-unused-local-typedef)
@@ -147,6 +150,10 @@ elseif(CLR_CMAKE_TARGET_DARWIN)
 elseif(CLR_CMAKE_TARGET_FREEBSD)
     add_link_options(-fuse-ld=lld -Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
     add_compile_options(-fstack-protector)
+endif()
+
+if(CLR_CMAKE_TARGET_ANDROID)
+    add_compile_options(-Wno-user-defined-warnings)
 endif()
 
 add_definitions(-D_NO_ASYNCRTIMP)
