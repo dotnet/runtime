@@ -2088,17 +2088,12 @@ namespace System.Net.Sockets
             return UnsafeBeginConnect(remoteEP, callback, state, flowContext: true);
         }
 
-        private bool CanUseConnectEx(EndPoint remoteEP)
-        {
-            return (_socketType == SocketType.Stream) &&
-                (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint));
-        }
-
-
+        private static bool CanUseConnectEx(SocketType socketType, EndPoint remoteEP)
+            => (socketType == SocketType.Stream) && (remoteEP.GetType() == typeof(IPEndPoint));
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state, bool flowContext = false)
         {
-            if (CanUseConnectEx(remoteEP))
+            if (CanUseConnectEx(_socketType, remoteEP))
             {
                 return BeginConnectEx(remoteEP, flowContext, callback, state);
             }
@@ -3817,8 +3812,7 @@ namespace System.Net.Sockets
                 SocketError socketError = SocketError.Success;
                 try
                 {
-                    bool canUseConnectEx = CanUseConnectEx(endPointSnapshot);
-                    if (canUseConnectEx)
+                    if (CanUseConnectEx(_socketType, endPointSnapshot))
                     {
                         socketError = e.DoOperationConnectEx(this, _handle);
                     }

@@ -42,6 +42,22 @@ namespace System.Net.Sockets.Tests
             Assert.True(client.Connected);
         }
 
+        [Theory]
+        [MemberData(nameof(Loopbacks))]
+        public async Task Connect_Dns_Success(IPAddress listenAt)
+        {
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, listenAt, out port))
+            {
+                using (Socket client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    Task connectTask = ConnectAsync(client, new DnsEndPoint("localhost", port));
+                    await connectTask;
+                    Assert.True(client.Connected);
+                }
+            }
+        }
+
         [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
