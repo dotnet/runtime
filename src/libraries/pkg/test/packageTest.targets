@@ -19,6 +19,11 @@
   <Import Project="packageSettings\$(TestPackageId)\*.targets" />
   <Import Project="packageSettings\$(TestPackageId)\$(_targetFrameworkIdentifier)\*.targets" />
   <Import Project="packageSettings\$(TestPackageId)\$(TargetFramework)\*.targets" />
+  
+  <ItemGroup>
+    <!-- Type duplicated: https://github.com/dotnet/runtime/issues/33998 -->
+    <IgnoredTypes Include="Microsoft.Extensions.Logging.LoggingBuilderExtensions" />
+  </ItemGroup>
 
   <Target Name="LogBeginTest">
     <PropertyGroup>

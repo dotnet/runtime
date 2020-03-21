@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private sealed class ScopeLease : IDisposable
         {
-            readonly CacheEntryStack _cacheEntryStack;
+            private readonly CacheEntryStack _cacheEntryStack;
 
             public ScopeLease(CacheEntryStack cacheEntryStack)
             {
