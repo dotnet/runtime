@@ -2854,13 +2854,10 @@ namespace Internal.JitInterface
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
 
-            if ((targetArchitecture == TargetArchitecture.X86
-                || targetArchitecture == TargetArchitecture.X64)
-#if READYTORUN
-                && isMethodDefinedInCoreLib()
-#endif
-               )
+            if (targetArchitecture == TargetArchitecture.X86)
             {
+                flags.Set(InstructionSet.X86_SSE);
+                flags.Set(InstructionSet.X86_SSE2);
 #if !READYTORUN
                 // This list needs to match the list of intrinsics we can generate detection code for
                 // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
@@ -2868,18 +2865,54 @@ namespace Internal.JitInterface
                 // For ReadyToRun, this list needs to match up with the behavior of FilterNamedIntrinsicMethodAttribs
                 // In particular, that this list of supported hardware will not generate non-SSE2 safe instruction
                 // sequences when paired with the behavior in FilterNamedIntrinsicMethodAttribs
+                if (isMethodDefinedInCoreLib())
 #endif
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_AES);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_PCLMULQDQ);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE3);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSSE3);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_LZCNT);
+                {
+                    flags.Set(InstructionSet.X86_AES);
+                    flags.Set(InstructionSet.X86_PCLMULQDQ);
+                    flags.Set(InstructionSet.X86_SSE3);
+                    flags.Set(InstructionSet.X86_SSSE3);
+                    flags.Set(InstructionSet.X86_LZCNT);
 #if READYTORUN
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE41);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE42);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_POPCNT);
+                    flags.Set(InstructionSet.X86_SSE41);
+                    flags.Set(InstructionSet.X86_SSE42);
+                    flags.Set(InstructionSet.X86_POPCNT);
 #endif
+                }
             }
+            else if (targetArchitecture == TargetArchitecture.X64)
+            {
+                flags.Set(InstructionSet.X64_SSE);
+                flags.Set(InstructionSet.X64_SSE2);
+#if !READYTORUN
+                // This list needs to match the list of intrinsics we can generate detection code for
+                // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
+#else
+                // For ReadyToRun, this list needs to match up with the behavior of FilterNamedIntrinsicMethodAttribs
+                // In particular, that this list of supported hardware will not generate non-SSE2 safe instruction
+                // sequences when paired with the behavior in FilterNamedIntrinsicMethodAttribs
+                if (isMethodDefinedInCoreLib())
+#endif
+                {
+                    flags.Set(InstructionSet.X64_AES);
+                    flags.Set(InstructionSet.X64_PCLMULQDQ);
+                    flags.Set(InstructionSet.X64_SSE3);
+                    flags.Set(InstructionSet.X64_SSSE3);
+                    flags.Set(InstructionSet.X64_LZCNT);
+#if READYTORUN
+                    flags.Set(InstructionSet.X64_SSE41);
+                    flags.Set(InstructionSet.X64_SSE42);
+                    flags.Set(InstructionSet.X64_POPCNT);
+#endif
+                }
+            }
+            else if (targetArchitecture == TargetArchitecture.ARM64)
+            {
+                flags.Set(InstructionSet.ARM64_ArmBase);
+                flags.Set(InstructionSet.ARM64_AdvSimd);
+            }
+
+            flags.Set64BitInstructionSetVariants(targetArchitecture);
 
             if (this.MethodBeingCompiled.IsNativeCallable)
             {
