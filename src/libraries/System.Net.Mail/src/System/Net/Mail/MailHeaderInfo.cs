@@ -81,7 +81,7 @@ namespace System.Net.Mail
             return headers;
         }
 
-        internal static string GetString(MailHeaderID id)
+        internal static string? GetString(MailHeaderID id)
         {
             switch (id)
             {

@@ -34,13 +34,13 @@ namespace System.Net.Mime
             if (headers == null)
                 throw new ArgumentNullException(nameof(headers));
 
-            foreach (string key in headers)
-                WriteHeader(key, headers[key], allowUnicode);
+            foreach (string? key in headers) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
+                WriteHeader(key!, headers[key]!, allowUnicode);
         }
 
         #region Cleanup
 
-        internal IAsyncResult BeginClose(AsyncCallback callback, object state)
+        internal IAsyncResult BeginClose(AsyncCallback? callback, object? state)
         {
             MultiAsyncResult multiResult = new MultiAsyncResult(this, callback, state);
 
@@ -65,7 +65,7 @@ namespace System.Net.Mime
             _stream.Close();
         }
 
-        private void Close(MultiAsyncResult multiResult)
+        private void Close(MultiAsyncResult? multiResult)
         {
             _bufferBuilder.Append(s_crlf);
             _bufferBuilder.Append(s_DASHDASH);
@@ -81,13 +81,13 @@ namespace System.Net.Mime
         /// </summary>
         /// <param name="sender">Sender of the close event</param>
         /// <param name="args">Event args (not used)</param>
-        protected override void OnClose(object sender, EventArgs args)
+        protected override void OnClose(object? sender, EventArgs args)
         {
             if (_contentStream != sender)
                 return; // may have called WriteHeader
 
             _contentStream.Flush();
-            _contentStream = null;
+            _contentStream = null!;
             _writeBoundary = true;
 
             _isInContent = false;
