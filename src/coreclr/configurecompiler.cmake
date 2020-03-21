@@ -434,11 +434,6 @@ if (MSVC)
 
   # Disable Warnings:
   # 4291: Delete not defined for new, c++ exception may cause leak.
-  # 4302: Truncation from '%$S' to '%$S'.
-  # 4311: Pointer truncation from '%$S' to '%$S'.
-  # 4312: '<function-style-cast>' : conversion from '%$S' to '%$S' of greater size.
-  # 4477: Format string '%$S' requires an argument of type '%$S', but variadic argument %d has type '%$S'.
-  # add_compile_options(/wd4291 /wd4312)
   add_compile_options(/wd4291)
 
   # Treat Warnings as Errors:
