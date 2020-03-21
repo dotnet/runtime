@@ -247,6 +247,10 @@ mono_ios_runtime_init (void)
 {
     // for now, only Invariant Mode is supported (FIXME: integrate ICU)
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
+    // uncomment for debug output:
+    //
+    // setenv ("MONO_LOG_LEVEL", "debug", TRUE);
+    // setenv ("MONO_LOG_MASK", "all", TRUE);
 
     stdout_log = os_log_create ("net.dot.mono", "stdout");
 
@@ -292,4 +296,3 @@ mono_ios_runtime_init (void)
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
 }
-
