@@ -3910,9 +3910,6 @@ call:;
 				reinit_frame (child_frame, frame, cmethod, sp, retval);
 				frame = child_frame;
 			}
-#if DEBUG_INTERP
-			int tracing;
-#endif
 			if (method_entry (context, frame,
 #if DEBUG_INTERP
 				&tracing,
