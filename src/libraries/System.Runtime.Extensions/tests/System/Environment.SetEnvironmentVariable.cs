@@ -122,6 +122,7 @@ namespace System.Tests
 
                 try
                 {
+                    System.Threading.Thread.Sleep(1000000000);
                     // string slightly less than 2 GiB (1 GiB for x86) so the constructor doesn't fail
                     var count = (Environment.Is64BitProcess ? 1024 * 1024 * 1024 : 512 * 1024 * 1024) - 64;
                     longVal = new string('c', count);
