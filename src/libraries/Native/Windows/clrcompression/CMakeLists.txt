@@ -82,8 +82,6 @@ add_library(clrcompression
 add_library(clrcompression-static
     STATIC
     ${NATIVECOMPRESSION_SOURCES}
-    # This will add versioning to the library
-    ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc
 )
 
 SET_TARGET_PROPERTIES(clrcompression-static PROPERTIES PREFIX "")
