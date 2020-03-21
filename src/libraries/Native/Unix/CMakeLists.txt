@@ -153,6 +153,7 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 #
 if(CLR_CMAKE_TARGET_UNIX)
     if (CLR_CMAKE_TARGET_DARWIN)
+        add_definitions(-DTARGET_DARWIN)
         add_link_options(-Wl,-bind_at_load)
     elseif (CLR_CMAKE_TARGET_ARCH_WASM)
         # No object stripping for WASM
@@ -164,6 +165,7 @@ if(CLR_CMAKE_TARGET_UNIX)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
     add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
+    add_definitions(-DTARGET_UNIX)
 endif(CLR_CMAKE_TARGET_UNIX)
 
 function(install_library_and_symbols targetName)

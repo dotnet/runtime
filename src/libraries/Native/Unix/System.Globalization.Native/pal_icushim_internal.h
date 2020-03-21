@@ -8,6 +8,8 @@
 
 #pragma once
 
+#if defined(TARGET_UNIX)
+
 #include "config.h"
 
 #define U_DISABLE_RENAMING 1
@@ -32,6 +34,21 @@
 #include <unicode/utypes.h>
 #include <unicode/urename.h>
 #include <unicode/ustring.h>
+
+#elif defined(TARGET_WINDOWS)
+
+#include "icu.h"
+
+#ifndef __typeof
+#define __typeof decltype
+#endif
+
+#define HAVE_SET_MAX_VARIABLE 1
+#define UDAT_STANDALONE_SHORTER_WEEKDAYS 1
+
+#endif
+
+#include "pal_compiler.h"
 
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
@@ -131,13 +148,14 @@
     FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n)
 #else
+
 #define FOR_ALL_ICU_FUNCTIONS \
     FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(ucol_setVariableTop, libicui18n)
 #endif
 
 // Declare pointers to all the used ICU functions
-#define PER_FUNCTION_BLOCK(fn, lib) extern __typeof(fn)* fn##_ptr;
+#define PER_FUNCTION_BLOCK(fn, lib) EXTERN_C __typeof(fn)* fn##_ptr;
 FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 

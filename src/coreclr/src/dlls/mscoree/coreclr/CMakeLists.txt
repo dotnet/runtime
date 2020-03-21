@@ -110,6 +110,7 @@ set(CORECLR_LIBRARIES
     utilcode
     v3binder
     libraries-native
+    System.Globalization.Native-Static
     interop
 )
 
@@ -136,7 +137,6 @@ else()
         ${END_WHOLE_ARCHIVE}
         mscorrc
         palrt
-        System.Globalization.Native-Static
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
