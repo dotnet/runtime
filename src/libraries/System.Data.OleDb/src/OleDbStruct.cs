@@ -572,40 +572,14 @@ namespace System.Data.OleDb
 
     internal static class OleDbStructHelpers
     {
-        internal static ItagDBPROPINFO CreateTagDbPropInfo()
-        {
-            if (ODB.IsRunningOnX86)
-            {
-                return new tagDBPROPINFO_x86();
-            }
-            else
-            {
-                return new tagDBPROPINFO();
-            }
-        }
+        internal static ItagDBPROPINFO CreateTagDbPropInfo() =>
+            ODB.IsRunningOnX86 ? (ItagDBPROPINFO)new tagDBPROPINFO_x86() : new tagDBPROPINFO();
 
-        internal static ItagDBPROP CreateTagDbProp(int propertyID, bool required, object value)
-        {
-            if (ODB.IsRunningOnX86)
-            {
-                return new tagDBPROP_x86(propertyID, required, value);
-            }
-            else
-            {
-                return new tagDBPROP(propertyID, required, value);
-            }
-        }
+        internal static ItagDBPROP CreateTagDbProp(int propertyID, bool required, object value) =>
+            ODB.IsRunningOnX86 ? (ItagDBPROP) new tagDBPROP_x86(propertyID, required, value) :
+                    new tagDBPROP(propertyID, required, value);
 
-        internal static ItagDBPROP CreateTagDbProp()
-        {
-            if (ODB.IsRunningOnX86)
-            {
-                return new tagDBPROP_x86();
-            }
-            else
-            {
-                return new tagDBPROP();
-            }
-        }
+        internal static ItagDBPROP CreateTagDbProp() =>
+            ODB.IsRunningOnX86 ? (ItagDBPROP) new tagDBPROP_x86() : new tagDBPROP();
     }
 }
