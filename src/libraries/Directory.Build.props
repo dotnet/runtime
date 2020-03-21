@@ -13,6 +13,7 @@
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.EnvironmentVariables\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.FileExtensions\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Ini\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Json\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection.Abstractions\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.*\**\*csproj" />
