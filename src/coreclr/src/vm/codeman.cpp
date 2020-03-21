@@ -1296,6 +1296,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_CMOV);
         CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
     }
+
+    if (CPU_X86_USE_SSE2(cpuInfo.dwFeatures))
+    {
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
+    }
 #endif // TARGET_X86
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1367,48 +1372,46 @@ void EEJitManager::SetCpuInfo()
 
         if ((buffer[15] & 0x06) == 0x06)                                    // SSE & SSE2
         {
-            CPUCompileFlags.Set(InstructionSet_SSE);
-            CPUCompileFlags.Set(InstructionSet_SSE2);
             if ((buffer[11] & 0x02) != 0)                                   // AESNI
             {
-                CPUCompileFlags.Set(InstructionSet_AES);
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AES);
             }
 
             if ((buffer[8] & 0x02) != 0)                                    // PCLMULQDQ
             {
-                CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ);
             }
 
             if ((buffer[8] & 0x01) != 0)                                    // SSE3
             {
-                CPUCompileFlags.Set(InstructionSet_SSE3);
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3);
 
                 if ((buffer[9] & 0x02) != 0)                                // SSSE3
                 {
-                    CPUCompileFlags.Set(InstructionSet_SSSE3);
+                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSSE3);
 
                     if ((buffer[10] & 0x08) != 0)                           // SSE4.1
                     {
-                        CPUCompileFlags.Set(InstructionSet_SSE41);
+                        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE41);
 
                         if ((buffer[10] & 0x10) != 0)                       // SSE4.2
                         {
-                            CPUCompileFlags.Set(InstructionSet_SSE42);
+                            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE42);
 
                             if ((buffer[10] & 0x80) != 0)                   // POPCNT
                             {
-                                CPUCompileFlags.Set(InstructionSet_POPCNT);
+                                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT);
                             }
 
                             if ((buffer[11] & 0x18) == 0x18)                // AVX & OSXSAVE
                             {
                                 if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))
                                 {
-                                    CPUCompileFlags.Set(InstructionSet_AVX);
+                                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX);
 
                                     if ((buffer[9] & 0x10) != 0)            // FMA
                                     {
-                                        CPUCompileFlags.Set(InstructionSet_FMA);
+                                        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FMA);
                                     }
 
                                     if (maxCpuId >= 0x07)
@@ -1417,7 +1420,7 @@ void EEJitManager::SetCpuInfo()
 
                                         if ((buffer[4] & 0x20) != 0)        // AVX2
                                         {
-                                            CPUCompileFlags.Set(InstructionSet_AVX2);
+                                            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
                                         }
                                     }
                                 }
@@ -1436,7 +1439,7 @@ void EEJitManager::SetCpuInfo()
 
             if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SIMD16ByteOnly) != 0)
             {
-                CPUCompileFlags.Clear(InstructionSet_AVX2);
+                CPUCompileFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
             }
         }
 
@@ -1446,16 +1449,14 @@ void EEJitManager::SetCpuInfo()
 
             if ((buffer[4] & 0x08) != 0)            // BMI1
             {
-                CPUCompileFlags.Set(InstructionSet_BMI1);
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1);
             }
 
             if ((buffer[5] & 0x01) != 0)            // BMI2
             {
-                CPUCompileFlags.Set(InstructionSet_BMI2);
+                CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2);
             }
         }
-
-        CPUCompileFlags.EnsureValidInstructionSetSupport();
     }
 
     DWORD maxCpuIdEx = getcpuid(0x80000000, buffer);
@@ -1470,7 +1471,7 @@ void EEJitManager::SetCpuInfo()
 
         if ((buffer[8] & 0x20) != 0)            // LZCNT
         {
-            CPUCompileFlags.Set(InstructionSet_LZCNT);
+            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_LZCNT);
         }
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1485,24 +1486,22 @@ void EEJitManager::SetCpuInfo()
     PAL_GetJitCpuCapabilityFlags(&CPUCompileFlags);
 #elif defined(HOST_64BIT)
     // FP and SIMD support are enabled by default
-    CPUCompileFlags.Set(InstructionSet_ArmBase);
-    CPUCompileFlags.Set(InstructionSet_AdvSimd);
+    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD);
+    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP);
     // PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE (30)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {
-        CPUCompileFlags.Set(InstructionSet_Aes);
-        CPUCompileFlags.Set(InstructionSet_Sha1);
-        CPUCompileFlags.Set(InstructionSet_Sha256);
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_AES);
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA1);
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA256);
     }
     // PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE (31)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE))
     {
-        CPUCompileFlags.Set(InstructionSet_Crc32);
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_CRC32);
     }
 #endif // HOST_64BIT
 #endif // TARGET_ARM64
-
-    CPUCompileFlags.Set64BitInstructionSetVariants();
 
     m_CPUCompileFlags = CPUCompileFlags;
 }
