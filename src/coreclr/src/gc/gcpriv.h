@@ -667,7 +667,8 @@ typedef DPTR(class CFinalize)                  PTR_CFinalize;
 //generation free list. It is an array of free lists bucketed by size, starting at sizes lower than (1 << first_bucket_bits)
 //and doubling each time. The last bucket (index == num_buckets) is for largest sizes with no limit
 
-#define MAX_BUCKET_COUNT (13)//Max number of buckets for the small generations.
+#define MAX_SOH_BUCKET_COUNT (13)//Max number of buckets for the SOH generations.
+#define MAX_BUCKET_COUNT (20)//Max number of buckets.
 class alloc_list
 {
     uint8_t* head;
@@ -4027,15 +4028,9 @@ protected:
     PER_HEAP
     alloc_list gen2_alloc_list[NUM_GEN2_ALIST-1];
 
-// TODO: tuning https://github.com/dotnet/runtime/issues/13739
-#define NUM_POH_ALIST (12)
-#ifdef BIT64
+#define NUM_POH_ALIST (19)
     // bucket 0 contains sizes less than 256
 #define BASE_POH_ALIST_BITS (7)
-#else
-    // bucket 0 contains sizes less than 128
-#define BASE_POH_ALIST_BITS (6)
-#endif // BIT64
     PER_HEAP
     alloc_list poh_alloc_list[NUM_POH_ALIST-1];
 

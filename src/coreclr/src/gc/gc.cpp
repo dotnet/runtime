@@ -23100,7 +23100,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                                   (1 + condemned_gen_number));
     generation*  older_gen = 0;
     generation* consing_gen = condemned_gen1;
-    alloc_list  r_free_list [MAX_BUCKET_COUNT];
+    alloc_list  r_free_list [MAX_SOH_BUCKET_COUNT];
 
     size_t r_free_list_space = 0;
     size_t r_free_obj_space = 0;
