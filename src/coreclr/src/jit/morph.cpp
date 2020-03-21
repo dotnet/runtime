@@ -7548,6 +7548,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             {
                 callType = origCallType;
             }
+            GenTree* zero = gtNewZeroConNode(callType);
+            result        = fgMorphTree(zero);
         }
         else
         {

@@ -1344,7 +1344,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 177
+// Highest packet number: 178
 // *************************************************************************************
 enum mcPackets
 {
@@ -1463,7 +1463,7 @@ enum mcPackets
     Packet_GetSecurityPrologHelper                       = 85, // Retired 2/18/2020
     Packet_GetSharedCCtorHelper                          = 86,
     Packet_GetTailCallCopyArgsThunk                      = 87,
-    Packet_GetTailCallHelpers                            = 176,
+    Packet_GetTailCallHelpers                            = 178, // Added 3/18/2020
     Packet_GetThreadTLSIndex                             = 88,
     Packet_GetTokenTypeAsHandle                          = 89,
     Packet_GetTypeForBox                                 = 90,
