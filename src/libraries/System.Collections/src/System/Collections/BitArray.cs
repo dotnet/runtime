@@ -127,7 +127,7 @@ namespace System.Collections
             m_array = new int[GetInt32ArrayLengthFromBitLength(values.Length)];
             m_length = values.Length;
 
-            int i = 0;
+            uint i = 0;
 
             if (values.Length < Vector256<byte>.Count)
             {
@@ -142,7 +142,7 @@ namespace System.Collections
             {
                 fixed (bool* ptr = values)
                 {
-                    for (; (i + Vector256<byte>.Count) <= values.Length; i += Vector256<byte>.Count)
+                    for (; (i + Vector256<byte>.Count) <= values.Length; i += (uint)Vector256<byte>.Count)
                     {
                         Vector256<byte> vector = Avx.LoadVector256((byte*)ptr + i);
                         Vector256<byte> isFalse = Avx2.CompareEqual(vector, Vector256<byte>.Zero);
@@ -155,7 +155,7 @@ namespace System.Collections
             {
                 fixed (bool* ptr = values)
                 {
-                    for (; (i + Vector128<byte>.Count * 2) <= values.Length; i += Vector128<byte>.Count * 2)
+                    for (; (i + Vector128<byte>.Count * 2) <= values.Length; i += (uint)Vector128<byte>.Count * 2)
                     {
                         Vector128<byte> lowerVector = Sse2.LoadVector128((byte*)ptr + i);
                         Vector128<byte> lowerIsFalse = Sse2.CompareEqual(lowerVector, Vector128<byte>.Zero);
@@ -173,7 +173,7 @@ namespace System.Collections
             {
                 fixed (bool* ptr = values)
                 {
-                    for (; (i + Vector128<byte>.Count * 2) <= values.Length; i += Vector128<byte>.Count * 2)
+                    for (; (i + Vector128<byte>.Count * 2) <= values.Length; i += (uint)Vector128<byte>.Count * 2)
                     {
                         // Same logic as SSE2 path, however we lack MoveMask (equivalent) instruction
                         // As a workaround, mask out the relevant bit after comparison
@@ -209,7 +209,7 @@ namespace System.Collections
             {
                 if (values[i])
                 {
-                    int elementIndex = Div32Rem(i, out int extraBits);
+                    int elementIndex = Div32Rem((int)i, out int extraBits);
                     m_array[elementIndex] |= 1 << extraBits;
                 }
             }
@@ -365,13 +365,13 @@ namespace System.Collections
                 case 0: goto Done;
             }
 
-            int i = 0;
+            uint i = 0;
             if (Avx2.IsSupported)
             {
                 fixed (int* leftPtr = thisArray)
                 fixed (int* rightPtr = valueArray)
                 {
-                    for (; i < count - (Vector256<int>.Count - 1); i += Vector256<int>.Count)
+                    for (; i < count - (Vector256<int>.Count - 1); i += (uint)Vector256<int>.Count)
                     {
                         Vector256<int> leftVec = Avx.LoadVector256(leftPtr + i);
                         Vector256<int> rightVec = Avx.LoadVector256(rightPtr + i);
@@ -384,7 +384,7 @@ namespace System.Collections
                 fixed (int* leftPtr = thisArray)
                 fixed (int* rightPtr = valueArray)
                 {
-                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    for (; i < count - (Vector128<int>.Count - 1); i += (uint)Vector128<int>.Count)
                     {
                         Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
                         Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
@@ -397,7 +397,7 @@ namespace System.Collections
                 fixed (int* leftPtr = thisArray)
                 fixed (int* rightPtr = valueArray)
                 {
-                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    for (; i < count - (Vector128<int>.Count - 1); i += (uint)Vector128<int>.Count)
                     {
                         Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
                         Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
@@ -451,13 +451,13 @@ namespace System.Collections
                 case 0: goto Done;
             }
 
-            int i = 0;
+            uint i = 0;
             if (Avx2.IsSupported)
             {
                 fixed (int* leftPtr = thisArray)
                 fixed (int* rightPtr = valueArray)
                 {
-                    for (; i < count - (Vector256<int>.Count - 1); i += Vector256<int>.Count)
+                    for (; i < count - (Vector256<int>.Count - 1); i += (uint)Vector256<int>.Count)
                     {
                         Vector256<int> leftVec = Avx.LoadVector256(leftPtr + i);
                         Vector256<int> rightVec = Avx.LoadVector256(rightPtr + i);
@@ -470,7 +470,7 @@ namespace System.Collections
                 fixed (int* leftPtr = thisArray)
                 fixed (int* rightPtr = valueArray)
                 {
-                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    for (; i < count - (Vector128<int>.Count - 1); i += (uint)Vector128<int>.Count)
                     {
                         Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
                         Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
@@ -483,7 +483,7 @@ namespace System.Collections
                 fixed (int* leftPtr = thisArray)
                 fixed (int* rightPtr = valueArray)
                 {
-                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    for (; i < count - (Vector128<int>.Count - 1); i += (uint)Vector128<int>.Count)
                     {
                         Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
                         Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
@@ -537,13 +537,13 @@ namespace System.Collections
                 case 0: goto Done;
             }
 
-            int i = 0;
+            uint i = 0;
             if (Avx2.IsSupported)
             {
                 fixed (int* leftPtr = m_array)
                 fixed (int* rightPtr = value.m_array)
                 {
-                    for (; i < count - (Vector256<int>.Count - 1); i += Vector256<int>.Count)
+                    for (; i < count - (Vector256<int>.Count - 1); i += (uint)Vector256<int>.Count)
                     {
                         Vector256<int> leftVec = Avx.LoadVector256(leftPtr + i);
                         Vector256<int> rightVec = Avx.LoadVector256(rightPtr + i);
@@ -556,7 +556,7 @@ namespace System.Collections
                 fixed (int* leftPtr = thisArray)
                 fixed (int* rightPtr = valueArray)
                 {
-                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    for (; i < count - (Vector128<int>.Count - 1); i += (uint)Vector128<int>.Count)
                     {
                         Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
                         Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
@@ -569,7 +569,7 @@ namespace System.Collections
                 fixed (int* leftPtr = thisArray)
                 fixed (int* rightPtr = valueArray)
                 {
-                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    for (; i < count - (Vector128<int>.Count - 1); i += (uint)Vector128<int>.Count)
                     {
                         Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
                         Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
@@ -615,13 +615,13 @@ namespace System.Collections
                 case 0: goto Done;
             }
 
-            int i = 0;
+            uint i = 0;
             if (Avx2.IsSupported)
             {
                 Vector256<int> ones = Vector256.Create(-1);
                 fixed (int* ptr = thisArray)
                 {
-                    for (; i < count - (Vector256<int>.Count - 1); i += Vector256<int>.Count)
+                    for (; i < count - (Vector256<int>.Count - 1); i += (uint)Vector256<int>.Count)
                     {
                         Vector256<int> vec = Avx.LoadVector256(ptr + i);
                         Avx.Store(ptr + i, Avx2.Xor(vec, ones));
@@ -633,7 +633,7 @@ namespace System.Collections
                 Vector128<int> ones = Vector128.Create(-1);
                 fixed (int* ptr = thisArray)
                 {
-                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    for (; i < count - (Vector128<int>.Count - 1); i += (uint)Vector128<int>.Count)
                     {
                         Vector128<int> vec = Sse2.LoadVector128(ptr + i);
                         Sse2.Store(ptr + i, Sse2.Xor(vec, ones));
@@ -644,7 +644,7 @@ namespace System.Collections
             {
                 fixed (int* leftPtr = thisArray)
                 {
-                    for (; i < count - (Vector128<int>.Count - 1); i += Vector128<int>.Count)
+                    for (; i < count - (Vector128<int>.Count - 1); i += (uint)Vector128<int>.Count)
                     {
                         Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
                         AdvSimd.Store(leftPtr + i, AdvSimd.Not(leftVec));
@@ -914,7 +914,7 @@ namespace System.Collections
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 }
 
-                int i = 0;
+                uint i = 0;
 
                 if (m_length < BitsPerInt32)
                     goto LessThan32;
@@ -927,7 +927,7 @@ namespace System.Collections
 
                     fixed (bool* destination = &boolArray[index])
                     {
-                        for (; (i + Vector256<byte>.Count) <= m_length; i += Vector256<byte>.Count)
+                        for (; (i + Vector256<byte>.Count) <= m_length; i += (uint)Vector256<byte>.Count)
                         {
                             int bits = m_array[i / BitsPerInt32];
                             Vector256<int> scalar = Vector256.Create(bits);
@@ -949,7 +949,7 @@ namespace System.Collections
 
                     fixed (bool* destination = &boolArray[index])
                     {
-                        for (; (i + Vector128<byte>.Count * 2) <= m_length; i += Vector128<byte>.Count * 2)
+                        for (; (i + Vector128<byte>.Count * 2) <= m_length; i += (uint)Vector128<byte>.Count * 2)
                         {
                             int bits = m_array[i / BitsPerInt32];
                             Vector128<int> scalar = Vector128.CreateScalarUnsafe(bits);
@@ -971,7 +971,7 @@ namespace System.Collections
                     Vector128<byte> ones = Vector128.Create((byte)1);
                     fixed (bool* destination = &boolArray[index])
                     {
-                        for (; (i + Vector128<byte>.Count * 2) <= m_length; i += Vector128<byte>.Count * 2)
+                        for (; (i + Vector128<byte>.Count * 2) <= m_length; i += (uint)Vector128<byte>.Count * 2)
                         {
                             int bits = m_array[i / BitsPerInt32];
                             // Same logic as SSSE3 path, except we do not have Shuffle instruction.
@@ -1009,7 +1009,7 @@ namespace System.Collections
             LessThan32:
                 for (; i < m_length; i++)
                 {
-                    int elementIndex = Div32Rem(i, out int extraBits);
+                    int elementIndex = Div32Rem((int)i, out int extraBits);
                     boolArray[index + i] = ((m_array[elementIndex] >> extraBits) & 0x00000001) != 0;
                 }
             }
