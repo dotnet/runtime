@@ -143,6 +143,24 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
         return -1;
     }
 
+    INT32 nextConfigVariableIndex = configVariableIndex;
+    auto TryGetConfig =
+        [&](const CLRConfig::ConfigDWORDInfo &configInfo, bool isBoolean, const WCHAR *appContextConfigName) -> bool
+    {
+        ++nextConfigVariableIndex;
+
+        bool wasNotConfigured = true;
+        *configValueRef = CLRConfig::GetConfigValue(configInfo, true /* acceptExplicitDefaultFromRegutil */, &wasNotConfigured);
+        if (wasNotConfigured)
+        {
+            return false;
+        }
+
+        *isBooleanRef = isBoolean;
+        *appContextConfigNameRef = appContextConfigName;
+        return true;
+    };
+
     switch (configVariableIndex)
     {
         case 0:
@@ -150,7 +168,29 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
             *configValueRef = 1;
             *isBooleanRef = true;
             *appContextConfigNameRef = NULL;
-            return 1;
+            return nextConfigVariableIndex + 1;
+
+        case 1: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_ForceMinWorkerThreads, false, W("System.Threading.ThreadPool.MinThreads"))) { return nextConfigVariableIndex; } // fall through
+        case 2: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_ForceMaxWorkerThreads, false, W("System.Threading.ThreadPool.MaxThreads"))) { return nextConfigVariableIndex; } // fall through
+        case 3: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_DisableStarvationDetection, true, W("System.Threading.ThreadPool.DisableStarvationDetection"))) { return nextConfigVariableIndex; } // fall through
+        case 4: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_DebugBreakOnWorkerStarvation, true, W("System.Threading.ThreadPool.DebugBreakOnWorkerStarvation"))) { return nextConfigVariableIndex; } // fall through
+        case 5: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking, true, W("System.Threading.ThreadPool.EnableWorkerTracking"))) { return nextConfigVariableIndex; } // fall through
+        case 6: if (TryGetConfig(CLRConfig::INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, false, W("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit"))) { return nextConfigVariableIndex; } // fall through
+
+        case 7: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_Disable, true, W("System.Threading.ThreadPool.HillClimbing.Disable"))) { return nextConfigVariableIndex; } // fall through
+        case 8: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_WavePeriod, false, W("System.Threading.ThreadPool.HillClimbing.WavePeriod"))) { return nextConfigVariableIndex; } // fall through
+        case 9: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_TargetSignalToNoiseRatio, false, W("System.Threading.ThreadPool.HillClimbing.TargetSignalToNoiseRatio"))) { return nextConfigVariableIndex; } // fall through
+        case 10: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_ErrorSmoothingFactor, false, W("System.Threading.ThreadPool.HillClimbing.ErrorSmoothingFactor"))) { return nextConfigVariableIndex; } // fall through
+        case 11: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_WaveMagnitudeMultiplier, false, W("System.Threading.ThreadPool.HillClimbing.WaveMagnitudeMultiplier"))) { return nextConfigVariableIndex; } // fall through
+        case 12: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxWaveMagnitude, false, W("System.Threading.ThreadPool.HillClimbing.MaxWaveMagnitude"))) { return nextConfigVariableIndex; } // fall through
+        case 13: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_WaveHistorySize, false, W("System.Threading.ThreadPool.HillClimbing.WaveHistorySize"))) { return nextConfigVariableIndex; } // fall through
+        case 14: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_Bias, false, W("System.Threading.ThreadPool.HillClimbing.Bias"))) { return nextConfigVariableIndex; } // fall through
+        case 15: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxChangePerSecond, false, W("System.Threading.ThreadPool.HillClimbing.MaxChangePerSecond"))) { return nextConfigVariableIndex; } // fall through
+        case 16: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxChangePerSample, false, W("System.Threading.ThreadPool.HillClimbing.MaxChangePerSample"))) { return nextConfigVariableIndex; } // fall through
+        case 17: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_MaxSampleErrorPercent, false, W("System.Threading.ThreadPool.HillClimbing.MaxSampleErrorPercent"))) { return nextConfigVariableIndex; } // fall through
+        case 18: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_SampleIntervalLow, false, W("System.Threading.ThreadPool.HillClimbing.SampleIntervalLow"))) { return nextConfigVariableIndex; } // fall through
+        case 19: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_SampleIntervalHigh, false, W("System.Threading.ThreadPool.HillClimbing.SampleIntervalHigh"))) { return nextConfigVariableIndex; } // fall through
+        case 20: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_GainExponent, false, W("System.Threading.ThreadPool.HillClimbing.GainExponent"))) { return nextConfigVariableIndex; } // fall through
 
         default:
             *configValueRef = 0;

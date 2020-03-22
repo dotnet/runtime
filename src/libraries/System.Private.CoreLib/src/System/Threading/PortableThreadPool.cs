@@ -11,10 +11,6 @@ namespace System.Threading
     /// </summary>
     internal sealed partial class PortableThreadPool
     {
-#pragma warning disable IDE1006 // Naming Styles
-        public static readonly PortableThreadPool ThreadPoolInstance = new PortableThreadPool();
-#pragma warning restore IDE1006 // Naming Styles
-
         private const int ThreadPoolThreadTimeoutMs = 20 * 1000; // If you change this make sure to change the timeout times in the tests.
 
 #if TARGET_64BIT
@@ -27,11 +23,16 @@ namespace System.Threading
 
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
-        private int _cpuUtilization;
 
         private static readonly short s_forcedMinWorkerThreads = AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
         private static readonly short s_forcedMaxWorkerThreads = AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MaxThreads", 0, false);
 
+#pragma warning disable IDE1006 // Naming Styles
+        // The singleton must be initialized after the static variables above, as the constructor may be dependent on them
+        public static readonly PortableThreadPool ThreadPoolInstance = new PortableThreadPool();
+#pragma warning restore IDE1006 // Naming Styles
+
+        private int _cpuUtilization = 0;
         private short _minThreads;
         private short _maxThreads;
         private readonly LowLevelLock _maxMinThreadLock = new LowLevelLock();

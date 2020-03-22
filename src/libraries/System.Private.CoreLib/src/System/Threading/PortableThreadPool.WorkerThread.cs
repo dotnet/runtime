@@ -20,7 +20,7 @@ namespace System.Threading
             /// </summary>
             private static int SemaphoreSpinCount
             {
-                get => AppContextConfigHelper.GetInt16Config("ThreadPool_UnfairSemaphoreSpinLimit", 70, false);
+                get => AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit", 70, false);
             }
 
             private static void WorkerThreadStart()
