@@ -1454,8 +1454,6 @@ void EEJitManager::SetCpuInfo()
                 CPUCompileFlags.Set(InstructionSet_BMI2);
             }
         }
-
-        CPUCompileFlags.EnsureValidInstructionSetSupport();
     }
 
     DWORD maxCpuIdEx = getcpuid(0x80000000, buffer);
@@ -1503,6 +1501,7 @@ void EEJitManager::SetCpuInfo()
 #endif // TARGET_ARM64
 
     CPUCompileFlags.Set64BitInstructionSetVariants();
+    CPUCompileFlags.EnsureValidInstructionSetSupport();
 
     m_CPUCompileFlags = CPUCompileFlags;
 }

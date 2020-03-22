@@ -126,4 +126,5 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 #endif // HAVE_AUXV_HWCAP_H
 #endif // defined(HOST_ARM64)
     CPUCompileFlags.Set64BitInstructionSetVariants();
+    CPUCompileFlags.EnsureValidInstructionSetSupport();
 }
