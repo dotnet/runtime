@@ -13,22 +13,19 @@
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.EnvironmentVariables\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.FileExtensions\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Ini\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection.Abstractions\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.*\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileSystemGlobbing\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting.Abstractions\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options.*\**\*csproj" />
     <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\**\*csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\ref\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\src\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\Microsoft.Extensions.*.Tests.csproj" Exclude="@(PortedExtensionsProject)" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\FunctionalTests\Microsoft.Extensions.Configuration.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\Common\test\Microsoft.Extensions.Logging.Testing.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\FunctionalTests\Microsoft.Extensions.Hosting.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\TestApp\Microsoft.Extensions.Hosting.TestApp.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\Common\Microsoft.Extensions.Logging.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.*\tests\**\*.csproj" Exclude="@(PortedExtensionsProject)" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.*\tests\FunctionalTests\Microsoft.Extensions.Configuration.Functional.Tests.csproj"/>
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Common\tests\Extensions\**\*.csproj" />
   </ItemGroup>
 
