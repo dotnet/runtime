@@ -769,8 +769,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
 #if defined(TARGET_XARCH)
         // Even though Vector256 is TYP_SIMD32, if AVX isn't supported, then it must
         // be treated as a regular struct
-        if (size == YMM_REGSIZE_BYTES && (simdBaseType != TYP_UNKNOWN) &&
-            !compExactlyDependsOn(InstructionSet_AVX))
+        if (size == YMM_REGSIZE_BYTES && (simdBaseType != TYP_UNKNOWN) && !compExactlyDependsOn(InstructionSet_AVX))
         {
             simdBaseType = TYP_UNKNOWN;
         }
