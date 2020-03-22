@@ -139,7 +139,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 }
 
 //------------------------------------------------------------------------
-// lookupIsa: Gets the InstructionSet for a given class name and enclsoing class name
+// lookupIsa: Gets the InstructionSet for a given class name and enclosing class name
 //
 // Arguments:
 //    className -- The name of the class associated with the InstructionSet to lookup
@@ -787,6 +787,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector128_get_Zero:
+        case NI_Vector128_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
 
@@ -832,6 +833,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector256_get_Zero:
+        case NI_Vector256_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
 
