@@ -25,8 +25,10 @@ bool unique(MethodContext* mc)
     unsigned            newFlags = 0;
     mc->repCompileMethod(&newInfo, &newFlags);
 
-    char* md5Buff = new char[MD5_HASH_BUFFER_SIZE];
-    mc->dumpMethodMD5HashToBuffer(md5Buff, MD5_HASH_BUFFER_SIZE, /* ignoreMethodName */ true);
+    // Assume that there are lots of duplicates, so don't allocate a new buffer for the MD5 hash data
+    // until we know we're going to add it to the map.
+    char md5Buff[MD5_HASH_BUFFER_SIZE];
+    mc->dumpMethodMD5HashToBuffer(md5Buff, MD5_HASH_BUFFER_SIZE, /* ignoreMethodName */ true, &newInfo, newFlags);
 
     if (inFile->GetIndex(newInfo.ILCodeSize) == -1)
         inFile->Add(newInfo.ILCodeSize, new DenseLightWeightMap<char*>());
@@ -36,15 +38,15 @@ bool unique(MethodContext* mc)
     for (int i = 0; i < (int)ourRank->GetCount(); i++)
     {
         char* md5Buff2 = ourRank->Get(i);
-
         if (strncmp(md5Buff, md5Buff2, MD5_HASH_BUFFER_SIZE) == 0)
         {
-            delete[] md5Buff;
             return false;
         }
     }
 
-    ourRank->Append(md5Buff);
+    char* newmd5Buff = new char[MD5_HASH_BUFFER_SIZE];
+    memcpy(newmd5Buff, md5Buff, MD5_HASH_BUFFER_SIZE);
+    ourRank->Append(newmd5Buff);
     return true;
 }
 
@@ -130,6 +132,8 @@ int verbRemoveDup::DoWork(const char* nameOfInput, const char* nameOfOutput, boo
         }
     }
 
+    LogInfo("Loaded %d, Saved %d", mci.MethodContextNumber(), savedCount);
+
     // We're leaking 'inFile' or 'inFileLegacy', but the process is going away, so it shouldn't matter.
 
     if (CloseHandle(hFileOut) == 0)
@@ -137,8 +141,6 @@ int verbRemoveDup::DoWork(const char* nameOfInput, const char* nameOfOutput, boo
         LogError("2nd CloseHandle failed. GetLastError()=%u", GetLastError());
         return -1;
     }
-
-    LogInfo("Loaded %d, Saved %d", mci.MethodContextNumber(), savedCount);
 
     if (!mci.Destroy())
         return -1;
