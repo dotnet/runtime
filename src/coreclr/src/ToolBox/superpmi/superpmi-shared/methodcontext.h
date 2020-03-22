@@ -14,11 +14,9 @@
 #include "compileresult.h"
 #include "lightweightmap.h"
 #include "errorhandling.h"
+#include "hash.h"
 
 #define METHOD_IDENTITY_INFO_SIZE 0x10000 // We assume that the METHOD_IDENTITY_INFO_SIZE will not exceed 64KB
-
-#define MD5_HASH_BYTE_SIZE 16   // MD5 is 128-bit, so we need 16 bytes to store it
-#define MD5_HASH_BUFFER_SIZE 33 // MD5 is 128-bit, so we need 32 chars + 1 char to store null-terminator
 
 class MethodContext
 {
@@ -583,8 +581,8 @@ public:
     static int dumpStatTitleToBuffer(char* buff, int len);
     int methodSize;
 
-    int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false);
-    int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false);
+    int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
+    int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
 
     void recGlobalContext(const MethodContext& other);
 
@@ -1315,6 +1313,9 @@ private:
 #define LWM(map, key, value) LightWeightMap<key, value>* map;
 #define DENSELWM(map, value) DenseLightWeightMap<value>* map;
 #include "lwmlist.h"
+
+    // MD5 hasher
+    static Hash m_hash;
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
