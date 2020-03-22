@@ -332,7 +332,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             const DSASignatureFormat SignatureFormat = DSASignatureFormat.Rfc3279DerSequence;
             // Make secp521r1 (7/16 chance of being smaller) and mod-8 keys (3/4 chance of being smaller)
-            // have the same 1-in-a-million chance of failure.
+            // have the same 1-in-a-billion chance of failure.
             int retryCount = keyDescription.FieldSizeInBits % 8 == 1 ? 36 : 15;
             byte[] hash = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
 
