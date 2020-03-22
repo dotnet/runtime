@@ -10,8 +10,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         StopSending = 0x05,
         Crypto = 0x06,
         NewToken = 0x07,
-        // TODO-RZ: Stream has total 8 values
-        Stream = 0x08 - 0x0f,
+        Stream = 0x08,
+        StreamWithOff = 0x0c,
+        StreamWithLen = 0x0a,
+        StreamWithFin = 0x09,
+        StreamMask = 0x0f,
         MaxData = 0x10,
         MaxStreamData = 0x11,
         MaxStreams = 0x12 - 0x13,

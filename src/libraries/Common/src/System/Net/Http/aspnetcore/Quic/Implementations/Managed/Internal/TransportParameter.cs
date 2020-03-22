@@ -21,4 +21,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         PreferredAddress = 0x0d,
         ActiveConnectionIdLimit = 0x0e,
     }
+
+    /// <summary>
+    ///     Wrapper around the currently used QUIC transport parameters.
+    /// </summary>
+    internal class TransportParameters
+    {
+        public long AckDelayExponent { get; }
+    }
 }
