@@ -326,7 +326,8 @@ else()
     endif()
 endif()
 
-if(NOT CLR_CMAKE_HOST_ARCH_WASM AND NOT CLR_CMAKE_TARGET_ANDROID)
+if(NOT CLR_CMAKE_HOST_ARCH_WASM)
+if(NOT CLR_CMAKE_TARGET_ANDROID) # Android requires PIC and CMake handles this so we don't need the check
     # All code we build should be compiled as position independent
     get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
     if("CXX" IN_LIST languages)
@@ -340,4 +341,5 @@ if(NOT CLR_CMAKE_HOST_ARCH_WASM AND NOT CLR_CMAKE_TARGET_ANDROID)
                   "PIE link options will not be passed to linker.")
     endif()
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif(NOT CLR_CMAKE_TARGET_ANDROID)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
