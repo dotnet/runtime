@@ -83,7 +83,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             {
                 packetNumber = (packetNumber << 8) | buffer[pnOffset + i];
             }
-            packetNumber = Encoder.DecodePacketNumber(0, packetNumber, pnLength);
+            packetNumber = QuicEncoding.DecodePacketNumber(0, packetNumber, pnLength);
 
             var nonce = new byte[IV.Length];
             MakeNonce(IV, packetNumber, nonce);

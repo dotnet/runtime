@@ -1,7 +1,6 @@
 namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 {
-    // TODO-RZ: get a better name for this class
-    internal class Encoder
+    internal class QuicEncoding
     {
         /// <summary>
         /// Gets minimum number of bytes needed to encode given value.
@@ -20,16 +19,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             return count;
         }
 
-        private static int GetVarIntLogLength(ulong value)
-        {
-            if (value <= 63) return 0;
-            if (value <= 16_383) return 1;
-            if (value <= 1_073_741_823) return 2;
-            if (value <= 4_611_686_018_427_387_903) return 3;
-
-            throw new ArgumentOutOfRangeException(nameof(value));
-        }
-
         private static int ReadVarIntLength(byte firstByte)
         {
             switch (firstByte >> 6)
@@ -41,56 +30,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
                 default: // Unreachable
                     throw new InvalidOperationException();
             }
-        }
-
-        /// <summary>
-        /// Encodes a variable length integer, returns number of bytes written.
-        /// </summary>
-        /// <param name="value">Integer value to be encoded.</param>
-        /// <param name="memory">Target memory to be encoded into.</param>
-        /// <returns></returns>
-        internal static int EncodeVarInt(ulong value, Span<byte> memory)
-        {
-            var log = GetVarIntLogLength(value);
-            var bytes = 1 << log;
-
-            if (memory.Length < bytes) throw new ArgumentException("Buffer too short");
-
-            // prefix with log length
-            value |= (ulong) log << (bytes * 8 - 2);
-
-            for (int i = 0; i < bytes; i++)
-            {
-                memory[bytes - i - 1] = (byte) value;
-                value >>= 8;
-            }
-
-            return bytes;
-        }
-
-        /// <summary>
-        /// Decodes a variable length encoding from the given memory, returns number of bytes read.
-        /// </summary>
-        /// <param name="memory"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        internal static int DecodeVarInt(ReadOnlySpan<byte> memory, out ulong value)
-        {
-            // first two bits give logarithm of size
-            var logBytes = memory[0] >> 6;
-            var bytes = 1 << logBytes;
-
-            if (memory.Length < bytes) throw new ArgumentException("Buffer too short");
-
-            ulong v = (ulong) (memory[0] & 0b0011_1111);
-
-            for (int i = 1; i < bytes; i++)
-            {
-                v = (v << 8) | memory[i];
-            }
-
-            value = v;
-            return bytes;
         }
 
         private static int GetPacketNumberLength(ulong packetNumber)

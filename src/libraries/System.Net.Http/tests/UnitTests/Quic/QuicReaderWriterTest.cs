@@ -1,9 +1,10 @@
+using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using Xunit;
 
 namespace System.Net.Quic.Tests
 {
-    public class EncoderTest
+    public class QuicReaderWriterTest
     {
         [Theory]
         [InlineData(37, new byte[]{0x25})]
@@ -14,13 +15,16 @@ namespace System.Net.Quic.Tests
         {
             var actual = new byte[expected.Length];
 
-            var bytes = Encoder.EncodeVarInt(value, actual);
+            var writer = new QuicWriter(actual);
+            writer.WriteVarInt(value);
 
-            Assert.Equal(expected.Length, bytes);
+            Assert.Equal(expected.Length, writer.BytesWritten);
             Assert.Equal(expected, actual);
 
-            var decodedBytes = Encoder.DecodeVarInt(actual, out var decoded);
-            Assert.Equal(bytes, decodedBytes);
+            var reader = new QuicReader(actual);
+            Assert.True(reader.TryReadVarInt(out ulong decoded));
+
+            Assert.Equal(writer.BytesWritten, reader.BytesRead);
             Assert.Equal(value, decoded);
         }
 
@@ -31,10 +35,10 @@ namespace System.Net.Quic.Tests
             ulong lastAcked = 0xa82f30ea;
             ulong truncated = 0x9b32;
 
-            int bytes = Encoder.GetPacketNumberByteCount(lastAcked, packetNumber);
+            int bytes = QuicEncoding.GetPacketNumberByteCount(lastAcked, packetNumber);
             Assert.Equal(2, bytes);
 
-            var actual = Encoder.DecodePacketNumber(lastAcked, truncated, 2);
+            var actual = QuicEncoding.DecodePacketNumber(lastAcked, truncated, 2);
 
             Assert.Equal(packetNumber, actual);
         }
