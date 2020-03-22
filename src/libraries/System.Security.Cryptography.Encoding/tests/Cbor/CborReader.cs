@@ -14,8 +14,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         NegativeInteger,
         ByteString,
         TextString,
+        StartTextString,
+        StartByteString,
         StartArray,
         StartMap,
+        EndTextString,
+        EndByteString,
         EndArray,
         EndMap,
         Tag,
@@ -33,7 +37,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // with null representing indefinite length data items.
         // The root context ony permits one data item to be read.
         private ulong? _remainingDataItems = 1;
-        private Stack<(CborMajorType type, ulong? remainingDataItems)>? _nestedDataItemStack;
+        private bool _isEvenNumberOfDataItemsWritten = true; // required for indefinite-length map writes
+        private Stack<(CborMajorType type, bool isEvenNumberOfDataItemsWritten, ulong? remainingDataItems)>? _nestedDataItemStack;
 
         internal CborReader(ReadOnlyMemory<byte> buffer)
         {
@@ -45,11 +50,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public CborReaderState Peek()
         {
-            if (_remainingDataItems is null)
-            {
-                throw new NotImplementedException("indefinite length collections");
-            }
-
             if (_remainingDataItems == 0)
             {
                 if (_nestedDataItemStack?.Count > 0)
@@ -72,13 +72,34 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 return CborReaderState.EndOfData;
             }
 
-            CborInitialByte initialByte = new CborInitialByte(_buffer.Span[0]);
+            var initialByte = new CborInitialByte(_buffer.Span[0]);
+
+            if (initialByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte)
+            {
+                if (_nestedDataItemStack?.Count > 0 && _remainingDataItems == null)
+                {
+                    return _nestedDataItemStack.Peek().type switch
+                    {
+                        CborMajorType.ByteString => CborReaderState.EndByteString,
+                        CborMajorType.TextString => CborReaderState.EndTextString,
+                        CborMajorType.Array => CborReaderState.EndArray,
+                        CborMajorType.Map => CborReaderState.EndMap,
+                        _ => throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack."),
+                    };
+                }
+                else
+                {
+                    throw new FormatException("Unexpected CBOR break byte.");
+                }
+            }
 
             return initialByte.MajorType switch
             {
                 CborMajorType.UnsignedInteger => CborReaderState.UnsignedInteger,
                 CborMajorType.NegativeInteger => CborReaderState.NegativeInteger,
+                CborMajorType.ByteString when initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength => CborReaderState.StartByteString,
                 CborMajorType.ByteString => CborReaderState.ByteString,
+                CborMajorType.TextString when initialByte.AdditionalInfo == CborAdditionalInfo.IndefiniteLength => CborReaderState.StartTextString,
                 CborMajorType.TextString => CborReaderState.TextString,
                 CborMajorType.Array => CborReaderState.StartArray,
                 CborMajorType.Map => CborReaderState.StartMap,
@@ -100,7 +121,31 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new FormatException("unexpected end of buffer.");
             }
 
-            return new CborInitialByte(_buffer.Span[0]);
+            var result = new CborInitialByte(_buffer.Span[0]);
+
+            // TODO check for tag state
+
+            if (_nestedDataItemStack != null && _nestedDataItemStack.Count > 0)
+            {
+                CborMajorType parentType = _nestedDataItemStack.Peek().type;
+
+                switch (parentType)
+                {
+                    // indefinite-length string contexts do not permit nesting
+                    case CborMajorType.ByteString:
+                    case CborMajorType.TextString:
+                        if (result.InitialByte == CborInitialByte.IndefiniteLengthBreakByte ||
+                            result.MajorType == parentType &&
+                            result.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
+                        {
+                            break;
+                        }
+
+                        throw new FormatException("Indefinite-length CBOR string containing invalid data item.");
+                }
+            }
+
+            return result;
         }
 
         private CborInitialByte PeekInitialByte(CborMajorType expectedType)
@@ -115,6 +160,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return result;
         }
 
+        private void ReadNextIndefiniteLengthBreakByte()
+        {
+            CborInitialByte result = PeekInitialByte();
+
+            if (result.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
+            {
+                throw new InvalidOperationException("Next data item is not indefinite-length break byte.");
+            }
+        }
+
         private void PushDataItem(CborMajorType type, ulong? expectedNestedItems)
         {
             if (expectedNestedItems > (ulong)_buffer.Length)
@@ -122,16 +177,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new FormatException("Insufficient buffer size for declared definite length in CBOR data item.");
             }
 
-            _nestedDataItemStack ??= new Stack<(CborMajorType, ulong?)>();
-            _nestedDataItemStack.Push((type, _remainingDataItems));
+            _nestedDataItemStack ??= new Stack<(CborMajorType, bool, ulong?)>();
+            _nestedDataItemStack.Push((type, _isEvenNumberOfDataItemsWritten, _remainingDataItems));
             _remainingDataItems = expectedNestedItems;
+            _isEvenNumberOfDataItemsWritten = true;
         }
 
         private void PopDataItem(CborMajorType expectedType)
         {
-            if (_remainingDataItems == null)
+            if (_nestedDataItemStack is null || _nestedDataItemStack.Count == 0)
             {
-                throw new NotImplementedException("Indefinite-length data items");
+                throw new InvalidOperationException("No active CBOR nested data item to pop");
+            }
+
+            (CborMajorType actualType, bool isEvenNumberOfDataItemsWritten, ulong? remainingItems) = _nestedDataItemStack.Peek();
+
+            if (expectedType != actualType)
+            {
+                throw new InvalidOperationException("Unexpected major type in nested CBOR data item.");
             }
 
             if (_remainingDataItems > 0)
@@ -139,20 +202,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("Definite-length nested CBOR data item is incomplete.");
             }
 
-            if (_nestedDataItemStack is null || _nestedDataItemStack.Count == 0)
-            {
-                throw new InvalidOperationException("No active CBOR nested data item to pop");
-            }
-
-            (CborMajorType actualType, ulong? remainingItems) = _nestedDataItemStack.Peek();
-
-            if (expectedType != actualType)
-            {
-                throw new InvalidOperationException("Unexpected major type in nested CBOR data item.");
-            }
-
             _nestedDataItemStack.Pop();
             _remainingDataItems = remainingItems;
+            _isEvenNumberOfDataItemsWritten = isEvenNumberOfDataItemsWritten;
+        }
+
+        private void DecrementRemainingItemCount()
+        {
+            _remainingDataItems--;
+            _isEvenNumberOfDataItemsWritten = !_isEvenNumberOfDataItemsWritten;
         }
 
         private void AdvanceBuffer(int length)

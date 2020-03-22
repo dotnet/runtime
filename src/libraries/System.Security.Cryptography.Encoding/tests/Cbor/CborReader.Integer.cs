@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 case CborMajorType.UnsignedInteger:
                     ulong value = ReadUnsignedInteger(header, out int additionalBytes);
                     AdvanceBuffer(1 + additionalBytes);
-                    _remainingDataItems--;
+                    DecrementRemainingItemCount();
                     return value;
 
                 case CborMajorType.NegativeInteger:
@@ -42,13 +42,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 case CborMajorType.UnsignedInteger:
                     value = checked((long)ReadUnsignedInteger(header, out additionalBytes));
                     AdvanceBuffer(1 + additionalBytes);
-                    _remainingDataItems--;
+                    DecrementRemainingItemCount();
                     return value;
 
                 case CborMajorType.NegativeInteger:
                     value = checked(-1 - (long)ReadUnsignedInteger(header, out additionalBytes));
                     AdvanceBuffer(1 + additionalBytes);
-                    _remainingDataItems--;
+                    DecrementRemainingItemCount();
                     return value;
 
                 default:
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.NegativeInteger);
             ulong value = ReadUnsignedInteger(header, out int additionalBytes);
             AdvanceBuffer(1 + additionalBytes);
-            _remainingDataItems--;
+            DecrementRemainingItemCount();
             return value;
         }
 
@@ -97,9 +97,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     EnsureBuffer(9);
                     additionalBytes = 8;
                     return BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(1));
-
-                case CborAdditionalInfo.IndefiniteLength:
-                    throw new NotImplementedException("indefinite length support");
 
                 default:
                     throw new FormatException("initial byte contains invalid integer encoding data");

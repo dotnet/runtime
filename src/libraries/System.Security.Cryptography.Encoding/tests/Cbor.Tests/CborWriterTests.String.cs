@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new string[] { "" }, "7f60ff")]
         [InlineData(new string[] { "ab", "" }, "7f62616260ff")]
         [InlineData(new string[] { "ab", "bc", "" }, "7f62616262626360ff")]
-        public static void WriteTextString_IndefiteLength_SingleValue_HappyPath(string[] chunkInputs, string hexExpectedEncoding)
+        public static void WriteTextString_IndefiniteLength_SingleValue_HappyPath(string[] chunkInputs, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(nameof(CborWriter.WriteStartByteString))]
         [InlineData(nameof(CborWriter.WriteStartArray))]
         [InlineData(nameof(CborWriter.WriteStartMap))]
-        public static void WriteTextString_IndefiteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
+        public static void WriteTextString_IndefiniteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             using var writer = new CborWriter();
             writer.WriteStartTextString();
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(nameof(CborWriter.WriteEndByteString))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
-        public static void WriteTextString_IndefiteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
+        public static void WriteTextString_IndefiniteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
         {
             using var writer = new CborWriter();
             writer.WriteStartTextString();

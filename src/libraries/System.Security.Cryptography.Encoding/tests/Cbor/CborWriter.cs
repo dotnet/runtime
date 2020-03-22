@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // The root context ony permits one data item to be written.
         private uint? _remainingDataItems = 1;
         private bool _isEvenNumberOfDataItemsWritten = true; // required for indefinite-length map writes
-        private Stack<(CborMajorType type, bool isEventNumberOfDataItemsWritten, uint? remainingDataItems)>? _nestedDataItemStack;
+        private Stack<(CborMajorType type, bool isEvenNumberOfDataItemsWritten, uint? remainingDataItems)>? _nestedDataItemStack;
 
         public CborWriter()
         {
@@ -79,11 +79,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             if (expectedType != actualType)
             {
                 throw new InvalidOperationException("Unexpected major type in nested CBOR data item.");
-            }
-
-            if (expectedType == CborMajorType.Map && !_isEvenNumberOfDataItemsWritten)
-            {
-                throw new InvalidOperationException("CBOR Map types require an even number of key/value combinations");
             }
 
             if (_remainingDataItems > 0)

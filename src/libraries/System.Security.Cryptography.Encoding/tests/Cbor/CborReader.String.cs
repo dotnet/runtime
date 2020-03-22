@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] result = new byte[length];
             _buffer.Slice(1 + additionalBytes, length).CopyTo(result);
             AdvanceBuffer(1 + additionalBytes + length);
-            _remainingDataItems--;
+            DecrementRemainingItemCount();
             return result;
         }
 
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             _buffer.Span.Slice(1 + additionalBytes, length).CopyTo(destination);
             AdvanceBuffer(1 + additionalBytes + length);
-            _remainingDataItems--;
+            DecrementRemainingItemCount();
 
             bytesWritten = length;
             return true;
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             ReadOnlySpan<byte> encodedString = _buffer.Span.Slice(1 + additionalBytes, length);
             string result = s_utf8Encoding.GetString(encodedString);
             AdvanceBuffer(1 + additionalBytes + length);
-            _remainingDataItems--;
+            DecrementRemainingItemCount();
             return result;
         }
 
@@ -72,9 +72,53 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             s_utf8Encoding.GetChars(encodedSlice, destination);
             AdvanceBuffer(1 + additionalBytes + byteLength);
-            _remainingDataItems--;
+            DecrementRemainingItemCount();
             charsWritten = charLength;
             return true;
+        }
+
+        public void ReadStartTextString()
+        {
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
+
+            if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
+            {
+                throw new InvalidOperationException("CBOR text string is not of indefinite length.");
+            }
+
+            DecrementRemainingItemCount();
+            AdvanceBuffer(1);
+
+            PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
+        }
+
+        public void ReadEndTextString()
+        {
+            ReadNextIndefiniteLengthBreakByte();
+            PopDataItem(CborMajorType.TextString);
+            AdvanceBuffer(1);
+        }
+
+        public void ReadStartByteString()
+        {
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
+
+            if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
+            {
+                throw new InvalidOperationException("CBOR text string is not of indefinite length.");
+            }
+
+            DecrementRemainingItemCount();
+            AdvanceBuffer(1);
+
+            PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
+        }
+
+        public void ReadEndByteString()
+        {
+            ReadNextIndefiniteLengthBreakByte();
+            PopDataItem(CborMajorType.ByteString);
+            AdvanceBuffer(1);
         }
     }
 }

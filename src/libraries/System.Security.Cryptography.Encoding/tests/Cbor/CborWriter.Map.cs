@@ -22,6 +22,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteEndMap()
         {
+            if (!_isEvenNumberOfDataItemsWritten)
+            {
+                throw new InvalidOperationException("CBOR Map types require an even number of key/value combinations");
+            }
+
             if (!_remainingDataItems.HasValue)
             {
                 // indefinite-length map, add break byte

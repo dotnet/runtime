@@ -4,6 +4,7 @@
 
 #nullable enable
 using System;
+using System.Linq;
 using Test.Cryptography;
 using Xunit;
 
@@ -81,6 +82,31 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(expectedValue.Length, charsWritten);
             Assert.Equal(expectedValue.ToCharArray(), buffer[..charsWritten]);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData(new string[] { }, "5fff")]
+        [InlineData(new string[] { "" }, "5f40ff")]
+        [InlineData(new string[] { "ab", "" }, "5f41ab40ff")]
+        [InlineData(new string[] { "ab", "bc", "" }, "5f41ab41bc40ff")]
+        public static void ReadByteString_IndefiteLength_SingleValue_HappyPath(string[] expectedHexValues, string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            byte[][] expectedValues = expectedHexValues.Select(x => x.HexToByteArray()).ToArray();
+            var reader = new CborReader(data);
+            Helpers.VerifyValue(reader, expectedValues);
+        }
+
+        [Theory]
+        [InlineData(new string[] { }, "7fff")]
+        [InlineData(new string[] { "" }, "7f60ff")]
+        [InlineData(new string[] { "ab", "" }, "7f62616260ff")]
+        [InlineData(new string[] { "ab", "bc", "" }, "7f62616262626360ff")]
+        public static void ReadTextString_IndefiteLength_SingleValue_HappyPath(string[] expectedValues, string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            Helpers.VerifyValue(reader, expectedValues);
         }
 
         [Theory]
@@ -342,6 +368,30 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.ReadByteString());
+        }
+
+        [Fact]
+        public static void ReadByteString_IndefiteLength_ContainingInvalidMajorTypes_ShouldThrowFormatException()
+        {
+            string hexEncoding = "5f4001ff";
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            reader.ReadStartByteString();
+            reader.ReadByteString();
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek()); // peek should not fail
+            Assert.Throws<FormatException>(() => reader.ReadInt64()); // throws FormatException even if it's the right major type we're trying to read
+        }
+
+        [Fact]
+        public static void ReadTextString_IndefiteLength_ContainingInvalidMajorTypes_ShouldThrowFormatException()
+        {
+            string hexEncoding = "7f6001ff";
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            reader.ReadStartTextString();
+            reader.ReadTextString();
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek()); // peek should not fail
+            Assert.Throws<FormatException>(() => reader.ReadInt64()); // throws FormatException even if it's the right major type we're trying to read
         }
     }
 }
