@@ -21,17 +21,35 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CipherAlgorithm.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CipherAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CryptoSeal.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CryptoSeal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CryptoSealAesBase.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CryptoSealAesBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CryptoSealAesCcm.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CryptoSealAesCcm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CryptoSealAesGcm.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CryptoSealAesGcm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CryptoSealAlgorithm.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CryptoSealAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\Encoder.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\Encoder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\Encryption.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\Encryption.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\KeyDerivation.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\KeyDerivation.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\FrameType.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\FrameType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\HeaderHelpers.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\HeaderHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportErrorCode.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportErrorCode.cs</Link>

@@ -4,19 +4,19 @@ using System.Security.Cryptography;
 namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 {
     /// <summary>
-    ///     Adapter for using AEAD_AES_128_GCM and AEAD_AES_256_GCM for header protection.
+    ///     Adapter for using AEAD_AES_128_CCM
     /// </summary>
-    internal class CryptoSealAesGcm : CryptoSealAesBase
+    internal class CryptoSealAesCcm : CryptoSealAesBase
     {
         // AES-128 and AES-256 implementation for actual packet payload protection
-        private readonly AesGcm _aesGcm;
+        private readonly AesCcm _aesCcm;
 
-        internal CryptoSealAesGcm(byte[] key, byte[] headerKey) : base(headerKey)
+        internal CryptoSealAesCcm(byte[] key, byte[] headerKey) : base(headerKey)
         {
-            Debug.Assert(key.Length == 16 || key.Length == 32);
+            Debug.Assert(key.Length == 16);
             Debug.Assert(headerKey.Length == 16);
 
-            _aesGcm = new AesGcm(key);
+            _aesCcm = new AesCcm(key);
         }
 
         internal override int TagLength => 16;
@@ -24,14 +24,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
         internal override void Encrypt(ReadOnlySpan<byte> nonce, Span<byte> buffer, Span<byte> tag,
             ReadOnlySpan<byte> aad)
         {
-            _aesGcm.Encrypt(nonce, buffer, buffer, tag, aad);
+            _aesCcm.Encrypt(nonce, buffer, buffer, tag, aad);
         }
 
         internal override bool Decrypt(ReadOnlySpan<byte> nonce, Span<byte> buffer, ReadOnlySpan<byte> tag, ReadOnlySpan<byte> aad)
         {
             try
             {
-                _aesGcm.Decrypt(nonce, buffer, tag, buffer, aad);
+                _aesCcm.Decrypt(nonce, buffer, tag, buffer, aad);
                 return true;
             }
             catch (CryptographicException)

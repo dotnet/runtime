@@ -1,107 +1,180 @@
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
-using System.Security.Cryptography;
 using Xunit;
 
 namespace System.Net.Quic.Tests
 {
     public class CryptoTests
     {
-        private static readonly string dcidHex = "8394c8f03e515708";
-
-        private static readonly string initialSecretHex =
-            "524e374c6da8cf8b496f4bcb69678350" +
-            "7aafee6198b202b4bc823ebf7514a423";
-
         [Theory]
-        [InlineData("client in", 32, "00200f746c73313320636c69656e7420696e00")]
-        [InlineData("server in", 32, "00200f746c7331332073657276657220696e00")]
-        [InlineData("quic key", 16, "00100e746c7331332071756963206b657900")]
-        [InlineData("quic iv", 12, "000c0d746c733133207175696320697600")]
-        [InlineData("quic hp", 16, "00100d746c733133207175696320687000")]
+        [InlineData("client in", 32, ReferenceData.ClientInLabelHex)]
+        [InlineData("server in", 32, ReferenceData.ServerInLabelHex)]
+        [InlineData("quic key", 16, ReferenceData.QuicKeyLabelHex)]
+        [InlineData("quic iv", 12, ReferenceData.QuicIvLabelHex)]
+        [InlineData("quic hp", 16, ReferenceData.QuicHpLabelHex)]
         public void TestLabelGeneration(string label, ushort len, string expectedHex)
         {
             var actual = KeyDerivation.CreateHkdfLabel(label, len);
-            var actualHex = HexHelpers.ToHexString(actual);
+            string actualHex = HexHelpers.ToHexString(actual);
 
             Assert.Equal(expectedHex, actualHex);
         }
 
         [Fact]
-        public void TestInitialSecret()
+        public void DecryptClientInitial()
         {
-            var actual = KeyDerivation.DeriveInitialSecret(HexHelpers.FromHexString(dcidHex));
-            var actualHex = HexHelpers.ToHexString(actual);
+            var packet = HexHelpers.FromHexString(ReferenceData.EncryptedClientInitialPacket);
 
-            Assert.Equal(initialSecretHex, actualHex);
+            // no error handling yet, test happy path only
+
+            // derive keying material (we need client material to decrypt client's message)
+            var seal = DeriveClientCryptoSeal();
+
+            seal.DecryptPacket(packet);
+
+            const string headerHex = ReferenceData.ClientInitialPacketHeaderHex;
+            int headerLen = headerHex.Length / 2;
+
+            Assert.Equal(
+                headerHex,
+                HexHelpers.ToHexString(packet.AsSpan(0, headerLen)));
         }
 
         [Fact]
-        public void TestInitialClientKeyingMaterial()
+        public void EncryptClientInitial()
         {
-            var initial = KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(initialSecretHex));
+            const string headerHex = ReferenceData.ClientInitialPacketHeaderHex;
+            int headerLen = headerHex.Length / 2;
 
-            var clientInitial =
-                "fda3953aecc040e48b34e27ef87de3a6" +
-                "098ecf0e38b7e032c5c57bcbd5975b84";
+            var encryptedClientInitial = HexHelpers.FromHexString(ReferenceData.EncryptedClientInitialPacket);
 
-            Assert.Equal(clientInitial, HexHelpers.ToHexString(initial));
+            byte[] buff = new byte[encryptedClientInitial.Length];
 
-            var key = KeyDerivation.DeriveKey(initial);
-            Assert.Equal("af7fd7efebd21878ff66811248983694", HexHelpers.ToHexString(key));
+            HexHelpers.FromHexString(headerHex, buff);
+            HexHelpers.FromHexString(ReferenceData.ClientInitialPacketCryptoFrameHex, buff.AsSpan(headerLen));
+            // rest of the packet is zeros (padding frames)
 
-            var iv = KeyDerivation.DeriveIv(initial);
-            Assert.Equal("8681359410a70bb9c92f0420", HexHelpers.ToHexString(iv));
+            const int payloadLength = 1162;
 
-            var hp = KeyDerivation.DeriveHp(initial);
-            Assert.Equal("a980b8b4fb7d9fbc13e814c23164253d", HexHelpers.ToHexString(hp));
-        }
+            // derive keying material
+            CryptoSeal seal = DeriveClientCryptoSeal();
+            seal.EncryptPacket(buff, headerLen, payloadLength, 2);
 
-        [Fact]
-        public void TestInitialServerKeyingMaterial()
-        {
-            var initial = KeyDerivation.DeriveServerInitialSecret(HexHelpers.FromHexString(initialSecretHex));
-
-            var serverInitial =
-                "554366b81912ff90be41f17e80222130" +
-                "90ab17d8149179bcadf222f29ff2ddd5";
-
-            Assert.Equal(serverInitial, HexHelpers.ToHexString(initial));
-
-            var key = KeyDerivation.DeriveKey(initial);
-            Assert.Equal("5d51da9ee897a21b2659ccc7e5bfa577", HexHelpers.ToHexString(key));
-
-            var iv = KeyDerivation.DeriveIv(initial);
-            Assert.Equal("5e5ae651fd1e8495af13508b", HexHelpers.ToHexString(iv));
-
-            var hp = KeyDerivation.DeriveHp(initial);
-            Assert.Equal("a8ed82e6664f865aedf6106943f95fb8", HexHelpers.ToHexString(hp));
+            Assert.Equal(encryptedClientInitial, buff);
         }
 
         [Fact]
         public void TestHeaderProtection()
         {
-            var payloadSample = HexHelpers.FromHexString("535064a4268a0d9d7b1c9d250ae35516");
-            var expectedMask = "833b343aaa";
-            var headerKey = HexHelpers.FromHexString("a980b8b4fb7d9fbc13e814c23164253d");
-            var header = HexHelpers.FromHexString("c3ff00001b088394c8f03e5157080000449e00000002");
-            var expectedProtectedHeader = "c0ff00001b088394c8f03e5157080000449e3b343aa8";
+            var payloadSample = HexHelpers.FromHexString(ReferenceData.ClientInitialPacketPayloadSampleHex);
+            string expectedMask = ReferenceData.ClientInitialPacketProtectionMaskHex;
+            var headerKey = HexHelpers.FromHexString(ReferenceData.ClientInitialHpHex);
+            var header = HexHelpers.FromHexString(ReferenceData.ClientInitialPacketHeaderHex);
+            string expectedProtectedHeader = ReferenceData.ClientInitialPacketProtectedHeaderHex;
 
-            var protectionMask = Encryption.GetHeaderProtectionMask(Algorithm.AEAD_AES_128_GCM, headerKey, payloadSample);
+            var alg = CryptoSealAlgorithm.Create(CipherAlgorithm.AEAD_AES_128_GCM, new byte[16], headerKey);
+
+            var protectionMask = new byte[5];
+            alg.CreateProtectionMask(payloadSample, protectionMask);
             Assert.Equal(expectedMask, HexHelpers.ToHexString(protectionMask));
 
             var actual = (byte[])header.Clone();
 
-            Encryption.ProtectHeader(actual, protectionMask);
+            CryptoSeal.ProtectHeader(actual, protectionMask);
             Assert.Equal(expectedProtectedHeader, HexHelpers.ToHexString(actual));
 
             // also try unprotecting
-            Encryption.UnprotectHeader(actual, protectionMask, 18);
+            CryptoSeal.UnprotectHeader(actual, protectionMask, 18);
             Assert.Equal(
                 HexHelpers.ToHexString(header),
                 HexHelpers.ToHexString(actual));
         }
 
-        private const string encryptedClientInitialHex = @"
+        [Fact]
+        public void TestInitialClientKeyingMaterial()
+        {
+            var initial =
+                KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(ReferenceData.InitialSecretHex));
+
+            Assert.Equal(ReferenceData.ClientInitialHex, HexHelpers.ToHexString(initial));
+
+            var key = KeyDerivation.DeriveKey(initial);
+            Assert.Equal(ReferenceData.ClientInitialKeyHex, HexHelpers.ToHexString(key));
+
+            var iv = KeyDerivation.DeriveIv(initial);
+            Assert.Equal(ReferenceData.ClientInitialIvHex, HexHelpers.ToHexString(iv));
+
+            var hp = KeyDerivation.DeriveHp(initial);
+            Assert.Equal(ReferenceData.ClientInitialHpHex, HexHelpers.ToHexString(hp));
+        }
+
+        [Fact]
+        public void TestInitialSecret()
+        {
+            var actual = KeyDerivation.DeriveInitialSecret(HexHelpers.FromHexString(ReferenceData.DcidHex));
+            string actualHex = HexHelpers.ToHexString(actual);
+
+            Assert.Equal(ReferenceData.InitialSecretHex, actualHex);
+        }
+
+        [Fact]
+        public void TestInitialServerKeyingMaterial()
+        {
+            var initial =
+                KeyDerivation.DeriveServerInitialSecret(HexHelpers.FromHexString(ReferenceData.InitialSecretHex));
+
+            Assert.Equal(ReferenceData.ServerInitialHex, HexHelpers.ToHexString(initial));
+
+            var key = KeyDerivation.DeriveKey(initial);
+            Assert.Equal(ReferenceData.ServerInitialKeyHex, HexHelpers.ToHexString(key));
+
+            var iv = KeyDerivation.DeriveIv(initial);
+            Assert.Equal(ReferenceData.ServerInitialIvHex, HexHelpers.ToHexString(iv));
+
+            var hp = KeyDerivation.DeriveHp(initial);
+            Assert.Equal(ReferenceData.ServerInitialHpHex, HexHelpers.ToHexString(hp));
+        }
+
+        private static CryptoSeal DeriveClientCryptoSeal()
+        {
+            var initial =
+                KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(ReferenceData.InitialSecretHex));
+            var key = KeyDerivation.DeriveKey(initial);
+            var iv = KeyDerivation.DeriveIv(initial);
+            var hp = KeyDerivation.DeriveHp(initial);
+
+            var seal = new CryptoSeal(iv, key, hp, CipherAlgorithm.AEAD_AES_128_GCM);
+            return seal;
+        }
+
+        private static class ReferenceData
+        {
+            public const string DcidHex = "8394c8f03e515708";
+
+            public const string InitialSecretHex =
+                "524e374c6da8cf8b496f4bcb69678350" +
+                "7aafee6198b202b4bc823ebf7514a423";
+
+            public const string ClientInitialHex =
+                "fda3953aecc040e48b34e27ef87de3a6" +
+                "098ecf0e38b7e032c5c57bcbd5975b84";
+
+            public const string ClientInitialKeyHex = "af7fd7efebd21878ff66811248983694";
+            public const string ClientInitialIvHex = "8681359410a70bb9c92f0420";
+            public const string ClientInitialHpHex = "a980b8b4fb7d9fbc13e814c23164253d";
+
+            public const string ServerInitialHex = "554366b81912ff90be41f17e80222130" +
+                                                   "90ab17d8149179bcadf222f29ff2ddd5";
+
+            public const string ServerInitialKeyHex = "5d51da9ee897a21b2659ccc7e5bfa577";
+            public const string ServerInitialIvHex = "5e5ae651fd1e8495af13508b";
+            public const string ServerInitialHpHex = "a8ed82e6664f865aedf6106943f95fb8";
+
+            public const string ClientInitialPacketPayloadSampleHex = "535064a4268a0d9d7b1c9d250ae35516";
+            public const string ClientInitialPacketProtectionMaskHex = "833b343aaa";
+            public const string ClientInitialPacketHeaderHex = "c3ff00001b088394c8f03e5157080000449e00000002";
+            public const string ClientInitialPacketProtectedHeaderHex = "c0ff00001b088394c8f03e5157080000449e3b343aa8";
+
+            public const string EncryptedClientInitialPacket = @"
    c0ff00001b088394c8f03e5157080000 449e3b343aa8535064a4268a0d9d7b1c
    9d250ae355162276e9b1e3011ef6bbc0 ab48ad5bcc2681e953857ca62becd752
    4daac473e68d7405fbba4e9ee616c870 38bdbe908c06d9605d9ac49030359eec
@@ -142,7 +215,7 @@ namespace System.Net.Quic.Tests
    38d3b779d72edc00c5cd088eff802b05
 ";
 
-        private const string unprotectedCryptoFrameHex = @"
+            public const string ClientInitialPacketCryptoFrameHex = @"
 060040c4010000c003036660261ff947 cea49cce6cfad687f457cf1b14531ba1
 4131a0e8f309a1d0b9c4000006130113 031302010000910000000b0009000006
 736572766572ff01000100000a001400 12001d00170018001901000101010201
@@ -151,58 +224,11 @@ namespace System.Net.Quic.Tests
 05030603020308040805080604010501 060102010402050206020202002d0002
 0101001c00024001";
 
-        [Fact]
-        public void EncryptClientInitial()
-        {
-            const string headerHex = "c3ff00001b088394c8f03e5157080000449e00000002";
-            int headerLen = headerHex.Length / 2;
-
-            var encryptedClientInitial = HexHelpers.FromHexString(encryptedClientInitialHex);
-
-            byte[] buff = new byte[encryptedClientInitial.Length];
-
-            HexHelpers.FromHexString(headerHex, buff);
-            HexHelpers.FromHexString(unprotectedCryptoFrameHex, buff.AsSpan(headerLen));
-            // rest of the packet is zeros (padding frames)
-
-            const int payloadLength = 1162;
-
-            // derive keying material
-            CryptoSealAesGcm seal = DeriveClientCryptoSeal();
-            seal.EncryptPacket(buff, headerLen, payloadLength, 2);
-
-            Assert.Equal(encryptedClientInitial, buff);
-        }
-
-        private static CryptoSealAesGcm DeriveClientCryptoSeal()
-        {
-            var initial = KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(initialSecretHex));
-            var key = KeyDerivation.DeriveKey(initial);
-            var iv = KeyDerivation.DeriveIv(initial);
-            var hp = KeyDerivation.DeriveHp(initial);
-
-            var seal = new CryptoSealAesGcm(iv, key, hp);
-            return seal;
-        }
-
-        [Fact]
-        public void DecryptClientInitial()
-        {
-            var packet = HexHelpers.FromHexString(encryptedClientInitialHex);
-
-            // no error handling yet, test happy path only
-
-            // derive keying material (we need client material to decrypt client's message)
-            var seal = DeriveClientCryptoSeal();
-
-            seal.DecryptPacket(packet);
-
-            const string headerHex = "c3ff00001b088394c8f03e5157080000449e00000002";
-            int headerLen = headerHex.Length / 2;
-
-            Assert.Equal(
-                headerHex,
-                HexHelpers.ToHexString(packet.AsSpan(0, headerLen)));
+            public const string ClientInLabelHex = "00200f746c73313320636c69656e7420696e00";
+            public const string ServerInLabelHex = "00200f746c7331332073657276657220696e00";
+            public const string QuicKeyLabelHex = "00100e746c7331332071756963206b657900";
+            public const string QuicIvLabelHex = "000c0d746c733133207175696320697600";
+            public const string QuicHpLabelHex = "00100d746c733133207175696320687000";
         }
     }
 }
