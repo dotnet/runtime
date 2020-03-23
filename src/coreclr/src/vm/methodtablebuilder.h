@@ -809,7 +809,8 @@ private:
         static bool
         SignaturesEquivalent(
             const MethodSignature & sig1,
-            const MethodSignature & sig2);
+            const MethodSignature & sig2,
+            BOOL allowCovariantReturn);
 
         //-----------------------------------------------------------------------------------------
         // Returns true if the metadata signatures (PCCOR_SIGNATURE) are exactly equal. (No type equivalence permitted)
@@ -2739,6 +2740,7 @@ private:
     MethodImplCompareSignatures(
         bmtMethodHandle     hDecl,
         bmtMethodHandle     hImpl,
+        BOOL                allowCovariantReturn,
         DWORD               dwConstraintErrorCode);
 
     // --------------------------------------------------------------------------------------------

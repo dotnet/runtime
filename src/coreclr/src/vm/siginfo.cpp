@@ -713,7 +713,7 @@ static BOOL MethodDescMatchesSig(MethodDesc* pMD, PCCOR_SIGNATURE pSig, DWORD cS
     pMD->GetSig(&pSigOfMD, &cSigOfMD);
 
     return MetaSig::CompareMethodSigs(pSig, cSig, pModule, NULL,
-                                      pSigOfMD, cSigOfMD, pMD->GetModule(), NULL);
+                                      pSigOfMD, cSigOfMD, pMD->GetModule(), NULL, FALSE);
 }
 #endif // _DEBUG
 
@@ -3002,7 +3002,7 @@ static BOOL CompareDelegatesForEquivalence(mdToken tk1, mdToken tk2, Module *pMo
     GetDelegateInvokeMethodSignature(tk1, pModule1, &cbSig1, &pSig1);
     GetDelegateInvokeMethodSignature(tk2, pModule2, &cbSig2, &pSig2);
 
-    return MetaSig::CompareMethodSigs(pSig1, cbSig1, pModule1, NULL, pSig2, cbSig2, pModule2, NULL, pVisited);
+    return MetaSig::CompareMethodSigs(pSig1, cbSig1, pModule1, NULL, pSig2, cbSig2, pModule2, NULL, FALSE, pVisited);
 }
 
 #endif // FEATURE_TYPEEQUIVALENCE
@@ -3562,6 +3562,41 @@ ErrExit:
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
+
+// static
+BOOL MetaSig::CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allowDerivedClass)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(!hType1.IsNull() && !hType2.IsNull());
+    }
+    CONTRACTL_END;
+
+    if (hType1 == hType2)
+        return TRUE;
+
+    if (!allowDerivedClass)
+        return FALSE;
+
+    CorElementType et1 = hType1.GetInternalCorElementType();
+    CorElementType et2 = hType2.GetInternalCorElementType();
+    // TODO: ELEMENT_TYPE_GENERICINST
+    if ((et1 == ELEMENT_TYPE_OBJECT || et1 == ELEMENT_TYPE_CLASS) && et2 == ELEMENT_TYPE_CLASS)
+    {
+        while (!hType2.IsNull())
+        {
+            if (hType1 == hType2)
+                return TRUE;
+            hType2 = hType2.GetParent();
+        }
+    }
+
+    return FALSE;
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Compare the next elements in two sigs.
@@ -3577,6 +3612,7 @@ MetaSig::CompareElementType(
     Module *             pModule2,
     const Substitution * pSubst1,
     const Substitution * pSubst2,
+    BOOL                 allowDerivedClass,
     TokenPairList *      pVisited) // = NULL
 {
     CONTRACTL
@@ -3621,6 +3657,7 @@ MetaSig::CompareElementType(
             pSubst2->GetModule(),
             pSubst1,
             pSubst2->GetNext(),
+            allowDerivedClass,
             pVisited);
     }
 
@@ -3648,6 +3685,7 @@ MetaSig::CompareElementType(
             pModule2,
             pSubst1->GetNext(),
             pSubst2,
+            allowDerivedClass,
             pVisited);
     }
 
@@ -3686,21 +3724,21 @@ MetaSig::CompareElementType(
     {
         if ((Type1 == ELEMENT_TYPE_INTERNAL) || (Type2 == ELEMENT_TYPE_INTERNAL))
         {
-            TypeHandle     hInternal;
+            TypeHandle     hType1, hType2;
             CorElementType eOtherType;
             Module *       pOtherModule;
 
             // One type is already loaded, collect all the necessary information to identify the other type.
             if (Type1 == ELEMENT_TYPE_INTERNAL)
             {
-                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void **)&hInternal));
+                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void **)&hType1));
 
                 eOtherType = Type2;
                 pOtherModule = pModule2;
             }
             else
             {
-                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig2, pEndSig2, (void **)&hInternal));
+                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig2, pEndSig2, (void **)&hType2));
 
                 eOtherType = Type1;
                 pOtherModule = pModule1;
@@ -3711,11 +3749,23 @@ MetaSig::CompareElementType(
             {
                 case ELEMENT_TYPE_OBJECT:
                 {
-                    return (hInternal.AsMethodTable() == g_pObjectClass);
+                    if (Type1 == ELEMENT_TYPE_INTERNAL)
+                    {
+                        // Type2 is ELEMENT_TYPE_OBJECT. Return true only if Type1 is also type object.
+                        return hType1.AsMethodTable() == g_pObjectClass;
+                    }
+                    else
+                    {
+                        // Type1 is ELEMENT_TYPE_OBJECT. Return true if Type1 is object or any other class deriving
+                        // from object if allowDerivedClass is TRUE
+                        return CompareTypeHandles(TypeHandle(g_pObjectClass), hType2, allowDerivedClass);
+                    }
                 }
                 case ELEMENT_TYPE_STRING:
                 {
-                    return (hInternal.AsMethodTable() == g_pStringClass);
+                    return Type1 == ELEMENT_TYPE_INTERNAL ?
+                        hType1.AsMethodTable() == g_pStringClass :
+                        hType2.AsMethodTable() == g_pStringClass;
                 }
                 case ELEMENT_TYPE_VALUETYPE:
                 case ELEMENT_TYPE_CLASS:
@@ -3724,20 +3774,23 @@ MetaSig::CompareElementType(
                     if (Type1 == ELEMENT_TYPE_INTERNAL)
                     {
                         IfFailThrow(CorSigUncompressToken_EndPtr(pSig2, pEndSig2, &tkOther));
+                        hType2 = ClassLoader::LoadTypeDefOrRefThrowing(
+                            pOtherModule,
+                            tkOther,
+                            ClassLoader::ReturnNullIfNotFound,
+                            ClassLoader::FailIfUninstDefOrRef);
                     }
                     else
                     {
                         IfFailThrow(CorSigUncompressToken_EndPtr(pSig1, pEndSig1, &tkOther));
+                        hType1 = ClassLoader::LoadTypeDefOrRefThrowing(
+                            pOtherModule,
+                            tkOther,
+                            ClassLoader::ReturnNullIfNotFound,
+                            ClassLoader::FailIfUninstDefOrRef);
                     }
-                    TypeHandle hOtherType;
 
-                    hOtherType = ClassLoader::LoadTypeDefOrRefThrowing(
-                        pOtherModule,
-                        tkOther,
-                        ClassLoader::ReturnNullIfNotFound,
-                        ClassLoader::FailIfUninstDefOrRef);
-
-                    return (hInternal == hOtherType);
+                    return CompareTypeHandles(hType1, hType2, allowDerivedClass);
                 }
                 default:
                 {
@@ -3747,7 +3800,14 @@ MetaSig::CompareElementType(
         }
         else
         {
-            return FALSE; // types must be the same
+            // Types must be the same, or type2 must derive from type1.
+            if (allowDerivedClass && Type1 == ELEMENT_TYPE_OBJECT)
+            {
+                // TODO: ELEMENT_TYPE_GENERICINST
+                return Type2 == ELEMENT_TYPE_STRING || Type2 == ELEMENT_TYPE_CLASS;
+            }
+
+            return FALSE;
         }
     }
 
@@ -3831,6 +3891,7 @@ MetaSig::CompareElementType(
                     pModule2,
                     pSubst1,
                     pSubst2,
+                    FALSE,
                     pVisited))
             {
                 return FALSE;
@@ -3846,7 +3907,18 @@ MetaSig::CompareElementType(
             IfFailThrow(CorSigUncompressToken_EndPtr(pSig1, pEndSig1, &tk1));
             IfFailThrow(CorSigUncompressToken_EndPtr(pSig2, pEndSig2, &tk2));
 
-            return CompareTypeTokens(tk1, tk2, pModule1, pModule2, pVisited);
+            if (CompareTypeTokens(tk1, tk2, pModule1, pModule2, pVisited))
+            {
+                return TRUE;
+            }
+
+            if (allowDerivedClass)
+            {
+                TypeHandle hType1 = ClassLoader::LoadTypeDefOrRefThrowing(pModule1, tk1, ClassLoader::ReturnNullIfNotFound, ClassLoader::FailIfUninstDefOrRef);
+                TypeHandle hType2 = ClassLoader::LoadTypeDefOrRefThrowing(pModule2, tk2, ClassLoader::ReturnNullIfNotFound, ClassLoader::FailIfUninstDefOrRef);
+                return CompareTypeHandles(hType1, hType2, TRUE);
+            }
+            return FALSE;
         }
 
         case ELEMENT_TYPE_FNPTR:
@@ -3890,6 +3962,7 @@ MetaSig::CompareElementType(
                         pModule2,
                         pSubst1,
                         pSubst2,
+                        FALSE,
                         &newVisited))
                 {
                     return FALSE;
@@ -3918,6 +3991,7 @@ MetaSig::CompareElementType(
                     pModule2,
                     pSubst1,
                     pSubst2,
+                    allowDerivedClass,
                     &newVisitedAlwaysForbidden))
             {
                 return FALSE;
@@ -3943,6 +4017,7 @@ MetaSig::CompareElementType(
                         pModule2,
                         pSubst1,
                         pSubst2,
+                        FALSE,
                         &newVisited))
                 {
                     return FALSE;
@@ -3971,6 +4046,7 @@ MetaSig::CompareElementType(
                     pModule2,
                     pSubst1,
                     pSubst2,
+                    FALSE,
                     pVisited))
             {
                 return FALSE;
@@ -4051,7 +4127,7 @@ MetaSig::CompareElementType(
             IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void **)&hType1));
             IfFailThrow(CorSigUncompressPointer_EndPtr(pSig2, pEndSig2, (void **)&hType2));
 
-            return (hType1 == hType2);
+            return CompareTypeHandles(hType1, hType2, allowDerivedClass);
         }
     } // switch
     // Unreachable
@@ -4125,6 +4201,7 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
                 pSubst2->GetModule(),
                 pSubst1->GetNext(),
                 pSubst2->GetNext(),
+                FALSE,
                 pVisited))
         {
             return FALSE;
@@ -4232,7 +4309,7 @@ MetaSig::CompareMethodSigsNT(
     HRESULT hr = S_OK;
     EX_TRY
     {
-        if (CompareMethodSigs(pSignature1, cSig1, pModule1, pSubst1, pSignature2, cSig2, pModule2, pSubst2, pVisited))
+        if (CompareMethodSigs(pSignature1, cSig1, pModule1, pSubst1, pSignature2, cSig2, pModule2, pSubst2, FALSE, pVisited))
             hr = S_OK;
         else
             hr = S_FALSE;
@@ -4257,6 +4334,7 @@ MetaSig::CompareMethodSigs(
     DWORD                cSig2,
     Module *             pModule2,
     const Substitution * pSubst2,
+    BOOL                 allowCovariantReturn,
     TokenPairList *      pVisited) //= NULL
 {
     CONTRACTL
@@ -4361,6 +4439,7 @@ MetaSig::CompareMethodSigs(
                     pModule2,
                     pSubst1,
                     pSubst2,
+                    i == 0 && allowCovariantReturn,
                     pVisited))
             {
                 return FALSE;
@@ -4386,6 +4465,7 @@ MetaSig::CompareMethodSigs(
                 pModule2,
                 pSubst1,
                 pSubst2,
+                i == 0 && allowCovariantReturn,
                 pVisited))
         {
             return FALSE;
@@ -4426,7 +4506,7 @@ BOOL MetaSig::CompareFieldSigs(
     pEndSig1 = pSig1 + cSig1;
     pEndSig2 = pSig2 + cSig2;
 
-    return(CompareElementType(++pSig1, ++pSig2, pEndSig1, pEndSig2, pModule1, pModule2, NULL, NULL, pVisited));
+    return(CompareElementType(++pSig1, ++pSig2, pEndSig1, pEndSig2, pModule1, pModule2, NULL, NULL, FALSE, pVisited));
 }
 
 #ifndef DACCESS_COMPILE
@@ -4668,7 +4748,7 @@ BOOL MetaSig::CompareTypeDefOrRefOrSpec(Module *pModule1, mdToken tok1,
     ULONG cSig1,cSig2;
     IfFailThrow(pInternalImport1->GetTypeSpecFromToken(tok1, &pSig1, &cSig1));
     IfFailThrow(pInternalImport2->GetTypeSpecFromToken(tok2, &pSig2, &cSig2));
-    return MetaSig::CompareElementType(pSig1,pSig2,pSig1+cSig1,pSig2+cSig2,pModule1,pModule2,pSubst1,pSubst2,pVisited);
+    return MetaSig::CompareElementType(pSig1, pSig2, pSig1 + cSig1, pSig2 + cSig2, pModule1, pModule2, pSubst1, pSubst2, FALSE, pVisited);
 } // MetaSig::CompareTypeDefOrRefOrSpec
 
 /* static */

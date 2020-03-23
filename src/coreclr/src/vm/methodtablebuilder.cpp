@@ -892,13 +892,15 @@ MethodTableBuilder::MethodSignature::NamesEqual(
 /*static*/ bool
 MethodTableBuilder::MethodSignature::SignaturesEquivalent(
     const MethodSignature & sig1,
-    const MethodSignature & sig2)
+    const MethodSignature & sig2,
+    BOOL allowCovariantReturn)
 {
     STANDARD_VM_CONTRACT;
 
     return !!MetaSig::CompareMethodSigs(
         sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(),
-        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution());
+        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
+        allowCovariantReturn);
 }
 
 //*******************************************************************************
@@ -913,7 +915,7 @@ MethodTableBuilder::MethodSignature::SignaturesExactlyEqual(
     return !!MetaSig::CompareMethodSigs(
         sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(),
         sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
-        &newVisited);
+        FALSE, &newVisited);
 }
 
 //*******************************************************************************
@@ -923,7 +925,7 @@ MethodTableBuilder::MethodSignature::Equivalent(
 {
     STANDARD_VM_CONTRACT;
 
-    return NamesEqual(*this, rhs) && SignaturesEquivalent(*this, rhs);
+    return NamesEqual(*this, rhs) && SignaturesEquivalent(*this, rhs, FALSE);
 }
 
 //*******************************************************************************
@@ -2365,6 +2367,47 @@ MethodTableBuilder::EnumerateMethodImpls()
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MISSING_SIG_BODY);
                 }
+
+                hr = pMDInternalImport->GetParentToken(theDecl, &tkParent);
+                if (FAILED(hr))
+                    BuildMethodTableThrowException(hr, *bmtError);
+
+                // Note on covariant return types: right now we only support covariant returns for MethodImpls on
+                // class, where the MethodDecl is also on a class. Interface methods are not supported. In order to allow
+                // covariant return type checking in the call to CompareMethodSigs, we need to verify whether the type with
+                // the MethodDecl is an interface.
+                // We will also allow covariant return types if both the MethodImpl and MethodDecl are not on the same type.
+
+                BOOL isBodyOnInterface = IsInterface();
+                BOOL isDeclOnInterface = FALSE;
+                BOOL methodImplAndMethodDeclOnSameType = (GetCl() == tkParent);
+
+                if (!isBodyOnInterface && !methodImplAndMethodDeclOnSameType)
+                {
+                    // Skip checking if the declaring type is an interface if we already know this is a scenario where
+                    // we can't allow for covariant returns
+
+                    CONTRACT_VIOLATION(LoadsTypeViolation);
+                    MethodTable* pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+                        GetModule(),
+                        tkParent,
+                        &bmtGenerics->typeContext,
+                        ClassLoader::ThrowIfNotFound,
+                        ClassLoader::PermitUninstDefOrRef,
+                        ClassLoader::LoadTypes,
+                        CLASS_LOAD_APPROXPARENTS,
+                        TRUE).GetMethodTable()->GetCanonicalMethodTable();
+
+                    CONSISTENCY_CHECK(pDeclMT != NULL);
+
+                    isDeclOnInterface = pDeclMT->IsInterface();
+                }
+
+                if (strstr(this->GetHalfBakedClass()->m_szDebugClassName, "MyFoo") != NULL || strstr(this->GetHalfBakedClass()->m_szDebugClassName, "MyBar") != NULL)
+                {
+                    int a = 0;
+                }
+
                 // Can't use memcmp because there may be two AssemblyRefs
                 // in this scope, pointing to the same assembly, etc.).
                 if (!MetaSig::CompareMethodSigs(
@@ -2375,7 +2418,8 @@ MethodTableBuilder::EnumerateMethodImpls()
                         pSigBody,
                         cbSigBody,
                         GetModule(),
-                        NULL))
+                        NULL,
+                        !isBodyOnInterface && !isDeclOnInterface && !methodImplAndMethodDeclOnSameType))
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH);
                 }
@@ -3648,10 +3692,10 @@ BOOL MethodTableBuilder::IsSelfReferencingStaticValueTypeField(mdToken     dwByV
 
     PCCOR_SIGNATURE pFieldSig = pMemberSignature + 1; // skip the CALLCONV_FIELD
 
-    return MetaSig::CompareElementType(pFakeSig,             pFieldSig,
+    return MetaSig::CompareElementType(pFakeSig, pFieldSig,
                                        pFakeSig + cFakeSig,  pMemberSignature + cMemberSignature,
                                        GetModule(), GetModule(),
-                                       NULL,                 NULL);
+                                       NULL, NULL, FALSE);
 
 }
 
@@ -5568,6 +5612,11 @@ MethodTableBuilder::ProcessMethodImpls()
 
     HRESULT hr = S_OK;
 
+    if (strstr(this->GetHalfBakedClass()->m_szDebugClassName, "MyFoo") != NULL || strstr(this->GetHalfBakedClass()->m_szDebugClassName, "MyBar") != NULL)
+    {
+        int a = 0;
+    }
+
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
@@ -5783,8 +5832,9 @@ MethodTableBuilder::ProcessMethodImpls()
                                 bmtRTType *pCurDeclType = pDeclType;
                                 do
                                 {
-                                    // two pass algorithm. search for exact matches followed
-                                    // by equivalent matches.
+                                    // Two pass algorithm:
+                                    //  1: Search for exact matches
+                                    //  2: Search for equivalent matches.
                                     for (int iPass = 0; (iPass < 2) && (declMethod.IsNull()); iPass++)
                                     {
                                         MethodTable *pCurDeclMT = pCurDeclType->GetMethodTable();
@@ -5818,6 +5868,7 @@ MethodTableBuilder::ProcessMethodImpls()
                                                     cbCurMDSig,
                                                     pCurMD->GetModule(),
                                                     &pCurDeclType->GetSubstitution(),
+                                                    FALSE,
                                                     iPass == 0 ? &newVisited : NULL))
                                                 {
                                                     declMethod = (*bmtParent->pSlotTable)[pCurMD->GetSlot()].Decl();
@@ -6118,6 +6169,7 @@ VOID
 MethodTableBuilder::MethodImplCompareSignatures(
     bmtMethodHandle     hDecl,
     bmtMethodHandle     hImpl,
+    BOOL                allowCovariantReturn,
     DWORD               dwConstraintErrorCode)
 {
     CONTRACTL {
@@ -6131,7 +6183,7 @@ MethodTableBuilder::MethodImplCompareSignatures(
     const MethodSignature &declSig(hDecl.GetMethodSignature());
     const MethodSignature &implSig(hImpl.GetMethodSignature());
 
-    if (!MethodSignature::SignaturesEquivalent(declSig, implSig))
+    if (!MethodSignature::SignaturesEquivalent(declSig, implSig, allowCovariantReturn))
     {
         LOG((LF_CLASSLOADER, LL_INFO1000, "BADSIG placing MethodImpl: %x\n", declSig.GetToken()));
         BuildMethodTableThrowException(COR_E_TYPELOAD, IDS_CLASSLOAD_MI_BADSIGNATURE, declSig.GetToken());
@@ -6379,6 +6431,7 @@ MethodTableBuilder::PlaceLocalDeclarationOnClass(
         MethodImplCompareSignatures(
             pDecl,
             pImpl,
+            FALSE /* allowCovariantReturn */,
             IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_LOCAL_METHOD_IMPL);
 
         ///////////////////////////////
@@ -6450,6 +6503,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
         MethodImplCompareSignatures(
             pDecl,
             pImpl,
+            FALSE /* allowCovariantReturn */,
             IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_INTERFACE_METHOD_IMPL);
 
         ///////////////////////////////
@@ -6552,6 +6606,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnInterface(
         MethodImplCompareSignatures(
             hDecl,
             bmtMethodHandle(pImpl),
+            FALSE /* allowCovariantReturn */,
             IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_INTERFACE_METHOD_IMPL);
 
         ///////////////////////////////
@@ -6600,6 +6655,7 @@ MethodTableBuilder::PlaceParentDeclarationOnClass(
         MethodImplCompareSignatures(
             pDecl,
             pImpl,
+            TRUE /* allowCovariantReturn */,
             IDS_CLASSLOAD_CONSTRAINT_MISMATCH_ON_PARENT_METHOD_IMPL);
 
         ////////////////////////////////
@@ -7230,7 +7286,7 @@ MethodTableBuilder::PlaceMethodFromParentEquivalentInterfaceIntoInterfaceSlot(
             // Check to verify that the equivalent slot on the equivalent interface actually matches the method
             // on the current interface. If not, then the slot is not a match, and we should search other interfaces
             // for an implementation of the method.
-            if (!MethodSignature::SignaturesEquivalent(pCurItfMethod->GetMethodSignature(), parentImplementation.GetMethodSignature()))
+            if (!MethodSignature::SignaturesEquivalent(pCurItfMethod->GetMethodSignature(), parentImplementation.GetMethodSignature(), FALSE))
             {
                 continue;
             }

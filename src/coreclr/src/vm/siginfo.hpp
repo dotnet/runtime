@@ -970,6 +970,11 @@ class MetaSig
         //------------------------------------------------------------------
         CorElementType GetByRefType(TypeHandle* pTy) const;
 
+        // Compare two type handles for equality. If the two types are not equal, and allowDerivedClass
+        // is TRUE, return true if hType2 derives from hType1. This inheritance check is used to allow
+        // for covariant return types on MethodImpls.
+        static BOOL CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allowDerivedClass);
+
         // Compare types in two signatures, first applying
         // - optional substitutions pSubst1 and pSubst2
         //   to class type parameters (E_T_VAR) in the respective signatures
@@ -984,6 +989,7 @@ class MetaSig
             Module *             pModule2,
             const Substitution * pSubst1,
             const Substitution * pSubst2,
+            BOOL                 allowDerivedClass,
             TokenPairList *      pVisited = NULL);
 
 
@@ -1002,15 +1008,16 @@ class MetaSig
         // Compare two complete method signatures, first applying optional substitutions pSubst1 and pSubst2
         // to class type parameters (E_T_VAR) in the respective signatures
         static BOOL CompareMethodSigs(
-            PCCOR_SIGNATURE pSig1,
-            DWORD       cSig1,
-            Module*     pModule1,
+            PCCOR_SIGNATURE     pSig1,
+            DWORD               cSig1,
+            Module*             pModule1,
             const Substitution* pSubst1,
-            PCCOR_SIGNATURE pSig2,
-            DWORD       cSig2,
-            Module*     pModule2,
+            PCCOR_SIGNATURE     pSig2,
+            DWORD               cSig2,
+            Module*             pModule2,
             const Substitution* pSubst2,
-            TokenPairList *pVisited = NULL
+            BOOL                allowCovariantReturn,
+            TokenPairList*      pVisited = NULL
         );
 
         // Nonthrowing version of CompareMethodSigs
