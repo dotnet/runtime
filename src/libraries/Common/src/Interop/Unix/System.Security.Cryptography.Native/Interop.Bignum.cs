@@ -16,7 +16,7 @@ internal static partial class Interop
         internal static extern void BigNumDestroy(IntPtr a);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumFromBinary")]
-        private static extern IntPtr BigNumFromBinary(ref byte s, int len);
+        private static extern unsafe IntPtr BigNumFromBinary(byte* s, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumToBinary")]
         private static extern unsafe int BigNumToBinary(SafeBignumHandle a, byte* to);
@@ -24,16 +24,19 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetBigNumBytes")]
         private static extern int GetBigNumBytes(SafeBignumHandle a);
 
-        private static IntPtr CreateBignumPtr(ReadOnlySpan<byte> bigEndianValue)
+        private static unsafe IntPtr CreateBignumPtr(ReadOnlySpan<byte> bigEndianValue)
         {
-            IntPtr ret = BigNumFromBinary(ref MemoryMarshal.GetReference(bigEndianValue), bigEndianValue.Length);
-
-            if (ret == IntPtr.Zero)
+            fixed (byte* pBigEndianValue = bigEndianValue)
             {
-                throw CreateOpenSslCryptographicException();
-            }
+                IntPtr ret = BigNumFromBinary(pBigEndianValue, bigEndianValue.Length);
 
-            return ret;
+                if (ret == IntPtr.Zero)
+                {
+                    throw CreateOpenSslCryptographicException();
+                }
+
+                return ret;
+            }
         }
 
         internal static SafeBignumHandle CreateBignum(ReadOnlySpan<byte> bigEndianValue)
