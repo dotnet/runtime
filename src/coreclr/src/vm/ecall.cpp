@@ -349,7 +349,7 @@ static INT FindECIndexForMethod(MethodDesc *pMD, const LPVOID* impls)
 
             //@GENERICS: none of these methods belong to generic classes so there is no instantiation info to pass in
             if (!MetaSig::CompareMethodSigs(pMethodSig, cbMethodSigLen, pModule, NULL,
-                                            sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), NULL))
+                                            sig.GetRawSig(), sig.GetRawSigLen(), MscorlibBinder::GetModule(), NULL, FALSE))
             {
                 continue;
             }

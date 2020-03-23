@@ -713,7 +713,7 @@ static BOOL MethodDescMatchesSig(MethodDesc* pMD, PCCOR_SIGNATURE pSig, DWORD cS
     pMD->GetSig(&pSigOfMD, &cSigOfMD);
 
     return MetaSig::CompareMethodSigs(pSig, cSig, pModule, NULL,
-                                      pSigOfMD, cSigOfMD, pMD->GetModule(), NULL);
+                                      pSigOfMD, cSigOfMD, pMD->GetModule(), NULL, FALSE);
 }
 #endif // _DEBUG
 
@@ -3007,7 +3007,7 @@ static BOOL CompareDelegatesForEquivalence(mdToken tk1, mdToken tk2, Module *pMo
     GetDelegateInvokeMethodSignature(tk1, pModule1, &cbSig1, &pSig1);
     GetDelegateInvokeMethodSignature(tk2, pModule2, &cbSig2, &pSig2);
 
-    return MetaSig::CompareMethodSigs(pSig1, cbSig1, pModule1, NULL, pSig2, cbSig2, pModule2, NULL, pVisited);
+    return MetaSig::CompareMethodSigs(pSig1, cbSig1, pModule1, NULL, pSig2, cbSig2, pModule2, NULL, FALSE, pVisited);
 }
 
 #endif // FEATURE_TYPEEQUIVALENCE
@@ -3567,6 +3567,346 @@ ErrExit:
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
+
+//---------------------------------------------------------------------------------------
+//
+// Compare two type handles for equality, or that hType2 is a derived class of hType1.
+// The derived type check is used by the covariant returns feature.
+//
+// static
+BOOL MetaSig::CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allowDerivedClass)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(!hType1.IsNull() && !hType2.IsNull());
+    }
+    CONTRACTL_END;
+
+    if (hType1 == hType2)
+        return TRUE;
+
+    if (!allowDerivedClass)
+        return FALSE;
+
+    if (hType1.IsNull() || hType2.IsValueType())
+    {
+        return FALSE;
+    }
+
+    hType2 = hType2.GetParent();
+
+    while (!hType2.IsNull())
+    {
+        if (hType1 == hType2)
+            return TRUE;
+        hType2 = hType2.GetParent();
+    }
+
+    return FALSE;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Check if a type signature is eligible to be used with derived type signature comparison
+// and if so, return TRUE if the type is eligible.
+//    Inputs:
+//      - pSig, pEndSig, pModule : Input type signature and module to check for eligibility.
+//      - isBaseTypeSig          : Flag indicating whether the input signature should be treated
+//                                 as that of a base type or a derived type.
+//    Outputs:
+//      - pTypeDefToken, ppTypeDefModule    : TypeDef token and module of the type in the input signature
+//      - pParentTypeDefOrRefOrSpecToken    : Base type token if the input signature is treated as
+//                                            that of a derived type. This can be a TypeDef/TypeRef/TypeSpec.
+//
+// static
+BOOL MetaSig::IsEligibleForDerivedTypeSignatureComparison(
+    PCCOR_SIGNATURE     pSig,
+    PCCOR_SIGNATURE     pEndSig,
+    Module*             pModule,
+    BOOL                isBaseTypeSig,
+    mdToken*            pTypeDefToken,                  /* = NULL */
+    Module**            ppTypeDefModule,                /* = NULL */
+    mdToken*            pParentTypeDefOrRefOrSpecToken) /* = NULL */
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    CorElementType elementType = ELEMENT_TYPE_MAX;
+
+    IfFailThrow(CorSigUncompressElementType_EndPtr(pSig, pEndSig, &elementType));
+
+    // System.Object is always eligible as a base type since all reference types derive from it
+    if (isBaseTypeSig && elementType == ELEMENT_TYPE_OBJECT)
+    {
+        return TRUE;
+    }
+
+    if (elementType == ELEMENT_TYPE_GENERICINST)
+    {
+        IfFailThrow(CorSigUncompressElementType_EndPtr(pSig, pEndSig, &elementType));
+    }
+
+    // Only classes are eligible (no inheritance with value types)
+    if (elementType != ELEMENT_TYPE_CLASS)
+    {
+        return FALSE;
+    }
+
+    mdToken typeRefOrDefToken;
+    IfFailThrow(CorSigUncompressToken_EndPtr(pSig, pEndSig, &typeRefOrDefToken));
+
+    // Ensure we are working with the typedef token
+    mdToken typeDefToken;
+    Module* pFoundModule;
+    if (!ClassLoader::ResolveTokenToTypeDefThrowing(pModule, typeRefOrDefToken, &pFoundModule, &typeDefToken))
+    {
+        return FALSE;
+    }
+
+    mdToken parentTypeDefOrRefOrSpecToken = mdTokenNil;
+    if (!isBaseTypeSig)
+    {
+        DWORD attr;
+        IfFailThrow(pFoundModule->GetMDImport()->GetTypeDefProps(typeDefToken, &attr, &parentTypeDefOrRefOrSpecToken));
+
+        // Check the validity of the parent type token if this is a signature of a derived type.
+        if (!pFoundModule->GetMDImport()->IsValidToken(parentTypeDefOrRefOrSpecToken))
+        {
+            return FALSE;
+        }
+    }
+
+    if (ppTypeDefModule != NULL)
+        *ppTypeDefModule = pFoundModule;
+    if (pTypeDefToken != NULL)
+        *pTypeDefToken = typeDefToken;
+    if (pParentTypeDefOrRefOrSpecToken != NULL)
+        *pParentTypeDefOrRefOrSpecToken = parentTypeDefOrRefOrSpecToken;
+
+    return TRUE;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Compute the base type token (it will either be a typedef or typeref token), and return the
+// module where that base type token is declared.
+//
+// static
+BOOL MetaSig::GetBaseTypeTokenAndModule(
+    mdToken     tk,
+    Module*     pModule,
+    mdToken*    pBaseTypeDefOrRefToken,
+    Module**    ppBaseTypeTokenModule)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(CheckPointer(pModule));
+        PRECONDITION(CheckPointer(pBaseTypeDefOrRefToken));
+        PRECONDITION(CheckPointer(ppBaseTypeTokenModule));
+        PRECONDITION(TypeFromToken(tk) == mdtTypeRef || TypeFromToken(tk) == mdtTypeDef);
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Ensure we are working with the typedef token
+    mdToken typeDefToken;
+    Module* pFoundModule;
+    if (!ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pFoundModule, &typeDefToken))
+        return FALSE;
+
+    DWORD attr;
+    mdToken tkTypeParent;
+    IfFailThrow(pFoundModule->GetMDImport()->GetTypeDefProps(typeDefToken, &attr, &tkTypeParent));
+
+    if (!pFoundModule->GetMDImport()->IsValidToken(tkTypeParent))
+        return FALSE;
+
+    if (TypeFromToken(tkTypeParent) == mdtTypeSpec)
+    {
+        // If the base type token is a TypeSpec of a generic instantiation, extract the type definition token
+
+        ULONG cbSig;
+        PCCOR_SIGNATURE pSig;
+        IfFailThrow(pFoundModule->GetMDImport()->GetSigFromToken(tkTypeParent, &cbSig, &pSig));
+
+        PCCOR_SIGNATURE pEndSig = pSig + cbSig;
+        CorElementType elementType = ELEMENT_TYPE_MAX;
+
+        IfFailThrow(CorSigUncompressElementType_EndPtr(pSig, pEndSig, &elementType));
+        if (elementType == ELEMENT_TYPE_GENERICINST)
+        {
+            IfFailThrow(CorSigUncompressElementType_EndPtr(pSig, pEndSig, &elementType));
+        }
+
+        if (elementType != ELEMENT_TYPE_CLASS)
+            return FALSE;
+
+        IfFailThrow(CorSigUncompressToken_EndPtr(pSig, pEndSig, pBaseTypeDefOrRefToken));
+        *ppBaseTypeTokenModule = pFoundModule;
+
+        _ASSERTE(TypeFromToken(*pBaseTypeDefOrRefToken) == mdtTypeRef || TypeFromToken(*pBaseTypeDefOrRefToken) == mdtTypeDef);
+        _ASSERTE(pFoundModule->GetMDImport()->IsValidToken(*pBaseTypeDefOrRefToken));
+
+        return TRUE;
+    }
+    else if (TypeFromToken(tkTypeParent) == mdtTypeRef || TypeFromToken(tkTypeParent) == mdtTypeDef)
+    {
+        *pBaseTypeDefOrRefToken = tkTypeParent;
+        *ppBaseTypeTokenModule = pFoundModule;
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+//------------------------------------------------------------------
+// Extract the base type's signature and stubstitution from the second type signature
+// and recompare it with the first type's signature.
+//------------------------------------------------------------------
+// static
+BOOL MetaSig::ComputeBaseTypeAndCompareElementType(
+    PCCOR_SIGNATURE &    pSig1,
+    PCCOR_SIGNATURE &    pSig2,
+    PCCOR_SIGNATURE      pEndSig1,
+    PCCOR_SIGNATURE      pEndSig2,
+    Module *             pModule1,
+    Module *             pModule2,
+    const Substitution * pSubst1,
+    const Substitution * pSubst2,
+    TokenPairList*       pVisited) // = NULL
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Quick check of Type1 for eligibility before starting to traverse base type chain in Type2
+    if (!IsEligibleForDerivedTypeSignatureComparison(pSig1, pEndSig1, pModule1, TRUE))
+    {
+        return FALSE;
+    }
+
+    // Now a quick check of Type2 for eligibility, and if eligible, compute the TypeDef module of the current type in pSig2, as well
+    // as the base type token (which can be a TypeRef/TypeDef/TypeSpec)
+    Module* pTypeDefModule;
+    mdToken parentTypeDefOrRefOrSpecToken;
+    if (!IsEligibleForDerivedTypeSignatureComparison(pSig2, pEndSig2, pModule2, FALSE, NULL, &pTypeDefModule, &parentTypeDefOrRefOrSpecToken))
+    {
+        return FALSE;
+    }
+
+    // We need to check if the signature of Type2 is that of a generic type
+    // and if so, insert its generic instantiation arguments to the end of the substitution chain.
+    // Doing so will enable type signature comparison to traverse the generic stubstitution
+    // chain correctly while traversing the base type hierarchy of Type2.
+    // The instantiation arguments substitution have to be added as the leaf node of the
+    // substitution chain, which is why we perform the NULL check on the substitution
+
+    const Substitution* pCurrentSubstChain = pSubst2;
+
+    Substitution leafSubstFromGenericArgs;
+    if (pSubst2 == NULL || pSubst2->GetInst().IsNull())
+    {
+        CorElementType et;
+        SigParser parser(pSig2, (DWORD)(pEndSig2 - pSig2));
+        IfFailThrow(parser.GetElemType(&et));
+        if (et == ELEMENT_TYPE_GENERICINST)
+        {
+            IfFailThrow(parser.SkipExactlyOne());    // Skip generic type definition signature
+            IfFailThrow(parser.GetData(NULL));       // Skip number of generic arguments
+
+            leafSubstFromGenericArgs = Substitution(pModule2, SigPointer(parser.GetPtr()), NULL);
+
+            // Set the current substitution chain to the leaf node we just created.
+            pCurrentSubstChain = &leafSubstFromGenericArgs;
+        }
+    }
+
+    Substitution parentTypeSubst;
+    SigBuilder parentTypeSigBuilder;
+
+    // If the parent type token is a TypeSpec token, we need to load the substitution from the signature and
+    // chain it to the existing substitution chain. This is necessary to ensure proper comparisons
+    // for generic instantiation arguments while performing comparison using one of the base type's signatures.
+
+    if (TypeFromToken(parentTypeDefOrRefOrSpecToken) == mdtTypeSpec)
+    {
+        ULONG cbParentTypeSig;
+        PCCOR_SIGNATURE pParentTypeSig;
+        IfFailThrow(pTypeDefModule->GetMDImport()->GetSigFromToken(parentTypeDefOrRefOrSpecToken, &cbParentTypeSig, &pParentTypeSig));
+
+        parentTypeSigBuilder.AppendSignature(pParentTypeSig, pParentTypeSig + cbParentTypeSig);
+        parentTypeSubst = Substitution(parentTypeDefOrRefOrSpecToken, pTypeDefModule, pCurrentSubstChain);
+    }
+    else if (TypeFromToken(parentTypeDefOrRefOrSpecToken) == mdtTypeDef || TypeFromToken(parentTypeDefOrRefOrSpecToken) == mdtTypeRef)
+    {
+        // We need to special case type System.Object since it has its own element type. We don't need to do the same for type String
+        // because it's a sealed type, and no other class can derive from it. Without this special casing, we'll end up with a comparison
+        // between a ELEMENT_TYPE_OBJECT and a ELEMENT_TYPE_CLASS respresentation of object, which we'll have to special case in the
+        // implementation of MetaSig::CompareElementType() by checking the type token following ELEMENT_TYPE_CLASS (possible, but adds
+        // unnecessary complexity).
+
+        Module* pResolvedModule;
+        mdTypeDef resolvedTypeDefToken;
+        BOOL resolvedToken = ClassLoader::ResolveTokenToTypeDefThrowing(pTypeDefModule, parentTypeDefOrRefOrSpecToken, &pResolvedModule, &resolvedTypeDefToken);
+
+        if (resolvedToken && pResolvedModule == g_pObjectClass->GetModule() && resolvedTypeDefToken == g_pObjectClass->GetCl())
+        {
+            parentTypeSigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
+        }
+        else
+        {
+            parentTypeSigBuilder.AppendElementType(ELEMENT_TYPE_CLASS);
+            parentTypeSigBuilder.AppendToken(parentTypeDefOrRefOrSpecToken);
+        }
+
+        parentTypeSubst = (pCurrentSubstChain == NULL ? Substitution() : Substitution(*pCurrentSubstChain));
+    }
+    else
+    {
+        return FALSE;
+    }
+
+    DWORD cbParentTypeSig;
+    PCCOR_SIGNATURE pParentTypeSig = (PCCOR_SIGNATURE)parentTypeSigBuilder.GetSignature(&cbParentTypeSig);
+    PCCOR_SIGNATURE pParentTypeSigEnd = pParentTypeSig + cbParentTypeSig;
+
+    //
+    // Given that we're going to restart the current type comparaison between Type1 and the base type of Type2, and
+    // given that the signature pointers for both types are passed by reference to get updated during each call to
+    // CompareElementType(), we need to skip one element from the original signature of Type2.
+    //
+    SigParser parser = SigParser(pSig2);
+    IfFailThrow(parser.SkipExactlyOne());
+    pSig2 = parser.GetPtr();
+
+    return CompareElementType(
+        pSig1,
+        pParentTypeSig,
+        pEndSig1,
+        pParentTypeSigEnd,
+        pModule1,
+        pTypeDefModule,
+        pSubst1,
+        parentTypeSubst.GetInst().IsNull() ? NULL : &parentTypeSubst,
+        TRUE,
+        pVisited);
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Compare the next elements in two sigs.
@@ -3582,6 +3922,7 @@ MetaSig::CompareElementType(
     Module *             pModule2,
     const Substitution * pSubst1,
     const Substitution * pSubst2,
+    BOOL                 allowDerivedClass,
     TokenPairList *      pVisited) // = NULL
 {
     CONTRACTL
@@ -3591,7 +3932,10 @@ MetaSig::CompareElementType(
         INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
-    CONTRACTL_END
+    CONTRACTL_END;
+
+    PCCOR_SIGNATURE pSig1Start = pSig1;
+    PCCOR_SIGNATURE pSig2Start = pSig2;
 
  redo:
     // We jump here if the Type was a ET_CMOD prefix.
@@ -3626,6 +3970,7 @@ MetaSig::CompareElementType(
             pSubst2->GetModule(),
             pSubst1,
             pSubst2->GetNext(),
+            allowDerivedClass,
             pVisited);
     }
 
@@ -3653,6 +3998,7 @@ MetaSig::CompareElementType(
             pModule2,
             pSubst1->GetNext(),
             pSubst2,
+            allowDerivedClass,
             pVisited);
     }
 
@@ -3691,21 +4037,21 @@ MetaSig::CompareElementType(
     {
         if ((Type1 == ELEMENT_TYPE_INTERNAL) || (Type2 == ELEMENT_TYPE_INTERNAL))
         {
-            TypeHandle     hInternal;
+            TypeHandle     hType1, hType2;
             CorElementType eOtherType;
             Module *       pOtherModule;
 
             // One type is already loaded, collect all the necessary information to identify the other type.
             if (Type1 == ELEMENT_TYPE_INTERNAL)
             {
-                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void **)&hInternal));
+                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void **)&hType1));
 
                 eOtherType = Type2;
                 pOtherModule = pModule2;
             }
             else
             {
-                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig2, pEndSig2, (void **)&hInternal));
+                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig2, pEndSig2, (void **)&hType2));
 
                 eOtherType = Type1;
                 pOtherModule = pModule1;
@@ -3716,11 +4062,30 @@ MetaSig::CompareElementType(
             {
                 case ELEMENT_TYPE_OBJECT:
                 {
-                    return (hInternal.AsMethodTable() == g_pObjectClass);
+                    if (Type1 == ELEMENT_TYPE_INTERNAL)
+                    {
+                        // Type2 is ELEMENT_TYPE_OBJECT. Return true only if Type1 is also type object.
+                        return hType1.AsMethodTable() == g_pObjectClass;
+                    }
+                    else
+                    {
+                        // Type1 is ELEMENT_TYPE_OBJECT. Return true if Type2 is type System.Object or any other class
+                        // if allowDerivedClass is TRUE.
+                        if (hType2.AsMethodTable() == g_pObjectClass)
+                        {
+                            return TRUE;
+                        }
+                        else
+                        {
+                            return allowDerivedClass ? CompareTypeHandles(TypeHandle(g_pObjectClass), hType2, TRUE) : FALSE;
+                        }
+                    }
                 }
                 case ELEMENT_TYPE_STRING:
                 {
-                    return (hInternal.AsMethodTable() == g_pStringClass);
+                    return Type1 == ELEMENT_TYPE_INTERNAL ?
+                        hType1.AsMethodTable() == g_pStringClass :
+                        hType2.AsMethodTable() == g_pStringClass;
                 }
                 case ELEMENT_TYPE_VALUETYPE:
                 case ELEMENT_TYPE_CLASS:
@@ -3729,20 +4094,23 @@ MetaSig::CompareElementType(
                     if (Type1 == ELEMENT_TYPE_INTERNAL)
                     {
                         IfFailThrow(CorSigUncompressToken_EndPtr(pSig2, pEndSig2, &tkOther));
+                        hType2 = ClassLoader::LoadTypeDefOrRefThrowing(
+                            pOtherModule,
+                            tkOther,
+                            ClassLoader::ReturnNullIfNotFound,
+                            ClassLoader::FailIfUninstDefOrRef);
                     }
                     else
                     {
                         IfFailThrow(CorSigUncompressToken_EndPtr(pSig1, pEndSig1, &tkOther));
+                        hType1 = ClassLoader::LoadTypeDefOrRefThrowing(
+                            pOtherModule,
+                            tkOther,
+                            ClassLoader::ReturnNullIfNotFound,
+                            ClassLoader::FailIfUninstDefOrRef);
                     }
-                    TypeHandle hOtherType;
 
-                    hOtherType = ClassLoader::LoadTypeDefOrRefThrowing(
-                        pOtherModule,
-                        tkOther,
-                        ClassLoader::ReturnNullIfNotFound,
-                        ClassLoader::FailIfUninstDefOrRef);
-
-                    return (hInternal == hOtherType);
+                    return CompareTypeHandles(hType1, hType2, allowDerivedClass);
                 }
                 default:
                 {
@@ -3752,7 +4120,31 @@ MetaSig::CompareElementType(
         }
         else
         {
-            return FALSE; // types must be the same
+            if (allowDerivedClass)
+            {
+                // Obvious case: string derives from object.
+                if (Type1 == ELEMENT_TYPE_OBJECT && Type2 == ELEMENT_TYPE_STRING)
+                {
+                    return TRUE;
+                }
+
+                // Reset pSig1 and pSig2 to their initial position (Note that their values get updated during the
+                // recursive calls).
+                pSig1 = pSig1Start;
+                pSig2 = pSig2Start;
+                return ComputeBaseTypeAndCompareElementType(
+                    pSig1,
+                    pSig2,
+                    pEndSig1,
+                    pEndSig2,
+                    pModule1,
+                    pModule2,
+                    pSubst1,
+                    pSubst2,
+                    pVisited);
+            }
+
+            return FALSE;
         }
     }
 
@@ -3836,6 +4228,7 @@ MetaSig::CompareElementType(
                     pModule2,
                     pSubst1,
                     pSubst2,
+                    FALSE,
                     pVisited))
             {
                 return FALSE;
@@ -3851,7 +4244,77 @@ MetaSig::CompareElementType(
             IfFailThrow(CorSigUncompressToken_EndPtr(pSig1, pEndSig1, &tk1));
             IfFailThrow(CorSigUncompressToken_EndPtr(pSig2, pEndSig2, &tk2));
 
-            return CompareTypeTokens(tk1, tk2, pModule1, pModule2, pVisited);
+            if (CompareTypeTokens(tk1, tk2, pModule1, pModule2, pVisited))
+            {
+                return TRUE;
+            }
+
+            if (allowDerivedClass)
+            {
+                //
+                // We need to check if Type2 derives from Type1. Note that if Type1 is a generic type,
+                // we cannot check for inheritance here because we need to properly keep track of substitutions.
+                //
+                // Here's an example:
+                //      class Class0<A,B> { }
+                //      class Class1<ARG1, ARG2> : Class0<!ARG1, !ARG2> { }
+                //      class Class2<T> : Class1<!T, int16> { }
+                //      class Class3 : Class2<int32> { }
+                //      class Class4 : Class3{ }
+                //
+                // Here, we need to check if Class4 derives from Class0<int32,int16>
+                //
+                // In that example, if we just look at the typedef tokens for Class0<A,B> and Class4, and traverse the
+                // parent chain of Class4 to check if it derives from Class0, we would be always returning true, which
+                // is not necessarily correct all the times.
+                // Here's a counter example: if Class2 was declared as 'Class2<T> : Class1<string,int16>',
+                // then Class4 would be deriving from Class0<string,int16>, and not from Class0<int32,int16>.
+                //
+                // Therefore, we need to keep track of the substitutions:
+                //      A -> ARG1 -> T -> int32
+                //      B -> ARG2 -> int16
+                //
+                // To handle that case, we need to compute the base type *AND* base type substitution chain of type2, and
+                // recompare that with type1. If type1 is generic, we'll return return FALSE here, so that we can properly
+                // handle this scenario under ELEMENT_TYPE_GENERICINST.
+                //
+
+                // First, check if Type1 is eligible for covariant returns
+
+                mdToken typeDefToken1;
+                Module* pTypeDefModule1;
+                if (!IsEligibleForDerivedTypeSignatureComparison(pSig1Start, pEndSig1, pModule1, TRUE, &typeDefToken1, &pTypeDefModule1))
+                {
+                    return FALSE;
+                }
+
+                // Second, check if Type1 is generic. If so, we'll return FALSE here, and have that handled under ELEMENT_TYPE_GENERICINST
+
+                HENUMInternal   hEnumGenericPars;
+                IfFailThrow(pTypeDefModule1->GetMDImport()->EnumInit(mdtGenericParam, typeDefToken1, &hEnumGenericPars));
+                if (pTypeDefModule1->GetMDImport()->EnumGetCount(&hEnumGenericPars) != 0)
+                {
+                    return FALSE;
+                }
+
+                // Finally, walk the base type chain of Type2 to check if it derives from Type1. At this point, we don't need to
+                // worry about generic substitutions because we know that Type1 is non-generic. A simple token-based comparison
+                // will yield the correct result here.
+
+                mdToken baseType2Token = tk2;
+                Module* pBaseType2Module = pModule2;
+                while (GetBaseTypeTokenAndModule(tk2, pModule2, &baseType2Token, &pBaseType2Module) && !(baseType2Token == tk2 && pBaseType2Module == pModule2))
+                {
+                    tk2 = baseType2Token;
+                    pModule2 = pBaseType2Module;
+                    if (CompareTypeTokens(tk1, tk2, pModule1, pModule2, pVisited))
+                    {
+                        return TRUE;
+                    }
+                }
+            }
+
+            return FALSE;
         }
 
         case ELEMENT_TYPE_FNPTR:
@@ -3895,6 +4358,7 @@ MetaSig::CompareElementType(
                         pModule2,
                         pSubst1,
                         pSubst2,
+                        FALSE,
                         &newVisited))
                 {
                     return FALSE;
@@ -3923,9 +4387,28 @@ MetaSig::CompareElementType(
                     pModule2,
                     pSubst1,
                     pSubst2,
+                    allowDerivedClass,
                     &newVisitedAlwaysForbidden))
             {
-                return FALSE;
+                if (!allowDerivedClass)
+                {
+                    return FALSE;
+                }
+
+                // Reset pSig1 and pSig2 to their initial position (Note that their values get updated during the
+                // recursive calls).
+                pSig1 = pSig1Start;
+                pSig2 = pSig2Start;
+                return ComputeBaseTypeAndCompareElementType(
+                    pSig1,
+                    pSig2,
+                    pEndSig1,
+                    pEndSig2,
+                    pModule1,
+                    pModule2,
+                    pSubst1,
+                    pSubst2,
+                    &newVisitedAlwaysForbidden);
             }
 
             DWORD argCnt1;
@@ -3948,6 +4431,7 @@ MetaSig::CompareElementType(
                         pModule2,
                         pSubst1,
                         pSubst2,
+                        FALSE,
                         &newVisited))
                 {
                     return FALSE;
@@ -3976,6 +4460,7 @@ MetaSig::CompareElementType(
                     pModule2,
                     pSubst1,
                     pSubst2,
+                    FALSE,
                     pVisited))
             {
                 return FALSE;
@@ -4056,7 +4541,7 @@ MetaSig::CompareElementType(
             IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void **)&hType1));
             IfFailThrow(CorSigUncompressPointer_EndPtr(pSig2, pEndSig2, (void **)&hType2));
 
-            return (hType1 == hType2);
+            return CompareTypeHandles(hType1, hType2, allowDerivedClass);
         }
     } // switch
     // Unreachable
@@ -4130,6 +4615,7 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
                 pSubst2->GetModule(),
                 pSubst1->GetNext(),
                 pSubst2->GetNext(),
+                FALSE,
                 pVisited))
         {
             return FALSE;
@@ -4237,7 +4723,7 @@ MetaSig::CompareMethodSigsNT(
     HRESULT hr = S_OK;
     EX_TRY
     {
-        if (CompareMethodSigs(pSignature1, cSig1, pModule1, pSubst1, pSignature2, cSig2, pModule2, pSubst2, pVisited))
+        if (CompareMethodSigs(pSignature1, cSig1, pModule1, pSubst1, pSignature2, cSig2, pModule2, pSubst2, FALSE, pVisited))
             hr = S_OK;
         else
             hr = S_FALSE;
@@ -4262,6 +4748,7 @@ MetaSig::CompareMethodSigs(
     DWORD                cSig2,
     Module *             pModule2,
     const Substitution * pSubst2,
+    BOOL                 allowCovariantReturn,
     TokenPairList *      pVisited) //= NULL
 {
     CONTRACTL
@@ -4366,6 +4853,7 @@ MetaSig::CompareMethodSigs(
                     pModule2,
                     pSubst1,
                     pSubst2,
+                    i == 0 && allowCovariantReturn,
                     pVisited))
             {
                 return FALSE;
@@ -4391,6 +4879,7 @@ MetaSig::CompareMethodSigs(
                 pModule2,
                 pSubst1,
                 pSubst2,
+                i == 0 && allowCovariantReturn,
                 pVisited))
         {
             return FALSE;
@@ -4431,7 +4920,7 @@ BOOL MetaSig::CompareFieldSigs(
     pEndSig1 = pSig1 + cSig1;
     pEndSig2 = pSig2 + cSig2;
 
-    return(CompareElementType(++pSig1, ++pSig2, pEndSig1, pEndSig2, pModule1, pModule2, NULL, NULL, pVisited));
+    return(CompareElementType(++pSig1, ++pSig2, pEndSig1, pEndSig2, pModule1, pModule2, NULL, NULL, FALSE, pVisited));
 }
 
 #ifndef DACCESS_COMPILE
@@ -4673,7 +5162,7 @@ BOOL MetaSig::CompareTypeDefOrRefOrSpec(Module *pModule1, mdToken tok1,
     ULONG cSig1,cSig2;
     IfFailThrow(pInternalImport1->GetTypeSpecFromToken(tok1, &pSig1, &cSig1));
     IfFailThrow(pInternalImport2->GetTypeSpecFromToken(tok2, &pSig2, &cSig2));
-    return MetaSig::CompareElementType(pSig1,pSig2,pSig1+cSig1,pSig2+cSig2,pModule1,pModule2,pSubst1,pSubst2,pVisited);
+    return MetaSig::CompareElementType(pSig1, pSig2, pSig1 + cSig1, pSig2 + cSig2, pModule1, pModule2, pSubst1, pSubst2, FALSE, pVisited);
 } // MetaSig::CompareTypeDefOrRefOrSpec
 
 /* static */
@@ -5258,6 +5747,7 @@ MetaSig::GetUnmanagedCallingConvention(
     *pPinvokeMapOut = (CorPinvokeMap)0;
     return TRUE;
 }
+#endif // #ifndef DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
@@ -5357,8 +5847,6 @@ void Substitution::DeleteChain()
     }
     delete this;
 }
-
-#endif // #ifndef DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
