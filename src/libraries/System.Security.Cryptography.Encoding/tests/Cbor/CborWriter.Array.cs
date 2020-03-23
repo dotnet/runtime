@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PopDataItem(CborMajorType.Array);
         }
 
-        public void WriteStartArray()
+        public void WriteStartArrayIndefiniteLength()
         {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Array, CborAdditionalInfo.IndefiniteLength));

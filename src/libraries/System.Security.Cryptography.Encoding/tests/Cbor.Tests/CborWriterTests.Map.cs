@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void EndWriteMap_IndefiniteLength_EvenItems_ShouldThrowInvalidOperationException(int length)
         {
             using var writer = new CborWriter();
-            writer.WriteStartMap();
+            writer.WriteStartMapIndefiniteLength();
 
             for (int i = 1; i < length; i++)
             {

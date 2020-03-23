@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _offset += length;
         }
 
-        public void WriteStartByteString()
+        public void WriteStartByteStringIndefiniteLength()
         {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.ByteString, CborAdditionalInfo.IndefiniteLength));
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PopDataItem(CborMajorType.ByteString);
         }
 
-        public void WriteStartTextString()
+        public void WriteStartTextStringIndefiniteLength()
         {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.TextString, CborAdditionalInfo.IndefiniteLength));

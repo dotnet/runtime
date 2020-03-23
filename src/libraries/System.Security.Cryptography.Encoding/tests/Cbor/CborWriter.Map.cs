@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PopDataItem(CborMajorType.Map);
         }
 
-        public void WriteStartMap()
+        public void WriteStartMapIndefiniteLength()
         {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));

@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
                 else
                 {
-                    writer.WriteStartArray();
+                    writer.WriteStartArrayIndefiniteLength();
                 }
 
                 foreach (object value in values)
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 }
                 else
                 {
-                    writer.WriteStartMap();
+                    writer.WriteStartMapIndefiniteLength();
                 }
 
                 foreach (object value in keyValuePairs.Skip(1))
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public static void WriteChunkedByteString(CborWriter writer, byte[][] chunks)
             {
-                writer.WriteStartByteString();
+                writer.WriteStartByteStringIndefiniteLength();
                 foreach (byte[] chunk in chunks)
                 {
                     writer.WriteByteString(chunk);
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             public static void WriteChunkedTextString(CborWriter writer, string[] chunks)
             {
-                writer.WriteStartTextString();
+                writer.WriteStartTextStringIndefiniteLength();
                 foreach (string chunk in chunks)
                 {
                     writer.WriteTextString(chunk);
@@ -109,10 +109,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     case nameof(writer.WriteInt64): writer.WriteInt64(42); break;
                     case nameof(writer.WriteByteString): writer.WriteByteString(Array.Empty<byte>()); break;
                     case nameof(writer.WriteTextString): writer.WriteTextString(""); break;
-                    case nameof(writer.WriteStartTextString): writer.WriteStartTextString(); break;
-                    case nameof(writer.WriteStartByteString): writer.WriteStartByteString(); break;
-                    case nameof(writer.WriteStartArray): writer.WriteStartArray(); break;
-                    case nameof(writer.WriteStartMap): writer.WriteStartMap(); break;
+                    case nameof(writer.WriteStartTextStringIndefiniteLength): writer.WriteStartTextStringIndefiniteLength(); break;
+                    case nameof(writer.WriteStartByteStringIndefiniteLength): writer.WriteStartByteStringIndefiniteLength(); break;
+                    case nameof(writer.WriteStartArray): writer.WriteStartArrayIndefiniteLength(); break;
+                    case nameof(writer.WriteStartMap): writer.WriteStartMapIndefiniteLength(); break;
                     case nameof(writer.WriteEndByteString): writer.WriteEndByteString(); break;
                     case nameof(writer.WriteEndTextString): writer.WriteEndTextString(); break;
                     case nameof(writer.WriteEndArray): writer.WriteEndArray(); break;
