@@ -762,7 +762,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                     }
                 }
 #endif // defined(TARGET_ARM64)
-
             }
         }
 
