@@ -170,8 +170,12 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 {
 	THREADS_SUSPEND_DEBUG ("sending signal %d to %p[%p]\n", signum, info, mono_thread_info_get_tid (info));
 
+	const int signal_queue_ovf_retry_count = 5;
+	const gulong signal_queue_ovf_sleep_us = 10 * 1000; /* 10 milliseconds */ 
+	int retry_count = 0;
 	int result;
 
+redo:
 #ifdef USE_TKILL_ON_ANDROID
 	int old_errno = errno;
 
@@ -205,8 +209,20 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 #if defined (__MACH__) && defined (ENOTSUP)
 	    && result != ENOTSUP
 #endif
+#if defined (__linux__)
+	    && result != EAGAIN
+#endif
 	    )
 		g_error ("%s: pthread_kill failed with error %d - potential kernel OOM or signal queue overflow", __func__, result);
+
+	if (result == EAGAIN && retry_count < signal_queue_ovf_retry_count) {
+		/* HACK: if the signal queue overflows on linux, try again a couple of times.
+		 * Tries to address https://github.com/dotnet/runtime/issues/32377
+		 */
+		g_usleep (signal_queue_ovf_sleep_us);
+		++retry_count;
+		goto redo;
+	}
 
 	return result;
 }
