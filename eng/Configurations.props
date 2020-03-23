@@ -15,8 +15,12 @@
     <XmlDocDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'docs'))</XmlDocDir>
   </PropertyGroup>
 
+  <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(Configuration)' == 'Release'">true</EnableNgenOptimization>
+    <NETCoreAppCurrentVersion>5.0</NETCoreAppCurrentVersion>
+    <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v$(NETCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
+    <NetCoreAppCurrent>netcoreapp$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <NetFrameworkCurrent>net472</NetFrameworkCurrent>
   </PropertyGroup>
 
   <!-- Honor the generic RuntimeConfiguration property. -->
@@ -40,5 +44,10 @@
     <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
     <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
     <LibrariesTargetOS Condition="'$(LibrariesTargetOS)' == ''">$(TargetOS)</LibrariesTargetOS>
+  </PropertyGroup>
+
+  <!--Feature switches -->
+  <PropertyGroup>
+    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(Configuration)' == 'Release'">true</EnableNgenOptimization>
   </PropertyGroup>
 </Project>
