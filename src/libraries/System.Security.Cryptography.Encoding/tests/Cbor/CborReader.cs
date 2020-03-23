@@ -25,6 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         Tag,
         Special,
         Finished,
+        FormatError,
         EndOfData,
     }
 
@@ -57,6 +58,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return _nestedDataItemStack.Peek().type switch
                     {
                         CborMajorType.Array => CborReaderState.EndArray,
+                        CborMajorType.Map when !_isEvenNumberOfDataItemsWritten => CborReaderState.FormatError,
                         CborMajorType.Map => CborReaderState.EndMap,
                         _ => throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack."),
                     };
@@ -83,13 +85,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         CborMajorType.ByteString => CborReaderState.EndByteString,
                         CborMajorType.TextString => CborReaderState.EndTextString,
                         CborMajorType.Array => CborReaderState.EndArray,
+                        CborMajorType.Map when !_isEvenNumberOfDataItemsWritten => CborReaderState.FormatError,
                         CborMajorType.Map => CborReaderState.EndMap,
                         _ => throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack."),
                     };
                 }
                 else
                 {
-                    throw new FormatException("Unexpected CBOR break byte.");
+                    return CborReaderState.FormatError;
                 }
             }
 
@@ -105,7 +108,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 CborMajorType.Map => CborReaderState.StartMap,
                 CborMajorType.Tag => CborReaderState.Tag,
                 CborMajorType.Special => CborReaderState.Special,
-                _ => throw new FormatException("Invalid CBOR major type"),
+                _ => CborReaderState.FormatError,
             };
         }
 

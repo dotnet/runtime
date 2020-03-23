@@ -255,7 +255,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64();
             }
 
-            Assert.Equal(CborReaderState.EndMap, reader.Peek()); // don't want this to fail
+            Assert.Equal(CborReaderState.FormatError, reader.Peek()); // don't want this to fail
             Assert.Throws<FormatException>(() => reader.ReadEndMap());
         }
 
