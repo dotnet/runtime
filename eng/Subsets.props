@@ -57,11 +57,12 @@
     <DefaultLibrariesSubsets>depproj-native-ref-src</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(DefaultLibrariesSubsets)-apicompat</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">$(DefaultLibrariesSubsets)-pretest</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)-packages</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets Condition="'$(IncludeLibrariesTestSubset)' == 'true'">$(DefaultLibrariesSubsets)-test</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)-package</DefaultLibrariesSubsets>
     <!-- Only build package projects for pack target.-->
-    <DefaultLibrariesSubsets Condition="'$(Pack)' == 'true'">packages</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets Condition="'$(Pack)' == 'true'">package</DefaultLibrariesSubsets>
     <!-- Only build test projects for test target. -->
-    <DefaultLibrariesSubsets Condition="'$(Test)' == 'true'">tests</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets Condition="'$(Test)' == 'true'">test</DefaultLibrariesSubsets>
 
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS'">depproj-pkgproj</DefaultInstallerSubsets>
@@ -96,8 +97,8 @@
     <SubsetName Include="Src" Category="Libraries" Description="The managed implementation libraries." />
     <SubsetName Include="ApiCompat" Category="Libraries" Description="The ApiCompat tool which scans for api compatibility." />
     <SubsetName Include="PreTest" Category="Libraries" Description="Test assets which are necessary to run tests." />
-    <SubsetName Include="Packages" Category="Libraries" Description="The projects that produce NuGet packages from libraries." />
-    <SubsetName Include="Tests" Category="Libraries" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
+    <SubsetName Include="Package" Category="Libraries" Description="The projects that produce NuGet packages from libraries." />
+    <SubsetName Include="Test" Category="Libraries" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
 
     <!-- CoreClr -->
     <SubsetName Include="Runtime" Category="CoreClr" Description="The CoreCLR .NET runtime." />
@@ -257,12 +258,12 @@
     <ProjectToBuild Include="@(LibrariesPreTestToBuild)" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-tests-'))">
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-test-'))">
     <LibrariesTestToBuild Include="$(LibrariesProjectRoot)tests.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(LibrariesTestToBuild)" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-packages-'))">
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-package-'))">
     <LibrariesPackageToBuild Include="$(LibrariesProjectRoot)packages.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(LibrariesPackageToBuild)" />
   </ItemGroup>

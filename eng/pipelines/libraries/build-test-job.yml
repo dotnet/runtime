@@ -55,14 +55,11 @@ jobs:
             unpackFolder: $(Build.SourcesDirectory)/artifacts
             cleanUnpackFolder: false
 
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
-          displayName: Restore
-
         - script: $(_buildScript)
                 -subset tests
                 $(_buildArguments)
                 $(_archiveTestsParameter)
-          displayName: Build
+          displayName: Restore and Build
 
         - template: /eng/pipelines/common/upload-artifact-step.yml
           parameters:
