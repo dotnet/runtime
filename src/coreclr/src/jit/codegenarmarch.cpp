@@ -1377,7 +1377,8 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
 
     // Assumption: current implementation requires that a multi-reg
     // var in 'var = call' is flagged as lvIsMultiRegRet to prevent it from
-    // being promoted.
+    // being promoted, unless compiler->lvaEnregMultiRegVars is true.
+
     unsigned   lclNum = treeNode->AsLclVarCommon()->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
     if (op1->OperIs(GT_CALL))
@@ -1388,7 +1389,9 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
 
     genConsumeRegs(op1);
 
-    int offset = 0;
+    int  offset        = 0;
+    bool isMultiRegVar = treeNode->IsMultiRegLclVar();
+    bool hasRegs       = false;
 
     // Check for the case of an enregistered SIMD type that's returned in multiple registers.
     if (varDsc->lvIsRegCandidate() && treeNode->GetRegNum() != REG_NA)
@@ -1442,6 +1445,11 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
     }
     else
     {
+        if (isMultiRegVar)
+        {
+            assert(compiler->lvaEnregMultiRegVars);
+            assert(regCount == varDsc->lvFieldCnt);
+        }
         for (unsigned i = 0; i < regCount; ++i)
         {
             var_types type = actualOp1->GetRegTypeByIndex(i);
@@ -1455,13 +1463,55 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
             }
 
             assert(reg != REG_NA);
-            GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
-            offset += genTypeSize(type);
+            regNumber varReg = REG_NA;
+            if (isMultiRegVar)
+            {
+                regNumber  varReg      = treeNode->GetRegByIndex(i);
+                unsigned   fieldLclNum = varDsc->lvFieldLclStart + i;
+                LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
+                var_types  type        = fieldVarDsc->TypeGet();
+                if (varReg != REG_NA)
+                {
+                    hasRegs = true;
+                    if (varReg != reg)
+                    {
+                        inst_RV_RV(ins_Copy(type), varReg, reg, type);
+                    }
+                    fieldVarDsc->SetRegNum(varReg);
+                }
+                else
+                {
+                    if (!treeNode->AsLclVar()->IsLastUse(i))
+                    {
+                        GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, fieldLclNum, 0);
+                    }
+                    fieldVarDsc->SetRegNum(REG_STK);
+                }
+            }
+            else
+            {
+                GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
+                offset += genTypeSize(type);
+            }
         }
 
         // Update variable liveness.
-        genUpdateLife(treeNode);
-        varDsc->SetRegNum(REG_STK);
+        if (isMultiRegVar)
+        {
+            if (hasRegs)
+            {
+                genProduceReg(treeNode);
+            }
+            else
+            {
+                genUpdateLife(treeNode);
+            }
+        }
+        else
+        {
+            genUpdateLife(treeNode);
+            varDsc->SetRegNum(REG_STK);
+        }
     }
 }
 

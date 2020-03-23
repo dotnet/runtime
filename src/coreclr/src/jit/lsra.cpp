@@ -153,6 +153,17 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
         putArg->SetRegNumByIdx(reg, regIdx);
     }
 #endif // FEATURE_ARG_SPLIT
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    else if (tree->OperIs(GT_HWINTRINSIC))
+    {
+        assert(regIdx == 1);
+        tree->AsHWIntrinsic()->SetOtherReg(reg);
+    }
+#endif
+    else if (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
+    {
+        tree->AsLclVar()->SetRegNumByIdx(reg, regIdx);
+    }
     else
     {
         assert(tree->IsMultiRegCall());
@@ -1724,6 +1735,34 @@ void LinearScan::identifyCandidates()
             if (varDsc->lvTracked)
             {
                 localVarIntervals[varDsc->lvVarIndex] = nullptr;
+            }
+            // The current implementation of multi-reg structs that are referenced collectively
+            // (i.e. by refering to the parent lclVar rather than each field separately) relies
+            // on all or none of the fields being candidates.
+            if (varDsc->lvIsStructField)
+            {
+                LclVarDsc* parentVarDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
+                if (parentVarDsc->lvIsMultiRegRet && !parentVarDsc->lvDoNotEnregister)
+                {
+                    JITDUMP("Setting multi-reg struct V%02u as not enregisterable:", varDsc->lvParentLcl);
+                    compiler->lvaSetVarDoNotEnregister(varDsc->lvParentLcl DEBUGARG(Compiler::DNER_BlockOp));
+                    for (unsigned int i = 0; i < parentVarDsc->lvFieldCnt; i++)
+                    {
+                        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(parentVarDsc->lvFieldLclStart + i);
+                        JITDUMP(" V%02u", parentVarDsc->lvFieldLclStart + i);
+                        if (fieldVarDsc->lvTracked)
+                        {
+                            fieldVarDsc->lvLRACandidate                = 0;
+                            localVarIntervals[fieldVarDsc->lvVarIndex] = nullptr;
+                            VarSetOps::RemoveElemD(compiler, registerCandidateVars, fieldVarDsc->lvVarIndex);
+                            JITDUMP("*");
+                        }
+                        // This is not accurate, but we need a non-zero refCnt for the parent so that it will
+                        // be allocated to the stack.
+                        parentVarDsc->setLvRefCnt(parentVarDsc->lvRefCnt() + fieldVarDsc->lvRefCnt());
+                    }
+                    JITDUMP("\n");
+                }
             }
             continue;
         }
@@ -6295,12 +6334,25 @@ void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval, Regi
 // Return Value:
 //    None
 //
+// Note:
+//    For a multireg node, 'varNum' will be the field local for the given register.
+//
 void LinearScan::writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumber reg)
 {
-    // We don't yet support multireg locals.
-    assert((lclNode->GetLclNum() == varNum) && !lclNode->IsMultiReg());
-    assert(lclNode->GetLclNum() == varNum);
-    lclNode->SetRegNum(reg);
+    assert((lclNode->GetLclNum() == varNum) == !lclNode->IsMultiReg());
+    if (lclNode->GetLclNum() == varNum)
+    {
+        lclNode->SetRegNum(reg);
+    }
+    else
+    {
+        assert(compiler->lvaEnregMultiRegVars);
+        LclVarDsc* parentVarDsc = compiler->lvaGetDesc(lclNode->GetLclNum());
+        assert(parentVarDsc->lvPromoted);
+        unsigned regIndex = varNum - parentVarDsc->lvFieldLclStart;
+        assert(regIndex < MAX_MULTIREG_COUNT);
+        lclNode->SetRegNumByIdx(reg, regIndex);
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -6392,7 +6444,9 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         }
         interval->assignedReg = nullptr;
         interval->physReg     = REG_NA;
-        if (currentRefPosition->refType == RefTypeUse)
+        // Set this as contained if it is not a multi-reg (we could potentially mark it s contained
+        // if all uses are from spill, but that adds complexity.
+        if ((currentRefPosition->refType == RefTypeUse) && !treeNode->IsMultiReg())
         {
             assert(treeNode != nullptr);
             treeNode->SetContained();
@@ -6454,6 +6508,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         if (treeNode != nullptr)
         {
             treeNode->gtFlags |= GTF_SPILLED;
+            if (treeNode->IsMultiReg())
+            {
+                treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
+            }
             if (spillAfter)
             {
                 if (currentRefPosition->RegOptional())
@@ -6476,6 +6534,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
                 else
                 {
                     treeNode->gtFlags |= GTF_SPILL;
+                    if (treeNode->IsMultiReg())
+                    {
+                        treeNode->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
+                    }
                 }
             }
         }
@@ -6557,6 +6619,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             if (treeNode != nullptr)
             {
                 treeNode->gtFlags |= GTF_SPILL;
+                if (treeNode->IsMultiReg())
+                {
+                    treeNode->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
+                }
             }
             assert(interval->isSpilled);
             interval->physReg = REG_NA;
@@ -6574,6 +6640,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             if (!currentRefPosition->lastUse)
             {
                 treeNode->gtFlags |= GTF_SPILLED;
+                if (treeNode->IsMultiReg())
+                {
+                    treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
+                }
             }
         }
     }
@@ -9498,7 +9568,9 @@ void LinearScan::lsraGetOperandString(GenTree*          tree,
 
                 if (tree->IsMultiRegNode())
                 {
-                    unsigned regCount = tree->GetMultiRegCount();
+                    unsigned regCount = tree->IsMultiRegLclVar()
+                                            ? compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt
+                                            : tree->GetMultiRegCount();
                     for (unsigned regIndex = 1; regIndex < regCount; regIndex++)
                     {
                         regNumber reg = tree->GetRegByIndex(regIndex);

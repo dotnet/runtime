@@ -3672,7 +3672,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // actually passed in registers.
                     if (argEntry->isPassedInRegisters())
                     {
-                        assert(argEntry->structDesc.passedInRegisters);
                         if (argObj->OperIs(GT_OBJ))
                         {
                             if (passingSize != structSize)
@@ -10134,12 +10133,22 @@ GenTree* Compiler::fgMorphBlkNode(GenTree* tree, bool isDest)
     }
     GenTree* blkSrc = blkNode->Addr();
     assert(blkSrc != nullptr);
-    if (!blkNode->TypeIs(TYP_STRUCT) && blkSrc->OperIs(GT_ADDR) && blkSrc->gtGetOp1()->OperIs(GT_LCL_VAR))
+    if (blkSrc->OperIs(GT_ADDR) && blkSrc->gtGetOp1()->OperIs(GT_LCL_VAR))
     {
         GenTreeLclVarCommon* lclVarNode = blkSrc->gtGetOp1()->AsLclVarCommon();
-        if ((genTypeSize(blkNode) != genTypeSize(lclVarNode)) || (!isDest && !varTypeIsStruct(lclVarNode)))
+        if ((blkNode->TypeGet() != TYP_STRUCT) &&
+            ((genTypeSize(blkNode) != genTypeSize(lclVarNode)) || (!isDest && !varTypeIsStruct(lclVarNode))))
         {
             lvaSetVarDoNotEnregister(lclVarNode->GetLclNum() DEBUG_ARG(DNER_VMNeedsStackAddr));
+        }
+        else
+        {
+            unsigned lclSize = lclVarNode->TypeIs(TYP_STRUCT) ? lvaGetDesc(lclVarNode)->lvExactSize
+                                                              : genTypeSize(lvaGetDesc(lclVarNode));
+            if ((blkNode->Size() == lclSize) && (lclVarNode->TypeGet() == tree->TypeGet()))
+            {
+                return lclVarNode;
+            }
         }
     }
 
@@ -10730,8 +10739,18 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         {
             if (!destLclVar->lvRegStruct || (destLclVar->lvType != dest->TypeGet()))
             {
-                // Mark it as DoNotEnregister.
-                lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
+                if (!dest->IsMultiRegLclVar() || (blockWidth != destLclVar->lvExactSize) ||
+                    (destLclVar->lvCustomLayout && destLclVar->lvContainsHoles))
+                {
+                    // Mark it as DoNotEnregister.
+                    lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
+                }
+                else if (dest->IsMultiRegLclVar())
+                {
+                    // Handle this as lvIsMultiRegRet; this signals to SSA that it can't consider these fields
+                    // SSA candidates (we don't have a way to represent multiple SSANums on MultiRegLclVar nodes).
+                    destLclVar->lvIsMultiRegRet = true;
+                }
             }
         }
 

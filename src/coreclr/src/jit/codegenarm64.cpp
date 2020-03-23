@@ -1925,21 +1925,37 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 {
     GenTree* data = tree->gtOp1;
 
-    // var = call, where call returns a multi-reg return value
-    // case is handled separately.
-    if (data->gtSkipReloadOrCopy()->IsMultiRegCall())
+    // Multi-reg nodes are handled separately.
+    if (data->gtSkipReloadOrCopy()->IsMultiRegNode())
     {
         genMultiRegStoreToLocal(tree);
+        return;
+    }
+
+    LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
+    if (tree->IsMultiReg())
+    {
+        // This is the case of storing to a multi-reg HFA local from a fixed-size SIMD type.
+        assert(varTypeIsSIMD(data) && varDsc->lvIsHfa() && (varDsc->GetHfaType() == TYP_FLOAT));
+        regNumber    operandReg = genConsumeReg(data);
+        unsigned int regCount   = varDsc->lvFieldCnt;
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            regNumber varReg = tree->GetRegByIndex(i);
+            assert(varReg != REG_NA);
+            unsigned   fieldLclNum = varDsc->lvFieldLclStart + i;
+            LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
+            assert(fieldVarDsc->TypeGet() == TYP_FLOAT);
+            GetEmitter()->emitIns_R_R_I(INS_dup, emitTypeSize(TYP_FLOAT), varReg, operandReg, i);
+        }
     }
     else
     {
         regNumber targetReg = tree->GetRegNum();
         emitter*  emit      = GetEmitter();
 
-        unsigned varNum = tree->GetLclNum();
-        assert(varNum < compiler->lvaCount);
-        LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
-        var_types  targetType = varDsc->GetRegisterType(tree);
+        unsigned  varNum     = tree->GetLclNum();
+        var_types targetType = varDsc->GetRegisterType(tree);
 
 #ifdef FEATURE_SIMD
         // storing of TYP_SIMD12 (i.e. Vector3) field

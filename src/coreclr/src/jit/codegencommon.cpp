@@ -11660,6 +11660,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     {
         varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
         retTypeDesc.InitializeStructReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
+        assert(varDsc->lvIsMultiRegRet);
     }
     else
     {
@@ -11670,7 +11671,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     assert(regCount <= MAX_RET_REG_COUNT);
 
 #if FEATURE_MULTIREG_RET
-    if (actualOp1->OperIs(GT_LCL_VAR) && (varTypeIsEnregisterable(op1)))
+    if (actualOp1->OperIs(GT_LCL_VAR) && varTypeIsEnregisterable(op1) && !actualOp1->AsLclVar()->IsMultiReg())
     {
         // Right now the only enregisterable structs supported are SIMD vector types.
         assert(varTypeIsSIMD(op1));
@@ -11678,7 +11679,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         genSIMDSplitReturn(op1, &retTypeDesc);
 #endif // FEATURE_SIMD
     }
-    else if (actualOp1->OperIs(GT_LCL_VAR))
+    else if (actualOp1->OperIs(GT_LCL_VAR) && !actualOp1->AsLclVar()->IsMultiReg())
     {
         GenTreeLclVar* lclNode = actualOp1->AsLclVar();
         LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode->GetLclNum());
@@ -11694,20 +11695,36 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     }
     else
     {
-        assert(actualOp1->IsMultiRegCall());
         for (unsigned i = 0; i < regCount; ++i)
         {
             var_types type    = retTypeDesc.GetReturnRegType(i);
             regNumber toReg   = retTypeDesc.GetABIReturnReg(i);
             regNumber fromReg = op1->GetRegByIndex(i);
-            if (fromReg == REG_NA)
+            if ((fromReg == REG_NA) && op1->OperIs(GT_COPY))
             {
-                assert(op1->IsCopyOrReload());
+                // A copy that doesn't copy this field will have REG_NA.
+                // TODO-Cleanup: It would probably be better to always have a valid reg
+                // on a GT_COPY, unless the operand is actually spilled. Then we wouldn't have
+                // to check for this case (though we'd have to check in the genRegCopy that the
+                // reg is valid).
                 fromReg = actualOp1->GetRegByIndex(i);
             }
-            if (fromReg != toReg)
+            if (fromReg == REG_NA)
             {
-                inst_RV_RV(ins_Copy(type), toReg, fromReg, type);
+                // This is a spilled field of a multi-reg lclVar.
+                // We currently only mark a lclVar operand as RegOptional, since we don't have a way
+                // to mark a multi-reg tree node as used from spill (GTF_NOREG_AT_USE) on a per-reg basis.
+                assert(varDsc != nullptr);
+                assert(varDsc->lvPromoted);
+                unsigned fieldVarNum = varDsc->lvFieldLclStart + i;
+                assert(compiler->lvaGetDesc(fieldVarNum)->lvOnFrame);
+                GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, fieldVarNum, 0);
+            }
+            else if (fromReg != toReg)
+            {
+                // Note that ins_Copy(fromReg, type) will return the appropriate register to copy
+                // between register files if needed.
+                inst_RV_RV(ins_Copy(fromReg, type), toReg, fromReg, type);
             }
         }
     }
@@ -11774,6 +11791,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
             // on the source is still valid at the consumer).
             if (targetReg != REG_NA)
             {
+                regMaskTP targetRegMask = genRegMask(targetReg);
                 // We shouldn't specify a no-op move.
                 regMaskTP targetRegMask = genRegMask(targetReg);
                 assert(sourceReg != targetReg);
@@ -11852,7 +11870,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
             if ((lcl->gtFlags & GTF_VAR_DEATH) == 0 && (treeNode->gtFlags & GTF_VAR_DEATH) == 0)
             {
-                LclVarDsc* varDsc = compiler->lvaGetDesc(lcl);
+                LclVarDsc* varDsc = &compiler->lvaTable[lcl->GetLclNum()];
 
                 // If we didn't just spill it (in genConsumeReg, above), then update the register info
                 if (varDsc->GetRegNum() != REG_STK)

@@ -679,7 +679,7 @@ bool GenTree::gtHasReg() const
 //    This does not look at the actual register assignments, if any, and so
 //    is valid after Lowering.
 //
-int GenTree::GetRegisterDstCount() const
+int GenTree::GetRegisterDstCount(Compiler* compiler) const
 {
     assert(!isContained());
     if (!IsMultiRegNode())
@@ -692,7 +692,7 @@ int GenTree::GetRegisterDstCount() const
     }
     else if (IsCopyOrReload())
     {
-        return gtGetOp1()->GetRegisterDstCount();
+        return gtGetOp1()->GetRegisterDstCount(compiler);
     }
 #if FEATURE_ARG_SPLIT
     else if (OperIsPutArgSplit())
@@ -723,6 +723,12 @@ int GenTree::GetRegisterDstCount() const
         return 2;
     }
 #endif
+    if (OperIsScalarLocal())
+    {
+        // temporarily cast away const-ness as AsLclVar() method is not declared const
+        GenTree* temp = const_cast<GenTree*>(this);
+        return temp->AsLclVar()->GetFieldCount(compiler);
+    }
     assert(!"Unexpected multi-reg node");
     return 0;
 }
@@ -10212,7 +10218,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
     {
         // 0th reg is GetRegNum(), which is already printed above.
         // Print the remaining regs of a multi-reg call node.
-        const GenTreeCall* call     = tree->AsCall();
+        const GenTreeCall* call     = tree->gtSkipReloadOrCopy()->AsCall();
         const unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
         for (unsigned i = 1; i < regCount; ++i)
         {

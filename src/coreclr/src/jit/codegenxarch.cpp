@@ -1872,7 +1872,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
 
     // Assumption: The current implementation requires that a multi-reg
     // var in 'var = call' is flagged as lvIsMultiRegRet to prevent it from
-    // being struct promoted.
+    // being promoted, unless compiler->lvaEnregMultiRegVars is true.
 
     unsigned   lclNum = treeNode->AsLclVarCommon()->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
@@ -1965,7 +1965,14 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
         // - a call returning multiple registers
         // - a HW intrinsic producing two registers to be stored into a TYP_STRUCT
         //
-        int offset = 0;
+        int  offset        = 0;
+        bool isMultiRegVar = treeNode->IsMultiRegLclVar();
+        bool hasRegs       = false;
+        if (isMultiRegVar)
+        {
+            assert(compiler->lvaEnregMultiRegVars);
+            assert(regCount == varDsc->lvFieldCnt);
+        }
         for (unsigned i = 0; i < regCount; ++i)
         {
             var_types type = actualOp1->GetRegTypeByIndex(i);
@@ -1979,12 +1986,53 @@ void CodeGen::genMultiRegStoreToLocal(GenTree* treeNode)
             }
 
             assert(reg != REG_NA);
-            GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
-            offset += genTypeSize(type);
+            regNumber varReg = REG_NA;
+            if (isMultiRegVar)
+            {
+                regNumber  varReg      = treeNode->GetRegByIndex(i);
+                unsigned   fieldLclNum = varDsc->lvFieldLclStart + i;
+                LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldLclNum);
+                var_types  type        = fieldVarDsc->TypeGet();
+                if (varReg != REG_NA)
+                {
+                    hasRegs = true;
+                    if (varReg != reg)
+                    {
+                        inst_RV_RV(ins_Copy(type), varReg, reg, type);
+                    }
+                    fieldVarDsc->SetRegNum(varReg);
+                }
+                else
+                {
+                    if (!treeNode->AsLclVar()->IsLastUse(i))
+                    {
+                        GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, fieldLclNum, 0);
+                    }
+                    fieldVarDsc->SetRegNum(REG_STK);
+                }
+            }
+            else
+            {
+                GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
+                offset += genTypeSize(type);
+            }
         }
-        // Update variable liveness.
-        genUpdateLife(treeNode);
-        varDsc->SetRegNum(REG_STK);
+        if (isMultiRegVar)
+        {
+            if (hasRegs)
+            {
+                genProduceReg(treeNode);
+            }
+            else
+            {
+                genUpdateLife(treeNode);
+            }
+        }
+        else
+        {
+            genUpdateLife(treeNode);
+            varDsc->SetRegNum(REG_STK);
+        }
     }
 }
 
@@ -4372,7 +4420,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
-    if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
+    if (!isRegCandidate && !tree->IsMultiReg() && !(tree->gtFlags & GTF_SPILLED))
     {
 #if defined(FEATURE_SIMD) && defined(TARGET_X86)
         // Loading of TYP_SIMD12 (i.e. Vector3) variable
@@ -4439,8 +4487,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
     GenTree* op1 = tree->gtGetOp1();
 
-    // var = call, where call returns a multi-reg return value
-    // case is handled separately.
+    // Multi-reg nodes are handled separately.
     if (op1->gtSkipReloadOrCopy()->IsMultiRegNode())
     {
         genMultiRegStoreToLocal(tree);
@@ -4541,11 +4588,10 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
                 emit->emitInsBinary(ins_Move_Extend(targetType, true), emitTypeSize(tree), tree, op1);
             }
         }
-    }
-
-    if (targetReg != REG_NA)
-    {
-        genProduceReg(tree);
+        if (targetReg != REG_NA)
+        {
+            genProduceReg(tree);
+        }
     }
 }
 

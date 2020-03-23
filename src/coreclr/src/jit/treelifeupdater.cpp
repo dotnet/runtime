@@ -128,7 +128,35 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
         }
         else if (ForCodeGen && lclVarTree->IsMultiRegLclVar())
         {
-            assert(!"MultiRegLclVars not yet supported");
+            assert(varDsc->lvPromoted && compiler->lvaEnregMultiRegVars);
+            unsigned firstFieldVarNum = varDsc->lvFieldLclStart;
+            for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
+            {
+                LclVarDsc* fldVarDsc = &(compiler->lvaTable[firstFieldVarNum + i]);
+                noway_assert(fldVarDsc->lvIsStructField);
+                assert(fldVarDsc->lvTracked);
+                unsigned  fldVarIndex  = fldVarDsc->lvVarIndex;
+                regNumber reg          = lclVarTree->AsLclVar()->GetRegNumByIdx(i);
+                bool      isInReg      = fldVarDsc->lvIsInReg() && reg != REG_NA;
+                bool      isInMemory   = !isInReg || fldVarDsc->lvLiveInOutOfHndlr;
+                bool      isFieldDying = lclVarTree->AsLclVar()->IsLastUse(i);
+                if ((isBorn && !isFieldDying) || (!isBorn && isFieldDying))
+                {
+                    VarSetOps::AddElemD(compiler, varDeltaSet, fldVarIndex);
+                    if (isInMemory)
+                    {
+                        VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
+                    }
+                }
+                if (isInReg)
+                {
+                    if (isBorn)
+                    {
+                        compiler->codeGen->genUpdateVarReg(fldVarDsc, tree, i);
+                    }
+                    compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isFieldDying DEBUGARG(tree));
+                }
+            }
         }
         else if (varDsc->lvPromoted)
         {
