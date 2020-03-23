@@ -35,6 +35,7 @@ bool Hash::Initialize()
 #ifdef TARGET_UNIX
 
     // No initialization necessary.
+    return true;
 
 #else // !TARGET_UNIX
 
@@ -69,6 +70,7 @@ bool Hash::Destroy()
 #ifdef TARGET_UNIX
 
     // No destruction necessary.
+    return true;
 
 #else // !TARGET_UNIX
 
