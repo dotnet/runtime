@@ -8,6 +8,7 @@
 
   <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
     <Project Include="$(PkgDir)*\*.proj" />
+    <Project Remove="$(PkgDir)test\*.proj" />
     <Project Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true'" />
   </ItemGroup>
 
@@ -76,13 +77,12 @@
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 
-  <!-- Ordering matters! Overwriting the Build and Test target after the Sdk.targets import. -->
+  <!-- Ordering matters! Overwriting the Build target after the Sdk.targets import. -->
   <Target Name="Build" DependsOnTargets="BuildAllProjects" />
   <Target Name="BuildAllProjects">
     <MSBuild Targets="Build"
              Projects="@(Project)"
              Properties="BuildAllProjects=true"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndStop" />
+             BuildInParallel="true" />
   </Target>
 </Project>

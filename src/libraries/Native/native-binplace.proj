@@ -1,12 +1,10 @@
-<Project>
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
-
+<Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
   </PropertyGroup>
 
-  <Target Name="GetBinPlaceItems">
+  <Target Name="GetBinPlaceItems" AfterTargets="Build">
     <ItemGroup>
       <BinPlaceItem Include="$(NativeBinDir)/*.dll" />
       <BinPlaceItem Include="$(NativeBinDir)/*.pdb" />
@@ -21,7 +19,6 @@
     </ItemGroup>
   </Target>
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-
-  <Target Name="Build" DependsOnTargets="BinPlace" />
+  <!-- Workaround for https://github.com/microsoft/MSBuildSdks/issues/120. -->
+  <Target Name="CreateManifestResourceNames" />
 </Project>
