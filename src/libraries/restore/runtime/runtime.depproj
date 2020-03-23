@@ -1,4 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project>
+  <PropertyGroup>
+    <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
+    <DisableProjectRestore>false</DisableProjectRestore>
+  </PropertyGroup>
+
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+
   <PropertyGroup>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <!-- We're using ToolRuntimeRID as a placeholder for the real corelib/runtime components until we have an actual set of runtime bits to consume for webassembly/ios/android. -->
@@ -111,4 +118,6 @@
         <ReferenceCopyLocalPaths Include="@(CoreCLRILFiles)" />
       </ItemGroup>
   </Target>
+
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 </Project>

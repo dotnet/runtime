@@ -49,5 +49,7 @@
   <!--Feature switches -->
   <PropertyGroup>
     <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(Configuration)' == 'Release'">true</EnableNgenOptimization>
+    <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
+    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
   </PropertyGroup>
 </Project>

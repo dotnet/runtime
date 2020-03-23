@@ -295,7 +295,7 @@
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" Condition="'$(IsReferenceAssembly)' == 'true'" />
 
   <PropertyGroup>
-    <DisableProjectRestore Condition="'$(MSBuildProjectExtension)' == '.depproj' or '$(MSBuildProjectExtension)' == '.pkgproj'">true</DisableProjectRestore>
+    <DisableProjectRestore Condition="'$(DisableProjectRestore)' == '' and ('$(MSBuildProjectExtension)' == '.depproj' or '$(MSBuildProjectExtension)' == '.pkgproj')">true</DisableProjectRestore>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)restore\repoRestore.props" Condition="'$(DisableProjectRestore)' == 'true'" />

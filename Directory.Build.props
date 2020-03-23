@@ -81,12 +81,6 @@
     <EmbeddedResourceUseDependentUponConvention>false</EmbeddedResourceUseDependentUponConvention>
   </PropertyGroup>
 
-  <!-- NuGet settings -->
-  <PropertyGroup>
-    <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
-    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
-  </PropertyGroup>
-
   <PropertyGroup>
     <!-- Default to portable build if not explicitly set -->
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
