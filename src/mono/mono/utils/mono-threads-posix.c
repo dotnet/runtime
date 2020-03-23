@@ -215,7 +215,7 @@ redo:
 	    && result != ENOTSUP
 #endif
 #if defined (__linux__)
-	    && result != EAGAIN
+	    && !(result == EAGAIN && retry_count < signal_queue_ovf_retry_count)
 #endif
 	    )
 		g_error ("%s: pthread_kill failed with error %d - potential kernel OOM or signal queue overflow", __func__, result);
