@@ -1,26 +1,24 @@
 <Project>
   <Import Project="Directory.Build.props" />
 
-  <PropertyGroup>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-  </PropertyGroup>
-
   <ItemGroup>
-    <Project Condition="'$(DotNetBuildFromSource)' != 'true'" Include="netcoreapp/netcoreapp.depproj" />
-    <Project Include="netstandard/netstandard.depproj" />
-    <Project Include="netfx/netfx.depproj" />
-    <Project Include="binplacePackages/binplacePackages.depproj" />
+    <ProjectReference Include="netcoreapp/netcoreapp.depproj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <ProjectReference Include="netstandard/netstandard.depproj" />
+    <ProjectReference Include="netfx/netfx.depproj" />
+    <ProjectReference Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>
 
-  <Target Name="BeforeRestoreGenerateOSPropsFile"
-          DependsOnTargets="GenerateRuntimeOSPropsFile"
-          BeforeTargets="Restore" />
+  <Target Name="Restore"
+          DependsOnTargets="GenerateRuntimeOSPropsFile">
+    <MSBuild Projects="@(ProjectReference)"
+             Properties="__BuildPhase=Restore;BuildAllProjects=true"
+             BuildInParallel="true"
+             Targets="Restore" />
 
-  <Target Name="BuildAllProjects"
-          AfterTargets="Restore">
-    <MSBuild Targets="Build"
-             Projects="@(Project)"
-             ContinueOnError="ErrorAndStop" />
+    <MSBuild Projects="@(ProjectReference)"
+             Properties="__BuildPhase=Build;BuildAllProjects=true"
+             BuildInParallel="true"
+             Targets="Build" />
   </Target>
 
   <Import Project="Directory.Build.targets" />
