@@ -91,7 +91,7 @@
     <value>Cannot stop '{0}' service on computer '{1}'.</value>
   </data>
   <data name="Timeout" xml:space="preserve">
-    <value>Time out has expired and the operation has not been completed.</value>
+    <value>The operation requested for service '{0}' has not been completed within the specified time interval.</value>
   </data>
   <data name="PlatformNotSupported_ServiceController" xml:space="preserve">
     <value>ServiceController enables manipulating and accessing Windows services and it is not applicable for other operating systems.</value>
