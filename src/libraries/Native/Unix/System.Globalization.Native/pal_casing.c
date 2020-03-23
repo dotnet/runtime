@@ -9,9 +9,11 @@
 #include "pal_icushim_internal.h"
 #include "pal_casing.h"
 
+#ifdef __clang__
 // Workaround for warnings produced by U16_NEXT and U16_APPEND macro expansions
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"
+#endif
 
 /*
 Function:
@@ -146,4 +148,6 @@ void GlobalizationNative_ChangeCaseTurkish(
     }
 }
 
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif

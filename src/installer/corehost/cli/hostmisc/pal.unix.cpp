@@ -15,15 +15,15 @@
 #include <ctime>
 #include <pwd.h>
 
-#if defined(__APPLE__)
+#if defined(TARGET_DARWIN)
 #include <mach-o/dyld.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #endif
 
-#if defined(__LINUX__)
+#if defined(TARGET_LINUX)
 #define symlinkEntrypointExecutable "/proc/self/exe"
-#elif !defined(__APPLE__)
+#elif !defined(TARGET_DARWIN)
 #define symlinkEntrypointExecutable "/proc/curproc/exe"
 #endif
 
@@ -162,7 +162,7 @@ bool pal::get_loaded_library(
     /*out*/ pal::string_t *path)
 {
     pal::string_t library_name_local;
-#if defined(__APPLE__)
+#if defined(TARGET_DARWIN)
     if (!pal::is_path_rooted(library_name))
         library_name_local.append("@rpath/");
 #endif
@@ -467,7 +467,7 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
-#if defined(__APPLE__)
+#if defined(TARGET_DARWIN)
      recv->assign(_X("/usr/local/share/dotnet"));
 #else
      recv->assign(_X("/usr/share/dotnet"));
@@ -491,7 +491,7 @@ pal::string_t trim_quotes(pal::string_t stringToCleanup)
     return stringToCleanup;
 }
 
-#if defined(__APPLE__)
+#if defined(TARGET_DARWIN)
 pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;
@@ -531,7 +531,7 @@ pal::string_t pal::get_current_os_rid_platform()
 
     return ridOS;
 }
-#elif defined(__FreeBSD__)
+#elif defined(TARGET_FREEBSD)
 // On FreeBSD get major verion. Minors should be compatible
 pal::string_t pal::get_current_os_rid_platform()
 {
@@ -679,7 +679,7 @@ pal::string_t pal::get_current_os_rid_platform()
 }
 #endif
 
-#if defined(__APPLE__)
+#if defined(TARGET_DARWIN)
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
     uint32_t path_length = 0;
@@ -694,7 +694,7 @@ bool pal::get_own_executable_path(pal::string_t* recv)
     }
     return false;
 }
-#elif defined(__FreeBSD__)
+#elif defined(TARGET_FREEBSD)
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
     int mib[4];
@@ -903,7 +903,7 @@ bool pal::is_running_in_wow64()
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)
 {
-#if defined(__APPLE__)
+#if defined(TARGET_DARWIN)
     // On Mac, paths are case-insensitive
     return (strcasecmp(path1.c_str(), path2.c_str()) == 0);
 #else

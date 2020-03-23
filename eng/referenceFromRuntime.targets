@@ -101,12 +101,25 @@
 
       <!-- transform back to path -->
       <!-- We are adding two items(with and without aliases) for references having Aliases. The major reason behind this to not use the Aliases for all the types in that reference.  -->
-      <!-- We can't use a Reference item for both since only the first one will be kept. Use ReferencePath for the second reference so it will still be passed to the compiler. -->
+      <!-- We can't use a Reference item for both since only the first one will be kept. -->
+      <!-- Aliases provides no way to encode both an alias and a non-aliased reference : https://github.com/dotnet/roslyn/issues/42604 -->
+      <!-- Use ReferencePath for the second reference so it will still be passed to the compiler. -->
       <Reference Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" />
-      <ReferencePath Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" Condition="'%(_filteredReferencePathFromRuntimeByFileName.Aliases)' != ''" Aliases="" />
+      <_aliasedReferencePathFromRuntime Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" Condition="'%(_filteredReferencePathFromRuntimeByFileName.Aliases)' != ''" />
+      <ReferencePath Include="@(_aliasedReferencePathFromRuntime)" Aliases=""/>
     </ItemGroup>
 
     <Error Condition="'@(_missingReferenceFromRuntime)' != ''"
            Text="Could not resolve ReferenceFromRuntime item(s) '%(_missingReferenceFromRuntime.OriginalReferenceFromRuntime)' from '$(RuntimeProjectFile)'." />
   </Target>
+  
+  <Target Name="RemoveAliasedReferenceFromRuntime"
+          AfterTargets="CoreCompile"
+          Condition="'@(_aliasedReferencePathFromRuntime)' != ''">
+    <!-- SDK's GenerateBuildDependencyFile will break when they encounter two identical reference paths, fix by removing the aliased ones -->
+    <ItemGroup>
+      <ReferencePath Remove="@(_aliasedReferencePathFromRuntime)"/>
+    </ItemGroup>
+  </Target>
+
 </Project>

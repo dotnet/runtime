@@ -900,7 +900,7 @@ namespace System.ServiceProcess
             while (Status != desiredStatus)
             {
                 if (DateTime.UtcNow - start > timeout)
-                    throw new System.ServiceProcess.TimeoutException(SR.Timeout);
+                    throw new System.ServiceProcess.TimeoutException(SR.Format(SR.Timeout, ServiceName));
 
                 _waitForStatusSignal.WaitOne(250);
                 Refresh();

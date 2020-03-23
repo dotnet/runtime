@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 using System.Net.Mime;
 using System.Text;
@@ -18,11 +17,11 @@ namespace System.Net.Mail
             base(fileName)
         { }
 
-        public LinkedResource(string fileName, string mediaType) :
+        public LinkedResource(string fileName, string? mediaType) :
             base(fileName, mediaType)
         { }
 
-        public LinkedResource(string fileName, ContentType contentType) :
+        public LinkedResource(string fileName, ContentType? contentType) :
             base(fileName, contentType)
         { }
 
@@ -30,15 +29,15 @@ namespace System.Net.Mail
             base(contentStream)
         { }
 
-        public LinkedResource(Stream contentStream, string mediaType) :
+        public LinkedResource(Stream contentStream, string? mediaType) :
             base(contentStream, mediaType)
         { }
 
-        public LinkedResource(Stream contentStream, ContentType contentType) :
+        public LinkedResource(Stream contentStream, ContentType? contentType) :
             base(contentStream, contentType)
         { }
 
-        public Uri ContentLink
+        public Uri? ContentLink
         {
             get
             {
@@ -58,14 +57,14 @@ namespace System.Net.Mail
             return a;
         }
 
-        public static LinkedResource CreateLinkedResourceFromString(string content, Encoding contentEncoding, string mediaType)
+        public static LinkedResource CreateLinkedResourceFromString(string content, Encoding? contentEncoding, string? mediaType)
         {
             LinkedResource a = new LinkedResource();
             a.SetContentFromString(content, contentEncoding, mediaType);
             return a;
         }
 
-        public static LinkedResource CreateLinkedResourceFromString(string content, ContentType contentType)
+        public static LinkedResource CreateLinkedResourceFromString(string content, ContentType? contentType)
         {
             LinkedResource a = new LinkedResource();
             a.SetContentFromString(content, contentType);

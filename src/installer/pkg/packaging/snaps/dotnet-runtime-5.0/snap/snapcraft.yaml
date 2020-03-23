@@ -1,0 +1,43 @@
+name: dotnet-runtime-50
+base: core18
+version: 5.0.0-preview.1.20124.5
+summary: Cross-Platform .NET Core Runtime. 
+description: |
+  .NET Core runtimes and libraries which are optimized for running .NET Core apps in production. See https://dot.net/core.
+  .NET Core is a general purpose development platform maintained by Microsoft. 
+
+grade: stable
+confinement: strict
+
+apps:
+  dotnet:
+    command: dotnet
+    plugs:
+      - network
+      - network-bind
+      - removable-media
+      - home
+
+slots:
+  dotnet-runtime:
+    content: dotnet-runtime-50
+    interface: content
+    read: [/]
+
+parts:
+  dotnet-runtime:
+    plugin: dump
+    source: https://download.visualstudio.microsoft.com/download/pr/c88ef7f1-c62a-4ef6-810e-87f5d6152217/96c52963aa875fbcd9131f42075ff5c9/aspnetcore-runtime-5.0.0-preview.1.20124.5-linux-x64.tar.gz
+    source-checksum: sha512/4ec2c9e8ed5e8ddaa52ed291c263412b754691ae2b95362ddc6fa75cfe087dbe59c7e4f65f21b0f096bc93967d04f4ea612a0c42c8a124ef4583d0de8daac01c
+    stage-packages:
+      - libicu60
+      - libssl1.0.0
+      - libcurl3
+      - libgssapi-krb5-2
+      - liblttng-ust0
+      - libstdc++6
+      - zlib1g
+      - libgcc1
+      - libtinfo5
+      - libdb5.3
+      - libc6

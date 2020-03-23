@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Internal.Runtime.InteropServices.WindowsRuntime
 {
@@ -12,6 +13,7 @@ namespace Internal.Runtime.InteropServices.WindowsRuntime
         /// Attach restricted error information to the exception if it may apply to that exception, returning
         /// back the input value
         /// </summary>
+        [return: NotNullIfNotNull("e")]
         public static Exception? AttachRestrictedErrorInfo(Exception? e) => throw new PlatformNotSupportedException();
 
         /// <summary>

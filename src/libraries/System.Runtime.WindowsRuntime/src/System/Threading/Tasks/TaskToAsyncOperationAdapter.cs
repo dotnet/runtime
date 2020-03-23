@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
@@ -21,19 +22,18 @@ namespace System.Threading.Tasks
         }
 
 
-        internal TaskToAsyncOperationAdapter(Task underlyingTask, CancellationTokenSource underlyingCancelTokenSource)
+        internal TaskToAsyncOperationAdapter(Task underlyingTask, CancellationTokenSource? underlyingCancelTokenSource)
 
             : base(underlyingTask, underlyingCancelTokenSource, underlyingProgressDispatcher: null)
         {
         }
 
 
-        internal TaskToAsyncOperationAdapter(TResult synchronousResult)
+        internal TaskToAsyncOperationAdapter([AllowNull] TResult synchronousResult)
 
             : base(synchronousResult)
         {
         }
-
 
         public virtual TResult GetResults()
         {

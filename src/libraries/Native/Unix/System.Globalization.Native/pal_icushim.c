@@ -3,7 +3,13 @@
 // See the LICENSE file in the project root for more information.
 //
 
+#if defined(TARGET_UNIX)
 #include <dlfcn.h>
+#elif defined(TARGET_WINDOWS)
+#include <windows.h>
+#include <libloaderapi.h>
+#include <errhandlingapi.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,7 +26,22 @@ FOR_ALL_ICU_FUNCTIONS
 static void* libicuuc = NULL;
 static void* libicui18n = NULL;
 
-#ifdef __APPLE__
+#if defined(TARGET_WINDOWS)
+
+static int FindICULibs()
+{
+    libicuuc = LoadLibraryExW(L"icu.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (libicuuc == NULL)
+    {
+        return FALSE;
+    }
+
+    // Windows has a single dll for icu.
+    libicui18n = libicuuc;
+    return TRUE;
+}
+
+#elif defined(TARGET_DARWIN)
 
 static int FindICULibs()
 {
@@ -42,7 +63,7 @@ static int FindICULibs()
     return TRUE;
 }
 
-#else // __APPLE__
+#else // !TARGET_WINDOWS && !TARGET_DARWIN
 
 #define VERSION_PREFIX_NONE ""
 #define VERSION_PREFIX_SUSE "suse"
@@ -242,7 +263,7 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
            FindLibWithMajorMinorSubVersion(versionPrefix, symbolName, symbolVersion);
 }
 
-#endif // __APPLE__
+#endif
 
 // GlobalizationNative_LoadICU
 // This method get called from the managed side during the globalization initialization.
@@ -250,7 +271,18 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 // return 0 if failed to load ICU and 1 otherwise
 int32_t GlobalizationNative_LoadICU()
 {
-#ifdef __APPLE__
+#if defined(TARGET_WINDOWS)
+
+    if (!FindICULibs())
+    {
+        return FALSE;
+    }
+
+#define PER_FUNCTION_BLOCK(fn, lib) \
+    fn##_ptr = (__typeof(fn)*)GetProcAddress((HMODULE)lib, #fn); \
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", #fn, GetLastError()); abort(); }
+
+#elif defined(TARGET_DARWIN)
 
     if (!FindICULibs())
     {
@@ -262,7 +294,7 @@ int32_t GlobalizationNative_LoadICU()
     fn##_ptr = (__typeof(fn)*)dlsym(lib, #fn); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", #fn, dlerror()); abort(); }
 
-#else // __APPLE__
+#else // !TARGET_WINDOWS && !TARGET_DARWIN
 
     char symbolName[128];
     char symbolVersion[MaxICUVersionStringLength + 1] = "";
@@ -282,7 +314,7 @@ int32_t GlobalizationNative_LoadICU()
     fn##_ptr = (__typeof(fn)*)dlsym(lib, symbolName); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
 
-#endif // __APPLE__
+#endif
 
     FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK

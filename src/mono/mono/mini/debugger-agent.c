@@ -7252,6 +7252,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		ignore_case = decode_byte (p, &p, end);
 
 		if (!mono_reflection_parse_type_checked (name, &info, error)) {
+			buffer_add_string (buf, mono_error_get_message (error));
 			mono_error_cleanup (error);
 			g_free (name);
 			mono_reflection_free_type_info (&info);
@@ -7740,6 +7741,8 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_ASSEMBLY_GET_TYPE: {
 		ERROR_DECL (error);
 		char *s = decode_string (p, &p, end);
+		char* original_s = g_strdup_printf ("\"%s\"", s);
+
 		gboolean ignorecase = decode_byte (p, &p, end);
 		MonoTypeNameParse info;
 		MonoType *t;
@@ -7755,20 +7758,33 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			mono_error_cleanup (error);
 			t = NULL;
 		} else {
-			if (info.assembly.name)
-				NOT_IMPLEMENTED;
+			if (info.assembly.name) {
+				mono_reflection_free_type_info (&info);
+				g_free (s);
+				mono_domain_set_fast (d, TRUE);
+				char* error_msg =  g_strdup_printf ("Unexpected assembly-qualified type %s was provided", original_s);
+				buffer_add_string (buf, error_msg);
+				g_free (error_msg);
+				g_free (original_s);
+				return ERR_INVALID_ARGUMENT;
+			}
 			t = mono_reflection_get_type_checked (alc, ass->image, ass->image, &info, ignorecase, TRUE, &type_resolve, error);
 			if (!is_ok (error)) {
 				mono_error_cleanup (error); /* FIXME don't swallow the error */
 				mono_reflection_free_type_info (&info);
 				g_free (s);
+				mono_domain_set_fast (d, TRUE);
+				char* error_msg =  g_strdup_printf ("Invalid type name %s", original_s);
+				buffer_add_string (buf, error_msg);
+				g_free (error_msg);
+				g_free (original_s);
 				return ERR_INVALID_ARGUMENT;
 			}
 		}
 		buffer_add_typeid (buf, domain, t ? mono_class_from_mono_type_internal (t) : NULL);
 		mono_reflection_free_type_info (&info);
 		g_free (s);
-
+		g_free (original_s);
 		mono_domain_set_fast (d, TRUE);
 
 		break;
@@ -7825,6 +7841,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
         error_init (error);
         MonoClass* mono_class = mono_class_get_checked (ass->image, token, error);
         if (!is_ok (error)) {
+            buffer_add_string (buf, mono_error_get_message (error));
             mono_error_cleanup (error);
             return ERR_INVALID_ARGUMENT;
         }
@@ -7841,6 +7858,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
         error_init (error);
         MonoMethod* mono_method = mono_get_method_checked (ass->image, token, NULL, NULL, error);
         if (!is_ok (error)) {
+            buffer_add_string (buf, mono_error_get_message (error));
             mono_error_cleanup (error);
             return ERR_INVALID_ARGUMENT;
         }
@@ -8693,6 +8711,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 
 		header = mono_method_get_header_checked (method, error);
 		if (!header) {
+			buffer_add_string (buf, mono_error_get_message (error));
 			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			return ERR_INVALID_ARGUMENT;
 		}
@@ -9524,7 +9543,7 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (!is_ok (error)) {
 				if (s)
 					g_free (s);
-
+				buffer_add_string (buf, mono_error_get_message (error));
 				return ERR_INVALID_ARGUMENT;
 			}
 			buffer_add_string (buf, s);

@@ -47,7 +47,7 @@ if(NOT WIN32)
     locate_toolchain_exec(ranlib CMAKE_RANLIB)
   endif()
 
-  if(NOT CLR_CMAKE_TARGET_DARWIN AND NOT CLR_CMAKE_TARGET_IOS)
+  if(NOT CLR_CMAKE_TARGET_DARWIN)
     locate_toolchain_exec(objdump CMAKE_OBJDUMP)
 
     if(CMAKE_SYSTEM_NAME STREQUAL Android)
@@ -60,5 +60,5 @@ if(NOT WIN32)
     endif()
 
     locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
-  endif()
+  endif(NOT CLR_CMAKE_TARGET_DARWIN)
 endif()

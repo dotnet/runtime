@@ -1293,9 +1293,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTempPathW.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetTempPathW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetVersionExW.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetVersionExW.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Globalization.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.Globalization.cs</Link>
     </Compile>
@@ -1421,6 +1418,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.SYSTEM_LEAP_SECOND_INFORMATION.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.SYSTEM_LEAP_SECOND_INFORMATION.cs</Link>

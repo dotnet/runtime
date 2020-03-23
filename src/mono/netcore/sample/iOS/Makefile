@@ -9,22 +9,25 @@ ARTIFACTS_MONO=$(ARTIFACTS_BIN)/mono/iOS.$(MONO_ARCH).$(MONO_CONFIG)
 DOTNET := $(shell cd ../../ && bash init-tools.sh | tail -1)
 SYSROOT := $(shell xcrun --sdk iphoneos --show-sdk-path)
 
+BCL_LIBS = \
+	System.Runtime.dll \
+	System.Runtime.Extensions.dll \
+	System.Collections.dll \
+	System.Core.dll \
+	System.Threading.dll \
+	System.Threading.Tasks.dll \
+	System.Linq.dll \
+	System.Memory.dll \
+	System.Runtime.InteropServices.dll \
+	System.Text.Encoding.Extensions.dll \
+	Microsoft.Win32.Primitives.dll \
+	System.Console.dll
+
 # once a new library is added here it should also be 
 # added in mono_ios_register_modules() (runtime.m)
 all: prepare
 	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_MONO)/System.Private.CoreLib.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/System.Runtime.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/System.Runtime.Extensions.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/System.Collections.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/System.Core.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/System.Threading.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/System.Threading.Tasks.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/System.Linq.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/System.Memory.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/System.Runtime.InteropServices.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/System.Text.Encoding.Extensions.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/Microsoft.Win32.Primitives.dll
-	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/System.Console.dll
+	for lib in $(BCL_LIBS); do make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/$$lib; done
 	make Program.dll.o
 
 # recompile Program.cs AOT
@@ -34,15 +37,7 @@ Program.dll.o: bin/Program.dll Makefile
 # we need to copy some BCL libs to ARTIFACTS_MONO
 # to be able to aot other bcl libs
 prepare:
-	cp $(ARTIFACTS_BCL)/System.Memory.dll $(ARTIFACTS_MONO)
-	cp $(ARTIFACTS_BCL)/System.Collections.dll $(ARTIFACTS_MONO)
-	cp $(ARTIFACTS_BCL)/System.Threading.dll $(ARTIFACTS_MONO)
-	cp $(ARTIFACTS_BCL)/System.Threading.Thread.dll $(ARTIFACTS_MONO)
-	cp $(ARTIFACTS_BCL)/System.Runtime.dll $(ARTIFACTS_MONO)
-	cp $(ARTIFACTS_BCL)/System.Runtime.InteropServices.dll $(ARTIFACTS_MONO)
-	cp $(ARTIFACTS_BCL)/System.Text.Encoding.Extensions.dll $(ARTIFACTS_MONO)
-	cp $(ARTIFACTS_BCL)/Microsoft.Win32.Primitives.dll $(ARTIFACTS_MONO)
-	cp $(ARTIFACTS_BCL)/System.Console.dll $(ARTIFACTS_MONO)
+	for lib in $(BCL_LIBS); do cp $(ARTIFACTS_BCL)/$$lib $(ARTIFACTS_MONO); done
 
 bin/Program.dll: Program.cs
 	$(DOTNET) build -c Debug Program.csproj

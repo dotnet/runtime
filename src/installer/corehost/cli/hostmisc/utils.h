@@ -11,7 +11,7 @@
 #define _STRINGIFY(s) _X(s)
 #if defined(_WIN32)
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=798306")
-#elif defined(__APPLE__)
+#elif defined(TARGET_DARWIN)
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=2063366")
 #else
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=2063370")
@@ -61,7 +61,7 @@ bool test_only_getenv(const pal::char_t* name, pal::string_t* recv);
 class propagate_error_writer_t
 {
 public:
-    typedef trace::error_writer_fn(*set_error_writer_fn)(trace::error_writer_fn error_writer);
+    typedef trace::error_writer_fn(__cdecl *set_error_writer_fn)(trace::error_writer_fn error_writer);
 
 private:
     set_error_writer_fn m_set_error_writer;

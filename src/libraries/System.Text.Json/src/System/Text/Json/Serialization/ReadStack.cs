@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -25,6 +26,9 @@ namespace System.Text.Json
         private int _count;
 
         private List<ReadStackFrame> _previous;
+
+        // State cache when deserializing objects with parameterized constructors.
+        private List<ArgumentState>? _ctorArgStateCache;
 
         /// <summary>
         /// Bytes consumed in the current loop.
@@ -100,7 +104,18 @@ namespace System.Text.Json
                 else
                 {
                     JsonClassInfo jsonClassInfo;
-                    if ((Current.JsonClassInfo.ClassType & (ClassType.Object | ClassType.Value | ClassType.NewValue)) != 0)
+                    if (Current.JsonClassInfo.ClassType == ClassType.Object)
+                    {
+                        if (Current.JsonPropertyInfo != null)
+                        {
+                            jsonClassInfo = Current.JsonPropertyInfo.RuntimeClassInfo;
+                        }
+                        else
+                        {
+                            jsonClassInfo = Current.CtorArgumentState!.JsonParameterInfo!.RuntimeClassInfo;
+                        }
+                    }
+                    else if ((Current.JsonClassInfo.ClassType & (ClassType.Value | ClassType.NewValue)) != 0)
                     {
                         // Although ClassType.Value doesn't push, a custom custom converter may re-enter serialization.
                         jsonClassInfo = Current.JsonPropertyInfo!.RuntimeClassInfo;
@@ -138,6 +153,8 @@ namespace System.Text.Json
                     _count++;
                 }
             }
+
+            SetConstrutorArgumentState();
         }
 
         public void Pop(bool success)
@@ -187,6 +204,8 @@ namespace System.Text.Json
             {
                 Current = _previous[--_count -1];
             }
+
+            SetConstrutorArgumentState();
         }
 
         // Return a JSONPath using simple dot-notation when possible. When special characters are present, bracket-notation is used:
@@ -278,8 +297,9 @@ namespace System.Text.Json
                 byte[]? utf8PropertyName = frame.JsonPropertyName;
                 if (utf8PropertyName == null)
                 {
-                    // Attempt to get the JSON property name from the JsonPropertyInfo.
-                    utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName;
+                    // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
+                    utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName ??
+                        frame.CtorArgumentState?.JsonParameterInfo?.JsonPropertyName;
                     if (utf8PropertyName == null)
                     {
                         // Attempt to get the JSON property name set manually for dictionary
@@ -294,6 +314,31 @@ namespace System.Text.Json
                 }
 
                 return propertyName;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void SetConstrutorArgumentState()
+        {
+            if (Current.JsonClassInfo.ParameterCount > 0)
+            {
+                // A zero index indicates a new stack frame.
+                if (Current.CtorArgumentStateIndex == 0)
+                {
+                    if (_ctorArgStateCache == null)
+                    {
+                        _ctorArgStateCache = new List<ArgumentState>();
+                    }
+
+                    var newState = new ArgumentState();
+                    _ctorArgStateCache.Add(newState);
+
+                    (Current.CtorArgumentStateIndex, Current.CtorArgumentState) = (_ctorArgStateCache.Count, newState);
+                }
+                else
+                {
+                    Current.CtorArgumentState = _ctorArgStateCache![Current.CtorArgumentStateIndex - 1];
+                }
             }
         }
     }
