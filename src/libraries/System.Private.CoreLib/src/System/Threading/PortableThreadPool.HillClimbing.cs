@@ -18,6 +18,8 @@ namespace System.Threading
             private const int DefaultSampleIntervalMsLow = 10;
             private const int DefaultSampleIntervalMsHigh = 200;
 
+            public static readonly bool IsDisabled = AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.HillClimbing.Disable", false);
+
             private static HillClimbing CreateHillClimber()
             {
                 // Default values pulled from CoreCLR
@@ -381,7 +383,7 @@ namespace System.Threading
                 //
                 int newSampleInterval;
                 if (ratio.Real < 0.0 && newThreadCount == minThreads)
-                    newSampleInterval = (int)(0.5 + _currentSampleMs * (10.0 * Math.Max(-ratio.Real, 1.0)));
+                    newSampleInterval = (int)(0.5 + _currentSampleMs * (10.0 * Math.Min(-ratio.Real, 1.0)));
                 else
                     newSampleInterval = _currentSampleMs;
 

@@ -292,7 +292,7 @@ namespace System.Threading
                 // different from the original CoreCLR code from which this implementation was ported because in this
                 // implementation there are no retired threads, so only the count of threads processing work is considered.
                 ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-                return counts.numProcessingWork <= counts.numThreadsGoal;
+                return counts.numProcessingWork <= counts.numThreadsGoal && !HillClimbing.IsDisabled;
             }
             return false;
         }

@@ -7,6 +7,9 @@ namespace System
 {
     internal static class AppContextConfigHelper
     {
+        internal static bool GetBooleanConfig(string configName, bool defaultValue) =>
+            AppContext.TryGetSwitch(configName, out bool value) ? value : defaultValue;
+
         internal static int GetInt32Config(string configName, int defaultValue, bool allowNegative = true)
         {
             try
