@@ -84,6 +84,7 @@ cmakeargs=''
 extraargs=''
 build=false
 subsetCategory=''
+checkedSoltuionBuild=false
 crossBuild=0
 
 source $scriptroot/native/init-os-and-arch.sh
@@ -172,6 +173,17 @@ while [[ $# > 0 ]]; do
       ;;
       *)
       ea=$1
+
+      if [[ $checkedSoltuionBuild == false ]]; then
+        checkedSoltuionBuild=true
+
+        if [[ -d "$1" ]]; then
+          ea="-projects $1"
+        elif [[ -d "$scriptroot/../src/libraries/$1/$1.sln" ]]; then
+          ea="-projects $scriptroot/../src/libraries/$1/$1.sln"
+        fi
+      fi
+
       extraargs="$extraargs $ea"
       shift 1
       ;;

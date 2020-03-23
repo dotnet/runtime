@@ -120,6 +120,20 @@ if (!$actionPassedIn) {
   $arguments = "-restore -build"
 }
 
+$solutionLeaf = if($properties.Length -gt 0) { $properties[0]; } else { $null }
+
+if ($null -ne $solutionLeaf) {
+  if (Test-Path $solutionLeaf) {
+    $properties[0] = "-projects $(Resolve-Path $solutionLeaf)"
+  }
+  else {
+    $dtb = Join-Path "$PSSCriptRoot\..\src\libraries" $solutionLeaf | Join-Path -ChildPath "$solutionLeaf.sln"
+    if (Test-Path $dtb) { 
+      $properties[0] = "-projects $(Resolve-Path $dtb)"
+    }
+  }
+}
+
 foreach ($argument in $PSBoundParameters.Keys)
 {
   switch($argument)
