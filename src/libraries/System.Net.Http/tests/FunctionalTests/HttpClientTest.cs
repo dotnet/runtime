@@ -327,6 +327,38 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public void Send_NullRequest_ThrowsException()
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(null))))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("request", () => { client.Send(null); });
+            }
+        }
+
+        [Fact]
+        public void Send_DuplicateRequest_ThrowsException()
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(new HttpResponseMessage()))))
+            using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()))
+            {
+                (client.Send(request)).Dispose();
+                Assert.Throws<InvalidOperationException>(() => { client.Send(request); });
+            }
+        }
+
+        [Fact]
+        public async Task Send_RequestContentNotDisposed()
+        {
+            var content = new ByteArrayContent(new byte[1]);
+            using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()) { Content = content })
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(new HttpResponseMessage()))))
+            {
+                client.Send(request);
+                await content.ReadAsStringAsync(); // no exception
+            }
+        }
+
+        [Fact]
         public void SendAsync_NullRequest_ThrowsException()
         {
             using (var client = new HttpClient(new CustomResponseHandler((r,c) => Task.FromResult<HttpResponseMessage>(null))))
@@ -580,6 +612,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<ObjectDisposedException>(() => { client.PostAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
             Assert.Throws<ObjectDisposedException>(() => { client.PutAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
             Assert.Throws<ObjectDisposedException>(() => { client.SendAsync(new HttpRequestMessage(HttpMethod.Get, CreateFakeUri())); });
+            Assert.Throws<ObjectDisposedException>(() => { client.Send(new HttpRequestMessage(HttpMethod.Get, CreateFakeUri())); });
             Assert.Throws<ObjectDisposedException>(() => { client.Timeout = TimeSpan.FromSeconds(1); });
         }
 
@@ -840,6 +873,11 @@ namespace System.Net.Http.Functional.Tests
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 return _func(request, cancellationToken);
+            }
+
+            protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                return _func(request, cancellationToken).GetAwaiter().GetResult();
             }
         }
 
