@@ -14,6 +14,7 @@ include_directories(../superpmi-shared)
 set(MCS_SOURCES
     commandline.cpp
     mcs.cpp
+    removedup.cpp
     verbasmdump.cpp
     verbconcat.cpp
     verbdump.cpp
