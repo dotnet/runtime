@@ -245,11 +245,11 @@ namespace System.IO
         // Writes a two-byte signed integer to this stream. The current position of
         // the stream is advanced by two.
         //
-        public virtual void Write(short value)
+        public virtual unsafe void Write(short value)
         {
-            Span<byte> span = stackalloc byte[sizeof(short)];
-            BinaryPrimitives.WriteInt16LittleEndian(span, value);
-            OutStream.Write(span);
+            if (!BitConverter.IsLittleEndian)
+                value = BinaryPrimitives.ReverseEndianness(value);
+            OutStream.Write(new ReadOnlySpan<byte>(&value, sizeof(short)));
         }
 
         // Writes a two-byte unsigned integer to this stream. The current position
@@ -266,9 +266,9 @@ namespace System.IO
         //
         public virtual unsafe void Write(int value)
         {
-            Span<byte> span = stackalloc byte[sizeof(int)];
-            BinaryPrimitives.WriteInt32LittleEndian(span, value);
-            OutStream.Write(span);
+            if (!BitConverter.IsLittleEndian)
+                value = BinaryPrimitives.ReverseEndianness(value);
+            OutStream.Write(new ReadOnlySpan<byte>(&value, sizeof(int)));
         }
 
         // Writes a four-byte unsigned integer to this stream. The current position
@@ -285,9 +285,9 @@ namespace System.IO
         //
         public virtual unsafe void Write(long value)
         {
-            Span<byte> span = stackalloc byte[sizeof(long)];
-            BinaryPrimitives.WriteInt64LittleEndian(span, value);
-            OutStream.Write(span);
+            if (!BitConverter.IsLittleEndian)
+                value = BinaryPrimitives.ReverseEndianness(value);
+            OutStream.Write(new ReadOnlySpan<byte>(&value, sizeof(long)));
         }
 
         // Writes an eight-byte unsigned integer to this stream. The current
