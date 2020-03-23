@@ -56,7 +56,7 @@ jobs:
             cleanUnpackFolder: false
 
         - script: $(_buildScript)
-                -subset tests
+                -subset test
                 $(_buildArguments)
                 $(_archiveTestsParameter)
           displayName: Restore and Build
