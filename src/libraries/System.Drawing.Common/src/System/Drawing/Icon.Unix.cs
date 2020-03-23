@@ -449,7 +449,7 @@ namespace System.Drawing
             SaveIconImage(writer, (IconImage)imageData![best]);
         }
 
-        private void SaveBitmapAsIcon(BinaryWriter writer)
+        private unsafe void SaveBitmapAsIcon(BinaryWriter writer)
         {
             writer.Write((ushort)0);    // idReserved must be 0
             writer.Write((ushort)1);    // idType must be 1
