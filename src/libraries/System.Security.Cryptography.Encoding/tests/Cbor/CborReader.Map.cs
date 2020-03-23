@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     throw new InvalidOperationException("Not at end of indefinite-length map.");
                 }
 
-                if (!_isEvenNumberOfDataItemsWritten)
+                if (!_isEvenNumberOfDataItemsRead)
                 {
                     throw new FormatException("CBOR Map types require an even number of key/value combinations");
                 }

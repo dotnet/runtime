@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // with null representing indefinite length data items.
         // The root context ony permits one data item to be read.
         private ulong? _remainingDataItems = 1;
-        private bool _isEvenNumberOfDataItemsWritten = true; // required for indefinite-length map writes
+        private bool _isEvenNumberOfDataItemsRead = true; // required for indefinite-length map writes
         private Stack<(CborMajorType type, bool isEvenNumberOfDataItemsWritten, ulong? remainingDataItems)>? _nestedDataItemStack;
 
         internal CborReader(ReadOnlyMemory<byte> buffer)
@@ -58,7 +58,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return _nestedDataItemStack.Peek().type switch
                     {
                         CborMajorType.Array => CborReaderState.EndArray,
-                        CborMajorType.Map when !_isEvenNumberOfDataItemsWritten => CborReaderState.FormatError,
                         CborMajorType.Map => CborReaderState.EndMap,
                         _ => throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack."),
                     };
@@ -85,7 +84,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         CborMajorType.ByteString => CborReaderState.EndByteString,
                         CborMajorType.TextString => CborReaderState.EndTextString,
                         CborMajorType.Array => CborReaderState.EndArray,
-                        CborMajorType.Map when !_isEvenNumberOfDataItemsWritten => CborReaderState.FormatError,
+                        CborMajorType.Map when !_isEvenNumberOfDataItemsRead => CborReaderState.FormatError,
                         CborMajorType.Map => CborReaderState.EndMap,
                         _ => throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack."),
                     };
@@ -181,9 +180,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             _nestedDataItemStack ??= new Stack<(CborMajorType, bool, ulong?)>();
-            _nestedDataItemStack.Push((type, _isEvenNumberOfDataItemsWritten, _remainingDataItems));
+            _nestedDataItemStack.Push((type, _isEvenNumberOfDataItemsRead, _remainingDataItems));
             _remainingDataItems = expectedNestedItems;
-            _isEvenNumberOfDataItemsWritten = true;
+            _isEvenNumberOfDataItemsRead = true;
         }
 
         private void PopDataItem(CborMajorType expectedType)
@@ -207,13 +206,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             _nestedDataItemStack.Pop();
             _remainingDataItems = remainingItems;
-            _isEvenNumberOfDataItemsWritten = isEvenNumberOfDataItemsWritten;
+            _isEvenNumberOfDataItemsRead = isEvenNumberOfDataItemsWritten;
         }
 
         private void DecrementRemainingItemCount()
         {
             _remainingDataItems--;
-            _isEvenNumberOfDataItemsWritten = !_isEvenNumberOfDataItemsWritten;
+            _isEvenNumberOfDataItemsRead = !_isEvenNumberOfDataItemsRead;
         }
 
         private void AdvanceBuffer(int length)
