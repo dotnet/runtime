@@ -12,38 +12,41 @@
 class IpcStreamFactory
 {
 public:
-    static IpcStream::DiagnosticsIpc *CreateServer(const char *const pIpcName, ErrorCallback = nullptr);
-    static IpcStream::DiagnosticsIpc *CreateClient(const char *const pIpcName, ErrorCallback = nullptr);
-    static IpcStream *GetNextAvailableStream(IpcStream::DiagnosticsIpc *const *const ppIpcs, uint32_t nIpcs, ErrorCallback = nullptr);
+    static bool CreateServer(const char *const pIpcName, ErrorCallback = nullptr);
+    static bool CreateClient(const char *const pIpcName, ErrorCallback = nullptr);
+    static IpcStream *GetNextAvailableStream(ErrorCallback = nullptr);
+    static bool HasActiveConnections();
+    static void CloseConnections();
 private:
-    static IpcStream **s_ppActiveConnectionsCache;
-    static uint32_t s_ActiveConnectionsCacheSize;
+    static CQuickArrayList<IpcStream::DiagnosticsIpc*> s_rgpIpcs;
+    static CQuickArray<IpcStream*> s_rgpActiveConnectionsCache;
 
     static void ResizeCache(uint32_t size)
     {
-        if (s_ppActiveConnectionsCache != nullptr)
-            delete[] s_ppActiveConnectionsCache;
+        if (s_rgpActiveConnectionsCache != nullptr)
+            ClearCache();
 
-        s_ppActiveConnectionsCache = new IpcStream*[size];
-        s_ActiveConnectionsCacheSize = size;
-        memset(s_ppActiveConnectionsCache, 0, size * sizeof(IpcStream*));
+        // s_ppActiveConnectionsCache = new IpcStream*[size];
+        // s_ActiveConnectionsCacheSize = size;
+        // memset(s_ppActiveConnectionsCache, 0, size * sizeof(IpcStream*));
+        s_rgpActiveConnectionsCache.ReSizeThrows(size);
     }
 
     static void RemoveFromCache(IpcStream *pStream)
     {
-        for (uint32_t i = 0; i < s_ActiveConnectionsCacheSize; i++)
-            if (s_ppActiveConnectionsCache[i] == pStream)
-                s_ppActiveConnectionsCache[i] = nullptr;
+        for (uint32_t i = 0; i < (uint32_t)s_rgpActiveConnectionsCache.Size(); i++)
+            if (s_rgpActiveConnectionsCache[i] == pStream)
+                s_rgpActiveConnectionsCache[i] = nullptr;
     }
 
     static void ClearCache()
     {
-        for (uint32_t i = 0; i < s_ActiveConnectionsCacheSize; i++)
+        for (uint32_t i = 0; i < (uint32_t)s_rgpActiveConnectionsCache.Size(); i++)
         {
-            if (s_ppActiveConnectionsCache[i] != nullptr)
+            if (s_rgpActiveConnectionsCache[i] != nullptr)
             {
-                delete s_ppActiveConnectionsCache[i];
-                s_ppActiveConnectionsCache[i] = nullptr;
+                delete s_rgpActiveConnectionsCache[i];
+                s_rgpActiveConnectionsCache[i] = nullptr;
             }
         }
     }

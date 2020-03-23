@@ -8,37 +8,73 @@
 
 #ifdef FEATURE_PERFTRACING
 
-IpcStream **IpcStreamFactory::s_ppActiveConnectionsCache = nullptr;
-uint32_t IpcStreamFactory::s_ActiveConnectionsCacheSize = 0;
+CQuickArrayList<IpcStream::DiagnosticsIpc*> IpcStreamFactory::s_rgpIpcs = CQuickArrayList<IpcStream::DiagnosticsIpc*>();
+CQuickArray<IpcStream*> IpcStreamFactory::s_rgpActiveConnectionsCache = CQuickArray<IpcStream*>();
 
-IpcStream::DiagnosticsIpc *IpcStreamFactory::CreateServer(const char *const pIpcName, ErrorCallback callback)
+bool IpcStreamFactory::CreateServer(const char *const pIpcName, ErrorCallback callback)
 {
-    return IpcStream::DiagnosticsIpc::Create(pIpcName, IpcStream::DiagnosticsIpc::ConnectionMode::SERVER, callback);
+    IpcStream::DiagnosticsIpc *pIpc = IpcStream::DiagnosticsIpc::Create(pIpcName, IpcStream::DiagnosticsIpc::ConnectionMode::SERVER, callback);
+    if (pIpc != nullptr)
+    {
+        s_rgpIpcs.Push(pIpc);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
-IpcStream::DiagnosticsIpc *IpcStreamFactory::CreateClient(const char *const pIpcName, ErrorCallback callback)
+bool IpcStreamFactory::CreateClient(const char *const pIpcName, ErrorCallback callback)
 {
-    return IpcStream::DiagnosticsIpc::Create(pIpcName, IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT, callback);
+    IpcStream::DiagnosticsIpc *pIpc = IpcStream::DiagnosticsIpc::Create(pIpcName, IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT, callback);
+    if (pIpc != nullptr)
+    {
+        s_rgpIpcs.Push(pIpc);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
-IpcStream *IpcStreamFactory::GetNextAvailableStream(IpcStream::DiagnosticsIpc *const *const ppIpcs, uint32_t nIpcs, ErrorCallback callback)
+bool IpcStreamFactory::HasActiveConnections()
+{
+    return s_rgpIpcs.Size() > 0;
+}
+
+void IpcStreamFactory::CloseConnections()
+{
+    for (uint32_t i = 0; i < (uint32_t)s_rgpIpcs.Size(); i++)
+    {
+        IpcStream::DiagnosticsIpc *pIpc = s_rgpIpcs.Pop();
+        if (pIpc != nullptr)
+            delete pIpc;
+
+        if (s_rgpActiveConnectionsCache[i] != nullptr)
+            delete s_rgpActiveConnectionsCache[i];
+    }
+}
+
+IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
 {
     // a static array that holds open client connections that haven't been used
     // Remove entries from this list that have been used, e.g., they are placed in pStream and returned
     // This will prevent the runtime from continually reestablishing connection when the server loop loops.
     // This does, however, introduce state to this method which is undesireable, but a justifiable cost to minimizing system calls.
 
-    if (s_ppActiveConnectionsCache == nullptr)
+    if (s_rgpActiveConnectionsCache == nullptr)
     {
-        ResizeCache(nIpcs);
+        ResizeCache((uint32_t)s_rgpIpcs.Size());
     }
 
-    if (s_ActiveConnectionsCacheSize != nIpcs)
+    if (s_rgpActiveConnectionsCache.Size() != s_rgpIpcs.Size())
     {
         // number of connections has changed
         // (3/2020 - This isn't possible, but should be here for future proofing)
         ClearCache();
-        ResizeCache(nIpcs);
+        ResizeCache((uint32_t)s_rgpIpcs.Size());
     }
 
     IpcStream *pStream = nullptr;
@@ -60,12 +96,12 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(IpcStream::DiagnosticsIpc *c
     while (pStream == nullptr)
     {
         CQuickArrayList<IpcStream*> pStreams;
-        for (uint32_t i = 0; i < nIpcs; i++)
+        for (uint32_t i = 0; i < (uint32_t)s_rgpIpcs.Size(); i++)
         {
-            if (ppIpcs[i]->mode == IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT)
+            if (s_rgpIpcs[i]->mode == IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT)
             {
                 pollTimeoutMs = (pollTimeoutMs == -1) ? pollTimeoutMinMs : pollTimeoutMs;
-                if (s_ppActiveConnectionsCache[i] != nullptr)
+                if (s_rgpActiveConnectionsCache[i] != nullptr)
                 {
                     // Check if the connection is still open by doing a 0 length read
                     // this should fail if the connection has been closed
@@ -74,22 +110,22 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(IpcStream::DiagnosticsIpc *c
                     //       self-correct
                     uint32_t nBytesRead;
                     uint8_t buf[1];
-                    if (s_ppActiveConnectionsCache[i]->Read(buf, 0, nBytesRead))
+                    if (s_rgpActiveConnectionsCache[i]->Read(buf, 0, nBytesRead))
                     {
-                        pStreams.Push(s_ppActiveConnectionsCache[i]);
+                        pStreams.Push(s_rgpActiveConnectionsCache[i]);
                         continue;
                     }
                     else
                     {
-                        delete s_ppActiveConnectionsCache[i];
-                        s_ppActiveConnectionsCache[i] = nullptr;
+                        delete s_rgpActiveConnectionsCache[i];
+                        s_rgpActiveConnectionsCache[i] = nullptr;
                         pollTimeoutMs = pollTimeoutMinMs;
                     }
                 }
 
                 // loop here
                 IpcStream *pConnection = nullptr;
-                pConnection = ppIpcs[i]->Connect(callback);
+                pConnection = s_rgpIpcs[i]->Connect(callback);
 
                 if (pConnection != nullptr)
                 {
@@ -101,7 +137,7 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(IpcStream::DiagnosticsIpc *c
                     }
 
                     // Add connection to cache
-                    s_ppActiveConnectionsCache[i] = pConnection;
+                    s_rgpActiveConnectionsCache[i] = pConnection;
                     pStreams.Push(pConnection);
                     pollTimeoutMs = pollTimeoutMaxMs;
                 }
@@ -114,7 +150,7 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(IpcStream::DiagnosticsIpc *c
             }
             else
             {
-                IpcStream *pServer = ppIpcs[i]->Accept(false, callback);
+                IpcStream *pServer = s_rgpIpcs[i]->Accept(false, callback);
                 if (pServer == nullptr)
                 {
                     if (callback != nullptr)
