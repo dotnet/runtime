@@ -18,7 +18,7 @@ necessary for the source program to run.
 
 The command:
 
-`illinker -a Program.exe`
+`illink -a Program.exe`
 
 will use the assembly Program.exe as a source. That means that the linker will
 walk through all the methods of Program.exe to generate only what is necessary
@@ -28,7 +28,7 @@ for this assembly to run.
 
 The command:
 
-`illinker -x desc.xml`
+`illink -x desc.xml`
 
 will use the XML descriptor as a source. That means that the linker will
 use this file to decide what to link in a set of assemblies. The format of the
@@ -38,7 +38,7 @@ descriptors is described further on in this document.
 
 The command:
 
-`illinker -i assembly.info`
+`illink -i assembly.info`
 
 will use a file produced by `mono-api-info` as a source. The linker will use
 this file to link only what is necessary to match the public API defined in
@@ -61,11 +61,11 @@ The linker can do the following things:
 
 You can specify an action per assembly like this:
 
-`illinker -p link Foo`
+`illink -p link Foo`
 
 or
 
-`illinker -p skip System.Windows.Forms`
+`illink -p skip System.Windows.Forms`
 
 Or you can specify what to do for the core assemblies.
 
@@ -94,7 +94,7 @@ and `bin`. You can specify
 
 Example:
 
-`illinker -d ../../libs -a program.exe`
+`illink -d ../../libs -a program.exe`
 
 ### Adding custom steps to the linker.
 
@@ -123,21 +123,21 @@ namespace Foo {
 
 That is compiled against the linker to `Foo.dll` assembly.
 
-To tell the linker where this assembly is located, you have to append its full path after two commas that separate the custom step's name from the custom assembly's path:
+To tell the linker where this assembly is located, you have to append its full path after a comma which separates the custom step's name from the custom assembly's path:
 
 `--custom-step [custom step],[custom assembly]`
 
 You can now ask the linker to add the custom step at the end of the pipeline:
 
-`illinker --custom-step Foo.FooStep,D:\Bar\Foo.dll`
+`illink --custom-step Foo.FooStep,D:\Bar\Foo.dll`
 
 Or you can ask the linker to add it after a specific step:
 
-`illinker --custom-step +MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a program.exe`
+`illink --custom-step +MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a program.exe`
 
 Or before a specific step:
 
-`illinker --custom-step -MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a program.exe`
+`illink --custom-step -MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a program.exe`
 
 ## Mono specific options
 
@@ -154,14 +154,14 @@ Mono has a few assemblies which contains everything region specific:
 By default, they will all be copied to the output directory. But you can
 specify which one you want using the command:
 
-`illinker -l choice`
+`illink -l choice`
 
 Where choice can either be: none, all, cjk, mideast, other, rare or west. You can
 combine the values with a comma.
 
 Example:
 
-`illinker -a assembly -l mideast,cjk`
+`illink -a assembly -l mideast,cjk`
 
 ## Syntax of xml descriptor
 
