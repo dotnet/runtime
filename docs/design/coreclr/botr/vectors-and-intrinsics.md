@@ -53,7 +53,7 @@ The rules here provide the following characteristics.
 - Ahead of time generated code which could take advantage of more advanced hardware support experiences a performance penalty until rejitted. (If a customer chooses to disable tiered compilation, then customer code may always run slowly).
 
 #### Code review rules for code written in System.Private.CoreLib.dll
-- Any use of a platform intrinsic in the codebase MUST be wrapped with a call to the associated IsSupported property. This wrapping MUST be done within the same function that uses the hardware intrinsic, and MUST NOT be in a wrapper function.
+- Any use of a platform intrinsic in the codebase MUST be wrapped with a call to the associated IsSupported property. This wrapping MUST be done within the same function that uses the hardware intrinsic, and MUST NOT be in a wrapper function unless it is one of the intrinsics that are enabled by default for crossgen compilation of System.Private.CoreLib (See list above in the implementation rules section). 
 - Within a single function that uses platform intrinsics, it must behave identically regardless of whether IsSupported returns true or not. This rule is required as code inside of an IsSupported check that calls a helper function cannot assume that the helper function will itself see its use of the same IsSupported check return true. This is due to the impact of tiered compilation on code execution within the process. 
 - Excessive use of intrinsics may cause startup performance problems due to additional jitting, or may not achieve desired performance characteristics due to suboptimal codegen.
 
