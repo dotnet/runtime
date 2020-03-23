@@ -182,7 +182,7 @@ namespace System.Buffers
                     newSize = currentLength + sizeHint;
                     if ((uint)newSize > int.MaxValue)
                     {
-                        ThrowHelper.ThrowOutOfMemoryException();
+                        ThrowOutOfMemoryException((uint)newSize);
                     }
                 }
 
@@ -195,6 +195,11 @@ namespace System.Buffers
         private static void ThrowInvalidOperationException_AdvancedTooFar(int capacity)
         {
             throw new InvalidOperationException(SR.Format(SR.BufferWriterAdvancedTooFar, capacity));
+        }
+
+        private static void ThrowOutOfMemoryException(uint capacity)
+        {
+            throw new OutOfMemoryException(SR.Format(SR.BufferMaximumSizeExceeded, capacity));
         }
     }
 }
