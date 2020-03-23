@@ -6,6 +6,7 @@ project(CoreFX C)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 if(CLR_CMAKE_TARGET_IOS)
+    # CMake 3.14.5 contains bug fixes for iOS
     cmake_minimum_required(VERSION 3.14.5)
 endif()
 
