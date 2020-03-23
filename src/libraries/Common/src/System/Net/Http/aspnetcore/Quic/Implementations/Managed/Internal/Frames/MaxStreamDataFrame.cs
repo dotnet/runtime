@@ -13,7 +13,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         internal readonly ulong StreamId;
 
         /// <summary>
-        ///     Maximum amount of data that can be sent on the stream identified by <see cref="StreamId"/>.
+        ///     Maximum amount of data that can be sent on the stream identified by <see cref="StreamId" />.
         /// </summary>
         internal readonly ulong MaximumStreamData;
 

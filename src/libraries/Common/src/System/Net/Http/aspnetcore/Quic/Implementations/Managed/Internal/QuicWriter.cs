@@ -24,11 +24,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _written = 0;
         }
 
-        internal void WriteFrameType(FrameType type)
-        {
-            WriteVarInt((ulong) type);
-        }
-
         private static int GetVarIntLogLength(ulong value)
         {
             if (value <= 63) return 0;
@@ -101,6 +96,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             data.CopyTo(GetSpan(data.Length));
             Advance(data.Length);
+        }
+
+        internal Span<byte> GetWritableSpan(int length)
+        {
+            var span = GetSpan(length);
+            Advance(length);
+            return span;
         }
 
         private void Advance(int bytes)

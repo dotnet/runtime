@@ -19,19 +19,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             return count;
         }
 
-        private static int ReadVarIntLength(byte firstByte)
-        {
-            switch (firstByte >> 6)
-            {
-                case 00: return 1;
-                case 01: return 2;
-                case 10: return 4;
-                case 11: return 8;
-                default: // Unreachable
-                    throw new InvalidOperationException();
-            }
-        }
-
         private static int GetPacketNumberLength(ulong packetNumber)
         {
             if (packetNumber < byte.MaxValue) return 1;

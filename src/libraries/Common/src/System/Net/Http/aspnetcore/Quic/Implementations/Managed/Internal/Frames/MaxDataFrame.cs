@@ -3,7 +3,8 @@ using System.Diagnostics;
 namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 {
     /// <summary>
-    ///     Used in flow control to inform the peer of the maximmum amount of data that can be sent on the connection as a whole.
+    ///     Used in flow control to inform the peer of the maximmum amount of data that can be sent on the connection as a
+    ///     whole.
     /// </summary>
     internal readonly struct MaxDataFrame
     {

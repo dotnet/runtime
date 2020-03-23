@@ -3,7 +3,8 @@ using System.Diagnostics;
 namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 {
     /// <summary>
-    ///     Indicates that peer is discarding the data at application request and that transmission of a particular stream should be ceased.
+    ///     Indicates that peer is discarding the data at application request and that transmission of a particular stream
+    ///     should be ceased.
     /// </summary>
     internal readonly struct StopSendingFrame
     {

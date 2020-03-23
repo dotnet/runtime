@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 {
@@ -16,8 +15,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         /// <summary>
         ///     Time delta in microseconds between when this frame was sent and when the largest acknowledged packet, as
-        ///     indicated in <see cref="LargestAcknowledged"/>, was received. The value of this field is scaled by
-        ///     multiplying the value by 2 to the power of the <see cref="TransportParameters.AckDelayExponent"/>
+        ///     indicated in <see cref="LargestAcknowledged" />, was received. The value of this field is scaled by
+        ///     multiplying the value by 2 to the power of the <see cref="TransportParameters.AckDelayExponent" />
         ///     transport parameter set by the sender.
         /// </summary>
         internal readonly ulong AckDelay;
@@ -28,7 +27,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         internal readonly ulong AckRangeCount;
 
         /// <summary>
-        ///     Number of contiguous packets preceding the <see cref="LargestAcknowledged"/> that are being acknowledged.
+        ///     Number of contiguous packets preceding the <see cref="LargestAcknowledged" /> that are being acknowledged.
         /// </summary>
         internal readonly ulong FirstAckRange;
 
@@ -38,26 +37,31 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         internal readonly ReadOnlySpan<byte> AckRangesRaw;
 
         /// <summary>
-        ///     Flag indicating that <see cref="Ect0Count"/>, <see cref="Ect1Count"/> and <see cref="CeCount"/> fields contain valid values.
+        ///     Flag indicating that <see cref="Ect0Count" />, <see cref="Ect1Count" /> and <see cref="CeCount" /> fields contain
+        ///     valid values.
         /// </summary>
         internal readonly bool HasEcnCounts;
 
         /// <summary>
-        ///     Total number of packets received with the ECT(0) codepoint in the packet number space of this frame. Contains valid number only if <see cref="HasEcnCounts"/> is true.
+        ///     Total number of packets received with the ECT(0) codepoint in the packet number space of this frame. Contains valid
+        ///     number only if <see cref="HasEcnCounts" /> is true.
         /// </summary>
         internal readonly ulong Ect0Count;
 
         /// <summary>
-        ///     Total number of packets received with the ECT(1) codepoint in the packet number space of this frame.  Contains valid number only if <see cref="HasEcnCounts"/> is true.
+        ///     Total number of packets received with the ECT(1) codepoint in the packet number space of this frame.  Contains
+        ///     valid number only if <see cref="HasEcnCounts" /> is true.
         /// </summary>
         internal readonly ulong Ect1Count;
 
         /// <summary>
-        ///     Total number of packets received with the CE codepoint in the packet number space of this frame.  Contains valid number only if <see cref="HasEcnCounts"/> is true.
+        ///     Total number of packets received with the CE codepoint in the packet number space of this frame.  Contains valid
+        ///     number only if <see cref="HasEcnCounts" /> is true.
         /// </summary>
         internal readonly ulong CeCount;
 
-        internal AckFrame(ulong largestAcknowledged, ulong ackDelay, ulong ackRangeCount, ulong firstAckRange, ReadOnlySpan<byte> ackRangesRaw, bool hasEcnCounts, ulong ect0Count, ulong ect1Count, ulong ceCount)
+        internal AckFrame(ulong largestAcknowledged, ulong ackDelay, ulong ackRangeCount, ulong firstAckRange,
+            ReadOnlySpan<byte> ackRangesRaw, bool hasEcnCounts, ulong ect0Count, ulong ect1Count, ulong ceCount)
         {
             LargestAcknowledged = largestAcknowledged;
             AckDelay = ackDelay;

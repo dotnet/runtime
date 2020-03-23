@@ -41,8 +41,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             // Stream type is a bit special
             Debug.Assert((type & FrameType.StreamMask) == type);
 
-            bool hasOffset = (type & FrameType.StreamWithOff) != 0;
-            bool hasLength = (type & FrameType.StreamWithLen) != 0;
+            bool hasOffset = (type & FrameType.StreamWithOffset) != 0;
+            bool hasLength = (type & FrameType.StreamWithLength) != 0;
             bool hasFin = (type & FrameType.StreamWithFin) != 0;
 
             ulong length = 0;
@@ -52,7 +52,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
                 // TODO-RZ: is zero length allowed here?
                 hasLength && !reader.TryReadVarInt(out length) && length == 0 ||
                 // Read to end if length not set
-                !reader.TryReadSpan(hasLength ? (int) length : reader.BytesLeft,
+                !reader.TryReadSpan(hasLength ? (int)length : reader.BytesLeft,
                     out var data))
             {
                 frame = default;
@@ -66,8 +66,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         internal static void Write(QuicWriter writer, in StreamFrame frame)
         {
             // TODO-RZ: leave out length if this is the last frame
-            var type = FrameType.StreamWithLen;
-            if (frame.Offset != 0) type |= FrameType.StreamWithOff;
+            var type = FrameType.StreamWithLength;
+            if (frame.Offset != 0) type |= FrameType.StreamWithOffset;
             if (frame.Fin) type |= FrameType.StreamWithFin;
 
             writer.WriteFrameType(type);

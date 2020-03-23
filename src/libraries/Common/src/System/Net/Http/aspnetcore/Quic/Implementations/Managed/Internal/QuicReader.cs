@@ -135,11 +135,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return result;
         }
 
-        internal FrameType ReadFrameType()
-        {
-            return (FrameType)ReadVarInt();
-        }
-
         private void Advance(int bytes)
         {
             _consumed += bytes;

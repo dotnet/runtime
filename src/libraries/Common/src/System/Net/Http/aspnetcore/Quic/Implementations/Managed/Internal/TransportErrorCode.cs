@@ -1,5 +1,8 @@
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
+    /// <summary>
+    ///     Defines error codes which can be used within CONNECTION_CLOSE frame. These errors apply to entire connection.
+    /// </summary>
     internal enum TransportErrorCode
     {
         /// <summary>No error</summary>
