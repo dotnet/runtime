@@ -9,6 +9,7 @@
 
 #include <Security/Security.h>
 
+#ifndef TARGET_IOS
 /*
 Enumerate the certificates which are root trusted by the user.
 
@@ -62,3 +63,4 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 pOSStatus: Receives the last OSStatus value.
 */
 PALEXPORT int32_t AppleCryptoNative_StoreEnumerateMachineDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut);
+#endif

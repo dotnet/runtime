@@ -587,11 +587,13 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
 
     if (sizeof(SSLCipherSuite) == sizeof(uint32_t))
     {
+#ifndef TARGET_IOS
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         // macOS
         return SSLSetEnabledCiphers(sslContext, cipherSuites, (size_t)numCipherSuites);
 #pragma clang diagnostic pop   
+#endif
     }
     else
     {
