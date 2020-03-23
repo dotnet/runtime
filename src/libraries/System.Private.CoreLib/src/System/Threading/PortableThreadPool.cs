@@ -95,7 +95,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    short threads = (short)Math.Min(minThreads, MaxPossibleThreadCount);
+                    short threads = (short)Math.Max(1, Math.Min(minThreads, MaxPossibleThreadCount));
                     if (s_forcedMinWorkerThreads == 0)
                     {
                         _minThreads = threads;
