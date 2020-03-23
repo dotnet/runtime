@@ -1227,7 +1227,9 @@ typedef enum {
 	/* Allow AOT to use all current CPU instructions */
 	JIT_FLAG_USE_CURRENT_CPU = (1 << 10),
 	/* Generate code to self-init the method for AOT */
-	JIT_FLAG_SELF_INIT = (1 << 11)
+	JIT_FLAG_SELF_INIT = (1 << 11),
+	/* Assume code memory is exec only */
+	JIT_FLAG_CODE_EXEC_ONLY = (1 << 12),
 } JitFlags;
 
 /* Bit-fields in the MonoBasicBlock.region */
@@ -1445,6 +1447,7 @@ typedef struct {
 	guint            use_current_cpu : 1;
 	guint            self_init : 1;
 	guint            domainvar_inited : 1;
+	guint            code_exec_only : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -2781,28 +2784,6 @@ char* mono_get_method_from_ip (void *ip);
 
 /* SIMD support */
 
-/*
-This enum MUST be kept in sync with its managed mirror Mono.Simd.AccelMode.
- */
-enum {
-	SIMD_VERSION_SSE1	= 1 << 0,
-	SIMD_VERSION_SSE2	= 1 << 1,
-	SIMD_VERSION_SSE3	= 1 << 2,
-	SIMD_VERSION_SSSE3	= 1 << 3,
-	SIMD_VERSION_SSE41	= 1 << 4,
-	SIMD_VERSION_SSE42	= 1 << 5,
-	SIMD_VERSION_SSE4a	= 1 << 6,
-	SIMD_VERSION_ALL	= SIMD_VERSION_SSE1 | SIMD_VERSION_SSE2 |
-			  SIMD_VERSION_SSE3 | SIMD_VERSION_SSSE3 |
-			  SIMD_VERSION_SSE41 | SIMD_VERSION_SSE42 |
-			  SIMD_VERSION_SSE4a,
-
-	/* this value marks the end of the bit indexes used in 
-	 * this emum.
-	 */
-	SIMD_VERSION_INDEX_END = 6
-};
-
 typedef enum {
 	/* Used for lazy initialization */
 	MONO_CPU_INITED		= 1 << 0,
@@ -2890,27 +2871,82 @@ typedef enum {
 	SIMD_OP_SSE_CVTSS2SI64,
 	SIMD_OP_SSE_CVTTSS2SI64,
 	SIMD_OP_SSE_CVTSD2SI,
+	SIMD_OP_SSE_CVTTSD2SI,
 	SIMD_OP_SSE_CVTSD2SI64,
 	SIMD_OP_SSE_CVTTSD2SI64,
 	SIMD_OP_SSE_CVTSI2SS,
 	SIMD_OP_SSE_CVTSI2SS64,
 	SIMD_OP_SSE_CVTSI2SD,
 	SIMD_OP_SSE_CVTSI2SD64,
+	SIMD_OP_SSE_CVTSD2SS,
 	SIMD_OP_SSE_MAXPS,
 	SIMD_OP_SSE_MAXSS,
 	SIMD_OP_SSE_MINPS,
 	SIMD_OP_SSE_MINSS,
+	SIMD_OP_SSE_MAXPD,
+	SIMD_OP_SSE_MAXSD,
+	SIMD_OP_SSE_MINPD,
+	SIMD_OP_SSE_MINSD,
 	SIMD_OP_SSE_SFENCE,
+	SIMD_OP_SSE_LFENCE,
+	SIMD_OP_SSE_MFENCE,
 	SIMD_OP_SSE_SQRTPS,
 	SIMD_OP_SSE_RCPPS,
 	SIMD_OP_SSE_RSQRTPS,
 	SIMD_OP_SSE_SQRTSS,
 	SIMD_OP_SSE_RCPSS,
-	SIMD_OP_SSE_RSQRTSS
+	SIMD_OP_SSE_RSQRTSS,
+	SIMD_OP_SSE_SQRTPD,
+	SIMD_OP_SSE_SQRTSD,
+	SIMD_OP_SSE_PMULUDQ,
+	SIMD_OP_SSE_PMULHW,
+	SIMD_OP_SSE_PMULHUW,
+	SIMD_OP_SSE_PMADDWD,
+	SIMD_OP_SSE_PACKSSWB,
+	SIMD_OP_SSE_PACKSSDW,
+	SIMD_OP_SSE_PSRLW_IMM,
+	SIMD_OP_SSE_PSRLD_IMM,
+	SIMD_OP_SSE_PSRLQ_IMM,
+	SIMD_OP_SSE_PSRLW,
+	SIMD_OP_SSE_PSRLD,
+	SIMD_OP_SSE_PSRLQ,
+	SIMD_OP_SSE_PSLLW_IMM,
+	SIMD_OP_SSE_PSLLD_IMM,
+	SIMD_OP_SSE_PSLLQ_IMM,
+	SIMD_OP_SSE_PSLLW,
+	SIMD_OP_SSE_PSLLD,
+	SIMD_OP_SSE_PSLLQ,
+	SIMD_OP_SSE_PSRAW_IMM,
+	SIMD_OP_SSE_PSRAD_IMM,
+	SIMD_OP_SSE_PSRAW,
+	SIMD_OP_SSE_PSRAD,
+	SIMD_OP_SSE_PSUBSB,
+	SIMD_OP_SSE_PSUBSW,
+	SIMD_OP_SSE_PSUBUSB,
+	SIMD_OP_SSE_PSUBUSW,
+	SIMD_OP_SSE_PSADBW,
+	SIMD_OP_SSE_MASKMOVDQU,
+	SIMD_OP_SSE_ADDSUBPS,
+	SIMD_OP_SSE_ADDSUBPD,
+	SIMD_OP_SSE_HADDPS,
+	SIMD_OP_SSE_HADDPD,
+	SIMD_OP_SSE_PHADDW,
+	SIMD_OP_SSE_PHADDD,
+	SIMD_OP_SSE_PHSUBW,
+	SIMD_OP_SSE_PHSUBD,
+	SIMD_OP_SSE_HSUBPS,
+	SIMD_OP_SSE_HSUBPD,
+	SIMD_OP_SSE_PHADDSW,
+	SIMD_OP_SSE_PHSUBSW,
+	SIMD_OP_SSE_PSIGNB,
+	SIMD_OP_SSE_PSIGNW,
+	SIMD_OP_SSE_PSIGND,
+	SIMD_OP_SSE_PMADDUBSW,
+	SIMD_OP_SSE_PMULHRSW,
+	SIMD_OP_SSE_LDDQU
 } SimdOp;
 
 const char *mono_arch_xregname (int reg);
-guint32     mono_arch_cpu_enumerate_simd_versions (void);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS

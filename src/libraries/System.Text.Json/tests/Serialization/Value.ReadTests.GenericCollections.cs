@@ -1132,22 +1132,54 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
-        [Fact]
-        public static void ReadSimpleTestClass_GenericWrappers_NoAddMethod_Throws()
+        [Theory]
+        [MemberData(nameof(ReadSimpleTestClass_GenericWrappers_NoAddMethod))]
+        public static void ReadSimpleTestClass_GenericWrappers_NoAddMethod_Throws(Type type, string json, Type exceptionMessageType)
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIEnumerableWrapper>(SimpleTestClassWithStringIEnumerableWrapper.s_json));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIReadOnlyCollectionWrapper>(SimpleTestClassWithStringIReadOnlyCollectionWrapper.s_json));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIReadOnlyListWrapper>(SimpleTestClassWithStringIReadOnlyListWrapper.s_json));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper>(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json));
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Contains(exceptionMessageType.ToString(), ex.Message);
         }
 
-        [Fact]
-        public static void ReadReadOnlyCollections_Throws()
+        public static IEnumerable<object[]> ReadSimpleTestClass_GenericWrappers_NoAddMethod
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyWrapperForIList>(@"[""1"", ""2""]"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringIListWrapper>(@"[""1"", ""2""]"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringICollectionWrapper>(@"[""1"", ""2""]"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringToStringIDictionaryWrapper>(@"{""Key"":""key"",""Value"":""value""}"));
+            get
+            {
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithStringIEnumerableWrapper),
+                    SimpleTestClassWithStringIEnumerableWrapper.s_json,
+                    typeof(StringIEnumerableWrapper)
+                };
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithStringIReadOnlyCollectionWrapper),
+                    SimpleTestClassWithStringIReadOnlyCollectionWrapper.s_json,
+                    typeof(StringIReadOnlyCollectionWrapper)
+                };
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithStringIReadOnlyListWrapper),
+                    SimpleTestClassWithStringIReadOnlyListWrapper.s_json,
+                    typeof(StringIReadOnlyListWrapper)
+                };
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper),
+                    SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json,
+                    typeof(StringToStringIReadOnlyDictionaryWrapper)
+                };
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(ReadOnlyWrapperForIList), @"[""1"", ""2""]")]
+        [InlineData(typeof(ReadOnlyStringIListWrapper), @"[""1"", ""2""]")]
+        [InlineData(typeof(ReadOnlyStringICollectionWrapper), @"[""1"", ""2""]")]
+        [InlineData(typeof(ReadOnlyStringToStringIDictionaryWrapper), @"{""Key"":""key"",""Value"":""value""}")]
+        public static void ReadReadOnlyCollections_Throws(Type type, string json)
+        {
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Contains(type.ToString(), ex.Message);
         }
 
         [Fact]
@@ -1160,6 +1192,33 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("test", JsonSerializer.Deserialize<GenericListWrapper<string>>(json).First());
             Assert.Equal("test", JsonSerializer.Deserialize<MyMyList<string>>(json).First());
             Assert.Equal("test", JsonSerializer.Deserialize<MyListString>(json).First());
+        }
+
+        [Theory]
+        [InlineData(typeof(GenericIEnumerableWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericIEnumerableWrapperInternalConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericICollectionWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericICollectionWrapperInternalConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericIListWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericIListWrapperInternalConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericISetWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericISetWrapperInternalConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericIDictionaryWrapperPrivateConstructor<string, string>), @"{""Key"":""Value""}")]
+        [InlineData(typeof(GenericIDictionaryWrapperInternalConstructor<string, string>), @"{""Key"":""Value""}")]
+        [InlineData(typeof(StringToStringIReadOnlyDictionaryWrapperPrivateConstructor), @"{""Key"":""Value""}")]
+        [InlineData(typeof(StringToStringIReadOnlyDictionaryWrapperInternalConstructor), @"{""Key"":""Value""}")]
+        [InlineData(typeof(GenericListWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericListWrapperInternalConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericQueueWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericQueueWrapperInternalConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericStackWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericStackWrapperInternalConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(StringToGenericDictionaryWrapperPrivateConstructor<string>), @"{""Key"":""Value""}")]
+        [InlineData(typeof(StringToGenericDictionaryWrapperInternalConstructor<string>), @"{""Key"":""Value""}")]
+        public static void Read_Generic_NoPublicConstructor_Throws(Type type, string json)
+        {
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Contains(type.ToString(), ex.Message);
         }
     }
 }

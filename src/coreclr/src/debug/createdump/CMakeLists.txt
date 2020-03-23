@@ -52,4 +52,4 @@ target_link_libraries(createdump
 add_dependencies(createdump mscordaccore)
 
 install_clr(TARGETS createdump)
-install_clr(TARGETS createdump DESTINATION sharedFramework SKIP_STRIP)
+install_clr(TARGETS createdump DESTINATION sharedFramework)

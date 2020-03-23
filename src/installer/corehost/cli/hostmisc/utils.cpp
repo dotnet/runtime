@@ -187,13 +187,13 @@ pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pa
 
 const pal::char_t* get_arch()
 {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     return _X("x64");
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     return _X("x86");
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     return _X("arm");
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return _X("arm64");
 #else
 #error "Unknown target"

@@ -1975,6 +1975,11 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             noway_assert(varTypeIsFloating(simdTree->gtSIMDBaseType));
             break;
 
+        case SIMDIntrinsicCeil:
+        case SIMDIntrinsicFloor:
+            assert(compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported);
+            break;
+
         case SIMDIntrinsicAdd:
         case SIMDIntrinsicSub:
         case SIMDIntrinsicMul:

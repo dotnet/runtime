@@ -105,7 +105,7 @@ namespace System.Net.Sockets
         //
         private static readonly IntPtr MaxHandles = IntPtr.Size == 4 ? (IntPtr)int.MaxValue : (IntPtr)long.MaxValue;
 #endif
-        private static readonly IntPtr MinHandlesForAdditionalEngine = s_engineCount == 1 ? MaxHandles : (IntPtr)EventBufferCount;
+        private static readonly IntPtr MinHandlesForAdditionalEngine = s_engineCount == 1 ? MaxHandles : (IntPtr)32;
 
         //
         // Sentinel handle value to identify events from the "shutdown pipe," used to signal an event loop to stop

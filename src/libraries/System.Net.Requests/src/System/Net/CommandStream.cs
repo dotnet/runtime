@@ -26,16 +26,16 @@ namespace System.Net
         // Active variables used for the command state machine
         //
 
-        protected WebRequest _request;
+        protected WebRequest? _request;
         protected bool _isAsync;
         private bool _aborted;
 
-        protected PipelineEntry[] _commands;
+        protected PipelineEntry[]? _commands;
         protected int _index;
         private bool _doRead;
         private bool _doSend;
-        private ResponseDescription _currentResponseDescription;
-        protected string _abortReason;
+        private ResponseDescription? _currentResponseDescription;
+        protected string? _abortReason;
 
         internal CommandStream(TcpClient client)
             : base(client)
@@ -82,9 +82,9 @@ namespace System.Net
             // request that does not own the web request.
         }
 
-        protected void InvokeRequestCallback(object obj)
+        protected void InvokeRequestCallback(object? obj)
         {
-            WebRequest webRequest = _request;
+            WebRequest? webRequest = _request;
             if (webRequest != null)
             {
                 FtpWebRequest ftpWebRequest = (FtpWebRequest)webRequest;
@@ -108,10 +108,10 @@ namespace System.Net
             }
         }
 
-        internal Stream SubmitRequest(WebRequest request, bool isAsync, bool readInitalResponseOnConnect)
+        internal Stream? SubmitRequest(WebRequest request, bool isAsync, bool readInitalResponseOnConnect)
         {
             ClearState();
-            PipelineEntry[] commands = BuildCommandsList(request);
+            PipelineEntry[]? commands = BuildCommandsList(request);
             InitCommandPipeline(request, commands, isAsync);
             if (readInitalResponseOnConnect)
             {
@@ -126,12 +126,12 @@ namespace System.Net
             InitCommandPipeline(null, null, false);
         }
 
-        protected virtual PipelineEntry[] BuildCommandsList(WebRequest request)
+        protected virtual PipelineEntry[]? BuildCommandsList(WebRequest request)
         {
             return null;
         }
 
-        protected Exception GenerateException(string message, WebExceptionStatus status, Exception innerException)
+        protected Exception GenerateException(string message, WebExceptionStatus status, Exception? innerException)
         {
             return new WebException(
                             message,
@@ -140,13 +140,13 @@ namespace System.Net
                             null /* no response */ );
         }
 
-        protected Exception GenerateException(FtpStatusCode code, string statusDescription, Exception innerException)
+        protected Exception GenerateException(FtpStatusCode code, string? statusDescription, Exception? innerException)
         {
             return new WebException(SR.Format(SR.net_ftp_servererror, NetRes.GetWebStatusCodeString(code, statusDescription)),
                                     innerException, WebExceptionStatus.ProtocolError, null);
         }
 
-        protected void InitCommandPipeline(WebRequest request, PipelineEntry[] commands, bool isAsync)
+        protected void InitCommandPipeline(WebRequest? request, PipelineEntry[]? commands, bool isAsync)
         {
             _commands = commands;
             _index = 0;
@@ -180,7 +180,7 @@ namespace System.Net
         ///     each command such STOR, PORT, etc, is sent to the server, then the response is parsed into a string,
         ///     with the response, the delegate is called, which returns an instruction (either continue, stop, or read additional
         ///     responses from server).
-        protected Stream ContinueCommandPipeline()
+        protected Stream? ContinueCommandPipeline()
         {
             // In async case, The BeginWrite can actually result in a
             // series of synchronous completions that eventually close
@@ -188,7 +188,7 @@ namespace System.Net
             // we need to access, since they may not be valid after
             // BeginWrite returns
             bool isAsync = _isAsync;
-            while (_index < _commands.Length)
+            while (_index < _commands!.Length)
             {
                 if (_doSend)
                 {
@@ -236,7 +236,7 @@ namespace System.Net
                     }
                 }
 
-                Stream stream = null;
+                Stream? stream = null;
                 bool isReturn = PostSendCommandProcessing(ref stream);
                 if (isReturn)
                 {
@@ -252,7 +252,7 @@ namespace System.Net
             return null;
         }
 
-        private bool PostSendCommandProcessing(ref Stream stream)
+        private bool PostSendCommandProcessing(ref Stream? stream)
         {
             if (_doRead)
             {
@@ -263,11 +263,11 @@ namespace System.Net
                 // next call returns
                 bool isAsync = _isAsync;
                 int index = _index;
-                PipelineEntry[] commands = _commands;
+                PipelineEntry[] commands = _commands!;
 
                 try
                 {
-                    ResponseDescription response = ReceiveCommandResponse();
+                    ResponseDescription? response = ReceiveCommandResponse();
                     if (isAsync)
                     {
                         return true;
@@ -279,7 +279,7 @@ namespace System.Net
                     // If we get an exception on the QUIT command (which is
                     // always the last command), ignore the final exception
                     // and continue with the pipeline regardlss of sync/async
-                    if (index < 0 || index >= commands.Length ||
+                    if (index < 0 || index >= commands!.Length ||
                         commands[index].Command != "QUIT\r\n")
                         throw;
                 }
@@ -287,9 +287,9 @@ namespace System.Net
             return PostReadCommandProcessing(ref stream);
         }
 
-        private bool PostReadCommandProcessing(ref Stream stream)
+        private bool PostReadCommandProcessing(ref Stream? stream)
         {
-            if (_index >= _commands.Length)
+            if (_index >= _commands!.Length)
                 return false;
 
             // Set up front to prevent a race condition on result == PipelineInstruction.Pause
@@ -297,7 +297,7 @@ namespace System.Net
             _doRead = false;
 
             PipelineInstruction result;
-            PipelineEntry entry;
+            PipelineEntry? entry;
             if (_index == -1)
                 entry = null;
             else
@@ -306,7 +306,7 @@ namespace System.Net
             // Final QUIT command may get exceptions since the connection
             // may be already closed by the server. So there is no response
             // to process, just advance the pipeline to continue.
-            if (_currentResponseDescription == null && entry.Command == "QUIT\r\n")
+            if (_currentResponseDescription == null && entry!.Command == "QUIT\r\n")
                 result = PipelineInstruction.Advance;
             else
                 result = PipelineCallback(entry, _currentResponseDescription, false, ref stream);
@@ -393,7 +393,7 @@ namespace System.Net
             internal PipelineEntryFlags Flags;
         }
 
-        protected virtual PipelineInstruction PipelineCallback(PipelineEntry entry, ResponseDescription response, bool timeout, ref Stream stream)
+        protected virtual PipelineInstruction PipelineCallback(PipelineEntry? entry, ResponseDescription? response, bool timeout, ref Stream? stream)
         {
             return PipelineInstruction.Abort;
         }
@@ -404,7 +404,7 @@ namespace System.Net
 
         private static void ReadCallback(IAsyncResult asyncResult)
         {
-            ReceiveState state = (ReceiveState)asyncResult.AsyncState;
+            ReceiveState state = (ReceiveState)asyncResult.AsyncState!;
             try
             {
                 Stream stream = (Stream)state.Connection;
@@ -435,7 +435,7 @@ namespace System.Net
 
         private static void WriteCallback(IAsyncResult asyncResult)
         {
-            CommandStream connection = (CommandStream)asyncResult.AsyncState;
+            CommandStream connection = (CommandStream)asyncResult.AsyncState!;
             try
             {
                 try
@@ -451,7 +451,7 @@ namespace System.Net
                 {
                     throw;
                 }
-                Stream stream = null;
+                Stream? stream = null;
                 if (connection.PostSendCommandProcessing(ref stream))
                     return;
                 connection.ContinueCommandPipeline();
@@ -496,7 +496,7 @@ namespace System.Net
         /// Uses the Encoding <code>encoding</code> to transform the bytes received into a string to be
         /// returned in the GeneralResponseDescription's StatusDescription field.
         /// </summary>
-        private ResponseDescription ReceiveCommandResponse()
+        private ResponseDescription? ReceiveCommandResponse()
         {
             // These are the things that will be needed to maintain state.
             ReceiveState state = new ReceiveState(this);
@@ -668,7 +668,7 @@ namespace System.Net
                 {
                     _currentResponseDescription = state.Resp;
                 }
-                Stream stream = null;
+                Stream? stream = null;
                 if (PostReadCommandProcessing(ref stream))
                     return;
                 ContinueCommandPipeline();
@@ -685,10 +685,10 @@ namespace System.Net
         internal bool Multiline = false;
 
         internal int Status = NoStatus;
-        internal string StatusDescription;
+        internal string? StatusDescription;
         internal StringBuilder StatusBuffer = new StringBuilder();
 
-        internal string StatusCodeString;
+        internal string? StatusCodeString;
 
         internal bool PositiveIntermediate { get { return (Status >= 100 && Status <= 199); } }
         internal bool PositiveCompletion { get { return (Status >= 200 && Status <= 299); } }

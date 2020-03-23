@@ -660,6 +660,7 @@ void EEStartupHelper()
         CodeVersionManager::StaticInitialize();
         TieredCompilationManager::StaticInitialize();
         CallCountingManager::StaticInitialize();
+        OnStackReplacementManager::StaticInitialize();
 
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
@@ -795,7 +796,7 @@ void EEStartupHelper()
 #ifndef TARGET_UNIX
         {
             // Record mscorwks geometry
-            PEDecoder pe(g_pMSCorEE);
+            PEDecoder pe(g_hThisInst);
 
             g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
             g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
@@ -924,10 +925,12 @@ void EEStartupHelper()
         hr = g_pGCHeap->Initialize();
         IfFailGo(hr);
 
+#ifdef FEATURE_EVENT_TRACE
         // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
         // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
         // EventPipe initialization, so this is done after the GC has been fully initialized.
         EventPipe::FinishInitialize();
+#endif
 
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
@@ -1850,12 +1853,10 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
         HINSTANCE hInst;
         DWORD dwReason;
         LPVOID lpReserved;
-        void **pTlsData;
     } param;
     param.hInst = hInst;
     param.dwReason = dwReason;
     param.lpReserved = lpReserved;
-    param.pTlsData = NULL;
 
     // Can't use PAL_TRY/EX_TRY here as they access the ClrDebugState which gets blown away as part of the
     // PROCESS_DETACH path. Must use special PAL_TRY_FOR_DLLMAIN, passing the reason were in the DllMain.
@@ -1869,10 +1870,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 // We cache the SystemInfo for anyone to use throughout the
                 // life of the DLL.
                 GetSystemInfo(&g_SystemInfo);
-
-                // Remember module instance
-                g_pMSCorEE = pParam->hInst;
-
 
                 // Set callbacks so that LoadStringRC knows which language our
                 // threads are in so that it can return the proper localized string.
@@ -1917,17 +1914,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 // Don't destroy threads here if we're in shutdown (shutdown will
                 // clean up for us instead).
 
-                // Store the TLS data; we'll need it later and we might NULL the slot in DetachThread.
-                // This would be problematic because we can't depend on the FLS still existing.
-                pParam->pTlsData = CExecutionEngine::CheckThreadStateNoCreate(0
-#ifdef _DEBUG
-                 // When we get here, OS has destroyed FLS, so FlsGetValue returns NULL now.
-                 // We have validation code in CExecutionEngine::CheckThreadStateNoCreate to ensure that
-                 // our TLS and FLS data are consistent, but since FLS has been destroyed, we need
-                 // to silent the check there.  The extra arg for check build is for this purpose.
-                                                                                         , TRUE
-#endif
-                                                                                         );
                 Thread* thread = GetThread();
                 if (thread)
                 {
@@ -1961,7 +1947,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
     if (dwReason == DLL_THREAD_DETACH || dwReason == DLL_PROCESS_DETACH)
     {
-        CExecutionEngine::ThreadDetaching(param.pTlsData);
+        ThreadDetaching();
     }
     return TRUE;
 }

@@ -2893,9 +2893,9 @@ sgen_client_degraded_allocation (void)
 	if (mono_atomic_load_i32 (&last_major_gc_warned) < major_gc_count) {
 		gint32 num = mono_atomic_inc_i32 (&num_degraded);
 		if (num == 1 || num == 3)
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
 		else if (num == 10)
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
 
 		mono_atomic_store_i32 (&last_major_gc_warned, major_gc_count);
 	}
@@ -2970,9 +2970,9 @@ sgen_client_init (void)
 void
 mono_gc_init_icalls (void)
 {
-	mono_register_jit_icall (mono_gc_alloc_obj, mono_icall_sig_object_ptr_int, FALSE);
-	mono_register_jit_icall (mono_gc_alloc_vector, mono_icall_sig_object_ptr_int_int, FALSE);
-	mono_register_jit_icall (mono_gc_alloc_string, mono_icall_sig_object_ptr_int_int32, FALSE);
+	mono_register_jit_icall (mono_gc_alloc_obj, mono_icall_sig_object_ptr_sizet, FALSE);
+	mono_register_jit_icall (mono_gc_alloc_vector, mono_icall_sig_object_ptr_sizet_ptr, FALSE);
+	mono_register_jit_icall (mono_gc_alloc_string, mono_icall_sig_object_ptr_sizet_int32, FALSE);
 	mono_register_jit_icall (mono_profiler_raise_gc_allocation, mono_icall_sig_void_object, FALSE);
 }
 

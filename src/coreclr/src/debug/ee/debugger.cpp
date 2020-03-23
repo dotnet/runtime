@@ -1751,7 +1751,7 @@ void Debugger::SendRawEvent(const DebuggerIPCEvent * pManagedEvent)
     // The debugger can then use ReadProcessMemory to read through this array.
     ULONG_PTR rgData [] = {
         CLRDBG_EXCEPTION_DATA_CHECKSUM,
-        (ULONG_PTR) g_pMSCorEE,
+        (ULONG_PTR) g_hThisInst,
         (ULONG_PTR) pManagedEvent
     };
 
@@ -5669,7 +5669,7 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     // Ignore any notification exceptions sent from code:Debugger.SendRawEvent.
     // This is not a common case, but could happen in some cases described
     // in SendRawEvent. Either way, Left-Side and VM should just ignore these.
-    if (IsEventDebuggerNotification(exception, PTR_TO_CORDB_ADDRESS(g_pMSCorEE)))
+    if (IsEventDebuggerNotification(exception, PTR_TO_CORDB_ADDRESS(g_hThisInst)))
     {
         return true;
     }
@@ -12363,7 +12363,7 @@ void Debugger::GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress)
     // If its not a stub, then maybe its an address in mscoree?
     if (result == false)
     {
-        result = (IsIPInModule(g_pMSCorEE, (PCODE)stubAddress) == TRUE);
+        result = (IsIPInModule(g_hThisInst, (PCODE)stubAddress) == TRUE);
     }
 
     // This is a synchronous event (reply required)

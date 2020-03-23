@@ -3581,12 +3581,20 @@ BOOL EEJitManager::GetBoundariesAndVars(
     if (pDebugInfo == NULL)
         return FALSE;
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    BOOL hasFlagByte = TRUE;
+#else
+    BOOL hasFlagByte = FALSE;
+#endif
+
     // Uncompress. This allocates memory and may throw.
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        hasFlagByte
+    );
 
     return TRUE;
 }
@@ -3608,9 +3616,15 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
     this->pRealCodeHeader.EnumMem();
 #endif // USE_INDIRECT_CODEHEADER
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    BOOL hasFlagByte = TRUE;
+#else
+    BOOL hasFlagByte = FALSE;
+#endif
+
     if (this->GetDebugInfo() != NULL)
     {
-        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo());
+        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo(), hasFlagByte);
     }
 }
 
@@ -5521,8 +5535,9 @@ BOOL NativeImageJitManager::GetBoundariesAndVars(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        FALSE);          // no patchpoint info
 
     return TRUE;
 }
@@ -6735,8 +6750,9 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        FALSE);          // no patchpoint info
 
     return TRUE;
 }
@@ -6760,7 +6776,7 @@ void ReadyToRunJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemory
     if (pDebugInfo == NULL)
         return;
 
-    CompressDebugInfo::EnumMemoryRegions(flags, pDebugInfo);
+    CompressDebugInfo::EnumMemoryRegions(flags, pDebugInfo, FALSE);
 }
 #endif
 

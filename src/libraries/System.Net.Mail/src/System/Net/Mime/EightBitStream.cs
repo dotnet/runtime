@@ -23,7 +23,7 @@ namespace System.Net.Mime
     /// </summary>
     internal class EightBitStream : DelegatedStream, IEncodableStream
     {
-        private WriteStateInfoBase _writeState;
+        private WriteStateInfoBase? _writeState;
 
         // Should we do RFC 2821 Section 4.5.2 encoding of leading dots on a line?
         // We make this optional because this stream may be used recursively and
@@ -51,7 +51,7 @@ namespace System.Net.Mime
         /// <param name="count">Count of bytes to write</param>
         /// <param name="callback">Callback to call when write completes</param>
         /// <param name="state">State to pass to callback</param>
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (buffer == null)
             {

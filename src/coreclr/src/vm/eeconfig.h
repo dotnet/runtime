@@ -290,6 +290,17 @@ public:
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
 #endif
 
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    // OSR Config
+    DWORD         OSR_CounterBump() const { LIMITED_METHOD_CONTRACT; return dwOSR_CounterBump; }
+    DWORD         OSR_HitLimit() const { LIMITED_METHOD_CONTRACT; return dwOSR_HitLimit; }
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT) && defined(_DEBUG)
+    DWORD         OSR_LowId() const { LIMITED_METHOD_CONTRACT; return dwOSR_LowId; }
+    DWORD         OSR_HighId() const { LIMITED_METHOD_CONTRACT; return dwOSR_HighId; }
+#endif
+
 #ifndef CROSSGEN_COMPILE
     bool          BackpatchEntryPointSlots() const { LIMITED_METHOD_CONTRACT; return backpatchEntryPointSlots; }
 #endif
@@ -1021,6 +1032,16 @@ private: //----------------------------------------------------------------
     UINT16 tieredCompilation_CallCountThreshold;
     DWORD tieredCompilation_CallCountingDelayMs;
     DWORD tieredCompilation_DeleteCallCountingStubsAfter;
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    DWORD dwOSR_HitLimit;
+    DWORD dwOSR_CounterBump;
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT) && defined(_DEBUG)
+    DWORD dwOSR_LowId;
+    DWORD dwOSR_HighId;
 #endif
 
 #ifndef CROSSGEN_COMPILE

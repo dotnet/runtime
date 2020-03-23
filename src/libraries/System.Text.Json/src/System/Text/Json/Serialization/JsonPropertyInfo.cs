@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -38,6 +37,7 @@ namespace System.Text.Json
             jsonPropertyInfo.Options = options;
             jsonPropertyInfo.PropertyInfo = propertyInfo;
             jsonPropertyInfo.DeterminePropertyName();
+            jsonPropertyInfo.IsIgnored = true;
 
             Debug.Assert(!jsonPropertyInfo.ShouldDeserialize);
             Debug.Assert(!jsonPropertyInfo.ShouldSerialize);
@@ -195,7 +195,7 @@ namespace System.Text.Json
                 else
                 {
                     JsonConverter<object> converter = (JsonConverter<object>)
-                        state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+                        state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo.ConverterBase;
 
                     if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out object? value))
                     {
@@ -213,7 +213,7 @@ namespace System.Text.Json
                 IDictionary<string, JsonElement> dictionaryJsonElement = (IDictionary<string, JsonElement>)propValue;
 
                 JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)
-                    state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+                    state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo.ConverterBase;
 
                 if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement value))
                 {
@@ -227,6 +227,30 @@ namespace System.Text.Json
         }
 
         public abstract bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader);
+
+        public abstract bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value);
+
+        public bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        {
+            Debug.Assert(this == state.Current.JsonClassInfo.DataExtensionProperty);
+
+            if (RuntimeClassInfo.ElementType == typeof(object) && reader.TokenType == JsonTokenType.Null)
+            {
+                value = null;
+                return true;
+            }
+
+            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverter(typeof(JsonElement));
+            if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement jsonElement))
+            {
+                // JsonElement is a struct that must be read in full.
+                value = null;
+                return false;
+            }
+
+            value = jsonElement;
+            return true;
+        }
 
         public Type ParentClassType { get; private set; } = null!;
 
@@ -251,5 +275,6 @@ namespace System.Text.Json
 
         public bool ShouldSerialize { get; private set; }
         public bool ShouldDeserialize { get; private set; }
+        public bool IsIgnored { get; private set; }
     }
 }

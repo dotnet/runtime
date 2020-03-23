@@ -1019,6 +1019,13 @@ namespace System.Runtime.InteropServices
         public void RegisterAsGlobalInstance() { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
+    public sealed class NativeCallableAttribute : System.Attribute
+    {
+        public NativeCallableAttribute() { }
+        public System.Runtime.InteropServices.CallingConvention CallingConvention;
+        public string? EntryPoint;
+    }
 }
 namespace System.Runtime.InteropServices.ComTypes
 {

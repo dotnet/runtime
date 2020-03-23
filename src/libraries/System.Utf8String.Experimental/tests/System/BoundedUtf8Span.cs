@@ -17,6 +17,11 @@ namespace System.Tests
     {
         private readonly BoundedMemory<byte> _boundedMemory;
 
+        public BoundedUtf8Span(string utf16Data, PoisonPagePlacement placement = PoisonPagePlacement.After)
+            : this(utf16Data.AsSpan(), placement)
+        {
+        }
+
         public BoundedUtf8Span(ReadOnlySpan<char> utf16Data, PoisonPagePlacement placement = PoisonPagePlacement.After)
             : this(u8(utf16Data.ToString()).AsBytes(), placement)
         {

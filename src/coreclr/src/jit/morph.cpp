@@ -7448,7 +7448,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
     Statement* nextMorphStmt = fgMorphStmt->GetNextStmt();
-    // Remove all stmts after the call.
+    JITDUMP("Remove all stmts after the call.\n");
     while (nextMorphStmt != nullptr)
     {
         Statement* stmtToRemove = nextMorphStmt;
@@ -7456,7 +7456,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         fgRemoveStmt(compCurBB, stmtToRemove);
     }
 
-    fgMorphStmt->SetRootNode(call);
+    bool     isRootReplaced = false;
+    GenTree* root           = fgMorphStmt->GetRootNode();
+
+    if (root != call)
+    {
+        JITDUMP("Replace root node [%06d] with [%06d] tail call node.\n", dspTreeID(root), dspTreeID(call));
+        isRootReplaced = true;
+        fgMorphStmt->SetRootNode(call);
+    }
 
     // Tail call via helper: The VM can't use return address hijacking if we're
     // not going to return and the helper doesn't have enough info to safely poll,
@@ -7501,41 +7509,41 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         compCurBB->bbJumpKind = BBJ_THROW;
     }
 
-    // For non-void calls, we return a place holder which will be
-    // used by the parent GT_RETURN node of this call.
-
-    GenTree* result = call;
-    if (origCallType != TYP_VOID && info.compRetType != TYP_VOID)
+    if (isRootReplaced)
     {
-        var_types nodeTy = origCallType;
-#ifdef FEATURE_HFA
-        // Return a dummy node, as the return is already removed.
-        if (nodeTy == TYP_STRUCT)
+        // We have replaced the root node of this stmt and deleted the rest,
+        // but we still have the deleted, dead nodes on the `fgMorph*` stack
+        // if the root node was an `ASG`, `RET` or `CAST`.
+        // Return a zero con node to exit morphing of the old trees without asserts
+        // and forbid POST_ORDER morphing doing something wrong with our call.
+        var_types callType;
+        if (varTypeIsStruct(origCallType))
         {
-            // This is a HFA, use float 0.
-            nodeTy = TYP_FLOAT;
+            CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
+            Compiler::structPassingKind howToReturnStruct;
+            callType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+            assert((howToReturnStruct != SPK_Unknown) && (howToReturnStruct != SPK_ByReference));
+            if (howToReturnStruct == SPK_ByValue)
+            {
+                callType = TYP_I_IMPL;
+            }
+            else if (howToReturnStruct == SPK_ByValueAsHfa || varTypeIsSIMD(callType))
+            {
+                callType = TYP_FLOAT;
+            }
+            assert((callType != TYP_UNKNOWN) && !varTypeIsStruct(callType));
         }
-#elif defined(UNIX_AMD64_ABI)
-        // Return a dummy node, as the return is already removed.
-        if (varTypeIsStruct(nodeTy))
+        else
         {
-            // This is a register-returned struct. Return a 0.
-            // The actual return registers are hacked in lower and the register allocator.
-            nodeTy = TYP_INT;
+            callType = origCallType;
         }
-#endif
-#ifdef FEATURE_SIMD
-        // Return a dummy node, as the return is already removed.
-        if (varTypeIsSIMD(nodeTy))
-        {
-            nodeTy = TYP_DOUBLE;
-        }
-#endif
-        result = gtNewZeroConNode(genActualType(nodeTy));
-        result = fgMorphTree(result);
+        GenTree* zero = gtNewZeroConNode(callType);
+        return fgMorphTree(zero);
     }
-
-    return result;
+    else
+    {
+        return call;
+    }
 }
 
 /*****************************************************************************
@@ -8172,14 +8180,26 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // Remove the call
     fgRemoveStmt(block, lastStmt);
 
-    // Set the loop edge.  Ensure we have a scratch block and then target the
-    // next block.  Loop detection needs to see a pred out of the loop, so
-    // mark the scratch block BBF_DONT_REMOVE to prevent empty block removal
-    // on it.
-    fgEnsureFirstBBisScratch();
-    fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
+    // Set the loop edge.
+    if (opts.IsOSR())
+    {
+        // Todo: this may not look like a viable loop header.
+        // Might need the moral equivalent of a scratch BB.
+        block->bbJumpDest = fgEntryBB;
+    }
+    else
+    {
+        // Ensure we have a scratch block and then target the next
+        // block.  Loop detection needs to see a pred out of the loop,
+        // so mark the scratch block BBF_DONT_REMOVE to prevent empty
+        // block removal on it.
+        fgEnsureFirstBBisScratch();
+        fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
+        block->bbJumpDest = fgFirstBB->bbNext;
+    }
+
+    // Finish hooking things up.
     block->bbJumpKind = BBJ_ALWAYS;
-    block->bbJumpDest = fgFirstBB->bbNext;
     block->bbJumpDest->bbFlags |= BBF_JMP_TARGET;
     fgAddRefPred(block->bbJumpDest, block);
     block->bbFlags &= ~BBF_HAS_JMP;
@@ -13737,6 +13757,13 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
     switch (oper)
     {
         case GT_ASG:
+            // Make sure we're allowed to do this.
+            if (optValnumCSE_phase)
+            {
+                // It is not safe to reorder/delete CSE's
+                break;
+            }
+
             if (varTypeIsStruct(typ) && !tree->IsPhiDefn())
             {
                 if (tree->OperIsCopyBlkOp())
@@ -13751,14 +13778,6 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 
             if (typ == TYP_LONG)
             {
-                break;
-            }
-
-            /* Make sure we're allowed to do this */
-
-            if (optValnumCSE_phase)
-            {
-                // It is not safe to reorder/delete CSE's
                 break;
             }
 

@@ -1250,7 +1250,7 @@ if sys.version_info.major < 3:
         return unicode(s, "utf-8")
 else:
     def to_unicode(s):
-        return str(s, "utf-8")
+        return s
 
 def find_test_from_name(host_os, test_location, test_name):
     """ Given a test's name return the location on disk

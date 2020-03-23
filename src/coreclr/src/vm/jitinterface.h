@@ -70,8 +70,12 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 void InitJITHelpers1();
 void InitJITHelpers2();
 
-PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODER* header,
-                        CORJIT_FLAGS flags, ULONG* sizeOfCode = NULL);
+#ifndef CROSSGEN_COMPILE
+PCODE UnsafeJitFunction(PrepareCodeConfig* config,
+                        COR_ILMETHOD_DECODER* header,
+                        CORJIT_FLAGS flags,
+                        ULONG* sizeOfCode = NULL);
+#endif // CROSSGEN_COMPILE
 
 void getMethodInfoHelper(MethodDesc * ftn,
                          CORINFO_METHOD_HANDLE ftnHnd,
@@ -529,6 +533,9 @@ public:
     CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE methHnd);
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId);
     void getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal);
+
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset);
 
     // "System.Int32" ==> CORINFO_TYPE_INT..
     CorInfoType getTypeForPrimitiveValueClass(
@@ -1294,6 +1301,15 @@ public:
         m_iNativeVarInfo = 0;
         m_pNativeVarInfo = NULL;
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (m_pPatchpointInfoFromJit != NULL)
+            delete [] ((BYTE*) m_pPatchpointInfoFromJit);
+
+        m_pPatchpointInfoFromJit = NULL;
+        m_pPatchpointInfoFromRuntime = NULL;
+        m_ilOffset = 0;
+#endif
+
 #ifdef FEATURE_EH_FUNCLETS
         m_moduleBase = NULL;
         m_totalUnwindSize = 0;
@@ -1356,6 +1372,17 @@ public:
     }
 #endif
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    // Called by the runtime to supply patchpoint information to the jit.
+    void SetOSRInfo(PatchpointInfo* patchpointInfo, unsigned ilOffset)
+    {
+        _ASSERTE(m_pPatchpointInfoFromRuntime == NULL);
+        _ASSERTE(patchpointInfo != NULL);
+        m_pPatchpointInfoFromRuntime = patchpointInfo;
+        m_ilOffset = ilOffset;
+    }
+#endif
+
     CEEJitInfo(MethodDesc* fd,  COR_ILMETHOD_DECODER* header,
                EEJitManager* jm, bool fVerifyOnly, bool allowInlining = true)
         : CEEInfo(fd, fVerifyOnly, allowInlining),
@@ -1383,6 +1410,11 @@ public:
           m_pOffsetMapping(NULL),
           m_iNativeVarInfo(0),
           m_pNativeVarInfo(NULL),
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+          m_pPatchpointInfoFromJit(NULL),
+          m_pPatchpointInfoFromRuntime(NULL),
+          m_ilOffset(0),
+#endif
           m_gphCache()
     {
         CONTRACTL
@@ -1409,6 +1441,12 @@ public:
 
         if (m_pNativeVarInfo != NULL)
             delete [] ((BYTE*) m_pNativeVarInfo);
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (m_pPatchpointInfoFromJit != NULL)
+            delete [] ((BYTE*) m_pPatchpointInfoFromJit);
+#endif
+
     }
 
     // ICorDebugInfo stuff.
@@ -1444,6 +1482,9 @@ public:
 
     void BackoutJitData(EEJitManager * jitMgr);
 
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset);
+
 protected :
     EEJitManager*           m_jitManager;   // responsible for allocating memory
     CodeHeader*             m_CodeHeader;   // descriptor for JITTED code
@@ -1478,6 +1519,12 @@ protected :
 
     ULONG32                 m_iNativeVarInfo;
     ICorDebugInfo::NativeVarInfo * m_pNativeVarInfo;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    PatchpointInfo        * m_pPatchpointInfoFromJit;
+    PatchpointInfo        * m_pPatchpointInfoFromRuntime;
+    unsigned                m_ilOffset;
+#endif
 
     // The first time a call is made to CEEJitInfo::GetProfilingHandle() from this thread
     // for this method, these values are filled in.   Thereafter, these values are used

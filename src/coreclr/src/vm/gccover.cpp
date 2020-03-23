@@ -1400,7 +1400,16 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
     }
 
     Thread* pThread = GetThread();
-    _ASSERTE(pThread);
+    if (!pThread)
+    {
+        // No thread at the moment so we aren't doing coverage for this function.
+        // This should only occur for methods with the NativeCallableAttribute,
+        // where the call could be coming from a thread unknown to the CLR and
+        // we haven't created a thread yet - see PreStubWorker_Preemptive().
+        _ASSERTE(pMD->HasNativeCallableAttribute());
+        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr);
+        return TRUE;
+    }
 
 #if defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX)
     // If we're unable to redirect, then we simply won't test GC at this
@@ -1452,6 +1461,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     DWORD offset = codeInfo.GetRelOffset();
 
     Thread *pThread = GetThread();
+    _ASSERTE(pThread);
 
     if (!IsGcCoverageInterruptInstruction(instrPtr))
     {

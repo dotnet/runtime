@@ -130,7 +130,12 @@ gboolean mono_use_fast_math = FALSE;
 
 // Lists of whitelisted and blacklisted CPU features 
 MonoCPUFeatures mono_cpu_features_enabled = (MonoCPUFeatures)0;
+
+#ifdef DISABLE_SIMD
+MonoCPUFeatures mono_cpu_features_disabled = MONO_CPU_X86_FULL_SSEAVX_COMBINED;
+#else
 MonoCPUFeatures mono_cpu_features_disabled = (MonoCPUFeatures)0;
+#endif
 
 gboolean mono_use_interpreter = FALSE;
 const char *mono_interp_opts_string = NULL;
@@ -1273,6 +1278,10 @@ mono_patch_info_hash (gconstpointer data)
 	}
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		return hash | mono_signature_hash (ji->data.sig);
+	case MONO_PATCH_INFO_R8_GOT:
+		return hash | (guint32)*(double*)ji->data.target;
+	case MONO_PATCH_INFO_R4_GOT:
+		return hash | (guint32)*(float*)ji->data.target;
 	default:
 		printf ("info type: %d\n", ji->type);
 		mono_print_ji (ji); printf ("\n");
@@ -1518,7 +1527,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_R4:
+	case MONO_PATCH_INFO_R4_GOT:
 	case MONO_PATCH_INFO_R8:
+	case MONO_PATCH_INFO_R8_GOT:
 		target = patch_info->data.target;
 		break;
 	case MONO_PATCH_INFO_EXC_NAME:
@@ -4651,11 +4662,7 @@ register_icalls (void)
 
 	register_dyn_icall (mini_get_dbg_callbacks ()->user_break, mono_debugger_agent_user_break, mono_icall_sig_void, FALSE);
 
-	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_int, TRUE);
-	register_icall (mini_llvm_init_gshared_method_this, mono_icall_sig_void_ptr_ptr_int_object, TRUE);
-	register_icall (mini_llvm_init_gshared_method_mrgctx, mono_icall_sig_void_ptr_ptr_int_ptr, TRUE);
-	register_icall (mini_llvm_init_gshared_method_vtable, mono_icall_sig_void_ptr_ptr_int_ptr, TRUE);
-
+	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_int_ptr, TRUE);
 	register_icall_no_wrapper (mini_llvmonly_resolve_iface_call_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_generic_virtual_call, mono_icall_sig_ptr_ptr_int_ptr);

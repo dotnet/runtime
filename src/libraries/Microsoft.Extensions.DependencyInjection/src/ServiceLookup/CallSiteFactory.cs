@@ -40,14 +40,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     if (implementationTypeInfo == null || !implementationTypeInfo.IsGenericTypeDefinition)
                     {
                         throw new ArgumentException(
-                            Resources.FormatOpenGenericServiceRequiresOpenGenericImplementation(descriptor.ServiceType),
+                            SR.Format(SR.OpenGenericServiceRequiresOpenGenericImplementation, descriptor.ServiceType),
                             "descriptors");
                     }
 
                     if (implementationTypeInfo.IsAbstract || implementationTypeInfo.IsInterface)
                     {
                         throw new ArgumentException(
-                            Resources.FormatTypeCannotBeActivated(descriptor.ImplementationType, descriptor.ServiceType));
+                            SR.Format(SR.TypeCannotBeActivated, descriptor.ImplementationType, descriptor.ServiceType));
                     }
                 }
                 else if (descriptor.ImplementationInstance == null && descriptor.ImplementationFactory == null)
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         implementationTypeInfo.IsInterface)
                     {
                         throw new ArgumentException(
-                            Resources.FormatTypeCannotBeActivated(descriptor.ImplementationType, descriptor.ServiceType));
+                            SR.Format(SR.TypeCannotBeActivated, descriptor.ImplementationType, descriptor.ServiceType));
                     }
                 }
 
@@ -134,7 +134,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 if (serviceType.IsConstructedGenericType &&
                     serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
-                    var itemType = serviceType.GenericTypeArguments.Single();
+                    var itemType = serviceType.GenericTypeArguments[0];
                     var cacheLocation = CallSiteResultCacheLocation.Root;
 
                     var callSites = new List<ServiceCallSite>();
@@ -260,7 +260,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 if (constructors.Length == 0)
                 {
-                    throw new InvalidOperationException(Resources.FormatNoConstructorMatch(implementationType));
+                    throw new InvalidOperationException(SR.Format(SR.NoConstructorMatch, implementationType));
                 }
                 else if (constructors.Length == 1)
                 {
@@ -320,7 +320,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                                 // Ambiguous match exception
                                 var message = string.Join(
                                     Environment.NewLine,
-                                    Resources.FormatAmbiguousConstructorException(implementationType),
+                                    SR.Format(SR.AmbiguousConstructorException, implementationType),
                                     bestConstructor,
                                     constructors[i]);
                                 throw new InvalidOperationException(message);
@@ -332,7 +332,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 if (bestConstructor == null)
                 {
                     throw new InvalidOperationException(
-                        Resources.FormatUnableToActivateTypeException(implementationType));
+                        SR.Format(SR.UnableToActivateTypeException, implementationType));
                 }
                 else
                 {
@@ -368,7 +368,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     if (throwIfCallSiteNotFound)
                     {
-                        throw new InvalidOperationException(Resources.FormatCannotResolveService(
+                        throw new InvalidOperationException(SR.Format(SR.CannotResolveService,
                             parameterType,
                             implementationType));
                     }

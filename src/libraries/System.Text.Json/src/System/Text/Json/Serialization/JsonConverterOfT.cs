@@ -47,6 +47,11 @@ namespace System.Text.Json.Serialization
             return new JsonPropertyInfo<T>();
         }
 
+        internal override sealed JsonParameterInfo CreateJsonParameterInfo()
+        {
+            return new JsonParameterInfo<T>();
+        }
+
         internal override Type? ElementType => null;
 
         // Allow a converter that can't be null to return a null value representation, such as JsonElement or Nullable<>.
@@ -75,7 +80,7 @@ namespace System.Text.Json.Serialization
         }
 
         // Provide a default implementation for value converters.
-        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T value)
+        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
             value = Read(ref reader, typeToConvert, options);
             return true;

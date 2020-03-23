@@ -68,7 +68,7 @@
 #define LIB_PREFIX
 #define MAKE_LIBNAME(NAME) (_X(NAME) _X(".dll"))
 #define FALLBACK_HOST_RID _X("win10")
-#elif defined(__APPLE__)
+#elif defined(TARGET_DARWIN)
 #define LIB_PREFIX _X("lib")
 #define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".dylib"))
 #define FALLBACK_HOST_RID _X("osx.10.12")
@@ -176,7 +176,7 @@ namespace pal
 
     #define __cdecl    /* nothing */
     #define __stdcall  /* nothing */
-    #if !defined(__FreeBSD__)
+    #if !defined(TARGET_FREEBSD)
         #define __fastcall /* nothing */
     #else
         #include <sys/types.h>

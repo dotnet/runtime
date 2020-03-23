@@ -119,4 +119,4 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 # add the install targets
 install_clr(TARGETS mscordbi)
-install_clr(TARGETS mscordbi DESTINATION sharedFramework SKIP_STRIP)
+install_clr(TARGETS mscordbi DESTINATION sharedFramework)

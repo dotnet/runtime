@@ -2785,6 +2785,12 @@ protected:
 };
 #endif // TARGET_X86 && !TARGET_UNIX
 
+// Frame for the Reverse PInvoke (i.e. NativeCallableAttribute).
+struct ReversePInvokeFrame
+{
+    Thread* currentThread;
+};
+
 #if defined(TARGET_X86) && defined(FEATURE_COMINTEROP)
 //-------------------------------------------------------------------------
 // Exception handler for COM to managed frame

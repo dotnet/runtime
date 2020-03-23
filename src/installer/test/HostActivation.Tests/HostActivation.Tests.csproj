@@ -10,10 +10,6 @@
     <TestsOutputName>ha</TestsOutputName>
     <UsesTestAssets>true</UsesTestAssets>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
-    <LangVersion>7.1</LangVersion>
-  </PropertyGroup>
   
   <ItemGroup>
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />

@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            ArrayWriterHelper.WriteArray(writer, values);
+            Helpers.WriteArray(writer, values);
             byte[] actualEncoding = writer.ToArray();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            ArrayWriterHelper.WriteArray(writer, values);
+            Helpers.WriteArray(writer, values);
             byte[] actualEncoding = writer.ToArray();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(1)]
         [InlineData(3)]
         [InlineData(10)]
-        public static void EndWriteArray_DefiniteLengthNotMet_ShouldThrowInvalidOperationException(int definiteLength)
+        public static void WriteEndArray_DefiniteLengthNotMet_ShouldThrowInvalidOperationException(int definiteLength)
         {
             using var writer = new CborWriter();
             writer.WriteStartArray(definiteLength);
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(1)]
         [InlineData(3)]
         [InlineData(10)]
-        public static void EndWriteArray_DefiniteLengthNotMet_WithNestedData_ShouldThrowInvalidOperationException(int definiteLength)
+        public static void WriteEndArray_DefiniteLengthNotMet_WithNestedData_ShouldThrowInvalidOperationException(int definiteLength)
         {
             using var writer = new CborWriter();
             writer.WriteStartArray(definiteLength);
@@ -113,31 +113,43 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }
 
-        [Fact]
-        public static void EndWriteArray_ImbalancedCall_ShouldThrowInvalidOperationException()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        public static void WriteEndArray_ImbalancedCall_ShouldThrowInvalidOperationException(int depth)
         {
             using var writer = new CborWriter();
+            for (int i = 0; i < depth; i++)
+            {
+                writer.WriteStartMap(1);
+            }
+
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }
-    }
 
-    static class ArrayWriterHelper
-    {
-        public static void WriteArray(CborWriter writer, params object[] values)
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        public static void WriteEndArray_AfterStartMap_ShouldThrowInvalidOperationException(int depth)
         {
-            writer.WriteStartArray(values.Length);
-            foreach (object value in values)
+            using var writer = new CborWriter();
+
+            for (int i = 0; i < depth; i++)
             {
-                switch (value)
+                if (i % 2 == 0)
                 {
-                    case int i: writer.WriteInt64(i); break;
-                    case string s: writer.WriteTextString(s); break;
-                    case byte[] b: writer.WriteByteString(b); break;
-                    case object[] nested: ArrayWriterHelper.WriteArray(writer, nested); break;
-                    default: throw new ArgumentException($"Unrecognized argument type {value.GetType()}");
-                };
+                    writer.WriteStartArray(1);
+                }
+                else
+                {
+                    writer.WriteStartMap(1);
+                }
             }
-            writer.WriteEndArray();
+
+            writer.WriteStartMap(definiteLength: 0);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }
     }
 }

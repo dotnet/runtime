@@ -1809,6 +1809,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // Most of these checks are already done by importer or fgMorphTailCall().
     // This serves as a double sanity check.
     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0); // tail calls from synchronized methods
+    assert(!comp->opts.IsReversePInvoke());                  // tail calls reverse pinvoke
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
 

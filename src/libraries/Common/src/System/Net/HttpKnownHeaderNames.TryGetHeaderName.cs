@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net
 {
@@ -15,7 +17,7 @@ namespace System.Net
         /// Gets a known header name string from a matching char[] array segment, using a case-sensitive
         /// ordinal comparison. Used to avoid allocating new strings for known header names.
         /// </summary>
-        public static bool TryGetHeaderName(char[] array, int startIndex, int length, out string name)
+        public static bool TryGetHeaderName(char[] array, int startIndex, int length, [NotNullWhen(true)] out string? name)
         {
             CharArrayHelpers.DebugAssertArrayInputs(array, startIndex, length);
 
@@ -30,7 +32,7 @@ namespace System.Net
         /// Gets a known header name string from a matching IntPtr buffer, using a case-sensitive
         /// ordinal comparison. Used to avoid allocating new strings for known header names.
         /// </summary>
-        public static unsafe bool TryGetHeaderName(IntPtr buffer, int length, out string name)
+        public static unsafe bool TryGetHeaderName(IntPtr buffer, int length, out string? name)
         {
             Debug.Assert(length >= 0);
 
@@ -84,7 +86,7 @@ namespace System.Net
             T key, int startIndex, int length,
             Func<T, int, char> charAt,
             Func<string, T, int, int, bool> equals,
-            out string name)
+            [NotNullWhen(true)] out string? name)
         {
             Debug.Assert(key != null);
             Debug.Assert(startIndex >= 0);
@@ -110,7 +112,7 @@ namespace System.Net
             //
             // Matching is case-sensitive: we only want to return a known header that exactly matches the key.
 
-            string potentialHeader = null;
+            string potentialHeader;
 
             switch (length)
             {
@@ -340,7 +342,7 @@ namespace System.Net
         /// Returns true if <paramref name="known"/> matches the <paramref name="key"/> char[] array segment,
         /// using an ordinal comparison.
         /// </summary>
-        private static bool TryMatch<T>(string known, T key, int startIndex, int length, Func<string, T, int, int, bool> equals, out string name)
+        private static bool TryMatch<T>(string known, T key, int startIndex, int length, Func<string, T, int, int, bool> equals, [NotNullWhen(true)] out string? name)
         {
             Debug.Assert(known != null);
             Debug.Assert(known.Length > 0);

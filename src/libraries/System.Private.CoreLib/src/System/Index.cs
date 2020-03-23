@@ -140,11 +140,15 @@ namespace System
 
         private string ToStringFromEnd()
         {
+#if !NETSTANDARD2_0
             Span<char> span = stackalloc char[11]; // 1 for ^ and 10 for longest possible uint value
             bool formatted = ((uint)Value).TryFormat(span.Slice(1), out int charsWritten);
             Debug.Assert(formatted);
             span[0] = '^';
             return new string(span.Slice(0, charsWritten + 1));
+#else
+            return '^' + Value.ToString();
+#endif
         }
     }
 }

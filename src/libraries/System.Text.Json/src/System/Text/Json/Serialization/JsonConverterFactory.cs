@@ -46,6 +46,11 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
+        internal override JsonParameterInfo CreateJsonParameterInfo()
+        {
+            throw new InvalidOperationException();
+        }
+
         internal sealed override Type? ElementType => null;
 
         internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
     <!-- The test leaves AssemblyLoadContext.Default.ResolvingUnmanagedDll event registered to a method in the test at exit -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>

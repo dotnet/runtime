@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
@@ -517,7 +518,7 @@ namespace System.Buffers
             return endIndex - startIndex;
         }
 
-        internal bool TryGetReadOnlySequenceSegment(out ReadOnlySequenceSegment<T>? startSegment, out int startIndex, out ReadOnlySequenceSegment<T>? endSegment, out int endIndex)
+        internal bool TryGetReadOnlySequenceSegment([NotNullWhen(true)] out ReadOnlySequenceSegment<T>? startSegment, out int startIndex, [NotNullWhen(true)] out ReadOnlySequenceSegment<T>? endSegment, out int endIndex)
         {
             object? startObject = _startObject;
 
@@ -555,7 +556,7 @@ namespace System.Buffers
             return true;
         }
 
-        internal bool TryGetString(out string? text, out int start, out int length)
+        internal bool TryGetString([NotNullWhen(true)] out string? text, out int start, out int length)
         {
             if (typeof(T) != typeof(char) || GetSequenceType() != SequenceType.String)
             {

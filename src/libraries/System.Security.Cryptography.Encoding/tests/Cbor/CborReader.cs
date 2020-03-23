@@ -117,6 +117,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private void PushDataItem(CborMajorType type, ulong? expectedNestedItems)
         {
+            if (expectedNestedItems > (ulong)_buffer.Length)
+            {
+                throw new FormatException("Insufficient buffer size for declared definite length in CBOR data item.");
+            }
+
             _nestedDataItemStack ??= new Stack<(CborMajorType, ulong?)>();
             _nestedDataItemStack.Push((type, _remainingDataItems));
             _remainingDataItems = expectedNestedItems;
