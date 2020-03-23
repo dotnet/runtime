@@ -123,7 +123,7 @@ namespace System.Net.Http.Json.Functional.Tests
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
             {
-                new HttpHeaderData("Content-Type", "text/plain; charset=\"utf-8\"")
+                new HttpHeaderData("Content-Type", "application/json; charset=\"utf-8\"")
             };
 
             await LoopbackServer.CreateClientAndServerAsync(
@@ -146,7 +146,7 @@ namespace System.Net.Http.Json.Functional.Tests
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
             {
-                new HttpHeaderData("Content-Type", "text/plain; charset=\"foo-bar\"")
+                new HttpHeaderData("Content-Type", "application/json; charset=\"foo-bar\"")
             };
 
             await LoopbackServer.CreateClientAndServerAsync(
@@ -193,7 +193,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     byte[] bytes =
                         Encoding.ASCII.GetBytes(
                             $"HTTP/1.1 200 OK" +
-                            $"\r\nContent-Type: text/plain; charset=utf-16\r\n" +
+                            $"\r\nContent-Type: application/json; charset=utf-16\r\n" +
                             $"Content-Length: {utf16Content.Length}\r\n" +
                             $"Connection:close\r\n\r\n");
 
@@ -223,6 +223,60 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                 },
                 server => server.HandleRequestAsync(headers: _headers, content: "{}"));
+        }
+
+        [Fact]
+        public async Task TestStructuredSyntaxJsonSuffix()
+        {
+            List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
+            {
+                new HttpHeaderData("Content-Type", "application/problem+json; charset=\"utf-8\"")
+            };
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        var response = await client.SendAsync(request);
+
+                        Person person = await response.Content.ReadFromJsonAsync<Person>();
+                        person.Validate();
+                    }
+                },
+                server => server.HandleRequestAsync(headers: customHeaders, content: Person.Create().Serialize()));
+        }
+
+        [Theory]
+        [InlineData("text/plain")]
+        [InlineData("/")]
+        [InlineData("application/")]
+        [InlineData("application/+")]
+        [InlineData("application/+json")] // empty subtype before suffix is invalid.
+        [InlineData("application/problem+")] // no suffix after '+'.
+        [InlineData("application/problem+foo+json")] // more than one '+' not allowed.
+        public async Task TestInvalidMediaTypeAsync(string mediaType)
+        {
+            List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
+            {
+                new HttpHeaderData("Content-Type", $"{mediaType}; charset=\"utf-8\"")
+            };
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        var response = await client.SendAsync(request);
+
+                        Exception ex = await Assert.ThrowsAsync<NotSupportedException>(() => response.Content.ReadFromJsonAsync<Person>());
+                        Assert.Contains("application/json", ex.Message);
+                        Assert.Contains("application/+json", ex.Message);
+                    }
+                },
+                server => server.HandleRequestAsync(headers: customHeaders, content: Person.Create().Serialize()));
         }
     }
 }

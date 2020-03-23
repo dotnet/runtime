@@ -40,7 +40,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
-    <Compile Include="..\..\src\System\Net\Http\Json\ArraySegmentExtensions.netstandard.cs" Link="ArraySegmentExtensions.netstandard.cs" />
+    <Compile Include="..\..\src\System\ArraySegmentExtensions.netstandard.cs" Link="ArraySegmentExtensions.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Net\Http\Json\TranscodingReadStream.cs" Link="TranscodingReadStream.cs" />

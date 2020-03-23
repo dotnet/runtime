@@ -20,7 +20,7 @@
     <Reference Include="System.Runtime" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <Compile Include="System\Net\Http\Json\ArraySegmentExtensions.netstandard.cs" />
+    <Compile Include="System\ArraySegmentExtensions.netstandard.cs" />
     <Reference Include="System.Buffers" />
   </ItemGroup>
   <ItemGroup>

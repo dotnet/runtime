@@ -18,7 +18,7 @@ namespace System.Net.Http.Json
         {
             ValidateContent(content);
             Debug.Assert(content.Headers.ContentType != null);
-            Encoding? sourceEncoding = GetEncoding(content.Headers.ContentType.CharSet);
+            Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
 
             return ReadFromJsonAsyncCore(content, type, sourceEncoding, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken);
         }
@@ -27,7 +27,7 @@ namespace System.Net.Http.Json
         {
             ValidateContent(content);
             Debug.Assert(content.Headers.ContentType != null);
-            Encoding? sourceEncoding = GetEncoding(content.Headers.ContentType.CharSet);
+            Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
 
             return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken);
         }
@@ -79,41 +79,48 @@ namespace System.Net.Http.Json
 
             string? mediaType = content.Headers.ContentType?.MediaType;
 
-            if (mediaType != JsonContent.JsonMediaType &&
-                mediaType != MediaTypeNames.Text.Plain)
+            if (mediaType == null)
             {
                 throw new NotSupportedException(SR.ContentTypeNotSupported);
             }
 
+            mediaType = mediaType.ToLower();
+
+            if (mediaType != JsonContent.JsonMediaType &&
+                !IsValidStructuredSyntaxJsonSuffix(mediaType.AsSpan()))
+            {
+                throw new NotSupportedException(SR.ContentTypeNotSupported);
+            }
         }
 
-        private static Encoding? GetEncoding(string? charset)
+        private static bool IsValidStructuredSyntaxJsonSuffix(ReadOnlySpan<char> mediaType)
         {
-            Encoding? encoding = null;
+            int index = 0;
+            int typeLength = mediaType.IndexOf('/');
 
-            if (charset != null)
+            if (typeLength < 0 ||
+                !mediaType.Slice(index, typeLength).SequenceEqual(JsonContent.JsonType.AsSpan()))
             {
-                try
-                {
-                    // Remove at most a single set of quotes.
-                    if (charset.Length > 2 && charset[0] == '\"' && charset[charset.Length - 1] == '\"')
-                    {
-                        encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
-                    }
-                    else
-                    {
-                        encoding = Encoding.GetEncoding(charset);
-                    }
-                }
-                catch (ArgumentException e)
-                {
-                    throw new InvalidOperationException(SR.CharSetInvalid, e);
-                }
-
-                Debug.Assert(encoding != null);
+                return false;
             }
 
-            return encoding;
+            index += typeLength + 1;
+            int suffixStart = mediaType.Slice(index).IndexOf('+');
+
+            // Empty prefix subtype ("application/+json") not allowed.
+            if (suffixStart <= 0)
+            {
+                return false;
+            }
+
+            index += suffixStart + 1;
+
+            if (!mediaType.Slice(index).SequenceEqual(JsonContent.JsonSubtype.AsSpan()))
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

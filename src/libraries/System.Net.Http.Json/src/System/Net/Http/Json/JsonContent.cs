@@ -15,8 +15,13 @@ namespace System.Net.Http.Json
     public partial class JsonContent : HttpContent
     {
         internal const string JsonMediaType = "application/json";
-        private static MediaTypeHeaderValue s_defaultMediaType => MediaTypeHeaderValue.Parse(string.Format("{0}; charset={1}", JsonMediaType, Encoding.UTF8.WebName));
-        internal static JsonSerializerOptions s_defaultSerializerOptions => new JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        internal const string JsonType = "application";
+        internal const string JsonSubtype = "json";
+        private static MediaTypeHeaderValue s_defaultMediaType
+            => MediaTypeHeaderValue.Parse(string.Format("{0}; charset={1}", JsonMediaType, Encoding.UTF8.WebName));
+
+        internal static JsonSerializerOptions s_defaultSerializerOptions
+            => new JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
         public Type ObjectType { get; }
@@ -74,7 +79,7 @@ namespace System.Net.Http.Json
             }
         }
 
-        private static Encoding? GetEncoding(string? charset)
+        internal static Encoding? GetEncoding(string? charset)
         {
             Encoding? encoding = null;
 
