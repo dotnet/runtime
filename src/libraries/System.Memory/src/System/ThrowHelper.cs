@@ -52,6 +52,10 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateObjectDisposedException_ArrayMemoryPoolBuffer() { return new ObjectDisposedException("ArrayMemoryPoolBuffer"); }
 
+        internal static void ThrowOutOfMemoryException() { throw CreateOutOfMemoryException(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateOutOfMemoryException() { return new OutOfMemoryException(); }
+
         //
         // ReadOnlySequence .ctor validation Throws coalesced to enable inlining of the .ctor
         //

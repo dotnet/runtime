@@ -182,7 +182,7 @@ namespace System.Buffers
                     newSize = currentLength + sizeHint;
                     if ((uint)newSize > int.MaxValue)
                     {
-                        newSize = int.MaxValue;
+                        ThrowHelper.ThrowOutOfMemoryException();
                     }
                 }
 
