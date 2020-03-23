@@ -15,6 +15,10 @@
       https://github.com/dotnet/arcade/issues/388
   -->
 
+  <PropertyGroup>
+    <RestoreUsingNuGetTargets>false</RestoreUsingNuGetTargets>
+  </PropertyGroup>
+
   <!-- Import to have access to properties/items used both during the Arcade phase and in the repo. -->
   <Import Project="$(MSBuildThisFileDirectory)Configurations.props" />
   <Import Project="$(MSBuildThisFileDirectory)Subsets.props" />

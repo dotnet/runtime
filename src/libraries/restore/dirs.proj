@@ -12,5 +12,9 @@
     <Project Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>
 
+  <Target Name="BeforeRestoreGenerateOSPropsFile"
+          DependsOnTargets="GenerateRuntimeOSPropsFile"
+          BeforeTargets="Restore" />
+
   <Import Project="..\dir.traversal.targets" />
 </Project>

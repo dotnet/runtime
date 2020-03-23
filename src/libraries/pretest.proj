@@ -53,14 +53,9 @@
 
   <!-- Generate launch settings support files to enable VS debugging. -->
   <Target Name="GenerateLaunchSettingsFiles" Condition="'$(EnableLaunchSettings)' == 'true'">
-    <PropertyGroup>
-      <_TestProjectRootDir>$(LibrariesProjectRoot)</_TestProjectRootDir>
-      <_TestProjectRootDir Condition="'$(DirectoryToBuild)'!=''">$(DirectoryToBuild)</_TestProjectRootDir>
-    </PropertyGroup>
-
     <ItemGroup>
       <!-- Keep in sync with pattern for test projects in tests.proj -->
-      <TestProjects Include="$(_TestProjectRootDir)*\tests\**\*.Tests.csproj" />
+      <TestProjects Include="$(LibrariesProjectRoot)*\tests\**\*.Tests.csproj" />
     </ItemGroup>
 
     <MSBuild Projects="@(TestProjects)"

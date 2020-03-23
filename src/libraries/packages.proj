@@ -1,8 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <EnableProjectRestore>true</EnableProjectRestore>
-  </PropertyGroup>
-
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>

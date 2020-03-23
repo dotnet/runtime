@@ -1,9 +1,6 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
   [switch][Alias('h')]$help,
-  [switch][Alias('b')]$build,
-  [switch][Alias('t')]$test,
-  [switch]$buildtests,
   [string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
@@ -11,6 +8,7 @@ Param(
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
+  [switch]$testnobuild,
   [string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
   [string]$subsetCategory,
   [string]$subset,
@@ -37,7 +35,6 @@ function Get-Help() {
   Write-Host "Actions (defaults to -restore -build):"
   Write-Host "  -restore                Restore dependencies (short: -r)"
   Write-Host "  -build                  Build all source projects (short: -b)"
-  Write-Host "  -buildtests             Build all test projects"
   Write-Host "  -rebuild                Rebuild all source projects"
   Write-Host "  -test                   Build and run tests (short: -t)"
   Write-Host "  -pack                   Package build outputs into NuGet packages"
@@ -50,6 +47,7 @@ function Get-Help() {
   Write-Host "  -framework              Build framework: netcoreapp5.0 or net472 (short: -f)"
   Write-Host "  -coverage               Collect code coverage when testing"
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all"
+  Write-Host "  -testnobuild            Skip building tests when invoking -test"
   Write-Host "  -allconfigurations      Build packages for all build configurations"
   Write-Host ""
 
@@ -112,7 +110,7 @@ if ($vs) {
 }
 
 # Check if an action is passed in
-$actions = "r","restore","b","build","buildtests","rebuild","t","test","pack","sign","publish","clean"
+$actions = "r","restore","sign","testnobuild","publish","clean"
 $actionPassedIn = @(Compare-Object -ReferenceObject @($PSBoundParameters.Keys) -DifferenceObject $actions -ExcludeDifferent -IncludeEqual).Length -ne 0
 if ($null -ne $properties -and $actionPassedIn -ne $true) {
   $actionPassedIn = @(Compare-Object -ReferenceObject $properties -DifferenceObject $actions.ForEach({ "-" + $_ }) -ExcludeDifferent -IncludeEqual).Length -ne 0
@@ -122,28 +120,10 @@ if (!$actionPassedIn) {
   $arguments = "-restore -build"
 }
 
-$possibleDirToBuild = if($properties.Length -gt 0) { $properties[0]; } else { $null }
-
-if ($null -ne $possibleDirToBuild -and $subsetCategory -eq "libraries") {
-  $dtb = $possibleDirToBuild.TrimEnd('\')
-  if (Test-Path $dtb) {
-    $properties[0] = "/p:DirectoryToBuild=$(Resolve-Path $dtb)"
-  }
-  else {
-    $dtb = Join-Path "$PSSCriptRoot\..\src\libraries" $dtb
-    if (Test-Path $dtb) {
-      $properties[0] = "/p:DirectoryToBuild=$(Resolve-Path $dtb)"
-    }
-  }
-}
-
 foreach ($argument in $PSBoundParameters.Keys)
 {
   switch($argument)
   {
-    "build"                { $arguments += " -build" }
-    "buildtests"           { if ($build -eq $true) { $arguments += " /p:BuildTests=true" } else { $arguments += " -build /p:BuildTests=only" } }
-    "test"                 { $arguments += " -test" }
     "runtimeConfiguration" { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"            { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                   { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }

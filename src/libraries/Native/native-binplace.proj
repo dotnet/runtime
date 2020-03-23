@@ -1,11 +1,5 @@
-<Project DefaultTargets="Build">
-
-  <Import Project="..\Directory.Build.props" />
-  <Target Name="Build" DependsOnTargets="BinPlace" />
-  <Target Name="Clean" />
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
-
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+<Project>
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
@@ -26,4 +20,8 @@
       <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
   </Target>
+
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+
+  <Target Name="Build" DependsOnTargets="BinPlace" />
 </Project>

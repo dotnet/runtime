@@ -51,18 +51,30 @@
     <DefaultSubsetCategories>libraries-installer-coreclr-mono</DefaultSubsetCategories>
     <DefaultSubsetCategories Condition="'$(TargetOS)' == 'iOS'">libraries-installer-mono</DefaultSubsetCategories>
     <DefaultSubsetCategories Condition="'$(TargetOS)' == 'Android'">libraries-mono</DefaultSubsetCategories>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefaultLibrariesSubsets>depproj-native-ref-src</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(DefaultLibrariesSubsets)-apicompat</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">$(DefaultLibrariesSubsets)-pretest</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)-packages</DefaultLibrariesSubsets>
+    <!-- Only build package projects for pack target.-->
+    <DefaultLibrariesSubsets Condition="'$(Pack)' == 'true'">packages</DefaultLibrariesSubsets>
+    <!-- Only build test projects for test target. -->
+    <DefaultLibrariesSubsets Condition="'$(Test)' == 'true'">tests</DefaultLibrariesSubsets>
+
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS'">depproj-pkgproj</DefaultInstallerSubsets>
-    <!-- TODO: Split into multiple sets. -->
-    <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
     <DefaultCoreClrSubsets>runtime-linuxdac-corelib-nativecorelib-tools-packages</DefaultCoreClrSubsets>
     <DefaultMonoSubsets>all</DefaultMonoSubsets>
+  </PropertyGroup>
 
+  <PropertyGroup>
     <_subsetCategory Condition="'$(SubsetCategory)' != ''">$(SubsetCategory.ToLowerInvariant())</_subsetCategory>
     <_subsetCategory Condition="'$(SubsetCategory)' == ''">$(DefaultSubsetCategories)</_subsetCategory>
     <_subset Condition="'$(Subset)' != ''">$(Subset.ToLowerInvariant())</_subset>
-    <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('installer'))">$(DefaultInstallerSubsets)</_subset>
-    <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('libraries'))">$(_subset)-$(DefaultLibrariesSubsets)</_subset>
+    <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('libraries'))">$(DefaultLibrariesSubsets)</_subset>
+    <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('installer'))">$(_subset)-$(DefaultInstallerSubsets)</_subset>
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('coreclr'))">$(_subset)-$(DefaultCoreClrSubsets)</_subset>
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('mono'))">$(_subset)-$(DefaultMonoSubsets)</_subset>
 
@@ -77,11 +89,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Global -->
-    <SubsetName Include="RegenerateReadmeTable" Category="" OnDemand="true" Description="Regenerates the table of asset links in the README.md file." />
-
     <!-- Libraries -->
-    <SubsetName Include="All" Category="Libraries" Description="The .NET libraries comprising the shared framework." />
+    <SubsetName Include="DepProj" Category="Libraries" Description="The upfront restore projects which are necessary to compose the libraries." />
+    <SubsetName Include="Native" Category="Libraries" Description="The native libraries used in the shared framework." />
+    <SubsetName Include="Ref" Category="Libraries" Description="The managed reference libraries." />
+    <SubsetName Include="Src" Category="Libraries" Description="The managed implementation libraries." />
+    <SubsetName Include="ApiCompat" Category="Libraries" Description="The ApiCompat tool which scans for api compatibility." />
+    <SubsetName Include="PreTest" Category="Libraries" Description="Test assets which are necessary to run tests." />
+    <SubsetName Include="Packages" Category="Libraries" Description="The projects that produce NuGet packages from libraries." />
+    <SubsetName Include="Tests" Category="Libraries" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
 
     <!-- CoreClr -->
     <SubsetName Include="Runtime" Category="CoreClr" Description="The CoreCLR .NET runtime." />
@@ -104,11 +120,6 @@
     <SubsetName Include="Bundle" Category="Installer" Description="The shared framework bundle installer projects. Produces .exe installers for Windows." />
     <SubsetName Include="Installers" Category="Installer" Description="Generates additional installers. This produces the shared frameworks and their installers." />
     <SubsetName Include="Test" Category="Installer" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
-  </ItemGroup>
-
-  <!-- Global sets -->
-  <ItemGroup Condition="$(_subset.Contains('-regeneratereadmetable-'))">
-    <ProjectToBuild Include="$(RepoToolsLocalDir)regenerate-readme-table.proj" />
   </ItemGroup>
 
   <ItemDefinitionGroup Condition="'$(CoreCLRConfiguration)' != ''">
@@ -142,9 +153,30 @@
   </ItemDefinitionGroup>
 
   <ItemDefinitionGroup Condition="'$(LibrariesConfiguration)' != ''">
-    <LibrariesProjectToBuild>
+    <LibrariesDepprojToBuild>
       <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-    </LibrariesProjectToBuild>
+    </LibrariesDepprojToBuild>
+    <LibrariesNativeToBuild>
+      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+    </LibrariesNativeToBuild>
+    <LibrariesRefToBuild>
+      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+    </LibrariesRefToBuild>
+    <LibrariesSrcToBuild>
+      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+    </LibrariesSrcToBuild>
+    <LibrariesApiCompatToBuild>
+      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+    </LibrariesApiCompatToBuild>
+    <LibrariesPreTestToBuild>
+      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+    </LibrariesPreTestToBuild>
+    <LibrariesTestToBuild>
+      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+    </LibrariesTestToBuild>
+    <LibrariesPackageToBuild>
+      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+    </LibrariesPackageToBuild>
   </ItemDefinitionGroup>
 
   <!-- CoreClr sets -->
@@ -186,6 +218,7 @@
     <CoreClrPackagesProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\packages.builds" BuildInParallel="false" />
     <ProjectToBuild Include="@(CoreClrPackagesProjectToBuild)" />
   </ItemGroup>
+
   <!-- Mono sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('-all-'))">
     <MonoProjectToBuild Include="$(MonoProjectRoot)mono.proj" BuildInParallel="false" />
@@ -194,9 +227,44 @@
   </ItemGroup>
 
   <!-- Libraries sets -->
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-all-'))">
-    <LibrariesProjectToBuild Include="$(LibrariesProjectRoot)build.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(LibrariesProjectToBuild)" />
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-depproj-'))">
+    <LibrariesDepprojToBuild Include="$(LibrariesProjectRoot)restore\dirs.proj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(LibrariesDepprojToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-native-'))">
+    <LibrariesNativeToBuild Include="$(LibrariesProjectRoot)Native\build-native.proj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(LibrariesNativeToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-ref-'))">
+    <LibrariesRefToBuild Include="$(LibrariesProjectRoot)ref.proj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(LibrariesRefToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-src-'))">
+    <LibrariesSrcToBuild Include="$(LibrariesProjectRoot)src.proj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(LibrariesSrcToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-apicompat-'))">
+    <LibrariesApiCompatToBuild Include="$(LibrariesProjectRoot)shims\ApiCompat.proj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(LibrariesApiCompatToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-pretest-'))">
+    <LibrariesPreTestToBuild Include="$(LibrariesProjectRoot)pretest.proj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(LibrariesPreTestToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-tests-'))">
+    <LibrariesTestToBuild Include="$(LibrariesProjectRoot)tests.proj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(LibrariesTestToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-packages-'))">
+    <LibrariesPackageToBuild Include="$(LibrariesProjectRoot)packages.proj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(LibrariesPackageToBuild)" />
   </ItemGroup>
 
   <!-- Installer sets -->

@@ -1,26 +1,20 @@
 <Project>
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
-  <Import Project="$(RepositoryEngineeringDir)coverage.props" Condition="'$(EnableCoverageSupport)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\coverage.props" Condition="'$(Coverage)' == 'true'" />
 
   <PropertyGroup>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'"> 
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\System.Utf8String.Experimental\tests\System.Utf8String.Experimental.Tests.csproj" />
-  </ItemGroup>
-
-  <PropertyGroup Condition="'$(EnableCoverageSupport)' == 'true'">
+  <PropertyGroup Condition="'$(Coverage)' == 'true'">
     <CoverageReportInputPath>$(ArtifactsBinDir)*.Tests/**/coverage.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
-    <SerializeProjects>true</SerializeProjects> 
+    <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We currently only test with C# projects. -->
-    <ProjectReference Condition="'$(DirectoryToBuild)' != ''" Include="$(DirectoryToBuild)\**\*.Tests.csproj" />
-    <ProjectReference Condition="'$(SkipTestRestore)' != 'true' and '$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(ProjectExclusions)" />
-    <ProjectReference Condition="'$(SkipTestRestore)' == 'true' and '$(DirectoryToBuild)' == ''" Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(ProjectExclusions)" />
     <ProjectReference Remove="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
   </ItemGroup>
 
