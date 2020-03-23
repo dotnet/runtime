@@ -4,7 +4,7 @@
 
 #include "common.h"
 #include "diagnosticserver.h"
-#include "diagnosticsipcfactory.h"
+#include "ipcstreamfactory.h"
 #include "eventpipeprotocolhelper.h"
 #include "dumpdiagnosticprotocolhelper.h"
 #include "profilerdiagnosticprotocolhelper.h"
@@ -48,7 +48,7 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
     {
         while (!s_shuttingDown)
         {
-            IpcStream *pStream = DiagnosticsIpcFactory::GetNextAvailableStream(s_rgIpcs.Ptr(), (uint32_t)s_rgIpcs.Size(), LoggingCallback);
+            IpcStream *pStream = IpcStreamFactory::GetNextAvailableStream(s_rgIpcs.Ptr(), (uint32_t)s_rgIpcs.Size(), LoggingCallback);
 
             if (pStream == nullptr)
                 continue;
@@ -149,10 +149,10 @@ bool DiagnosticServer::Initialize()
             }
 
             // Create the clint mode connection
-            s_rgIpcs.Push(DiagnosticsIpcFactory::CreateClient(address, ErrorCallback));
+            s_rgIpcs.Push(IpcStreamFactory::CreateClient(address, ErrorCallback));
         }
 
-        s_rgIpcs.Push(DiagnosticsIpcFactory::CreateServer(nullptr, ErrorCallback));
+        s_rgIpcs.Push(IpcStreamFactory::CreateServer(nullptr, ErrorCallback));
 
         if (s_rgIpcs.Size() != 0)
         {

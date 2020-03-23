@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#ifndef __DIAGNOSTICS_IPC_FACTORY_H__
-#define __DIAGNOSTICS_IPC_FACTORY_H__
+#ifndef __IPC_STREAM_FACTORY_H__
+#define __IPC_STREAM_FACTORY_H__
 
 #ifdef FEATURE_PERFTRACING
 
 #include "diagnosticsipc.h"
 
-class DiagnosticsIpcFactory
+class IpcStreamFactory
 {
 public:
     static IpcStream::DiagnosticsIpc *CreateServer(const char *const pIpcName, ErrorCallback = nullptr);
@@ -51,4 +51,4 @@ private:
 
 #endif // FEATURE_PERFTRACING
 
-#endif // __DIAGNOSTICS_IPC_FACTORY_H__ 
+#endif // __IPC_STREAM_FACTORY_H__ 

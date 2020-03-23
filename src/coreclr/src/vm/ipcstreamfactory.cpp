@@ -4,24 +4,24 @@
 
 #include "common.h"
 #include "diagnosticsprotocol.h"
-#include "diagnosticsipcfactory.h"
+#include "ipcstreamfactory.h"
 
 #ifdef FEATURE_PERFTRACING
 
-IpcStream **DiagnosticsIpcFactory::s_ppActiveConnectionsCache = nullptr;
-uint32_t DiagnosticsIpcFactory::s_ActiveConnectionsCacheSize = 0;
+IpcStream **IpcStreamFactory::s_ppActiveConnectionsCache = nullptr;
+uint32_t IpcStreamFactory::s_ActiveConnectionsCacheSize = 0;
 
-IpcStream::DiagnosticsIpc *DiagnosticsIpcFactory::CreateServer(const char *const pIpcName, ErrorCallback callback)
+IpcStream::DiagnosticsIpc *IpcStreamFactory::CreateServer(const char *const pIpcName, ErrorCallback callback)
 {
     return IpcStream::DiagnosticsIpc::Create(pIpcName, IpcStream::DiagnosticsIpc::ConnectionMode::SERVER, callback);
 }
 
-IpcStream::DiagnosticsIpc *DiagnosticsIpcFactory::CreateClient(const char *const pIpcName, ErrorCallback callback)
+IpcStream::DiagnosticsIpc *IpcStreamFactory::CreateClient(const char *const pIpcName, ErrorCallback callback)
 {
     return IpcStream::DiagnosticsIpc::Create(pIpcName, IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT, callback);
 }
 
-IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsIpc *const *const ppIpcs, uint32_t nIpcs, ErrorCallback callback)
+IpcStream *IpcStreamFactory::GetNextAvailableStream(IpcStream::DiagnosticsIpc *const *const ppIpcs, uint32_t nIpcs, ErrorCallback callback)
 {
     // a static array that holds open client connections that haven't been used
     // Remove entries from this list that have been used, e.g., they are placed in pStream and returned
@@ -127,13 +127,13 @@ IpcStream *DiagnosticsIpcFactory::GetNextAvailableStream(IpcStream::DiagnosticsI
 
         int32_t retval = IpcStream::Poll(pStreams.Ptr(), (uint32_t)pStreams.Size(), pollTimeoutMs, &pStream, callback);
         nPollAttempts++;
-        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "DiagnosticsIpcFactory::GetNextAvailableStream - Poll attempt: %d, timeout: %dms.\n", nPollAttempts, pollTimeoutMs);
+        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - Poll attempt: %d, timeout: %dms.\n", nPollAttempts, pollTimeoutMs);
 
         if (retval < 0)
         {
             if (pStream != nullptr)
             {
-                STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, "DiagnosticsIpcFactory::GetNextAvailableStream - Poll attempt: %d, connection hung up.\n", nPollAttempts);
+                STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - Poll attempt: %d, connection hung up.\n", nPollAttempts);
                 // This stream was hung up
                 RemoveFromCache(pStream);
                 delete pStream;

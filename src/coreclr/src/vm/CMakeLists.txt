@@ -320,7 +320,6 @@ set(VM_SOURCES_WKS
     custommarshalerinfo.cpp
     autotrace.cpp
     diagnosticserver.cpp
-    diagnosticsipcfactory.cpp
     dllimportcallback.cpp
     eeconfig.cpp
     eecontract.cpp
@@ -365,6 +364,7 @@ set(VM_SOURCES_WKS
     interoputil.cpp
     interpreter.cpp
     invokeutil.cpp
+    ipcstreamfactory.cpp
     jithelpers.cpp
     managedmdimport.cpp
     marshalnative.cpp
@@ -437,7 +437,6 @@ set(VM_HEADERS_WKS
     custommarshalerinfo.h
     autotrace.h
     diagnosticserver.h
-    diagnosticsipcfactory.h
     diagnosticsprotocol.h
     dllimportcallback.h
     eeconfig.h
@@ -484,6 +483,7 @@ set(VM_HEADERS_WKS
     interpreter.h
     interpreter.hpp
     invokeutil.h
+    ipcstreamfactory.h
     managedmdimport.hpp
     marshalnative.h
     methodtablebuilder.h
