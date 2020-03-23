@@ -215,7 +215,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-packages-'))">
-    <CoreClrPackagesProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\packages.builds" BuildInParallel="false" />
+    <CoreClrPackagesProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\packages.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(CoreClrPackagesProjectToBuild)" />
   </ItemGroup>
 

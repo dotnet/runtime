@@ -4,9 +4,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.builds" />
-    <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.builds" />
-    <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" />
+    <ProjectReference Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.proj" />
+    <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.proj" />
+    <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.proj" />
   </ItemGroup>
 
   <!-- Generate a version.txt file we include in our packages

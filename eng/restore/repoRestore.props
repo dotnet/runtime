@@ -1,6 +1,9 @@
 <Project TreatAsLocalProperty="ExcludeRestorePackageImports">
 
   <PropertyGroup>
+    <RestoreUseStaticGraphEvaluation>false</RestoreUseStaticGraphEvaluation>
+  </PropertyGroup>
+  <PropertyGroup>
     <!-- Need to set ProjectAssetsFile to something so it doesn't get set to the Tools.proj assets file when we import the generated props -->
     <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == ''">unused</ProjectAssetsFile>
     <!-- Nuget will normally disable all generated imports as part of a restore to avoid 

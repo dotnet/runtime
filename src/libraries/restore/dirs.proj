@@ -16,5 +16,16 @@
           DependsOnTargets="GenerateRuntimeOSPropsFile"
           BeforeTargets="Restore" />
 
-  <Import Project="..\dir.traversal.targets" />
+  <Target Name="BuildAllProjects"
+          AfterTargets="Restore">
+    <MSBuild Targets="Build"
+             Projects="@(Project)"
+             ContinueOnError="ErrorAndStop" />
+  </Target>
+
+  <Import Project="Directory.Build.targets" />
+
+  <!-- Ordering matters! Overwriting the Build target after the Sdk.targets import. -->
+  <!-- Don't do anything during build. -->
+  <Target Name="Build" />
 </Project>

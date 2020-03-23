@@ -18,8 +18,6 @@
       unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
     -->
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
-    <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
-    <RestoreUseStaticGraphEvaluation Condition="'$(DisableProjectRestore)' != 'true'">true</RestoreUseStaticGraphEvaluation>
   </PropertyGroup>
 
   <PropertyGroup>

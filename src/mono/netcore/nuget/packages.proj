@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <ItemGroup>
-    <ProjectReference Include="Microsoft.NETCore.Tool.MonoAOT\Microsoft.NETCore.Tool.MonoAOT.builds" Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" />
-    <ProjectReference Include="Microsoft.NETCore.Runtime.Mono\Microsoft.NETCore.Runtime.Mono.builds" />
+    <ProjectReference Include="Microsoft.NETCore.Tool.MonoAOT\Microsoft.NETCore.Tool.MonoAOT.proj" Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" />
+    <ProjectReference Include="Microsoft.NETCore.Runtime.Mono\Microsoft.NETCore.Runtime.Mono.proj" />
   </ItemGroup>
 
   <!-- Generate a version.txt file we include in our packages

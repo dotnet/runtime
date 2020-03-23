@@ -56,17 +56,17 @@ Sample `System.Collections.Concurrent.pkgproj`
 ```
 
 ### Framework-specific library
-Framework specific libraries are effectively the same as the previous example.  The difference is that the src project reference **must** refer to the `.builds` file which will provide multiple assets from multiple projects.
+Framework specific libraries are effectively the same as the previous example.  The difference is that the src project reference **must** refer to the `.proj` file which will provide multiple assets from multiple projects.
 
 Sample System.Net.Security.pkgproj
 ```
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\System.Net.Security.builds">
+    <ProjectReference Include="..\ref\System.Net.Security.proj">
       <SupportedFramework>net463;netcoreapp1.1;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Net.Security.builds" />
+    <ProjectReference Include="..\src\System.Net.Security.proj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />
@@ -86,7 +86,7 @@ Sample System.Net.Security.pkgproj
 </Project>
 ```
 
-Sample \ref .builds file defining a constant used to filter API that were added on top of the netstandard1.7 ones and are available only in netcoreapp1.1:
+Sample \ref .proj file defining a constant used to filter API that were added on top of the netstandard1.7 ones and are available only in netcoreapp1.1:
 
 ```
 <Project DefaultTargets="Build">
@@ -115,7 +115,7 @@ Conditional compilation using the above-mentioned constant (from `ref\System.Net
 #endif
 ```
 
-Sample \src .builds file (in this case the implementation is the same in both netcoreapp1.1 and netstandard1.7):
+Sample \src .proj file (in this case the implementation is the same in both netcoreapp1.1 and netstandard1.7):
 
 ```
 <Project DefaultTargets="Build">
@@ -176,7 +176,7 @@ Sample `System.IO.FileSystem.pkgproj`
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.IO.FileSystem.builds">
+    <ProjectReference Include="..\..\src\System.IO.FileSystem.proj">
       <AdditionalProperties>OSGroup=Windows_NT</AdditionalProperties>
     </ProjectReference>
 
@@ -204,7 +204,7 @@ Sample `System.IO.FileSystem.pkgproj`
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.IO.FileSystem.builds">
+    <ProjectReference Include="..\..\src\System.IO.FileSystem.proj">
       <AdditionalProperties>OSGroup=Linux</AdditionalProperties>
     </ProjectReference>
   </ItemGroup>
@@ -221,8 +221,8 @@ Asset projects (`.csproj`, `.vbproj`, or `.depproj`) can control their `{targetM
 
 The primary thing that the library author needs to do in order to ensure the correct asset selection is:
 
-1. Configure the correct projects in your library's `.builds` file.
-2. Reference the `.builds` file from the package project.
+1. Configure the correct projects in your library's `.proj` file.
+2. Reference the `.proj` file from the package project.
 3. Provide a default PackageTargetFramework for empty-BuildTargetFramework builds in the library's `.csproj` or `.vbproj`.
     ```
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
