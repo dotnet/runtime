@@ -19,8 +19,9 @@ int verbRemoveDup::DoWork(const char* nameOfInput, const char* nameOfOutput, boo
         return -1;
     }
 
-    RemoveDup removeDups(/* cleanup */ false);
-    if (!removeDups.CopyAndRemoveDups(nameOfInput, hFileOut, stripCR, legacyCompare))
+    RemoveDup removeDups;
+    if (!removeDups.Initialize(stripCR, legacyCompare, /* cleanup */ false)
+        || !removeDups.CopyAndRemoveDups(nameOfInput, hFileOut))
     {
         LogError("Failed to remove dups");
         return -1;

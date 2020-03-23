@@ -118,7 +118,7 @@ bool RemoveDup::uniqueLegacy(MethodContext* mc)
     return true;
 }
 
-bool RemoveDup::CopyAndRemoveDups(const char* nameOfInput, HANDLE hFileOut, bool stripCR, bool legacyCompare)
+bool RemoveDup::CopyAndRemoveDups(const char* nameOfInput, HANDLE hFileOut)
 {
     MethodContextIterator mci(/* progressReport */ true);
     if (!mci.Initialize(nameOfInput))
@@ -129,12 +129,12 @@ bool RemoveDup::CopyAndRemoveDups(const char* nameOfInput, HANDLE hFileOut, bool
     while (mci.MoveNext())
     {
         MethodContext* mc = mci.CurrentTakeOwnership();
-        if (stripCR)
+        if (m_stripCR)
         {
             delete mc->cr;
             mc->cr = new CompileResult();
         }
-        if (legacyCompare)
+        if (m_legacyCompare)
         {
             if (uniqueLegacy(mc))
             {
