@@ -71,8 +71,8 @@
   </Target>
 
   <!-- Platform manifest needs to include all System*Native items from 3.1 release. This target adds them explicitly,
-      to work around the issue introduced with a fix for https://github.com/dotnet/runtime/issues/33118,
-      Android libraries need to conform to a specific naming convention which necessitated renames of these libraries.
+      to fill the gap that appeared when the
+      names of these libraries were changed in 5.0 to conform to a specific Android naming convention. The library name change was a fix for https://github.com/dotnet/runtime/issues/33118.
       For more details of the issue and fix see https://github.com/dotnet/runtime/issues/33450 -->
 
   <Target Name="AddSharedFrameworkNativeFilesWithoutLibPrefixToPlatformManifest"
