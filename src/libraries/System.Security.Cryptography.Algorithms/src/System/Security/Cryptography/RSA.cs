@@ -625,6 +625,42 @@ namespace System.Security.Cryptography
             bytesRead = localRead;
         }
 
+        public override void ImportFromPem(ReadOnlySpan<char> input)
+        {
+            PemKeyImportHelpers.ImportPem(input, label => {
+                if (label.SequenceEqual("RSA PRIVATE KEY"))
+                {
+                    return ImportRSAPrivateKey;
+                }
+                else if (label.SequenceEqual("PRIVATE KEY"))
+                {
+                    return ImportPkcs8PrivateKey;
+                }
+                else if (label.SequenceEqual("RSA PUBLIC KEY"))
+                {
+                    return ImportRSAPublicKey;
+                }
+                else if (label.SequenceEqual("PUBLIC KEY"))
+                {
+                    return ImportSubjectPublicKeyInfo;
+                }
+                else
+                {
+                    return null;
+                }
+            });
+        }
+
+        public override void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<char> password)
+        {
+            PemKeyImportHelpers.ImportEncryptedPem<char>(input, password, ImportEncryptedPkcs8PrivateKey);
+        }
+
+        public override void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<byte> passwordBytes)
+        {
+            PemKeyImportHelpers.ImportEncryptedPem<byte>(input, passwordBytes, ImportEncryptedPkcs8PrivateKey);
+        }
+
         private static void ClearPrivateParameters(in RSAParameters rsaParameters)
         {
             CryptographicOperations.ZeroMemory(rsaParameters.D);

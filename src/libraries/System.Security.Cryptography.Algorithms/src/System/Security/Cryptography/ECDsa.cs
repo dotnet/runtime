@@ -1298,5 +1298,37 @@ namespace System.Security.Cryptography
                     throw new ArgumentOutOfRangeException(nameof(signatureFormat));
             }
         }
+
+        public override void ImportFromPem(ReadOnlySpan<char> input)
+        {
+            PemKeyImportHelpers.ImportPem(input, label => {
+                if (label.SequenceEqual("PRIVATE KEY"))
+                {
+                    return ImportPkcs8PrivateKey;
+                }
+                else if (label.SequenceEqual("PUBLIC KEY"))
+                {
+                    return ImportSubjectPublicKeyInfo;
+                }
+                else if (label.SequenceEqual("EC PRIVATE KEY"))
+                {
+                    return ImportECPrivateKey;
+                }
+                else
+                {
+                    return null;
+                }
+            });
+        }
+
+        public override void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<char> password)
+        {
+            PemKeyImportHelpers.ImportEncryptedPem<char>(input, password, ImportEncryptedPkcs8PrivateKey);
+        }
+
+        public override void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<byte> passwordBytes)
+        {
+            PemKeyImportHelpers.ImportEncryptedPem<byte>(input, passwordBytes, ImportEncryptedPkcs8PrivateKey);
+        }
     }
 }

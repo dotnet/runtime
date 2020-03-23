@@ -164,6 +164,15 @@ namespace System.Security.Cryptography
         public virtual bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) =>
             throw new NotImplementedException(SR.NotSupported_SubclassOverride);
 
+        public virtual void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<char> password) =>
+            throw new NotImplementedException(SR.NotSupported_SubclassOverride);
+
+        public virtual void ImportFromEncryptedPem(ReadOnlySpan<char> input, ReadOnlySpan<byte> passwordBytes) =>
+            throw new NotImplementedException(SR.NotSupported_SubclassOverride);
+
+        public virtual void ImportFromPem(ReadOnlySpan<char> input) =>
+            throw new NotImplementedException(SR.NotSupported_SubclassOverride);
+
         private delegate bool TryExportPbe<T>(
             ReadOnlySpan<T> password,
             PbeParameters pbeParameters,

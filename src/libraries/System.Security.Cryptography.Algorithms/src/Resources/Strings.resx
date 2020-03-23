@@ -81,6 +81,15 @@
   <data name="ArgumentNull_Buffer" xml:space="preserve">
     <value>Buffer cannot be null.</value>
   </data>
+  <data name="Argument_PemImport_NoPemFound" xml:space="preserve">
+    <value>A supported key was not found.</value>
+  </data>
+  <data name="Argument_PemImport_AmbiguousPem" xml:space="preserve">
+    <value>Multiple supported keys were found.</value>
+  </data>
+  <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
+    <value>An encrypted key was found, but attempted to import it without a password.</value>
+  </data>
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>
@@ -320,7 +329,7 @@
   </data>
   <data name="NotSupported_Method" xml:space="preserve">
     <value>Method not supported.</value>
-  </data>  
+  </data>
   <data name="NotSupported_SubclassOverride" xml:space="preserve">
     <value>Method not supported. Derived class must override.</value>
   </data>
