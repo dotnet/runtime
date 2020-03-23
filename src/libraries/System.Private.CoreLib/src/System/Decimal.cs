@@ -574,9 +574,9 @@ namespace System
             return true;
         }
 
-        internal static void GetBytes(in decimal d, byte[] buffer)
+        internal static void GetBytes(in decimal d, Span<byte> buffer)
         {
-            Debug.Assert(buffer != null && buffer.Length >= 16, "[GetBytes]buffer != null && buffer.Length >= 16");
+            Debug.Assert(buffer.Length >= 16, "[GetBytes]buffer.Length >= 16");
             buffer[0] = (byte)d.lo;
             buffer[1] = (byte)(d.lo >> 8);
             buffer[2] = (byte)(d.lo >> 16);
@@ -596,6 +596,12 @@ namespace System
             buffer[13] = (byte)(d.flags >> 8);
             buffer[14] = (byte)(d.flags >> 16);
             buffer[15] = (byte)(d.flags >> 24);
+        }
+
+        internal static void GetBytes(in decimal d, byte[] buffer)
+        {
+            Debug.Assert(buffer != null, "[GetBytes]buffer != null");
+            GetBytes(in d, buffer.AsSpan());
         }
 
         internal static decimal ToDecimal(ReadOnlySpan<byte> span)

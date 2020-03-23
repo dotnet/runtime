@@ -5,6 +5,7 @@
 using System.Text;
 using System.Diagnostics;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Threading.Tasks;
 
 namespace System.IO
@@ -18,7 +19,6 @@ namespace System.IO
         public static readonly BinaryWriter Null = new BinaryWriter();
 
         protected Stream OutStream;
-        private readonly byte[] _buffer;    // temp space for writing primitives to.
         private readonly Encoding _encoding;
         private readonly Encoder _encoder;
 
@@ -35,7 +35,6 @@ namespace System.IO
         protected BinaryWriter()
         {
             OutStream = Stream.Null;
-            _buffer = new byte[16];
             _encoding = EncodingCache.UTF8NoBOM;
             _encoder = _encoding.GetEncoder();
         }
@@ -58,7 +57,6 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
 
             OutStream = output;
-            _buffer = new byte[16];
             _encoding = encoding;
             _encoder = _encoding.GetEncoder();
             _leaveOpen = leaveOpen;
@@ -145,8 +143,7 @@ namespace System.IO
         //
         public virtual void Write(bool value)
         {
-            _buffer[0] = (byte)(value ? 1 : 0);
-            OutStream.Write(_buffer, 0, 1);
+            Write((byte)(value ? 1 : 0));
         }
 
         // Writes a byte to this stream. The current position of the stream is
@@ -198,13 +195,10 @@ namespace System.IO
             if (char.IsSurrogate(ch))
                 throw new ArgumentException(SR.Arg_SurrogatesNotAllowedAsSingleChar);
 
-            Debug.Assert(_encoding.GetMaxByteCount(1) <= 16, "_encoding.GetMaxByteCount(1) <= 16)");
-            int numBytes = 0;
-            fixed (byte* pBytes = &_buffer[0])
-            {
-                numBytes = _encoder.GetBytes(&ch, 1, pBytes, _buffer.Length, flush: true);
-            }
-            OutStream.Write(_buffer, 0, numBytes);
+            int maxByteCount = _encoding.GetMaxByteCount(1);
+            byte* pBytes = stackalloc byte[maxByteCount];
+            int numBytes = _encoder.GetBytes(&ch, 1, pBytes, maxByteCount, flush: true);
+            OutStream.Write(new ReadOnlySpan<byte>(pBytes, numBytes));
         }
 
         // Writes a character array to this stream.
@@ -236,24 +230,16 @@ namespace System.IO
         // Writes a double to this stream. The current position of the stream is
         // advanced by eight.
         //
-        public virtual unsafe void Write(double value)
+        public virtual void Write(double value)
         {
-            ulong TmpValue = *(ulong*)&value;
-            _buffer[0] = (byte)TmpValue;
-            _buffer[1] = (byte)(TmpValue >> 8);
-            _buffer[2] = (byte)(TmpValue >> 16);
-            _buffer[3] = (byte)(TmpValue >> 24);
-            _buffer[4] = (byte)(TmpValue >> 32);
-            _buffer[5] = (byte)(TmpValue >> 40);
-            _buffer[6] = (byte)(TmpValue >> 48);
-            _buffer[7] = (byte)(TmpValue >> 56);
-            OutStream.Write(_buffer, 0, 8);
+            Write(BitConverter.DoubleToInt64Bits(value));
         }
 
         public virtual void Write(decimal value)
         {
-            decimal.GetBytes(value, _buffer);
-            OutStream.Write(_buffer, 0, 16);
+            Span<byte> span = stackalloc byte[sizeof(decimal)];
+            decimal.GetBytes(in value, span);
+            OutStream.Write(span);
         }
 
         // Writes a two-byte signed integer to this stream. The current position of
@@ -261,9 +247,9 @@ namespace System.IO
         //
         public virtual void Write(short value)
         {
-            _buffer[0] = (byte)value;
-            _buffer[1] = (byte)(value >> 8);
-            OutStream.Write(_buffer, 0, 2);
+            Span<byte> span = stackalloc byte[sizeof(short)];
+            BinaryPrimitives.WriteInt16LittleEndian(span, value);
+            OutStream.Write(span);
         }
 
         // Writes a two-byte unsigned integer to this stream. The current position
@@ -272,21 +258,17 @@ namespace System.IO
         [CLSCompliant(false)]
         public virtual void Write(ushort value)
         {
-            _buffer[0] = (byte)value;
-            _buffer[1] = (byte)(value >> 8);
-            OutStream.Write(_buffer, 0, 2);
+            Write(unchecked((short) value));
         }
 
         // Writes a four-byte signed integer to this stream. The current position
         // of the stream is advanced by four.
         //
-        public virtual void Write(int value)
+        public virtual unsafe void Write(int value)
         {
-            _buffer[0] = (byte)value;
-            _buffer[1] = (byte)(value >> 8);
-            _buffer[2] = (byte)(value >> 16);
-            _buffer[3] = (byte)(value >> 24);
-            OutStream.Write(_buffer, 0, 4);
+            Span<byte> span = stackalloc byte[sizeof(int)];
+            BinaryPrimitives.WriteInt32LittleEndian(span, value);
+            OutStream.Write(span);
         }
 
         // Writes a four-byte unsigned integer to this stream. The current position
@@ -295,27 +277,17 @@ namespace System.IO
         [CLSCompliant(false)]
         public virtual void Write(uint value)
         {
-            _buffer[0] = (byte)value;
-            _buffer[1] = (byte)(value >> 8);
-            _buffer[2] = (byte)(value >> 16);
-            _buffer[3] = (byte)(value >> 24);
-            OutStream.Write(_buffer, 0, 4);
+            Write(unchecked((int) value));
         }
 
         // Writes an eight-byte signed integer to this stream. The current position
         // of the stream is advanced by eight.
         //
-        public virtual void Write(long value)
+        public virtual unsafe void Write(long value)
         {
-            _buffer[0] = (byte)value;
-            _buffer[1] = (byte)(value >> 8);
-            _buffer[2] = (byte)(value >> 16);
-            _buffer[3] = (byte)(value >> 24);
-            _buffer[4] = (byte)(value >> 32);
-            _buffer[5] = (byte)(value >> 40);
-            _buffer[6] = (byte)(value >> 48);
-            _buffer[7] = (byte)(value >> 56);
-            OutStream.Write(_buffer, 0, 8);
+            Span<byte> span = stackalloc byte[sizeof(long)];
+            BinaryPrimitives.WriteInt64LittleEndian(span, value);
+            OutStream.Write(span);
         }
 
         // Writes an eight-byte unsigned integer to this stream. The current
@@ -324,28 +296,15 @@ namespace System.IO
         [CLSCompliant(false)]
         public virtual void Write(ulong value)
         {
-            _buffer[0] = (byte)value;
-            _buffer[1] = (byte)(value >> 8);
-            _buffer[2] = (byte)(value >> 16);
-            _buffer[3] = (byte)(value >> 24);
-            _buffer[4] = (byte)(value >> 32);
-            _buffer[5] = (byte)(value >> 40);
-            _buffer[6] = (byte)(value >> 48);
-            _buffer[7] = (byte)(value >> 56);
-            OutStream.Write(_buffer, 0, 8);
+            Write(unchecked((long) value));
         }
 
         // Writes a float to this stream. The current position of the stream is
         // advanced by four.
         //
-        public virtual unsafe void Write(float value)
+        public virtual void Write(float value)
         {
-            uint TmpValue = *(uint*)&value;
-            _buffer[0] = (byte)TmpValue;
-            _buffer[1] = (byte)(TmpValue >> 8);
-            _buffer[2] = (byte)(TmpValue >> 16);
-            _buffer[3] = (byte)(TmpValue >> 24);
-            OutStream.Write(_buffer, 0, 4);
+            Write(BitConverter.SingleToInt32Bits(value));
         }
 
 
