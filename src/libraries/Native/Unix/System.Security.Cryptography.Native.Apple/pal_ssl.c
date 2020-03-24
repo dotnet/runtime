@@ -585,17 +585,17 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
     // Max numCipherSuites is 2^16 (all possible cipher suites)
     assert(numCipherSuites < (1 << 16));
 
+#ifndef TARGET_IOS
     if (sizeof(SSLCipherSuite) == sizeof(uint32_t))
     {
-#ifndef TARGET_IOS
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         // macOS
         return SSLSetEnabledCiphers(sslContext, cipherSuites, (size_t)numCipherSuites);
 #pragma clang diagnostic pop   
-#endif
     }
     else
+#endif
     {
         // iOS, tvOS, watchOS
         SSLCipherSuite* cipherSuites16 = (SSLCipherSuite*)calloc((size_t)numCipherSuites, sizeof(SSLCipherSuite));
