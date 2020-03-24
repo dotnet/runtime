@@ -52,7 +52,7 @@ set(NATIVECRYPTO_SOURCES
 # Always build portable on macOS because OpenSSL is not a system component
 # and our prebuilts should not assume a specific ABI version for the types
 # that use OpenSSL at runtime.
-if (CLR_CMAKE_TARGET_DARWIN)
+if (CLR_CMAKE_TARGET_OSX)
     set(FEATURE_DISTRO_AGNOSTIC_SSL True)
 endif()
 

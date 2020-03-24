@@ -1409,17 +1409,29 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double Sqrt(double value) => Math.Sqrt(value);
 
-        public static byte AbsoluteDifference(sbyte left, sbyte right) => (byte)Math.Abs((long)left - (long)right);
+        public static byte AbsoluteDifference(sbyte op1, sbyte op2) => op1 < op2 ? (byte)(op2 - op1) : (byte)(op1 - op2);
 
-        public static ushort AbsoluteDifference(short left, short right) => (ushort)Math.Abs((long)left - (long)right);
+        public static sbyte AbsoluteDifferenceAdd(sbyte op1, sbyte op2, sbyte op3) => (sbyte)(op1 + AbsoluteDifference(op2, op3));
 
-        public static uint AbsoluteDifference(int left, int right) => (uint)Math.Abs((long)left - (long)right);
+        public static ushort AbsoluteDifference(short op1, short op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
 
-        public static byte AbsoluteDifference(byte left, byte right) => (byte)Math.Abs((long)left - (long)right);
+        public static short AbsoluteDifferenceAdd(short op1, short op2, short op3) => (short)(op1 + AbsoluteDifference(op2, op3));
 
-        public static ushort AbsoluteDifference(ushort left, ushort right) => (ushort)Math.Abs((long)left - (long)right);
+        public static uint AbsoluteDifference(int op1, int op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
 
-        public static uint AbsoluteDifference(uint left, uint right) => (uint)Math.Abs((long)left - (long)right);
+        public static int AbsoluteDifferenceAdd(int op1, int op2, int op3) => (int)(op1 + AbsoluteDifference(op2, op3));
+
+        public static byte AbsoluteDifference(byte op1, byte op2) => op1 < op2 ? (byte)(op2 - op1) : (byte)(op1 - op2);
+
+        public static byte AbsoluteDifferenceAdd(byte op1, byte op2, byte op3) => (byte)(op1 + AbsoluteDifference(op2, op3));
+
+        public static ushort AbsoluteDifference(ushort op1, ushort op2) => op1 < op2 ? (ushort)(op2 - op1) : (ushort)(op1 - op2);
+
+        public static ushort AbsoluteDifferenceAdd(ushort op1, ushort op2, ushort op3) => (ushort)(op1 + AbsoluteDifference(op2, op3));
+
+        public static uint AbsoluteDifference(uint op1, uint op2) => op1 < op2 ? (uint)(op2 - op1) : (uint)(op1 - op2);
+
+        public static uint AbsoluteDifferenceAdd(uint op1, uint op2, uint op3) => (uint)(op1 + AbsoluteDifference(op2, op3));
 
         public static float AbsoluteDifference(float op1, float op2) => MathF.Abs(op1 - op2);
 
@@ -1443,6 +1455,28 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float MinNumberPairwise(float[] op1, float[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
 
+        public static float MultiplyExtended(float op1, float op2)
+        {
+            bool inf1 = float.IsInfinity(op1);
+            bool inf2 = float.IsInfinity(op2);
+
+            bool zero1 = (op1 == 0);
+            bool zero2 = (op2 == 0);
+
+            if ((inf1 && zero2) || (zero1 && inf2))
+            {
+                return MathF.CopySign(2, (zero1 ? op2 : op1));
+            }
+            else
+            {
+                return op1 * op2;
+            }
+        }
+
+        public static float FPRecipStepFused(float op1, float op2) => FusedMultiplySubtract(2, op1, op2);
+
+        public static float FPRSqrtStepFused(float op1, float op2) => FusedMultiplySubtract(3, op1, op2) / 2;
+
         public static double AbsoluteDifference(double op1, double op2) => Math.Abs(op1 - op2);
 
         public static double FusedMultiplyAdd(double op1, double op2, double op3) => Math.FusedMultiplyAdd(op2, op3, op1);
@@ -1464,6 +1498,108 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double MinNumberPairwise(double[] op1, int i) => Pairwise(MinNumber, op1, i);
 
         public static double MinNumberPairwise(double[] op1, double[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
+        public static double MultiplyExtended(double op1, double op2)
+        {
+            bool inf1 = double.IsInfinity(op1);
+            bool inf2 = double.IsInfinity(op2);
+
+            bool zero1 = (op1 == 0);
+            bool zero2 = (op2 == 0);
+
+            if ((inf1 && zero2) || (zero1 && inf2))
+            {
+                return Math.CopySign(2, (zero1 ? op2 : op1));
+            }
+            else
+            {
+                return op1 * op2;
+            }
+        }
+
+        public static double FPRecipStepFused(double op1, double op2) => FusedMultiplySubtract(2, op1, op2);
+
+        public static double FPRSqrtStepFused(double op1, double op2) => FusedMultiplySubtract(3, op1, op2) / 2;
+
+        private static uint RecipEstimate(uint a)
+        {
+            a = a * 2 + 1;
+
+            uint b = (1 << 19) / a;
+            uint r = (b + 1) / 2;
+
+            return r;
+        }
+
+        private static uint RecipSqrtEstimate(uint a)
+        {
+            if (a < 256)
+            {
+                a = a * 2 + 1;
+            }
+            else
+            {
+                a = (a >> 1) << 1;
+                a = (a + 1) * 2;
+            }
+
+            uint b = 512;
+
+            while (a * (b + 1) * (b + 1) < (1 << 28))
+            {
+                b = b + 1;
+            }
+
+            uint r = (b + 1) / 2;
+
+            return r;
+        }
+
+        private static uint ExtractBits(uint val, byte msbPos, byte lsbPos)
+        {
+            uint andMask = 0;
+
+            for (byte pos = lsbPos; pos <= msbPos; pos++)
+            {
+                andMask |= (uint)1 << pos;
+            }
+
+            return (val & andMask) >> lsbPos;
+        }
+
+        public static uint UnsignedRecipEstimate(uint op1)
+        {
+            uint result;
+
+            if ((op1 & (1 << 31)) == 0)
+            {
+                result = ~0U;
+            }
+            else
+            {
+                uint estimate = RecipEstimate(ExtractBits(op1, 31, 23));
+                result = ExtractBits(estimate, 8, 0) << 31;
+            }
+
+            return result;
+        }
+
+        public static uint UnsignedRSqrtEstimate(uint op1)
+        {
+            uint result;
+
+            if ((op1 & (3 << 30)) == 0)
+            {
+                result = ~0U;
+            }
+            else
+            {
+                uint estimate = RecipSqrtEstimate(ExtractBits(op1, 31, 23));
+                result = ExtractBits(estimate, 8, 0) << 31;
+            }
+
+            return result;
+        }
 
         public static sbyte Add(sbyte op1, sbyte op2) => (sbyte)(op1 + op2);
 
@@ -2124,5 +2260,42 @@ namespace JIT.HardwareIntrinsics.Arm
         public static float MaxNumberAcross(float[] op1) => Reduce(MaxNumber, op1);
 
         public static float MinNumberAcross(float[] op1) => Reduce(MinNumber, op1);
+
+        private static ulong PolynomialMult(sbyte op1, sbyte op2)
+        {
+            ulong result = 0;
+            ulong extendedOp2 = (ulong)op2;
+
+            for (int i = 0; i < 8 * sizeof(sbyte); i++)
+            {
+                if ((op1 & (1 << i)) != 0)
+                {
+                    result ^= (extendedOp2 << i);
+                }
+            }
+
+            return result;
+        }
+
+        public static sbyte PolynomialMultiply(sbyte op1, sbyte op2) => (sbyte)PolynomialMult(op1, op2);
+
+        private static ulong PolynomialMult(byte op1, byte op2)
+        {
+            ulong result = 0;
+            ulong extendedOp2 = (ulong)op2;
+
+            for (int i = 0; i < 8 * sizeof(byte); i++)
+            {
+                if ((op1 & (1 << i)) != 0)
+                {
+                    result ^= (extendedOp2 << i);
+                }
+            }
+
+            return result;
+        }
+
+        public static byte PolynomialMultiply(byte op1, byte op2) => (byte)PolynomialMult(op1, op2);
+
     }
 }

@@ -21,7 +21,7 @@ if(CLR_CMAKE_TARGET_UNIX)
         return()
     endif()
 
-    if(CLR_CMAKE_TARGET_DARWIN)
+    if(CLR_CMAKE_TARGET_OSX)
         find_library(ICUCORE icucore)
         if(ICUCORE STREQUAL ICUCORE-NOTFOUND)
             message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
@@ -86,7 +86,7 @@ set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME 
 
 install (TARGETS System.Globalization.Native-Static DESTINATION .)
 
-if(NOT CLR_CMAKE_TARGET_DARWIN)
+if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"

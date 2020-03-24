@@ -1,7 +1,7 @@
-if(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_FREEBSD)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_FREEBSD)
+endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
@@ -14,7 +14,7 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   include_directories(${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep)
 
   add_subdirectory(libunwind)
-elseif(NOT CLR_CMAKE_TARGET_DARWIN)
+elseif(NOT CLR_CMAKE_TARGET_OSX)
     if(CLR_CMAKE_HOST_ARCH_ARM)
       find_library(UNWIND_ARCH NAMES unwind-arm)
     endif()
@@ -64,7 +64,7 @@ include_directories(include)
 
 # Compile options
 
-if(CLR_CMAKE_TARGET_DARWIN)
+if(CLR_CMAKE_TARGET_OSX)
   add_definitions(-DTARGET_OSX)
   add_definitions(-DXSTATE_SUPPORTED)
   set(PLATFORM_SOURCES
@@ -74,7 +74,7 @@ if(CLR_CMAKE_TARGET_DARWIN)
     exception/machexception.cpp
     exception/machmessage.cpp
   )
-endif(CLR_CMAKE_TARGET_DARWIN)
+endif(CLR_CMAKE_TARGET_OSX)
 
 if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
   add_definitions(-DFEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
@@ -120,12 +120,12 @@ set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/processor.cpp
 )
 
-if(NOT CLR_CMAKE_TARGET_DARWIN)
+if(NOT CLR_CMAKE_TARGET_OSX)
   list(APPEND PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/callsignalhandlerwrapper.S
     arch/${PAL_ARCH_SOURCES_DIR}/signalhandlerhelper.cpp
   )
-endif(NOT CLR_CMAKE_TARGET_DARWIN)
+endif(NOT CLR_CMAKE_TARGET_OSX)
 
 if(CLR_CMAKE_HOST_ARCH_ARM)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -261,7 +261,7 @@ if(CLR_CMAKE_TARGET_LINUX)
   )
 endif(CLR_CMAKE_TARGET_LINUX)
 
-if(CLR_CMAKE_TARGET_DARWIN)
+if(CLR_CMAKE_TARGET_OSX)
   find_library(COREFOUNDATION CoreFoundation)
   find_library(CORESERVICES CoreServices)
   find_library(SECURITY Security)
@@ -272,7 +272,7 @@ if(CLR_CMAKE_TARGET_DARWIN)
     ${SECURITY}
     ${SYSTEM}
   )
-endif(CLR_CMAKE_TARGET_DARWIN)
+endif(CLR_CMAKE_TARGET_OSX)
 
 if(CLR_CMAKE_TARGET_FREEBSD)
   target_link_libraries(coreclrpal

@@ -783,7 +783,9 @@ libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 # These are public headers.
 # They should not use glib.h, G_BEGIN_DECLS, guint, etc.
 # They should be wrapped in MONO_BEGIN_DECLS / MONO_END_DECLS.
-libmonoinclude_HEADERS = jit.h
+libmonoinclude_HEADERS = \
+	jit.h		\
+	mono-private-unstable.h
 
 CSFLAGS = -unsafe -nowarn:0219,0169,0414,0649,0618
 
