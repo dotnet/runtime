@@ -19,6 +19,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             EnsureWriteCapacity(value.Length);
             value.CopyTo(_buffer.AsSpan(_offset));
             _offset += value.Length;
+            DecrementRemainingItemCount();
         }
 
         // Implements major type 3 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
@@ -29,6 +30,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             EnsureWriteCapacity(length);
             s_utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset));
             _offset += length;
+            DecrementRemainingItemCount();
         }
 
         public void WriteStartByteStringIndefiniteLength()

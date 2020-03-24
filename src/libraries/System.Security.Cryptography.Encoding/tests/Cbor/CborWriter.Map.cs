@@ -17,6 +17,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
+            DecrementRemainingItemCount();
             PushDataItem(CborMajorType.Map, 2 * (uint)definiteLength);
         }
 

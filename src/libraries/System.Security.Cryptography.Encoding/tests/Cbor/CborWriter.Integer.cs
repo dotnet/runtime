@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public void WriteUInt64(ulong value)
         {
             WriteUnsignedInteger(CborMajorType.UnsignedInteger, value);
+            DecrementRemainingItemCount();
         }
 
         // Implements major type 0,1 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
@@ -26,6 +27,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 WriteUnsignedInteger(CborMajorType.UnsignedInteger, (ulong)value);
             }
+
+            DecrementRemainingItemCount();
+        }
+
+        public void WriteTag(ulong tag)
+        {
+            WriteUnsignedInteger(CborMajorType.Tag, tag);
         }
 
         // Unsigned integer encoding https://tools.ietf.org/html/rfc7049#section-2.1
@@ -63,8 +71,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(_offset), value);
                 _offset += 8;
             }
-
-            DecrementRemainingItemCount();
         }
     }
 }

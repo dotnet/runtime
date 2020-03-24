@@ -101,6 +101,49 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(2, 2, "c202")]
+        [InlineData(0, "2013-03-21T20:04:00Z", "c074323031332d30332d32315432303a30343a30305a")]
+        [InlineData(1, 1363896240, "c11a514b67b0")]
+        [InlineData(23, new byte[] { 1, 2, 3, 4 }, "d74401020304")]
+        [InlineData(32, "http://www.example.com", "d82076687474703a2f2f7777772e6578616d706c652e636f6d")]
+        [InlineData(int.MaxValue, 2, "da7fffffff02")]
+        [InlineData(ulong.MaxValue, new object[] { 1, 2 }, "dbffffffffffffffff820102")]
+        public static void ReadTag_SingleValue_HappyPath(ulong expectedTag, object expectedValue, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            Assert.Equal(CborReaderState.Tag, reader.Peek());
+            ulong tag = reader.ReadTag();
+            Assert.Equal(expectedTag, tag);
+
+            Helpers.VerifyValue(reader, expectedValue);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData(new ulong[] { 1, 2, 3 }, 2, "c1c2c302")]
+        [InlineData(new ulong[] { 0, 0, 0 }, "2013-03-21T20:04:00Z", "c0c0c074323031332d30332d32315432303a30343a30305a")]
+        [InlineData(new ulong[] { int.MaxValue, ulong.MaxValue }, 1363896240, "da7fffffffdbffffffffffffffff1a514b67b0")]
+        [InlineData(new ulong[] { 23, 24, 100 }, new byte[] { 1, 2, 3, 4 }, "d7d818d8644401020304")]
+        [InlineData(new ulong[] { 32, 1, 1 }, new object[] { 1, "lorem ipsum" }, "d820c1c182016b6c6f72656d20697073756d")]
+        public static void ReadTag_NestedTags_HappyPath(ulong[] expectedTags, object expectedValue, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            foreach (ulong expectedTag in expectedTags)
+            {
+                Assert.Equal(CborReaderState.Tag, reader.Peek());
+                ulong tag = reader.ReadTag();
+                Assert.Equal(expectedTag, tag);
+            }
+
+            Helpers.VerifyValue(reader, expectedValue);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Theory]
         // all possible definite-length encodings for the value 23
         [InlineData("17")]
         [InlineData("1817")]
