@@ -978,14 +978,14 @@ namespace System.Collections
                             // (TableVectorLookup could be an alternative - dotnet/runtime#1277)
                             // Instead we use chained ZIP1/2 instructions:
                             // (A0 is the byte containing LSB, A3 is the byte containing MSB)
-                            // bits (on Little endian)           - A3 A2 A1 A0
-                            // Byte reversal / bits (Big endian) - A0 A1 A2 A3
-                            // v1 = Vector128.Create             - A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3
-                            // v2 = ZipLow(v1, v1)               - A0 A0 A1 A1 A2 A2 A3 A3 A0 A0 A1 A1 A2 A2 A3 A3
-                            // v3 = ZipLow(v2, v2)               - A0 A0 A0 A0 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3 A3
-                            // shuffledLower = ZipLow(v3, v3)    - A0 A0 A0 A0 A0 A0 A0 A0 A1 A1 A1 A1 A1 A1 A1 A1
-                            // shuffledHigher = ZipHigh(v3, v3)  - A2 A2 A2 A2 A2 A2 A2 A2 A3 A3 A3 A3 A3 A3 A3 A3
-                            if (BitConverter.IsLittleEndian)
+                            // bits (on Big endian)                 - A3 A2 A1 A0
+                            // bits (Little endian) / Byte reversal - A0 A1 A2 A3
+                            // v1 = Vector128.Create                - A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3
+                            // v2 = ZipLow(v1, v1)                  - A0 A0 A1 A1 A2 A2 A3 A3 A0 A0 A1 A1 A2 A2 A3 A3
+                            // v3 = ZipLow(v2, v2)                  - A0 A0 A0 A0 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3 A3
+                            // shuffledLower = ZipLow(v3, v3)       - A0 A0 A0 A0 A0 A0 A0 A0 A1 A1 A1 A1 A1 A1 A1 A1
+                            // shuffledHigher = ZipHigh(v3, v3)     - A2 A2 A2 A2 A2 A2 A2 A2 A3 A3 A3 A3 A3 A3 A3 A3
+                            if (!BitConverter.IsLittleEndian)
                             {
                                 bits = BinaryPrimitives.ReverseEndianness(bits);
                             }
