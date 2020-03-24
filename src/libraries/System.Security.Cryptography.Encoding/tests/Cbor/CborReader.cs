@@ -4,6 +4,7 @@
 
 #nullable enable
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -77,8 +78,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (initialByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte)
             {
-                if (_nestedDataItemStack?.Count > 0 && _remainingDataItems == null)
+                if (_remainingDataItems == null)
                 {
+                    // stack guaranteed to be populated since root context cannot be indefinite-length
+                    Debug.Assert(_nestedDataItemStack != null && _nestedDataItemStack.Count > 0);
+
                     return _nestedDataItemStack.Peek().type switch
                     {
                         CborMajorType.ByteString => CborReaderState.EndByteString,
@@ -92,6 +96,27 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 else
                 {
                     return CborReaderState.FormatError;
+                }
+            }
+
+            if (_remainingDataItems == null)
+            {
+                // stack guaranteed to be populated since root context cannot be indefinite-length
+                Debug.Assert(_nestedDataItemStack != null && _nestedDataItemStack.Count > 0);
+
+                CborMajorType parentType = _nestedDataItemStack.Peek().type;
+
+                switch (parentType)
+                {
+                    case CborMajorType.ByteString:
+                    case CborMajorType.TextString:
+                        // indefinite length string contexts can only contain data items of same major type
+                        if (initialByte.MajorType != parentType)
+                        {
+                            return CborReaderState.FormatError;
+                        }
+
+                        break;
                 }
             }
 
@@ -224,6 +249,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private void EnsureBuffer(int length)
         {
             if (_buffer.Length < length)
+            {
+                throw new FormatException("Unexpected end of buffer.");
+            }
+        }
+        private static void EnsureBuffer(ReadOnlySpan<byte> buffer, int requiredLength)
+        {
+            if (buffer.Length < requiredLength)
             {
                 throw new FormatException("Unexpected end of buffer.");
             }

@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             else
             {
-                ulong arrayLength = ReadUnsignedInteger(header, out int additionalBytes);
+                ulong arrayLength = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
                 AdvanceBuffer(1 + additionalBytes);
                 DecrementRemainingItemCount();
                 PushDataItem(CborMajorType.Array, arrayLength);

@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             else
             {
-                ulong mapSize = ReadUnsignedInteger(header, out int additionalBytes);
+                ulong mapSize = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
 
                 if (mapSize > long.MaxValue)
                 {

@@ -5,6 +5,7 @@
 #nullable enable
 using System;
 using System.Linq;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -89,7 +90,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(new string[] { "" }, "5f40ff")]
         [InlineData(new string[] { "ab", "" }, "5f41ab40ff")]
         [InlineData(new string[] { "ab", "bc", "" }, "5f41ab41bc40ff")]
-        public static void ReadByteString_IndefiteLength_SingleValue_HappyPath(string[] expectedHexValues, string hexEncoding)
+        public static void ReadByteString_IndefiniteLength_SingleValue_HappyPath(string[] expectedHexValues, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             byte[][] expectedValues = expectedHexValues.Select(x => x.HexToByteArray()).ToArray();
@@ -98,15 +99,85 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData("", "5fff")]
+        [InlineData("", "5f40ff")]
+        [InlineData("ab", "5f41ab40ff")]
+        [InlineData("abbc", "5f41ab41bc40ff")]
+        public static void ReadByteString_IndefiniteLengthConcatenated_SingleValue_HappyPath(string expectedHexValue, string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            Assert.Equal(CborReaderState.StartByteString, reader.Peek());
+            byte[] actualValue = reader.ReadByteString();
+            Assert.Equal(expectedHexValue.ToUpper(), actualValue.ByteArrayToHex());
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData("", "5fff")]
+        [InlineData("", "5f40ff")]
+        [InlineData("ab", "5f41ab40ff")]
+        [InlineData("abbc", "5f41ab41bc40ff")]
+        public static void TryReadByteString_IndefiniteLengthConcatenated_SingleValue_HappyPath(string expectedHexValue, string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            Assert.Equal(CborReaderState.StartByteString, reader.Peek());
+
+            Span<byte> buffer = new byte[32];
+            bool result = reader.TryReadByteString(buffer, out int bytesWritten);
+
+            Assert.True(result);
+            Assert.Equal(expectedHexValue.Length / 2, bytesWritten);
+            Assert.Equal(expectedHexValue.ToUpper(), buffer.Slice(0, bytesWritten).ByteArrayToHex());
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Theory]
         [InlineData(new string[] { }, "7fff")]
         [InlineData(new string[] { "" }, "7f60ff")]
         [InlineData(new string[] { "ab", "" }, "7f62616260ff")]
         [InlineData(new string[] { "ab", "bc", "" }, "7f62616262626360ff")]
-        public static void ReadTextString_IndefiteLength_SingleValue_HappyPath(string[] expectedValues, string hexEncoding)
+        public static void ReadTextString_IndefiniteLength_SingleValue_HappyPath(string[] expectedValues, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
             Helpers.VerifyValue(reader, expectedValues);
+        }
+
+        [Theory]
+        [InlineData("", "7fff")]
+        [InlineData("", "7f60ff")]
+        [InlineData("ab", "7f62616260ff")]
+        [InlineData("abbc", "7f62616262626360ff")]
+        public static void ReadTextString_IndefiniteLengthConcatenated_SingleValue_HappyPath(string expectedValue, string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            Assert.Equal(CborReaderState.StartTextString, reader.Peek());
+            string actualValue = reader.ReadTextString();
+            Assert.Equal(expectedValue, actualValue);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData("", "7fff")]
+        [InlineData("", "7f60ff")]
+        [InlineData("ab", "7f62616260ff")]
+        [InlineData("abbc", "7f62616262626360ff")]
+        public static void TryReadTextString_IndefiniteLengthConcatenated_SingleValue__HappyPath(string expectedValue, string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            Assert.Equal(CborReaderState.StartTextString, reader.Peek());
+
+            Span<char> buffer = new char[32];
+            bool result = reader.TryReadTextString(buffer, out int charsWritten);
+
+            Assert.True(result);
+            Assert.Equal(expectedValue.Length, charsWritten);
+            Assert.Equal(expectedValue, new string(buffer.Slice(0, charsWritten)));
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
         [Theory]
@@ -137,6 +208,38 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
             bool result = reader.TryReadTextString(buffer, out int charsWritten);
+            Assert.False(result);
+            Assert.Equal(0, charsWritten);
+            Assert.All(buffer, (b => Assert.Equal(0, '\0')));
+        }
+
+        [Theory]
+        [InlineData("ab", "5f41ab40ff")]
+        [InlineData("abbc", "5f41ab41bc40ff")]
+        public static void TryReadByteString_IndefiniteLengthConcatenated_BufferTooSmall_ShouldReturnFalse(string expectedHexValue, string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            byte[] buffer = new byte[expectedHexValue.Length / 2 - 1];
+            bool result = reader.TryReadByteString(buffer, out int bytesWritten);
+
+            Assert.False(result);
+            Assert.Equal(0, bytesWritten);
+            Assert.All(buffer, (b => Assert.Equal(0, b)));
+        }
+
+        [Theory]
+        [InlineData("ab", "7f62616260ff")]
+        [InlineData("abbc", "7f62616262626360ff")]
+        public static void TryReadTextString_IndefiniteLengthConcatenated_BufferTooSmall_ShouldReturnFalse(string expectedValue, string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            char[] buffer = new char[expectedValue.Length - 1];
+            bool result = reader.TryReadTextString(buffer, out int charsWritten);
+
             Assert.False(result);
             Assert.Equal(0, charsWritten);
             Assert.All(buffer, (b => Assert.Equal(0, '\0')));
@@ -371,27 +474,61 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Fact]
-        public static void ReadByteString_IndefiteLength_ContainingInvalidMajorTypes_ShouldThrowFormatException()
+        public static void ReadByteString_IndefiniteLength_ContainingInvalidMajorTypes_ShouldThrowFormatException()
         {
             string hexEncoding = "5f4001ff";
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
             reader.ReadStartByteString();
             reader.ReadByteString();
-            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek()); // peek should not fail
-            Assert.Throws<FormatException>(() => reader.ReadInt64()); // throws FormatException even if it's the right major type we're trying to read
+
+            Assert.Equal(CborReaderState.FormatError, reader.Peek());
+            // throws FormatException even if it's the right major type we're trying to read
+            Assert.Throws<FormatException>(() => reader.ReadInt64());
         }
 
         [Fact]
-        public static void ReadTextString_IndefiteLength_ContainingInvalidMajorTypes_ShouldThrowFormatException()
+        public static void ReadTextString_IndefiniteLength_ContainingInvalidMajorTypes_ShouldThrowFormatException()
         {
             string hexEncoding = "7f6001ff";
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
             reader.ReadStartTextString();
             reader.ReadTextString();
-            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek()); // peek should not fail
-            Assert.Throws<FormatException>(() => reader.ReadInt64()); // throws FormatException even if it's the right major type we're trying to read
+
+            Assert.Equal(CborReaderState.FormatError, reader.Peek());
+            // throws FormatException even if it's the right major type we're trying to read
+            Assert.Throws<FormatException>(() => reader.ReadInt64());
+        }
+
+        [Fact]
+        public static void ReadByteString_IndefiniteLengthConcatenated_ContainingInvalidMajorTypes_ShouldThrowFormatException()
+        {
+            string hexEncoding = "5f4001ff";
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            Assert.Throws<FormatException>(() => reader.ReadByteString());
+        }
+
+        [Fact]
+        public static void ReadTextString_IndefiniteLengthConcatenated_ContainingInvalidMajorTypes_ShouldThrowFormatException()
+        {
+            string hexEncoding = "7f6001ff";
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            Assert.Throws<FormatException>(() => reader.ReadTextString());
+        }
+
+        [Fact]
+        public static void ReadTextString_IndefiniteLengthConcatenated_InvalidUtf8Chunks_ShouldThrowDecoderFallbackException()
+        {
+            // while the concatenated string is valid utf8, the individual chunks are not,
+            // which is in violation of the CBOR format.
+
+            string hexEncoding = "7f62f090628591ff";
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            Assert.Throws<DecoderFallbackException>(() => reader.ReadTextString());
         }
     }
 }
