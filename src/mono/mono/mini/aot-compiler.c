@@ -11303,6 +11303,7 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	info->plt_got_offset_base = acfg->plt_got_offset_base;
 	info->plt_got_info_offset_base = acfg->plt_got_info_offset_base;
 	info->got_size = acfg->got_offset * sizeof (target_mgreg_t);
+	info->llvm_got_size = acfg->llvm_got_offset * sizeof (target_mgreg_t);
 	info->plt_size = acfg->plt_offset;
 	info->nmethods = acfg->nmethods;
 	info->call_table_entry_size = acfg->call_table_entry_size;
@@ -11356,15 +11357,15 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	sindex = 0;
 	symbols [sindex ++] = acfg->got_symbol;
 	if (acfg->llvm) {
-		symbols [sindex ++] = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, acfg->llvm_got_symbol);
 		symbols [sindex ++] = acfg->llvm_eh_frame_symbol;
 	} else {
-		symbols [sindex ++] = NULL;
 		symbols [sindex ++] = NULL;
 	}
 	/* llvm_get_method */
 	symbols [sindex ++] = NULL;
 	/* llvm_get_unbox_tramp */
+	symbols [sindex ++] = NULL;
+	/* llvm_init_aotconst */
 	symbols [sindex ++] = NULL;
 	if (!acfg->aot_opts.llvm_only) {
 		symbols [sindex ++] = "jit_code_start";
@@ -11460,6 +11461,7 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	emit_int32 (acfg, info->plt_got_offset_base);
 	emit_int32 (acfg, info->plt_got_info_offset_base);
 	emit_int32 (acfg, info->got_size);
+	emit_int32 (acfg, info->llvm_got_size);
 	emit_int32 (acfg, info->plt_size);
 	emit_int32 (acfg, info->nmethods);
 	emit_int32 (acfg, info->nextra_methods);
