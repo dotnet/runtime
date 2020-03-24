@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
@@ -1296,9 +1297,6 @@ namespace Internal.JitInterface
         CORJIT_FLAG_UNUSED4 = 11,
         CORJIT_FLAG_UNUSED5 = 12,
         CORJIT_FLAG_UNUSED6 = 13,
-        CORJIT_FLAG_USE_AVX = 14,
-        CORJIT_FLAG_USE_AVX2 = 15,
-        CORJIT_FLAG_USE_AVX_512 = 16,
         CORJIT_FLAG_FEATURE_SIMD = 17,
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
@@ -1325,49 +1323,12 @@ namespace Internal.JitInterface
         CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_NO_INLINING = 42, // JIT should not inline any called method into this method
-
-#region TARGET_ARM64
-        CORJIT_FLAG_HAS_ARM64_AES           = 43, // ID_AA64ISAR0_EL1.AES is 1 or better
-        CORJIT_FLAG_HAS_ARM64_ATOMICS       = 44, // ID_AA64ISAR0_EL1.Atomic is 2 or better
-        CORJIT_FLAG_HAS_ARM64_CRC32         = 45, // ID_AA64ISAR0_EL1.CRC32 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_DCPOP         = 46, // ID_AA64ISAR1_EL1.DPB is 1 or better
-        CORJIT_FLAG_HAS_ARM64_DP            = 47, // ID_AA64ISAR0_EL1.DP is 1 or better
-        CORJIT_FLAG_HAS_ARM64_FCMA          = 48, // ID_AA64ISAR1_EL1.FCMA is 1 or better
-        CORJIT_FLAG_HAS_ARM64_FP            = 49, // ID_AA64PFR0_EL1.FP is 0 or better
-        CORJIT_FLAG_HAS_ARM64_FP16          = 50, // ID_AA64PFR0_EL1.FP is 1 or better
-        CORJIT_FLAG_HAS_ARM64_JSCVT         = 51, // ID_AA64ISAR1_EL1.JSCVT is 1 or better
-        CORJIT_FLAG_HAS_ARM64_LRCPC         = 52, // ID_AA64ISAR1_EL1.LRCPC is 1 or better
-        CORJIT_FLAG_HAS_ARM64_PMULL         = 53, // ID_AA64ISAR0_EL1.AES is 2 or better
-        CORJIT_FLAG_HAS_ARM64_SHA1          = 54, // ID_AA64ISAR0_EL1.SHA1 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SHA256        = 55, // ID_AA64ISAR0_EL1.SHA2 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SHA512        = 56, // ID_AA64ISAR0_EL1.SHA2 is 2 or better
-        CORJIT_FLAG_HAS_ARM64_SHA3          = 57, // ID_AA64ISAR0_EL1.SHA3 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SIMD          = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
-        CORJIT_FLAG_HAS_ARM64_SIMD_V81      = 59, // ID_AA64ISAR0_EL1.RDM is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SIMD_FP16     = 60, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SM3           = 61, // ID_AA64ISAR0_EL1.SM3 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SM4           = 62, // ID_AA64ISAR0_EL1.SM4 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_SVE           = 63, // ID_AA64PFR0_EL1.SVE is 1 or better
-#endregion
-
-#region x86/x64
-        CORJIT_FLAG_USE_SSE3 = 43,
-        CORJIT_FLAG_USE_SSSE3 = 44,
-        CORJIT_FLAG_USE_SSE41 = 45,
-        CORJIT_FLAG_USE_SSE42 = 46,
-        CORJIT_FLAG_USE_AES = 47,
-        CORJIT_FLAG_USE_BMI1 = 48,
-        CORJIT_FLAG_USE_BMI2 = 49,
-        CORJIT_FLAG_USE_FMA = 50,
-        CORJIT_FLAG_USE_LZCNT = 51,
-        CORJIT_FLAG_USE_PCLMULQDQ = 52,
-        CORJIT_FLAG_USE_POPCNT = 53,
-#endregion
     }
 
     public struct CORJIT_FLAGS
     {
         private UInt64 _corJitFlags;
+        InstructionSetFlags _instructionSetFlags;
 
         public void Reset()
         {
@@ -1377,6 +1338,11 @@ namespace Internal.JitInterface
         public void Set(CorJitFlag flag)
         {
             _corJitFlags |= 1UL << (int)flag;
+        }
+
+        public void Set(InstructionSet instructionSet)
+        {
+            _instructionSetFlags.AddInstructionSet(instructionSet);
         }
 
         public void Clear(CorJitFlag flag)
@@ -1389,19 +1355,9 @@ namespace Internal.JitInterface
             return (_corJitFlags & (1UL << (int)flag)) != 0;
         }
 
-        public void Add(ref CORJIT_FLAGS other)
+        public void Set64BitInstructionSetVariants(TargetArchitecture architecture)
         {
-            _corJitFlags |= other._corJitFlags;
-        }
-
-        public void Remove(ref CORJIT_FLAGS other)
-        {
-            _corJitFlags &= ~other._corJitFlags;
-        }
-
-        public bool IsEmpty()
-        {
-            return _corJitFlags == 0;
+            _instructionSetFlags.Set64BitInstructionSetVariants(architecture);
         }
     }
 }

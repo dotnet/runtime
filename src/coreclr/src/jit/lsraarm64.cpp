@@ -994,11 +994,11 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 //
 int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 {
-    NamedIntrinsic      intrinsicId = intrinsicTree->gtHWIntrinsicId;
-    var_types           baseType    = intrinsicTree->gtSIMDBaseType;
-    InstructionSet      isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
-    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
+    NamedIntrinsic         intrinsicId = intrinsicTree->gtHWIntrinsicId;
+    var_types              baseType    = intrinsicTree->gtSIMDBaseType;
+    CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
+    HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+    int                    numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
 
     GenTree* op1    = intrinsicTree->gtGetOp1();
     GenTree* op2    = intrinsicTree->gtGetOp2();

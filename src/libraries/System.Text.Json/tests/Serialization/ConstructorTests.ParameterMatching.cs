@@ -301,6 +301,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => Serializer.Deserialize<ClassWrapper_For_Int_Point_3D_String>(@"{""MyPoint3DStruct"":null,""MyString"":""1""}"));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33928")]
         [Fact]
         public void OtherPropertiesAreSet()
         {
