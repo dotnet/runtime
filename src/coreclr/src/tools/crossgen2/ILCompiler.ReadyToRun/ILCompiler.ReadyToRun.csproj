@@ -234,6 +234,9 @@
     <Compile Include="..\..\Common\JitInterface\CorInfoTypes.cs">
       <Link>JitInterface\CorInfoTypes.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\JitInterface\CorInfoInstructionSet.cs">
+      <Link>JitInterface\CorInfoInstructionSet.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\JitInterface\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
