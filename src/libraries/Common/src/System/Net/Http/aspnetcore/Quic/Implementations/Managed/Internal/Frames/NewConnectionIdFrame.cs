@@ -1,12 +1,53 @@
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 {
     /// <summary>
+    ///     Token used to authorize a Connection id when attempting to connect to a known host.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal readonly struct StatelessResetToken
+    {
+        /// <summary>
+        ///     Length of the reset token.
+        /// </summary>
+        internal const int Length = 128/8;
+
+        /// <summary>
+        ///     First 8 bytes of the reset token.
+        /// </summary>
+        internal readonly ulong LowerHalf;
+
+        /// <summary>
+        ///     Second 8 bytes of the reset token.
+        /// </summary>
+        internal readonly ulong UpperHalf;
+
+        public StatelessResetToken(ulong lowerHalf, ulong upperHalf)
+        {
+            LowerHalf = lowerHalf;
+            UpperHalf = upperHalf;
+        }
+
+        internal static StatelessResetToken FromSpan(ReadOnlySpan<byte> token)
+        {
+            return MemoryMarshal.Read<StatelessResetToken>(token);
+        }
+
+        internal static void ToSpan(Span<byte> destination, in StatelessResetToken token)
+        {
+            MemoryMarshal.AsRef<StatelessResetToken>(destination) = token;
+        }
+    }
+
+    /// <summary>
     ///     Provides peer with an alternative connection IDs that can be used to break linkability when migrating connections.
     /// </summary>
-    internal ref readonly struct NewConnectionIdFrame
+    internal readonly ref struct NewConnectionIdFrame
     {
         /// <summary>
         ///     Sequence number assigned to the connection ID by the sender.
@@ -26,10 +67,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Stateless reset token to be used when <see cref="ConnectionId" /> is used.
         /// </summary>
-        internal readonly ReadOnlySpan<byte> StatelessResetToken;
+        internal readonly StatelessResetToken StatelessResetToken;
 
         public NewConnectionIdFrame(ulong sequenceNumber, ulong retirePriorTo, ReadOnlySpan<byte> connectionId,
-            ReadOnlySpan<byte> statelessResetToken)
+            StatelessResetToken statelessResetToken)
         {
             SequenceNumber = sequenceNumber;
             RetirePriorTo = retirePriorTo;
@@ -46,7 +87,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
                 !reader.TryReadVarInt(out ulong retirePriorTo) || retirePriorTo > sequenceNumber ||
                 !reader.TryReadUInt8(out byte length) || length > HeaderHelpers.MaxConnectionIdLength ||
                 !reader.TryReadSpan(length, out var connectionId) ||
-                !reader.TryReadSpan(HeaderHelpers.StatelessResetTokenLength, out var token))
+                !reader.TryReadStatelessResetToken(out var token))
             {
                 frame = default;
                 return false;
@@ -65,8 +106,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             Debug.Assert(frame.ConnectionId.Length <= HeaderHelpers.MaxConnectionIdLength);
             writer.WriteUInt8((byte)frame.ConnectionId.Length);
             writer.WriteSpan(frame.ConnectionId);
-            Debug.Assert(frame.StatelessResetToken.Length == HeaderHelpers.StatelessResetTokenLength);
-            writer.WriteSpan(frame.StatelessResetToken);
+            writer.WriteStatelessResetToken(frame.StatelessResetToken);
         }
     }
 }

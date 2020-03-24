@@ -84,49 +84,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal bool TryReadVarInt(out ulong result)
         {
-            if (BytesLeft == 0)
-            {
-                result = 0;
-                return false;
-            }
-
-            // first two bits give logarithm of size
-            int logBytes = _buffer[_consumed] >> 6;
-            int bytes = 1 << logBytes;
-
-            // mask the log length prefix (uppermost 2 bits)
-            bool success;
-            switch (bytes)
-            {
-                case 1:
-                {
-                    success = TryReadUInt8(out byte res);
-                    result = (ulong) (res & 0x3f);
-                    break;
-                }
-                case 2:
-                {
-                    success = TryReadUInt16(out ushort res);
-                    result = (ulong) (res & 0x3fff);
-                    break;
-                }
-                case 4:
-                {
-                    success = TryReadUInt32(out uint res);
-                    result = (ulong) (res & 0x3fff_ffff);
-                    break;
-                }
-                case 8:
-                {
-                    success = TryReadUInt64(out ulong res);
-                    result = res & 0x3fff_ffff_ffff_ffff;
-                    break;
-                }
-                default:
-                    throw new InvalidOperationException("Unreachable");
-            }
-
-            return success;
+            int bytes =  QuicPrimitives.ReadVarInt(PeekSpan(BytesLeft), out result);
+            Advance(bytes);
+            return bytes > 0;
         }
 
         internal ulong ReadVarInt()

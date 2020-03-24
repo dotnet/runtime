@@ -24,16 +24,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _written = 0;
         }
 
-        private static int GetVarIntLogLength(ulong value)
-        {
-            if (value <= 63) return 0;
-            if (value <= 16_383) return 1;
-            if (value <= 1_073_741_823) return 2;
-            if (value <= 4_611_686_018_427_387_903) return 3;
-
-            throw new ArgumentOutOfRangeException(nameof(value));
-        }
-
         internal void WriteUInt8(byte value)
         {
             CheckSizeAvailable(sizeof(byte));
@@ -43,7 +33,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void WriteUInt16(ushort value)
         {
-            BinaryPrimitives.WriteUInt16BigEndian(GetSpan(sizeof(ushort)), value);
+            BinaryPrimitives.WriteUInt16BigEndian(GetWritableSpan(sizeof(ushort)), value);
             Advance(sizeof(ushort));
         }
 
@@ -55,47 +45,22 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void WriteUInt32(uint value)
         {
-            BinaryPrimitives.WriteUInt32BigEndian(GetSpan(sizeof(uint)), value);
-            Advance(sizeof(uint));
+            BinaryPrimitives.WriteUInt32BigEndian(GetWritableSpan(sizeof(uint)), value);
         }
 
         internal void WriteUInt64(ulong value)
         {
-            BinaryPrimitives.WriteUInt64BigEndian(GetSpan(sizeof(ulong)), value);
-            Advance(sizeof(ulong));
+            BinaryPrimitives.WriteUInt64BigEndian(GetWritableSpan(sizeof(ulong)), value);
         }
 
         internal void WriteVarInt(ulong value)
         {
-            int log = GetVarIntLogLength(value);
-            int bytes = 1 << log;
-
-            // prefix with log length
-            value |= (ulong) log << (bytes * 8 - 2);
-
-            switch (bytes)
-            {
-                case 1:
-                    WriteUInt8((byte) value);
-                    break;
-                case 2:
-                    WriteUInt16((ushort) value);
-                    break;
-                case 4:
-                    WriteUInt32((uint) value);
-                    break;
-                case 8:
-                    WriteUInt64(value);
-                    break;
-                default:
-                    throw new InvalidOperationException("Unreachable");
-            }
+            QuicPrimitives.WriteVarInt(GetWritableSpan(1 << QuicPrimitives.GetVarIntLogLength(value)), value);
         }
 
         internal void WriteSpan(ReadOnlySpan<byte> data)
         {
-            data.CopyTo(GetSpan(data.Length));
-            Advance(data.Length);
+            data.CopyTo(GetWritableSpan(data.Length));
         }
 
         internal Span<byte> GetWritableSpan(int length)

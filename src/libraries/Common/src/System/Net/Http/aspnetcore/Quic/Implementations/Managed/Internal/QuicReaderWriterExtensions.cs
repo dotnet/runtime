@@ -1,3 +1,6 @@
+using System.Net.Quic.Implementations.Managed.Internal.Frames;
+using System.Runtime.InteropServices;
+
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal static class QuicReaderWriterExtensions
@@ -12,12 +15,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             result = default;
             return false;
-
         }
 
         internal static void WriteLengthPrefixedSpan(this QuicWriter reader, in ReadOnlySpan<byte> data)
         {
-            reader.WriteVarInt((ulong) data.Length);
+            reader.WriteVarInt((ulong)data.Length);
             reader.WriteSpan(data);
         }
 
@@ -35,8 +37,24 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal static void WriteFrameType(this QuicWriter writer, FrameType frameType)
         {
-            writer.WriteVarInt((ulong) frameType);
+            writer.WriteVarInt((ulong)frameType);
         }
 
+        internal static bool TryReadStatelessResetToken(this QuicReader reader, out StatelessResetToken token)
+        {
+            if (!reader.TryReadSpan(StatelessResetToken.Length, out var data))
+            {
+                token = default;
+                return false;
+            }
+
+            token = StatelessResetToken.FromSpan(data);
+            return true;
+        }
+
+        internal static void WriteStatelessResetToken(this QuicWriter writer, in StatelessResetToken token)
+        {
+            StatelessResetToken.ToSpan(writer.GetWritableSpan(StatelessResetToken.Length), token);
+        }
     }
 }

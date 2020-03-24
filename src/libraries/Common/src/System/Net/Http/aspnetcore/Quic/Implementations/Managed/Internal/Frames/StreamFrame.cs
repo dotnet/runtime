@@ -41,9 +41,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             // Stream type is a bit special
             Debug.Assert((type & FrameType.StreamMask) == type);
 
-            bool hasOffset = (type & FrameType.StreamWithOffset) != 0;
-            bool hasLength = (type & FrameType.StreamWithLength) != 0;
-            bool hasFin = (type & FrameType.StreamWithFin) != 0;
+            bool hasOffset = (type & FrameType.StreamWithOffset ^ FrameType.Stream) != 0;
+            bool hasLength = (type & FrameType.StreamWithLength ^ FrameType.Stream) != 0;
+            bool hasFin = (type & FrameType.StreamWithFin ^ FrameType.Stream) != 0;
 
             ulong length = 0;
             ulong offset = 0;

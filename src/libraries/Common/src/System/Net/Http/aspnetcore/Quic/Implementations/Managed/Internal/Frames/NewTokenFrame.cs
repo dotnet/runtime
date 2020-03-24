@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 {
     /// <summary>
@@ -17,6 +19,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static bool Read(QuicReader reader, out NewTokenFrame frame)
         {
+            var type = reader.ReadFrameType();
+            Debug.Assert(type == FrameType.NewToken);
+
             if (!reader.TryReadLengthPrefixedSpan(out var token) ||
                 token.Length == 0) // token must be nonempty
             {
@@ -26,6 +31,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
             frame = new NewTokenFrame(token);
             return true;
+        }
+
+        internal static void Write(QuicWriter writer, in NewTokenFrame frame)
+        {
+            writer.WriteFrameType(FrameType.NewToken);
+
+            writer.WriteLengthPrefixedSpan(frame.Token);
         }
     }
 }
