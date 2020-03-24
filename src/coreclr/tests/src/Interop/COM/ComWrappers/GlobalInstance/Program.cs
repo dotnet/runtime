@@ -53,6 +53,8 @@ namespace ComWrappersTests.GlobalInstance
                 [Out, MarshalAs(UnmanagedType.Interface)] out Test ret);
         }
 
+        private const string ManagedServerTypeName = "ConsumeNETServerTesting";
+
         private const string IID_IDISPATCH = "00020400-0000-0000-C000-000000000046";
         private const string IID_IINSPECTABLE = "AF86E2E0-B12D-4c6a-9C5A-D7AA65101E90";
         class TestEx : Test
@@ -109,49 +111,43 @@ namespace ComWrappersTests.GlobalInstance
             {
                 LastComputeVtablesObject = obj;
 
-                if (ReturnInvalid || !(obj is Test))
+                if (ReturnInvalid)
                 {
                     count = -1;
                     return null;
                 }
 
-                IntPtr fpQueryInteface = default;
-                IntPtr fpAddRef = default;
-                IntPtr fpRelease = default;
-                ComWrappers.GetIUnknownImpl(out fpQueryInteface, out fpAddRef, out fpRelease);
-
-                var vtbl = new ITestVtbl()
+                if (obj is Test)
                 {
-                    IUnknownImpl = new IUnknownVtbl()
+                    return ComputeVtablesForTestObject((Test)obj, out count);
+                }
+                else if (string.Equals(ManagedServerTypeName, obj.GetType().Name))
+                {
+                    IntPtr fpQueryInteface = default;
+                    IntPtr fpAddRef = default;
+                    IntPtr fpRelease = default;
+                    ComWrappers.GetIUnknownImpl(out fpQueryInteface, out fpAddRef, out fpRelease);
+
+                    var vtbl = new IUnknownVtbl()
                     {
                         QueryInterface = fpQueryInteface,
                         AddRef = fpAddRef,
                         Release = fpRelease
-                    },
-                    SetValue = Marshal.GetFunctionPointerForDelegate(ITestVtbl.pSetValue)
-                };
-                var vtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ITestVtbl));
-                Marshal.StructureToPtr(vtbl, vtblRaw, false);
+                    };
+                    var vtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(IUnknownVtbl), sizeof(IUnknownVtbl));
+                    Marshal.StructureToPtr(vtbl, vtblRaw, false);
 
-                int countLocal = obj is TestEx ? ((TestEx)obj).Interfaces.Length + 1 : 1;
-                var entryRaw = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ComInterfaceEntry) * countLocal);
-                entryRaw[0].IID = typeof(ITest).GUID;
-                entryRaw[0].Vtable = vtblRaw;
+                    // Including interfaces to allow QI, but not actually returning a valid vtable, since it is not needed for the tests here.
+                    var entryRaw = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(IUnknownVtbl), sizeof(ComInterfaceEntry));
+                    entryRaw[0].IID = typeof(Server.Contract.IConsumeNETServer).GUID;
+                    entryRaw[0].Vtable = vtblRaw;
 
-                if (obj is TestEx)
-                {
-                    var testEx = (TestEx)obj;
-
-                    for (int i = 1; i < testEx.Interfaces.Length + 1; i++)
-                    {
-                        // Including interfaces to allow QI, but not actually returning a valid vtable, since it is not needed for the tests here.
-                        entryRaw[i].IID = testEx.Interfaces[i-1];
-                        entryRaw[i].Vtable = IntPtr.Zero;
-                    }
+                    count = 1;
+                    return entryRaw;
                 }
 
-                count = countLocal;
-                return entryRaw;
+                count = -1;
+                return null;
             }
 
             protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
@@ -183,6 +179,47 @@ namespace ComWrappersTests.GlobalInstance
             protected override void ReleaseObjects(IEnumerable objects)
             {
                 throw new Exception() { HResult = ReleaseObjectsCallAck };
+            }
+
+            private unsafe ComInterfaceEntry* ComputeVtablesForTestObject(Test obj, out int count)
+            {
+                IntPtr fpQueryInteface = default;
+                IntPtr fpAddRef = default;
+                IntPtr fpRelease = default;
+                ComWrappers.GetIUnknownImpl(out fpQueryInteface, out fpAddRef, out fpRelease);
+
+                var vtbl = new ITestVtbl()
+                {
+                    IUnknownImpl = new IUnknownVtbl()
+                    {
+                        QueryInterface = fpQueryInteface,
+                        AddRef = fpAddRef,
+                        Release = fpRelease
+                    },
+                    SetValue = Marshal.GetFunctionPointerForDelegate(ITestVtbl.pSetValue)
+                };
+                var vtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ITestVtbl));
+                Marshal.StructureToPtr(vtbl, vtblRaw, false);
+
+                int countLocal = obj is TestEx ? ((TestEx)obj).Interfaces.Length + 1 : 1;
+                var entryRaw = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ComInterfaceEntry) * countLocal);
+                entryRaw[0].IID = typeof(ITest).GUID;
+                entryRaw[0].Vtable = vtblRaw;
+
+                if (obj is TestEx)
+                {
+                    var testEx = (TestEx)obj;
+
+                    for (int i = 1; i < testEx.Interfaces.Length + 1; i++)
+                    {
+                        // Including interfaces to allow QI, but not actually returning a valid vtable, since it is not needed for the tests here.
+                        entryRaw[i].IID = testEx.Interfaces[i - 1];
+                        entryRaw[i].Vtable = IntPtr.Zero;
+                    }
+                }
+
+                count = countLocal;
+                return entryRaw;
             }
         }
 
@@ -347,7 +384,7 @@ namespace ComWrappersTests.GlobalInstance
             // Initialize CoreShim and hostpolicymock
             HostPolicyMock.Initialize(Environment.CurrentDirectory, null);
             Environment.SetEnvironmentVariable("CORESHIM_COMACT_ASSEMBLYNAME", "NETServer");
-            Environment.SetEnvironmentVariable("CORESHIM_COMACT_TYPENAME", "ConsumeNETServerTesting");
+            Environment.SetEnvironmentVariable("CORESHIM_COMACT_TYPENAME", ManagedServerTypeName);
 
             using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(0, string.Empty, string.Empty, string.Empty))
             {
@@ -355,7 +392,7 @@ namespace ComWrappersTests.GlobalInstance
                 var server = Activator.CreateInstance(t);
                 Assert.AreEqual(returnValid, server is FakeWrapper, $"Should{(returnValid ? string.Empty : "not")} have returned {nameof(FakeWrapper)} instance");
                 object serverUnwrapped = GlobalComWrappers.Instance.LastComputeVtablesObject;
-                Assert.AreEqual("ConsumeNETServerTesting", serverUnwrapped.GetType().Name);
+                Assert.AreEqual(ManagedServerTypeName, serverUnwrapped.GetType().Name);
 
                 IntPtr ptr = Marshal.GetIUnknownForObject(server);
                 var obj = Marshal.GetObjectForIUnknown(ptr);
