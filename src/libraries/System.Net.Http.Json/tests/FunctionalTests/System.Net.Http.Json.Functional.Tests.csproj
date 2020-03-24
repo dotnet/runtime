@@ -7,8 +7,6 @@
     <Compile Include="HttpContentJsonExtensionsTests.cs" />
     <Compile Include="JsonContentTests.cs" />
     <Compile Include="TestClasses.cs" />
-    <Compile Include="TranscodingReadStreamTests.cs" />
-    <Compile Include="TranscodingWriteStreamTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs">
@@ -38,12 +36,5 @@
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
-    <Compile Include="..\..\src\System\ArraySegmentExtensions.netstandard.cs" Link="ArraySegmentExtensions.netstandard.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\src\System\Net\Http\Json\TranscodingReadStream.cs" Link="TranscodingReadStream.cs" />
-    <Compile Include="..\..\src\System\Net\Http\Json\TranscodingWriteStream.cs" Link="TranscodingWriteStream.cs" />
   </ItemGroup>
 </Project>
