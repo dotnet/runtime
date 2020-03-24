@@ -3,7 +3,3 @@
 -nomethod System.Tests.ActivatorTests.TestingCreateInstanceFromObjectHandle
 -nomethod System.Tests.AppDomainTests.TestingCreateInstanceFromObjectHandleFullSignature
 -nomethod System.Tests.AppDomainTests.TestingCreateInstanceFromObjectHandle
-
--nomethod System.Threading.Tasks.Dataflow.Tests.DataflowBlockExtensionsTests.TestReceiveAsync_LongChain
--nomethod System.Threading.Tasks.Dataflow.Tests.DataflowBlockExtensionsTests.TestOutputAvailableAsync_LongSequence
--nomethod System.Threading.Tasks.Tests.*
