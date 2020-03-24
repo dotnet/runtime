@@ -15,7 +15,9 @@ namespace System
 {
     public static partial class Environment
     {
+#if !TARGET_IOS
         private static Func<string, object>? s_directoryCreateDirectory;
+#endif
 
         public static bool UserInteractive => true;
 
@@ -56,7 +58,10 @@ namespace System
             // Get the path for the SpecialFolder
             string path = GetFolderPathCoreWithoutValidation(folder);
             Debug.Assert(path != null);
-
+#if TARGET_IOS
+            // ignore verification and SpecialFolderOption.Create on iOS
+            return path;
+#else
             // If we didn't get one, or if we got one but we're not supposed to verify it,
             // or if we're supposed to verify it and it passes verification, return the path.
             if (path.Length == 0 ||
@@ -86,17 +91,21 @@ namespace System
 
                 return path;
             }
+#endif
         }
 
         private static string GetFolderPathCoreWithoutValidation(SpecialFolder folder)
         {
+#if TARGET_IOS
+            return GetFolderPathiOS(folder);
+#else
             // First handle any paths that involve only static paths, avoiding the overheads of getting user-local paths.
             // https://www.freedesktop.org/software/systemd/man/file-hierarchy.html
             switch (folder)
             {
                 case SpecialFolder.CommonApplicationData: return "/usr/share";
                 case SpecialFolder.CommonTemplates: return "/usr/share/templates";
-#if TARGET_OSX || TARGET_IOS
+#if TARGET_OSX
                 case SpecialFolder.ProgramFiles: return "/Applications";
                 case SpecialFolder.System: return "/System";
 #endif
@@ -152,7 +161,7 @@ namespace System
                 case SpecialFolder.MyVideos:
                     return ReadXdgDirectory(home, "XDG_VIDEOS_DIR", "Videos");
 
-#if TARGET_OSX || TARGET_IOS
+#if TARGET_OSX
                 case SpecialFolder.MyMusic:
                     return Path.Combine(home, "Music");
                 case SpecialFolder.MyPictures:
@@ -175,6 +184,7 @@ namespace System
 
             // No known path for the SpecialFolder
             return string.Empty;
+#endif
         }
 
         private static string GetXdgConfig(string home)

@@ -291,6 +291,12 @@
       <Compile Include="$(BclSourcesRoot)\Internal\Resources\WindowsRuntimeResourceManagerBase.cs" />
       <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsiOS)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs" />
+      <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
+        <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>
+      </Compile>
+  </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeMarshal.cs" />

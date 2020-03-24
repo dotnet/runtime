@@ -19,17 +19,26 @@ namespace System
 		{
 			Debug.Assert(variable != null);
 
+			variable = TrimStringOnFirstZero (variable);
+
+			// call getenv directly if s_environment is not yet initialized
 			if (s_environment == null) {
 				using (var h = RuntimeMarshal.MarshalString (variable)) {
 					return internalGetEnvironmentVariable_native (h.Value);
 				}
 			}
 
-			variable = TrimStringOnFirstZero (variable);
+			string value = "";
 			lock (s_environment) {
-				s_environment.TryGetValue (variable, out string value);
-				return value;
+				if (!s_environment.TryGetValue (variable, out value)) {
+					// on some platform s_environment can be empty after EnsureEnvironmentCached (), e.g. iOS
+					using (var h = RuntimeMarshal.MarshalString (variable)) {
+						value = internalGetEnvironmentVariable_native (h.Value);
+						s_environment [variable] = value;
+					}
+				}
 			}
+			return value;
 		}
 
 		static unsafe void SetEnvironmentVariableCore (string variable, string? value)

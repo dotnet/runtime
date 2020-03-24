@@ -23,7 +23,9 @@ set(NATIVE_SOURCES
 )
 
 if (CLR_CMAKE_TARGET_IOS)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_log.m)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_log.m
+        pal_searchpath.m)
 else ()
     set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_console.c)
 endif ()

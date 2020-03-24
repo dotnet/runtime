@@ -1,0 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+#include "pal_searchpath.h"
+#import <Foundation/Foundation.h>
+
+const char* SystemNative_SearchPath(int32_t folderId)
+{
+    NSSearchPathDirectory spd = (NSSearchPathDirectory) folderId;
+    NSURL* url = [[[NSFileManager defaultManager] URLsForDirectory:spd inDomains:NSUserDomainMask] lastObject];
+    return strdup ([[url path] UTF8String]);
+}
