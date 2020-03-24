@@ -9542,10 +9542,22 @@ after_codegen_1:
 		ctx->builder = create_builder (ctx);
 		LLVMPositionBuilderAtEnd (ctx->builder, ctx->inited_bb);
 
+		char *name = mono_method_get_full_name (cfg->method);
+		int len = strlen (name);
+
+		LLVMTypeRef type = LLVMArrayType (LLVMInt8Type (), len + 1);
+		LLVMValueRef name_var = LLVMAddGlobal (ctx->lmodule, type, "missing_method_name");
+		LLVMSetVisibility (name_var, LLVMHiddenVisibility);
+		LLVMSetLinkage (name_var, LLVMInternalLinkage);
+		LLVMSetInitializer (name_var, mono_llvm_create_constant_data_array ((guint8*)name, len + 1));
+		mono_llvm_set_is_constant (name_var);
+		g_free (name);
+
 		if (!sig)
-			sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
-		LLVMValueRef callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_throw_missing_method_exception));
-		LLVMBuildCall (ctx->builder, callee, NULL, 0, "");
+			sig = LLVMFunctionType1 (LLVMVoidType (), ctx->module->ptr_type, FALSE);
+		LLVMValueRef callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_throw_aot_failed_exception));
+		LLVMValueRef args [] = { convert (ctx, name_var, ctx->module->ptr_type) };
+		LLVMBuildCall (ctx->builder, callee, args, 1, "");
 		LLVMBuildUnreachable (ctx->builder);
 	}
 

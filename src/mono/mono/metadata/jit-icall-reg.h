@@ -139,7 +139,7 @@ MONO_JIT_ICALL (mini_llvmonly_resolve_generic_virtual_iface_call) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_iface_call_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_throw_nullref_exception) \
-MONO_JIT_ICALL (mini_llvmonly_throw_missing_method_exception) \
+MONO_JIT_ICALL (mini_llvmonly_throw_aot_failed_exception) \
 MONO_JIT_ICALL (mono_amd64_resume_unwind)	\
 MONO_JIT_ICALL (mono_amd64_start_gsharedvt_call)	\
 MONO_JIT_ICALL (mono_amd64_throw_corlib_exception)	\
