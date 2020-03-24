@@ -56,7 +56,7 @@ if [[ "$__BuildArch" == wasm ]]; then
 elif [[ "$__TargetOS" == iOS ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == Android ]]; then
+elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     # nothing to do here
     true
 else
@@ -72,7 +72,7 @@ fi
 if [[ "$__TargetOS" == OSX ]]; then
     # set default OSX deployment target
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
-elif [[ "$__TargetOS" == Android ]]; then
+elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     if [[ -z "$ANDROID_NDK_HOME" ]]; then
         echo "Error: You need to set the ANDROID_NDK_HOME environment variable pointing to the Android NDK root."
         exit 1
