@@ -12,7 +12,7 @@ jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
     variables:
-      # Workaround for azure devops flakyness when dowloading artifacts
+      # Workaround for azure devops flakiness when dowloading artifacts
       # https://github.com/dotnet/runtime/issues/32805
       - name: System.DisableZipDownload
         value: true
