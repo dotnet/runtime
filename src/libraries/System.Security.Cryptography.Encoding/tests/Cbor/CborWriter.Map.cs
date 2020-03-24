@@ -22,7 +22,27 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public void WriteEndMap()
         {
+            if (!_isEvenNumberOfDataItemsWritten)
+            {
+                throw new InvalidOperationException("CBOR Map types require an even number of key/value combinations");
+            }
+
+            if (!_remainingDataItems.HasValue)
+            {
+                // indefinite-length map, add break byte
+                EnsureWriteCapacity(1);
+                WriteInitialByte(new CborInitialByte(CborInitialByte.IndefiniteLengthBreakByte));
+            }
+
             PopDataItem(CborMajorType.Map);
+        }
+
+        public void WriteStartMapIndefiniteLength()
+        {
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
+            DecrementRemainingItemCount();
+            PushDataItem(CborMajorType.Map, expectedNestedItems: null);
         }
     }
 }

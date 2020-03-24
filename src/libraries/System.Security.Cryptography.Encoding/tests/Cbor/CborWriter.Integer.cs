@@ -31,43 +31,40 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Unsigned integer encoding https://tools.ietf.org/html/rfc7049#section-2.1
         private void WriteUnsignedInteger(CborMajorType type, ulong value)
         {
-            EnsureCanWriteNewDataItem();
-
             if (value < 24)
             {
                 EnsureWriteCapacity(1);
-                _buffer[_offset++] = new CborInitialByte(type, (CborAdditionalInfo)value).InitialByte;
+                WriteInitialByte(new CborInitialByte(type, (CborAdditionalInfo)value));
             }
             else if (value <= byte.MaxValue)
             {
                 EnsureWriteCapacity(2);
-                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.Unsigned8BitIntegerEncoding).InitialByte;
-                _buffer[_offset + 1] = (byte)value;
-                _offset += 2;
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Unsigned8BitIntegerEncoding));
+                _buffer[_offset++] = (byte)value;
             }
             else if (value <= ushort.MaxValue)
             {
                 EnsureWriteCapacity(3);
-                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.Unsigned16BitIntegerEncoding).InitialByte;
-                BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(_offset + 1), (ushort)value);
-                _offset += 3;
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Unsigned16BitIntegerEncoding));
+                BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(_offset), (ushort)value);
+                _offset += 2;
             }
             else if (value <= uint.MaxValue)
             {
                 EnsureWriteCapacity(5);
-                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.Unsigned32BitIntegerEncoding).InitialByte;
-                BinaryPrimitives.WriteUInt32BigEndian(_buffer.AsSpan(_offset + 1), (uint)value);
-                _offset += 5;
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Unsigned32BitIntegerEncoding));
+                BinaryPrimitives.WriteUInt32BigEndian(_buffer.AsSpan(_offset), (uint)value);
+                _offset += 4;
             }
             else
             {
                 EnsureWriteCapacity(9);
-                _buffer[_offset] = new CborInitialByte(type, CborAdditionalInfo.Unsigned64BitIntegerEncoding).InitialByte;
-                BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(_offset + 1), value);
-                _offset += 9;
+                WriteInitialByte(new CborInitialByte(type, CborAdditionalInfo.Unsigned64BitIntegerEncoding));
+                BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(_offset), value);
+                _offset += 8;
             }
 
-            _remainingDataItems--;
+            DecrementRemainingItemCount();
         }
     }
 }
