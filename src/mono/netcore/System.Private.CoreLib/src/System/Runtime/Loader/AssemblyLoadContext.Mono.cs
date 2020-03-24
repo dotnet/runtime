@@ -25,9 +25,8 @@ namespace System.Runtime.Loader
             return InternalInitializeNativeALC(thisHandlePtr, representsTPALoadContext, isCollectible);
         }
 
-        private static void PrepareForAssemblyLoadContextRelease(IntPtr nativeAssemblyLoadContext, IntPtr assemblyLoadContextStrong)
-        {
-        }
+        [MethodImplAttribute (MethodImplOptions.InternalCall)]
+        private static extern void PrepareForAssemblyLoadContextRelease (IntPtr nativeAssemblyLoadContext, IntPtr assemblyLoadContextStrong);
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         private Assembly InternalLoadFromPath(string assemblyPath, string nativeImagePath)
