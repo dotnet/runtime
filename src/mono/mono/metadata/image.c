@@ -2402,6 +2402,8 @@ mono_image_close_except_pools (MonoImage *image)
 		char *old_name = image->name;
 		image->name = g_strdup_printf ("%s - UNLOADED", old_name);
 		g_free (old_name);
+		g_free (image->filename);
+		image->filename = NULL;
 	} else {
 		g_free (image->name);
 		g_free (image->filename);
