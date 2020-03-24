@@ -10,7 +10,7 @@ set(PRERELEASE 1)
 #     - for non-windows build platform & architecture is detected using inbuilt CMAKE variables and cross target component configure
 #     - for windows we use the passed in parameter to CMAKE to determine build arch
 #----------------------------------------
-set(CLR_CMAKE_HOST_OS ${CMAKE_HOST_SYSTEM_NAME})
+set(CLR_CMAKE_HOST_OS ${CMAKE_SYSTEM_NAME})
 if(CLR_CMAKE_HOST_OS STREQUAL Linux OR CLR_CMAKE_HOST_OS STREQUAL Android)
     set(CLR_CMAKE_HOST_UNIX 1)
     if(CLR_CROSS_COMPONENTS_BUILD AND NOT CLR_CMAKE_HOST_OS STREQUAL Android)
@@ -107,6 +107,11 @@ if(CLR_CMAKE_HOST_OS STREQUAL FreeBSD)
     set(CLR_CMAKE_HOST_UNIX 1)
     set(CLR_CMAKE_HOST_UNIX_AMD64 1)
     set(CLR_CMAKE_HOST_FREEBSD 1)
+
+    if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL Linux)
+        set(CLR_CMAKE_HOST_OS Linux)
+        set(CLR_CMAKE_TARGET_OS FreeBSD)
+    endif()
 endif(CLR_CMAKE_HOST_OS STREQUAL FreeBSD)
 
 if(CLR_CMAKE_HOST_OS STREQUAL OpenBSD)

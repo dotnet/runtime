@@ -106,13 +106,13 @@ set_target_properties(mscordacobj mscordaccore PROPERTIES DAC_COMPONENT TRUE)
 
 if(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_TARGET_FREEBSD)
     add_dependencies(mscordaccore lib_redefines_inc)
-endif(CLR_CMAKE_TARGET_LINUX)
+endif(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_TARGET_FREEBSD)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_dependencies(mscordaccore mscordaccore_exports)
     set_property(TARGET mscordaccore APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
     set_property(TARGET mscordaccore APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_TARGET_FREEBSD)
+endif(CLR_CMAKE_HOST_UNIX)
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
