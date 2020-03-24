@@ -225,12 +225,14 @@ namespace System.Net.Http.Json.Functional.Tests
                 server => server.HandleRequestAsync(headers: _headers, content: "{}"));
         }
 
-        [Fact]
-        public async Task TestStructuredSyntaxJsonSuffix()
+        [Theory]
+        [InlineData("application/json")]
+        [InlineData("application/foo+json")] // Structured Syntax Json Suffix
+        public async Task TestValidMediaTypes(string mediaType)
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
             {
-                new HttpHeaderData("Content-Type", "application/problem+json; charset=\"utf-8\"")
+                new HttpHeaderData("Content-Type", $"{mediaType}; charset=\"utf-8\"")
             };
 
             await LoopbackServer.CreateClientAndServerAsync(

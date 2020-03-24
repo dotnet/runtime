@@ -56,14 +56,10 @@ namespace System.Net.Http.Json
             => throw new NotSupportedException();
 
         public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException();
-        }
+            => throw new NotSupportedException();
 
         public override void SetLength(long value)
-        {
-            throw new NotSupportedException();
-        }
+            => throw new NotSupportedException();
 
         public override void Write(byte[] buffer, int offset, int count)
             => throw new NotSupportedException();
@@ -87,7 +83,7 @@ namespace System.Net.Http.Json
 
             if (buffer.Length - offset < count)
             {
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
             var bufferSegment = new ArraySegment<byte>(buffer, offset, count);

@@ -65,8 +65,6 @@ namespace System.Net.Http.Json
         internal int CharBufferCount => _charBuffer.Count;
         internal int OverflowCount => _overflowBuffer.Count;
 
-        public override void Flush() { }
-
         public override int Read(byte[] buffer, int offset, int count)
             => throw new NotSupportedException();
 
@@ -89,7 +87,7 @@ namespace System.Net.Http.Json
 
             if (buffer.Length - offset < count)
             {
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
 
             var readBuffer = new ArraySegment<byte>(buffer, offset, count);
@@ -115,17 +113,12 @@ namespace System.Net.Http.Json
                 return bytesToCopy;
             }
 
+            bool shouldFlushEncoder = false;
             // Only read more content from the input stream if we have exhausted all the buffered chars.
             if (_charBuffer.Count == 0)
             {
                 int bytesRead = await ReadInputChars(cancellationToken).ConfigureAwait(false);
-
-                if (bytesRead == 0)
-                {
-                    // We are done, flush encoder.
-                    _encoder.Convert(_charBuffer.Array!, 0, 0, _byteBuffer.Array!, 0, 0, flush: true, out _, out _, out _);
-                    return 0;
-                }
+                shouldFlushEncoder = bytesRead == 0;
             }
 
             bool completed = false;
@@ -135,43 +128,36 @@ namespace System.Net.Http.Json
             if (readBuffer.Count > OverflowBufferSize || _charBuffer.Count == 0)
             {
                 _encoder.Convert(_charBuffer.Array!, _charBuffer.Offset, _charBuffer.Count, readBuffer.Array!, readBuffer.Offset, readBuffer.Count,
-                    flush: false, out charsRead, out bytesWritten, out completed);
+                    flush: shouldFlushEncoder, out charsRead, out bytesWritten, out completed);
             }
 
             _charBuffer = _charBuffer.Slice(charsRead);
 
-            if (completed)
+            if (completed || bytesWritten > 0)
             {
                 return bytesWritten;
             }
-            else
-            {
-                if (bytesWritten > 0)
-                {
-                    return bytesWritten;
-                }
 
-                _encoder.Convert(_charBuffer.Array!, _charBuffer.Offset, _charBuffer.Count, _overflowBuffer.Array!, 0, _overflowBuffer.Array!.Length,
-                    flush: false, out int overFlowChars, out int overflowBytes, out completed);
+            _encoder.Convert(_charBuffer.Array!, _charBuffer.Offset, _charBuffer.Count, _overflowBuffer.Array!, 0, _overflowBuffer.Array!.Length,
+                flush: shouldFlushEncoder, out int overFlowChars, out int overflowBytes, out completed);
 
-                Debug.Assert(overflowBytes > 0 && overFlowChars > 0, "We expect writes to the overflow buffer to always succeed since it is large enough to accommodate at least one char.");
+            Debug.Assert(overflowBytes > 0 && overFlowChars > 0, "We expect writes to the overflow buffer to always succeed since it is large enough to accommodate at least one char.");
 
-                _charBuffer = _charBuffer.Slice(overFlowChars);
+            _charBuffer = _charBuffer.Slice(overFlowChars);
 
-                // readBuffer: [ 0, 0, ], overflowBuffer: [ 7, 13, 34, ]
-                // Fill up the readBuffer to capacity, so the result looks like so:
-                // readBuffer: [ 7, 13 ], overflowBuffer: [ 34 ]
-                Debug.Assert(readBuffer.Count < overflowBytes);
-                _overflowBuffer.Array.AsSpan(0, readBuffer.Count).CopyTo(readBuffer);
+            // readBuffer: [ 0, 0, ], overflowBuffer: [ 7, 13, 34, ]
+            // Fill up the readBuffer to capacity, so the result looks like so:
+            // readBuffer: [ 7, 13 ], overflowBuffer: [ 34 ]
+            Debug.Assert(readBuffer.Count < overflowBytes);
+            _overflowBuffer.Array.AsSpan(0, readBuffer.Count).CopyTo(readBuffer);
 
-                Debug.Assert(_overflowBuffer.Array != null);
+            Debug.Assert(_overflowBuffer.Array != null);
 
-                _overflowBuffer = new ArraySegment<byte>(_overflowBuffer.Array, readBuffer.Count, overflowBytes - readBuffer.Count);
+            _overflowBuffer = new ArraySegment<byte>(_overflowBuffer.Array, readBuffer.Count, overflowBytes - readBuffer.Count);
 
-                Debug.Assert(_overflowBuffer.Count > 0);
+            Debug.Assert(_overflowBuffer.Count > 0);
 
-                return readBuffer.Count;
-            }
+            return readBuffer.Count;
         }
 
         private async Task<int> ReadInputChars(CancellationToken cancellationToken)
@@ -196,7 +182,7 @@ namespace System.Net.Http.Json
                 flush: bytesRead == 0, out int bytesUsed, out int charsUsed, out _);
 
             // We flush only when the stream is exhausted and there are no pending bytes in the buffer.
-            Debug.Assert(bytesRead != 0 || _byteBuffer.Count == 0);
+            Debug.Assert(bytesRead != 0 || _byteBuffer.Count - bytesUsed == 0);
 
             _byteBuffer = _byteBuffer.Slice(bytesUsed);
             _charBuffer = new ArraySegment<char>(_charBuffer.Array, 0, charsUsed);
@@ -204,20 +190,17 @@ namespace System.Net.Http.Json
             return bytesRead;
         }
 
+        public override void Flush()
+            => throw new NotSupportedException();
+
         public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException();
-        }
+            => throw new NotSupportedException();
 
         public override void SetLength(long value)
-        {
-            throw new NotSupportedException();
-        }
+            => throw new NotSupportedException();
 
         public override void Write(byte[] buffer, int offset, int count)
-        {
-            throw new NotSupportedException();
-        }
+            => throw new NotSupportedException();
 
         protected override void Dispose(bool disposing)
         {

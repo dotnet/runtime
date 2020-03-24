@@ -120,16 +120,4 @@
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
-  <data name="CharSetInvalid" xml:space="preserve">
-    <value>The character set provided in ContentType is invalid.</value>
-  </data>
-  <data name="CharSetNotSupported" xml:space="preserve">
-    <value>The character set provided in ContentType is not supported.</value>
-  </data>
-  <data name="ContentTypeNotSupported" xml:space="preserve">
-    <value>The provided ContentType is not supported; the supported types are 'application/json' and the structured syntax suffix 'application/+json'.</value>
-  </data>
-  <data name="SerializeWrongType" xml:space="preserve">
-    <value>The specified type {0} must derive from the specific value's type {1}.</value>
-  </data>
 </root>

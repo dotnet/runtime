@@ -14,7 +14,12 @@ namespace System.Net.Http.Json.Functional.Tests
 {
     public class HttpClientJsonExtensionsTests
     {
-        private static readonly JsonSerializerOptions s_DefaultSerializerOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        private static readonly JsonSerializerOptions s_defaultSerializerOptions
+            = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
 
         [Fact]
         public async Task TestGetFromJsonAsync()
@@ -102,7 +107,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     {
                         HttpRequestData request = await server.HandleRequestAsync();
                         ValidateRequest(request);
-                        Person per = JsonSerializer.Deserialize<Person>(request.Body, s_DefaultSerializerOptions);
+                        Person per = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
                         per.Validate();
                     }
                 });
@@ -138,7 +143,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     {
                         HttpRequestData request = await server.HandleRequestAsync();
                         ValidateRequest(request);
-                        Person obj = JsonSerializer.Deserialize<Person>(request.Body, s_DefaultSerializerOptions);
+                        Person obj = JsonSerializer.Deserialize<Person>(request.Body, s_defaultSerializerOptions);
                         obj.Validate();
                     }
                 });

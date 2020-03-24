@@ -4,6 +4,7 @@
 
 // Taken from https://github.com/dotnet/aspnetcore/blob/master/src/Mvc/Mvc.Core/test/Formatters/TranscodingReadStreamTest.cs
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -276,6 +277,34 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task TestOneToOneTranscodingAsync()
         {
+            Encoding sourceEncoding = Encoding.GetEncoding(28591);
+            string message = '"' + new string('A', TranscodingReadStream.MaxByteBufferSize - 2 + 1) + '"';
+
+            Stream stream = new MemoryStream(sourceEncoding.GetBytes(message));
+            using (TranscodingReadStream transcodingStream = new TranscodingReadStream(stream, sourceEncoding))
+            {
+                string deserializedMessage = await JsonSerializer.DeserializeAsync<string>(transcodingStream);
+                Assert.Equal(message.Trim('"'), deserializedMessage);
+            }
+        }
+
+        [Fact(Skip ="TODO: Find out how to simulate exhausting the ArrayPool's bucket.")]
+        public async Task ByteBufferIsLargerThanCharBuffer()
+        {
+            List<byte[]> rentedArrays = new List<byte[]>();
+
+            while (true)
+            {
+                byte[] rented = ArrayPool<byte>.Shared.Rent(TranscodingReadStream.MaxByteBufferSize);
+
+                rentedArrays.Add(rented);
+                if (rented.Length > TranscodingReadStream.MaxByteBufferSize)
+                {
+                    // Rented array is larger than expected... proceeding with the test.
+                    break;
+                }
+            }
+
             Encoding sourceEncoding = Encoding.GetEncoding(28591);
             string message = '"' + new string('A', TranscodingReadStream.MaxByteBufferSize - 2 + 1) + '"';
 
