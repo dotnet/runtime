@@ -6,9 +6,11 @@ include(CheckPrototypeDefinition)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
-include(CheckFunctionExists)
 
-if (CLR_CMAKE_TARGET_LINUX)
+
+if (CLR_CMAKE_TARGET_ANDROID)
+    set(PAL_UNIX_NAME \"ANDROID\")
+elseif (CLR_CMAKE_TARGET_LINUX)
     set(PAL_UNIX_NAME \"LINUX\")
 elseif (CLR_CMAKE_TARGET_OSX)
     set(PAL_UNIX_NAME \"OSX\")
@@ -177,6 +179,11 @@ check_symbol_exists(
     sched_setaffinity
     "sched.h"
     HAVE_SCHED_SETAFFINITY)
+
+check_symbol_exists(
+    pthread_setcancelstate
+    "pthread.h"
+    HAVE_PTHREAD_SETCANCELSTATE)
 
 check_symbol_exists(
     arc4random_buf
@@ -450,6 +457,11 @@ if(CLR_CMAKE_TARGET_IOS)
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
     unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+elseif(CLR_CMAKE_TARGET_ANDROID)
+    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
+    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
 else()
     check_c_source_runs(
         "
@@ -899,8 +911,6 @@ check_c_source_compiles(
     }
     "
     HAVE_BUILTIN_MUL_OVERFLOW)
-
-check_function_exists(pthread_setcancelstate HAVE_PTHREAD_SETCANCELSTATE)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in

@@ -63,7 +63,54 @@ static int FindICULibs()
     return TRUE;
 }
 
-#else // !TARGET_WINDOWS && !TARGET_OSX
+#elif defined(TARGET_ANDROID)
+
+// support ICU versions from 50-255
+#define MinICUVersion 50
+#define MaxICUVersion 255
+#define MaxICUVersionStringLength 4
+
+static int FindSymbolVersion(char* symbolName, char* symbolVersion)
+{
+    for (int i = MinICUVersion; i <= MaxICUVersion; i++)
+    {
+        sprintf(symbolVersion, "_%d", i);
+        sprintf(symbolName, "u_strlen%s", symbolVersion);
+        if (dlsym(libicuuc, symbolName) != NULL)
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+static int FindICULibs(char* symbolName, char* symbolVersion)
+{
+    libicui18n = dlopen("libicui18n.so", RTLD_LAZY);
+
+    if (libicui18n == NULL)
+    {
+        return FALSE;
+    }
+
+    libicuuc = dlopen("libicuuc.so", RTLD_LAZY);
+
+    if (libicuuc == NULL)
+    {
+        return FALSE;
+    }
+
+    if (!FindSymbolVersion(symbolName, symbolVersion))
+    {
+        fprintf(stderr, "Cannot determine ICU version.");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+#else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID
 
 #define VERSION_PREFIX_NONE ""
 #define VERSION_PREFIX_SUSE "suse"
@@ -299,6 +346,12 @@ int32_t GlobalizationNative_LoadICU()
     char symbolName[128];
     char symbolVersion[MaxICUVersionStringLength + 1] = "";
 
+#if defined(TARGET_ANDROID)
+    if (!FindICULibs(symbolName, symbolVersion))
+    {
+        return FALSE;
+    }
+#else
     if (!FindICULibs(VERSION_PREFIX_NONE, symbolName, symbolVersion))
     {
         if (!FindICULibs(VERSION_PREFIX_SUSE, symbolName, symbolVersion))
@@ -306,6 +359,7 @@ int32_t GlobalizationNative_LoadICU()
             return FALSE;
         }
     }
+#endif
 
     // Get pointers to all the ICU functions that are needed
 #define PER_FUNCTION_BLOCK(fn, lib) \
