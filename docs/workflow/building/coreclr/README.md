@@ -33,7 +33,7 @@ The build places logs in `artifacts\log` and these are useful when the build fai
 The build places all of its intermediate output in the `artifacts\obj\coreclr` directory, so if you remove that directory you can force a
 full rebuild.
 
-To build CoreCLR, the root build script invokes the src\coreclr\build.cmd (or build.sh) script. To build the CoreCLR tests, you must use this script.
+To build CoreCLR, the root build script invokes the `src\coreclr\build.cmd` (or build.sh) script. To build the CoreCLR tests, you must use this script.
 Use `build -?` to learn about the options to this script.
 
 See [Running Tests](../../testing/coreclr/testing.md) for instructions on running the tests.
