@@ -188,14 +188,16 @@ namespace ComWrappersTests.GlobalInstance
                 IntPtr fpRelease = default;
                 ComWrappers.GetIUnknownImpl(out fpQueryInteface, out fpAddRef, out fpRelease);
 
+                var iUnknownVtbl = new IUnknownVtbl()
+                {
+                    QueryInterface = fpQueryInteface,
+                    AddRef = fpAddRef,
+                    Release = fpRelease
+                };
+
                 var vtbl = new ITestVtbl()
                 {
-                    IUnknownImpl = new IUnknownVtbl()
-                    {
-                        QueryInterface = fpQueryInteface,
-                        AddRef = fpAddRef,
-                        Release = fpRelease
-                    },
+                    IUnknownImpl = iUnknownVtbl,
                     SetValue = Marshal.GetFunctionPointerForDelegate(ITestVtbl.pSetValue)
                 };
                 var vtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ITestVtbl));
@@ -208,13 +210,15 @@ namespace ComWrappersTests.GlobalInstance
 
                 if (obj is TestEx)
                 {
-                    var testEx = (TestEx)obj;
+                    var iUnknownVtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(IUnknownVtbl), sizeof(IUnknownVtbl));
+                    Marshal.StructureToPtr(iUnknownVtbl, iUnknownVtblRaw, false);
 
+                    var testEx = (TestEx)obj;
                     for (int i = 1; i < testEx.Interfaces.Length + 1; i++)
                     {
                         // Including interfaces to allow QI, but not actually returning a valid vtable, since it is not needed for the tests here.
                         entryRaw[i].IID = testEx.Interfaces[i - 1];
-                        entryRaw[i].Vtable = IntPtr.Zero;
+                        entryRaw[i].Vtable = iUnknownVtblRaw;
                     }
                 }
 

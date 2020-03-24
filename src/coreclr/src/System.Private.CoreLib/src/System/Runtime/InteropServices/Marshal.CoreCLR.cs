@@ -415,7 +415,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(pUnk));
             }
 
-
             return GetObjectForIUnknownNative(pUnk);
         }
 
@@ -428,7 +427,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(unknown));
             }
-
 
             return GetUniqueObjectForIUnknownNative(unknown);
         }

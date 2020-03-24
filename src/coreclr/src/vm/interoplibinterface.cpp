@@ -397,8 +397,11 @@ namespace
         }
     };
 
-    // Global instance
+    // Global instance of the external object cache
     Volatile<ExtObjCxtCache*> ExtObjCxtCache::g_Instance;
+
+    // Indicator for if a ComWrappers implementation is globally registered
+    bool g_IsGlobalComWrappersRegistered;
 
     // Defined handle types for the specific object uses.
     const HandleType InstanceHandleType{ HNDTYPE_STRONG };
@@ -592,6 +595,11 @@ namespace
         RETURN (wrapperRawMaybe != NULL);
     }
 
+    // The unwrap parameter indicates whether or not COM instances that are actually CCWs should
+    // be unwrapped to the original managed object.
+    // For implicit usage of ComWrappers (i.e. automatically called by the runtime when there is a global instance),
+    // CCWs should be unwrapped to allow for round-tripping object -> COM instance -> object.
+    // For explicit usage of ComWrappers (i.e. directly called via a ComWrappers APIs), CCWs should not be unwrapped.
     bool TryGetOrCreateObjectForComInstanceInternal(
         _In_opt_ OBJECTREF impl,
         _In_ IUnknown* identity,
@@ -635,8 +643,11 @@ namespace
             ExtObjCxtCache::LockHolder lock(cache);
             extObjCxt = cache->Find(identity);
 
+            // If is no object found in the cache, check if the object COM instance is actually the CCW
+            // representing a managed object.
             if (extObjCxt == NULL && unwrap)
             {
+                // If the COM instance is a CCW that is not COM-activated, use the object of that wrapper object.
                 InteropLib::OBJECTHANDLE handleLocal;
                 if (InteropLib::Com::GetObjectForWrapper(identity, &handleLocal) ==  S_OK
                     && InteropLib::Com::IsComActivated(identity) == S_FALSE)
@@ -652,6 +663,8 @@ namespace
         }
         else if (handle != NULL)
         {
+            // We have an object handle from the COM instance which is a CCW. Use that object.
+            // This allows for the round-trip from object -> COM instance -> object.
             ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
             gc.objRefMaybe = ObjectFromHandle(objectHandle);
         }
@@ -747,8 +760,6 @@ namespace
         *objRef = gc.objRefMaybe;
         RETURN (gc.objRefMaybe != NULL);
     }
-
-    bool g_IsGlobalComWrappersRegistered;
 }
 
 namespace InteropLibImports
@@ -980,13 +991,14 @@ namespace InteropLibImports
 
             gc.implRef = NULL; // Use the globally registered implementation.
             gc.wrapperMaybeRef = NULL; // No supplied wrapper here.
+            bool unwrapIfManagedObjectWrapper = false; // Don't unwrap CCWs
 
             // Get wrapper for external object
             bool success = TryGetOrCreateObjectForComInstanceInternal(
                 gc.implRef,
                 externalComObject,
                 externalObjectFlags,
-                false /*unwrap*/,
+                unwrapIfManagedObjectWrapper,
                 gc.wrapperMaybeRef,
                 &gc.objRef);
 
@@ -1150,12 +1162,14 @@ BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
     // are being manipulated.
     {
         GCX_COOP();
+
+        bool unwrapIfManagedObjectWrapper = false; // Don't unwrap CCWs
         OBJECTREF newObj;
         success = TryGetOrCreateObjectForComInstanceInternal(
             ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
             identity,
             (CreateObjectFlags)flags,
-            false /*unwrap*/,
+            unwrapIfManagedObjectWrapper,
             ObjectToOBJECTREF(*wrapperMaybe.m_ppObject),
             &newObj);
 
@@ -1247,17 +1261,19 @@ void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* context
     }
 }
 
-void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapper)
+void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe)
 {
     CONTRACTL
     {
         NOTHROW;
         MODE_ANY;
-        PRECONDITION(wrapper != NULL);
+        PRECONDITION(wrapperMaybe != NULL);
     }
     CONTRACTL_END;
 
-    InteropLib::Com::MarkComActivated(wrapper);
+    // The IUnknown may or may not represent a wrapper, so E_INVALIDARG is okay here.
+    HRESULT hr = InteropLib::Com::MarkComActivated(wrapperMaybe);
+    _ASSERTE(SUCCEEDED(hr) || hr == E_INVALIDARG);
 }
 
 void QCALLTYPE GlobalComWrappers::SetGlobalInstanceRegistered()
@@ -1268,7 +1284,7 @@ void QCALLTYPE GlobalComWrappers::SetGlobalInstanceRegistered()
 
     BEGIN_QCALL;
 
-    g_IsGlobalComWrappersRegistered = true;;
+    g_IsGlobalComWrappersRegistered = true;
 
     END_QCALL;
 }
@@ -1308,12 +1324,16 @@ bool GlobalComWrappers::TryGetOrCreateObjectForComInstance(
     {
         GCX_COOP();
 
+        // For implicit usage of ComWrappers (i.e. automatically called by the runtime when there is a global instance),
+        // unwrap CCWs to allow for round-tripping object -> COM instance -> object.
+        bool unwrapIfManagedObjectWrapper = true;
+
         // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
         return TryGetOrCreateObjectForComInstanceInternal(
             NULL /*comWrappersImpl*/,
             externalComObject,
             (CreateObjectFlags)flags,
-            true /*unwrap*/,
+            unwrapIfManagedObjectWrapper,
             NULL /*wrapperMaybe*/,
             objRef);
     }

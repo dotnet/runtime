@@ -129,7 +129,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Create a COM representation of the supplied object that can be passed to a non-managed environment.
         /// </summary>
-        /// <param name="impl">The <see cref="ComWrappers" /> implemenentation to use when creating the COM representation.</param>
+        /// <param name="impl">The <see cref="ComWrappers" /> implementation to use when creating the COM representation.</param>
         /// <param name="instance">The managed object to expose outside the .NET runtime.</param>
         /// <param name="flags">Flags used to configure the generated interface.</param>
         /// <param name="retValue">The generated COM interface that can be passed outside the .NET runtime or IntPtr.Zero if it could not be created.</param>
@@ -238,7 +238,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Get the currently registered managed object or creates a new managed object and registers it.
         /// </summary>
-        /// <param name="impl">The <see cref="ComWrappers" /> implemenentation to use when creating the managed object.</param>
+        /// <param name="impl">The <see cref="ComWrappers" /> implementation to use when creating the managed object.</param>
         /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
         /// <param name="flags">Flags used to describe the external object.</param>
         /// <param name="wrapperMaybe">The <see cref="object"/> to be used as the wrapper for the external object.</param>

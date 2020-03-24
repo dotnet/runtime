@@ -36,12 +36,14 @@ public: // Lifetime management for COM Wrappers
     static void MarkExternalComObjectContextCollected(_In_ void* context);
 
 public: // COM activation
-    static void MarkWrapperAsComActivated(_In_ IUnknown* wrapper);
+    static void MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe);
 };
 
 class GlobalComWrappers
 {
 public:
+    // Native QCall for the ComWrappers managed type to indicate a global instance is registered
+    // This should be set if the private static member representing the global instance on ComWrappers is non-null.
     static void QCALLTYPE SetGlobalInstanceRegistered();
 
 public: // Functions operating on a registered global instance

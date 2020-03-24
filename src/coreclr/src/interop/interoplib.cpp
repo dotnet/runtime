@@ -89,7 +89,7 @@ namespace InteropLib
             return S_OK;
         }
 
-        HRESULT GetObjectForWrapper(_In_ IUnknown *wrapper, _Out_ OBJECTHANDLE *object) noexcept
+        HRESULT GetObjectForWrapper(_In_ IUnknown* wrapper, _Outptr_result_maybenull_ OBJECTHANDLE* object) noexcept
         {
             if (object == nullptr)
                 return E_POINTER;
@@ -107,7 +107,7 @@ namespace InteropLib
             return S_OK;
         }
 
-        HRESULT MarkComActivated(_In_ IUnknown *wrapperMaybe) noexcept
+        HRESULT MarkComActivated(_In_ IUnknown* wrapperMaybe) noexcept
         {
             ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
             if (wrapper == nullptr)
@@ -117,7 +117,7 @@ namespace InteropLib
             return S_OK;
         }
 
-        HRESULT IsComActivated(_In_ IUnknown *wrapperMaybe) noexcept
+        HRESULT IsComActivated(_In_ IUnknown* wrapperMaybe) noexcept
         {
             ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
             if (wrapper == nullptr)

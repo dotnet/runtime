@@ -53,11 +53,11 @@ namespace
     }
 
     void EnsureObjectRefIsValidForSpecifiedClass(
-        _In_ OBJECTREF obj,
+        _In_ OBJECTREF *obj,
         _In_ DWORD dwFlags,
         _In_ MethodTable *pMTClass)
     {
-        _ASSERTE(obj != NULL);
+        _ASSERTE(*obj != NULL);
         _ASSERTE(pMTClass != NULL);
 
         if ((dwFlags & ObjFromComIP::CLASS_IS_HINT) != 0)
@@ -69,13 +69,13 @@ namespace
         // Bad format exception thrown for backward compatibility
         THROW_BAD_FORMAT_MAYBE(pMTClass->IsArray() == FALSE, BFA_UNEXPECTED_ARRAY_TYPE, pMTClass);
 
-        if (CanCastComObject(obj, pMTClass))
+        if (CanCastComObject(*obj, pMTClass))
             return;
 
         StackSString ssObjClsName;
         StackSString ssDestClsName;
 
-        obj->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
+        (*obj)->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
         pMTClass->_GetFullyQualifiedNameForClass(ssDestClsName);
 
         COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,
@@ -182,13 +182,15 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
     if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
     {
         hr = S_OK;
-        void *pvObj;
+
+        SafeComHolder<IUnknown> pvObj;
         if (ReqIpType & ComIpType_Dispatch)
         {
             hr = pUnk->QueryInterface(IID_IDispatch, &pvObj);
         }
         else if (ReqIpType & ComIpType_Inspectable)
         {
+            SafeComHolder<IInspectable> pvObj;
             hr = pUnk->QueryInterface(IID_IInspectable, &pvObj);
         }
 
@@ -468,7 +470,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
 
     if (TryGetComIPFromObjectRefUsingComWrappers(*poref, &pUnk))
     {
-        void *pvObj;
+        SafeComHolder<IUnknown> pvObj;
         hr = pUnk->QueryInterface(iid, &pvObj);
         if (FAILED(hr))
             COMPlusThrowHR(hr);
@@ -539,7 +541,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
     if (TryGetObjectRefFromComIPUsingComWrappers(pUnk, dwFlags, pObjOut))
     {
         if (pMTClass != NULL)
-            EnsureObjectRefIsValidForSpecifiedClass(*pObjOut, dwFlags, pMTClass);
+            EnsureObjectRefIsValidForSpecifiedClass(pObjOut, dwFlags, pMTClass);
 
         return;
     }
@@ -646,7 +648,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         // make sure we can cast to the specified class
         if (pMTClass != NULL)
         {
-            EnsureObjectRefIsValidForSpecifiedClass(*pObjOut, dwFlags, pMTClass);
+            EnsureObjectRefIsValidForSpecifiedClass(pObjOut, dwFlags, pMTClass);
         }
         else if (dwFlags & ObjFromComIP::REQUIRE_IINSPECTABLE)
         {
