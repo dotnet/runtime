@@ -33,7 +33,7 @@
       <BuildArgs Condition="'$(Compiler)' != ''">$(BuildArgs) $(Compiler)</BuildArgs>
       <BuildArgs Condition="'$(CMakeArgs)' != ''">$(BuildArgs) $(CMakeArgs)</BuildArgs>
       <BuildArgs Condition="'$(StripSymbols)' == 'true'">$(BuildArgs) -stripsymbols</BuildArgs>
-      <BuildArgs Condition="'$(TargetOS)' != '' AND '$(TargetOS)' != 'Unix'">$(BuildArgs) -os $(TargetOS)</BuildArgs>
+      <BuildArgs Condition="'$(TargetOS)' == 'FreeBSD'">$(BuildArgs) -os FreeBSD</BuildArgs>
     </PropertyGroup>
 
     <!--

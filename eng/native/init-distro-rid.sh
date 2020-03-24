@@ -20,14 +20,6 @@
 # If -portablebuild=false is passed a non-portable rid will be created for any
 # distro.
 #
-# Below is the list of current non-portable platforms.
-#
-# Builds from the following *must* be non-portable:
-#
-#   |    OS     |           Expected RID            |
-#   -------------------------------------------------
-#   |  freeBSD  |        freebsd.(version)-x64      |
-#
 # It is important to note that the function does not return anything, but it
 # exports __DistroRid, if there is a non-portable distro rid to be used.
 #
@@ -71,7 +63,7 @@ initNonPortableDistroRid()
 
     if [ "$targetOs" = "FreeBSD" ]; then
         if (( isPortable == 0 )); then
-            # $rootfsDir can be empty. freebsd-version is shell scrip and it should always work.
+            # $rootfsDir can be empty. freebsd-version is shell script and it should always work.
             __freebsd_major_version=$($rootfsDir/bin/freebsd-version | { read v; echo "${v%%.*}"; })
             nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
         fi
