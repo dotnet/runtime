@@ -17,7 +17,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = JsonContent.Create(value, null, options);
+            JsonContent content = JsonContent.Create(value, mediaType: null, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
@@ -28,14 +28,14 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = JsonContent.Create(value, null, options);
+            JsonContent content = JsonContent.Create(value, mediaType: null, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
         public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, string? requestUri, TValue value, CancellationToken cancellationToken)
-            => client.PutAsJsonAsync(requestUri, value, null, cancellationToken);
+            => client.PutAsJsonAsync(requestUri, value, options: null, cancellationToken);
 
         public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, Uri? requestUri, TValue value, CancellationToken cancellationToken)
-            => client.PutAsJsonAsync(requestUri, value, null, cancellationToken);
+            => client.PutAsJsonAsync(requestUri, value, options: null, cancellationToken);
     }
 }

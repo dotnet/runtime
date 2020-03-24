@@ -59,16 +59,16 @@ namespace System.Net.Http.Json
         }
 
         public static Task<object?> GetFromJsonAsync(this HttpClient client, string? requestUri, Type type, CancellationToken cancellationToken = default)
-            => client.GetFromJsonAsync(requestUri, type, null, cancellationToken);
+            => client.GetFromJsonAsync(requestUri, type, options: null, cancellationToken);
 
         public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, CancellationToken cancellationToken = default)
-            => client.GetFromJsonAsync(requestUri, type, null, cancellationToken);
+            => client.GetFromJsonAsync(requestUri, type, options: null, cancellationToken);
 
         public static Task<TValue> GetFromJsonAsync<TValue>(this HttpClient client, string? requestUri, CancellationToken cancellationToken = default)
-            => client.GetFromJsonAsync<TValue>(requestUri, null, cancellationToken);
+            => client.GetFromJsonAsync<TValue>(requestUri, options: null, cancellationToken);
 
         public static Task<TValue> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, CancellationToken cancellationToken = default)
-            => client.GetFromJsonAsync<TValue>(requestUri, null, cancellationToken);
+            => client.GetFromJsonAsync<TValue>(requestUri, options: null, cancellationToken);
 
         private static async Task<object?> GetFromJsonAsyncCore(Task<HttpResponseMessage> taskResponse, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {

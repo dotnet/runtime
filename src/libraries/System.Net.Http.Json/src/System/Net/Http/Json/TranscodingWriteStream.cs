@@ -117,7 +117,7 @@ namespace System.Net.Http.Json
 
             while (!encoderCompleted && charsWritten < _charsDecoded)
             {
-                _encoder.Convert(_charBuffer, charsWritten, _charsDecoded - charsWritten, byteBuffer, 0, byteBuffer.Length,
+                _encoder.Convert(_charBuffer, charsWritten, _charsDecoded - charsWritten, byteBuffer, byteIndex: 0, byteBuffer.Length,
                     flush: false, out int charsEncoded, out int bytesUsed, out encoderCompleted);
 
                 await _stream.WriteAsync(byteBuffer, 0, bytesUsed, cancellationToken).ConfigureAwait(false);

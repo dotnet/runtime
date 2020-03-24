@@ -138,7 +138,7 @@ namespace System.Net.Http.Json
                 return bytesWritten;
             }
 
-            _encoder.Convert(_charBuffer.Array!, _charBuffer.Offset, _charBuffer.Count, _overflowBuffer.Array!, 0, _overflowBuffer.Array!.Length,
+            _encoder.Convert(_charBuffer.Array!, _charBuffer.Offset, _charBuffer.Count, _overflowBuffer.Array!, byteIndex: 0, _overflowBuffer.Array!.Length,
                 flush: shouldFlushEncoder, out int overFlowChars, out int overflowBytes, out completed);
 
             Debug.Assert(overflowBytes > 0 && overFlowChars > 0, "We expect writes to the overflow buffer to always succeed since it is large enough to accommodate at least one char.");
@@ -178,7 +178,7 @@ namespace System.Net.Http.Json
             Debug.Assert(_charBuffer.Array != null);
             Debug.Assert(_charBuffer.Count == 0, "We should only expect to read more input chars once all buffered content is read");
 
-            _decoder.Convert(_byteBuffer.Array, _byteBuffer.Offset, _byteBuffer.Count, _charBuffer.Array, 0, _charBuffer.Array.Length,
+            _decoder.Convert(_byteBuffer.Array, _byteBuffer.Offset, _byteBuffer.Count, _charBuffer.Array, charIndex: 0, _charBuffer.Array.Length,
                 flush: bytesRead == 0, out int bytesUsed, out int charsUsed, out _);
 
             // We flush only when the stream is exhausted and there are no pending bytes in the buffer.

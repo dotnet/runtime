@@ -20,7 +20,7 @@ namespace System.Net.Http.Json
             Debug.Assert(content.Headers.ContentType != null);
             Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
 
-            return ReadFromJsonAsyncCore(content, type, sourceEncoding, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken);
+            return ReadFromJsonAsyncCore(content, type, sourceEncoding, options ?? JsonContent.DefaultSerializerOptions, cancellationToken);
         }
 
         public static Task<T> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
@@ -29,7 +29,7 @@ namespace System.Net.Http.Json
             Debug.Assert(content.Headers.ContentType != null);
             Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
 
-            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken);
+            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options ?? JsonContent.DefaultSerializerOptions, cancellationToken);
         }
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
@@ -39,15 +39,12 @@ namespace System.Net.Http.Json
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
             {
-                using Stream transcodingStream = new TranscodingReadStream(contentStream, sourceEncoding);
-                return await JsonSerializer.DeserializeAsync(transcodingStream, type, options, cancellationToken).ConfigureAwait(false);
+                contentStream = new TranscodingReadStream(contentStream, sourceEncoding);
             }
-            else
+
+            using (contentStream)
             {
-                using (contentStream)
-                {
-                    return await JsonSerializer.DeserializeAsync(contentStream, type, options, cancellationToken).ConfigureAwait(false);
-                }
+                return await JsonSerializer.DeserializeAsync(contentStream, type, options, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -58,15 +55,12 @@ namespace System.Net.Http.Json
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
             {
-                using Stream transcodingStream = new TranscodingReadStream(contentStream, sourceEncoding);
-                return await JsonSerializer.DeserializeAsync<T>(transcodingStream, options, cancellationToken).ConfigureAwait(false);
+                contentStream = new TranscodingReadStream(contentStream, sourceEncoding);
             }
-            else
+
+            using (contentStream)
             {
-                using (contentStream)
-                {
-                    return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken).ConfigureAwait(false);
-                }
+                return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -84,7 +78,7 @@ namespace System.Net.Http.Json
                 throw new NotSupportedException(SR.ContentTypeNotSupported);
             }
 
-            mediaType = mediaType.ToLower();
+            mediaType = mediaType.ToLowerInvariant();
 
             if (mediaType != JsonContent.JsonMediaType &&
                 !IsValidStructuredSyntaxJsonSuffix(mediaType.AsSpan()))

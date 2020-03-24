@@ -7,7 +7,9 @@
     <Compile Include="TranscodingWriteStreamTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
-    <Compile Include="..\..\src\System\ArraySegmentExtensions.netstandard.cs" Link="ArraySegmentExtensions.netstandard.cs" />
+    <Compile Include="..\..\src\System\ArraySegmentExtensions.netstandard.cs">
+      <Link>ProductionCode\System\ArraySegmentExtensions.netstandard.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Net\Http\Json\TranscodingReadStream.cs">
