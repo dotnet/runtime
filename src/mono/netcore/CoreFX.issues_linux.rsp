@@ -1,5 +1,1 @@
-# See TODO in AssemblyLoadContext.InternalLoadFromPath()
--nomethod System.Tests.ActivatorTests.TestingCreateInstanceFromObjectHandleFullSignature
--nomethod System.Tests.ActivatorTests.TestingCreateInstanceFromObjectHandle
--nomethod System.Tests.AppDomainTests.TestingCreateInstanceFromObjectHandleFullSignature
--nomethod System.Tests.AppDomainTests.TestingCreateInstanceFromObjectHandle
+
