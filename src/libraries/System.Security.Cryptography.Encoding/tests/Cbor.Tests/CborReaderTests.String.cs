@@ -185,13 +185,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("ffffffffffffffffffffffffffff", "4effffffffffffffffffffffffffff")]
         public static void TryReadByteString_BufferTooSmall_ShouldReturnFalse(string actualValue, string hexEncoding)
         {
-            byte[] buffer = new byte[actualValue.Length / 2 - 1];
+            byte[] buffer = new byte[actualValue.Length / 2];
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            bool result = reader.TryReadByteString(buffer, out int bytesWritten);
+            bool result = reader.TryReadByteString(buffer.AsSpan(1), out int bytesWritten);
             Assert.False(result);
             Assert.Equal(0, bytesWritten);
             Assert.All(buffer, (b => Assert.Equal(0, b)));
+
+            // ensure that reader is still able to complete the read operation if a large enough buffer is supplied subsequently
+            result = reader.TryReadByteString(buffer, out bytesWritten);
+            Assert.True(result);
+            Assert.Equal(buffer.Length, bytesWritten);
+            Assert.Equal(actualValue.ToUpper(), buffer.ByteArrayToHex());
         }
 
         [Theory]
@@ -204,13 +210,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("\ud800\udd51", "64f0908591")]
         public static void TryReadTextString_BufferTooSmall_ShouldReturnFalse(string actualValue, string hexEncoding)
         {
-            char[] buffer = new char[actualValue.Length - 1];
+            char[] buffer = new char[actualValue.Length];
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            bool result = reader.TryReadTextString(buffer, out int charsWritten);
+            bool result = reader.TryReadTextString(buffer.AsSpan(1), out int charsWritten);
             Assert.False(result);
             Assert.Equal(0, charsWritten);
             Assert.All(buffer, (b => Assert.Equal(0, '\0')));
+
+            // ensure that reader is still able to complete the read operation if a large enough buffer is supplied subsequently
+            result = reader.TryReadTextString(buffer, out charsWritten);
+            Assert.True(result);
+            Assert.Equal(actualValue.Length, charsWritten);
+            Assert.Equal(actualValue, new string(buffer.AsSpan(0, charsWritten)));
         }
 
         [Theory]
@@ -221,12 +233,18 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
 
-            byte[] buffer = new byte[expectedHexValue.Length / 2 - 1];
-            bool result = reader.TryReadByteString(buffer, out int bytesWritten);
+            byte[] buffer = new byte[expectedHexValue.Length / 2];
+            bool result = reader.TryReadByteString(buffer.AsSpan(1), out int bytesWritten);
 
             Assert.False(result);
             Assert.Equal(0, bytesWritten);
             Assert.All(buffer, (b => Assert.Equal(0, b)));
+
+            // ensure that reader is still able to complete the read operation if a large enough buffer is supplied subsequently
+            result = reader.TryReadByteString(buffer, out bytesWritten);
+            Assert.True(result);
+            Assert.Equal(buffer.Length, bytesWritten);
+            Assert.Equal(expectedHexValue.ToUpper(), buffer.ByteArrayToHex());
         }
 
         [Theory]
@@ -237,12 +255,18 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
 
-            char[] buffer = new char[expectedValue.Length - 1];
-            bool result = reader.TryReadTextString(buffer, out int charsWritten);
+            char[] buffer = new char[expectedValue.Length];
+            bool result = reader.TryReadTextString(buffer.AsSpan(1), out int charsWritten);
 
             Assert.False(result);
             Assert.Equal(0, charsWritten);
             Assert.All(buffer, (b => Assert.Equal(0, '\0')));
+
+            // ensure that reader is still able to perform the read operation if a large enough buffer is supplied subsequently
+            result = reader.TryReadTextString(buffer, out charsWritten);
+            Assert.True(result);
+            Assert.Equal(expectedValue.Length, charsWritten);
+            Assert.Equal(expectedValue, new string(buffer.AsSpan(0, charsWritten)));
         }
 
         [Theory]
