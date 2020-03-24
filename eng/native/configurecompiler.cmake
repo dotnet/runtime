@@ -182,7 +182,7 @@ if(CLR_CMAKE_HOST_LINUX)
 endif(CLR_CMAKE_HOST_LINUX)
 if(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options(-fuse-ld=lld LINKER:--build-id=sha1)
+  add_link_options(LINKER:--build-id=sha1)
 endif(CLR_CMAKE_HOST_FREEBSD)
 
 #------------------------------------

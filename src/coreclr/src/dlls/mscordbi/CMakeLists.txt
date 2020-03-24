@@ -15,9 +15,9 @@ set(MSCORDBI_SOURCES
 )
 
 # Add the DAC PAL export mapping file
-if(CLR_CMAKE_HOST_LINUX)
+if(CLR_CMAKE_TARGET_LINUX)
     list(APPEND MSCORDBI_SOURCES ${PAL_REDEFINES_FILE})
-endif(CLR_CMAKE_HOST_LINUX)
+endif(CLR_CMAKE_TARGET_LINUX)
 
 if(CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=mscordbi.dll)
@@ -111,9 +111,9 @@ elseif(CLR_CMAKE_HOST_UNIX)
 
     add_dependencies(mscordbi mscordaccore)
 
-    if(CLR_CMAKE_HOST_LINUX)
+    if(CLR_CMAKE_TARGET_LINUX)
         add_dependencies(mscordbi pal_redefines_file)
-    endif(CLR_CMAKE_HOST_LINUX)
+    endif(CLR_CMAKE_TARGET_LINUX)
 
 endif(CLR_CMAKE_HOST_WIN32)
 

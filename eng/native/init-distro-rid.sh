@@ -70,8 +70,11 @@ initNonPortableDistroRid()
     fi
 
     if [ "$targetOs" = "FreeBSD" ]; then
-        __freebsd_major_version=$(freebsd-version | { read v; echo "${v%%.*}"; })
-        nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
+        if (( isPortable == 0 )); then
+            # $rootfsDir can be empty. freebsd-version is shell scrip and it should always work.
+            __freebsd_major_version=$($rootfsDir/bin/freebsd-version | { read v; echo "${v%%.*}"; })
+            nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
+        fi
     fi
 
     if [ -n "${nonPortableBuildID}" ]; then
