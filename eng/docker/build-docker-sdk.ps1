@@ -31,6 +31,7 @@ if ($buildWindowsContainers)
       --file "$PSScriptRoot/libraries-sdk-aspnetcore.windows.Dockerfile" `
       "$REPO_ROOT_DIR/artifacts/bin/testhost"
   }
+  else
   {
     docker build --tag $imageName `
       --build-arg CONFIGURATION=$configuration `
