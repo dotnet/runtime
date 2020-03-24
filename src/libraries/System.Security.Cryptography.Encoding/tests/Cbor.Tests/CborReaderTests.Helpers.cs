@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         break;
                     case string[] expectedChunks:
                         Assert.Equal(CborReaderState.StartTextString, reader.Peek());
-                        reader.ReadStartTextString();
+                        reader.ReadStartTextStringIndefiniteLength();
                         foreach(string expectedChunk in expectedChunks)
                         {
                             Assert.Equal(CborReaderState.TextString, reader.Peek());
@@ -52,11 +52,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                             Assert.Equal(expectedChunk, chunk);
                         }
                         Assert.Equal(CborReaderState.EndTextString, reader.Peek());
-                        reader.ReadEndTextString();
+                        reader.ReadEndTextStringIndefiniteLength();
                         break;
                     case byte[][] expectedChunks:
                         Assert.Equal(CborReaderState.StartByteString, reader.Peek());
-                        reader.ReadStartByteString();
+                        reader.ReadStartByteStringIndefiniteLength();
                         foreach (byte[] expectedChunk in expectedChunks)
                         {
                             Assert.Equal(CborReaderState.ByteString, reader.Peek());
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                             Assert.Equal(expectedChunk.ByteArrayToHex(), chunk.ByteArrayToHex());
                         }
                         Assert.Equal(CborReaderState.EndByteString, reader.Peek());
-                        reader.ReadEndByteString();
+                        reader.ReadEndByteStringIndefiniteLength();
                         break;
 
                     case object[] nested when CborWriterTests.Helpers.IsCborMapRepresentation(nested):

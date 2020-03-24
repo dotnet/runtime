@@ -479,7 +479,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             string hexEncoding = "5f4001ff";
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
-            reader.ReadStartByteString();
+            reader.ReadStartByteStringIndefiniteLength();
             reader.ReadByteString();
 
             Assert.Equal(CborReaderState.FormatError, reader.Peek());
@@ -493,12 +493,56 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             string hexEncoding = "7f6001ff";
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
-            reader.ReadStartTextString();
+            reader.ReadStartTextStringIndefiniteLength();
             reader.ReadTextString();
 
             Assert.Equal(CborReaderState.FormatError, reader.Peek());
             // throws FormatException even if it's the right major type we're trying to read
             Assert.Throws<FormatException>(() => reader.ReadInt64());
+        }
+
+        [Fact]
+        public static void ReadByteString_IndefiniteLength_ContainingNestedIndefiniteLengthStrings_ShouldThrowFormatException()
+        {
+            string hexEncoding = "5f5fffff";
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            reader.ReadStartByteStringIndefiniteLength();
+
+            Assert.Throws<FormatException>(() => reader.ReadStartByteStringIndefiniteLength());
+        }
+
+        [Fact]
+        public static void ReadByteString_IndefiniteLengthConcatenated_ContainingNestedIndefiniteLengthStrings_ShouldThrowFormatException()
+        {
+            string hexEncoding = "5f5fffff";
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            Assert.Throws<FormatException>(() => reader.ReadByteString());
+        }
+
+        [Fact]
+        public static void ReadTextString_IndefiniteLength_ContainingNestedIndefiniteLengthStrings_ShouldThrowFormatException()
+        {
+            string hexEncoding = "7f7fffff";
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            reader.ReadStartTextStringIndefiniteLength();
+
+            Assert.Throws<FormatException>(() => reader.ReadStartTextStringIndefiniteLength());
+        }
+
+        [Fact]
+        public static void ReadTextString_IndefiniteLengthConcatenated_ContainingNestedIndefiniteLengthStrings_ShouldThrowFormatException()
+        {
+            string hexEncoding = "7f7fffff";
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            Assert.Throws<FormatException>(() => reader.ReadTextString());
         }
 
         [Fact]

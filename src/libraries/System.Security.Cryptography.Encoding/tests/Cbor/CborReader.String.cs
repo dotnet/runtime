@@ -105,7 +105,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return true;
         }
 
-        public void ReadStartTextString()
+        public void ReadStartTextStringIndefiniteLength()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
 
@@ -120,14 +120,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
         }
 
-        public void ReadEndTextString()
+        public void ReadEndTextStringIndefiniteLength()
         {
             ReadNextIndefiniteLengthBreakByte();
             PopDataItem(CborMajorType.TextString);
             AdvanceBuffer(1);
         }
 
-        public void ReadStartByteString()
+        public void ReadStartByteStringIndefiniteLength()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
 
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
         }
 
-        public void ReadEndByteString()
+        public void ReadEndByteStringIndefiniteLength()
         {
             ReadNextIndefiniteLengthBreakByte();
             PopDataItem(CborMajorType.ByteString);

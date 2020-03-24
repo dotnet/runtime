@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 {
                     writer.WriteByteString(chunk);
                 }
-                writer.WriteEndByteString();
+                writer.WriteEndByteStringIndefiniteLength();
             }
 
             public static void WriteChunkedTextString(CborWriter writer, string[] chunks)
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 {
                     writer.WriteTextString(chunk);
                 }
-                writer.WriteEndTextString();
+                writer.WriteEndTextStringIndefiniteLength();
             }
 
             public static void ExecOperation(CborWriter writer, string op)
@@ -113,8 +113,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     case nameof(writer.WriteStartByteStringIndefiniteLength): writer.WriteStartByteStringIndefiniteLength(); break;
                     case nameof(writer.WriteStartArray): writer.WriteStartArrayIndefiniteLength(); break;
                     case nameof(writer.WriteStartMap): writer.WriteStartMapIndefiniteLength(); break;
-                    case nameof(writer.WriteEndByteString): writer.WriteEndByteString(); break;
-                    case nameof(writer.WriteEndTextString): writer.WriteEndTextString(); break;
+                    case nameof(writer.WriteEndByteStringIndefiniteLength): writer.WriteEndByteStringIndefiniteLength(); break;
+                    case nameof(writer.WriteEndTextStringIndefiniteLength): writer.WriteEndTextStringIndefiniteLength(); break;
                     case nameof(writer.WriteEndArray): writer.WriteEndArray(); break;
                     case nameof(writer.WriteEndMap): writer.WriteEndMap(); break;
                     default: throw new Exception($"Unrecognized CborWriter operation name {op}");

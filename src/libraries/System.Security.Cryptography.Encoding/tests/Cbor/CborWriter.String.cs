@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
         }
 
-        public void WriteEndByteString()
+        public void WriteEndByteStringIndefiniteLength()
         {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborInitialByte.IndefiniteLengthBreakByte));
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
         }
 
-        public void WriteEndTextString()
+        public void WriteEndTextStringIndefiniteLength()
         {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborInitialByte.IndefiniteLengthBreakByte));

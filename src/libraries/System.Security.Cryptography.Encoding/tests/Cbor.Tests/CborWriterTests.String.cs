@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData(nameof(CborWriter.WriteEndByteString))]
+        [InlineData(nameof(CborWriter.WriteEndByteStringIndefiniteLength))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteTextString_IndefiniteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(nameof(CborWriter.WriteStartByteStringIndefiniteLength))]
         [InlineData(nameof(CborWriter.WriteStartArray))]
         [InlineData(nameof(CborWriter.WriteStartMap))]
-        [InlineData(nameof(CborWriter.WriteEndTextString))]
+        [InlineData(nameof(CborWriter.WriteEndTextStringIndefiniteLength))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteByteString_IndefiteLength_NestedWrites_ShouldThrowInvalidOperationException(string opName)
@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData(nameof(CborWriter.WriteEndTextString))]
+        [InlineData(nameof(CborWriter.WriteEndTextStringIndefiniteLength))]
         [InlineData(nameof(CborWriter.WriteEndArray))]
         [InlineData(nameof(CborWriter.WriteEndMap))]
         public static void WriteByteString_IndefiteLength_ImbalancedWrites_ShouldThrowInvalidOperationException(string opName)
