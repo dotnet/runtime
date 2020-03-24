@@ -3,11 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -297,25 +294,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 return cib;
             }
-        }
-
-        private List<(int offset, int length)>? _rangeListAllocation = null;
-        private List<(int offset, int length)> AcquireRangeList()
-        {
-            List<(int offset, int length)>? ranges = Interlocked.Exchange(ref _rangeListAllocation, null);
-
-            if (ranges != null)
-            {
-                ranges.Clear();
-                return ranges;
-            }
-
-            return new List<(int, int)>();
-        }
-
-        private void ReturnRangeList(List<(int offset, int length)> ranges)
-        {
-            _rangeListAllocation = ranges;
         }
     }
 }

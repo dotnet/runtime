@@ -5,6 +5,7 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -41,6 +42,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private ulong? _remainingDataItems = 1;
         private bool _isEvenNumberOfDataItemsRead = true; // required for indefinite-length map writes
         private Stack<(CborMajorType type, bool isEvenNumberOfDataItemsWritten, ulong? remainingDataItems)>? _nestedDataItemStack;
+
+        // stores a reusable List allocation for keeping ranges in the buffer
+        private List<(int offset, int length)>? _rangeListAllocation = null;
 
         internal CborReader(ReadOnlyMemory<byte> buffer)
         {
@@ -260,6 +264,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 throw new FormatException("Unexpected end of buffer.");
             }
+        }
+
+        private List<(int offset, int length)> AcquireRangeList()
+        {
+            List<(int offset, int length)>? ranges = Interlocked.Exchange(ref _rangeListAllocation, null);
+
+            if (ranges != null)
+            {
+                ranges.Clear();
+                return ranges;
+            }
+
+            return new List<(int, int)>();
+        }
+
+        private void ReturnRangeList(List<(int offset, int length)> ranges)
+        {
+            _rangeListAllocation = ranges;
         }
     }
 }
