@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -73,14 +72,8 @@ namespace System.Net.Http.Json
 
             string? mediaType = content.Headers.ContentType?.MediaType;
 
-            if (mediaType == null)
-            {
-                throw new NotSupportedException(SR.ContentTypeNotSupported);
-            }
-
-            mediaType = mediaType.ToLowerInvariant();
-
-            if (mediaType != JsonContent.JsonMediaType &&
+            if (mediaType == null ||
+                !mediaType.Equals(JsonContent.JsonMediaType, StringComparison.OrdinalIgnoreCase) &&
                 !IsValidStructuredSyntaxJsonSuffix(mediaType.AsSpan()))
             {
                 throw new NotSupportedException(SR.ContentTypeNotSupported);
@@ -93,7 +86,7 @@ namespace System.Net.Http.Json
             int typeLength = mediaType.IndexOf('/');
 
             if (typeLength < 0 ||
-                !mediaType.Slice(index, typeLength).SequenceEqual(JsonContent.JsonType.AsSpan()))
+                mediaType.Slice(index, typeLength).CompareTo(JsonContent.JsonType.AsSpan(), StringComparison.OrdinalIgnoreCase) != 0)
             {
                 return false;
             }
@@ -108,8 +101,8 @@ namespace System.Net.Http.Json
             }
 
             index += suffixStart + 1;
-
-            if (!mediaType.Slice(index).SequenceEqual(JsonContent.JsonSubtype.AsSpan()))
+            ReadOnlySpan<char> mediaTypeSuffix = mediaType.Slice(index);
+            if (mediaTypeSuffix.CompareTo(JsonContent.JsonSubtype.AsSpan(), StringComparison.OrdinalIgnoreCase) != 0)
             {
                 return false;
             }

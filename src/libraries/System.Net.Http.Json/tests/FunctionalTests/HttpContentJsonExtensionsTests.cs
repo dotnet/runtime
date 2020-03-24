@@ -227,7 +227,10 @@ namespace System.Net.Http.Json.Functional.Tests
 
         [Theory]
         [InlineData("application/json")]
+        [InlineData("Application/Json")]
         [InlineData("application/foo+json")] // Structured Syntax Json Suffix
+        [InlineData("application/foo+Json")]
+        [InlineData("appLiCaTiOn/a+JsOn")]
         public async Task TestValidMediaTypes(string mediaType)
         {
             List<HttpHeaderData> customHeaders = new List<HttpHeaderData>
