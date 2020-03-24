@@ -1,0 +1,115 @@
+<Project>
+  <PropertyGroup>
+    <_UnsupportedTargetFrameworkError></_UnsupportedTargetFrameworkError>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework.Contains('-'))">
+    <_OriginalTargetFramework>$(TargetFramework)</_OriginalTargetFramework>
+    <TargetFrameworkSuffix>$(TargetFramework.SubString($([MSBuild]::Add($(TargetFramework.IndexOf('-')), 1))))</TargetFrameworkSuffix>
+    <TargetFramework>$(TargetFramework.SubString(0, $(TargetFramework.IndexOf('-'))))</TargetFramework>
+  </PropertyGroup>
+
+    <!-- Split $(TargetFramework) (e.g. net45) into short identifier and short version (e.g. 'net' and '45'). -->
+  <PropertyGroup Condition="'$(TargetFramework)' != '' and !$(TargetFramework.Contains(',')) and !$(TargetFramework.Contains('+'))">
+   <_ShortFrameworkIdentifier>$(TargetFramework.TrimEnd('.0123456789'))</_ShortFrameworkIdentifier>
+   <_ShortFrameworkVersion>$(TargetFramework.Substring($(_ShortFrameworkIdentifier.Length)))</_ShortFrameworkVersion>
+  </PropertyGroup>
+
+  <!-- Versions with dots are taken as is and just given leading 'v'. -->
+  <PropertyGroup Condition="'$(TargetFrameworkVersion)' == '' and '$(_ShortFrameworkVersion)' != '' and $(_ShortFrameworkVersion.Contains('.'))">
+    <TargetFrameworkVersion>v$(_ShortFrameworkVersion)</TargetFrameworkVersion>
+  </PropertyGroup>
+
+  <!-- Versions with no dots and up to 3 characters get leading 'v' and implicit dots between characters. -->
+  <PropertyGroup Condition="'$(TargetFrameworkVersion)' == '' and '$(_ShortFrameworkVersion)' != ''">
+    <TargetFrameworkVersion Condition="$(_ShortFrameworkVersion.Length) == 1">v$(_ShortFrameworkVersion[0]).0</TargetFrameworkVersion>
+    <TargetFrameworkVersion Condition="$(_ShortFrameworkVersion.Length) == 2">v$(_ShortFrameworkVersion[0]).$(_ShortFrameworkVersion[1])</TargetFrameworkVersion>
+    <TargetFrameworkVersion Condition="$(_ShortFrameworkVersion.Length) == 3">v$(_ShortFrameworkVersion[0]).$(_ShortFrameworkVersion[1]).$(_ShortFrameworkVersion[2])</TargetFrameworkVersion>
+  </PropertyGroup>
+  
+  <!-- Map short name to long name. See earlier comment for example of how to work with identifiers that are not recognized here. -->
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == ''">
+    <TargetFrameworkIdentifier Condition="'$(_ShortFrameworkIdentifier)' == 'netstandard'">.NETStandard</TargetFrameworkIdentifier>
+    <TargetFrameworkIdentifier Condition="'$(_ShortFrameworkIdentifier)' == 'netcoreapp'">.NETCoreApp</TargetFrameworkIdentifier>
+    
+    <!-- The meaning of "net" as a short framework name depends on the version.  If it's 4.x or less, it means .NETFramework.
+         If the version is 5.0 or higher, then "net" means .NET 5.0 and on, which is the evolution of .NET Core, and uses
+         the .NETCoreApp TargetFrameworkIdentifier. -->
+    <TargetFrameworkIdentifier Condition="'$(_ShortFrameworkIdentifier)' == 'net' And
+                                          $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '5.0'))">.NETFramework</TargetFrameworkIdentifier>
+    <TargetFrameworkIdentifier Condition="'$(_ShortFrameworkIdentifier)' == 'net' And
+                                          $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '5.0'))">.NETCoreApp</TargetFrameworkIdentifier>
+  </PropertyGroup>
+
+  <!-- 
+    Trigger an error if we're unable to infer the framework identifier and version. 
+    We have to evaluate this here and not in the target because by the time the target runs,
+    Microsoft.Common.targets will have defaulted to .NETFramework,Version=v4.0
+  -->
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '' or '$(TargetFrameworkVersion)' == ''">
+    <_UnsupportedTargetFrameworkError>true</_UnsupportedTargetFrameworkError>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'Windows_NT'">
+      <PropertyGroup>
+        <TargetsWindows>true</TargetsWindows>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'Unix'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'Linux'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsLinux>true</TargetsLinux>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'OSX'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsOSX>true</TargetsOSX>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'iOS'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsiOS>true</TargetsiOS>
+        <PackageTargetRuntime>ios</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'FreeBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsFreeBSD>true</TargetsFreeBSD>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'NetBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsNetBSD>true</TargetsNetBSD>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'WebAssembly'">
+      <PropertyGroup>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsWebAssembly>true</TargetsWebAssembly>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == ''">
+      <PropertyGroup>
+        <TargetsAnyOS>true</TargetsAnyOS>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <PropertyGroup>
+    <TargetsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
+    <TargetsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</TargetsNetStandard>
+    <TargetsNetFx Condition="$(TargetFramework.StartsWith('net4'))">true</TargetsNetFx>
+    
+    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
+  </PropertyGroup>
+</Project>

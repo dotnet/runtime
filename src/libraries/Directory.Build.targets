@@ -22,6 +22,7 @@
     <StrongNameKeyId Condition="'$(IsTestProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)intellisense.targets" Condition="'$(IsTestProject)' != 'true'" />
   <Import Project="$(RepositoryEngineeringDir)resources.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
