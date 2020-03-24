@@ -67,7 +67,7 @@
     <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
 
     <!-- RuntimeOS is calculated based on the build system OS, however if building for WebAssembly/iOS/Android we need to let
-         the build system to use webassembly/ios as the RuntimeOS for produced package RIDs. -->
+         the build system to use webassembly/ios/android as the RuntimeOS for produced package RIDs. -->
     <RuntimeOS Condition="'$(TargetOS)' == 'WebAssembly'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
     <RuntimeOS Condition="'$(TargetOS)' == 'iOS'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
     <RuntimeOS Condition="'$(TargetOS)' == 'Android'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
