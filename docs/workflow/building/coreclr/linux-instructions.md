@@ -130,7 +130,7 @@ To build the runtime on Linux, run build.sh to build the CoreCLR subset category
 ./build.sh -subsetCategory coreclr
 ```
 
-After the build is completed, there should some files placed in `runtime/artifacts/bin/coreclr/Linux.x64.Debug`.  The ones we are most interested in are:
+After the build is completed, there should some files placed in `artifacts/bin/coreclr/Linux.x64.Debug`.  The ones we are most interested in are:
 
 * `corerun`: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
 * `libcoreclr.so`: The CoreCLR runtime itself.
