@@ -141,7 +141,6 @@ namespace System
 
             // No known path for the SpecialFolder
             return string.Empty;
-#endif
         }
 
         private static string GetXdgConfig(string home)
