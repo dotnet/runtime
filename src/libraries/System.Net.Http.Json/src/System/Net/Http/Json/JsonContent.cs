@@ -45,10 +45,10 @@ namespace System.Net.Http.Json
             _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
         }
 
-        public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options = null)
+        public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => Create(inputValue, typeof(T), mediaType, options);
 
-        public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options = null)
+        public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => new JsonContent(inputValue, inputType, mediaType, options);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)

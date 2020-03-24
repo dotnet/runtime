@@ -21,23 +21,23 @@ namespace System.Net.Http.Json.Functional.Tests
             Type fooType = typeof(Foo);
             Foo foo = new Foo();
 
-            JsonContent content = JsonContent.Create(foo, fooType, null);
+            JsonContent content = JsonContent.Create(foo, fooType);
             Assert.Equal(fooType, content.ObjectType);
             Assert.Same(foo, content.Value);
 
-            content = JsonContent.Create(foo, null);
+            content = JsonContent.Create(foo);
             Assert.Equal(fooType, content.ObjectType);
             Assert.Same(foo, content.Value);
 
             object fooBoxed = foo;
 
             // ObjectType is the specified type when using the .ctor.
-            content = JsonContent.Create(fooBoxed, fooType, null);
+            content = JsonContent.Create(fooBoxed, fooType);
             Assert.Equal(fooType, content.ObjectType);
             Assert.Same(fooBoxed, content.Value);
 
             // ObjectType is the declared type when using the factory method.
-            content = JsonContent.Create(fooBoxed, null);
+            content = JsonContent.Create(fooBoxed);
             Assert.Equal(typeof(object), content.ObjectType);
             Assert.Same(fooBoxed, content.Value);
         }
@@ -49,11 +49,11 @@ namespace System.Net.Http.Json.Functional.Tests
             Foo foo = new Foo();
 
             // Use the default content-type if none is provided.
-            JsonContent content = JsonContent.Create(foo, fooType, null);
+            JsonContent content = JsonContent.Create(foo, fooType);
             Assert.Equal("application/json", content.Headers.ContentType.MediaType);
             Assert.Equal("utf-8", content.Headers.ContentType.CharSet);
 
-            content = JsonContent.Create(foo, null);
+            content = JsonContent.Create(foo);
             Assert.Equal("application/json", content.Headers.ContentType.MediaType);
             Assert.Equal("utf-8", content.Headers.ContentType.CharSet);
 
@@ -69,7 +69,7 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task SendQuotedCharsetAsync()
         {
-            JsonContent content = JsonContent.Create<Foo>(null, null);
+            JsonContent content = JsonContent.Create<Foo>(null);
             content.Headers.ContentType.CharSet = "\"utf-8\"";
 
             HttpClient client = new HttpClient();
@@ -81,8 +81,8 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public void TestJsonContentContentTypeIsNotTheSameOnMultipleInstances()
         {
-            JsonContent jsonContent1 = JsonContent.Create<object>(null, null);
-            JsonContent jsonContent2 = JsonContent.Create<object>(null, null);
+            JsonContent jsonContent1 = JsonContent.Create<object>(null);
+            JsonContent jsonContent2 = JsonContent.Create<object>(null);
 
             jsonContent1.Headers.ContentType.CharSet = "foo-bar";
 
@@ -132,9 +132,6 @@ namespace System.Net.Http.Json.Functional.Tests
 
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => JsonContent.Create(foo, inputType: null, mediaType: null));
             Assert.Equal("inputType", ex.ParamName);
-
-            ex = Assert.Throws<ArgumentNullException>(() => JsonContent.Create(foo, inputType: null, mediaType: null));
-            Assert.Equal("inputType", ex.ParamName);
         }
 
         [Fact]
@@ -144,7 +141,7 @@ namespace System.Net.Http.Json.Functional.Tests
             var foo = new Foo();
             Type typeOfBar = typeof(Bar);
 
-            Exception ex = Assert.Throws<ArgumentException>(() => JsonContent.Create(foo, typeOfBar, null));
+            Exception ex = Assert.Throws<ArgumentException>(() => JsonContent.Create(foo, typeOfBar));
 
             string strTypeOfBar = typeOfBar.ToString();
             Assert.Contains(strTypeOfBar, ex.Message);
@@ -180,7 +177,7 @@ namespace System.Net.Http.Json.Functional.Tests
             EnsureDefaultOptions obj = new EnsureDefaultOptions();
 
             var request = new HttpRequestMessage(HttpMethod.Post, "http://example.com");
-            request.Content = JsonContent.Create(obj, mediaType: null);
+            request.Content = JsonContent.Create(obj);
             await client.SendAsync(request);
         }
 
