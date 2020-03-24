@@ -31,9 +31,9 @@ else(CLR_CMAKE_HOST_WIN32)
     # Add dependency on export file
     add_custom_target(mscordaccore_exports DEPENDS ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_HOST_DARWIN OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+    if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-    endif(CLR_CMAKE_HOST_DARWIN OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
     if(CLR_CMAKE_HOST_LINUX)
 
@@ -91,10 +91,10 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
-if(CLR_CMAKE_HOST_DARWIN)
+if(CLR_CMAKE_HOST_OSX)
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_DARWIN)
+endif(CLR_CMAKE_HOST_OSX)
 
 # Create object library to enable creation of proper dependency of mscordaccore.exp on mscordac.obj and
 # mscordaccore on both the mscordaccore.exp and mscordac.obj.

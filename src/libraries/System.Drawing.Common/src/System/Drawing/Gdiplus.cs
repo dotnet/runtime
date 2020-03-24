@@ -562,22 +562,6 @@ namespace System.Drawing
             public IntPtr bmBits;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        public class BITMAPINFOHEADER
-        {
-            public int biSize = 40;
-            public int biWidth;
-            public int biHeight;
-            public short biPlanes;
-            public short biBitCount;
-            public int biCompression;
-            public int biSizeImage;
-            public int biXPelsPerMeter;
-            public int biYPelsPerMeter;
-            public int biClrUsed;
-            public int biClrImportant;
-        }
-
         // https://devblogs.microsoft.com/oldnewthing/20101018-00/?p=12513
         // https://devblogs.microsoft.com/oldnewthing/20120720-00/?p=7083
 

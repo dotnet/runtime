@@ -41,7 +41,7 @@ static int FindICULibs()
     return TRUE;
 }
 
-#elif defined(TARGET_DARWIN)
+#elif defined(TARGET_OSX)
 
 static int FindICULibs()
 {
@@ -63,7 +63,7 @@ static int FindICULibs()
     return TRUE;
 }
 
-#else // !TARGET_WINDOWS && !TARGET_DARWIN
+#else // !TARGET_WINDOWS && !TARGET_OSX
 
 #define VERSION_PREFIX_NONE ""
 #define VERSION_PREFIX_SUSE "suse"
@@ -282,7 +282,7 @@ int32_t GlobalizationNative_LoadICU()
     fn##_ptr = (__typeof(fn)*)GetProcAddress((HMODULE)lib, #fn); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", #fn, GetLastError()); abort(); }
 
-#elif defined(TARGET_DARWIN)
+#elif defined(TARGET_OSX)
 
     if (!FindICULibs())
     {
@@ -294,7 +294,7 @@ int32_t GlobalizationNative_LoadICU()
     fn##_ptr = (__typeof(fn)*)dlsym(lib, #fn); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", #fn, dlerror()); abort(); }
 
-#else // !TARGET_WINDOWS && !TARGET_DARWIN
+#else // !TARGET_WINDOWS && !TARGET_OSX
 
     char symbolName[128];
     char symbolVersion[MaxICUVersionStringLength + 1] = "";

@@ -370,7 +370,7 @@
     <ItemGroup>
       <_MonoBuildParams Include="/p:MONO_BUILD_DIR_PREFIX=&quot;&quot;$(MonoObjDir)&quot;&quot;" />
       <_MonoBuildParams Include="/p:MONO_ENABLE_NETCORE=true" />
-      <_MonoBuildParams Condition="'$(Configuration)' == 'Debug'" Include="/p:MONO_USE_STATIC_C_RUNTIME=true" />
+      <_MonoBuildParams Include="/p:MONO_USE_STATIC_C_RUNTIME=true" />
       <_MonoBuildParams Include="/p:CL_MPCount=$([System.Environment]::ProcessorCount)" />
       <_MonoBuildParams Include="/v:minimal" />
       <_MonoBuildParams Condition="$(MonoEnableLLVM) == true" Include="/p:MONO_ENABLE_LLVM=true" />
