@@ -208,7 +208,9 @@ namespace System.Buffers.Tests
         [Fact]
         public void GetMemory_ExceedMaximumBufferSize()
         {
-            var output = new ArrayBufferWriter<T>(256);
+            var output = new ArrayBufferWriter<T>(int.MaxValue / 2 + 1);
+            output.Advance(int.MaxValue / 2 + 1);
+            output.GetMemory(1);//Validate when can't double the buffer size, but can grow by sizeHint
             Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
         }
 
