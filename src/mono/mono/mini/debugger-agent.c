@@ -230,6 +230,8 @@ struct _DebuggerTlsData {
 	 * Number of times this thread has been resumed using resume_thread ().
 	 */
 	guint32 resume_count;
+	guint32 resume_count_internal;
+	guint32 suspend_count;
 
 	MonoInternalThread *thread;
 	intptr_t thread_id;
@@ -730,7 +732,7 @@ static void invalidate_frames (DebuggerTlsData *tls);
 
 /* Callbacks used by debugger-engine */
 static MonoContext* tls_get_restore_state (void *the_tls);
-static gboolean try_process_suspend (void *tls, MonoContext *ctx);
+static gboolean try_process_suspend (void *tls, MonoContext *ctx, gboolean from_breakpoint);
 static gboolean begin_breakpoint_processing (void *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal);
 static void begin_single_step_processing (MonoContext *ctx, gboolean from_signal);
 static void ss_discard_frame_context (void *the_tls);
@@ -2724,6 +2726,8 @@ reset_native_thread_suspend_state (gpointer key, gpointer value, gpointer user_d
 		tls->async_state.valid = FALSE;
 		invalidate_frames (tls);
 	}
+	tls->resume_count_internal++;
+
 }
 
 typedef struct {
@@ -2832,19 +2836,24 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 
 /* Conditionally call process_suspend depending oh the current state */
 static gboolean
-try_process_suspend (void *the_tls, MonoContext *ctx)
+try_process_suspend (void *the_tls, MonoContext *ctx, gboolean from_breakpoint)
 {
 	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
-
-	if (suspend_count > 0) {
+	/* if there is a suspend pending that is not executed yes */
+	if (suspend_count > 0) { 
 		/* Fastpath during invokes, see in process_suspend () */
-		if (suspend_count - tls->resume_count == 0)
+		/* if there is a suspend pending but this thread is already resumed, we shouldn't suspend it again and the breakpoint/ss can run */
+		if (suspend_count - tls->resume_count == 0) 
 			return FALSE;
-		if (tls->invoke)
+		/* if there is in a invoke the breakpoint/step should be executed even with the suspend pending */
+		if (tls->invoke) 
+			return FALSE;
+		/* with the multithreaded single step check if there is a suspend_count pending in the current thread and not in the vm */
+		if (from_breakpoint && tls->suspend_count <= tls->resume_count_internal)
 			return FALSE;
 		process_suspend (tls, ctx);
 		return TRUE;
-	}
+	} /* if there isn't any suspend pending, the breakpoint/ss will be executed and will suspend then vm when the event is sent */
 	return FALSE;
 }
 
@@ -2954,6 +2963,8 @@ resume_thread (MonoInternalThread *thread)
 	DEBUG_PRINTF (1, "[sdb] Resuming thread %p...\n", (gpointer)(gssize)thread->tid);
 
 	tls->resume_count += suspend_count;
+	tls->resume_count_internal += tls->suspend_count;
+	tls->suspend_count = 0;
 
 	/* 
 	 * Signal suspend_count without decreasing suspend_count, the threads will wake up
@@ -4044,6 +4055,8 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		 * returns.
 		 */
 		save_thread_context (ctx);
+		DebuggerTlsData *tls = (DebuggerTlsData *)mono_g_hash_table_lookup (thread_to_tls,  mono_thread_internal_current ());
+		tls->suspend_count++;
 		suspend_vm ();
 
 		if (keepalive_obj)
@@ -4982,7 +4995,7 @@ ss_args_destroy (SingleStepArgs *ss_args)
 static int
 handle_multiple_ss_requests (void)
 {
-	return DE_ERR_NOT_IMPLEMENTED;
+	return 1;
 }
 
 static int
@@ -6246,7 +6259,7 @@ clear_event_request (int req_id, int etype)
 			if (req->event_kind == EVENT_KIND_BREAKPOINT)
 				mono_de_clear_breakpoint ((MonoBreakpoint *)req->info);
 			if (req->event_kind == EVENT_KIND_STEP) {
-				mono_de_cancel_ss ();
+				mono_de_cancel_ss ((SingleStepReq *)req->info);
 			}
 			if (req->event_kind == EVENT_KIND_METHOD_ENTRY)
 				mono_de_clear_breakpoint ((MonoBreakpoint *)req->info);
