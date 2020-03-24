@@ -1278,20 +1278,15 @@ void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe)
 
 void QCALLTYPE GlobalComWrappers::SetGlobalInstanceRegistered()
 {
-    QCALL_CONTRACT;
+    // QCALL contracts are not used here because the managed declaration
+    // uses the SuppressGCTransition attribute
 
     _ASSERTE(!g_IsGlobalComWrappersRegistered);
-
-    BEGIN_QCALL;
-
     g_IsGlobalComWrappersRegistered = true;
-
-    END_QCALL;
 }
 
 bool GlobalComWrappers::TryGetOrCreateComInterfaceForObject(
     _In_ OBJECTREF instance,
-    _In_ INT32 flags,
     _Outptr_ void** wrapperRaw)
 {
     if (!g_IsGlobalComWrappersRegistered)
@@ -1302,18 +1297,20 @@ bool GlobalComWrappers::TryGetOrCreateComInterfaceForObject(
     {
         GCX_COOP();
 
+        CreateComInterfaceFlags flags = CreateComInterfaceFlags::CreateComInterfaceFlags_TrackerSupport;
+
         // Passing NULL as the ComWrappers implementation indicates using the globally registered instance
         return TryGetOrCreateComInterfaceForObjectInternal(
             NULL,
             instance,
-            (CreateComInterfaceFlags)flags,
+            flags,
             wrapperRaw);
     }
 }
 
 bool GlobalComWrappers::TryGetOrCreateObjectForComInstance(
     _In_ IUnknown* externalComObject,
-    _In_ INT32 flags,
+    _In_ INT32 objFromComIPFlags,
     _Out_ OBJECTREF* objRef)
 {
     if (!g_IsGlobalComWrappersRegistered)
@@ -1323,6 +1320,10 @@ bool GlobalComWrappers::TryGetOrCreateObjectForComInstance(
     // are being manipulated.
     {
         GCX_COOP();
+
+        int flags = CreateObjectFlags::CreateObjectFlags_TrackerObject;
+        if ((objFromComIPFlags & ObjFromComIP::UNIQUE_OBJECT) != 0)
+            flags |= CreateObjectFlags::CreateObjectFlags_UniqueInstance;
 
         // For implicit usage of ComWrappers (i.e. automatically called by the runtime when there is a global instance),
         // unwrap CCWs to allow for round-tripping object -> COM instance -> object.

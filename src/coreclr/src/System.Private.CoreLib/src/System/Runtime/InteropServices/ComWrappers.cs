@@ -292,6 +292,7 @@ namespace System.Runtime.InteropServices
         }
 
         [DllImport(RuntimeHelpers.QCall)]
+        [SuppressGCTransition]
         private static extern void SetGlobalInstanceRegistered();
 
         /// <summary>

@@ -49,12 +49,11 @@ public:
 public: // Functions operating on a registered global instance
     static bool TryGetOrCreateComInterfaceForObject(
         _In_ OBJECTREF instance,
-        _In_ INT32 flags,
         _Outptr_ void** wrapperRaw);
 
     static bool TryGetOrCreateObjectForComInstance(
         _In_ IUnknown* externalComObject,
-        _In_ INT32 flags,
+        _In_ INT32 objFromComIPFlags,
         _Out_ OBJECTREF* objRef);
 };
 

@@ -17,7 +17,6 @@
 #include "runtimecallablewrapper.h"
 #include "cominterfacemarshaler.h"
 #include "binder.h"
-#include <interoplibimports.h> // CreateComInterfaceFlags, CreateObjectFlags
 #include <interoplibinterface.h>
 #include "winrttypenameconverter.h"
 #include "typestring.h"
@@ -29,8 +28,7 @@ namespace
         _Outptr_ IUnknown** wrapperRaw)
     {
 #ifdef FEATURE_COMWRAPPERS
-        InteropLib::Com::CreateComInterfaceFlags flags = InteropLib::Com::CreateComInterfaceFlags::CreateComInterfaceFlags_TrackerSupport;
-        return GlobalComWrappers::TryGetOrCreateComInterfaceForObject(instance, flags, (void**)wrapperRaw);
+        return GlobalComWrappers::TryGetOrCreateComInterfaceForObject(instance, (void**)wrapperRaw);
 #else
         return false;
 #endif // FEATURE_COMWRAPPERS
@@ -42,11 +40,7 @@ namespace
         _Out_ OBJECTREF *pObjOut)
     {
 #ifdef FEATURE_COMWRAPPERS
-        int flags = InteropLib::Com::CreateObjectFlags::CreateObjectFlags_TrackerObject;
-        if ((dwFlags & ObjFromComIP::UNIQUE_OBJECT) != 0)
-            flags |= InteropLib::Com::CreateObjectFlags::CreateObjectFlags_UniqueInstance;
-
-        return GlobalComWrappers::TryGetOrCreateObjectForComInstance(pUnknown, flags, pObjOut);
+        return GlobalComWrappers::TryGetOrCreateObjectForComInstance(pUnknown, dwFlags, pObjOut);
 #else
         return false;
 #endif // FEATURE_COMWRAPPERS
