@@ -18,9 +18,6 @@ typedef void (*MonoPrintCallback) (const char *string, mono_bool is_stdout);
 typedef void (*MonoLogCallback) (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
 
 MONO_API void
-mono_trace_init (void);
-
-MONO_API void
 mono_trace_set_log_handler (MonoLogCallback callback, void *user_data);
 
 MONO_API void
