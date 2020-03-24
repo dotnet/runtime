@@ -71,6 +71,7 @@
 #include "aot-runtime.h"
 #include "jit-icalls.h"
 #include "mini-runtime.h"
+#include "mono-private-unstable.h"
 #include "llvmonly-runtime.h"
 
 #ifndef DISABLE_AOT

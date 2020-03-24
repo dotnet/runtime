@@ -6,6 +6,7 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/exception.h>
 #include <mono/jit/jit.h>
+#include <mono/jit/mono-private-unstable.h>
 
 #import <os/log.h>
 #include <sys/stat.h>
