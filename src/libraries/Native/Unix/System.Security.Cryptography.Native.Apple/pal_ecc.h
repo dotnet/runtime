@@ -9,6 +9,7 @@
 
 #include <Security/Security.h>
 
+#ifndef TARGET_IOS
 /*
 Generate an ECC keypair of the specified size.
 
@@ -19,6 +20,7 @@ PALEXPORT int32_t AppleCryptoNative_EccGenerateKey(int32_t keySizeBits,
                                                    SecKeyRef* pPublicKey,
                                                    SecKeyRef* pPrivateKey,
                                                    int32_t* pOSStatus);
+#endif
 
 /*
 Get the keysize, in bits, of an ECC key.

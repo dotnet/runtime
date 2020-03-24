@@ -53,6 +53,8 @@ jobs:
       value: ${{ parameters.osSubgroup }}
     - name: officialBuildIdArg
       value: ''
+    - name: osOverride
+      value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '/p:officialBuildId=$(Build.BuildNumber)'

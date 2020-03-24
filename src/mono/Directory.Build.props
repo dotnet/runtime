@@ -34,19 +34,20 @@
   <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
     <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <TargetsLinux Condition="'$(TargetOS)' == 'Linux'">true</TargetsLinux>
+    <TargetsLinux Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Android'">true</TargetsLinux>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
     <TargetsiOS Condition="'$(TargetOS)' == 'iOS'">true</TargetsiOS>
     <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetsiOSSimulator>
+    <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
     <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true'">true</TargetsUnix>
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 
   <PropertyGroup>
     <!-- Minimum target OS version, keep in sync with src/libraries/Native/build-native.sh -->
-    <iOSVersionMin Condition="'$(TargetOS)' == 'iOS' and '$(TargetsiOSSimulator)' != 'true'">7.0</iOSVersionMin>
-    <iOSVersionMin Condition="'$(TargetOS)' == 'iOS' and '$(TargetsiOSSimulator)' == 'true'">8.0</iOSVersionMin>
+    <iOSVersionMin Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">7.0</iOSVersionMin>
+    <iOSVersionMin Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">8.0</iOSVersionMin>
     <tvOSVersionMin>9.0</tvOSVersionMin>
     <watchOSVersionMin>2.0</watchOSVersionMin>
     <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
@@ -58,6 +59,9 @@
     <watchOSVersion></watchOSVersion>
     <watchOS64_32Version></watchOS64_32Version>
     <macOSVersion></macOSVersion>
+
+    <!-- Version of the Android SDK we target, keep in sync with src/libraries/Native/build-native.sh -->
+    <AndroidApiVersion>21</AndroidApiVersion>
   </PropertyGroup>
 
   <!-- Set the kind of PDB to Portable -->

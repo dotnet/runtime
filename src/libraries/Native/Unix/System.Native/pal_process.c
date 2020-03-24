@@ -230,7 +230,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     sigset_t signal_set;
     sigset_t old_signal_set;
 
-#ifndef HAVE_PTHREAD_SETCANCELSTATE
+#if HAVE_PTHREAD_SETCANCELSTATE
     int thread_cancel_state;
 
     // None of this code can be canceled without leaking handles, so just don't allow it
@@ -382,7 +382,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             }
             if (!sigaction(sig, NULL, &sa_old))
             {
-                void (*oldhandler)(int) = (sa_old.sa_flags & SA_SIGINFO) ? (void (*)(int))sa_old.sa_sigaction : sa_old.sa_handler;
+                void (*oldhandler)(int) = (((unsigned int)sa_old.sa_flags) & SA_SIGINFO) ? (void (*)(int))sa_old.sa_sigaction : sa_old.sa_handler;
                 if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
                 {
                     // It has a custom handler, put the default handler back.
@@ -501,7 +501,7 @@ done:;
         errno = priorErrno;
     }
 
-#ifndef HAVE_PTHREAD_SETCANCELSTATE
+#if HAVE_PTHREAD_SETCANCELSTATE
     // Restore thread cancel state
     pthread_setcancelstate(thread_cancel_state, &thread_cancel_state);
 #endif

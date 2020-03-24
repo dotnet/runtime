@@ -65,7 +65,7 @@ namespace System.Net
             }
         }
 
-        internal string Spn
+        internal string? Spn
         {
             get
             {

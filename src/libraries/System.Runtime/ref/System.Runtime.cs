@@ -8573,7 +8573,7 @@ namespace System.Runtime
     public static partial class ProfileOptimization
     {
         public static void SetProfileRoot(string directoryPath) { }
-        public static void StartProfile(string profile) { }
+        public static void StartProfile(string? profile) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class TargetedPatchingOptOutAttribute : System.Attribute

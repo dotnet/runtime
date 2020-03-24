@@ -30,5 +30,35 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             s_utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset));
             _offset += length;
         }
+
+        public void WriteStartByteStringIndefiniteLength()
+        {
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborMajorType.ByteString, CborAdditionalInfo.IndefiniteLength));
+            DecrementRemainingItemCount();
+            PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
+        }
+
+        public void WriteEndByteStringIndefiniteLength()
+        {
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborInitialByte.IndefiniteLengthBreakByte));
+            PopDataItem(CborMajorType.ByteString);
+        }
+
+        public void WriteStartTextStringIndefiniteLength()
+        {
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborMajorType.TextString, CborAdditionalInfo.IndefiniteLength));
+            DecrementRemainingItemCount();
+            PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
+        }
+
+        public void WriteEndTextStringIndefiniteLength()
+        {
+            EnsureWriteCapacity(1);
+            WriteInitialByte(new CborInitialByte(CborInitialByte.IndefiniteLengthBreakByte));
+            PopDataItem(CborMajorType.TextString);
+        }
     }
 }

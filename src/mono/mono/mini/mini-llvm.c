@@ -298,6 +298,8 @@ static void llvm_jit_finalize_method (EmitContext *ctx);
 static void mono_llvm_nonnull_state_update (EmitContext *ctx, LLVMValueRef lcall, MonoMethod *call_method, LLVMValueRef *args, int num_params);
 static void mono_llvm_propagate_nonnull_final (GHashTable *all_specializable, MonoLLVMModule *module);
 static void create_aot_info_var (MonoLLVMModule *module);
+static void set_invariant_load_flag (LLVMValueRef v);
+static void set_nonnull_load_flag (LLVMValueRef v);
 
 static inline void
 set_failure (EmitContext *ctx, const char *message)
@@ -1714,6 +1716,7 @@ static char*
 get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 {
 	char *name;
+	int len;
 
 	switch (type) {
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
@@ -1721,11 +1724,24 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 		break;
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *entry = (MonoJumpInfoRgctxEntry*)data;
-		name = g_strdup_printf ("RGCTX_SLOT_INDEX_%s", mono_rgctx_info_type_to_str (entry->info_type));
+		name = g_strdup_printf ("rgctx_slot_index_%s", mono_rgctx_info_type_to_str (entry->info_type));
 		break;
 	}
+	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
+	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
+	case MONO_PATCH_INFO_GC_NURSERY_START:
+	case MONO_PATCH_INFO_GC_NURSERY_BITS:
+	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
+		name = g_strdup_printf ("%s", mono_ji_type_to_string (type));
+		len = strlen (name);
+		for (int i = 0; i < len; ++i)
+			name [i] = tolower (name [i]);
+		break;
 	default:
 		name = g_strdup_printf ("%s_%d", mono_ji_type_to_string (type), got_offset);
+		len = strlen (name);
+		for (int i = 0; i < len; ++i)
+			name [i] = tolower (name [i]);
 		break;
 	}
 
@@ -1753,7 +1769,8 @@ compute_aot_got_offset (MonoLLVMModule *module, MonoJumpInfo *ji, LLVMTypeRef ll
 
 /* Allocate a GOT slot for TYPE/DATA, and emit IR to load it */
 static LLVMValueRef
-get_aotconst_typed_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInfoType type, gconstpointer data, LLVMTypeRef llvm_type)
+get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInfoType type, gconstpointer data, LLVMTypeRef llvm_type,
+					 guint32 *out_got_offset, MonoJumpInfo **out_ji)
 {
 	guint32 got_offset;
 	LLVMValueRef indexes [2];
@@ -1766,35 +1783,40 @@ get_aotconst_typed_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJ
 
 	MonoJumpInfo *ji = mono_aot_patch_info_dup (&tmp_ji);
 
+	if (out_ji)
+		*out_ji = ji;
+
 	got_offset = compute_aot_got_offset (module, ji, llvm_type);
 	module->max_got_offset = MAX (module->max_got_offset, got_offset);
+
+	if (out_got_offset)
+		*out_got_offset = got_offset;
 
 	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
 	got_entry_addr = LLVMBuildGEP (builder, module->got_var, indexes, 2, "");
 
 	name = get_aotconst_name (type, data, got_offset);
-	if (llvm_type) {
-		load = LLVMBuildLoad (builder, got_entry_addr, "");
-		load = LLVMBuildBitCast (builder, load, llvm_type, name);
-	} else {
-		load = LLVMBuildLoad (builder, got_entry_addr, name ? name : "");
-	}
+	load = LLVMBuildLoad (builder, got_entry_addr, "");
+
+	if (mono_aot_is_shared_got_offset (got_offset))
+		set_invariant_load_flag (load);
+	if (type == MONO_PATCH_INFO_LDSTR)
+		set_nonnull_load_flag (load);
+
+	load = LLVMBuildBitCast (builder, load, llvm_type, name);
 	g_free (name);
-	//set_invariant_load_flag (load);
 
 	return load;
 }
 
 static LLVMValueRef
-get_aotconst_typed (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data, LLVMTypeRef llvm_type)
+get_aotconst (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data, LLVMTypeRef llvm_type)
 {
 	MonoCompile *cfg;
 	guint32 got_offset;
-	LLVMValueRef indexes [2];
-	LLVMValueRef got_entry_addr, load;
-	LLVMBuilderRef builder = ctx->builder;
-	char *name = NULL;
+	MonoJumpInfo *ji;
+	LLVMValueRef load;
 
 	cfg = ctx->cfg;
 
@@ -1802,13 +1824,11 @@ get_aotconst_typed (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data,
 	tmp_ji.type = type;
 	tmp_ji.data.target = data;
 
-	MonoJumpInfo *ji = mono_aot_patch_info_dup (&tmp_ji);
+	load = get_aotconst_module (ctx->module, ctx->builder, type, data, llvm_type, &got_offset, &ji);
 
 	ji->next = cfg->patch_info;
 	cfg->patch_info = ji;
 
-	got_offset = compute_aot_got_offset (ctx->module, cfg->patch_info, llvm_type);
-	ctx->module->max_got_offset = MAX (ctx->module->max_got_offset, got_offset);
 	/* 
 	 * If the got slot is shared, it means its initialized when the aot image is loaded, so we don't need to
 	 * explicitly initialize it.
@@ -1819,28 +1839,23 @@ get_aotconst_typed (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data,
 		ctx->cfg->got_access_count ++;
 	}
 
-	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-	indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
-	got_entry_addr = LLVMBuildGEP (builder, ctx->module->got_var, indexes, 2, "");
-
-	name = get_aotconst_name (type, data, got_offset);
-	if (llvm_type) {
-		load = LLVMBuildLoad (builder, got_entry_addr, "");
-		load = convert (ctx, load, llvm_type);
-		LLVMSetValueName (load, name ? name : "");
-	} else {
-		load = LLVMBuildLoad (builder, got_entry_addr, name ? name : "");
-	}
-	g_free (name);
-	//set_invariant_load_flag (load);
-
 	return load;
 }
 
 static LLVMValueRef
-get_aotconst (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data)
+get_dummy_aotconst (EmitContext *ctx, LLVMTypeRef llvm_type)
 {
-	return get_aotconst_typed (ctx, type, data, NULL);
+	LLVMValueRef indexes [2];
+	LLVMValueRef got_entry_addr, load;
+
+	LLVMBuilderRef builder = ctx->builder;
+	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+	indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+	got_entry_addr = LLVMBuildGEP (builder, ctx->module->got_var, indexes, 2, "");
+
+	load = LLVMBuildLoad (builder, got_entry_addr, "");
+	load = convert (ctx, load, llvm_type);
+	return load;
 }
 
 typedef struct {
@@ -1942,16 +1957,7 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 			 * a reference to the llvm method for the callee, or from a load from the
 			 * GOT.
 			 */
-			LLVMValueRef indexes [2];
-			LLVMValueRef got_entry_addr, load;
-
-			LLVMBuilderRef builder = ctx->builder;
-			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			got_entry_addr = LLVMBuildGEP (builder, ctx->module->got_var, indexes, 2, "");
-
-			load = LLVMBuildLoad (builder, got_entry_addr, "");
-			load = convert (ctx, load, llvm_type);
+			LLVMValueRef load = get_dummy_aotconst (ctx, llvm_type);
 			info->load = load;
 
 			g_ptr_array_add (ctx->callsite_list, info);
@@ -1963,7 +1969,7 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	/*
 	 * All other calls are made through the GOT.
 	 */
-	callee = get_aotconst_typed (ctx, type, data, LLVMPointerType (llvm_sig, 0));
+	callee = get_aotconst (ctx, type, data, LLVMPointerType (llvm_sig, 0));
 
 	return callee;
 }
@@ -2938,45 +2944,45 @@ emit_llvm_code_start (MonoLLVMModule *module)
 	LLVMDisposeBuilder (builder);
 }
 
+/*
+ * emit_init_icall_wrapper:
+ *
+ *   Emit wrappers around the mini_llvm_init_method () JIT icall.
+ * The wrappers handle adding the 'amodule' argument, loading the vtable from different locations, and they have
+ * a cold calling convention.
+ */
 static LLVMValueRef
 emit_init_icall_wrapper (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 {
 	LLVMModuleRef lmodule = module->lmodule;
-	LLVMValueRef func, indexes [2], got_entry_addr, args [16], callee, inited_var, cmp;
+	LLVMValueRef func, indexes [2], args [16], callee, inited_var, cmp;
 	LLVMBasicBlockRef entry_bb, inited_bb, notinited_bb;
 	LLVMBuilderRef builder;
-	LLVMTypeRef sig;
-	MonoJumpInfo *ji;
-	int got_offset;
+	LLVMTypeRef icall_sig;
 	const char *wrapper_name = mono_marshal_get_aot_init_wrapper_name (subtype);
+	LLVMTypeRef func_type = NULL;
+
 	char *name = g_strdup_printf ("%s_%s", module->global_prefix, wrapper_name);
-	MonoJitICallId icall_id = MONO_JIT_ICALL_ZeroIsReserved;
 
 	switch (subtype) {
 	case AOT_INIT_METHOD:
-		icall_id = MONO_JIT_ICALL_mini_llvm_init_method;
-		func = LLVMAddFunction (lmodule, name, LLVMFunctionType1 (LLVMVoidType (), LLVMInt32Type (), FALSE));
-		sig = LLVMFunctionType3 (LLVMVoidType (), IntPtrType (), IntPtrType (), LLVMInt32Type (), FALSE);
+		func_type = LLVMFunctionType1 (LLVMVoidType (), LLVMInt32Type (), FALSE);
 		break;
 	case AOT_INIT_METHOD_GSHARED_MRGCTX:
-		icall_id = MONO_JIT_ICALL_mini_llvm_init_gshared_method_mrgctx; // Deliberate fall-through
+		func_type = LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), IntPtrType (), FALSE);
+		break;
 	case AOT_INIT_METHOD_GSHARED_VTABLE:
-		/* mrgctx/vtable */
-		if (!icall_id)
-			icall_id = MONO_JIT_ICALL_mini_llvm_init_gshared_method_vtable;
-		func = LLVMAddFunction (lmodule, name, LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), IntPtrType (), FALSE));
-		sig = LLVMFunctionType4 (LLVMVoidType (), IntPtrType (), IntPtrType (), LLVMInt32Type (), IntPtrType (), FALSE);
+		func_type = LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), IntPtrType (), FALSE);
 		break;
 	case AOT_INIT_METHOD_GSHARED_THIS:
-		icall_id = MONO_JIT_ICALL_mini_llvm_init_gshared_method_this;
-		func = LLVMAddFunction (lmodule, name, LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), ObjRefType (), FALSE));
-		sig = LLVMFunctionType4 (LLVMVoidType (), IntPtrType (), IntPtrType (), LLVMInt32Type (), ObjRefType (), FALSE);
+		func_type = LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), ObjRefType (), FALSE);
 		break;
 	default:
 		g_assert_not_reached ();
 	}
 
-	g_assert (icall_id);
+	func = LLVMAddFunction (lmodule, name, func_type);
+
 	LLVMSetLinkage (func, LLVMInternalLinkage);
 
 	mono_llvm_add_func_attr (func, LLVM_ATTR_NO_INLINE);
@@ -3002,33 +3008,39 @@ emit_init_icall_wrapper (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 
 	LLVMPositionBuilderAtEnd (builder, notinited_bb);
 
-	/* get_aotconst */
-	ji = g_new0 (MonoJumpInfo, 1);
-	ji->type = MONO_PATCH_INFO_AOT_MODULE;
-	ji = mono_aot_patch_info_dup (ji);
-	got_offset = compute_aot_got_offset (module, ji, IntPtrType ());
-	module->max_got_offset = MAX (module->max_got_offset, got_offset);
-	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-	indexes [1] = LLVMConstInt (LLVMInt32Type (), got_offset, FALSE);
-	got_entry_addr = LLVMBuildGEP (builder, module->got_var, indexes, 2, "");
-	args [0] = LLVMBuildPtrToInt (builder, module->info_var, IntPtrType (), "");
-	args [1] = LLVMBuildPtrToInt (builder, LLVMBuildLoad (builder, got_entry_addr, ""), IntPtrType (), "");
-	args [2] = LLVMGetParam (func, 0);
-	if (subtype)
-		args [3] = LLVMGetParam (func, 1);
+	LLVMValueRef amodule_var = get_aotconst_module (module, builder, MONO_PATCH_INFO_AOT_MODULE, NULL, LLVMPointerType (IntPtrType (), 0), NULL, NULL);
 
-	ji = g_new0 (MonoJumpInfo, 1);
-	ji->type = MONO_PATCH_INFO_JIT_ICALL_ID;
-	ji->data.jit_icall_id = icall_id;
-	ji = mono_aot_patch_info_dup (ji);
-	got_offset = compute_aot_got_offset (module, ji, sig);
-	module->max_got_offset = MAX (module->max_got_offset, got_offset);
-	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-	indexes [1] = LLVMConstInt (LLVMInt32Type (), got_offset, FALSE);
-	got_entry_addr = LLVMBuildGEP (builder, module->got_var, indexes, 2, "");
-	callee = LLVMBuildLoad (builder, got_entry_addr, "");
-	callee = LLVMBuildBitCast (builder, callee, LLVMPointerType (sig, 0), "");
-	LLVMBuildCall (builder, callee, args, LLVMCountParamTypes (sig), "");
+	args [0] = LLVMBuildPtrToInt (builder, module->info_var, IntPtrType (), "");
+	args [1] = LLVMBuildPtrToInt (builder, amodule_var, IntPtrType (), "");
+	args [2] = LLVMGetParam (func, 0);
+
+	switch (subtype) {
+	case AOT_INIT_METHOD:
+		args [3] = LLVMConstNull (IntPtrType ());
+		break;
+	case AOT_INIT_METHOD_GSHARED_VTABLE:
+		args [3] = LLVMGetParam (func, 1);
+		break;
+	case AOT_INIT_METHOD_GSHARED_THIS:
+		/* Load this->vtable */
+		args [3] = LLVMBuildBitCast (builder, LLVMGetParam (func, 1), LLVMPointerType (IntPtrType (), 0), "");
+		indexes [0] = const_int32 (MONO_STRUCT_OFFSET (MonoObject, vtable) / SIZEOF_VOID_P);
+		args [3] = LLVMBuildLoad (builder, LLVMBuildGEP (builder, args [3], indexes, 1, ""), "vtable");
+		break;
+	case AOT_INIT_METHOD_GSHARED_MRGCTX:
+		/* Load mrgctx->vtable */
+		args [3] = LLVMBuildIntToPtr (builder, LLVMGetParam (func, 1), LLVMPointerType (IntPtrType (), 0), "");
+		indexes [0] = const_int32 (MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, class_vtable) / SIZEOF_VOID_P);
+		args [3] = LLVMBuildLoad (builder, LLVMBuildGEP (builder, args [3], indexes, 1, ""), "vtable");
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+
+	icall_sig = LLVMFunctionType4 (LLVMVoidType (), IntPtrType (), IntPtrType (), LLVMInt32Type (), IntPtrType (), FALSE);
+	callee = get_aotconst_module (module, builder, MONO_PATCH_INFO_JIT_ICALL_ID, GINT_TO_POINTER (MONO_JIT_ICALL_mini_llvm_init_method), LLVMPointerType (icall_sig, 0), NULL, NULL);
+	LLVMBuildCall (builder, callee, args, LLVMCountParamTypes (icall_sig), "");
 
 	// Set the inited flag
 	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
@@ -3042,6 +3054,8 @@ emit_init_icall_wrapper (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 
 	LLVMVerifyFunction(func, LLVMAbortProcessAction);
 	LLVMDisposeBuilder (builder);
+	g_free (name);
+
 	return func;
 }
 
@@ -3068,7 +3082,7 @@ emit_icall_cold_wrapper (MonoLLVMModule *module, LLVMModuleRef lmodule, MonoJitI
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
 
 	if (aot) {
-		callee = get_aotconst_typed_module (module, builder, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id), LLVMPointerType (sig, 0));
+		callee = get_aotconst_module (module, builder, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (icall_id), LLVMPointerType (sig, 0), NULL, NULL);
 	} else {
 		MonoJitICallInfo * const info = mono_find_jit_icall_info (icall_id);
 		gpointer target = (gpointer)mono_icall_get_wrapper_full (info, TRUE);
@@ -3147,7 +3161,7 @@ emit_gc_safepoint_poll (MonoLLVMModule *module, LLVMModuleRef lmodule, MonoCompi
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
 	LLVMValueRef poll_val_ptr;
 	if (is_aot) {
-		poll_val_ptr = get_aotconst_typed_module (module, builder, MONO_PATCH_INFO_GC_SAFE_POINT_FLAG, NULL, ptr_type);
+		poll_val_ptr = get_aotconst_module (module, builder, MONO_PATCH_INFO_GC_SAFE_POINT_FLAG, NULL, ptr_type, NULL, NULL);
 	} else {
 		LLVMValueRef poll_val_int = LLVMConstInt (IntPtrType (), (guint64) &mono_polling_required, FALSE);
 		poll_val_ptr = LLVMBuildIntToPtr (builder, poll_val_int, ptr_type, "");
@@ -4047,7 +4061,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		l = l->next;
 	}
 
-
 	if (call->cinfo->dummy_arg) {
 		g_assert (call->cinfo->dummy_arg_pindex < nargs);
 		args [call->cinfo->dummy_arg_pindex] = LLVMConstNull (ctx->module->ptr_type);
@@ -4306,7 +4319,7 @@ mono_llvm_emit_match_exception_call (EmitContext *ctx, LLVMBuilderRef builder, g
 	LLVMValueRef args[5];
 	const int num_args = G_N_ELEMENTS (args);
 
-	args [0] = convert (ctx, get_aotconst (ctx, MONO_PATCH_INFO_AOT_JIT_INFO, GINT_TO_POINTER (ctx->cfg->method_index)), IntPtrType ());
+	args [0] = convert (ctx, get_aotconst (ctx, MONO_PATCH_INFO_AOT_JIT_INFO, GINT_TO_POINTER (ctx->cfg->method_index), LLVMPointerType (IntPtrType (), 0)), IntPtrType ());
 	args [1] = LLVMConstInt (LLVMInt32Type (), region_start, 0);
 	args [2] = LLVMConstInt (LLVMInt32Type (), region_end, 0);
 	if (ctx->cfg->rgctx_var) {
@@ -5922,25 +5935,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_AOTCONST: {
-			guint32 got_offset;
-			LLVMValueRef indexes [2];
-			MonoJumpInfo *tmp_ji, *ji;
-			LLVMValueRef got_entry_addr;
-			char *name;
+			MonoJumpInfoType ji_type = ins->inst_c1;
+			gpointer ji_data = ins->inst_p0;
 
-			/* 
-			 * FIXME: Can't allocate from the cfg mempool since that is freed if
-			 * the LLVM compile fails.
-			 */
-			tmp_ji = g_new0 (MonoJumpInfo, 1);
-			tmp_ji->type = (MonoJumpInfoType)ins->inst_c1;
-			tmp_ji->data.target = ins->inst_p0;
-
-			ji = mono_aot_patch_info_dup (tmp_ji);
-			g_free (tmp_ji);
-
-			if (ji->type == MONO_PATCH_INFO_ICALL_ADDR) {
-				char *symbol = mono_aot_get_direct_call_symbol (MONO_PATCH_INFO_ICALL_ADDR_CALL, ji->data.target);
+			if (ji_type == MONO_PATCH_INFO_ICALL_ADDR) {
+				char *symbol = mono_aot_get_direct_call_symbol (MONO_PATCH_INFO_ICALL_ADDR_CALL, ji_data);
 				if (symbol) {
 					/*
 					 * Avoid emitting a got entry for these since the method is directly called, and it might not be
@@ -5952,34 +5951,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				}
 			}
 
-			ji->next = cfg->patch_info;
-			cfg->patch_info = ji;
-				   
-			//mono_add_patch_info (cfg, 0, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
-			got_offset = compute_aot_got_offset (ctx->module, cfg->patch_info, NULL);
-
-			ctx->module->max_got_offset = MAX (ctx->module->max_got_offset, got_offset);
-			if (!mono_aot_is_shared_got_offset (got_offset)) {
-				//mono_print_ji (ji);
-				//printf ("\n");
-				ctx->cfg->got_access_count ++;
-			}
- 
-			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
-			got_entry_addr = LLVMBuildGEP (builder, ctx->module->got_var, indexes, 2, "");
-
-			name = get_aotconst_name (ji->type, ji->data.target, got_offset);
-			values [ins->dreg] = LLVMBuildLoad (builder, got_entry_addr, name);
-			g_free (name);
-			/* Can't use this in llvmonly mode since the got slots are initialized by the methods themselves */
-			if (!cfg->llvm_only || mono_aot_is_shared_got_offset (got_offset)) {
-				/* Can't use this in llvmonly mode since the got slots are initialized by the methods themselves */
-				set_invariant_load_flag (values [ins->dreg]);
-			}
-
-			if (ji->type == MONO_PATCH_INFO_LDSTR)
-				set_nonnull_load_flag (values [ins->dreg]);
+			values [ins->dreg] = get_aotconst (ctx, ji_type, ji_data, LLVMPointerType (IntPtrType (), 0));
 			break;
 		}
 		case OP_MEMMOVE: {
