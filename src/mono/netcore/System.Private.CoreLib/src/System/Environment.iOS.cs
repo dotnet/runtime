@@ -23,7 +23,7 @@ namespace System
         // Various user-visible documentation, support, and configuration files
         private static string NSLibraryDirectory => s_library ??= Interop.Sys.SearchPath(NSLibraryDirectoryId);
 
-        private static string GetFolderPathIos(SpecialFolder folder)
+        private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
             switch (folder)
             {
