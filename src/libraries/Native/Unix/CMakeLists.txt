@@ -195,15 +195,19 @@ endif()
 
 add_subdirectory(System.Native)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable for iOS
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    add_subdirectory(System.Net.Security.Native)
+
+if (NOT CLR_CMAKE_TARGET_IOS)
+    # TODO: reenable for iOS
     add_subdirectory(System.Globalization.Native)
 
     # disable System.Security.Cryptography.Native build on iOS,
     # only used for interacting with OpenSSL which isn't useful there
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
+endif()
 
 if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
-    add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()
