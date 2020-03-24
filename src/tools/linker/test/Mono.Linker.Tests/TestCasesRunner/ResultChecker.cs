@@ -660,8 +660,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		void VerifyRecordedReflectionPatterns (AssemblyDefinition original, TestReflectionPatternRecorder reflectionPatternRecorder)
 		{
 			foreach (var expectedSourceMethodDefinition in original.MainModule.AllDefinedTypes ().SelectMany (t => t.AllMethods ())) {
+				bool foundAttributesToVerify = false;
 				foreach (var attr in expectedSourceMethodDefinition.CustomAttributes) {
 					if (attr.AttributeType.Resolve ().Name == nameof (RecognizedReflectionAccessPatternAttribute)) {
+						foundAttributesToVerify = true;
+
+						// Special case for default .ctor - just trigger the overall verification on the method
+						// but don't verify any specific pattern.
+						if (attr.ConstructorArguments.Count == 0)
+							continue;
+
 						string expectedSourceMethod = GetFullMemberNameFromDefinition (expectedSourceMethodDefinition);
 						string expectedReflectionMethod = GetFullMemberNameFromReflectionAccessPatternAttribute (attr, constructorArgumentsOffset: 0);
 						string expectedAccessedItem = GetFullMemberNameFromReflectionAccessPatternAttribute (attr, constructorArgumentsOffset: 3);
@@ -693,6 +701,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 								$"If there's no matches, try to specify just a part of the source method or reflection method name and rerun the test to get potential matches.");
 						}
 					} else if (attr.AttributeType.Resolve ().Name == nameof (UnrecognizedReflectionAccessPatternAttribute)) {
+						foundAttributesToVerify = true;
 						string expectedSourceMethod = GetFullMemberNameFromDefinition (expectedSourceMethodDefinition);
 						string expectedReflectionMethod = GetFullMemberNameFromReflectionAccessPatternAttribute (attr, constructorArgumentsOffset: 0);
 						string expectedMessage = (string)attr.ConstructorArguments [3].Value;
@@ -723,6 +732,27 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 								$"Potential patterns matching the reflection method: {Environment.NewLine}{reflectionMethodCandidates}{Environment.NewLine}" +
 								$"If there's no matches, try to specify just a part of the source method or reflection method name and rerun the test to get potential matches.");
 						}
+					}
+				}
+
+				if (foundAttributesToVerify) {
+					// Validate that there are no other reported unrecognized patterns on the method
+					string expectedSourceMethod = GetFullMemberNameFromDefinition (expectedSourceMethodDefinition);
+					var unrecognizedPatternsForSourceMethod = reflectionPatternRecorder.UnrecognizedPatterns.Where (pattern => {
+						if (GetFullMemberNameFromDefinition (pattern.SourceMethod) != expectedSourceMethod)
+							return false;
+
+						return true;
+					});
+
+					if (unrecognizedPatternsForSourceMethod.Any ()) {
+						string unrecognizedPatterns = string.Join (Environment.NewLine, unrecognizedPatternsForSourceMethod
+							.Select (p => "\t" + UnrecognizedReflectionAccessPatternToString (p)));
+
+						Assert.Fail (
+							$"Method {expectedSourceMethod} has either {nameof (RecognizedReflectionAccessPatternAttribute)} or {nameof (UnrecognizedReflectionAccessPatternAttribute)} attributes.{Environment.NewLine}" +
+							$"Some reported unrecognized patterns are not expected by the test (there's no matching attribute for them):{Environment.NewLine}" +
+							$"{unrecognizedPatterns}");
 					}
 				}
 			}
