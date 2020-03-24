@@ -210,7 +210,8 @@ namespace System.Buffers.Tests
         {
             var output = new ArrayBufferWriter<T>(int.MaxValue / 2 + 1);
             output.Advance(int.MaxValue / 2 + 1);
-            output.GetMemory(1);//Validate when can't double the buffer size, but can grow by sizeHint
+            Memory<T> memory = output.GetMemory(1); // Validate we can't double the buffer size, but can grow by sizeHint
+            Assert.Equal(1, memory.Length);
             Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
         }
 
