@@ -5,6 +5,11 @@ project(CoreFX C)
 
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
+if(CLR_CMAKE_TARGET_IOS)
+    # CMake 3.14.5 contains bug fixes for iOS
+    cmake_minimum_required(VERSION 3.14.5)
+endif()
+
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
     cmake_policy(SET CMP0083 NEW)
 endif(NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -127,7 +132,7 @@ else ()
 endif ()
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
-elseif (CLR_CMAKE_TARGET_DARWIN)
+elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -152,15 +157,15 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
 if(CLR_CMAKE_TARGET_UNIX)
-    if (CLR_CMAKE_TARGET_DARWIN)
-        add_definitions(-DTARGET_DARWIN)
-        add_link_options(-Wl,-bind_at_load)
-    elseif (CLR_CMAKE_TARGET_ARCH_WASM)
-        # No object stripping for WASM
-    else (CLR_CMAKE_TARGET_DARWIN)
-        add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-        add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
-    endif(CLR_CMAKE_TARGET_DARWIN)
+    if(NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS)
+        if(CLR_CMAKE_TARGET_OSX)
+            add_definitions(-DTARGET_OSX)
+            add_link_options(-Wl,-bind_at_load)
+        else()
+            add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+            add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
+        endif()
+    endif()
 
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
@@ -199,6 +204,6 @@ if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenab
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
 
-if(CLR_CMAKE_TARGET_DARWIN)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()
