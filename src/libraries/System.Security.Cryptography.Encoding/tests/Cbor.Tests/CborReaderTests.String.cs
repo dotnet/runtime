@@ -133,6 +133,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
+        [Fact]
+        public static void ReadByteString_IndefiniteLengthConcatenated_NestedValues_HappyPath()
+        {
+            string hexEncoding = "825f41ab40ff5f41ab40ff";
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            reader.ReadStartArray();
+            Assert.Equal("AB", reader.ReadByteString().ByteArrayToHex());
+            Assert.Equal("AB", reader.ReadByteString().ByteArrayToHex());
+            reader.ReadEndArray();
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
         [Theory]
         [InlineData(new string[] { }, "7fff")]
         [InlineData(new string[] { "" }, "7f60ff")]
@@ -157,6 +170,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(CborReaderState.StartTextString, reader.Peek());
             string actualValue = reader.ReadTextString();
             Assert.Equal(expectedValue, actualValue);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Fact]
+        public static void ReadTextString_IndefiniteLengthConcatenated_NestedValues_HappyPath()
+        {
+            string hexEncoding = "827f62616260ff7f62616260ff";
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            reader.ReadStartArray();
+            Assert.Equal("ab", reader.ReadTextString());
+            Assert.Equal("ab", reader.ReadTextString());
+            reader.ReadEndArray();
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 

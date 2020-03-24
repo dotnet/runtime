@@ -253,6 +253,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new FormatException("Unexpected end of buffer.");
             }
         }
+
         private static void EnsureBuffer(ReadOnlySpan<byte> buffer, int requiredLength)
         {
             if (buffer.Length < requiredLength)

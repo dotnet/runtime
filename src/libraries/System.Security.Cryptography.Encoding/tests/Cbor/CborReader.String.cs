@@ -7,6 +7,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
@@ -170,6 +171,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             bytesWritten = concatenatedBufferSize;
             AdvanceBuffer(encodingLength);
             DecrementRemainingItemCount();
+            ReturnRangeList(ranges);
             return true;
         }
 
@@ -199,6 +201,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             charsWritten = concatenatedStringSize;
             AdvanceBuffer(encodingLength);
             DecrementRemainingItemCount();
+            ReturnRangeList(ranges);
             return true;
         }
 
@@ -219,6 +222,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Debug.Assert(target.IsEmpty);
             AdvanceBuffer(encodingLength);
             DecrementRemainingItemCount();
+            ReturnRangeList(ranges);
             return output;
         }
 
@@ -233,26 +237,32 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 concatenatedStringSize += s_utf8Encoding.GetCharCount(buffer.Slice(o, l));
             }
 
-            var output = new char[concatenatedStringSize];
-            Span<char> target = output;
+            string output = string.Create(concatenatedStringSize, (ranges, _buffer), BuildString);
 
-            foreach ((int o, int l) in ranges)
-            {
-                s_utf8Encoding.GetChars(buffer.Slice(o, l), target);
-                target = target.Slice(l);
-            }
-
-            Debug.Assert(target.IsEmpty);
             AdvanceBuffer(encodingLength);
             DecrementRemainingItemCount();
-            return new string(output);
+            ReturnRangeList(ranges);
+            return output;
+
+            static void BuildString(Span<char> target, (List<(int offset, int length)> ranges, ReadOnlyMemory<byte> source) input)
+            {
+                ReadOnlySpan<byte> source = input.source.Span;
+
+                foreach ((int o, int l) in input.ranges)
+                {
+                    s_utf8Encoding.GetChars(source.Slice(o, l), target);
+                    target = target.Slice(l);
+                }
+
+                Debug.Assert(target.IsEmpty);
+            }
         }
 
         // reads a buffer starting with an indefinite-length string,
         // performing validation and returning a list of ranges containing the individual chunk payloads
         private List<(int offset, int length)> ReadChunkedStringRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
         {
-            var ranges = new List<(int offset, int length)>();
+            var ranges = GetRangeList();
             ReadOnlySpan<byte> buffer = _buffer.Span;
             concatenatedBufferSize = 0;
 
@@ -287,6 +297,20 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 return cib;
             }
+        }
+
+        private List<(int offset, int length)>? _rangeListAllocation = null;
+        private List<(int offset, int length)> GetRangeList()
+        {
+            List<(int offset, int length)>? ranges = Interlocked.Exchange(ref _rangeListAllocation, null);
+            ranges ??= new List<(int, int)>();
+            return ranges;
+        }
+
+        private void ReturnRangeList(List<(int offset, int length)> ranges)
+        {
+            ranges.Clear();
+            _rangeListAllocation = ranges;
         }
     }
 }
