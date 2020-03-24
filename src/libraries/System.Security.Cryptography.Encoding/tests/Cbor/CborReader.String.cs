@@ -262,7 +262,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // performing validation and returning a list of ranges containing the individual chunk payloads
         private List<(int offset, int length)> ReadChunkedStringRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
         {
-            var ranges = GetRangeList();
+            var ranges = AcquireRangeList();
             ReadOnlySpan<byte> buffer = _buffer.Span;
             concatenatedBufferSize = 0;
 
@@ -300,16 +300,21 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         private List<(int offset, int length)>? _rangeListAllocation = null;
-        private List<(int offset, int length)> GetRangeList()
+        private List<(int offset, int length)> AcquireRangeList()
         {
             List<(int offset, int length)>? ranges = Interlocked.Exchange(ref _rangeListAllocation, null);
-            ranges ??= new List<(int, int)>();
-            return ranges;
+
+            if (ranges != null)
+            {
+                ranges.Clear();
+                return ranges;
+            }
+
+            return new List<(int, int)>();
         }
 
         private void ReturnRangeList(List<(int offset, int length)> ranges)
         {
-            ranges.Clear();
             _rangeListAllocation = ranges;
         }
     }
