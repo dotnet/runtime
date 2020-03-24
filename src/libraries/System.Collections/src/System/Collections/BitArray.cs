@@ -140,12 +140,14 @@ namespace System.Collections
 
             if (Avx2.IsSupported)
             {
+                // JIT does not support code hoisting for SIMD yet
+                Vector256<byte> zero = Vector256<byte>.Zero;
                 fixed (bool* ptr = values)
                 {
                     for (; (i + Vector256<byte>.Count) <= values.Length; i += (uint)Vector256<byte>.Count)
                     {
                         Vector256<byte> vector = Avx.LoadVector256((byte*)ptr + i);
-                        Vector256<byte> isFalse = Avx2.CompareEqual(vector, Vector256<byte>.Zero);
+                        Vector256<byte> isFalse = Avx2.CompareEqual(vector, zero);
                         int result = Avx2.MoveMask(isFalse);
                         m_array[i / 32] = ~result;
                     }
@@ -153,16 +155,18 @@ namespace System.Collections
             }
             else if (Sse2.IsSupported)
             {
+                // JIT does not support code hoisting for SIMD yet
+                Vector128<byte> zero = Vector128<byte>.Zero;
                 fixed (bool* ptr = values)
                 {
                     for (; (i + Vector128<byte>.Count * 2) <= values.Length; i += (uint)Vector128<byte>.Count * 2)
                     {
                         Vector128<byte> lowerVector = Sse2.LoadVector128((byte*)ptr + i);
-                        Vector128<byte> lowerIsFalse = Sse2.CompareEqual(lowerVector, Vector128<byte>.Zero);
+                        Vector128<byte> lowerIsFalse = Sse2.CompareEqual(lowerVector, zero);
                         int lowerPackedIsFalse = Sse2.MoveMask(lowerIsFalse);
 
                         Vector128<byte> upperVector = Sse2.LoadVector128((byte*)ptr + i + Vector128<byte>.Count);
-                        Vector128<byte> upperIsFalse = Sse2.CompareEqual(upperVector, Vector128<byte>.Zero);
+                        Vector128<byte> upperIsFalse = Sse2.CompareEqual(upperVector, zero);
                         int upperPackedIsFalse = Sse2.MoveMask(upperIsFalse);
 
                         m_array[i / 32] = ~((upperPackedIsFalse << 16) | lowerPackedIsFalse);
@@ -171,6 +175,10 @@ namespace System.Collections
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
+                // JIT does not support code hoisting for SIMD yet
+                // However comparison against zero can be replaced to cmeq against zero (vceqzq_s8)
+                // See dotnet/runtime#33972 for details
+                Vector128<byte> zero = Vector128<byte>.Zero;
                 fixed (bool* ptr = values)
                 {
                     for (; (i + Vector128<byte>.Count * 2) <= values.Length; i += (uint)Vector128<byte>.Count * 2)
@@ -179,7 +187,7 @@ namespace System.Collections
                         // As a workaround, mask out the relevant bit after comparison
                         // and combine by ORing all of them together (In this case, adding all of them does the same thing)
                         Vector128<byte> lowerVector = AdvSimd.LoadVector128((byte*)ptr + i);
-                        Vector128<byte> lowerIsFalse = AdvSimd.CompareEqual(lowerVector, Vector128<byte>.Zero);
+                        Vector128<byte> lowerIsFalse = AdvSimd.CompareEqual(lowerVector, zero);
                         Vector128<byte> bitsExtracted1 = AdvSimd.And(lowerIsFalse, s_bitMask128);
                         bitsExtracted1 = AdvSimd.Arm64.AddPairwise(bitsExtracted1, bitsExtracted1);
                         bitsExtracted1 = AdvSimd.Arm64.AddPairwise(bitsExtracted1, bitsExtracted1);
@@ -187,7 +195,7 @@ namespace System.Collections
                         Vector128<short> lowerPackedIsFalse = bitsExtracted1.AsInt16();
 
                         Vector128<byte> upperVector = AdvSimd.LoadVector128((byte*)ptr + i + Vector128<byte>.Count);
-                        Vector128<byte> upperIsFalse = AdvSimd.CompareEqual(upperVector, Vector128<byte>.Zero);
+                        Vector128<byte> upperIsFalse = AdvSimd.CompareEqual(upperVector, zero);
                         Vector128<byte> bitsExtracted2 = AdvSimd.And(upperIsFalse, s_bitMask128);
                         bitsExtracted2 = AdvSimd.Arm64.AddPairwise(bitsExtracted2, bitsExtracted2);
                         bitsExtracted2 = AdvSimd.Arm64.AddPairwise(bitsExtracted2, bitsExtracted2);
