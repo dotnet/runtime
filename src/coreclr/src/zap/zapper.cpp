@@ -1181,16 +1181,9 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
     }
 
     // .NET Core requires SSE2.
-#endif // TARGET_X86
+    m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    m_pOpt->m_compilerFlags.Set(InstructionSet_SSE);
-    m_pOpt->m_compilerFlags.Set(InstructionSet_SSE2);
-#endif
-#if defined(TARGET_ARM64)
-    m_pOpt->m_compilerFlags.Set(InstructionSet_ArmBase);
-    m_pOpt->m_compilerFlags.Set(InstructionSet_AdvSimd);
-#endif
+#endif // TARGET_X86
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     // If we're crossgenning CoreLib, allow generating non-VEX intrinsics. The generated code might
@@ -1205,24 +1198,21 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE);
-        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE2);
-        m_pOpt->m_compilerFlags.Set(InstructionSet_AES);
-        m_pOpt->m_compilerFlags.Set(InstructionSet_PCLMULQDQ);
-        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE3);
-        m_pOpt->m_compilerFlags.Set(InstructionSet_SSSE3);
-        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE41);
-        m_pOpt->m_compilerFlags.Set(InstructionSet_SSE42);
-        m_pOpt->m_compilerFlags.Set(InstructionSet_POPCNT);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AES);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSSE3);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE41);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE42);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT);
         // Leaving out CORJIT_FLAGS::CORJIT_FLAG_USE_AVX, CORJIT_FLAGS::CORJIT_FLAG_USE_FMA
         // CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2, CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1,
         // CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2 on purpose - these require VEX encodings
         // and the JIT doesn't support generating code for methods with mixed encodings.
-        m_pOpt->m_compilerFlags.Set(InstructionSet_LZCNT);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_LZCNT);
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
-    m_pOpt->m_compilerFlags.Set64BitInstructionSetVariants();
 
     if (   m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO)
         && m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE)

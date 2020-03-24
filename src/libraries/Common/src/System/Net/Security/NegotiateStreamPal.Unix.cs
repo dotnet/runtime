@@ -6,6 +6,7 @@
 using System.IO;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication;
@@ -280,7 +281,7 @@ namespace System.Net.Security
           SafeFreeNegoCredentials credential,
           ref SafeDeleteContext? context,
           ChannelBinding? channelBinding,
-          string targetName,
+          string? targetName,
           ContextFlagsPal inFlags,
           byte[]? incomingBlob,
           ref byte[]? resultBuffer,
@@ -296,7 +297,7 @@ namespace System.Net.Security
                     NetEventSource.Info(context, $"requested protocol = {protocol}, target = {targetName}");
                 }
 
-                context = new SafeDeleteNegoContext(credential, targetName);
+                context = new SafeDeleteNegoContext(credential, targetName!);
             }
 
             SafeDeleteNegoContext negoContext = (SafeDeleteNegoContext)context;
@@ -358,7 +359,7 @@ namespace System.Net.Security
         internal static SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials credentialsHandle,
             ref SafeDeleteContext? securityContext,
-            string spn,
+            string? spn,
             ContextFlagsPal requestedContextFlags,
             byte[]? incomingBlob,
             ChannelBinding? channelBinding,
@@ -624,7 +625,7 @@ namespace System.Net.Security
             return GssUnwrap(((SafeDeleteNegoContext)securityContext).GssContext, buffer!, offset, count);
         }
 
-        internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, ref byte[] output)
+        internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, [AllowNull] ref byte[] output)
         {
             SafeDeleteNegoContext gssContext = (SafeDeleteNegoContext)securityContext;
             byte[] tempOutput = GssWrap(gssContext.GssContext, false, buffer, offset, count);

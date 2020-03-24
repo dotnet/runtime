@@ -13,13 +13,13 @@ namespace System.Net.Mime
         internal const string DefaultCharSet = "utf-8";
         private static readonly char[] s_decodeEncodingSplitChars = new char[] { '?', '\r', '\n' };
 
-        protected ContentType _contentType;
-        protected ContentDisposition _contentDisposition;
-        private HeaderCollection _headers;
+        protected ContentType? _contentType;
+        protected ContentDisposition? _contentDisposition;
+        private HeaderCollection? _headers;
 
         internal MimeBasePart() { }
 
-        internal static bool ShouldUseBase64Encoding(Encoding encoding) =>
+        internal static bool ShouldUseBase64Encoding(Encoding? encoding) =>
             encoding == Encoding.Unicode || encoding == Encoding.UTF8 || encoding == Encoding.UTF32 || encoding == Encoding.BigEndianUnicode;
 
         //use when the length of the header is not known or if there is no header
@@ -27,7 +27,7 @@ namespace System.Net.Mime
             EncodeHeaderValue(value, encoding, base64Encoding, 0);
 
         //used when the length of the header name itself is known (i.e. Subject : )
-        internal static string EncodeHeaderValue(string value, Encoding encoding, bool base64Encoding, int headerLength)
+        internal static string EncodeHeaderValue(string value, Encoding? encoding, bool base64Encoding, int headerLength)
         {
             //no need to encode if it's pure ascii
             if (IsAscii(value, false))
@@ -35,10 +35,7 @@ namespace System.Net.Mime
                 return value;
             }
 
-            if (encoding == null)
-            {
-                encoding = Encoding.GetEncoding(DefaultCharSet);
-            }
+            encoding ??= Encoding.GetEncoding(DefaultCharSet);
 
             EncodedStreamFactory factory = new EncodedStreamFactory();
             IEncodableStream stream = factory.GetEncoderForHeader(encoding, base64Encoding, headerLength);
@@ -51,7 +48,7 @@ namespace System.Net.Mime
         private static readonly char[] s_headerValueSplitChars = new char[] { '\r', '\n', ' ' };
         private static readonly char[] s_questionMarkSplitChars = new char[] { '?' };
 
-        internal static string DecodeHeaderValue(string value)
+        internal static string DecodeHeaderValue(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -97,7 +94,7 @@ namespace System.Net.Mime
         // "=?utf-8?B?RmlsZU5hbWVf55CG0Y3Qq9C60I5jw4TRicKq0YIM0Y1hSsSeTNCy0Klh?="; // 3.5
         // With the addition of folding in 4.0, there may be multiple lines with encoding, only detect the first:
         // "=?utf-8?B?RmlsZU5hbWVf55CG0Y3Qq9C60I5jw4TRicKq0YIM0Y1hSsSeTNCy0Klh?=\r\n =?utf-8?B??=";
-        internal static Encoding DecodeEncoding(string value)
+        internal static Encoding? DecodeEncoding(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -135,9 +132,9 @@ namespace System.Net.Mime
             return true;
         }
 
-        internal string ContentID
+        internal string? ContentID
         {
-            get { return Headers[MailHeaderInfo.GetString(MailHeaderID.ContentID)]; }
+            get { return Headers[MailHeaderInfo.GetString(MailHeaderID.ContentID)!]; }
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -151,9 +148,9 @@ namespace System.Net.Mime
             }
         }
 
-        internal string ContentLocation
+        internal string? ContentLocation
         {
-            get { return Headers[MailHeaderInfo.GetString(MailHeaderID.ContentLocation)]; }
+            get { return Headers[MailHeaderInfo.GetString(MailHeaderID.ContentLocation)!]; }
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -194,7 +191,7 @@ namespace System.Net.Mime
 
         internal ContentType ContentType
         {
-            get { return _contentType ?? (_contentType = new ContentType()); }
+            get { return _contentType ??= new ContentType(); }
             set
             {
                 if (value == null)
@@ -209,13 +206,13 @@ namespace System.Net.Mime
 
         internal void PrepareHeaders(bool allowUnicode)
         {
-            _contentType.PersistIfNeeded((HeaderCollection)Headers, false);
-            _headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentType), _contentType.Encode(allowUnicode));
+            _contentType!.PersistIfNeeded((HeaderCollection)Headers, false);
+            _headers!.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentType)!, _contentType.Encode(allowUnicode));
 
             if (_contentDisposition != null)
             {
                 _contentDisposition.PersistIfNeeded((HeaderCollection)Headers, false);
-                _headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentDisposition), _contentDisposition.Encode(allowUnicode));
+                _headers.InternalSet(MailHeaderInfo.GetString(MailHeaderID.ContentDisposition)!, _contentDisposition.Encode(allowUnicode));
             }
         }
 
@@ -224,8 +221,8 @@ namespace System.Net.Mime
             throw new NotImplementedException();
         }
 
-        internal virtual IAsyncResult BeginSend(BaseWriter writer, AsyncCallback callback,
-            bool allowUnicode, object state)
+        internal virtual IAsyncResult BeginSend(BaseWriter writer, AsyncCallback? callback,
+            bool allowUnicode, object? state)
         {
             throw new NotImplementedException();
         }
@@ -237,7 +234,7 @@ namespace System.Net.Mime
                 throw new ArgumentNullException(nameof(asyncResult));
             }
 
-            LazyAsyncResult castedAsyncResult = asyncResult as MimePartAsyncResult;
+            LazyAsyncResult? castedAsyncResult = asyncResult as MimePartAsyncResult;
 
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
             {
@@ -259,7 +256,7 @@ namespace System.Net.Mime
 
         internal class MimePartAsyncResult : LazyAsyncResult
         {
-            internal MimePartAsyncResult(MimeBasePart part, object state, AsyncCallback callback) : base(part, state, callback)
+            internal MimePartAsyncResult(MimeBasePart part, object? state, AsyncCallback? callback) : base(part, state, callback)
             {
             }
         }

@@ -2890,7 +2890,9 @@ public:
     void gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, const char** ilNameOut, unsigned* ilNumOut);
     int gtGetLclVarName(unsigned lclNum, char* buf, unsigned buf_remaining);
     char* gtGetLclVarName(unsigned lclNum);
-    void gtDispLclVar(unsigned varNum, bool padForBiggestDisp = true);
+    void gtDispLclVar(unsigned lclNum, bool padForBiggestDisp = true);
+    void gtDispLclVarStructType(unsigned lclNum);
+    void gtDispClassLayout(ClassLayout* layout, var_types type);
     void gtDispStmt(Statement* stmt, const char* msg = nullptr);
     void gtDispBlockStmts(BasicBlock* block);
     void gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, int listCount, char* bufp, unsigned bufLength);
@@ -3672,7 +3674,7 @@ protected:
                                        bool                  mustExpand);
 
 protected:
-    bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
+    bool compSupportsHWIntrinsic(InstructionSet isa);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -8270,7 +8272,7 @@ private:
         return false;
     }
 
-    bool compSupports(CORINFO_InstructionSet isa) const
+    bool compSupports(InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (opts.compSupportsISA & (1ULL << isa)) != 0;
@@ -8379,13 +8381,11 @@ public:
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         uint64_t compSupportsISA;
-#endif
-        void setSupportedISAs(CORINFO_InstructionSetFlags isas)
+        void setSupportedISA(InstructionSet isa)
         {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-            compSupportsISA = isas.GetFlagsRaw();
-#endif
+            compSupportsISA |= 1ULL << isa;
         }
+#endif
 
         unsigned compFlags; // method attributes
         unsigned instrCount;

@@ -49,13 +49,13 @@ else(CLR_CMAKE_HOST_WIN32)
         set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
     endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
 
-    if(CLR_CMAKE_TARGET_DARWIN)
+    if(CLR_CMAKE_TARGET_OSX)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -force_load)
         set(END_WHOLE_ARCHIVE )
 
         set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-    endif(CLR_CMAKE_TARGET_DARWIN)
+    endif(CLR_CMAKE_TARGET_OSX)
 
     if(CLR_CMAKE_TARGET_ANDROID AND CLR_CMAKE_HOST_ARCH_ARM)
         set(EXPORTS_LINKER_OPTION "${EXPORTS_LINKER_OPTION} -Wl,--no-warn-shared-textrel")
@@ -110,6 +110,7 @@ set(CORECLR_LIBRARIES
     utilcode
     v3binder
     libraries-native
+    System.Globalization.Native-Static
     interop
 )
 
@@ -136,7 +137,6 @@ else()
         ${END_WHOLE_ARCHIVE}
         mscorrc
         palrt
-        System.Globalization.Native-Static
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
@@ -214,7 +214,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
 install_clr(TARGETS coreclr)
-install_clr(TARGETS coreclr DESTINATION sharedFramework SKIP_STRIP)
+install_clr(TARGETS coreclr DESTINATION sharedFramework)
 
 # Enable profile guided optimization
 add_pgo(coreclr)

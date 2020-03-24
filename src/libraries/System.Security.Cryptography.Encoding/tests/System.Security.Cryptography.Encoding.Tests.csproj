@@ -77,6 +77,8 @@
     <Compile Include="Base64TransformsTests.cs" />
     <Compile Include="Oid.cs" />
     <Compile Include="OidCollectionTests.cs" />
+    <Compile Include="PemEncodingFindTests.cs" />
+    <Compile Include="PemEncodingTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>

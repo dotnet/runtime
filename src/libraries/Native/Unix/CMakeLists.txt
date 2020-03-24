@@ -6,6 +6,7 @@ project(CoreFX C)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 if(CLR_CMAKE_TARGET_IOS)
+    # CMake 3.14.5 contains bug fixes for iOS
     cmake_minimum_required(VERSION 3.14.5)
 endif()
 
@@ -133,7 +134,7 @@ else ()
 endif ()
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
-elseif (CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_IOS)
+elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -158,53 +159,26 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
 if(CLR_CMAKE_TARGET_UNIX)
-    if (CLR_CMAKE_TARGET_DARWIN)
-        add_link_options(-Wl,-bind_at_load)
-
-        # Ensure that dsymutil and strip are present
-        find_program(DSYMUTIL dsymutil)
-        if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
-            message(FATAL_ERROR "dsymutil not found")
+    if(NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS)
+        if(CLR_CMAKE_TARGET_OSX)
+            add_definitions(-DTARGET_OSX)
+            add_link_options(-Wl,-bind_at_load)
+        else()
+            add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+            add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
         endif()
-
-        find_program(STRIP strip)
-        if (STRIP STREQUAL "STRIP-NOTFOUND")
-            message(FATAL_ERROR "strip not found")
-        endif()
-    elseif (CLR_CMAKE_TARGET_IOS)
-        # No object stripping for iOS
-    elseif (CLR_CMAKE_TARGET_ANDROID)
-        # No object stripping for Android
-    elseif (CLR_CMAKE_TARGET_ARCH_WASM)
-        # No object stripping for WASM
-    else (CLR_CMAKE_TARGET_DARWIN)
-        add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-        add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
-    endif(CLR_CMAKE_TARGET_DARWIN)
+    endif()
 
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
     add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
+    add_definitions(-DTARGET_UNIX)
 endif(CLR_CMAKE_TARGET_UNIX)
 
 function(install_library_and_symbols targetName)
-    strip_symbols(${targetName} strip_destination_file NO)
-
-    # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
-    # generator expression doesn't work correctly returning the wrong path and on
-    # the newer cmake versions the LOCATION property isn't supported anymore.
-    if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
-        set(install_source_file $<TARGET_FILE:${targetName}>)
-    else()
-        get_property(install_source_file TARGET ${targetName} PROPERTY LOCATION)
-    endif()
-
+    install_symbols(${targetName} .)
+    set(install_source_file $<TARGET_FILE:${targetName}>)
     install(PROGRAMS ${install_source_file} DESTINATION .)
-    if(CLR_CMAKE_TARGET_WIN32)
-        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION PDB)
-    else()
-        install(FILES ${strip_destination_file} DESTINATION .)
-    endif()
 endfunction()
 
 include(configure.cmake)
@@ -223,22 +197,16 @@ endif()
 
 add_subdirectory(System.Native)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
-if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable for iOS
     add_subdirectory(System.Globalization.Native)
-if (NOT CLR_CMAKE_TARGET_ANDROID)  # TODO: reenable
+if (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS)  # TODO: reenable for Android
     add_subdirectory(System.Net.Security.Native)
-endif()
-endif()
-if (NOT CLR_CMAKE_TARGET_IOS)
-if (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS) # TODO: reenable
     # disable System.Security.Cryptography.Native build on iOS,
     # only used for interacting with OpenSSL which isn't useful there
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
 endif()
-endif()
 
-if(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_IOS)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()

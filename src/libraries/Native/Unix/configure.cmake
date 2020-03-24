@@ -12,7 +12,7 @@ if (CLR_CMAKE_TARGET_ANDROID)
     set(PAL_UNIX_NAME \"ANDROID\")
 elseif (CLR_CMAKE_TARGET_LINUX)
     set(PAL_UNIX_NAME \"LINUX\")
-elseif (CLR_CMAKE_TARGET_DARWIN)
+elseif (CLR_CMAKE_TARGET_OSX)
     set(PAL_UNIX_NAME \"OSX\")
 
     # Xcode's clang does not include /usr/local/include by default, but brew's does.

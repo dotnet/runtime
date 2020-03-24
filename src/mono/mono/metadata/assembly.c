@@ -1667,8 +1667,8 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	 * 3. If the ALC is not the default and this is not a satellite request,
 	 *    check if it's already loaded by the default ALC.
 	 *
-	 * 4. If the ALC is not the default or this is not a satellite request,
-	 *    check the TPA paths and ApplicationBase.
+	 * 4. If the ALC is the default or this is not a satellite request,
+	 *    check the TPA list, APP_PATHS, and ApplicationBase.
 	 *
 	 * 5. If this is a satellite request, call the ALC ResolveSatelliteAssembly method.
 	 *
