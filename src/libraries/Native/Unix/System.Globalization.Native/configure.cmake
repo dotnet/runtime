@@ -5,11 +5,6 @@ else()
     include(CheckCSourceCompiles)
     include(CheckSymbolExists)
 
-    if(CLR_CMAKE_TARGET_ANDROID)
-        string(REPLACE ";" ":" ANDROID_RPATHS "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}:${CMAKE_SYSTEM_LIBRARY_PATH}")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -rpath ${ANDROID_RPATHS}")
-    endif()
-
     if (CLR_CMAKE_TARGET_UNIX)
         set(CMAKE_REQUIRED_INCLUDES ${UTYPES_H} ${ICU_HOMEBREW_INC_PATH})
 
