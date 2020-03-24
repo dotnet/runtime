@@ -222,9 +222,6 @@ namespace System.Threading
         private void AdjustMaxWorkersActive()
         {
             _hillClimbingThreadAdjustmentLock.VerifyIsLocked();
-            int currentTicks = Environment.TickCount;
-            int totalNumCompletions = (int)_completionCounter.Count;
-            int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
             long startTime = _currentSampleStartTime;
             long endTime = Stopwatch.GetTimestamp();
             long freq = Stopwatch.Frequency;
@@ -233,6 +230,10 @@ namespace System.Threading
 
             if (elapsedSeconds * 1000 >= _threadAdjustmentIntervalMs / 2)
             {
+                int currentTicks = Environment.TickCount;
+                int totalNumCompletions = (int)_completionCounter.Count;
+                int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
+
                 ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
                 int newMax;
                 (newMax, _threadAdjustmentIntervalMs) = HillClimbing.ThreadPoolHillClimber.Update(currentCounts.numThreadsGoal, elapsedSeconds, numCompletions);
@@ -269,6 +270,7 @@ namespace System.Threading
                         currentCounts = oldCounts;
                     }
                 }
+
                 _separated.priorCompletionCount = totalNumCompletions;
                 _separated.nextCompletedWorkRequestsTime = currentTicks + _threadAdjustmentIntervalMs;
                 Volatile.Write(ref _separated.priorCompletedWorkRequestsTime, currentTicks);
