@@ -60,12 +60,12 @@
     <RuntimeGroup Include="ios">
       <Parent>unix</Parent>
       <Architectures>arm</Architectures>
-      <Versions>10</Versions>
+      <Versions>8;9;10</Versions>
     </RuntimeGroup>
     <RuntimeGroup Include="ios">
       <Parent>unix</Parent>
       <Architectures>arm64;x64</Architectures>
-      <Versions>10;11;12;13</Versions>
+      <Versions>8;9;10;11;12;13</Versions>
     </RuntimeGroup>
 
     <!-- linux mint includes major version in Include because Parent is different for each major -->
