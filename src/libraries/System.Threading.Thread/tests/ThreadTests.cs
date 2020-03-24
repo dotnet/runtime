@@ -648,6 +648,19 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
+        public static void ThreadNameDoesNotAffectProcessName()
+        {
+            // On Linux, changing the main thread name affects ProcessName.
+            // To avoid that, .NET ignores requests to change the main thread name.
+            RemoteExecutor.Invoke(() =>
+            {
+                const string threadName = "my-thread";
+                Thread.CurrentThread.Name = threadName;
+                Assert.NotEqual(threadName, Process.GetCurrentProcess().ProcessName);
+            }).Dispose();
+        }
+
+        [Fact]
         public static void PriorityTest()
         {
             var e = new ManualResetEvent(false);
