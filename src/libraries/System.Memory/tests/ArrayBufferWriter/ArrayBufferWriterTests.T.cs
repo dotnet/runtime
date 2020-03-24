@@ -205,7 +205,8 @@ namespace System.Buffers.Tests
             Assert.Equal(sizeHint <= 256 ? 256 : sizeHint, memory.Length);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsX64))]
+        [OuterLoop]
         public void GetMemory_ExceedMaximumBufferSize()
         {
             var output = new ArrayBufferWriter<T>(int.MaxValue / 2 + 1);
