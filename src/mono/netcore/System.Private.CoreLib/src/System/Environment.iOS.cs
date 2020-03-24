@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
-    partial class Environment
+    public static partial class Environment
     {
         private const int NSDocumentDirectoryId = 9;
         private const int NSLibraryDirectoryId = 5;
@@ -23,41 +23,10 @@ namespace System
         // Various user-visible documentation, support, and configuration files
         private static string NSLibraryDirectory => s_library ??= Interop.Sys.SearchPath(NSLibraryDirectoryId);
 
-        private static string GetFolderPathiOS(SpecialFolder folder)
+        private static string GetFolderPathIos(SpecialFolder folder)
         {
             switch (folder)
             {
-                case SpecialFolder.MyComputer:
-                case SpecialFolder.Programs:
-                case SpecialFolder.SendTo:
-                case SpecialFolder.StartMenu:
-                case SpecialFolder.Startup:
-                case SpecialFolder.Cookies:
-                case SpecialFolder.History:
-                case SpecialFolder.Recent:
-                case SpecialFolder.CommonProgramFiles:
-                case SpecialFolder.System:
-                case SpecialFolder.NetworkShortcuts:
-                case SpecialFolder.CommonStartMenu:
-                case SpecialFolder.CommonPrograms:
-                case SpecialFolder.CommonStartup:
-                case SpecialFolder.CommonDesktopDirectory:
-                case SpecialFolder.PrinterShortcuts:
-                case SpecialFolder.Windows:
-                case SpecialFolder.SystemX86:
-                case SpecialFolder.ProgramFilesX86:
-                case SpecialFolder.CommonProgramFilesX86:
-                case SpecialFolder.CommonDocuments:
-                case SpecialFolder.CommonAdminTools:
-                case SpecialFolder.AdminTools:
-                case SpecialFolder.CommonMusic:
-                case SpecialFolder.CommonPictures:
-                case SpecialFolder.CommonVideos:
-                case SpecialFolder.LocalizedResources:
-                case SpecialFolder.CommonOemLinks:
-                case SpecialFolder.CDBurning:
-                    return String.Empty;
-                
                 case SpecialFolder.Personal:
                 case SpecialFolder.LocalApplicationData:
                     return NSDocumentDirectory;
@@ -108,7 +77,7 @@ namespace System
                     return "/usr/share";
 
                 default:
-                    throw new ArgumentException($"Invalid SpecialFolder '{folder}'");
+                    return string.Empty;
             }
         }
     }

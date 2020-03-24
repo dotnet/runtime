@@ -97,7 +97,7 @@ namespace System
         private static string GetFolderPathCoreWithoutValidation(SpecialFolder folder)
         {
 #if TARGET_IOS
-            return GetFolderPathiOS(folder);
+            return GetFolderPathIos(folder);
 #else
             // First handle any paths that involve only static paths, avoiding the overheads of getting user-local paths.
             // https://www.freedesktop.org/software/systemd/man/file-hierarchy.html
