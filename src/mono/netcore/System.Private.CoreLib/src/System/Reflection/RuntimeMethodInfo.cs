@@ -601,52 +601,26 @@ namespace System.Reflection
 
             GetPInvoke(out flags, out entryPoint, out dllName);
 
-            CharSet charSet;
-
-            switch (flags & PInvokeAttributes.CharSetMask)
+            CharSet charSet = (flags & PInvokeAttributes.CharSetMask) switch
             {
-                case PInvokeAttributes.CharSetNotSpec:
-                    charSet = CharSet.None;
-                    break;
-                case PInvokeAttributes.CharSetAnsi:
-                    charSet = CharSet.Ansi;
-                    break;
-                case PInvokeAttributes.CharSetUnicode:
-                    charSet = CharSet.Unicode;
-                    break;
-                case PInvokeAttributes.CharSetAuto:
-                    charSet = CharSet.Auto;
-                    break;
+                PInvokeAttributes.CharSetNotSpec => CharSet.None,
+                PInvokeAttributes.CharSetAnsi => CharSet.Ansi,
+                PInvokeAttributes.CharSetUnicode => CharSet.Unicode,
+                PInvokeAttributes.CharSetAuto => CharSet.Auto,
                 // Invalid: default to CharSet.None
-                default:
-                    charSet = CharSet.None;
-                    break;
-            }
+                _ => CharSet.None,
+            };
 
-            InteropServicesCallingConvention callingConvention;
-
-            switch (flags & PInvokeAttributes.CallConvMask)
+            InteropServicesCallingConvention callingConvention = (flags & PInvokeAttributes.CallConvMask) switch
             {
-                case PInvokeAttributes.CallConvWinapi:
-                    callingConvention = InteropServicesCallingConvention.Winapi;
-                    break;
-                case PInvokeAttributes.CallConvCdecl:
-                    callingConvention = InteropServicesCallingConvention.Cdecl;
-                    break;
-                case PInvokeAttributes.CallConvStdcall:
-                    callingConvention = InteropServicesCallingConvention.StdCall;
-                    break;
-                case PInvokeAttributes.CallConvThiscall:
-                    callingConvention = InteropServicesCallingConvention.ThisCall;
-                    break;
-                case PInvokeAttributes.CallConvFastcall:
-                    callingConvention = InteropServicesCallingConvention.FastCall;
-                    break;
+                PInvokeAttributes.CallConvWinapi => InteropServicesCallingConvention.Winapi,
+                PInvokeAttributes.CallConvCdecl => InteropServicesCallingConvention.Cdecl,
+                PInvokeAttributes.CallConvStdcall => InteropServicesCallingConvention.StdCall,
+                PInvokeAttributes.CallConvThiscall => InteropServicesCallingConvention.ThisCall,
+                PInvokeAttributes.CallConvFastcall => InteropServicesCallingConvention.FastCall,
                 // Invalid: default to CallingConvention.Cdecl
-                default:
-                    callingConvention = InteropServicesCallingConvention.Cdecl;
-                    break;
-            }
+                _ => InteropServicesCallingConvention.Cdecl,
+            };
 
             bool exactSpelling = (flags & PInvokeAttributes.NoMangle) != 0;
             bool setLastError = (flags & PInvokeAttributes.SupportsLastError) != 0;

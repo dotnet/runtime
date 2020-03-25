@@ -376,15 +376,12 @@ namespace System.Reflection.Emit
         {
             TypeBuilder.ResolveUserTypes(arguments);
 
-            switch (type)
+            return type switch
             {
-                case SignatureHelperType.HELPER_LOCAL:
-                    return get_signature_local();
-                case SignatureHelperType.HELPER_FIELD:
-                    return get_signature_field();
-                default:
-                    throw new NotImplementedException();
-            }
+                SignatureHelperType.HELPER_LOCAL => get_signature_local(),
+                SignatureHelperType.HELPER_FIELD => get_signature_field(),
+                _ => throw new NotImplementedException(),
+            };
         }
 
         public override string ToString()

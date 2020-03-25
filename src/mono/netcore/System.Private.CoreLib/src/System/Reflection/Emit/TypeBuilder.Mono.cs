@@ -1116,21 +1116,13 @@ namespace System.Reflection.Emit
                     if (m.IsStatic && !flatten)
                         continue;
 
-                    switch (mattrs & MethodAttributes.MemberAccessMask)
+                    match = (mattrs & MethodAttributes.MemberAccessMask) switch
                     {
-                        case MethodAttributes.Public:
-                            match = (bindingAttr & BindingFlags.Public) != 0;
-                            break;
-                        case MethodAttributes.Assembly:
-                            match = (bindingAttr & BindingFlags.NonPublic) != 0;
-                            break;
-                        case MethodAttributes.Private:
-                            match = false;
-                            break;
-                        default:
-                            match = (bindingAttr & BindingFlags.NonPublic) != 0;
-                            break;
-                    }
+                        MethodAttributes.Public => (bindingAttr & BindingFlags.Public) != 0,
+                        MethodAttributes.Assembly => (bindingAttr & BindingFlags.NonPublic) != 0,
+                        MethodAttributes.Private => false,
+                        _ => (bindingAttr & BindingFlags.NonPublic) != 0,
+                    };
 
                     if (match)
                         parent_candidates.Add(m);
@@ -1420,21 +1412,13 @@ namespace System.Reflection.Emit
                 layout_kind = (int)data[2];
                 layout_kind |= ((int)data[3]) << 8;
                 attrs &= ~TypeAttributes.LayoutMask;
-                switch ((LayoutKind)layout_kind)
+                attrs |= ((LayoutKind)layout_kind) switch
                 {
-                    case LayoutKind.Auto:
-                        attrs |= TypeAttributes.AutoLayout;
-                        break;
-                    case LayoutKind.Explicit:
-                        attrs |= TypeAttributes.ExplicitLayout;
-                        break;
-                    case LayoutKind.Sequential:
-                        attrs |= TypeAttributes.SequentialLayout;
-                        break;
-                    default:
-                        // we should ignore it since it can be any value anyway...
-                        throw new Exception("Error in customattr");
-                }
+                    LayoutKind.Auto => TypeAttributes.AutoLayout,
+                    LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
+                    LayoutKind.Sequential => TypeAttributes.SequentialLayout,
+                    _ => throw new Exception("Error in customattr"), // we should ignore it since it can be any value anyway...
+                };
 
                 Type ctor_type = customBuilder.Ctor is ConstructorBuilder builder ? builder.parameters[0] : customBuilder.Ctor.GetParametersInternal()[0].ParameterType;
                 int pos = 6;
