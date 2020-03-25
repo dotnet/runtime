@@ -69,11 +69,6 @@ jobs:
         value: '-gcc'
       - name: publishLogsArtifactPrefix
         value: 'BuildLogs_CoreCLR_GCC'
-      # workaround for gcc directory not in PATH
-      - name: CLR_CC
-        value: /opt/rh/devtoolset-7/root/usr/bin/gcc
-      - name: CLR_CXX
-        value: /opt/rh/devtoolset-7/root/usr/bin/g++
     - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), eq(parameters.compilerName, 'clang')) }}:
       - name: compilerArg
         value: '-clang9'
