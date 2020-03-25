@@ -203,7 +203,7 @@ PhaseStatus Compiler::fgTransformPatchpoints()
     if (!doesMethodHavePatchpoints())
     {
         JITDUMP("\n -- no patchpoints to transform\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // We should only be adding patchpoints at Tier0, so should not be in an inlinee
@@ -219,7 +219,7 @@ PhaseStatus Compiler::fgTransformPatchpoints()
     if (compLocallocUsed)
     {
         JITDUMP("\n -- unable to handle methods with localloc\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // We currently can't do OSR in synchronized methods. We need to alter
@@ -229,11 +229,11 @@ PhaseStatus Compiler::fgTransformPatchpoints()
     if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
     {
         JITDUMP("\n -- unable to handle synchronized methods\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     PatchpointTransformer ppTransformer(this);
     int                   count = ppTransformer.Run();
     JITDUMP("\n -- %d patchpoints transformed\n", count);
-    return (count == 0) ? PhaseStatus::PS_MODIFIED_NOTHING : PhaseStatus::PS_MODIFIED_EVERYTHING;
+    return (count == 0) ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
 }

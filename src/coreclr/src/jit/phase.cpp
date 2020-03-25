@@ -95,7 +95,7 @@ void Phase::PostPhase(PhaseStatus status)
 #ifdef DEBUG
 
     // Don't dump or check post phase unless the phase made changes.
-    const bool        madeChanges   = (status != PhaseStatus::PS_MODIFIED_NOTHING);
+    const bool        madeChanges   = (status != PhaseStatus::MODIFIED_NOTHING);
     const char* const statusMessage = madeChanges ? "" : " [no changes]";
     bool              doPostPhase   = false;
 

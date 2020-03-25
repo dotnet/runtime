@@ -1133,12 +1133,8 @@ enum class PhaseChecks
 // Specify compiler data that a phase might modify
 enum class PhaseStatus : unsigned
 {
-    PS_MODIFIED_NOTHING    = 0x0,
-    PS_MODIFIED_IR         = 0x1,
-    PS_MODIFIED_FLOW       = 0x2,
-    PS_MODIFIED_EH         = 0x4,
-    PS_MODIFIED_SYMBOLS    = 0x8,
-    PS_MODIFIED_EVERYTHING = 0xFFFFFFFF
+    MODIFIED_NOTHING,
+    MODIFIED_EVERYTHING
 };
 
 // The following enum provides a simple 1:1 mapping to CLR API's

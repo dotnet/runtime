@@ -6940,7 +6940,7 @@ PhaseStatus Compiler::fgImport()
         fgRemovePreds();
     }
 
-    return PhaseStatus::PS_MODIFIED_EVERYTHING;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 /*****************************************************************************
@@ -21959,7 +21959,7 @@ PhaseStatus Compiler::fgInline()
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -22101,7 +22101,7 @@ PhaseStatus Compiler::fgInline()
 
 #endif // DEBUG
 
-    return madeChanges ? PhaseStatus::PS_MODIFIED_EVERYTHING : PhaseStatus::PS_MODIFIED_NOTHING;
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 #ifdef DEBUG
@@ -23967,19 +23967,19 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, nothing to remove.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no removal.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no removal.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -24177,7 +24177,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 #endif // DEBUG
     }
 
-    return (emptyCount > 0) ? PhaseStatus::PS_MODIFIED_EVERYTHING : PhaseStatus::PS_MODIFIED_NOTHING;
+    return (emptyCount > 0) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -24221,25 +24221,25 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
     if (!enableRemoveEmptyTry)
     {
         JITDUMP("Empty try removal disabled.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, nothing to remove.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no removal.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no removal.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -24495,10 +24495,10 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
     {
         JITDUMP("fgRemoveEmptyTry() optimized %u empty-try try-finally clauses\n", emptyCount);
         fgOptimizedFinally = true;
-        return PhaseStatus::PS_MODIFIED_EVERYTHING;
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
-    return PhaseStatus::PS_MODIFIED_NOTHING;
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -24551,25 +24551,25 @@ PhaseStatus Compiler::fgCloneFinally()
     if (!enableCloning)
     {
         JITDUMP("Finally cloning disabled.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, no cloning.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no cloning.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no cloning.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -25092,7 +25092,7 @@ PhaseStatus Compiler::fgCloneFinally()
 #endif // DEBUG
     }
 
-    return (cloneCount > 0 ? PhaseStatus::PS_MODIFIED_EVERYTHING : PhaseStatus::PS_MODIFIED_NOTHING);
+    return (cloneCount > 0 ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING);
 }
 
 #ifdef DEBUG
@@ -25351,7 +25351,7 @@ PhaseStatus Compiler::fgUpdateFinallyTargetFlags()
     else
     {
         JITDUMP("no finally opts, no fixup required\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 }
 
@@ -25432,19 +25432,19 @@ PhaseStatus Compiler::fgMergeFinallyChains()
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, nothing to merge.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no merging.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no merging.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     bool enableMergeFinallyChains = true;
@@ -25469,7 +25469,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
     if (!enableMergeFinallyChains)
     {
         JITDUMP("fgMergeFinallyChains disabled\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -25498,7 +25498,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
     if (!hasFinally)
     {
         JITDUMP("Method does not have any try-finallys; no merging.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // Process finallys from outside in, merging as we go. This gives
@@ -25622,7 +25622,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
         }
     }
 
-    return didMerge ? PhaseStatus::PS_MODIFIED_EVERYTHING : PhaseStatus::PS_MODIFIED_NOTHING;
+    return didMerge ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -25831,7 +25831,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
     if (optNoReturnCallCount < 2)
     {
         JITDUMP("Method does not have multiple noreturn calls.\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // This transformation requires block pred lists to be built
@@ -25946,7 +25946,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
     if (numCandidates == 0)
     {
         JITDUMP("\n*************** no throws can be tail merged, sorry\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     JITDUMP("\n*** found %d merge candidates, rewriting flow\n\n", numCandidates);
@@ -26021,7 +26021,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
     if (updateCount == 0)
     {
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // If we altered flow, reset fgModified. Given where we sit in the
@@ -26033,7 +26033,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // see an already cleaned-up flow graph.
     assert(fgModified);
     fgModified = false;
-    return PhaseStatus::PS_MODIFIED_EVERYTHING;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------

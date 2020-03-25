@@ -823,9 +823,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 // Returns:
 //    PhaseStatus indicating, what, if anything, was modified
 //
-// Notes:
-//    Runs only if Compiler::optMethodFlags has flag OMF_HAS_NEWOBJ set.
-//
 PhaseStatus Rationalizer::DoPhase()
 {
     class RationalizeVisitor final : public GenTreeVisitor<RationalizeVisitor>
@@ -921,5 +918,5 @@ PhaseStatus Rationalizer::DoPhase()
 
     comp->compRationalIRForm = true;
 
-    return PhaseStatus::PS_MODIFIED_EVERYTHING;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }

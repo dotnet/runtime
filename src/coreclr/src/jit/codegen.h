@@ -1538,7 +1538,7 @@ protected:
     virtual PhaseStatus DoPhase() override
     {
         (codeGen->*action)();
-        return PhaseStatus::PS_MODIFIED_EVERYTHING;
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
 private:

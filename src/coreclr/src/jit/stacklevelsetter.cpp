@@ -61,7 +61,7 @@ PhaseStatus StackLevelSetter::DoPhase()
     CheckArgCnt();
 
     // Might want an "other" category for things like this...
-    return PhaseStatus::PS_MODIFIED_NOTHING;
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------

@@ -5291,7 +5291,7 @@ PhaseStatus Lowering::DoPhase()
     // tracked vars that have zero refs.
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    return PhaseStatus::PS_MODIFIED_EVERYTHING;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 #ifdef DEBUG

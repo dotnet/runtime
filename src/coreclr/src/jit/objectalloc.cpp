@@ -34,7 +34,7 @@ PhaseStatus ObjectAllocator::DoPhase()
     if ((comp->optMethodFlags & OMF_HAS_NEWOBJ) == 0)
     {
         JITDUMP("no newobjs in this method; punting\n");
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (IsObjectStackAllocationEnabled())
@@ -53,11 +53,11 @@ PhaseStatus ObjectAllocator::DoPhase()
     {
         ComputeStackObjectPointers(&m_bitVecTraits);
         RewriteUses();
-        return PhaseStatus::PS_MODIFIED_EVERYTHING;
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
     else
     {
-        return PhaseStatus::PS_MODIFIED_NOTHING;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 }
 

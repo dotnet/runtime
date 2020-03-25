@@ -42,7 +42,7 @@ protected:
     virtual PhaseStatus DoPhase() override
     {
         action();
-        return PhaseStatus::PS_MODIFIED_EVERYTHING;
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
 private:
@@ -72,7 +72,7 @@ protected:
     virtual PhaseStatus DoPhase() override
     {
         (comp->*action)();
-        return PhaseStatus::PS_MODIFIED_EVERYTHING;
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
 private:

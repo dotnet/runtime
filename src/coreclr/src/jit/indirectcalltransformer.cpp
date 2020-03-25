@@ -1047,5 +1047,5 @@ PhaseStatus Compiler::fgTransformIndirectCalls()
 
     INDEBUG(CheckNoTransformableIndirectCallsRemain(););
 
-    return (count == 0) ? PhaseStatus::PS_MODIFIED_NOTHING : PhaseStatus::PS_MODIFIED_EVERYTHING;
+    return (count == 0) ? PhaseStatus::MODIFIED_NOTHING : PhaseStatus::MODIFIED_EVERYTHING;
 }
