@@ -43,12 +43,12 @@ namespace System
 
                 case SpecialFolder.Personal:
                 case SpecialFolder.LocalApplicationData:
-                    return NSDocumentDirectory;
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory);
 
                 case SpecialFolder.ApplicationData:
                     // note: at first glance that looked like a good place to return NSLibraryDirectory 
                     // but it would break isolated storage for existing applications
-                    return Path.Combine(NSDocumentDirectory, ".config");
+                    return Path.Combine(Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory), ".config");
 
                 case SpecialFolder.Resources:
                     return Interop.Sys.SearchPath(NSSearchPathDirectory.NSLibraryDirectory); // older (8.2 and previous) would return String.Empty
@@ -64,7 +64,7 @@ namespace System
                     return Interop.Sys.SearchPath(NSSearchPathDirectory.NSPicturesDirectory);
 
                 case SpecialFolder.Templates:
-                    return Path.Combine(NSDocumentDirectory, "Templates");
+                    return Path.Combine(Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory), "Templates");
 
                 case SpecialFolder.MyVideos:
                     return Interop.Sys.SearchPath(NSSearchPathDirectory.NSMoviesDirectory);
@@ -73,7 +73,7 @@ namespace System
                     return "/usr/share/templates";
 
                 case SpecialFolder.Fonts:
-                    return Path.Combine(NSDocumentDirectory, ".fonts");
+                    return Path.Combine(Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory), ".fonts");
 
                 case SpecialFolder.Favorites:
                     return Path.Combine(Interop.Sys.SearchPath(NSSearchPathDirectory.NSLibraryDirectory), "Favorites");
