@@ -12,8 +12,8 @@
     "python3": "3.7.1"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "5.0.0-beta.20174.5",
-    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.20174.5",
+    "Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk": "5.0.0-beta.20175.1",
+    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.20175.1",
     "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.20171.1",
     "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.20171.1",
     "FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
