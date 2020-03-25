@@ -1927,10 +1927,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 
 #ifdef ENABLE_NETCORE
-	// Return false for IsSupported for all types in System.Runtime.Intrinsics.X86 
-	// as we don't support them now
+	// Return false for IsSupported for all types in System.Runtime.Intrinsics.* 
+	// if it's not handled in mono_emit_simd_intrinsics
 	if (in_corlib && 
-		!strcmp ("System.Runtime.Intrinsics.X86", cmethod_klass_name_space) && 
+		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25) && 
 		!strcmp (cmethod->name, "get_IsSupported")) {
 		EMIT_NEW_ICONST (cfg, ins, 0);
 		ins->type = STACK_I4;

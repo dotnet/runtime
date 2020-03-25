@@ -23,35 +23,14 @@ namespace System.Text.Json
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
             ref ReadStack state,
-            out bool useExtensionProperty)
+            out bool useExtensionProperty,
+            bool createExtensionProperty = true)
         {
             Debug.Assert(state.Current.JsonClassInfo.ClassType == ClassType.Object);
 
-            JsonPropertyInfo jsonPropertyInfo;
+            ReadOnlySpan<byte> unescapedPropertyName = GetPropertyName(ref state, ref reader, options);
 
-            ReadOnlySpan<byte> unescapedPropertyName;
-            ReadOnlySpan<byte> propertyName = reader.GetSpan();
-
-            if (reader._stringHasEscaping)
-            {
-                int idx = propertyName.IndexOf(JsonConstants.BackSlash);
-                Debug.Assert(idx != -1);
-                unescapedPropertyName = JsonReaderHelper.GetUnescapedSpan(propertyName, idx);
-            }
-            else
-            {
-                unescapedPropertyName = propertyName;
-            }
-
-            if (options.ReferenceHandling.ShouldReadPreservedReferences())
-            {
-                if (propertyName.Length > 0 && propertyName[0] == '$')
-                {
-                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
-                }
-            }
-
-            jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(unescapedPropertyName, ref state.Current);
+            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(unescapedPropertyName, ref state.Current);
 
             // Increment PropertyIndex so GetProperty() starts with the next property the next time this function is called.
             state.Current.PropertyIndex++;
@@ -63,12 +42,21 @@ namespace System.Text.Json
                 if (dataExtProperty != null)
                 {
                     state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
-                    CreateDataExtensionProperty(obj, dataExtProperty);
+
+                    if (createExtensionProperty)
+                    {
+                        CreateDataExtensionProperty(obj, dataExtProperty);
+                    }
+
                     jsonPropertyInfo = dataExtProperty;
+                    useExtensionProperty = true;
+                }
+                else
+                {
+                    useExtensionProperty = false;
                 }
 
                 state.Current.JsonPropertyInfo = jsonPropertyInfo;
-                useExtensionProperty = true;
                 return jsonPropertyInfo;
             }
 
@@ -101,7 +89,38 @@ namespace System.Text.Json
             return jsonPropertyInfo;
         }
 
-        private static void CreateDataExtensionProperty(
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ReadOnlySpan<byte> GetPropertyName(
+            ref ReadStack state,
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options)
+        {
+            ReadOnlySpan<byte> unescapedPropertyName;
+            ReadOnlySpan<byte> propertyName = reader.GetSpan();
+
+            if (reader._stringHasEscaping)
+            {
+                int idx = propertyName.IndexOf(JsonConstants.BackSlash);
+                Debug.Assert(idx != -1);
+                unescapedPropertyName = JsonReaderHelper.GetUnescapedSpan(propertyName, idx);
+            }
+            else
+            {
+                unescapedPropertyName = propertyName;
+            }
+
+            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            {
+                if (propertyName.Length > 0 && propertyName[0] == '$')
+                {
+                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                }
+            }
+
+            return unescapedPropertyName;
+        }
+
+        internal static void CreateDataExtensionProperty(
             object obj,
             JsonPropertyInfo jsonPropertyInfo)
         {

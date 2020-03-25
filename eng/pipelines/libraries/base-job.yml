@@ -40,7 +40,7 @@ jobs:
         - _BuildConfig: ${{ parameters.buildConfig }}
 
         - _msbuildCommonParameters: ''
-        - _stripSymbolsArg: ''
+        # rename this variable, due to collision with build-native.proj
         - _runtimeOSArg: ''
         - _finalFrameworkArg: ''
         - _buildScript: $(_buildScriptFileName)$(scriptExt)
@@ -68,6 +68,10 @@ jobs:
           - _warnAsErrorArg: '-warnAsError false'
 
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+          - _runtimeOSArg: -os ${{ parameters.osGroup }}
+
+        # force a value for OS when cross-building iOS on OSX
+        - ${{ if eq(parameters.osGroup, 'iOS') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 
         - ${{ if ne(parameters.framework, '') }}:
@@ -106,10 +110,8 @@ jobs:
         # Non-Windows variables
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
-          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - _stripSymbolsArg: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
       dependsOn:

@@ -144,7 +144,7 @@ namespace System.Net.Http.Headers
 
             if (MediaTypeHeaderParser.SingleValueParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (MediaTypeHeaderValue)output;
+                parsedValue = (MediaTypeHeaderValue)output!;
                 return true;
             }
             return false;

@@ -22,6 +22,6 @@ namespace System.Runtime.InteropServices
         [Intrinsic]
         [NonVersionable]
         public static ref T GetArrayDataReference<T>(T[] array) =>
-            ref Unsafe.As<byte, T>(ref array.GetRawArrayData ());
+            ref Unsafe.As<byte, T>(ref array.GetRawArrayData());
     }
 }

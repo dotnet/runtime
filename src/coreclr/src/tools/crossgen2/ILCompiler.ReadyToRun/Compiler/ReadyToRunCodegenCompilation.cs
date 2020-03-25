@@ -70,11 +70,34 @@ namespace ILCompiler
 
         public bool CanInline(MethodDesc caller, MethodDesc callee)
         {
+            if (JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_DEBUG_CODE))
+            {
+                // If the callee wants debuggable code, don't allow it to be inlined
+                return false;
+            }
+
+            if (callee.IsNoInlining)
+            {
+                return false;
+            }
+
             // Check to see if the method requires a security object.  This means they call demand and
             // shouldn't be inlined.
             if (callee.RequireSecObject)
             {
                 return false;
+            }
+
+            // If the method is MethodImpl'd by another method within the same type, then we have
+            // an issue that the importer will import the wrong body. In this case, we'll just
+            // disallow inlining because getFunctionEntryPoint will do the right thing.
+            if (callee.IsVirtual)
+            {
+                MethodDesc calleeMethodImpl = callee.OwningType.FindVirtualFunctionTargetMethodOnObjectType(callee);
+                if (calleeMethodImpl != callee)
+                {
+                    return false;
+                }
             }
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the https://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -18,7 +21,6 @@ namespace Microsoft.Extensions.Hosting
         public virtual void Dispose() { }
         protected abstract System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken stoppingToken);
         public virtual System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.Diagnostics.DebuggerStepThroughAttribute]
         public virtual System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.Environments.", false)]
@@ -37,9 +39,9 @@ namespace Microsoft.Extensions.Hosting
     public partial class HostBuilderContext
     {
         public HostBuilderContext(System.Collections.Generic.IDictionary<object, object> properties) { }
-        public Microsoft.Extensions.Configuration.IConfiguration Configuration { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public Microsoft.Extensions.Hosting.IHostEnvironment HostingEnvironment { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public System.Collections.Generic.IDictionary<object, object> Properties { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public Microsoft.Extensions.Configuration.IConfiguration Configuration { get { throw null; } set { } }
+        public Microsoft.Extensions.Hosting.IHostEnvironment HostingEnvironment { get { throw null; } set { } }
+        public System.Collections.Generic.IDictionary<object, object> Properties { get { throw null; } }
     }
     public static partial class HostDefaults
     {
@@ -57,18 +59,15 @@ namespace Microsoft.Extensions.Hosting
     public static partial class HostingAbstractionsHostBuilderExtensions
     {
         public static Microsoft.Extensions.Hosting.IHost Start(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder) { throw null; }
-        [System.Diagnostics.DebuggerStepThroughAttribute]
         public static System.Threading.Tasks.Task<Microsoft.Extensions.Hosting.IHost> StartAsync(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public static partial class HostingAbstractionsHostExtensions
     {
         public static void Run(this Microsoft.Extensions.Hosting.IHost host) { }
-        [System.Diagnostics.DebuggerStepThroughAttribute]
         public static System.Threading.Tasks.Task RunAsync(this Microsoft.Extensions.Hosting.IHost host, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) { throw null; }
         public static void Start(this Microsoft.Extensions.Hosting.IHost host) { }
         public static System.Threading.Tasks.Task StopAsync(this Microsoft.Extensions.Hosting.IHost host, System.TimeSpan timeout) { throw null; }
         public static void WaitForShutdown(this Microsoft.Extensions.Hosting.IHost host) { }
-        [System.Diagnostics.DebuggerStepThroughAttribute]
         public static System.Threading.Tasks.Task WaitForShutdownAsync(this Microsoft.Extensions.Hosting.IHost host, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) { throw null; }
     }
     public static partial class HostingEnvironmentExtensions

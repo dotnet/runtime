@@ -4329,6 +4329,12 @@ bool Compiler::fgMayExplicitTailCall()
         return false;
     }
 
+    if (opts.IsReversePInvoke())
+    {
+        // Reverse P/Invoke
+        return false;
+    }
+
 #if !FEATURE_FIXED_OUT_ARGS
     if (info.compIsVarArgs)
     {
@@ -25890,6 +25896,14 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // and there is less jumbled flow to sort out later.
     for (BasicBlock* block = fgLastBB; block != nullptr; block = block->bbPrev)
     {
+        // Workaround: don't consider try entry blocks as candidates
+        // for merging; if the canonical throw is later in the same try,
+        // we'll create invalid flow.
+        if ((block->bbFlags & BBF_TRY_BEG) != 0)
+        {
+            continue;
+        }
+
         // For throw helpers the block should have exactly one statement....
         // (this isn't guaranteed, but seems likely)
         Statement* stmt = block->firstStmt();

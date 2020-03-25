@@ -10,6 +10,7 @@
     <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard1.0;netstandard1.2;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsNetStandard)' == 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>

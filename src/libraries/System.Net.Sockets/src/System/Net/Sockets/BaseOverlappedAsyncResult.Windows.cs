@@ -36,7 +36,7 @@ namespace System.Net.Sockets
         // since the overlapped calls may complete asynchronously.
         internal void SetUnmanagedStructures(object? objectsToPin)
         {
-            Socket s = (Socket)AsyncObject;
+            Socket s = (Socket)AsyncObject!;
 
             // Bind the Win32 Socket Handle to the ThreadPool
             Debug.Assert(s != null, "m_CurrentSocket is null");
@@ -149,7 +149,7 @@ namespace System.Net.Sockets
             if (success)
             {
                 // Synchronous success.
-                Socket socket = (Socket)AsyncObject;
+                Socket socket = (Socket)AsyncObject!;
                 if (socket.SafeHandle.SkipCompletionPortOnSuccess)
                 {
                     // The socket handle is configured to skip completion on success,

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Net.Security;
+using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -18,8 +19,9 @@ namespace System.Net.Http
     public class WinHttpClientHandler : WinHttpHandler
     {
         private bool _useProxy;
+        private readonly Version _requestVersion;
 
-        public WinHttpClientHandler()
+        public WinHttpClientHandler(Version requestVersion)
         {
             // Adjust defaults to match current .NET Desktop HttpClientHandler (based on HWR stack).
             AllowAutoRedirect = true;
@@ -41,6 +43,8 @@ namespace System.Net.Http
             ReceiveHeadersTimeout = Timeout.InfiniteTimeSpan;
             ReceiveDataTimeout = Timeout.InfiniteTimeSpan;
             SendTimeout = Timeout.InfiniteTimeSpan;
+
+            _requestVersion = requestVersion;
         }
 
         public virtual bool SupportsAutomaticDecompression => true;
@@ -176,6 +180,11 @@ namespace System.Net.Http
                 {
                     base.WindowsProxyUsePolicy = WindowsProxyUsePolicy.DoNotUseProxy;
                 }
+            }
+
+            if(_requestVersion >= HttpVersion20.Value)
+            {
+                request.Version = _requestVersion;
             }
 
             return base.SendAsync(request, cancellationToken);

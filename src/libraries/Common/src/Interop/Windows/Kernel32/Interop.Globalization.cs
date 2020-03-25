@@ -40,6 +40,10 @@ internal static partial class Interop
 
         internal const uint TIME_NOSECONDS = 0x00000002;
 
+        internal const int GEOCLASS_NATION       = 16;
+        internal const int GEO_ISO2              =  4;
+        internal const int GEOID_NOT_AVAILABLE   = -1;
+
         internal const string LOCALE_NAME_USER_DEFAULT = null;
         internal const string LOCALE_NAME_SYSTEM_DEFAULT = "!x-sys-default-locale";
 
@@ -132,6 +136,12 @@ internal static partial class Interop
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern int GetCalendarInfoEx(string? lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, IntPtr lpValue);
+
+        [DllImport("kernel32.dll")]
+        internal static extern int GetUserGeoID(int geoClass);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        internal static extern int GetGeoInfo(int location, int geoType, char* lpGeoData, int cchData, int LangId);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern bool EnumCalendarInfoExEx(EnumCalendarInfoProcExEx pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string? lpReserved, uint CalType, void* lParam);

@@ -130,7 +130,12 @@ gboolean mono_use_fast_math = FALSE;
 
 // Lists of whitelisted and blacklisted CPU features 
 MonoCPUFeatures mono_cpu_features_enabled = (MonoCPUFeatures)0;
+
+#ifdef DISABLE_SIMD
+MonoCPUFeatures mono_cpu_features_disabled = MONO_CPU_X86_FULL_SSEAVX_COMBINED;
+#else
 MonoCPUFeatures mono_cpu_features_disabled = (MonoCPUFeatures)0;
+#endif
 
 gboolean mono_use_interpreter = FALSE;
 const char *mono_interp_opts_string = NULL;
@@ -2372,6 +2377,7 @@ lookup_start:
 			g_assert (vtable);
 			if (!mono_runtime_class_init_full (vtable, error))
 				return NULL;
+			MONO_PROFILER_RAISE (jit_done, (method, info));
 			return mono_create_ftnptr (target_domain, info->code_start);
 		}
 	}
@@ -4657,11 +4663,7 @@ register_icalls (void)
 
 	register_dyn_icall (mini_get_dbg_callbacks ()->user_break, mono_debugger_agent_user_break, mono_icall_sig_void, FALSE);
 
-	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_int, TRUE);
-	register_icall (mini_llvm_init_gshared_method_this, mono_icall_sig_void_ptr_ptr_int_object, TRUE);
-	register_icall (mini_llvm_init_gshared_method_mrgctx, mono_icall_sig_void_ptr_ptr_int_ptr, TRUE);
-	register_icall (mini_llvm_init_gshared_method_vtable, mono_icall_sig_void_ptr_ptr_int_ptr, TRUE);
-
+	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_int_ptr, TRUE);
 	register_icall_no_wrapper (mini_llvmonly_resolve_iface_call_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_generic_virtual_call, mono_icall_sig_ptr_ptr_int_ptr);
@@ -4671,7 +4673,7 @@ register_icalls (void)
 	register_icall (mini_llvmonly_init_delegate, mono_icall_sig_void_object, TRUE);
 	register_icall (mini_llvmonly_init_delegate_virtual, mono_icall_sig_void_object_object_ptr, TRUE);
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
-	register_icall (mini_llvmonly_throw_missing_method_exception, mono_icall_sig_void, TRUE);
+	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
 
 	register_icall (mono_get_assembly_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);

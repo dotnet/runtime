@@ -256,12 +256,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData("1f")]
         [InlineData("3f")]
-        public static void ReadInt64_IndefiniteLengthIntegers_ShouldThrowNotImplementedException(string hexEncoding)
+        public static void ReadInt64_IndefiniteLengthIntegers_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
 
-            Assert.Throws<NotImplementedException>(() => reader.ReadInt64());
+            Assert.Throws<FormatException>(() => reader.ReadInt64());
         }
 
         [Fact]

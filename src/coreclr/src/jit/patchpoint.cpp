@@ -232,6 +232,12 @@ PhaseStatus Compiler::fgTransformPatchpoints()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    if (opts.IsReversePInvoke())
+    {
+        JITDUMP(" -- unable to handle Reverse P/Invoke\n");
+        return;
+    }
+
     PatchpointTransformer ppTransformer(this);
     int                   count = ppTransformer.Run();
     JITDUMP("\n -- %d patchpoints transformed\n", count);

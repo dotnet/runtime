@@ -2029,6 +2029,8 @@ namespace System
     {
         public static int MaxGeneration { get { throw null; } }
         public static void AddMemoryPressure(long bytesAllocated) { }
+        public static T[] AllocateArray<T>(int length, bool pinned = false) { throw null; }
+        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false) { throw null; }
         public static void CancelFullGCNotification() { }
         public static void Collect() { }
         public static void Collect(int generation) { }
@@ -5616,6 +5618,21 @@ namespace System.Diagnostics.CodeAnalysis
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
     }
+    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
+    [System.CLSCompliant(false)]
+    public sealed class MemberNotNullAttribute : System.Attribute
+    {
+        public MemberNotNullAttribute(params string[] members) { }
+        public string[] Members { get { throw null; } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
+    [System.CLSCompliant(false)]
+    public sealed class MemberNotNullWhenAttribute : System.Attribute
+    {
+        public MemberNotNullWhenAttribute(bool returnValue, params string[] members) { }
+        public bool ReturnValue { get { throw null; } }
+        public string[] Members { get { throw null; } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
     [System.Diagnostics.ConditionalAttribute("CODE_ANALYSIS")]
     public sealed partial class SuppressMessageAttribute : System.Attribute
@@ -8556,7 +8573,7 @@ namespace System.Runtime
     public static partial class ProfileOptimization
     {
         public static void SetProfileRoot(string directoryPath) { }
-        public static void StartProfile(string profile) { }
+        public static void StartProfile(string? profile) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class TargetedPatchingOptOutAttribute : System.Attribute

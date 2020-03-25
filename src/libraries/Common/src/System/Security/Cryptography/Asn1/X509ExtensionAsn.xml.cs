@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct X509ExtensionAsn
     {
-        private static readonly byte[] s_defaultCritical = { 0x01, 0x01, 0x00 };
+        private static ReadOnlySpan<byte> DefaultCritical => new byte[] { 0x01, 0x01, 0x00 };
 
         internal Oid ExtnId;
         internal bool Critical;
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Asn1
             X509ExtensionAsn decoded = default;
             AsnValueReader reader;
 
-            reader = new AsnValueReader(s_defaultCritical, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultCritical, AsnEncodingRules.DER);
             decoded.Critical = reader.ReadBoolean();
             reader.ThrowIfNotEmpty();
         }
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Asn1
                     tmp.WriteBoolean(Critical);
                     ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
 
-                    if (!encoded.SequenceEqual(s_defaultCritical))
+                    if (!encoded.SequenceEqual(DefaultCritical))
                     {
                         writer.WriteEncodedValue(encoded);
                     }
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultCritical, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultCritical, AsnEncodingRules.DER);
                 decoded.Critical = defaultReader.ReadBoolean();
             }
 

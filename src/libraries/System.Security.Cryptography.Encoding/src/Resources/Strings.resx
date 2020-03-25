@@ -117,6 +117,18 @@
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
   </data>
+  <data name="Argument_PemEncoding_NoPemFound" xml:space="preserve">
+    <value>No PEM encoded data found.</value>
+  </data>
+  <data name="Argument_PemEncoding_InvalidLabel" xml:space="preserve">
+    <value>The specified label is not valid.</value>
+  </data>
+  <data name="Argument_PemEncoding_EncodedSizeTooLarge" xml:space="preserve">
+    <value>The encoded PEM size is too large to represent as a signed 32-bit integer.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPositiveNumber" xml:space="preserve">
+    <value>A positive number is required.</value>
+  </data>
   <data name="ObjectDisposed_Generic" xml:space="preserve">
     <value>Cannot access a disposed object.</value>
   </data>

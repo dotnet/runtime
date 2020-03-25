@@ -5,8 +5,8 @@
 
 namespace System
 {
-	public ref struct RuntimeArgumentHandle
-	{
-		internal IntPtr args;
-	}
+    public ref struct RuntimeArgumentHandle
+    {
+        internal IntPtr args;
+    }
 }

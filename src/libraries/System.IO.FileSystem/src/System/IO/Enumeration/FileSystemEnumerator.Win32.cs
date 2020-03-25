@@ -42,6 +42,10 @@ namespace System.IO.Enumeration
                 case Interop.StatusOptions.STATUS_SUCCESS:
                     Debug.Assert(statusBlock.Information.ToInt64() != 0);
                     return true;
+                // FILE_NOT_FOUND can occur when there are NO files in a volume root (usually there are hidden system files).
+                case Interop.StatusOptions.STATUS_FILE_NOT_FOUND:
+                    DirectoryFinished();
+                    return false;
                 default:
                     int error = (int)Interop.NtDll.RtlNtStatusToDosError(status);
 

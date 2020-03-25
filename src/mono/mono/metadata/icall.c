@@ -126,6 +126,16 @@
 
 //#define MONO_DEBUG_ICALLARRAY
 
+// Inline with CoreCLR heuristics, https://github.com/dotnet/runtime/blob/385b4d4296f9c5cb82363565aa210a1a37f92d90/src/coreclr/src/vm/threads.cpp#L6344.
+// Minimum stack size should be sufficient to allow a typical non-recursive call chain to execute,
+// including potential exception handling and garbage collection. Used for probing for available
+// stack space through RuntimeHelpers.EnsureSufficientExecutionStack.
+#if TARGET_SIZEOF_VOID_P == 8
+#define MONO_MIN_EXECUTION_STACK_SIZE (128 * 1024)
+#else
+#define MONO_MIN_EXECUTION_STACK_SIZE (64 * 1024)
+#endif
+
 #ifdef MONO_DEBUG_ICALLARRAY
 
 static char debug_icallarray; // 0:uninitialized 1:true 2:false
@@ -1293,6 +1303,27 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunModuleConstructor (M
 	mono_runtime_class_init_full (vtable, error);
 }
 
+#ifdef ENABLE_NETCORE
+MonoBoolean
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void)
+{
+	MonoThreadInfo *thread = mono_thread_info_current ();
+	void *current = &thread;
+
+	// Stack upper/lower bound should have been calculated and set as part of register_thread.
+	// If not, we are optimistic and assume there is enough room.
+	if (!thread->stack_start_limit || !thread->stack_end)
+		return TRUE;
+
+	// Stack start limit is stack lower bound. Make sure there is enough room left.
+	void *limit = ((uint8_t *)thread->stack_start_limit) + MONO_MIN_EXECUTION_STACK_SIZE;
+
+	if (current < limit)
+		return FALSE;
+
+	return TRUE;
+}
+#else
 MonoBoolean
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void)
 {
@@ -1331,6 +1362,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 #endif
 	return TRUE;
 }
+#endif
 
 #ifdef ENABLE_NETCORE
 MonoObjectHandle
@@ -8422,7 +8454,7 @@ typedef struct _EventPipeEventInstanceData {
 gconstpointer
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (MonoStringHandle provider_name, MonoDelegateHandle callback_func, MonoError *error)
 {
-	return EVENT_PIPE_DUMMY_PROVIDER_ID;
+	return GUINT_TO_POINTER (EVENT_PIPE_DUMMY_PROVIDER_ID);
 }
 
 intptr_t
@@ -9509,7 +9541,6 @@ mono_lookup_icall_symbol (MonoMethod *m)
 // Storage for these enums is pointer-sized as it gets replaced with MonoType*.
 //
 // mono_create_icall_signatures depends on this order. Handle with care.
-// It is alphabetical.
 typedef enum ICallSigType {
 	ICALL_SIG_TYPE_bool     = 0x00,
 	ICALL_SIG_TYPE_boolean  = ICALL_SIG_TYPE_bool,
@@ -9517,12 +9548,12 @@ typedef enum ICallSigType {
 	ICALL_SIG_TYPE_float    = 0x02,
 	ICALL_SIG_TYPE_int      = 0x03,
 	ICALL_SIG_TYPE_int16    = 0x04,
-	ICALL_SIG_TYPE_int32    = 0x05,
-	ICALL_SIG_TYPE_int8     = 0x06,
-	ICALL_SIG_TYPE_long     = 0x07,
-	ICALL_SIG_TYPE_obj      = 0x08,
+	ICALL_SIG_TYPE_int32    = ICALL_SIG_TYPE_int,
+	ICALL_SIG_TYPE_int8     = 0x05,
+	ICALL_SIG_TYPE_long     = 0x06,
+	ICALL_SIG_TYPE_obj      = 0x07,
 	ICALL_SIG_TYPE_object   = ICALL_SIG_TYPE_obj,
-	ICALL_SIG_TYPE_ptr      = ICALL_SIG_TYPE_int,
+	ICALL_SIG_TYPE_ptr      = 0x08,
 	ICALL_SIG_TYPE_ptrref   = 0x09,
 	ICALL_SIG_TYPE_string   = 0x0A,
 	ICALL_SIG_TYPE_uint16   = 0x0B,
@@ -9530,6 +9561,7 @@ typedef enum ICallSigType {
 	ICALL_SIG_TYPE_uint8    = 0x0D,
 	ICALL_SIG_TYPE_ulong    = 0x0E,
 	ICALL_SIG_TYPE_void     = 0x0F,
+	ICALL_SIG_TYPE_sizet    = 0x10
 } ICallSigType;
 
 #define ICALL_SIG_TYPES_1(a) 		  	ICALL_SIG_TYPE_ ## a,
@@ -9592,12 +9624,12 @@ mono_create_icall_signatures (void)
 		m_class_get_byval_arg (mono_defaults.boolean_class), // ICALL_SIG_TYPE_bool
 		m_class_get_byval_arg (mono_defaults.double_class),	 // ICALL_SIG_TYPE_double
 		m_class_get_byval_arg (mono_defaults.single_class),  // ICALL_SIG_TYPE_float
-		m_class_get_byval_arg (mono_defaults.int_class),	 // ICALL_SIG_TYPE_int
+		m_class_get_byval_arg (mono_defaults.int32_class),	 // ICALL_SIG_TYPE_int
 		m_class_get_byval_arg (mono_defaults.int16_class),	 // ICALL_SIG_TYPE_int16
-		m_class_get_byval_arg (mono_defaults.int32_class),	 // ICALL_SIG_TYPE_int32
 		m_class_get_byval_arg (mono_defaults.sbyte_class),	 // ICALL_SIG_TYPE_int8
 		m_class_get_byval_arg (mono_defaults.int64_class),	 // ICALL_SIG_TYPE_long
 		m_class_get_byval_arg (mono_defaults.object_class),	 // ICALL_SIG_TYPE_obj
+		m_class_get_byval_arg (mono_defaults.int_class),	 // ICALL_SIG_TYPE_ptr
 		mono_class_get_byref_type (mono_defaults.int_class), // ICALL_SIG_TYPE_ptrref
 		m_class_get_byval_arg (mono_defaults.string_class),	 // ICALL_SIG_TYPE_string
 		m_class_get_byval_arg (mono_defaults.uint16_class),	 // ICALL_SIG_TYPE_uint16
@@ -9605,6 +9637,7 @@ mono_create_icall_signatures (void)
 		m_class_get_byval_arg (mono_defaults.byte_class),	 // ICALL_SIG_TYPE_uint8
 		m_class_get_byval_arg (mono_defaults.uint64_class),	 // ICALL_SIG_TYPE_ulong
 		m_class_get_byval_arg (mono_defaults.void_class),	 // ICALL_SIG_TYPE_void
+		m_class_get_byval_arg (mono_defaults.int_class),	 // ICALL_SIG_TYPE_sizet
 	};
 
 	MonoMethodSignature_a *sig = (MonoMethodSignature*)&mono_icall_signatures;

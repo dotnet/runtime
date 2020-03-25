@@ -3049,6 +3049,9 @@ init_backend (MonoBackend *backend)
 static gboolean
 is_simd_supported (MonoCompile *cfg)
 {
+#ifdef DISABLE_SIMD
+    return FALSE;
+#endif
 	// FIXME: Clean this up
 #ifdef TARGET_WASM
 	if ((mini_get_cpu_features (cfg) & MONO_CPU_WASM_SIMD) == 0)

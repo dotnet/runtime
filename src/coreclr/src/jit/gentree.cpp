@@ -10035,18 +10035,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
 
                 if (layout != nullptr)
                 {
-                    if (layout->IsBlockLayout())
-                    {
-                        printf("<%u>", layout->GetSize());
-                    }
-                    else if (varTypeIsSIMD(tree->TypeGet()))
-                    {
-                        printf("<%s>", layout->GetClassName());
-                    }
-                    else
-                    {
-                        printf("<%s, %u>", layout->GetClassName(), layout->GetSize());
-                    }
+                    gtDispClassLayout(layout, tree->TypeGet());
                 }
             }
 
@@ -10401,6 +10390,69 @@ void Compiler::gtDispLclVar(unsigned lclNum, bool padForBiggestDisp)
     if (padForBiggestDisp && (charsPrinted < LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH))
     {
         printf("%*c", LONGEST_COMMON_LCL_VAR_DISPLAY_LENGTH - charsPrinted, ' ');
+    }
+}
+
+//------------------------------------------------------------------------
+// gtDispLclVarStructType: Print size and type information about a struct or lclBlk local variable.
+//
+// Arguments:
+//   lclNum - The local var id.
+//
+void Compiler::gtDispLclVarStructType(unsigned lclNum)
+{
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+    var_types  type   = varDsc->TypeGet();
+    if (type == TYP_STRUCT)
+    {
+        ClassLayout* layout = varDsc->GetLayout();
+        assert(layout != nullptr);
+        gtDispClassLayout(layout, type);
+    }
+    else if (type == TYP_LCLBLK)
+    {
+#if FEATURE_FIXED_OUT_ARGS
+        assert(lclNum == lvaOutgoingArgSpaceVar);
+        // Since lvaOutgoingArgSpaceSize is a PhasedVar we can't read it for Dumping until
+        // after we set it to something.
+        if (lvaOutgoingArgSpaceSize.HasFinalValue())
+        {
+            // A PhasedVar<T> can't be directly used as an arg to a variadic function
+            unsigned value = lvaOutgoingArgSpaceSize;
+            printf("<%u> ", value);
+        }
+        else
+        {
+            printf("<na> "); // The value hasn't yet been determined
+        }
+#else
+        assert(!"Unknown size");
+        NO_WAY("Target doesn't support TYP_LCLBLK");
+#endif // FEATURE_FIXED_OUT_ARGS
+    }
+}
+
+//------------------------------------------------------------------------
+// gtDispClassLayout: Print size and type information about a layout.
+//
+// Arguments:
+//   layout - the layout;
+//   type   - variable type, used to avoid printing size for SIMD nodes.
+//
+void Compiler::gtDispClassLayout(ClassLayout* layout, var_types type)
+{
+    assert(layout != nullptr);
+    if (layout->IsBlockLayout())
+    {
+        printf("<%u>", layout->GetSize());
+    }
+    else if (varTypeIsSIMD(type))
+    {
+        printf("<%s>", layout->GetClassName());
+    }
+    else
+    {
+        printf("<%s, %u>", layout->GetClassName(), layout->GetSize());
     }
 }
 

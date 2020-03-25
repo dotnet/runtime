@@ -5,3 +5,6 @@ normaliz.dll!NormalizeString
 <!-- On Nano these are stubs that return failure -->
 user32.dll!GetProcessWindowStation
 user32.dll!GetUserObjectInformationW
+
+<!-- GetGeoInfo is supported by the analyzer complain for nit using GetGeoInfoW instead and we need to keep the style of not using 'W' in the names -->
+kernel32.dll!GetGeoInfo

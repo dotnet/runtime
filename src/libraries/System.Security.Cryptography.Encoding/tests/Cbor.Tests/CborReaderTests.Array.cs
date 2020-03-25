@@ -42,6 +42,21 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(new object[] { }, "9fff")]
+        [InlineData(new object[] { 42 }, "9f182aff")]
+        [InlineData(new object[] { 1, 2, 3 }, "9f010203ff")]
+        [InlineData(new object[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 }, "9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff")]
+        [InlineData(new object[] { 1, -1, "", new byte[] { 7 } }, "9f0120604107ff")]
+        [InlineData(new object[] { "lorem", "ipsum", "dolor" }, "9f656c6f72656d65697073756d65646f6c6f72ff")]
+        public static void ReadArray_IndefiniteLength_HappyPath(object[] expectedValues, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            Helpers.VerifyArray(reader, expectedValues, expectDefiniteLengthCollections: false);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Theory]
         [InlineData("80", 0)]
         [InlineData("8101", 1)]
         [InlineData("83010203", 3)]
@@ -81,6 +96,40 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+        }
+
+        [Theory]
+        [InlineData("9f")]
+        [InlineData("9f01")]
+        [InlineData("9f0102")]
+        public static void ReadArray_IndefiniteLength_MissingBreakByte_ShouldReportEndOfData(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            reader.ReadStartArray();
+            while (reader.Peek() == CborReaderState.UnsignedInteger)
+            {
+                reader.ReadInt64();
+            }
+
+            Assert.Equal(CborReaderState.EndOfData, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData("9f01ff", 1)]
+        [InlineData("9f0102ff", 2)]
+        [InlineData("9f010203ff", 3)]
+        public static void ReadArray_IndefiniteLength_PrematureEndArrayCall_ShouldThrowInvalidOperationException(string hexEncoding, int length)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            reader.ReadStartArray();
+            for (int i = 1; i < length; i++)
+            {
+                reader.ReadInt64();
+            }
+
+            Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
         }
 
         [Theory]

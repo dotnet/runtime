@@ -2126,7 +2126,10 @@ namespace Internal.JitInterface
             {
                 if (pMT.IsValueType)
                 {
-                    throw new NotImplementedException("https://github.com/dotnet/runtime/issues/32630: ENCODE_CHECK_FIELD_OFFSET: root field check import");
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    pResult->offset = 0;
+                    pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
+                    pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                 }
                 else
                 {

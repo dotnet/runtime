@@ -28,11 +28,11 @@ namespace System.Net.Mail
             if (headers == null)
                 throw new ArgumentNullException(nameof(headers));
 
-            foreach (string key in headers)
+            foreach (string? key in headers) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/3214
             {
-                string[] values = headers.GetValues(key);
+                string[] values = headers!.GetValues(key)!;
                 foreach (string value in values)
-                    WriteHeader(key, value, allowUnicode);
+                    WriteHeader(key!, value, allowUnicode);
             }
         }
 
@@ -52,11 +52,11 @@ namespace System.Net.Mail
         /// </summary>
         /// <param name="sender">Sender of the close event</param>
         /// <param name="args">Event args (not used)</param>
-        protected override void OnClose(object sender, EventArgs args)
+        protected override void OnClose(object? sender, EventArgs args)
         {
             Diagnostics.Debug.Assert(_contentStream == sender);
             _contentStream.Flush();
-            _contentStream = null;
+            _contentStream = null!;
         }
     }
 }

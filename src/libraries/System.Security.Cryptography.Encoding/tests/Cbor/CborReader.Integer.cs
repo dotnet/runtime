@@ -16,9 +16,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    ulong value = ReadUnsignedInteger(header, out int additionalBytes);
+                    ulong value = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
                     AdvanceBuffer(1 + additionalBytes);
-                    _remainingDataItems--;
+                    DecrementRemainingItemCount();
                     return value;
 
                 case CborMajorType.NegativeInteger:
@@ -40,15 +40,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    value = checked((long)ReadUnsignedInteger(header, out additionalBytes));
+                    value = checked((long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
                     AdvanceBuffer(1 + additionalBytes);
-                    _remainingDataItems--;
+                    DecrementRemainingItemCount();
                     return value;
 
                 case CborMajorType.NegativeInteger:
-                    value = checked(-1 - (long)ReadUnsignedInteger(header, out additionalBytes));
+                    value = checked(-1 - (long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
                     AdvanceBuffer(1 + additionalBytes);
-                    _remainingDataItems--;
+                    DecrementRemainingItemCount();
                     return value;
 
                 default:
@@ -61,17 +61,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public ulong ReadCborNegativeIntegerEncoding()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.NegativeInteger);
-            ulong value = ReadUnsignedInteger(header, out int additionalBytes);
+            ulong value = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
             AdvanceBuffer(1 + additionalBytes);
-            _remainingDataItems--;
+            DecrementRemainingItemCount();
             return value;
         }
 
         // Unsigned integer decoding https://tools.ietf.org/html/rfc7049#section-2.1
-        private ulong ReadUnsignedInteger(CborInitialByte header, out int additionalBytes)
+        private static ulong ReadUnsignedInteger(ReadOnlySpan<byte> buffer, CborInitialByte header, out int additionalBytes)
         {
-            ReadOnlySpan<byte> buffer = _buffer.Span;
-
             switch (header.AdditionalInfo)
             {
                 case CborAdditionalInfo x when (x < CborAdditionalInfo.Unsigned8BitIntegerEncoding):
@@ -79,27 +77,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return (ulong)x;
 
                 case CborAdditionalInfo.Unsigned8BitIntegerEncoding:
-                    EnsureBuffer(2);
+                    EnsureBuffer(buffer, 2);
                     additionalBytes = 1;
                     return buffer[1];
 
                 case CborAdditionalInfo.Unsigned16BitIntegerEncoding:
-                    EnsureBuffer(3);
+                    EnsureBuffer(buffer, 3);
                     additionalBytes = 2;
                     return BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(1));
 
                 case CborAdditionalInfo.Unsigned32BitIntegerEncoding:
-                    EnsureBuffer(5);
+                    EnsureBuffer(buffer, 5);
                     additionalBytes = 4;
                     return BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(1));
 
                 case CborAdditionalInfo.Unsigned64BitIntegerEncoding:
-                    EnsureBuffer(9);
+                    EnsureBuffer(buffer, 9);
                     additionalBytes = 8;
                     return BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(1));
-
-                case CborAdditionalInfo.IndefiniteLength:
-                    throw new NotImplementedException("indefinite length support");
 
                 default:
                     throw new FormatException("initial byte contains invalid integer encoding data");

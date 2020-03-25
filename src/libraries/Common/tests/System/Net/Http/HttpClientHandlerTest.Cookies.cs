@@ -182,7 +182,11 @@ namespace System.Net.Http.Functional.Tests
 
         private string GetCookieValue(HttpRequestData request)
         {
+#if !NETFRAMEWORK
             if (LoopbackServerFactory.Version < HttpVersion.Version20)
+#else
+            if (LoopbackServerFactory.Version < HttpVersion20.Value)
+#endif
             {
                 // HTTP/1.x must have only one value.
                 return request.GetSingleHeaderValue("Cookie");
@@ -327,6 +331,12 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(CookieNamesValuesAndUseCookies))]
         public async Task GetAsync_ReceiveSetCookieHeader_CookieAdded(string cookieName, string cookieValue, bool useCookies)
         {
+            if (UseVersion.Major == 2)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/33930")]
+                return;
+            }
+
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -603,7 +613,9 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { "ABC", "123", useCookies };
                 yield return new object[] { "Hello", "World", useCookies };
                 yield return new object[] { "foo", "bar", useCookies };
+#if !NETFRAMEWORK
                 yield return new object[] { "Hello World", "value", useCookies };
+#endif
                 yield return new object[] { ".AspNetCore.Session", "RAExEmXpoCbueP_QYM", useCookies };
 
                 yield return new object[]

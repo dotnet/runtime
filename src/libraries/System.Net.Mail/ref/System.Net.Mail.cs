@@ -10,16 +10,16 @@ namespace System.Net.Mail
     public partial class AlternateView : System.Net.Mail.AttachmentBase
     {
         public AlternateView(System.IO.Stream contentStream) : base (default(System.IO.Stream)) { }
-        public AlternateView(System.IO.Stream contentStream, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
-        public AlternateView(System.IO.Stream contentStream, string mediaType) : base (default(System.IO.Stream)) { }
+        public AlternateView(System.IO.Stream contentStream, System.Net.Mime.ContentType? contentType) : base (default(System.IO.Stream)) { }
+        public AlternateView(System.IO.Stream contentStream, string? mediaType) : base (default(System.IO.Stream)) { }
         public AlternateView(string fileName) : base (default(System.IO.Stream)) { }
-        public AlternateView(string fileName, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
-        public AlternateView(string fileName, string mediaType) : base (default(System.IO.Stream)) { }
-        public System.Uri BaseUri { get { throw null; } set { } }
+        public AlternateView(string fileName, System.Net.Mime.ContentType? contentType) : base (default(System.IO.Stream)) { }
+        public AlternateView(string fileName, string? mediaType) : base (default(System.IO.Stream)) { }
+        public System.Uri? BaseUri { get { throw null; } set { } }
         public System.Net.Mail.LinkedResourceCollection LinkedResources { get { throw null; } }
         public static System.Net.Mail.AlternateView CreateAlternateViewFromString(string content) { throw null; }
-        public static System.Net.Mail.AlternateView CreateAlternateViewFromString(string content, System.Net.Mime.ContentType contentType) { throw null; }
-        public static System.Net.Mail.AlternateView CreateAlternateViewFromString(string content, System.Text.Encoding contentEncoding, string mediaType) { throw null; }
+        public static System.Net.Mail.AlternateView CreateAlternateViewFromString(string content, System.Net.Mime.ContentType? contentType) { throw null; }
+        public static System.Net.Mail.AlternateView CreateAlternateViewFromString(string content, System.Text.Encoding? contentEncoding, string? mediaType) { throw null; }
         protected override void Dispose(bool disposing) { }
     }
     public sealed partial class AlternateViewCollection : System.Collections.ObjectModel.Collection<System.Net.Mail.AlternateView>, System.IDisposable
@@ -34,26 +34,27 @@ namespace System.Net.Mail
     public partial class Attachment : System.Net.Mail.AttachmentBase
     {
         public Attachment(System.IO.Stream contentStream, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
-        public Attachment(System.IO.Stream contentStream, string name) : base (default(System.IO.Stream)) { }
-        public Attachment(System.IO.Stream contentStream, string name, string mediaType) : base (default(System.IO.Stream)) { }
+        public Attachment(System.IO.Stream contentStream, string? name) : base (default(System.IO.Stream)) { }
+        public Attachment(System.IO.Stream contentStream, string? name, string? mediaType) : base (default(System.IO.Stream)) { }
         public Attachment(string fileName) : base (default(System.IO.Stream)) { }
         public Attachment(string fileName, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
-        public Attachment(string fileName, string mediaType) : base (default(System.IO.Stream)) { }
-        public System.Net.Mime.ContentDisposition ContentDisposition { get { throw null; } }
-        public string Name { get { throw null; } set { } }
-        public System.Text.Encoding NameEncoding { get { throw null; } set { } }
+        public Attachment(string fileName, string? mediaType) : base (default(System.IO.Stream)) { }
+        public System.Net.Mime.ContentDisposition? ContentDisposition { get { throw null; } }
+        public string? Name { get { throw null; } set { } }
+        public System.Text.Encoding? NameEncoding { get { throw null; } set { } }
         public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, System.Net.Mime.ContentType contentType) { throw null; }
-        public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, string name) { throw null; }
-        public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, string name, System.Text.Encoding contentEncoding, string mediaType) { throw null; }
+        public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, string? name) { throw null; }
+        public static System.Net.Mail.Attachment CreateAttachmentFromString(string content, string? name, System.Text.Encoding? contentEncoding, string mediaType) { throw null; }
     }
     public abstract partial class AttachmentBase : System.IDisposable
     {
         protected AttachmentBase(System.IO.Stream contentStream) { }
-        protected AttachmentBase(System.IO.Stream contentStream, System.Net.Mime.ContentType contentType) { }
-        protected AttachmentBase(System.IO.Stream contentStream, string mediaType) { }
+        protected AttachmentBase(System.IO.Stream contentStream, System.Net.Mime.ContentType? contentType) { }
+        protected AttachmentBase(System.IO.Stream contentStream, string? mediaType) { }
         protected AttachmentBase(string fileName) { }
-        protected AttachmentBase(string fileName, System.Net.Mime.ContentType contentType) { }
-        protected AttachmentBase(string fileName, string mediaType) { }
+        protected AttachmentBase(string fileName, System.Net.Mime.ContentType? contentType) { }
+        protected AttachmentBase(string fileName, string? mediaType) { }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public string ContentId { get { throw null; } set { } }
         public System.IO.Stream ContentStream { get { throw null; } }
         public System.Net.Mime.ContentType ContentType { get { throw null; } set { } }
@@ -82,15 +83,15 @@ namespace System.Net.Mail
     public partial class LinkedResource : System.Net.Mail.AttachmentBase
     {
         public LinkedResource(System.IO.Stream contentStream) : base (default(System.IO.Stream)) { }
-        public LinkedResource(System.IO.Stream contentStream, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
-        public LinkedResource(System.IO.Stream contentStream, string mediaType) : base (default(System.IO.Stream)) { }
+        public LinkedResource(System.IO.Stream contentStream, System.Net.Mime.ContentType? contentType) : base (default(System.IO.Stream)) { }
+        public LinkedResource(System.IO.Stream contentStream, string? mediaType) : base (default(System.IO.Stream)) { }
         public LinkedResource(string fileName) : base (default(System.IO.Stream)) { }
-        public LinkedResource(string fileName, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
-        public LinkedResource(string fileName, string mediaType) : base (default(System.IO.Stream)) { }
-        public System.Uri ContentLink { get { throw null; } set { } }
+        public LinkedResource(string fileName, System.Net.Mime.ContentType? contentType) : base (default(System.IO.Stream)) { }
+        public LinkedResource(string fileName, string? mediaType) : base (default(System.IO.Stream)) { }
+        public System.Uri? ContentLink { get { throw null; } set { } }
         public static System.Net.Mail.LinkedResource CreateLinkedResourceFromString(string content) { throw null; }
-        public static System.Net.Mail.LinkedResource CreateLinkedResourceFromString(string content, System.Net.Mime.ContentType contentType) { throw null; }
-        public static System.Net.Mail.LinkedResource CreateLinkedResourceFromString(string content, System.Text.Encoding contentEncoding, string mediaType) { throw null; }
+        public static System.Net.Mail.LinkedResource CreateLinkedResourceFromString(string content, System.Net.Mime.ContentType? contentType) { throw null; }
+        public static System.Net.Mail.LinkedResource CreateLinkedResourceFromString(string content, System.Text.Encoding? contentEncoding, string? mediaType) { throw null; }
     }
     public sealed partial class LinkedResourceCollection : System.Collections.ObjectModel.Collection<System.Net.Mail.LinkedResource>, System.IDisposable
     {
@@ -104,17 +105,17 @@ namespace System.Net.Mail
     public partial class MailAddress
     {
         public MailAddress(string address) { }
-        public MailAddress(string address, string displayName) { }
-        public MailAddress(string address, string displayName, System.Text.Encoding displayNameEncoding) { }
+        public MailAddress(string address, string? displayName) { }
+        public MailAddress(string address, string? displayName, System.Text.Encoding? displayNameEncoding) { }
         public string Address { get { throw null; } }
         public string DisplayName { get { throw null; } }
         public string Host { get { throw null; } }
         public string User { get { throw null; } }
-        public override bool Equals(object value) { throw null; }
+        public override bool Equals(object? value) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static bool TryCreate(string address, out MailAddress result) { throw null; }
-        public static bool TryCreate(string address, string displayName, out MailAddress result) { throw null; }
-        public static bool TryCreate(string address, string displayName, System.Text.Encoding displayNameEncoding, out MailAddress result) { throw null; }
+        public static bool TryCreate(string address, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out MailAddress? result) { throw null; }
+        public static bool TryCreate(string address, string? displayName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out MailAddress? result) { throw null; }
+        public static bool TryCreate(string address, string? displayName, System.Text.Encoding displayNameEncoding, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out MailAddress? result) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class MailAddressCollection : System.Collections.ObjectModel.Collection<System.Net.Mail.MailAddress>
@@ -130,26 +131,30 @@ namespace System.Net.Mail
         public MailMessage() { }
         public MailMessage(System.Net.Mail.MailAddress from, System.Net.Mail.MailAddress to) { }
         public MailMessage(string from, string to) { }
-        public MailMessage(string from, string to, string subject, string body) { }
+        public MailMessage(string from, string to, string? subject, string? body) { }
         public System.Net.Mail.AlternateViewCollection AlternateViews { get { throw null; } }
         public System.Net.Mail.AttachmentCollection Attachments { get { throw null; } }
         public System.Net.Mail.MailAddressCollection Bcc { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public string Body { get { throw null; } set { } }
-        public System.Text.Encoding BodyEncoding { get { throw null; } set { } }
+        public System.Text.Encoding? BodyEncoding { get { throw null; } set { } }
         public System.Net.Mime.TransferEncoding BodyTransferEncoding { get { throw null; } set { } }
         public System.Net.Mail.MailAddressCollection CC { get { throw null; } }
         public System.Net.Mail.DeliveryNotificationOptions DeliveryNotificationOptions { get { throw null; } set { } }
-        public System.Net.Mail.MailAddress From { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        public System.Net.Mail.MailAddress? From { get { throw null; } set { } }
         public System.Collections.Specialized.NameValueCollection Headers { get { throw null; } }
-        public System.Text.Encoding HeadersEncoding { get { throw null; } set { } }
+        public System.Text.Encoding? HeadersEncoding { get { throw null; } set { } }
         public bool IsBodyHtml { get { throw null; } set { } }
         public System.Net.Mail.MailPriority Priority { get { throw null; } set { } }
         [System.ObsoleteAttribute("ReplyTo is obsoleted for this type.  Please use ReplyToList instead which can accept multiple addresses. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public System.Net.Mail.MailAddress ReplyTo { get { throw null; } set { } }
+        public System.Net.Mail.MailAddress? ReplyTo { get { throw null; } set { } }
         public System.Net.Mail.MailAddressCollection ReplyToList { get { throw null; } }
-        public System.Net.Mail.MailAddress Sender { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        public System.Net.Mail.MailAddress? Sender { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public string Subject { get { throw null; } set { } }
-        public System.Text.Encoding SubjectEncoding { get { throw null; } set { } }
+        public System.Text.Encoding? SubjectEncoding { get { throw null; } set { } }
         public System.Net.Mail.MailAddressCollection To { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -164,33 +169,34 @@ namespace System.Net.Mail
     public partial class SmtpClient : System.IDisposable
     {
         public SmtpClient() { }
-        public SmtpClient(string host) { }
-        public SmtpClient(string host, int port) { }
+        public SmtpClient(string? host) { }
+        public SmtpClient(string? host, int port) { }
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } }
-        public System.Net.ICredentialsByHost Credentials { get { throw null; } set { } }
+        public System.Net.ICredentialsByHost? Credentials { get { throw null; } set { } }
         public System.Net.Mail.SmtpDeliveryFormat DeliveryFormat { get { throw null; } set { } }
         public System.Net.Mail.SmtpDeliveryMethod DeliveryMethod { get { throw null; } set { } }
         public bool EnableSsl { get { throw null; } set { } }
-        public string Host { get { throw null; } set { } }
-        public string PickupDirectoryLocation { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        public string? Host { get { throw null; } set { } }
+        public string? PickupDirectoryLocation { get { throw null; } set { } }
         public int Port { get { throw null; } set { } }
         public System.Net.ServicePoint ServicePoint { get { throw null; } }
-        public string TargetName { get { throw null; } set { } }
+        public string? TargetName { get { throw null; } set { } }
         public int Timeout { get { throw null; } set { } }
         public bool UseDefaultCredentials { get { throw null; } set { } }
-        public event System.Net.Mail.SendCompletedEventHandler SendCompleted { add { } remove { } }
+        public event System.Net.Mail.SendCompletedEventHandler? SendCompleted { add { } remove { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         protected void OnSendCompleted(System.ComponentModel.AsyncCompletedEventArgs e) { }
         public void Send(System.Net.Mail.MailMessage message) { }
-        public void Send(string from, string recipients, string subject, string body) { }
-        public void SendAsync(System.Net.Mail.MailMessage message, object userToken) { }
-        public void SendAsync(string from, string recipients, string subject, string body, object userToken) { }
+        public void Send(string from, string recipients, string? subject, string? body) { }
+        public void SendAsync(System.Net.Mail.MailMessage message, object? userToken) { }
+        public void SendAsync(string from, string recipients, string? subject, string? body, object? userToken) { }
         public void SendAsyncCancel() { }
         public System.Threading.Tasks.Task SendMailAsync(System.Net.Mail.MailMessage message) { throw null; }
-        public System.Threading.Tasks.Task SendMailAsync(string from, string recipients, string subject, string body) { throw null; }
+        public System.Threading.Tasks.Task SendMailAsync(string from, string recipients, string? subject, string? body) { throw null; }
         public System.Threading.Tasks.Task SendMailAsync(System.Net.Mail.MailMessage message, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task SendMailAsync(string from, string recipients, string subject, string body, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task SendMailAsync(string from, string recipients, string? subject, string? body, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public enum SmtpDeliveryFormat
     {
@@ -207,10 +213,10 @@ namespace System.Net.Mail
     {
         public SmtpException() { }
         public SmtpException(System.Net.Mail.SmtpStatusCode statusCode) { }
-        public SmtpException(System.Net.Mail.SmtpStatusCode statusCode, string message) { }
+        public SmtpException(System.Net.Mail.SmtpStatusCode statusCode, string? message) { }
         protected SmtpException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        public SmtpException(string message) { }
-        public SmtpException(string message, System.Exception innerException) { }
+        public SmtpException(string? message) { }
+        public SmtpException(string? message, System.Exception? innerException) { }
         public System.Net.Mail.SmtpStatusCode StatusCode { get { throw null; } set { } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -218,13 +224,13 @@ namespace System.Net.Mail
     public partial class SmtpFailedRecipientException : System.Net.Mail.SmtpException, System.Runtime.Serialization.ISerializable
     {
         public SmtpFailedRecipientException() { }
-        public SmtpFailedRecipientException(System.Net.Mail.SmtpStatusCode statusCode, string failedRecipient) { }
-        public SmtpFailedRecipientException(System.Net.Mail.SmtpStatusCode statusCode, string failedRecipient, string serverResponse) { }
+        public SmtpFailedRecipientException(System.Net.Mail.SmtpStatusCode statusCode, string? failedRecipient) { }
+        public SmtpFailedRecipientException(System.Net.Mail.SmtpStatusCode statusCode, string? failedRecipient, string? serverResponse) { }
         protected SmtpFailedRecipientException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public SmtpFailedRecipientException(string message) { }
-        public SmtpFailedRecipientException(string message, System.Exception innerException) { }
-        public SmtpFailedRecipientException(string message, string failedRecipient, System.Exception innerException) { }
-        public string FailedRecipient { get { throw null; } }
+        public SmtpFailedRecipientException(string? message) { }
+        public SmtpFailedRecipientException(string? message, System.Exception? innerException) { }
+        public SmtpFailedRecipientException(string? message, string? failedRecipient, System.Exception? innerException) { }
+        public string? FailedRecipient { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
@@ -232,9 +238,9 @@ namespace System.Net.Mail
     {
         public SmtpFailedRecipientsException() { }
         protected SmtpFailedRecipientsException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public SmtpFailedRecipientsException(string message) { }
-        public SmtpFailedRecipientsException(string message, System.Exception innerException) { }
-        public SmtpFailedRecipientsException(string message, System.Net.Mail.SmtpFailedRecipientException[] innerExceptions) { }
+        public SmtpFailedRecipientsException(string? message) { }
+        public SmtpFailedRecipientsException(string? message, System.Exception? innerException) { }
+        public SmtpFailedRecipientsException(string? message, System.Net.Mail.SmtpFailedRecipientException[] innerExceptions) { }
         public System.Net.Mail.SmtpFailedRecipientException[] InnerExceptions { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -276,13 +282,13 @@ namespace System.Net.Mime
         public ContentDisposition(string disposition) { }
         public System.DateTime CreationDate { get { throw null; } set { } }
         public string DispositionType { get { throw null; } set { } }
-        public string FileName { get { throw null; } set { } }
+        public string? FileName { get { throw null; } set { } }
         public bool Inline { get { throw null; } set { } }
         public System.DateTime ModificationDate { get { throw null; } set { } }
         public System.Collections.Specialized.StringDictionary Parameters { get { throw null; } }
         public System.DateTime ReadDate { get { throw null; } set { } }
         public long Size { get { throw null; } set { } }
-        public override bool Equals(object rparam) { throw null; }
+        public override bool Equals(object? rparam) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -290,12 +296,13 @@ namespace System.Net.Mime
     {
         public ContentType() { }
         public ContentType(string contentType) { }
-        public string Boundary { get { throw null; } set { } }
-        public string CharSet { get { throw null; } set { } }
+        public string? Boundary { get { throw null; } set { } }
+        public string? CharSet { get { throw null; } set { } }
         public string MediaType { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public string Name { get { throw null; } set { } }
         public System.Collections.Specialized.StringDictionary Parameters { get { throw null; } }
-        public override bool Equals(object rparam) { throw null; }
+        public override bool Equals(object? rparam) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }

@@ -319,13 +319,7 @@ PCODE MethodDesc::PrepareInitialCode(CallerGCMode callerGCMode)
     STANDARD_VM_CONTRACT;
     PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
     config.SetCallerGCMode(callerGCMode);
-    PCODE pCode = PrepareCode(&config);
-
-#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
-    NotifyGdb::MethodPrepared(this);
-#endif
-
-    return pCode;
+    return PrepareCode(&config);
 }
 
 PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
@@ -335,7 +329,13 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
     // If other kinds of code need multi-versioning we could add more cases here,
     // but for now generation of all other code/stubs occurs in other code paths
     _ASSERTE(IsIL() || IsNoMetadata());
-    return PrepareILBasedCode(pConfig);
+    PCODE pCode = PrepareILBasedCode(pConfig);
+
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
+    NotifyGdb::MethodPrepared(this);
+#endif
+
+    return pCode;
 }
 
 bool MayUsePrecompiledILStub()

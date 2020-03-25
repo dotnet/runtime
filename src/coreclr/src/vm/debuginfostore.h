@@ -107,7 +107,7 @@ public:
 #endif
 
 #ifdef DACCESS_COMPILE
-    static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo);
+    static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo, BOOL hasFlagByte);
 #endif
 };
 
