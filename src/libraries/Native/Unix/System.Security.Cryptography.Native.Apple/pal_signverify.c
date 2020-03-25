@@ -4,6 +4,7 @@
 
 #include "pal_signverify.h"
 
+#ifndef TARGET_IOS
 static int32_t ExecuteSignTransform(SecTransformRef signer, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut);
 static int32_t ExecuteVerifyTransform(SecTransformRef verifier, CFErrorRef* pErrorOut);
 
@@ -285,3 +286,4 @@ static int32_t ConfigureSignVerifyTransform(SecTransformRef xform,
 
     return 1;
 }
+#endif

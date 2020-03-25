@@ -12,6 +12,10 @@
 
 #include "config.h"
 
+#if defined(TARGET_ANDROID)
+#include "pal_icushim_internal_android.h"
+#else
+
 #define U_DISABLE_RENAMING 1
 
 // All ICU headers need to be included here so that all function prototypes are
@@ -34,6 +38,8 @@
 #include <unicode/utypes.h>
 #include <unicode/urename.h>
 #include <unicode/ustring.h>
+
+#endif
 
 #elif defined(TARGET_WINDOWS)
 

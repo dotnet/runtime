@@ -1125,7 +1125,7 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
     CORJIT_FLAGS* jitflags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
-    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX", key, value.B, jitflags->GetFlagsRaw());
+    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-%016llX", key, value.B, jitflags->GetFlagsRaw(), jitflags->GetInstructionSetFlagsRaw());
     GetJitFlags->Unlock();
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)

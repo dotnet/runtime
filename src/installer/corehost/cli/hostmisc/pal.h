@@ -68,7 +68,7 @@
 #define LIB_PREFIX
 #define MAKE_LIBNAME(NAME) (_X(NAME) _X(".dll"))
 #define FALLBACK_HOST_RID _X("win10")
-#elif defined(TARGET_DARWIN)
+#elif defined(TARGET_OSX)
 #define LIB_PREFIX _X("lib")
 #define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".dylib"))
 #define FALLBACK_HOST_RID _X("osx.10.12")

@@ -27,7 +27,7 @@ namespace System.Threading
             Debug.Assert(maximumSignalCount > 0);
             Debug.Assert(spinCount >= 0);
 
-            _separated = new CacheLineSeparatedCounts();
+            _separated = default;
             _separated._counts._signalCount = (uint)initialSignalCount;
             _maximumSignalCount = maximumSignalCount;
             _spinCount = spinCount;
@@ -204,7 +204,7 @@ namespace System.Threading
                 {
                     // Unregister the waiter. The wait subsystem used above guarantees that a thread that wakes due to a timeout does
                     // not observe a signal to the object being waited upon.
-                    Counts toSubtract = new Counts();
+                    Counts toSubtract = default;
                     toSubtract._waiterCount++;
                     Counts newCounts = _separated._counts.Subtract(toSubtract);
                     Debug.Assert(newCounts._waiterCount != ushort.MaxValue); // Check for underflow

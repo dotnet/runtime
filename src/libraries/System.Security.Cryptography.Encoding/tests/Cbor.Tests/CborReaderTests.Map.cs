@@ -54,6 +54,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
+        [Theory]
+        [InlineData(new object[] { Map }, "bfff")]
+        [InlineData(new object[] { Map, 1, 2, 3, 4 }, "bf01020304ff")]
+        [InlineData(new object[] { Map, "a", "A", "b", "B", "c", "C", "d", "D", "e", "E" }, "bf6161614161626142616361436164614461656145ff")]
+        [InlineData(new object[] { Map, "a", "A", -1, 2, new byte[] { }, new byte[] { 1 } }, "bf616161412002404101ff")]
+        public static void ReadMap_IndefiniteLength_SimpleValues_HappyPath(object[] exoectedValues, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            Helpers.VerifyMap(reader, exoectedValues, expectDefiniteLengthCollections: false);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
 
         [Theory]
         [InlineData(new object[] { Map, "a", 1, "a", 2 }, "a2616101616102")]
@@ -191,6 +204,59 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             Assert.Throws<FormatException>(() => reader.ReadInt64());
+        }
+
+        [Theory]
+        [InlineData("bf")]
+        [InlineData("bf0102")]
+        [InlineData("bf01020304")]
+        public static void ReadMap_IndefiniteLength_MissingBreakByte_ShouldReportEndOfData(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            reader.ReadStartMap();
+            while (reader.Peek() == CborReaderState.UnsignedInteger)
+            {
+                reader.ReadInt64();
+            }
+
+            Assert.Equal(CborReaderState.EndOfData, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData("bf0102ff", 1)]
+        [InlineData("bf01020304ff", 2)]
+        [InlineData("bf010203040506ff", 3)]
+        public static void ReadMap_IndefiniteLength_PrematureEndArrayCall_ShouldThrowInvalidOperationException(string hexEncoding, int length)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            reader.ReadStartMap();
+            for (int i = 1; i < length; i++)
+            {
+                reader.ReadInt64();
+            }
+
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadEndMap());
+        }
+
+        [Theory]
+        [InlineData("bf01ff", 1)]
+        [InlineData("bf010203ff", 3)]
+        [InlineData("bf0102030405ff", 5)]
+        public static void ReadMap_IndefiniteLength_OddKeyValuePairs_ShouldThrowFormatException(string hexEncoding, int length)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            reader.ReadStartMap();
+            for (int i = 0; i < length; i++)
+            {
+                reader.ReadInt64();
+            }
+
+            Assert.Equal(CborReaderState.FormatError, reader.Peek()); // don't want this to fail
+            Assert.Throws<FormatException>(() => reader.ReadEndMap());
         }
 
         [Theory]

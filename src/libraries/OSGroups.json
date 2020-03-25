@@ -22,6 +22,11 @@
         "Unix"
         ]
       },
+    "Android": {
+      "#import": [
+        "Linux"
+        ]
+      },
     "FreeBSD": {
       "#import": [
         "Unix"

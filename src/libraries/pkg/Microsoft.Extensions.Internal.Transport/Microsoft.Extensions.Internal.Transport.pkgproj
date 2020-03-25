@@ -1,0 +1,13 @@
+﻿<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+  <PropertyGroup>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <HarvestStablePackage>false</HarvestStablePackage>
+  </PropertyGroup>
+  <ItemGroup>
+    <File Include="$(ASPNETCoreAppPackageRefPath)\*.*" TargetPath="lib\$(NetCoreAppCurrent)" />
+    <File Include="$(ASPNETCoreAppPackageRuntimePath)\*.*" TargetPath="ref\$(NetCoreAppCurrent)" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

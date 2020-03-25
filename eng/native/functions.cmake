@@ -254,7 +254,7 @@ function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
     set(strip_source_file $<TARGET_FILE:${targetName}>)
 
-    if (CLR_CMAKE_TARGET_DARWIN)
+    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
       set(strip_destination_file ${strip_source_file}.dwarf)
 
       # Ensure that dsymutil and strip are present
@@ -276,7 +276,7 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${STRIP} -S ${strip_source_file}
         COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
         )
-    else (CLR_CMAKE_TARGET_DARWIN)
+    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
       set(strip_destination_file ${strip_source_file}.dbg)
 
       add_custom_command(
@@ -288,7 +288,7 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
         )
-    endif (CLR_CMAKE_TARGET_DARWIN)
+    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
 
     set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
   endif(CLR_CMAKE_HOST_UNIX)

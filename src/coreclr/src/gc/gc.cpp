@@ -4334,12 +4334,12 @@ heap_segment* heap_segment_next_in_range (heap_segment* seg)
     return heap_segment_in_range (ns);
 }
 
-typedef struct
+struct imemory_data
 {
     uint8_t* memory_base;
-} imemory_data;
+};
 
-typedef struct
+struct initial_memory_details
 {
     imemory_data *initial_memory;
     imemory_data *initial_normal_heap; // points into initial_memory_array
@@ -4401,7 +4401,7 @@ typedef struct
         }
     };
 
-} initial_memory_details;
+};
 
 initial_memory_details memory_details;
 

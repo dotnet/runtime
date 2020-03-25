@@ -8,9 +8,9 @@
 - In the `.NET Core Launch (console)` configuration do the following
   - delete the `preLaunchTask` property
   - set `program` to the full path to `dotnet` in the artifacts/bin/testhost directory.
-    - something like `runtime/artifacts/bin/testhost/netcoreapp-{OS}-{Configuration}-{Architecture}`, plus the full path to your corefx directory.
+    - something like `artifacts/bin/testhost/netcoreapp-{OS}-{Configuration}-{Architecture}`, plus the full path to your dotnet/runtime directory.
   - set `cwd` to the test bin directory.
-    - using the System.Net.Sockets example, it should be something like `runtime/artifacts/bin/System.Net.Sockets.Tests/netcoreapp-{OS}-{Configuration}-{Architecture}`, plus the full path to your corefx directory.
+    - using the System.Net.Sockets example, it should be something like `artifacts/bin/System.Net.Sockets.Tests/netcoreapp-{OS}-{Configuration}-{Architecture}`, plus the full path to your dotnet/runtime directory.
   - set `args` to the command line arguments to pass to the test
     - something like: `[ "exec", "--runtimeconfig", "{TestProjectName}.runtimeconfig.json", "xunit.console.dll", "{TestProjectName}.dll", "-notrait", ... ]`, where TestProjectName would be `System.Net.Sockets.Tests`
     - to run a specific test, you can append something like: `[ "method", "System.Net.Sockets.Tests.{ClassName}.{TestMethodName}", ...]`

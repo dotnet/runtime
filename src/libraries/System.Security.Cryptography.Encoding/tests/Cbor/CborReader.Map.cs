@@ -12,22 +12,53 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public ulong? ReadStartMap()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Map);
-            ulong arrayLength = checked((ulong)ReadUnsignedInteger(header, out int additionalBytes));
-            AdvanceBuffer(1 + additionalBytes);
-            _remainingDataItems--;
 
-            if (arrayLength > long.MaxValue)
+            if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
-                throw new OverflowException("Read CBOR map field count exceeds supported size.");
+                AdvanceBuffer(1);
+                DecrementRemainingItemCount();
+                PushDataItem(CborMajorType.Map, null);
+                return null;
             }
+            else
+            {
+                ulong mapSize = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
 
-            PushDataItem(CborMajorType.Map, 2 * arrayLength);
-            return arrayLength;
+                if (mapSize > long.MaxValue)
+                {
+                    throw new OverflowException("Read CBOR map field count exceeds supported size.");
+                }
+
+                AdvanceBuffer(1 + additionalBytes);
+                DecrementRemainingItemCount();
+                PushDataItem(CborMajorType.Map, 2 * mapSize);
+                return mapSize;
+            }
         }
 
         public void ReadEndMap()
         {
-            PopDataItem(expectedType: CborMajorType.Map);
+            if (_remainingDataItems == null)
+            {
+                CborInitialByte value = PeekInitialByte();
+
+                if (value.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
+                {
+                    throw new InvalidOperationException("Not at end of indefinite-length map.");
+                }
+
+                if (!_isEvenNumberOfDataItemsRead)
+                {
+                    throw new FormatException("CBOR Map types require an even number of key/value combinations");
+                }
+
+                PopDataItem(expectedType: CborMajorType.Map);
+                AdvanceBuffer(1);
+            }
+            else
+            {
+                PopDataItem(expectedType: CborMajorType.Map);
+            }
         }
     }
 }

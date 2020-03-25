@@ -531,7 +531,7 @@ int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
     // On Android, there's no getdomainname but we can use uname to fetch the domain name
     // of the current device
     size_t namelen = (uint32_t)nameLength;
-    utsname  uts;
+    struct utsname  uts;
 
     // If uname returns an error, bail out.
     if (uname(&uts) == -1)
@@ -547,7 +547,7 @@ int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
     }
 
     // Copy the domain name
-    SafeStringCopy((char*)name, nameLength, uts.domainname);
+    SafeStringCopy((char*)name, namelen, uts.domainname);
     return 0;
 #else
     // GetDomainName is not supported on this platform.

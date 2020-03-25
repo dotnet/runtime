@@ -11,102 +11,116 @@ using Mono;
 
 namespace System
 {
-	partial class Environment
-	{
-		private static Dictionary<string, string> s_environment;
+    public partial class Environment
+    {
+        private static Dictionary<string, string> s_environment;
 
-		static string GetEnvironmentVariableCore (string variable)
-		{
-			Debug.Assert(variable != null);
+        private static string GetEnvironmentVariableCore(string variable)
+        {
+            Debug.Assert(variable != null);
 
-			variable = TrimStringOnFirstZero (variable);
+            variable = TrimStringOnFirstZero(variable);
 
-			// call getenv directly if s_environment is not yet initialized
-			if (s_environment == null) {
-				using (var h = RuntimeMarshal.MarshalString (variable)) {
-					return internalGetEnvironmentVariable_native (h.Value);
-				}
-			}
+            if (s_environment == null)
+            {
+                using (var h = RuntimeMarshal.MarshalString(variable))
+                {
+                    return internalGetEnvironmentVariable_native(h.Value);
+                }
+            }
 
-			string value = "";
-			lock (s_environment) {
-				if (!s_environment.TryGetValue (variable, out value)) {
-					// on some platform s_environment can be empty after EnsureEnvironmentCached (), e.g. iOS
-					using (var h = RuntimeMarshal.MarshalString (variable)) {
-						value = internalGetEnvironmentVariable_native (h.Value);
-						s_environment [variable] = value;
-					}
-				}
-			}
-			return value;
-		}
+            string value = "";
+            lock (s_environment)
+            {
+                if (!s_environment.TryGetValue(variable, out value))
+                {
+                    using (var h = RuntimeMarshal.MarshalString(variable))
+                    {
+                        value = internalGetEnvironmentVariable_native(h.Value);
+                        s_environment[variable] = value;
+                    }
+                }
+            }
+            return value;
+        }
 
-		static unsafe void SetEnvironmentVariableCore (string variable, string? value)
-		{
-			Debug.Assert(variable != null);
+        private static unsafe void SetEnvironmentVariableCore(string variable, string? value)
+        {
+            Debug.Assert(variable != null);
 
-			EnsureEnvironmentCached ();
-			lock (s_environment) {
-				variable = TrimStringOnFirstZero (variable);
-				value = value == null ? null : TrimStringOnFirstZero (value);
-				if (string.IsNullOrEmpty (value)) {
-					s_environment.Remove (variable);
-				} else {
-					s_environment[variable] = value;
-				}
-			}
-		}
+            EnsureEnvironmentCached();
+            lock (s_environment)
+            {
+                variable = TrimStringOnFirstZero(variable);
+                value = value == null ? null : TrimStringOnFirstZero(value);
+                if (string.IsNullOrEmpty(value))
+                {
+                    s_environment.Remove(variable);
+                }
+                else
+                {
+                    s_environment[variable] = value;
+                }
+            }
+        }
 
-		public static IDictionary GetEnvironmentVariables ()
-		{
-			var results = new Hashtable();
+        public static IDictionary GetEnvironmentVariables()
+        {
+            var results = new Hashtable();
 
-			EnsureEnvironmentCached();
-			lock (s_environment) {
-				foreach (var keyValuePair in s_environment) {
-					results.Add(keyValuePair.Key, keyValuePair.Value);
-				}
-			}
+            EnsureEnvironmentCached();
+            lock (s_environment)
+            {
+                foreach (var keyValuePair in s_environment)
+                {
+                    results.Add(keyValuePair.Key, keyValuePair.Value);
+                }
+            }
 
-			return results;
-		}
+            return results;
+        }
 
-		private static string TrimStringOnFirstZero (string value)
-		{
-			int index = value.IndexOf ('\0');
-			if (index >= 0) {
-				return value.Substring (0, index);
-			}
-			return value;
-		}
+        private static string TrimStringOnFirstZero(string value)
+        {
+            int index = value.IndexOf('\0');
+            if (index >= 0)
+            {
+                return value.Substring(0, index);
+            }
+            return value;
+        }
 
-		private static void EnsureEnvironmentCached ()
-		{
-			if (s_environment == null) {
-				Interlocked.CompareExchange (ref s_environment, GetSystemEnvironmentVariables (), null);
-			}
-		}
+        private static void EnsureEnvironmentCached()
+        {
+            if (s_environment == null)
+            {
+                Interlocked.CompareExchange(ref s_environment, GetSystemEnvironmentVariables(), null);
+            }
+        }
 
-		private static Dictionary<string, string> GetSystemEnvironmentVariables ()
-		{
-			var results = new Dictionary<string, string>();
+        private static Dictionary<string, string> GetSystemEnvironmentVariables()
+        {
+            var results = new Dictionary<string, string>();
 
-			foreach (string name in GetEnvironmentVariableNames ()) {
-				if (name != null) {
-					using (var h = RuntimeMarshal.MarshalString (name)) {
-						results.Add (name, internalGetEnvironmentVariable_native (h.Value));
-					}
-				}
-			}
+            foreach (string name in GetEnvironmentVariableNames())
+            {
+                if (name != null)
+                {
+                    using (var h = RuntimeMarshal.MarshalString(name))
+                    {
+                        results.Add(name, internalGetEnvironmentVariable_native(h.Value));
+                    }
+                }
+            }
 
-			return results;
-		}
+            return results;
+        }
 
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static string internalGetEnvironmentVariable_native (IntPtr variable);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern string internalGetEnvironmentVariable_native(IntPtr variable);
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		private extern static string [] GetEnvironmentVariableNames ();
-	}
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern string[] GetEnvironmentVariableNames();
+    }
 }

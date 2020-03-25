@@ -155,7 +155,7 @@ tls_get_restore_state (void *tls)
 }
 
 static gboolean
-try_process_suspend (void *tls, MonoContext *ctx)
+try_process_suspend (void *tls, MonoContext *ctx, gboolean from_breakpoint)
 {
 	return FALSE;
 }
@@ -241,7 +241,7 @@ process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, in
 	BpEvents *evts = (BpEvents*)_evts;
 	if (evts) {
 		if (evts->is_ss)
-			mono_de_cancel_ss ();
+			mono_de_cancel_all_ss ();
 		mono_wasm_fire_bp ();
 		g_free (evts);
 	}
@@ -295,7 +295,7 @@ ss_args_destroy (SingleStepArgs *ss_args)
 
 static int
 handle_multiple_ss_requests (void) {
-	mono_de_cancel_ss ();
+	mono_de_cancel_all_ss ();
 	return 1;
 }
 
@@ -399,7 +399,7 @@ mono_wasm_setup_single_step (int kind)
 		}
 	}
 	if (!isBPOnNativeCode) {
-		mono_de_cancel_ss ();
+		mono_de_cancel_all_ss ();
 	}
 	return isBPOnNativeCode;
 }

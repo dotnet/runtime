@@ -2259,7 +2259,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		if (mono_class_field_is_special_static (field)) {
 			gpointer addr;
 
-			mono_class_vtable_checked (domain, klass, error);
+			mono_class_vtable_checked (domain, field->parent, error);
 			mono_error_assert_ok (error);
 
 			/* Return the TLS offset */

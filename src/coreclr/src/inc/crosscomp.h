@@ -18,7 +18,7 @@
 #define MAKE_TARGET_DLLNAME_W(name) name W(".dll")
 #define MAKE_TARGET_DLLNAME_A(name) name ".dll"
 #else // TARGET_WINDOWS
-#ifdef TARGET_DARWIN
+#ifdef TARGET_OSX
 #define MAKE_TARGET_DLLNAME_W(name) W("lib") name W(".dylib")
 #define MAKE_TARGET_DLLNAME_A(name)  "lib" name  ".dylib"
 #else
@@ -370,9 +370,9 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 
 #define T_CRITICAL_SECTION_VALIDATION_MESSAGE "T_CRITICAL_SECTION validation failed. It is not in sync with CRITICAL_SECTION"
 
-#if defined(TARGET_DARWIN) && defined(TARGET_X86)
+#if defined(TARGET_OSX) && defined(TARGET_X86)
 #define DAC_CS_NATIVE_DATA_SIZE 76
-#elif defined(TARGET_DARWIN) && defined(TARGET_AMD64)
+#elif defined(TARGET_OSX) && defined(TARGET_AMD64)
 #define DAC_CS_NATIVE_DATA_SIZE 120
 #elif defined(TARGET_FREEBSD) && defined(TARGET_X86)
 #define DAC_CS_NATIVE_DATA_SIZE 12

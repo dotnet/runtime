@@ -51,9 +51,7 @@
   <!-- _packageTargetOSGroup is used to control the runtime package imports, don't import runtime package targets for
        an unsupported OS Group -->
   <PropertyGroup Condition="'$(PackageTargetRuntime)' != '' and '$(_isSupportedOSGroup)' == 'true'">
-    <!-- Android will use Linux package definitions -->
     <_packageTargetOSGroup>$(_derivedPackageTargetOSGroup)</_packageTargetOSGroup>
-    <_packageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == 'Android'">Linux</_packageTargetOSGroup>
   </PropertyGroup>
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
@@ -152,6 +150,18 @@
       <Platform>arm</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="ios-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
+  </ItemGroup>
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Android;'))">
+    <OfficialBuildRID Include="android-x64" />
+    <OfficialBuildRID Include="android-x86">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="android-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="android-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
   </ItemGroup>

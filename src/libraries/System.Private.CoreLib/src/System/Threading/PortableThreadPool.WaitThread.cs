@@ -238,7 +238,7 @@ namespace System.Threading
                     }
                     else
                     {
-                        if(numUserWaits == 0)
+                        if (numUserWaits == 0)
                         {
                             if (ThreadPoolInstance.TryRemoveWaitThread(this))
                             {

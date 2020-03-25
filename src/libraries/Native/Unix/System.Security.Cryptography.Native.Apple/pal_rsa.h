@@ -10,6 +10,7 @@
 
 #include <Security/Security.h>
 
+#ifndef TARGET_IOS
 /*
 Generate a new RSA keypair with the specified key size, in bits.
 
@@ -60,6 +61,7 @@ Follows pal_seckey return conventions.
 */
 PALEXPORT int32_t AppleCryptoNative_RsaEncryptPkcs(
     SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, CFDataRef* pEncryptedOut, CFErrorRef* pErrorOut);
+#endif
 
 /*
 Apply an RSA private key to a signing operation on data which was already padded.

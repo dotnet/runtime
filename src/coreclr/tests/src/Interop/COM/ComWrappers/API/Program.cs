@@ -7,154 +7,16 @@ namespace ComWrappersTests
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.IO;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
+    using ComWrappersTests.Common;
     using TestLibrary;
 
     class Program
     {
-        //
-        // Managed object with native wrapper definition.
-        //
-        [Guid("447BB9ED-DA48-4ABC-8963-5BB5C3E0AA09")]
-        interface ITest
-        {
-            void SetValue(int i);
-        }
-
-        class Test : ITest
-        {
-            public static int InstanceCount = 0;
-
-            private int value = -1;
-            public Test() { InstanceCount++; }
-            ~Test() { InstanceCount--; }
-
-            public void SetValue(int i) => this.value = i;
-            public int GetValue() => this.value;
-        }
-
-        public struct IUnknownVtbl
-        {
-            public IntPtr QueryInterface;
-            public IntPtr AddRef;
-            public IntPtr Release;
-        }
-
-        public struct ITestVtbl
-        {
-            public IUnknownVtbl IUnknownImpl;
-            public IntPtr SetValue;
-
-            public delegate int _SetValue(IntPtr thisPtr, int i);
-            public static _SetValue pSetValue = new _SetValue(SetValueInternal);
-
-            public static int SetValueInternal(IntPtr dispatchPtr, int i)
-            {
-                unsafe
-                {
-                    try
-                    {
-                        ComWrappers.ComInterfaceDispatch.GetInstance<ITest>((ComWrappers.ComInterfaceDispatch*)dispatchPtr).SetValue(i);
-                    }
-                    catch (Exception e)
-                    {
-                        return e.HResult;
-                    }
-                }
-                return 0; // S_OK;
-            }
-        }
-
-        //
-        // Native interface defintion with managed wrapper for tracker object
-        //
-        struct MockReferenceTrackerRuntime
-        {
-            [DllImport(nameof(MockReferenceTrackerRuntime))]
-            extern public static IntPtr CreateTrackerObject();
-
-            [DllImport(nameof(MockReferenceTrackerRuntime))]
-            extern public static void ReleaseAllTrackerObjects();
-
-            [DllImport(nameof(MockReferenceTrackerRuntime))]
-            extern public static int Trigger_NotifyEndOfReferenceTrackingOnThread();
-        }
-
-        [Guid("42951130-245C-485E-B60B-4ED4254256F8")]
-        public interface ITrackerObject
-        {
-            int AddObjectRef(IntPtr obj);
-            void DropObjectRef(int id);
-        };
-
-        public struct VtblPtr
-        {
-            public IntPtr Vtbl;
-        }
-
-        public class ITrackerObjectWrapper : ITrackerObject
-        {
-            private struct ITrackerObjectWrapperVtbl
-            {
-                public IntPtr QueryInterface;
-                public _AddRef AddRef;
-                public _Release Release;
-                public _AddObjectRef AddObjectRef;
-                public _DropObjectRef DropObjectRef;
-            }
-
-            private delegate int _AddRef(IntPtr This);
-            private delegate int _Release(IntPtr This);
-            private delegate int _AddObjectRef(IntPtr This, IntPtr obj, out int id);
-            private delegate int _DropObjectRef(IntPtr This, int id);
-
-            private readonly IntPtr instance;
-            private readonly ITrackerObjectWrapperVtbl vtable;
-
-            public ITrackerObjectWrapper(IntPtr instance)
-            {
-                var inst = Marshal.PtrToStructure<VtblPtr>(instance);
-                this.vtable = Marshal.PtrToStructure<ITrackerObjectWrapperVtbl>(inst.Vtbl);
-                this.instance = instance;
-            }
-
-            ~ITrackerObjectWrapper()
-            {
-                if (this.instance != IntPtr.Zero)
-                {
-                    this.vtable.Release(this.instance);
-                }
-            }
-
-            public int AddObjectRef(IntPtr obj)
-            {
-                int id;
-                int hr = this.vtable.AddObjectRef(this.instance, obj, out id);
-                if (hr != 0)
-                {
-                    throw new COMException($"{nameof(AddObjectRef)}", hr);
-                }
-
-                return id;
-            }
-
-            public void DropObjectRef(int id)
-            {
-                int hr = this.vtable.DropObjectRef(this.instance, id);
-                if (hr != 0)
-                {
-                    throw new COMException($"{nameof(DropObjectRef)}", hr);
-                }
-            }
-        }
-
         class TestComWrappers : ComWrappers
         {
-            public static readonly TestComWrappers Global = new TestComWrappers();
-
             protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
             {
                 Assert.IsTrue(obj is Test);
@@ -188,11 +50,11 @@ namespace ComWrappersTests
             protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
             {
                 var iid = typeof(ITrackerObject).GUID;
-                IntPtr iTestComObject;
-                int hr = Marshal.QueryInterface(externalComObject, ref iid, out iTestComObject);
-                Assert.AreEqual(hr, 0);
+                IntPtr iTrackerComObject;
+                int hr = Marshal.QueryInterface(externalComObject, ref iid, out iTrackerComObject);
+                Assert.AreEqual(0, hr);
 
-                return new ITrackerObjectWrapper(iTestComObject);
+                return new ITrackerObjectWrapper(iTrackerComObject);
             }
 
             public const int ReleaseObjectsCallAck = unchecked((int)-1);
@@ -458,37 +320,6 @@ namespace ComWrappersTests
             GC.Collect();
         }
 
-        static void ValidateGlobalInstanceScenarios()
-        {
-            Console.WriteLine($"Running {nameof(ValidateGlobalInstanceScenarios)}...");
-            Console.WriteLine($"Validate RegisterAsGlobalInstance()...");
-
-            var wrappers1 = TestComWrappers.Global;
-            wrappers1.RegisterAsGlobalInstance();
-
-            Assert.Throws<InvalidOperationException>(
-                () =>
-                {
-                    wrappers1.RegisterAsGlobalInstance();
-                }, "Should not be able to re-register for global ComWrappers");
-
-            var wrappers2 = new TestComWrappers();
-            Assert.Throws<InvalidOperationException>(
-                () =>
-                {
-                    wrappers2.RegisterAsGlobalInstance();
-                }, "Should not be able to reset for global ComWrappers");
-
-            Console.WriteLine($"Validate NotifyEndOfReferenceTrackingOnThread()...");
-
-            int hr;
-            var cw = TestComWrappers.Global;
-
-            // Trigger the thread lifetime end API and verify the callback occurs.
-            hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
-            Assert.AreEqual(TestComWrappers.ReleaseObjectsCallAck, hr);
-        }
-
         static int Main(string[] doNotUse)
         {
             try
@@ -499,10 +330,6 @@ namespace ComWrappersTests
                 ValidateIUnknownImpls();
                 ValidateBadComWrapperImpl();
                 ValidateRuntimeTrackerScenario();
-
-                // Perform all global impacting test scenarios last to
-                // avoid polluting non-global tests.
-                ValidateGlobalInstanceScenarios();
             }
             catch (Exception e)
             {
