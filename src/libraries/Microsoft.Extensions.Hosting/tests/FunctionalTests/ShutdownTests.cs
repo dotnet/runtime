@@ -30,15 +30,15 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
             _output = output;
         }
 
-        [ConditionalFact]
-        [OSSkipCondition(OperatingSystems.Windows | OperatingSystems.MacOSX)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public async Task ShutdownTestRun()
         {
             await ExecuteShutdownTest(nameof(ShutdownTestRun), "Run");
         }
 
-        [ConditionalFact]
-        [OSSkipCondition(OperatingSystems.Windows | OperatingSystems.MacOSX)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public async Task ShutdownTestWaitForShutdown()
         {
             await ExecuteShutdownTest(nameof(ShutdownTestWaitForShutdown), "WaitForShutdown");
@@ -51,11 +51,11 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 builder.SetMinimumLevel(LogLevel.Trace);
                 builder.AddXunit(_output);
             });
+
             // TODO refactor deployers to not depend on source code
             // see https://github.com/dotnet/extensions/issues/1697 and https://github.com/dotnet/aspnetcore/issues/10268
 #pragma warning disable 0618
-            var applicationPath = Path.Combine(TestPathUtilities.GetSolutionRootDirectory("Extensions"),
-                "src", "Hosting", "test", "testassets", "Microsoft.Extensions.Hosting.TestApp");
+            var applicationPath = string.Empty; // disabled for now
 #pragma warning restore 0618
 
             var deploymentParameters = new DeploymentParameters(
@@ -71,7 +71,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 
             deploymentParameters.EnvironmentVariables["DOTNET_STARTMECHANIC"] = shutdownMechanic;
 
-            using (var deployer = new SelfHostDeployer(deploymentParameters, loggerFactory))
+            using (var deployer = new SelfHostDeployer(deploymentParameters, xunitTestLoggerFactory))
             {
                 var result = await deployer.DeployAsync();
 

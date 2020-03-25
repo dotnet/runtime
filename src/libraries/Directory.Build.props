@@ -4,11 +4,6 @@
   </PropertyGroup>
   <Import Project="..\..\Directory.Build.props" />
 
-  <ItemGroup>
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\FunctionalTests\**\*.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\TestApp\**\*.csproj" />
-  </ItemGroup>
-
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
     <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
