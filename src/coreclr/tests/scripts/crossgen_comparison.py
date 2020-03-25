@@ -125,7 +125,6 @@ def build_argument_parser():
     corelib_parser.add_argument('--crossgen', dest='crossgen_executable_filename', required=True)
     corelib_parser.add_argument('--il_corelib', dest='il_corelib_filename', required=True)
     corelib_parser.add_argument('--result_dir', dest='result_dirname', required=True)
-    corelib_parser.add_argument('--run_serial', dest='run_serial', action="store_true", default=False)
     corelib_parser.set_defaults(func=crossgen_corelib)
 
     framework_parser_description = """Runs crossgen on each assembly in Core_Root and
@@ -136,7 +135,6 @@ def build_argument_parser():
     framework_parser.add_argument('--il_corelib', dest='il_corelib_filename', required=True)
     framework_parser.add_argument('--core_root', dest='core_root', required=True)
     framework_parser.add_argument('--result_dir', dest='result_dirname', required=True)
-    framework_parser.add_argument('--run_serial', dest='run_serial', action="store_true", default=False)
     framework_parser.set_defaults(func=crossgen_framework)
 
     dotnet_sdk_parser_description = "Unpack .NET Core SDK archive file and runs crossgen on each assembly."
@@ -145,7 +143,6 @@ def build_argument_parser():
     dotnet_sdk_parser.add_argument('--il_corelib', dest='il_corelib_filename', required=True)
     dotnet_sdk_parser.add_argument('--dotnet_sdk', dest='dotnet_sdk_filename', required=True)
     dotnet_sdk_parser.add_argument('--result_dir', dest='result_dirname', required=True)
-    dotnet_sdk_parser.add_argument('--run_serial', dest='run_serial', action="store_true", default=False)
     dotnet_sdk_parser.set_defaults(func=crossgen_dotnet_sdk)
 
     compare_parser_description = "Compares crossgen results in directories {base_dir} and {diff_dir}"
@@ -153,7 +150,6 @@ def build_argument_parser():
     compare_parser = subparsers.add_parser('compare', description=compare_parser_description)
     compare_parser.add_argument('--base_dir', dest='base_dirname', required=True)
     compare_parser.add_argument('--diff_dir', dest='diff_dirname', required=True)
-    compare_parser.add_argument('--run_serial', dest='run_serial', action="store_true", default=False)
     compare_parser.set_defaults(func=compare_results)
 
     return parser
@@ -244,8 +240,11 @@ class AsyncSubprocessHelper:
         """
 
         reset_env = os.environ.copy()
+        
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
+        loop.close()
+
         os.environ.update(reset_env)
 
 ################################################################################
@@ -444,22 +443,22 @@ class CrossGenRunner:
         self.crossgen_executable_filename = crossgen_executable_filename
         self.platform_assemblies_paths_sep = ';' if sys.platform == 'win32' else ':'
 
-    def crossgen_il_file(self, il_filename, ni_filename, platform_assemblies_paths):
+    async def crossgen_il_file(self, il_filename, ni_filename, platform_assemblies_paths):
         """
             Runs a subprocess "{crossgen_executable_filename} /nologo /Platform_Assemblies_Paths <path[:path]> /out {ni_filename} /in {il_filename}"
             and returns returncode, stdour, stderr.
         """
         args = self._build_args_crossgen_il_file(il_filename, ni_filename, platform_assemblies_paths)
-        return self._run_with_args(args)
+        return await self._run_with_args(args)
 
-    def create_debugging_file(self, ni_filename, debugging_files_dirname, platform_assemblies_paths):
+    async def create_debugging_file(self, ni_filename, debugging_files_dirname, platform_assemblies_paths):
         """
             Runs a subprocess "{crossgen_executable_filename} /nologo /Platform_Assemblies_Paths <path[:path]> /CreatePerfMap {debugging_files_dirname} /in {il_filename}" on Unix
             or "{crossgen_executable_filename} /nologo /Platform_Assemblies_Paths <path[:path]> /CreatePdb {debugging_files_dirname} /in {il_filename}" on Windows
             and returns returncode, stdout, stderr.
         """
         args = self._build_args_create_debugging_file(ni_filename, debugging_files_dirname, platform_assemblies_paths)
-        return self._run_with_args(args)
+        return await self._run_with_args(args)
 
     def _build_args_crossgen_il_file(self, il_filename, ni_filename, platform_assemblies_paths):
         args = []
@@ -485,15 +484,22 @@ class CrossGenRunner:
         args.append(ni_filename)
         return args
 
-    def _run_with_args(self, args):
+    async def _run_with_args(self, args):
         """
             Creates a subprocess running crossgen with specified set of arguments,
             communicates with the owner process - waits for its termination and pulls
             returncode, stdour, stderr.
         """
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        return (p.returncode, stdout.decode(), stderr.decode())
+        stdout = None
+        stderr = None
+
+        proc = await asyncio.create_subprocess_shell(" ".join(args), 
+                                                     stdin=asyncio.subprocess.PIPE,
+                                                     stdout=asyncio.subprocess.PIPE,
+                                                     stderr=asyncio.subprocess.PIPE)
+        stdout, stderr = await proc.communicate()
+
+        return (proc.returncode, stdout.decode(), stderr.decode())
 
 
 def compute_file_hashsum(filename):
@@ -574,9 +580,9 @@ class FileTypes:
     NativeOrReadyToRunImage = 'NativeOrReadyToRunImage'
     DebuggingFile = 'DebuggingFile'
 
-def run_crossgen(crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname):
+async def run_crossgen(crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname):
     runner = CrossGenRunner(crossgen_executable_filename)
-    returncode, stdout, stderr = runner.crossgen_il_file(il_filename, ni_filename, platform_assemblies_paths)
+    returncode, stdout, stderr = await runner.crossgen_il_file(il_filename, ni_filename, platform_assemblies_paths)
     ni_file_hashsum = compute_file_hashsum(ni_filename) if returncode == 0 else None
     ni_file_size_in_bytes = os.path.getsize(ni_filename) if returncode == 0 else None
     assembly_name = get_assembly_name(il_filename)
@@ -586,7 +592,7 @@ def run_crossgen(crossgen_executable_filename, il_filename, ni_filename, platfor
         return [crossgen_assembly_result]
 
     platform_assemblies_paths = platform_assemblies_paths + [os.path.dirname(ni_filename)]
-    returncode, stdout, stderr = runner.create_debugging_file(ni_filename, debugging_files_dirname, platform_assemblies_paths)
+    returncode, stdout, stderr = await runner.create_debugging_file(ni_filename, debugging_files_dirname, platform_assemblies_paths)
 
     if returncode == 0:
         filenames = list(filter(lambda filename: not re.match("^{0}\.ni\.".format(assembly_name), filename, re.IGNORECASE) is None, os.listdir(debugging_files_dirname)))
@@ -617,7 +623,7 @@ def create_output_folders():
     os.mkdir(debugging_files_dirname)
     return ni_files_dirname, debugging_files_dirname
 
-def crossgen_corelib(args):
+async def crossgen_corelib(args):
     il_corelib_filename = args.il_corelib_filename
     assembly_name = os.path.basename(il_corelib_filename)
     ni_corelib_dirname, debugging_files_dirname = create_output_folders()
@@ -629,7 +635,7 @@ def crossgen_corelib(args):
         print("IL Corelib path does not exist.")
         sys.exit(1)
 
-    crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
+    crossgen_results = await run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
     shutil.rmtree(ni_corelib_dirname, ignore_errors=True)
     save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
@@ -650,35 +656,16 @@ def crossgen_framework(args):
 
         if assembly_name == il_corelib_filename:
             ni_corelib_filename = os.path.join(ni_files_dirname, os.path.basename(il_corelib_filename))
-            crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
+            crossgen_results = await run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
             save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
         else:
             il_filename = os.path.join(args.core_root, assembly_name)
             ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
-            crossgen_results = run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
+            crossgen_results = await run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
             save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
-    def run_crossgen_helper_serial(print_prefix, assembly_name):
-        platform_assemblies_paths = [args.core_root]
-        print("{}{} {}".format(print_prefix, args.crossgen_executable_filename, assembly_name))
-
-        if assembly_name == il_corelib_filename:
-            ni_corelib_filename = os.path.join(ni_files_dirname, os.path.basename(il_corelib_filename))
-            crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
-            save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
-        else:
-            il_filename = os.path.join(args.core_root, assembly_name)
-            ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
-            crossgen_results = run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
-            save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
-
-    if args.run_serial:
-        for index, item in enumerate(g_Framework_Assemblies):
-            run_crossgen_helper("[{}:{}]".format(index, len(g_Framework_Assemblies)), item)
-
-    else:
-        helper = AsyncSubprocessHelper(g_Framework_Assemblies, verbose=True)
-        helper.run_to_completion(run_crossgen_helper)
+    helper = AsyncSubprocessHelper(g_Framework_Assemblies, verbose=True)
+    helper.run_to_completion(run_crossgen_helper)
 
     shutil.rmtree(ni_files_dirname, ignore_errors=True)
 
@@ -702,7 +689,7 @@ def dotnet_sdk_enumerate_assemblies(dotnet_sdk_dirname):
             filenames = filter(lambda filename: filename != 'System.Private.CoreLib.dll', filenames)
             yield (dirpath, filenames)
 
-def crossgen_dotnet_sdk(args):
+async def crossgen_dotnet_sdk(args):
     dotnet_sdk_dirname = tempfile.mkdtemp()
     with tarfile.open(args.dotnet_sdk_filename) as dotnet_sdk_tarfile:
         dotnet_sdk_tarfile.extractall(dotnet_sdk_dirname)
@@ -711,7 +698,7 @@ def crossgen_dotnet_sdk(args):
     ni_files_dirname, debugging_files_dirname = create_output_folders()
     ni_corelib_filename = os.path.join(ni_files_dirname, os.path.basename(il_corelib_filename))
     platform_assemblies_paths = [os.path.dirname(il_corelib_filename)]
-    crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
+    crossgen_results = await run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
     save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
     platform_assemblies_paths = [ni_files_dirname]
@@ -723,7 +710,7 @@ def crossgen_dotnet_sdk(args):
         for assembly_name in assembly_names:
             il_filename = os.path.join(il_files_dirname, assembly_name)
             ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
-            crossgen_results = run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
+            crossgen_results = await run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
             save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
     shutil.rmtree(ni_files_dirname, ignore_errors=True)
 
