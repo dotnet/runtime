@@ -111,7 +111,7 @@ During the source generation process the metadata in the `GeneratedDllImportAttr
 
 The Source Generator would generate the implementation of the partial method (D) in a separate translation unit (`Stubs.g.cs`). At point (E) a `DllImportAttribute` declaration is created based on the user's original declaration (A) for a private P/Invoke specifically for the generated code. The P/Invoke signature from the original declaration would be modified to contain only [blittable types][blittable_link] to ensure the JIT could inline the invocation. Finally note that the user's original function signature would remain in to avoid impacting existing callsites.
 
-In this system it is not defined how marshaling of specific types would be performed. The built-in runtime has complex rules for some types, and it is these rules that once shipped become the de facto standard - often times regardless if the behavior is a bug or not. The design here is not concerned with how the arguments go from a managed to unmanaged environment. With the IL Stub generation extracted from the runtime new type marshaling (e.g. `Span<T>`) could be introduced without requiring an corresponding update to the runtime itself. The `Span<T>` type is good example of a type that at present has no support for marshaling, but with Source Generators, users could update to the latest generator and have support without changing the runtime.
+In this system it is not defined how marshaling of specific types would be performed. The built-in runtime has complex rules for some types, and it is these rules that once shipped become the de facto standard - often times regardless if the behavior is a bug or not. The design here is not concerned with how the arguments go from a managed to unmanaged environment. With the IL Stub generation extracted from the runtime new type marshaling (e.g. [`Span<T>`](https://docs.microsoft.com/dotnet/api/system.span-1)) could be introduced without requiring an corresponding update to the runtime itself. The `Span<T>` type is good example of a type that at present has no support for marshaling, but with this proposal users could update to the latest generator and have support without changing the runtime.
 
 ### Adoption of Source Generator for existing code
 
@@ -191,9 +191,15 @@ namespace System.Runtime.InteropServices
 }
 ```
 
-## Questions
+## FAQs
 
 * Can the above API be used to provide a reverse P/Invoke stub?
+
+    * No. Reverse P/Invoke invocation is performed via a delegate and integrating this proposal would prove difficult. Alternative approach is to leverage the [`NativeCallableAttribute`](https://github.com/dotnet/runtime/issues/32462) feature.
+
+* How will users get error messages during source generator?
+
+    * The Source Generator API will be permitted to provide warnings and errors through the [Roslyn SDK](https://docs.microsoft.com/dotnet/csharp/roslyn-sdk/).
 
 ## References
 
