@@ -3,41 +3,44 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Threading;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using NSSearchPathDirectory = Interop.Sys.NSSearchPathDirectory;
 
 namespace System
 {
     public static partial class Environment
     {
-        // NSSearchPathDirectory enum
-        private const int NSApplicationDirectoryId = 1;
-        private const int NSLibraryDirectoryId = 5;
-        private const int NSUserDirectoryId = 7;
-        private const int NSDocumentDirectoryId = 9;
-        private const int NSDesktopDirectoryId = 12;
-        private const int NSCachesDirectoryId = 13;
-        private const int NSMoviesDirectoryId = 17;
-        private const int NSMusicDirectoryId = 18;
-        private const int NSPicturesDirectoryId = 19;
-
-        // Cache frequently used folders into lazy properties
-
-        // TODO: fix for tvOS (https://github.com/dotnet/runtime/issues/34007)
-        // The "normal" NSDocumentDirectory is a read-only directory on tvOS
-        // and that breaks a lot of assumptions in the runtime and the BCL
-        private static string s_document;
-        private static string NSDocumentDirectory => s_document ??= Interop.Sys.SearchPath(NSDocumentDirectoryId);
-
-        private static string s_library;
-        private static string NSLibraryDirectory => s_library ??= Interop.Sys.SearchPath(NSLibraryDirectoryId);
-
-        private static string s_user;
-        private static string NSUserDirectory => s_user ??= Interop.Sys.SearchPath(NSUserDirectoryId);
+        private static Dictionary<SpecialFolder, string> s_specialFolders;
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
+            if (s_specialFolders == null)
+            {
+                Interlocked.CompareExchange(ref s_specialFolders, new Dictionary<SpecialFolder, string>(), null);
+            }
+
+            string path;
+            lock (s_specialFolders)
+            {
+                if (!s_specialFolders.TryGetValue(folder, out path))
+                {
+                    path = GetSpecialFolder(folder);
+                    s_specialFolders[folder] = path;
+                }
+            }
+            return path;
+        }
+
+        private static string GetSpecialFolder(SpecialFolder folder)
+        {
             switch (folder)
             {
+                // TODO: fix for tvOS (https://github.com/dotnet/runtime/issues/34007)
+                // The "normal" NSDocumentDirectory is a read-only directory on tvOS
+                // and that breaks a lot of assumptions in the runtime and the BCL
+
                 case SpecialFolder.Personal:
                 case SpecialFolder.LocalApplicationData:
                     return NSDocumentDirectory;
@@ -48,23 +51,23 @@ namespace System
                     return Path.Combine(NSDocumentDirectory, ".config");
 
                 case SpecialFolder.Resources:
-                    return NSLibraryDirectory; // older (8.2 and previous) would return String.Empty
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSLibraryDirectory); // older (8.2 and previous) would return String.Empty
 
                 case SpecialFolder.Desktop:
                 case SpecialFolder.DesktopDirectory:
-                    return Interop.Sys.SearchPath(NSDesktopDirectoryId);
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSDesktopDirectory);
 
                 case SpecialFolder.MyMusic:
-                    return Interop.Sys.SearchPath(NSMusicDirectoryId);
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSMusicDirectory);
 
                 case SpecialFolder.MyPictures:
-                    return Interop.Sys.SearchPath(NSPicturesDirectoryId);
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSPicturesDirectory);
 
                 case SpecialFolder.Templates:
                     return Path.Combine(NSDocumentDirectory, "Templates");
 
                 case SpecialFolder.MyVideos:
-                    return Interop.Sys.SearchPath(NSMoviesDirectoryId);
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSMoviesDirectory);
 
                 case SpecialFolder.CommonTemplates:
                     return "/usr/share/templates";
@@ -73,16 +76,16 @@ namespace System
                     return Path.Combine(NSDocumentDirectory, ".fonts");
 
                 case SpecialFolder.Favorites:
-                    return Path.Combine(NSLibraryDirectory, "Favorites");
+                    return Path.Combine(Interop.Sys.SearchPath(NSSearchPathDirectory.NSLibraryDirectory), "Favorites");
 
                 case SpecialFolder.ProgramFiles:
-                    return Interop.Sys.SearchPath(NSApplicationDirectoryId);
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSApplicationDirectory);
 
                 case SpecialFolder.InternetCache:
-                    return Interop.Sys.SearchPath(NSCachesDirectoryId);
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSCachesDirectory);
 
                 case SpecialFolder.UserProfile:
-                    return NSUserDirectory;
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSUserDirectory);
 
                 case SpecialFolder.CommonApplicationData:
                     return "/usr/share";
