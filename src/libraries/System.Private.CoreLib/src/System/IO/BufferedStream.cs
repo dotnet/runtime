@@ -837,19 +837,6 @@ namespace System.IO
             return bytesToWrite;
         }
 
-        private void WriteToBuffer(byte[] array, ref int offset, ref int count, out Exception? error)
-        {
-            try
-            {
-                error = null;
-                WriteToBuffer(array, ref offset, ref count);
-            }
-            catch (Exception ex)
-            {
-                error = ex;
-            }
-        }
-
         public override void Write(byte[] array, int offset, int count)
         {
             if (array == null)

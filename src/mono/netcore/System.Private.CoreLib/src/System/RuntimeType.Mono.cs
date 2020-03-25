@@ -2203,17 +2203,6 @@ namespace System
             return null;
         }
 
-        private string GetCachedName(TypeNameKind kind)
-        {
-            switch (kind)
-            {
-                case TypeNameKind.SerializationName:
-                    return ToString();
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Type make_array_type(int rank);
 

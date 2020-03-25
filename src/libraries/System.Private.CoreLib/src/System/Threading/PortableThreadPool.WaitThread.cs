@@ -13,7 +13,6 @@ namespace System.Threading
         /// A linked list of <see cref="WaitThread"/>s.
         /// </summary>
         private WaitThreadNode _waitThreadsHead;
-        private WaitThreadNode _waitThreadsTail;
 
         private readonly LowLevelLock _waitThreadLock = new LowLevelLock();
 
@@ -28,7 +27,7 @@ namespace System.Threading
             {
                 if (_waitThreadsHead == null) // Lazily create the first wait thread.
                 {
-                    _waitThreadsTail = _waitThreadsHead = new WaitThreadNode
+                    _waitThreadsHead = new WaitThreadNode
                     {
                         Thread = new WaitThread()
                     };
@@ -48,7 +47,7 @@ namespace System.Threading
                 } while (current != null);
 
                 // If all wait threads are full, create a new one.
-                prev.Next = _waitThreadsTail = new WaitThreadNode
+                prev.Next = new WaitThreadNode
                 {
                     Thread = new WaitThread()
                 };
