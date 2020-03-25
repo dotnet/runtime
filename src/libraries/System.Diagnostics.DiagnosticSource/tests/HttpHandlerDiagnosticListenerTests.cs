@@ -161,7 +161,7 @@ namespace System.Diagnostics.Tests
                     // Send a random Http request to generate some events
                     var webRequest = (HttpWebRequest)WebRequest.Create(Configuration.Http.RemoteEchoServer);
 
-                    using var webResponse = (HttpWebResponse)webRequest.GetResponse();
+                    using var webResponse = webRequest.GetResponse();
                 }
 
                 // We should have exactly one Start and one Stop event
@@ -186,7 +186,7 @@ namespace System.Diagnostics.Tests
 
         [OuterLoop]
         [Fact]
-        public void TestBasicReceiveAndResponseWebRequestAsyncEvents()
+        public void TestBasicReceiveAndResponseWebRequestAsyncResultEvents()
         {
             using (var eventRecords = new EventObserverAndRecorder(e =>
             {
@@ -204,7 +204,7 @@ namespace System.Diagnostics.Tests
 
                     asyncResult.AsyncWaitHandle.WaitOne();
 
-                    webRequest.EndGetResponse(asyncResult);
+                    using var webResponse = webRequest.EndGetResponse(asyncResult);
                 }
 
                 // We should have exactly one Start and one Stop event
@@ -229,7 +229,7 @@ namespace System.Diagnostics.Tests
 
         [OuterLoop]
         [Fact]
-        public void TestBasicReceiveAndResponseWebRequestAsyncWithCallbackEvents()
+        public void TestBasicReceiveAndResponseWebRequestAsyncResultWithCallbackEvents()
         {
             using (var eventRecords = new EventObserverAndRecorder(e =>
             {
@@ -270,6 +270,45 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(2, eventRecords.Records.Count);
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+            }
+        }
+
+        [OuterLoop]
+        [Fact]
+        public async Task TestBasicReceiveAndResponseWebRequestAsyncEvents()
+        {
+            using (var eventRecords = new EventObserverAndRecorder(e =>
+            {
+                // Verify header is available when start event is fired.
+                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(e.Value, "Request");
+                Assert.NotNull(startRequest);
+                VerifyHeaders(startRequest);
+            }))
+            {
+                {
+                    // Send a random Http request to generate some events
+                    var webRequest = (HttpWebRequest)WebRequest.Create(Configuration.Http.RemoteEchoServer);
+
+                    using var webResponse = await webRequest.GetResponseAsync();
+                }
+
+                // We should have exactly one Start and one Stop event
+                Assert.Equal(2, eventRecords.Records.Count);
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+
+                // Check to make sure: The first record must be a request, the next record must be a response.
+                HttpWebRequest startRequest = AssertFirstEventWasStart(eventRecords);
+
+                VerifyHeaders(startRequest);
+
+                KeyValuePair<string, object> stopEvent;
+                Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
+                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Stop", stopEvent.Key);
+                HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
+                Assert.Equal(startRequest, stopRequest);
+                HttpWebResponse response = ReadPublicProperty<HttpWebResponse>(stopEvent.Value, "Response");
+                Assert.NotNull(response);
             }
         }
 
