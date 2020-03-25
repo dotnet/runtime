@@ -775,12 +775,12 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128i _mm_loadu_si32 (void const* mem_addr)
-        ///   MOVD xmm, reg/m64
+        ///   MOVD xmm, reg/m32
         /// </summary>
         public static unsafe Vector128<int> LoadScalarVector128(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_loadu_si32 (void const* mem_addr)
-        ///   MOVD xmm, reg/m64
+        ///   MOVD xmm, reg/m32
         /// </summary>
         public static unsafe Vector128<uint> LoadScalarVector128(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
