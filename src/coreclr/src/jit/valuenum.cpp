@@ -8567,13 +8567,13 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
 
-    int      lookupNumArgs    = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId);
-    bool     encodeResultType = vnEncodesResultTypeForHWIntrinsic(hwIntrinsicNode->gtHWIntrinsicId);
-    VNFunc   func             = GetVNFuncForNode(tree);
+    int    lookupNumArgs    = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId);
+    bool   encodeResultType = vnEncodesResultTypeForHWIntrinsic(hwIntrinsicNode->gtHWIntrinsicId);
+    VNFunc func             = GetVNFuncForNode(tree);
 
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair;
-    ValueNumPair resvnp     = ValueNumPair();
+    ValueNumPair resvnp = ValueNumPair();
 
     if (encodeResultType)
     {
