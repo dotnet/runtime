@@ -337,7 +337,6 @@ while :; do
             ;;
 
         stripsymbols|-stripsymbols)
-            __CMakeArgs="-DSTRIP_SYMBOLS=true $__CMakeArgs"
             ;;
 
         verbose|-verbose)

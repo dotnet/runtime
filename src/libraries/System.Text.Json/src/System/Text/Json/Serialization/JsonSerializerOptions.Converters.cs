@@ -20,48 +20,56 @@ namespace System.Text.Json
         private static readonly Dictionary<Type, JsonConverter> s_defaultSimpleConverters = GetDefaultSimpleConverters();
 
         // The global list of built-in converters that override CanConvert().
-        private static readonly List<JsonConverter> s_defaultFactoryConverters = GetDefaultConverters();
+        private static readonly JsonConverter[] s_defaultFactoryConverters = new JsonConverter[]
+        {
+            // Nullable converter should always be first since it forwards to any nullable type.
+            new NullableConverterFactory(),
+            new EnumConverterFactory(),
+            new KeyValuePairConverterFactory(),
+            // IEnumerable should always be second to last since they can convert any IEnumerable.
+            new IEnumerableConverterFactory(),
+            // Object should always be last since it converts any type.
+            new ObjectConverterFactory()
+        };
 
         // The cached converters (custom or built-in).
         private readonly ConcurrentDictionary<Type, JsonConverter?> _converters = new ConcurrentDictionary<Type, JsonConverter?>();
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
+            const int NumberOfSimpleConverters = 21;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
 
             // Use a dictionary for simple converters.
-            foreach (JsonConverter converter in DefaultSimpleConverters)
-            {
-                converters.Add(converter.TypeToConvert!, converter);
-            }
+            // When adding to this, update NumberOfSimpleConverters above.
+            Add(new BooleanConverter());
+            Add(new ByteConverter());
+            Add(new ByteArrayConverter());
+            Add(new CharConverter());
+            Add(new DateTimeConverter());
+            Add(new DateTimeOffsetConverter());
+            Add(new DoubleConverter());
+            Add(new DecimalConverter());
+            Add(new GuidConverter());
+            Add(new Int16Converter());
+            Add(new Int32Converter());
+            Add(new Int64Converter());
+            Add(new JsonElementConverter());
+            Add(new ObjectConverter());
+            Add(new SByteConverter());
+            Add(new SingleConverter());
+            Add(new StringConverter());
+            Add(new UInt16Converter());
+            Add(new UInt32Converter());
+            Add(new UInt64Converter());
+            Add(new UriConverter());
 
             Debug.Assert(NumberOfSimpleConverters == converters.Count);
 
             return converters;
-        }
 
-        // Get the list for converters that implement CanConvert().
-        private static List<JsonConverter> GetDefaultConverters()
-        {
-            const int NumberOfConverters = 5;
-
-            var converters = new List<JsonConverter>(NumberOfConverters);
-
-            // Nullable converter should always be first since it forwards to any nullable type.
-            converters.Add(new NullableConverterFactory());
-
-            converters.Add(new EnumConverterFactory());
-            converters.Add(new KeyValuePairConverterFactory());
-
-            // IEnumerable should always be last since they can convert any IEnumerable.
-            converters.Add(new IEnumerableConverterFactory());
-
-            // Object should always be last since it converts any type.
-            converters.Add(new ObjectConverterFactory());
-
-            Debug.Assert(NumberOfConverters == converters.Count);
-
-            return converters;
+            void Add(JsonConverter converter) =>
+                converters.Add(converter.TypeToConvert!, converter);
         }
 
         /// <summary>
@@ -272,38 +280,6 @@ namespace System.Text.Json
 
             ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(attributeType, classType, propertyInfo);
             return default;
-        }
-
-        private const int NumberOfSimpleConverters = 21;
-
-        private static IEnumerable<JsonConverter> DefaultSimpleConverters
-        {
-            get
-            {
-                // When adding to this, update NumberOfSimpleConverters above.
-
-                yield return new BooleanConverter();
-                yield return new ByteConverter();
-                yield return new ByteArrayConverter();
-                yield return new CharConverter();
-                yield return new DateTimeConverter();
-                yield return new DateTimeOffsetConverter();
-                yield return new DoubleConverter();
-                yield return new DecimalConverter();
-                yield return new GuidConverter();
-                yield return new Int16Converter();
-                yield return new Int32Converter();
-                yield return new Int64Converter();
-                yield return new JsonElementConverter();
-                yield return new ObjectConverter();
-                yield return new SByteConverter();
-                yield return new SingleConverter();
-                yield return new StringConverter();
-                yield return new UInt16Converter();
-                yield return new UInt32Converter();
-                yield return new UInt64Converter();
-                yield return new UriConverter();
-            }
         }
     }
 }

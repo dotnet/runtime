@@ -143,7 +143,7 @@ jobs:
       archType: x64
       platform: Linux_x64
       container:
-        image: centos-7-203142e-20200131220214
+        image: centos-7-359e48e-20200313130914
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -200,7 +200,7 @@ jobs:
 
 # iOS x64
 
-- ${{ if or(containsValue(parameters.platforms, 'iOS_x64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if containsValue(parameters.platforms, 'iOS_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
@@ -220,7 +220,7 @@ jobs:
 
 # iOS arm
 
-- ${{ if or(containsValue(parameters.platforms, 'iOS_arm'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if containsValue(parameters.platforms, 'iOS_arm') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
@@ -240,7 +240,7 @@ jobs:
 
 # iOS arm64
 
-- ${{ if or(containsValue(parameters.platforms, 'iOS_arm64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if containsValue(parameters.platforms, 'iOS_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}

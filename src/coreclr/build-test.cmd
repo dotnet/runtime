@@ -52,6 +52,8 @@ set __CommonMSBuildArgs=
 
 set __SkipRestorePackages=
 set __SkipManaged=
+set __SkipTestWrappers=
+set __BuildTestWrappersOnly=
 set __SkipNative=
 set __RuntimeId=
 set __TargetsWindows=1
@@ -95,7 +97,9 @@ if /i "%1" == "ci"                    (set __ArcadeScriptArgs="-ci"&set __ErrMsg
 
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"            (set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skiptestwrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildtesthostonly"     (set __SkipNative=1&set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages switch&&exit /b1)
 if /i "%1" == "skiprestorepackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&set __TestBuildMode=crossgen&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -480,8 +484,12 @@ REM === Create test wrappers.
 REM ===
 REM =========================================================================================
 
-if defined __SkipManaged goto SkipBuildingWrappers
+if defined __BuildTestWrappersOnly goto BuildTestWrappers
 
+if defined __SkipManaged goto SkipBuildingWrappers
+if defined __SkipTestWrappers goto SkipBuildingWrappers
+
+:BuildTestWrappers
 echo %__MsgPrefix%Creating test wrappers
 
 set __BuildLogRootName=Tests_XunitWrapper
@@ -514,6 +522,7 @@ REM ===
 REM =========================================================================================
 
 if defined __SkipCrossgenFramework goto SkipCrossgen
+if defined __BuildTestWrappersOnly goto SkipCrossgen
 
 set __CrossgenArg = ""
 if defined __DoCrossgen (

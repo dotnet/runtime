@@ -675,6 +675,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-gc.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\public</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-private-unstable.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\public</Filter>
+    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sgen-bridge.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\public</Filter>
     </ClInclude>

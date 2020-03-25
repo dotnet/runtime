@@ -1040,7 +1040,7 @@ namespace System.Linq.Expressions
 
                     return new ScopeWithType(variables, expressions, type);
                 }
-                Expression last = expressions.Last();
+                Expression last = expressions[^1];
                 if (type != typeof(void))
                 {
                     if (!TypeUtils.AreReferenceAssignable(type, last.Type))

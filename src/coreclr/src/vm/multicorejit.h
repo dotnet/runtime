@@ -195,7 +195,7 @@ public:
     void AutoStartProfile(AppDomain * pDomain);
 
     // Multicore JIT API function: SetProfileRoot
-    void SetProfileRoot(AppDomain * pDomain, const WCHAR * pProfilePath);
+    void SetProfileRoot(const WCHAR * pProfilePath);
 
     // Multicore JIT API function: StartProfile
     void StartProfile(AppDomain * pDomain, ICLRPrivBinder * pBinderContext, const WCHAR * pProfile, int suffix = -1);

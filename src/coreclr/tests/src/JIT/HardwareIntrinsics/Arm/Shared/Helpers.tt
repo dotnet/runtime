@@ -316,7 +316,9 @@ namespace JIT.HardwareIntrinsics.Arm
                                      (name: "uint",   unsigned: "uint") })
         {
 #>
-        public static <#= type.unsigned #> AbsoluteDifference(<#= type.name #> left, <#= type.name #> right) => (<#= type.unsigned #>)Math.Abs((long)left - (long)right);
+        public static <#= type.unsigned #> AbsoluteDifference(<#= type.name #> op1, <#= type.name #> op2) => op1 < op2 ? (<#= type.unsigned #>)(op2 - op1) : (<#= type.unsigned #>)(op1 - op2);
+
+        public static <#= type.name #> AbsoluteDifferenceAdd(<#= type.name #> op1, <#= type.name #> op2, <#= type.name #> op3) => (<#= type.name #>)(op1 + AbsoluteDifference(op2, op3));
 
 <#
         }
@@ -346,9 +348,119 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static <#= typeName #> MinNumberPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
 
-<#
+        public static <#= typeName #> MultiplyExtended(<#= typeName #> op1, <#= typeName #> op2)
+        {
+            bool inf1 = <#= typeName #>.IsInfinity(op1);
+            bool inf2 = <#= typeName #>.IsInfinity(op2);
+
+            bool zero1 = (op1 == 0);
+            bool zero2 = (op2 == 0);
+
+            if ((inf1 && zero2) || (zero1 && inf2))
+            {
+                return <#= className #>.CopySign(2, (zero1 ? op2 : op1));
+            }
+            else
+            {
+                return op1 * op2;
+            }
         }
 
+        public static <#= typeName #> FPRecipStepFused(<#= typeName #> op1, <#= typeName #> op2) => FusedMultiplySubtract(2, op1, op2);
+
+        public static <#= typeName #> FPRSqrtStepFused(<#= typeName #> op1, <#= typeName #> op2) => FusedMultiplySubtract(3, op1, op2) / 2;
+
+<#
+        }
+#>
+        private static uint RecipEstimate(uint a)
+        {
+            a = a * 2 + 1;
+
+            uint b = (1 << 19) / a;
+            uint r = (b + 1) / 2;
+
+            return r;
+        }
+
+        private static uint RecipSqrtEstimate(uint a)
+        {
+            if (a < 256)
+            {
+                a = a * 2 + 1;
+            }
+            else
+            {
+                a = (a >> 1) << 1;
+                a = (a + 1) * 2;
+            }
+
+            uint b = 512;
+
+            while (a * (b + 1) * (b + 1) < (1 << 28))
+            {
+                b = b + 1;
+            }
+
+            uint r = (b + 1) / 2;
+
+            return r;
+        }
+
+<#
+        foreach (string typeName in new string[] { "uint" })
+        {
+#>
+        private static <#= typeName #> ExtractBits(<#= typeName #> val, byte msbPos, byte lsbPos)
+        {
+            <#= typeName #> andMask = 0;
+
+            for (byte pos = lsbPos; pos <= msbPos; pos++)
+            {
+                andMask |= (<#= typeName #>)1 << pos;
+            }
+
+            return (val & andMask) >> lsbPos;
+        }
+
+<#
+        }
+#>
+        public static uint UnsignedRecipEstimate(uint op1)
+        {
+            uint result;
+
+            if ((op1 & (1 << 31)) == 0)
+            {
+                result = ~0U;
+            }
+            else
+            {
+                uint estimate = RecipEstimate(ExtractBits(op1, 31, 23));
+                result = ExtractBits(estimate, 8, 0) << 31;
+            }
+
+            return result;
+        }
+
+        public static uint UnsignedRSqrtEstimate(uint op1)
+        {
+            uint result;
+
+            if ((op1 & (3 << 30)) == 0)
+            {
+                result = ~0U;
+            }
+            else
+            {
+                uint estimate = RecipSqrtEstimate(ExtractBits(op1, 31, 23));
+                result = ExtractBits(estimate, 8, 0) << 31;
+            }
+
+            return result;
+        }
+
+<#
         foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double" })
         {
 #>
@@ -440,5 +552,31 @@ namespace JIT.HardwareIntrinsics.Arm
         public static float MaxNumberAcross(float[] op1) => Reduce(MaxNumber, op1);
 
         public static float MinNumberAcross(float[] op1) => Reduce(MinNumber, op1);
+
+<#
+        foreach (string typeName in new string[] { "sbyte", "byte" })
+        {
+#>
+        private static ulong PolynomialMult(<#= typeName #> op1, <#= typeName #> op2)
+        {
+            ulong result = 0;
+            ulong extendedOp2 = (ulong)op2;
+
+            for (int i = 0; i < 8 * sizeof(<#= typeName #>); i++)
+            {
+                if ((op1 & (1 << i)) != 0)
+                {
+                    result ^= (extendedOp2 << i);
+                }
+            }
+
+            return result;
+        }
+
+        public static <#= typeName #> PolynomialMultiply(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)PolynomialMult(op1, op2);
+
+<#
+        }
+#>
     }
 }

@@ -2890,7 +2890,9 @@ public:
     void gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, const char** ilNameOut, unsigned* ilNumOut);
     int gtGetLclVarName(unsigned lclNum, char* buf, unsigned buf_remaining);
     char* gtGetLclVarName(unsigned lclNum);
-    void gtDispLclVar(unsigned varNum, bool padForBiggestDisp = true);
+    void gtDispLclVar(unsigned lclNum, bool padForBiggestDisp = true);
+    void gtDispLclVarStructType(unsigned lclNum);
+    void gtDispClassLayout(ClassLayout* layout, var_types type);
     void gtDispStmt(Statement* stmt, const char* msg = nullptr);
     void gtDispBlockStmts(BasicBlock* block);
     void gtGetArgMsg(GenTreeCall* call, GenTree* arg, unsigned argNum, int listCount, char* bufp, unsigned bufLength);

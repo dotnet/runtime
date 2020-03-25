@@ -408,6 +408,23 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
+        /// Construct the signature decoder by storing the image byte array and offset within the array.
+        /// This variant uses the outer global metadata reader
+        /// </summary>
+        /// <param name="options">Dump options and paths</param>
+        /// <param name="signature">Signature to parse</param>
+        /// <param name="offset">Signature offset within the signature byte array</param>
+        /// <param name="contextReader">Top-level signature context reader</param>
+        private SignatureDecoder(IAssemblyResolver options, byte[] signature, int offset, ReadyToRunReader contextReader)
+        {
+            _metadataReader = contextReader.GetGlobalMetadataReader();
+            _options = options;
+            _image = signature;
+            _offset = offset;
+            _contextReader = contextReader;
+        }
+
+        /// <summary>
         /// Read a single byte from the signature stream and advances the current offset.
         /// </summary>
         public byte ReadByte()
@@ -996,7 +1013,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 case CorElementType.ELEMENT_TYPE_GENERICINST:
-                    ParseGenericTypeInstance(builder);
+                    SignatureDecoder outerTypeDecoder = new SignatureDecoder(_options, _image, _offset, _contextReader);
+                    outerTypeDecoder.ParseGenericTypeInstance(builder);
+                    _offset = outerTypeDecoder._offset;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_TYPEDBYREF:

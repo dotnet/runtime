@@ -25,7 +25,7 @@ public static class Program
 
     // Called by native code, see main.m
     [MonoPInvokeCallback(typeof(Action))]
-    private static async void OnButtonClick()
+    private static void OnButtonClick()
     {
         ios_set_text("OnButtonClick! #" + counter++);
     }
@@ -44,7 +44,6 @@ public static class Program
             await Task.Delay(100);
         }
 
-        // TODO: https://github.com/dotnet/runtime/issues/33667
         Console.WriteLine("Done!");
     }
 }

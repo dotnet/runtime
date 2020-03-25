@@ -1133,6 +1133,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 }
                 break;
 
+            case NI_AdvSimd_AbsoluteDifferenceAdd:
             case NI_AdvSimd_FusedMultiplyAdd:
             case NI_AdvSimd_FusedMultiplySubtract:
             case NI_AdvSimd_Arm64_FusedMultiplyAdd:

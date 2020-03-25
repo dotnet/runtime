@@ -54,12 +54,6 @@ jobs:
       value: ${{ parameters.osGroup }}
     - name: osSubgroup
       value: ${{ parameters.osSubgroup }}
-    - name: stripSymbolsArg
-      value: ''
-    # Strip symbols only on the release build
-    - ${{ if eq(parameters.buildConfig, 'Release') }}:
-      - name: stripSymbolsArg
-        value: '-stripsymbols'
     - name: compilerArg
       value: ''
     - name: publishLogsArtifactPrefix
@@ -69,11 +63,6 @@ jobs:
         value: '-gcc'
       - name: publishLogsArtifactPrefix
         value: 'BuildLogs_CoreCLR_GCC'
-      # workaround for gcc directory not in PATH
-      - name: CLR_CC
-        value: /opt/rh/devtoolset-7/root/usr/bin/gcc
-      - name: CLR_CXX
-        value: /opt/rh/devtoolset-7/root/usr/bin/g++
     - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), eq(parameters.compilerName, 'clang')) }}:
       - name: compilerArg
         value: '-clang9'
@@ -137,7 +126,7 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) $(stripSymbolsArg) $(officialBuildIdArg)
+      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)

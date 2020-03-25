@@ -7332,6 +7332,49 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_TYPELOAD (cmethod->klass);
 			}
 
+			/* Inlining */
+			if ((cfg->opt & MONO_OPT_INLINE) && !inst_tailcall &&
+				(!virtual_ || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) &&
+			    mono_method_check_inlining (cfg, cmethod)) {
+				int costs;
+				gboolean always = FALSE;
+
+				if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+					/* Prevent inlining of methods that call wrappers */
+					INLINE_FAILURE ("wrapper call");
+					// FIXME? Does this write to cmethod impact tailcall_supported? Probably not.
+					// Neither pinvoke or icall are likely to be tailcalled.
+					cmethod = mono_marshal_get_native_wrapper (cmethod, TRUE, FALSE);
+					always = TRUE;
+				}
+
+				costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, always);
+				if (costs) {
+					cfg->real_offset += 5;
+
+					if (!MONO_TYPE_IS_VOID (fsig->ret))
+						/* *sp is already set by inline_method */
+						ins = *sp;
+
+					inline_costs += costs;
+					// FIXME This is missed if the inlinee contains tail calls that
+					// would work, but not once inlined into caller.
+					// This matchingness could be a factor in inlining.
+					// i.e. Do not inline if it hurts tailcall, do inline
+					// if it helps and/or or is neutral, and helps performance
+					// using usual heuristics.
+					// Note that inlining will expose multiple tailcall opportunities
+					// so the tradeoff is not obvious. If we can tailcall anything
+					// like desktop, then this factor mostly falls away, except
+					// that inlining can affect tailcall performance due to
+					// signature match/mismatch.
+					if (inst_tailcall) // FIXME
+						mono_tailcall_print ("missed tailcall inline %s -> %s\n", method->name, cmethod->name);
+					goto call_end;
+				}
+			}
+
 			check_method_sharing (cfg, cmethod, &pass_vtable, &pass_mrgctx);
 
 			if (cfg->gshared) {
@@ -7539,49 +7582,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto call_end;
 			}
 			CHECK_CFG_ERROR;
-			
-			/* Inlining */
-			if ((cfg->opt & MONO_OPT_INLINE) &&
-				(!virtual_ || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) &&
-			    mono_method_check_inlining (cfg, cmethod)) {
-				int costs;
-				gboolean always = FALSE;
-
-				if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-					/* Prevent inlining of methods that call wrappers */
-					INLINE_FAILURE ("wrapper call");
-					// FIXME? Does this write to cmethod impact tailcall_supported? Probably not.
-					// Neither pinvoke or icall are likely to be tailcalled.
-					cmethod = mono_marshal_get_native_wrapper (cmethod, TRUE, FALSE);
-					always = TRUE;
-				}
-
-				costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, always);
-				if (costs) {
-					cfg->real_offset += 5;
-
-					if (!MONO_TYPE_IS_VOID (fsig->ret))
-						/* *sp is already set by inline_method */
-						ins = *sp;
-
-					inline_costs += costs;
-					// FIXME This is missed if the inlinee contains tail calls that
-					// would work, but not once inlined into caller.
-					// This matchingness could be a factor in inlining.
-					// i.e. Do not inline if it hurts tailcall, do inline
-					// if it helps and/or or is neutral, and helps performance
-					// using usual heuristics.
-					// Note that inlining will expose multiple tailcall opportunities
-					// so the tradeoff is not obvious. If we can tailcall anything
-					// like desktop, then this factor mostly falls away, except
-					// that inlining can affect tailcall performance due to
-					// signature match/mismatch.
-					if (inst_tailcall) // FIXME
-						mono_tailcall_print ("missed tailcall inline %s -> %s\n", method->name, cmethod->name);
-					goto call_end;
-				}
-			}
 
 			/* Tail recursion elimination */
 			if (((cfg->opt & MONO_OPT_TAILCALL) || inst_tailcall) && il_op == MONO_CEE_CALL && cmethod == method && next_ip < end && next_ip [0] == CEE_RET && !vtable_arg) {

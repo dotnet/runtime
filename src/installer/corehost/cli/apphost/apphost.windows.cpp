@@ -12,7 +12,7 @@ namespace
 {
     pal::string_t g_buffered_errors;
 
-    void buffering_trace_writer(const pal::char_t* message)
+    void __cdecl buffering_trace_writer(const pal::char_t* message)
     {
         // Add to buffer for later use.
         g_buffered_errors.append(message).append(_X("\n"));

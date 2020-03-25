@@ -5,6 +5,7 @@
 #nullable enable
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
@@ -74,7 +75,7 @@ namespace System.Net.Security
         internal static SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteContext? securityContext,
-            string spn,
+            string? spn,
             ContextFlagsPal requestedContextFlags,
             byte[]? incomingBlob,
             ChannelBinding? channelBinding,
@@ -225,7 +226,7 @@ namespace System.Net.Security
             return securityBuffer[1].size;
         }
 
-        internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, ref byte[] output)
+        internal static int MakeSignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count, [AllowNull] ref byte[] output)
         {
             SecPkgContext_Sizes sizes = default;
             bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);

@@ -42,6 +42,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<float> AbsoluteDifference(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ushort> AbsoluteDifference(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> AbsoluteDifference(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector128<byte> addend, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector128<short> addend, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector128<int> addend, System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector128<sbyte> addend, System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector128<ushort> addend, System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector128<uint> addend, System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector64<byte> addend, System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector64<short> addend, System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector64<int> addend, System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector64<sbyte> addend, System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector64<ushort> addend, System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> AbsoluteDifferenceAdd(System.Runtime.Intrinsics.Vector64<uint> addend, System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> AbsScalar(System.Runtime.Intrinsics.Vector64<double> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> AbsScalar(System.Runtime.Intrinsics.Vector64<float> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> Add(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
@@ -427,10 +439,26 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<ushort> OrNot(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> OrNot(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ulong> OrNot(System.Runtime.Intrinsics.Vector64<ulong> left, System.Runtime.Intrinsics.Vector64<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> PolynomialMultiply(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> PolynomialMultiply(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> PolynomialMultiply(System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> PolynomialMultiply(System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> PopCount(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<sbyte> PopCount(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> PopCount(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<sbyte> PopCount(System.Runtime.Intrinsics.Vector64<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> ReciprocalEstimate(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> ReciprocalEstimate(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> ReciprocalEstimate(System.Runtime.Intrinsics.Vector64<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> ReciprocalEstimate(System.Runtime.Intrinsics.Vector64<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> ReciprocalSquareRootEstimate(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> ReciprocalSquareRootEstimate(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> ReciprocalSquareRootEstimate(System.Runtime.Intrinsics.Vector64<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> ReciprocalSquareRootEstimate(System.Runtime.Intrinsics.Vector64<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> ReciprocalSquareRootStep(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> ReciprocalSquareRootStep(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> ReciprocalStep(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> ReciprocalStep(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> SqrtScalar(System.Runtime.Intrinsics.Vector64<double> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> SqrtScalar(System.Runtime.Intrinsics.Vector64<float> value) { throw null; }
         public unsafe static void Store(byte* address, System.Runtime.Intrinsics.Vector128<byte> source) { }
@@ -649,9 +677,28 @@ namespace System.Runtime.Intrinsics.Arm
             public static System.Runtime.Intrinsics.Vector64<double> MinScalar(System.Runtime.Intrinsics.Vector64<double> left, System.Runtime.Intrinsics.Vector64<double> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<float> MinScalar(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Multiply(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> MultiplyExtended(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> MultiplyExtended(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<float> MultiplyExtended(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<double> MultiplyExtendedScalar(System.Runtime.Intrinsics.Vector64<double> left, System.Runtime.Intrinsics.Vector64<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<float> MultiplyExtendedScalar(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Negate(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> Negate(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<long> NegateScalar(System.Runtime.Intrinsics.Vector64<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> ReciprocalEstimate(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<double> ReciprocalEstimateScalar(System.Runtime.Intrinsics.Vector64<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<float> ReciprocalEstimateScalar(System.Runtime.Intrinsics.Vector64<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<double> ReciprocalExponentScalar(System.Runtime.Intrinsics.Vector64<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<float> ReciprocalExponentScalar(System.Runtime.Intrinsics.Vector64<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> ReciprocalSquareRootEstimate(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<double> ReciprocalSquareRootEstimateScalar(System.Runtime.Intrinsics.Vector64<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<float> ReciprocalSquareRootEstimateScalar(System.Runtime.Intrinsics.Vector64<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> ReciprocalSquareRootStep(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<double> ReciprocalSquareRootStepScalar(System.Runtime.Intrinsics.Vector64<double> left, System.Runtime.Intrinsics.Vector64<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<float> ReciprocalSquareRootStepScalar(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> ReciprocalStep(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<double> ReciprocalStepScalar(System.Runtime.Intrinsics.Vector64<double> left, System.Runtime.Intrinsics.Vector64<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector64<float> ReciprocalStepScalar(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> ReverseElementBits(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<sbyte> ReverseElementBits(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<byte> ReverseElementBits(System.Runtime.Intrinsics.Vector64<byte> value) { throw null; }

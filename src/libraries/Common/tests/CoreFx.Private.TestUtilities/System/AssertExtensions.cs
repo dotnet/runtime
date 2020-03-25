@@ -390,7 +390,7 @@ namespace System
         public delegate void AssertThrowsAction<T>(Span<T> span);
 
         // Cannot use standard Assert.Throws() when testing Span - Span and closures don't get along.
-        public static void AssertThrows<E, T>(ReadOnlySpan<T> span, AssertThrowsActionReadOnly<T> action) where E : Exception
+        public static E AssertThrows<E, T>(ReadOnlySpan<T> span, AssertThrowsActionReadOnly<T> action) where E : Exception
         {
             Exception exception;
 
@@ -404,18 +404,18 @@ namespace System
                 exception = ex;
             }
 
-            if (exception == null)
+            switch(exception)
             {
-                throw new ThrowsException(typeof(E));
-            }
-
-            if (exception.GetType() != typeof(E))
-            {
-                throw new ThrowsException(typeof(E), exception);
+                case null:
+                    throw new ThrowsException(typeof(E));
+                case E ex when (ex.GetType() == typeof(E)):
+                    return ex;
+                default:
+                    throw new ThrowsException(typeof(E), exception);
             }
         }
 
-        public static void AssertThrows<E, T>(Span<T> span, AssertThrowsAction<T> action) where E : Exception
+        public static E AssertThrows<E, T>(Span<T> span, AssertThrowsAction<T> action) where E : Exception
         {
             Exception exception;
 
@@ -429,15 +429,31 @@ namespace System
                 exception = ex;
             }
 
-            if (exception == null)
+            switch(exception)
             {
-                throw new ThrowsException(typeof(E));
+                case null:
+                    throw new ThrowsException(typeof(E));
+                case E ex when (ex.GetType() == typeof(E)):
+                    return ex;
+                default:
+                    throw new ThrowsException(typeof(E), exception);
             }
+        }
 
-            if (exception.GetType() != typeof(E))
-            {
-                throw new ThrowsException(typeof(E), exception);
-            }
+        public static E Throws<E, T>(string expectedParamName, ReadOnlySpan<T> span, AssertThrowsActionReadOnly<T> action)
+            where E : ArgumentException
+        {
+            E exception = AssertThrows<E, T>(span, action);
+            Assert.Equal(expectedParamName, exception.ParamName);
+            return exception;
+        }
+
+        public static E Throws<E, T>(string expectedParamName, Span<T> span, AssertThrowsAction<T> action)
+            where E : ArgumentException
+        {
+            E exception = AssertThrows<E, T>(span, action);
+            Assert.Equal(expectedParamName, exception.ParamName);
+            return exception;
         }
     }
 }

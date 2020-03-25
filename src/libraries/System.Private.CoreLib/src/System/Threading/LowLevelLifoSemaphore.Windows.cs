@@ -57,7 +57,7 @@ namespace System.Threading
 
             for (int i = 0; i < count; i++)
             {
-                if(!Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, UIntPtr.Zero, IntPtr.Zero))
+                if (!Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, UIntPtr.Zero, IntPtr.Zero))
                 {
                     var lastError = Marshal.GetLastWin32Error();
                     var exception = new OutOfMemoryException();

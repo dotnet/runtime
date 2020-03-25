@@ -33,6 +33,7 @@ namespace System
         public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess);
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
+        public static bool IsNotWindows => !IsWindows;
 
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
@@ -206,7 +207,7 @@ namespace System
         private static bool GetIsRunningOnMonoInterpreter()
         {
             // This is a temporary solution because mono does not support interpreter detection
-            // within the runtime.  
+            // within the runtime.
             var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
             return (val != null && val.Contains("--interpreter"));
         }

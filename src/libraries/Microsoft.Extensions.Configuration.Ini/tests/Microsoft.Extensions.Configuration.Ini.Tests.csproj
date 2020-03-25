@@ -2,20 +2,23 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Config\test\Microsoft.Extensions.Configuration.Tests.csproj" />
-    <ProjectReference Include="..\..\testassets\Test.Common\Microsoft.Extensions.Configuration.Test.Common.csproj" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs">
+      <Link>Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs">
+      <Link>Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs">
+      <Link>Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Configuration.Abstractions" />
-    <Reference Include="Microsoft.Extensions.Configuration.FileExtensions" />
-    <Reference Include="Microsoft.Extensions.Configuration.Ini" />
-    <Reference Include="Microsoft.Extensions.Configuration" />
-    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
-    <Reference Include="Microsoft.Extensions.FileProviders.Physical" />
+    <ReferenceFromRuntime Include="Microsoft.Extensions.Configuration.Ini" />
   </ItemGroup>
 
 </Project>

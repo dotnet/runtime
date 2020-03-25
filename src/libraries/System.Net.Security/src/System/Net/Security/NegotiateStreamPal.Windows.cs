@@ -21,7 +21,7 @@ namespace System.Net.Security
         internal static IIdentity GetIdentity(NTAuthentication context)
         {
             IIdentity? result = null;
-            string name = context.IsServer ? context.AssociatedName! : context.Spn;
+            string name = context.IsServer ? context.AssociatedName! : context.Spn!;
             string protocol = context.ProtocolName;
 
             if (context.IsServer)

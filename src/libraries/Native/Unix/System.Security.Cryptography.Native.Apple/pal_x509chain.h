@@ -42,8 +42,8 @@ enum
 typedef uint32_t PAL_X509ChainStatusFlags;
 
 #define PAL_X509ChainErrorNone             0
-#define PAL_X509ChainErrorUnknownValueType 0x0001L << 32
-#define PAL_X509ChainErrorUnknownValue     0x0002L << 32
+#define PAL_X509ChainErrorUnknownValueType (((uint64_t)0x0001L) << 32)
+#define PAL_X509ChainErrorUnknownValue     (((uint64_t)0x0002L) << 32)
 typedef uint64_t PAL_X509ChainErrorFlags;
 
 /*
