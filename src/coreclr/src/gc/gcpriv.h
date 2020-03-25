@@ -106,7 +106,7 @@ inline void FATAL_GC_ERROR()
 
 #define CARD_BUNDLE         //enable card bundle feature.(requires WRITE_WATCH)
 
-#define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
+// #define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
 
 // If this is defined we use a map for segments in order to find the heap for
 // a segment fast. But it does use more memory as we have to cover the whole
@@ -734,7 +734,7 @@ public:
 
     size_t first_bucket_size()
     {
-        return (size_t)1 << first_bucket_bits;
+        return (size_t)1 << (first_bucket_bits + 1);
     }
 
     uint8_t*& alloc_list_head_of (unsigned int bn)

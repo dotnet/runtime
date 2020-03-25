@@ -1864,8 +1864,7 @@ void WaitLonger (int i
     }
 }
 
-inline
-static void enter_spin_lock (GCSpinLock* spin_lock)
+static void enter_spin_lock_slow (GCSpinLock* spin_lock)
 {
 retry:
 
@@ -1917,9 +1916,17 @@ retry:
     }
 }
 
-inline BOOL try_enter_spin_lock(GCSpinLock* spin_lock)
+inline
+static BOOL try_enter_spin_lock(GCSpinLock* spin_lock)
 {
     return (Interlocked::CompareExchange(&spin_lock->lock, 0, -1) < 0);
+}
+
+inline
+static void enter_spin_lock (GCSpinLock* spin_lock)
+{
+    if (!try_enter_spin_lock(spin_lock))
+        enter_spin_lock_slow(spin_lock);
 }
 
 inline
@@ -13728,7 +13735,7 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
                 bgc_loh_allocate_spin() :
                 bgc_poh_allocate_spin();
 
-            if (spin_for_allocation >= 0)
+            if (spin_for_allocation > 0)
             {
                 add_saved_spinlock_info (true, me_release, mt_alloc_large);
                 leave_spin_lock (&more_space_lock_uoh);
@@ -13739,7 +13746,7 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
                 add_saved_spinlock_info (true, me_acquire, mt_alloc_large);
                 dprintf (SPINLOCK_LOG, ("[%d]spin Emsl uoh", heap_number));
             }
-            else
+            else if (spin_for_allocation < 0)
             {
                 wait_for_background (awr_uoh_alloc_during_bgc, true);
             }
