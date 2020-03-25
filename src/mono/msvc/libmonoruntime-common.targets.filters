@@ -97,6 +97,9 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\environment.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\icall-eventpipe.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\exception.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>

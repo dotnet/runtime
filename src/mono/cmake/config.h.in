@@ -1647,6 +1647,9 @@
 /* Enable private types checked build */
 #cmakedefine ENABLE_CHECKED_BUILD_CRASH_REPORTING 1
 
+/* Enable EventPipe library support */
+#cmakedefine ENABLE_PERFTRACING 1
+
 /* Define to 1 if you have /usr/include/malloc.h. */
 #cmakedefine HAVE_USR_INCLUDE_MALLOC_H 1
 

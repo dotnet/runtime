@@ -94,7 +94,6 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;LLVM_API_VERSION=$(MONO_LLVM_DEFAULT_API_VERSION);$(SHIM_GLOBALIZATION_DEFINES);_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -121,7 +120,6 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;LLVM_API_VERSION=$(MONO_LLVM_DEFAULT_API_VERSION);$(SHIM_GLOBALIZATION_DEFINES);WIN64;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -145,7 +143,6 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;LLVM_API_VERSION=$(MONO_LLVM_DEFAULT_API_VERSION);$(SHIM_GLOBALIZATION_DEFINES);NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -174,7 +171,6 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_DEFAULT_INCLUDE_DIR);$(SHIM_GLOBALIZATION_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;$(GC_DEFINES);MONO_DLL_EXPORT;LLVM_API_VERSION=$(MONO_LLVM_DEFAULT_API_VERSION);$(SHIM_GLOBALIZATION_DEFINES);WIN64;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
