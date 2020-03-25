@@ -23,7 +23,7 @@ The [Roslyn Compiler](https://github.com/dotnet/roslyn) team is working on a [So
 
 ### Requirements
 
-* [Source generators][source_gen_link]
+* [Source Generators][source_gen_link]
   * Branch: https://github.com/dotnet/roslyn/tree/features/source-generators
 
 * Support for non-`void` return types in [`partial`](https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/partial-method) methods.
@@ -31,11 +31,11 @@ The [Roslyn Compiler](https://github.com/dotnet/roslyn) team is working on a [So
 
 ## Design
 
-Using Source Generators is focused on integrating with existing `DllImportAttribute` practices from an invocation point of view (i.e. callsites should not need to be updated). The idea behind Source Generators is that code for some scenarios can be precomputed using user declared types and logic thus avoiding the need to generator code at runtime.
+Using Source Generators is focused on integrating with existing `DllImportAttribute` practices from an invocation point of view (i.e. callsites should not need to be updated). The idea behind Source Generators is that code for some scenarios can be precomputed using user declared types, metadata, and logic thus avoiding the need to generate code at runtime.
 
 **Goals**
 
-* Allow P/Invoke interop evolution independently on runtime.
+* Allow P/Invoke interop evolution independently of runtime.
 * High performance: No reflection at runtime, compatible in an AOT scenario.
 
 **Non-Goals**
@@ -87,11 +87,11 @@ long count;
 /* C*/ QueryPerformanceCounter(out count);
 ```
 
-Observe point (A), the new attribute. This attribute provides an indication to a Source Generator that the following declaration represents a native export that will be called via Source Generated stub.
+Observe point (A), the new attribute. This attribute provides an indication to a Source Generator that the following declaration represents a native export that will be called via a generated stub.
 
 During the source generation process the metadata in the `GeneratedDllImportAttribute` (A) would be used to generate a stub and invoke the desired native export. Also note that the method declaration is marked `partial`. The Source Generator would then generate the source for this partial method. The invocation (C) remains unchanged to that of usage involving `DllImportAttribute`.
 
-`Stubs.g.cs`:
+`Stubs.g.cs` (Source Generator code)
 
 ``` CSharp
 /* D */ partial static bool QueryPerformanceCounter(out long lpPerformanceCount)
@@ -113,11 +113,11 @@ The Source Generator would generate the implementation of the partial method (D)
 
 In this system it is not defined how marshaling of specific types would be performed. The built-in runtime has complex rules for some types, and it is these rules that once shipped become the de facto standard - often times regardless if the behavior is a bug or not. The design here is not concerned with how the arguments go from a managed to unmanaged environment. With the IL Stub generation extracted from the runtime new type marshaling (e.g. [`Span<T>`](https://docs.microsoft.com/dotnet/api/system.span-1)) could be introduced without requiring an corresponding update to the runtime itself. The `Span<T>` type is good example of a type that at present has no support for marshaling, but with this proposal users could update to the latest generator and have support without changing the runtime.
 
-### Adoption of Source Generator for existing code
+### Adoption of Source Generator
 
-In the current Source Generator design modification of any user written code is not permitted. This includes modification of any non-functional metadata (e.g. Attributes). The above design therefore introduces a new attribute and signature for consumption of a native export. Therefore, in order to consume Source Generator's users would need to update their source and adoption could be stunted by this.
+In the current Source Generator design modification of any user written code is not permitted. This includes modification of any non-functional metadata (e.g. Attributes). The above design therefore introduces a new attribute and signature for consumption of a native export. In order to consume Source Generators, users would need to update their source and adoption could be stunted by this requirement.
 
-As a mitigation it would be possible to create a [Roslyn Analyzer and Code fix](https://github.com/dotnet/roslyn/wiki/Getting-Started-Writing-a-Custom-Analyzer-&-Code-Fix) to aid the developer in converting their `DllImportAttribute` marked functions to use `GeneratedDllImportAttribute`. Furthermore, the function would need to be updated to have the `partial` keyword and potentially the enclosing class.
+As a mitigation it would be possible to create a [Roslyn Analyzer and Code fix](https://github.com/dotnet/roslyn/wiki/Getting-Started-Writing-a-Custom-Analyzer-&-Code-Fix) to aid the developer in converting `DllImportAttribute` marked functions to use `GeneratedDllImportAttribute`. Additionally, the function signature would need to be updated to remove the `extern` keyword and add the `partial` keyword to the function and potentially the enclosing class.
 
 ## Proposed API
 
@@ -200,6 +200,10 @@ namespace System.Runtime.InteropServices
 * How will users get error messages during source generator?
 
     * The Source Generator API will be permitted to provide warnings and errors through the [Roslyn SDK](https://docs.microsoft.com/dotnet/csharp/roslyn-sdk/).
+
+* Is it be possible to completely replicate the marshaling rules in the current built-in system using existing .NET APIs?
+
+    * No. There are rules and semantics that would be difficult to replicate with the current .NET API surface. Additional .NET APIs will likely need to be added in order to allow a Source Generator implementation to provide identical semantics with the built-in system.
 
 ## References
 
