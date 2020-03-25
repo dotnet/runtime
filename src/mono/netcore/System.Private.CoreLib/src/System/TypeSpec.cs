@@ -193,7 +193,7 @@ namespace System
             var sb = new Text.StringBuilder(name.DisplayName);
             if (nested != null)
             {
-                foreach (var n in nested)
+                foreach (ITypeIdentifier? n in nested)
                     sb.Append('+').Append(n.DisplayName);
             }
 
@@ -230,7 +230,7 @@ namespace System
         {
             if (modifier_spec != null)
             {
-                foreach (var md in modifier_spec)
+                foreach (IModifierSpec? md in modifier_spec)
                     md.Append(sb);
             }
 
@@ -358,9 +358,9 @@ namespace System
 
             if (nested != null)
             {
-                foreach (var n in nested)
+                foreach (ITypeIdentifier? n in nested)
                 {
-                    var tmp = type.GetNestedType(n.DisplayName, BindingFlags.Public | BindingFlags.NonPublic);
+                    Type? tmp = type.GetNestedType(n.DisplayName, BindingFlags.Public | BindingFlags.NonPublic);
                     if (tmp == null)
                     {
                         if (throwOnError)
@@ -376,7 +376,7 @@ namespace System
                 Type[] args = new Type[generic_params.Count];
                 for (int i = 0; i < args.Length; ++i)
                 {
-                    var tmp = generic_params[i].Resolve(assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
+                    Type? tmp = generic_params[i].Resolve(assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
                     if (tmp == null)
                     {
                         if (throwOnError)
@@ -390,7 +390,7 @@ namespace System
 
             if (modifier_spec != null)
             {
-                foreach (var md in modifier_spec)
+                foreach (IModifierSpec? md in modifier_spec)
                     type = md.Resolve(type);
             }
 

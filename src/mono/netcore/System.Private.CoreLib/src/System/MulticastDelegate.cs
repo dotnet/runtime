@@ -212,7 +212,7 @@ namespace System
             }
             else if (delegates == null)
             {
-                foreach (var d in other.delegates)
+                foreach (Delegate? d in other.delegates)
                 {
                     if (this.Equals(d))
                         return null;

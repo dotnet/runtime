@@ -301,10 +301,10 @@ namespace System.Reflection.Emit
 
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder> assemblyAttributes)
         {
-            var ab = DefineDynamicAssembly(name, access);
+            AssemblyBuilder ab = DefineDynamicAssembly(name, access);
             if (assemblyAttributes != null)
             {
-                foreach (var attr in assemblyAttributes)
+                foreach (CustomAttributeBuilder attr in assemblyAttributes)
                     ab.SetCustomAttribute(attr);
             }
 
@@ -497,7 +497,7 @@ namespace System.Reflection.Emit
             if (name.Length == 0)
                 throw new ArgumentException("Name cannot be empty", nameof(name));
 
-            var res = InternalGetType(null, name, throwOnError, ignoreCase);
+            Type res = InternalGetType(null, name, throwOnError, ignoreCase);
             if (res is TypeBuilder)
             {
                 if (throwOnError)

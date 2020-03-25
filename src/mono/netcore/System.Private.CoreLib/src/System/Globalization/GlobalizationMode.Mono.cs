@@ -11,7 +11,7 @@ namespace System.Globalization
 
         private static bool GetInvariantSwitchValue()
         {
-            var val = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+            string? val = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
             if (val != null)
                 return bool.IsTrueStringIgnoreCase(val) || val.Equals("1");
             return false;

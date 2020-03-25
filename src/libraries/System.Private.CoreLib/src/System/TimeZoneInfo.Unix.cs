@@ -175,20 +175,20 @@ namespace System
 
             for (int i = 0; i < _adjustmentRules.Length; i++)
             {
-                var rule = _adjustmentRules[i];
-                var start = rule.DateStart.Kind == DateTimeKind.Utc ?
+                AdjustmentRule? rule = _adjustmentRules[i];
+                DateTime start = rule.DateStart.Kind == DateTimeKind.Utc ?
                             // At the daylight start we didn't start the daylight saving yet then we convert to Local time
                             // by adding the _baseUtcOffset to the UTC time
                             new DateTime(rule.DateStart.Ticks + _baseUtcOffset.Ticks, DateTimeKind.Unspecified) :
                             rule.DateStart;
-                var end = rule.DateEnd.Kind == DateTimeKind.Utc ?
+                DateTime end = rule.DateEnd.Kind == DateTimeKind.Utc ?
                             // At the daylight saving end, the UTC time is mapped to local time which is already shifted by the daylight delta
                             // we calculate the local time by adding _baseUtcOffset + DaylightDelta to the UTC time
                             new DateTime(rule.DateEnd.Ticks + _baseUtcOffset.Ticks + rule.DaylightDelta.Ticks, DateTimeKind.Unspecified) :
                             rule.DateEnd;
 
-                var startTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, start.Hour, start.Minute, start.Second), start.Month, start.Day);
-                var endTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, end.Hour, end.Minute, end.Second), end.Month, end.Day);
+                TransitionTime startTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, start.Hour, start.Minute, start.Second), start.Month, start.Day);
+                TransitionTime endTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, end.Hour, end.Minute, end.Second), end.Month, end.Day);
 
                 rules[i] = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(start.Date, end.Date, rule.DaylightDelta, startTransition, endTransition);
             }

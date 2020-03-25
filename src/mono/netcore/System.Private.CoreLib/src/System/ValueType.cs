@@ -54,7 +54,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            int result = InternalGetHashCode(this, out var fields);
+            int result = InternalGetHashCode(this, out object[]? fields);
 
             if (fields != null)
                 for (int i = 0; i < fields.Length; ++i)

@@ -296,7 +296,7 @@ namespace System.Reflection
 
         public override ParameterInfo[] GetParameters()
         {
-            var src = MonoMethodInfo.GetParametersInfo(mhandle, this);
+            ParameterInfo[] src = MonoMethodInfo.GetParametersInfo(mhandle, this);
             if (src.Length == 0)
                 return src;
 
@@ -404,8 +404,8 @@ namespace System.Reflection
 
             for (int i = 0; i < args.Length; ++i)
             {
-                var arg = args[i];
-                var pi = pinfo[i];
+                object arg = args[i];
+                ParameterInfo pi = pinfo[i];
                 if (arg == Type.Missing)
                 {
                     if (pi.DefaultValue == DBNull.Value)
@@ -658,7 +658,7 @@ namespace System.Reflection
                 new CustomAttributeTypedArgument (typeof(string), dllName),
             };
 
-            var attrType = typeof(DllImportAttribute);
+            Type attrType = typeof(DllImportAttribute);
 
             var namedArgs = new CustomAttributeNamedArgument[] {
                 new CustomAttributeNamedArgument (attrType.GetField ("EntryPoint"), entryPoint),
@@ -824,7 +824,7 @@ namespace System.Reflection
 
         internal override int GetParametersCount()
         {
-            var pi = MonoMethodInfo.GetParametersInfo(mhandle, this);
+            ParameterInfo[] pi = MonoMethodInfo.GetParametersInfo(mhandle, this);
             return pi == null ? 0 : pi.Length;
         }
 

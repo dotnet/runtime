@@ -169,7 +169,7 @@ namespace System.Reflection.Emit
         // Called from the runtime to return the corresponding finished ConstructorInfo object
         internal ConstructorInfo RuntimeResolve()
         {
-            var type = instantiation.InternalResolve();
+            Type type = instantiation.InternalResolve();
             return type.GetConstructor(cb);
         }
 

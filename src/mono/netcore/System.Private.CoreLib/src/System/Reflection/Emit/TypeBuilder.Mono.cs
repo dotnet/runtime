@@ -842,7 +842,7 @@ namespace System.Reflection.Emit
                 throw new TypeLoadException("Could not load type '" + FullName + "' from assembly '" + Assembly + "' because it is an enum with methods.");
             if (interfaces != null)
             {
-                foreach (var iface in interfaces)
+                foreach (Type iface in interfaces)
                 {
                     if (iface.IsNestedPrivate && iface.Assembly != Assembly)
                         throw new TypeLoadException("Could not load type '" + FullName + "' from assembly '" + Assembly + "' because it is implements the inaccessible interface '" + iface.FullName + "'.");
@@ -899,7 +899,7 @@ namespace System.Reflection.Emit
             ResolveUserTypes(interfaces);
             if (fields != null)
             {
-                foreach (var fb in fields)
+                foreach (FieldBuilder fb in fields)
                 {
                     if (fb != null)
                         fb.ResolveUserTypes();
@@ -907,7 +907,7 @@ namespace System.Reflection.Emit
             }
             if (methods != null)
             {
-                foreach (var mb in methods)
+                foreach (MethodBuilder mb in methods)
                 {
                     if (mb != null)
                         mb.ResolveUserTypes();
@@ -915,7 +915,7 @@ namespace System.Reflection.Emit
             }
             if (ctors != null)
             {
-                foreach (var cb in ctors)
+                foreach (ConstructorBuilder cb in ctors)
                 {
                     if (cb != null)
                         cb.ResolveUserTypes();
@@ -1437,7 +1437,7 @@ namespace System.Reflection.Emit
                         throw new Exception("Error in customattr");
                 }
 
-                var ctor_type = customBuilder.Ctor is ConstructorBuilder ? ((ConstructorBuilder)customBuilder.Ctor).parameters[0] : customBuilder.Ctor.GetParametersInternal()[0].ParameterType;
+                Type ctor_type = customBuilder.Ctor is ConstructorBuilder ? ((ConstructorBuilder)customBuilder.Ctor).parameters[0] : customBuilder.Ctor.GetParametersInternal()[0].ParameterType;
                 int pos = 6;
                 if (ctor_type.FullName == "System.Int16")
                     pos = 4;

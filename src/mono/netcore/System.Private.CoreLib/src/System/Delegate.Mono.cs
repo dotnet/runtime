@@ -436,7 +436,7 @@ namespace System
 #nullable restore
             }
 
-            var target = _target;
+            object? target = _target;
 
             if (data is null)
                 data = CreateDelegateData();

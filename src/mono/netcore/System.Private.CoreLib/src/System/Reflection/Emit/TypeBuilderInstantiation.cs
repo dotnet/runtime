@@ -88,7 +88,7 @@ namespace System.Reflection.Emit
                 throw new NotImplementedException();
             for (int i = 0; i < type_arguments.Length; ++i)
             {
-                var t = type_arguments[i];
+                Type t = type_arguments[i];
                 if (t is TypeBuilder && !(t as TypeBuilder).IsCreated())
                     throw new NotImplementedException();
             }
@@ -509,7 +509,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                foreach (var t in type_arguments)
+                foreach (Type t in type_arguments)
                 {
                     if (t.IsUserType)
                         return true;

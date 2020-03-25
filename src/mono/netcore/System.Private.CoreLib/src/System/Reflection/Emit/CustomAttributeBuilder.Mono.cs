@@ -151,7 +151,7 @@ namespace System.Reflection.Emit
                 return false;
             if (type.IsArray && type.GetElementType().IsValueType)
             {
-                foreach (var v in (Array)value)
+                foreach (object v in (Array)value)
                 {
                     if (v == null)
                         return false;

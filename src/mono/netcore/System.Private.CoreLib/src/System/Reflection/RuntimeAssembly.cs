@@ -319,7 +319,7 @@ namespace System.Reflection
         {
             using (var nativeNames = new Mono.SafeGPtrArrayHandle(InternalGetReferencedAssemblies(this)))
             {
-                var numAssemblies = nativeNames.Length;
+                int numAssemblies = nativeNames.Length;
                 try
                 {
                     AssemblyName[] result = new AssemblyName[numAssemblies];
@@ -368,7 +368,7 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal Assembly InternalGetSatelliteAssembly(CultureInfo culture, Version version, bool throwOnFileNotFound)
         {
-            var aname = GetName();
+            AssemblyName aname = GetName();
 
             var an = new AssemblyName();
             if (version == null)

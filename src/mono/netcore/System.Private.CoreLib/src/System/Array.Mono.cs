@@ -143,7 +143,7 @@ namespace System
 
             Type src_type = sourceArray.GetType().GetElementType()!;
             Type dst_type = destinationArray.GetType().GetElementType()!;
-            var dst_type_vt = dst_type.IsValueType && Nullable.GetUnderlyingType(dst_type) == null;
+            bool dst_type_vt = dst_type.IsValueType && Nullable.GetUnderlyingType(dst_type) == null;
 
             bool src_is_enum = src_type.IsEnum;
             bool dst_is_enum = dst_type.IsEnum;
@@ -381,7 +381,7 @@ namespace System
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
 
-            var lb = GetLowerBound(0);
+            int lb = GetLowerBound(0);
             if (index < lb || index > GetUpperBound(0))
                 throw new IndexOutOfRangeException("Index has to be between upper and lower bound of the array.");
 
@@ -428,7 +428,7 @@ namespace System
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
 
-            var lb = GetLowerBound(0);
+            int lb = GetLowerBound(0);
             if (index < lb || index > GetUpperBound(0))
                 throw new IndexOutOfRangeException("Index has to be >= lower bound and <= upper bound of the array.");
 
@@ -524,14 +524,14 @@ namespace System
         [Intrinsic]
         private void GetGenericValueImpl<T>(int pos, out T value)
         {
-            var self = this;
+            Array? self = this;
             GetGenericValue_icall(ref self, pos, out value);
         }
 
         [Intrinsic]
         private void SetGenericValueImpl<T>(int pos, ref T value)
         {
-            var self = this;
+            Array? self = this;
             SetGenericValue_icall(ref self, pos, ref value);
         }
 

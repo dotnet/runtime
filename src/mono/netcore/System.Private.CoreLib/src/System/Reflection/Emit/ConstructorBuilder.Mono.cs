@@ -355,12 +355,12 @@ namespace System.Reflection.Emit
             TypeBuilder.ResolveUserTypes(parameters);
             if (paramModReq != null)
             {
-                foreach (var types in paramModReq)
+                foreach (Type[] types in paramModReq)
                     TypeBuilder.ResolveUserTypes(types);
             }
             if (paramModOpt != null)
             {
-                foreach (var types in paramModOpt)
+                foreach (Type[] types in paramModOpt)
                     TypeBuilder.ResolveUserTypes(types);
             }
         }

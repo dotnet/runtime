@@ -317,7 +317,7 @@ namespace System.Runtime.InteropServices
 
         private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
         {
-            var obj = Activator.CreateInstance(structureType);
+            object? obj = Activator.CreateInstance(structureType);
             PtrToStructureHelper(ptr, obj, true);
             return obj;
         }
@@ -341,7 +341,7 @@ namespace System.Runtime.InteropServices
 
         internal static unsafe IntPtr AllocBSTR(int length)
         {
-            var res = BufferToBSTR((char*)IntPtr.Zero, length);
+            IntPtr res = BufferToBSTR((char*)IntPtr.Zero, length);
             if (res == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return res;

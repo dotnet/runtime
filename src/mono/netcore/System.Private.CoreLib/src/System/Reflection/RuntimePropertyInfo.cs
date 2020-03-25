@@ -154,7 +154,7 @@ namespace System.Reflection
             sbName.Append(" ");
             sbName.Append(Name);
 
-            var pi = GetIndexParameters();
+            ParameterInfo[] pi = GetIndexParameters();
             if (pi.Length > 0)
             {
                 sbName.Append(" [");
