@@ -1299,10 +1299,20 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static unsafe void StoreScalar(double* address, Vector128<double> source) => StoreScalar(address, source);
         /// <summary>
+        /// void _mm_storeu_si32 (void* mem_addr, __m128i a)
+        ///   MOVD m32, xmm
+        /// </summary>
+        public static unsafe void StoreScalar(int* address, Vector128<int> source) => StoreScalar(address, source);
+        /// <summary>
         /// void _mm_storel_epi64 (__m128i* mem_addr, __m128i a)
         ///   MOVQ m64, xmm
         /// </summary>
         public static unsafe void StoreScalar(long* address, Vector128<long> source) => StoreScalar(address, source);
+        /// <summary>
+        /// void _mm_storeu_si32 (void* mem_addr, __m128i a)
+        ///   MOVD m32, xmm
+        /// </summary>
+        public static unsafe void StoreScalar(uint* address, Vector128<uint> source) => StoreScalar(address, source);
         /// <summary>
         /// void _mm_storel_epi64 (__m128i* mem_addr, __m128i a)
         ///   MOVQ m64, xmm
