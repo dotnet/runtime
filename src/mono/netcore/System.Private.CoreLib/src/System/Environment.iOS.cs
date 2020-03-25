@@ -46,7 +46,7 @@ namespace System
                     return Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory);
 
                 case SpecialFolder.ApplicationData:
-                    // note: at first glance that looked like a good place to return NSLibraryDirectory 
+                    // note: at first glance that looked like a good place to return NSLibraryDirectory
                     // but it would break isolated storage for existing applications
                     return Path.Combine(Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory), ".config");
 
