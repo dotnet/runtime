@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using System.Runtime.CompilerServices;
 using System.IO;
+using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner;
 
 namespace Mono.Linker.Tests.TestCases
@@ -160,6 +161,13 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath);
 			return new TestCaseCollector (rootSourceDirectory, testCaseAssemblyPath);
+		}
+
+		public static NPath TestCasesRootDirectory {
+			get {
+				GetDirectoryPaths (out string rootSourceDirectory, out string _);
+				return rootSourceDirectory.ToNPath ();
+			}
 		}
 
 		static IEnumerable<TestCase> AllCases ()

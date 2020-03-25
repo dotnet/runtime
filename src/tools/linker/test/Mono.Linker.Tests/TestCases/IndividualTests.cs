@@ -19,6 +19,8 @@ namespace Mono.Linker.Tests.TestCases
 	[TestFixture]
 	public class IndividualTests
 	{
+		private NPath TestsDirectory => TestDatabase.TestCasesRootDirectory.Parent.Combine ("Mono.Linker.Tests");
+	
 		[Test]
 		public void CanSkipUnresolved ()
 		{
@@ -45,7 +47,7 @@ namespace Mono.Linker.Tests.TestCases
 			var jsonSerializer = new DataContractJsonSerializer (typeof (List<PInvokeInfo>));
 
 			using (var fsActual = File.Open(outputPath, FileMode.Open))
-			using (var fsExpected = File.Open("TestCases/Dependencies/PInvokesExpectations.json", FileMode.Open)) {
+			using (var fsExpected = File.Open (TestsDirectory.Combine ("TestCases/Dependencies/PInvokesExpectations.json"), FileMode.Open)) {
 				var actual = jsonSerializer.ReadObject (fsActual) as List<PInvokeInfo>;
 				var expected = jsonSerializer.ReadObject (fsExpected) as List<PInvokeInfo>;
 				foreach (var pinvokePair in Enumerable.Zip(actual, expected, (fst, snd) => Tuple.Create(fst, snd))) {
