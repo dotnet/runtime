@@ -31,6 +31,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34090")]
         [PlatformSpecific(TestPlatforms.Linux)]
         public async Task ShutdownTestRun()
         {
@@ -38,6 +39,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34090")]
         [PlatformSpecific(TestPlatforms.Linux)]
         public async Task ShutdownTestWaitForShutdown()
         {
