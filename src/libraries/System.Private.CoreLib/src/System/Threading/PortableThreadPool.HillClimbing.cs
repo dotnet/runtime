@@ -83,13 +83,13 @@ namespace System.Threading
             private double _completionsSinceLastChange;
             private int _accumulatedCompletionCount;
             private double _accumulatedSampleDurationSeconds;
-            private double[] _samples;
-            private double[] _threadCounts;
+            private readonly double[] _samples;
+            private readonly double[] _threadCounts;
             private int _currentSampleMs;
 
-            private Random _randomIntervalGenerator = new Random();
+            private readonly Random _randomIntervalGenerator = new Random();
 
-            private LogEntry[] _log = new LogEntry[LogCapacity];
+            private readonly LogEntry[] _log = new LogEntry[LogCapacity];
             private int _logStart = 0;
             private int _logSize = 0;
 

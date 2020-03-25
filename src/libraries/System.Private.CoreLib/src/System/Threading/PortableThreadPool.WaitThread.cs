@@ -15,7 +15,7 @@ namespace System.Threading
         private WaitThreadNode _waitThreadsHead;
         private WaitThreadNode _waitThreadsTail;
 
-        private LowLevelLock _waitThreadLock = new LowLevelLock();
+        private readonly LowLevelLock _waitThreadLock = new LowLevelLock();
 
         /// <summary>
         /// Register a wait handle on a <see cref="WaitThread"/>.

@@ -10,7 +10,7 @@ namespace Mono
 {
     internal unsafe struct RuntimeClassHandle
     {
-        private RuntimeStructs.MonoClass* value;
+        private readonly RuntimeStructs.MonoClass* value;
 
         internal RuntimeClassHandle(RuntimeStructs.MonoClass* value)
         {
@@ -67,7 +67,7 @@ namespace Mono
 
     internal unsafe struct RuntimeRemoteClassHandle
     {
-        private RuntimeStructs.RemoteClass* value;
+        private readonly RuntimeStructs.RemoteClass* value;
 
         internal RuntimeRemoteClassHandle(RuntimeStructs.RemoteClass* value)
         {
@@ -85,7 +85,7 @@ namespace Mono
 
     internal unsafe struct RuntimeGenericParamInfoHandle
     {
-        private RuntimeStructs.GenericParamInfo* value;
+        private readonly RuntimeStructs.GenericParamInfo* value;
 
         internal RuntimeGenericParamInfoHandle(RuntimeStructs.GenericParamInfo* value)
         {
@@ -128,7 +128,7 @@ namespace Mono
 
     internal struct RuntimeEventHandle
     {
-        private IntPtr value;
+        private readonly IntPtr value;
 
         internal RuntimeEventHandle(IntPtr v)
         {
@@ -168,7 +168,7 @@ namespace Mono
 
     internal struct RuntimePropertyHandle
     {
-        private IntPtr value;
+        private readonly IntPtr value;
 
         internal RuntimePropertyHandle(IntPtr v)
         {

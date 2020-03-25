@@ -104,7 +104,7 @@ namespace System.Threading
         /// </summary>
         private int _numRequestedCallbacks;
 
-        private LowLevelLock _callbackLock = new LowLevelLock();
+        private readonly LowLevelLock _callbackLock = new LowLevelLock();
 
         /// <summary>
         /// Notes if we need to signal the user's unregister event after all callbacks complete.

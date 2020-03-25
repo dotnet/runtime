@@ -42,8 +42,8 @@ namespace System
     internal class IArraySpec : IModifierSpec
     {
         // dimensions == 1 and bound, or dimensions > 1 and !bound
-        private int dimensions;
-        private bool bound;
+        private readonly int dimensions;
+        private readonly bool bound;
 
         internal IArraySpec(int dimensions, bool bound)
         {
@@ -93,7 +93,7 @@ namespace System
 
     internal class PointerSpec : IModifierSpec
     {
-        private int pointer_level;
+        private readonly int pointer_level;
 
         internal PointerSpec(int pointer_level)
         {
@@ -651,8 +651,8 @@ namespace System
 
         private class TypeSpecTypeName : TypeNames.ATypeName, ITypeName
         {
-            private TypeSpec ts;
-            private bool want_modifiers;
+            private readonly TypeSpec ts;
+            private readonly bool want_modifiers;
 
             internal TypeSpecTypeName(TypeSpec ts, bool wantModifiers)
             {
