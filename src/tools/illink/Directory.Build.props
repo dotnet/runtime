@@ -2,8 +2,29 @@
   <PropertyGroup>
     <MonoBuild Condition="'$(MonoBuild)' == '' and '$(SolutionName)' == 'monolinker'">true</MonoBuild>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and '$([System.IO.Path]::GetFileName($(MSBuildProjectDirectory)))' == 'ref'">true</IsReferenceAssembly>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(IsReferenceAssembly)' == 'true' ">
+    <ProduceOnlyReferenceAssembly>true</ProduceOnlyReferenceAssembly>
+    <!-- used by Arcade to compute OutputPath, IntermediateOutputPath, etc. early in the import chain. -->
+    <OutDirName>$(MSBuildProjectName)/ref</OutDirName>
+    <!-- don't try to publish PDBs for ref assemblies that have none. -->
+    <PublishWindowsPdb>false</PublishWindowsPdb>
+    <RunApiCompat>false</RunApiCompat>
+  </PropertyGroup>
+
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(MonoBuild)' == ''" />
+  <!-- Still use global versions even if not using arcade. -->
+  <Import Project="eng/Versions.props" Condition="'$(MonoBuild)' != ''" />
   <PropertyGroup>
     <IsPackable>false</IsPackable>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <_ToolsProjectTargets>$(ArtifactsToolsetDir)Common\Tools.proj.nuget.g.targets</_ToolsProjectTargets>
+    <!-- Set this to false to build against the submodule. Convenient for experimenting locally. -->
+    <UseCecilPackage Condition="'$(MonoBuild)' != '' And '$(UseCecilPackage)' == ''">false</UseCecilPackage>
+    <UseCecilPackage Condition="'$(UseCecilPackage)' == ''">true</UseCecilPackage>
   </PropertyGroup>
+
 </Project>

@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
@@ -24,8 +24,9 @@
     <Folder Include="Extensions\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj" />
-    <ProjectReference Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
+    <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" />
+    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\Mono.Cecil.csproj" />
+    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
     <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
@@ -58,7 +59,7 @@
   </Target>
 
   <ItemGroup Condition="'$(MonoBuild)' != ''">
-    <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
+    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
     <PackageReference Include="NUnit" Version="3.10.0" />
     <PackageReference Include="NUnit.ConsoleRunner" Version="3.10.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
