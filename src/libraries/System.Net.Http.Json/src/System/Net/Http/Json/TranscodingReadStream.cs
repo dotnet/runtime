@@ -18,7 +18,7 @@ namespace System.Net.Http.Json
         private static readonly int OverflowBufferSize = Encoding.UTF8.GetMaxByteCount(1); // The most number of bytes used to represent a single UTF char
 
         internal const int MaxByteBufferSize = 4096;
-        internal const int MaxCharBufferSize = 3 * MaxByteBufferSize;
+        internal const int MaxCharBufferSize = 4096;
 
         private readonly Stream _stream;
         private readonly Decoder _decoder;
@@ -118,7 +118,7 @@ namespace System.Net.Http.Json
             if (_charBuffer.Count == 0)
             {
                 int bytesRead = await ReadInputChars(cancellationToken).ConfigureAwait(false);
-                shouldFlushEncoder = bytesRead == 0;
+                shouldFlushEncoder = bytesRead == 0 && _byteBuffer.Count == 0;
             }
 
             bool completed = false;

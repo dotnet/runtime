@@ -101,11 +101,7 @@ namespace System.Net.Http.Json
 
                 _charsDecoded += charsDecoded;
                 bufferSegment = bufferSegment.Slice(bytesDecoded);
-
-                if (!decoderCompleted)
-                {
-                    await WriteBufferAsync(cancellationToken).ConfigureAwait(false);
-                }
+                await WriteBufferAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -142,10 +138,7 @@ namespace System.Net.Http.Json
 
         public async Task FinalWriteAsync(CancellationToken cancellationToken)
         {
-            // First write any buffered content
-            await WriteBufferAsync(cancellationToken).ConfigureAwait(false);
-
-            // Now flush the encoder.
+            // Flush the encoder.
             byte[] byteBuffer = ArrayPool<byte>.Shared.Rent(_maxByteBufferSize);
             bool encoderCompleted = false;
 

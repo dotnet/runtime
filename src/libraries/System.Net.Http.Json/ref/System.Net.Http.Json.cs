@@ -31,7 +31,7 @@ namespace System.Net.Http.Json
         public static System.Threading.Tasks.Task<object?> ReadFromJsonAsync(this System.Net.Http.HttpContent content, System.Type type, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task<T> ReadFromJsonAsync<T>(this System.Net.Http.HttpContent content, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
-    public partial class JsonContent : System.Net.Http.HttpContent
+    public sealed partial class JsonContent : System.Net.Http.HttpContent
     {
         internal JsonContent() { }
         public System.Type ObjectType { get { throw null; } }
