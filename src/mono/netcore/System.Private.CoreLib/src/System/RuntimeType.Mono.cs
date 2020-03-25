@@ -897,7 +897,7 @@ namespace System
                 }
                 else
                 {
-                    if ((object)returnType == null)
+                    if (returnType is null)
                         // if we are here we have no args or property type to select over and we have more than one property with that name
                         throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
                 }
@@ -1155,7 +1155,7 @@ namespace System
         public override bool IsEquivalentTo(Type? other)
         {
             RuntimeType otherRtType = other as RuntimeType;
-            if ((object)otherRtType == null)
+            if (otherRtType is null)
                 return false;
 
             if (otherRtType == this)
@@ -2363,7 +2363,7 @@ namespace System
             if (IsGenericParameter)
                 throw new InvalidOperationException(Environment.GetResourceString("Arg_GenericParameter"));
 
-            if ((object)ifaceType == null)
+            if (ifaceType is null)
                 throw new ArgumentNullException(nameof(ifaceType));
 
             RuntimeType ifaceRtType = ifaceType as RuntimeType;
@@ -2559,7 +2559,7 @@ namespace System
 
         public override bool IsSubclassOf(Type type)
         {
-            if ((object)type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
             RuntimeType rtType = type as RuntimeType;
