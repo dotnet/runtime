@@ -79,11 +79,11 @@ static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic      intrinsicId = node->gtHWIntrinsicId;
-    InstructionSet      isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
-    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    int                 ival        = HWIntrinsicInfo::lookupIval(intrinsicId);
-    int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
+    NamedIntrinsic         intrinsicId = node->gtHWIntrinsicId;
+    CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
+    HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+    int                    ival        = HWIntrinsicInfo::lookupIval(intrinsicId);
+    int                    numArgs     = HWIntrinsicInfo::lookupNumArgs(node);
 
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
 

@@ -56,6 +56,9 @@ if [[ "$__BuildArch" == wasm ]]; then
 elif [[ "$__TargetOS" == iOS ]]; then
     # nothing to do here
     true
+elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+    # nothing to do here
+    true
 else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
@@ -69,6 +72,27 @@ fi
 if [[ "$__TargetOS" == OSX ]]; then
     # set default OSX deployment target
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
+elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+    if [[ -z "$ANDROID_NDK_HOME" ]]; then
+        echo "Error: You need to set the ANDROID_NDK_HOME environment variable pointing to the Android NDK root."
+        exit 1
+    fi
+
+    # keep ANDROID_NATIVE_API_LEVEL in sync with src/mono/Directory.Build.props
+    __CMakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake -DANDROID_STL=none -DANDROID_NATIVE_API_LEVEL=21 $__CMakeArgs"
+
+    if [[ "$__BuildArch" == x64 ]]; then
+        __CMakeArgs="-DANDROID_ABI=x86_64 $__CMakeArgs"
+    elif [[ "$__BuildArch" == x86 ]]; then
+        __CMakeArgs="-DANDROID_ABI=x86 $__CMakeArgs"
+    elif [[ "$__BuildArch" == arm64 ]]; then
+        __CMakeArgs="-DANDROID_ABI=arm64-v8a $__CMakeArgs"
+    elif [[ "$__BuildArch" == arm ]]; then
+        __CMakeArgs="-DANDROID_ABI=armeabi-v7a $__CMakeArgs"
+    else
+        echo "Error: Unknown Android architecture $__BuildArch."
+        exit 1
+    fi
 elif [[ "$__TargetOS" == iOS ]]; then
     __CMakeArgs="-DCMAKE_SYSTEM_NAME=iOS $__CMakeArgs"
     if [[ "$__BuildArch" == x64 ]]; then

@@ -63,12 +63,14 @@
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm64'">arm64</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(TargetOS)' == 'WebAssembly'">wasm</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(TargetOS)' == 'iOS'">x64</ArchGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(TargetOS)' == 'Android'">x64</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
 
-    <!-- RuntimeOS is calculated based on the build system OS, however if building for WebAssembly or iOS we need to let
-         the build system to use webassembly/ios as the RuntimeOS for produced package RIDs. -->
+    <!-- RuntimeOS is calculated based on the build system OS, however if building for WebAssembly/iOS/Android we need to let
+         the build system to use webassembly/ios/android as the RuntimeOS for produced package RIDs. -->
     <RuntimeOS Condition="'$(TargetOS)' == 'WebAssembly'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
     <RuntimeOS Condition="'$(TargetOS)' == 'iOS'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
+    <RuntimeOS Condition="'$(TargetOS)' == 'Android'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
  
     <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
@@ -93,6 +95,14 @@
         <TargetsUnix>true</TargetsUnix>
         <TargetsLinux>true</TargetsLinux>
         <PackageTargetRuntime>linux</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFrameworkSuffix)' == 'Android'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsAndroid>true</TargetsAndroid>
+        <PackageTargetRuntime>android</PackageTargetRuntime>
       </PropertyGroup>
     </When>
     <When Condition="'$(TargetFrameworkSuffix)' == 'OSX'">
@@ -186,6 +196,7 @@
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">freebsd</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'WebAssembly'">webassembly</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'ios'">ios</_portableOS>
+    <_portableOS Condition="'$(RuntimeOS)' == 'android'">android</_portableOS>
 
     <_runtimeOS>$(RuntimeOS)</_runtimeOS>
     <_runtimeOS Condition="'$(_runtimeOS)' == 'tizen.4.0.0'">linux</_runtimeOS>
@@ -201,6 +212,11 @@
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(TargetOS)' == 'Windows_NT'">win-x64</ToolRuntimeRID>
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(TargetOS)' != 'Windows_NT' and $(_buildingInOSX)">osx-x64</ToolRuntimeRID>
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(TargetOS)' != 'Windows_NT' and !$(_buildingInOSX)">linux-x64</ToolRuntimeRID>
+
+    <!-- There are no Android tools, so use the default ones -->
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'android' and '$(TargetOS)' == 'Windows_NT'">win-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'android' and '$(TargetOS)' != 'Windows_NT' and $(_buildingInOSX)">osx-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'android' and '$(TargetOS)' != 'Windows_NT' and !$(_buildingInOSX)">linux-x64</ToolRuntimeRID>
 
     <!-- There are no iOS tools and it can be built on OSX only, so use that -->
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'ios'">osx-x64</ToolRuntimeRID>

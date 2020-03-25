@@ -5,26 +5,24 @@ find_library(SECURITY_LIBRARY Security)
 
 set(NATIVECRYPTO_SOURCES
     pal_digest.c
+    pal_ecc.c
     pal_hmac.c
+    pal_keyagree.c
+    pal_keychain.c
     pal_random.c
+    pal_rsa.c
+    pal_sec.c
+    pal_seckey.c
+    pal_signverify.c
+    pal_ssl.c
     pal_symmetric.c
+    pal_trust.c
+    pal_x509.c
+    pal_x509chain.c
 )
 
-if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable more sources
-    set(NATIVECRYPTO_SOURCES
-        ${NATIVECRYPTO_SOURCES}
-        pal_ecc.c
-        pal_keyagree.c
-        pal_keychain.c
-        pal_rsa.c
-        pal_sec.c
-        pal_seckey.c
-        pal_signverify.c
-        pal_ssl.c
-        pal_trust.c
-        pal_x509.c
-        pal_x509chain.c
-    )
+if (CLR_CMAKE_TARGET_IOS)
+    add_definitions(-DTARGET_IOS)
 endif()
 
 add_library(System.Security.Cryptography.Native.Apple

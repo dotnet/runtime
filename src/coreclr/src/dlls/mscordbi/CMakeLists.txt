@@ -3,11 +3,11 @@
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
 if(CORECLR_SET_RPATH)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-  if(CLR_CMAKE_HOST_DARWIN)
+  if(CLR_CMAKE_HOST_OSX)
     set(CMAKE_INSTALL_RPATH "@loader_path")
   else()
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
-  endif(CLR_CMAKE_HOST_DARWIN)
+  endif(CLR_CMAKE_HOST_OSX)
 endif(CORECLR_SET_RPATH)
 
 set(MSCORDBI_SOURCES
@@ -50,10 +50,10 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
-if(CLR_CMAKE_HOST_DARWIN)
+if(CLR_CMAKE_HOST_OSX)
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_DARWIN)
+endif(CLR_CMAKE_HOST_OSX)
 
 add_library_clr(mscordbi SHARED ${MSCORDBI_SOURCES})
 target_precompile_header(TARGET mscordbi HEADER stdafx.h)

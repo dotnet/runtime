@@ -5,6 +5,11 @@ project(CoreFX C)
 
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
+if(CLR_CMAKE_TARGET_IOS)
+    # CMake 3.14.5 contains bug fixes for iOS
+    cmake_minimum_required(VERSION 3.14.5)
+endif()
+
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
     cmake_policy(SET CMP0083 NEW)
 endif(NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -86,7 +91,9 @@ endif ()
 
 if(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DTARGET_ANDROID)
-    include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
+    if(CROSS_ROOTFS)
+        include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
+    endif()
 endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
@@ -127,7 +134,7 @@ else ()
 endif ()
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
-elseif (CLR_CMAKE_TARGET_DARWIN)
+elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -151,15 +158,15 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
 if(CLR_CMAKE_TARGET_UNIX)
-    if (CLR_CMAKE_TARGET_DARWIN)
-        add_definitions(-DTARGET_DARWIN)
-        add_link_options(-Wl,-bind_at_load)
-    elseif (CLR_CMAKE_TARGET_ARCH_WASM)
-        # No object stripping for WASM
-    else (CLR_CMAKE_TARGET_DARWIN)
-        add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-        add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
-    endif(CLR_CMAKE_TARGET_DARWIN)
+    if(NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS)
+        if(CLR_CMAKE_TARGET_OSX)
+            add_definitions(-DTARGET_OSX)
+            add_link_options(-Wl,-bind_at_load)
+        else()
+            add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+            add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
+        endif()
+    endif()
 
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
@@ -189,15 +196,23 @@ endif()
 
 add_subdirectory(System.Native)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable for iOS
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    # skip for now
+elseif(CLR_CMAKE_TARGET_IOS)
+    add_subdirectory(System.Net.Security.Native)
+    #add_subdirectory(System.Globalization.Native) # TODO: reenable
+    # System.Security.Cryptography.Native is intentionally disabled on iOS
+    # it is only used for interacting with OpenSSL which isn't useful there
+elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
+    add_subdirectory(System.Globalization.Native)
+    #add_subdirectory(System.Net.Security.Native) # TODO: reenable
+    #add_subdirectory(System.Security.Cryptography.Native) # TODO: reenable
+else()
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
-
-    # disable System.Security.Cryptography.Native build on iOS,
-    # only used for interacting with OpenSSL which isn't useful there
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
 
-if(CLR_CMAKE_TARGET_DARWIN)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()

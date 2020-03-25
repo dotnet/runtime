@@ -53,6 +53,8 @@ jobs:
       value: ${{ parameters.osSubgroup }}
     - name: officialBuildIdArg
       value: ''
+    - name: osOverride
+      value: ''
     # Strip symbols only on the release build
     - ${{ if eq(parameters.buildConfig, 'Release') }}:
       - name: stripSymbolsArg

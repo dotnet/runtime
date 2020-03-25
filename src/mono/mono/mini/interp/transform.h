@@ -10,8 +10,7 @@
 #define INTERP_INST_FLAG_SEQ_POINT_NESTED_CALL 8
 #define INTERP_INST_FLAG_RECORD_CALL_PATCH 16
 
-#define INTERP_LOCAL_FLAG_INDIRECT 1
-#define INTERP_LOCAL_FLAG_DEAD 2
+#define INTERP_LOCAL_FLAG_DEAD 1
 
 typedef struct InterpInst InterpInst;
 
@@ -91,6 +90,7 @@ typedef struct {
 	MonoType *type;
 	int mt;
 	int flags;
+	int indirects;
 	int offset;
 } InterpLocal;
 

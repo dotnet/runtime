@@ -3,21 +3,16 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-gc.h>
 #include <mono/metadata/exception.h>
 #include <mono/jit/jit.h>
+#include <mono/jit/mono-private-unstable.h>
 
 #import <os/log.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 
 static os_log_t stdout_log;
-
-/* These are not in public headers */
-typedef unsigned char* (*MonoLoadAotDataFunc) (MonoAssembly *assembly, int size, void *user_data, void **out_handle);
-typedef void  (*MonoFreeAotDataFunc) (MonoAssembly *assembly, int size, void *user_data, void *handle);
-void mono_install_load_aot_data_hook (MonoLoadAotDataFunc load_func, MonoFreeAotDataFunc free_func, void *user_data);
-void mono_trace_init (void);
-void mono_gc_init_finalizer_thread (void);
 
 static char *bundle_path;
 
@@ -272,7 +267,6 @@ mono_ios_runtime_init (void)
     mono_install_assembly_preload_hook (assembly_preload_hook, NULL);
     mono_install_load_aot_data_hook (load_aot_data, free_aot_data, NULL);
     mono_install_unhandled_exception_hook (unhandled_exception_handler, NULL);
-    mono_trace_init ();
     mono_trace_set_log_handler (log_callback, NULL);
     mono_set_signal_chaining (TRUE);
     mono_set_crash_chaining (TRUE);
