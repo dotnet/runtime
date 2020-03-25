@@ -3660,6 +3660,9 @@ namespace Mono.Linker.Steps {
 												} else {
 													MarkFieldsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
 												}
+											} else if (stringParam is MethodParameterValue methodParameterValue) {
+												// TODO: Check if parameter is annotated.
+												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
 											} else {
 												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
 											}
