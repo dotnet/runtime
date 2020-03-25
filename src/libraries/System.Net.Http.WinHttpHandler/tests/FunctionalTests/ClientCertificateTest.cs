@@ -55,6 +55,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
 // Disabling it for full .Net Framework due to a missing ALPN API which leads to a protocol downgrade
 #if !NETFRAMEWORK
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34010")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version2004OrGreater))]
         public async Task UseClientCertOnHttp2_OSSupportsIt_Success()
         {
