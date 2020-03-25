@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
-using System;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -1253,7 +1251,7 @@ namespace System.Text.Json.Serialization.Tests
             public IEnumerable<string> NetworkList
             {
                 get => Networks.Split(',');
-                set => Networks = value != null ? string.Join(',', value) : "";
+                set => Networks = value != null ? string.Join(",", value) : "";
             }
         }
 
