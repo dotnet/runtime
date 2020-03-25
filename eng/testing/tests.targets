@@ -83,7 +83,7 @@
       <_rspFile Include="$(MonoProjectRoot)netcore\CoreFX.issues_windows.rsp" Condition="'$(TargetOS)' == 'Windows_NT'" />
     </ItemGroup>
     <ItemGroup>
-      <_rspFileContent Include="$([System.IO.File]::ReadAllText(%(_rspFile.Identity)))" Condition="'$(TargetOS)' != 'OSX' and '$(TargetOS)' == 'Linux'" />
+      <_rspFileContent Include="$([System.IO.File]::ReadAllText(%(_rspFile.Identity)))" Condition="'$(TargetOS)' != 'OSX' and '$(TargetOS)' != 'Linux'" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(MonoRspFile)" Lines="@(_rspFileContent)" Overwrite="true" />
