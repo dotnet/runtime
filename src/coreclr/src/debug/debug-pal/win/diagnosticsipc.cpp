@@ -9,8 +9,9 @@
 
 #define _ASSERTE assert
 
-IpcStream::DiagnosticsIpc::DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength], ConnectionMode mode)
-    : mode(mode)
+IpcStream::DiagnosticsIpc::DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength], ConnectionMode mode) : 
+    mode(mode),
+    _isListening(false)
 {
     memcpy(_pNamedPipeName, namedPipeName, sizeof(_pNamedPipeName));
 }
@@ -53,25 +54,20 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     return new IpcStream::DiagnosticsIpc(namedPipeName, mode);
 }
 
-IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback callback) const
+bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 {
+    if (_isListening)
+        return true;
+
     _ASSERTE(mode == ConnectionMode::SERVER);
-    if (mode != ConnectionMode::SERVER)
-    {
-        if (callback != nullptr)
-            callback("Cannot call accept on a client connection", 0);
-        return nullptr;
-    }
 
     const uint32_t nInBufferSize = 16 * 1024;
     const uint32_t nOutBufferSize = 16 * 1024;
     HANDLE hPipe = ::CreateNamedPipeA(
         _pNamedPipeName,                                            // pipe name
-        PIPE_ACCESS_DUPLEX |
-        FILE_FLAG_OVERLAPPED,                                       // read/write access
-        PIPE_TYPE_BYTE | 
-        PIPE_WAIT | 
-        PIPE_REJECT_REMOTE_CLIENTS,                                 // message type pipe, message-read and blocking mode
+        PIPE_ACCESS_DUPLEX |                                        // read/write access
+        FILE_FLAG_OVERLAPPED,                                       // async listening
+        PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,    // message type pipe, message-read and blocking mode
         PIPE_UNLIMITED_INSTANCES,                                   // max. instances
         nOutBufferSize,                                             // output buffer size
         nInBufferSize,                                              // input buffer size
@@ -82,30 +78,19 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
     {
         if (callback != nullptr)
             callback("Failed to create an instance of a named pipe.", ::GetLastError());
-        return nullptr;
+        return false;
     }
 
-    // TODO: Find a better way to do this than
-    // mixing abstractions
-    IpcStream *pStream = new IpcStream(hPipe, mode);
+    _oOverlap.hEvent = CreateEvent(NULL, true, false, NULL);
 
-    BOOL fSuccess = ::ConnectNamedPipe(hPipe, &pStream->_oOverlap) != 0;
+    BOOL fSuccess = ::ConnectNamedPipe(hPipe, _oOverlap) != 0;
     if (!fSuccess)
     {
         const DWORD errorCode = ::GetLastError();
         switch (errorCode)
         {
-            case ERROR_PIPE_LISTENING:
-                // Occurs when there isn't a pending client and we're
-                // in PIPE_NOWAIT mode
             case ERROR_IO_PENDING:
-                if (shouldBlock)
-                {
-                    fSuccess = GetOverlappedResult(pStream->_hPipe,
-                                                   &pStream->_oOverlap,
-                                                   NULL,
-                                                   true);
-                }
+                // There was a pending connection that can be waited on (will happen in poll)
             case ERROR_PIPE_CONNECTED:
                 // Occurs when a client connects before the function is called.
                 // In this case, there is a connection between client and
@@ -116,12 +101,13 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
                 if (callback != nullptr)
                     callback("A client process failed to connect.", errorCode);
                 ::CloseHandle(hPipe);
-                delete pStream;
-                return nullptr;
+                ::CloseHandle(_oOverlap.hEvent);
+                return false;
         }
     }
 
-    return pStream;
+    _isListening = true;
+    return true;
 }
 
 IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
@@ -161,8 +147,7 @@ IpcStream::IpcStream(HANDLE hPipe, DiagnosticsIpc::ConnectionMode mode) :
     _hPipe(hPipe), 
     _mode(mode) 
 {
-    if (_mode == DiagnosticsIpc::ConnectionMode::SERVER)
-        _oOverlap.hEvent = CreateEvent(NULL, true, false, NULL);
+    _oOverlap.hEvent = CreateEvent(NULL, true, false, NULL);
 }
 
 IpcStream::~IpcStream()
@@ -180,31 +165,36 @@ IpcStream::~IpcStream()
         const BOOL fSuccessCloseHandle = ::CloseHandle(_hPipe);
         _ASSERTE(fSuccessCloseHandle != 0);
     }
+
+    if (_oOverlap.hEvent != INVALID_HANDLE_VALUE)
+    {
+        ::CloseHandle(_oOverlap.hEvent);
+    }
 }
 
-int32_t IpcStream::Poll(IpcStream *const *const ppStreams, uint32_t nStreams, int32_t timeoutMs, IpcStream **ppStream, ErrorCallback callback)
+int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback)
 {
-    *ppStream = nullptr;
     // load up an array of handles
-    HANDLE *pHandles = new HANDLE[nStreams];
-    for (uint32_t i = 0; i < nStreams; i++)
+    HANDLE *pHandles = new HANDLE[nHandles];
+    for (uint32_t i = 0; i < nHandles; i++)
     {
-        if (ppStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER)
+        rgpIpcPollHandles[i]->revents = 0; // ignore any inputs on revents
+        if (rgpIpcPollHandles[i]->pIpc->mode == DiagnosticsIpc::ConnectionMode::SERVER)
         {
-            pHandles[i] = ppStreams[i]->_oOverlap.hEvent;
+            pHandles[i] = rgpIpcPollHandles[i]->pIpc->_oOverlap.hEvent;
         }
         else
         {
-            pHandles[i] = ppStreams[i]->_hPipe;
+            pHandles[i] = rgpIpcPollHandles[i]->pStream->_hPipe;
         }
     }
 
     // call wait for multiple obj
     DWORD dwWait = WaitForMultipleObjects(
-        nStreams,       // count
+        nHandles,       // count
         pHandles,       // handles
-        false,          // Don't wait all
-        timeoutMs);      // wait infinitely
+        false,          // Don't wait-all
+        timeoutMs);
     
     if (dwWait == WAIT_TIMEOUT)
     {
@@ -213,35 +203,57 @@ int32_t IpcStream::Poll(IpcStream *const *const ppStreams, uint32_t nStreams, in
         return 0;
     }
 
-    // determine which of the streams signaled
-    DWORD index = dwWait - WAIT_OBJECT_0;
-    if (index < 0 || index > (nStreams - 1))
+    if (dwWait == WAIT_FAILED)
     {
+        // we errored
         if (callback != nullptr)
-            callback("Failed to select to named pipe.", ::GetLastError());
+            callback("WaitForMultipleObjects failed", ::GetLastError());
         delete[] pHandles;
         return -1;
     }
 
-    if (ppStreams[index]->_mode == IpcStream::DiagnosticsIpc::ConnectionMode::SERVER)
+    // determine which of the streams signaled
+    DWORD index = dwWait - WAIT_OBJECT_0;
+    if (index < 0 || index > (nHandles - 1))
     {
-        // set that stream's mode to blocking
-        bool result = SetNamedPipeHandleState(
-            pHandles[index],                // handle
-            PIPE_READMODE_BYTE | PIPE_WAIT, // read mode and wait mode
-            NULL,                           // no collecting
-            NULL);                          // no collecting
-        if (!result)
+            // check if we abandoned something
+        DWORD abandonedIndex = dwWait - WAIT_ABANDONED_0;
+        if (abandonedIndex > 0 || abandonedIndex < (nHandles - 1))
+        {
+            rgpIpcPollHandles[abandonedIndex]->revents = (uint8_t)IpcStream::PollEvents::HANGUP;
+            delete[] pHandles;
+            return -1;
+        }
+        else
         {
             if (callback != nullptr)
-                callback("Failed to convert handle to wait mode", ::GetLastError());
+                callback("WaitForMultipleObjects failed", ::GetLastError());
             delete[] pHandles;
             return -1;
         }
     }
 
-    // cleanup and return that stream
-    *ppStream = ppStreams[index];
+    if (rgpIpcPollHandles[index]->pIpc->mode == IpcStream::DiagnosticsIpc::ConnectionMode::SERVER)
+    {
+        bool fSuccess = GetOverlappedResult(rgpIpcPollHandles[index]->pIpc->_hPipe,
+                                            &rgpIpcPollHandles[index]->pIpc->_oOverlap,
+                                            NULL,
+                                            true);
+        if (!fSuccess)
+        {
+            if (callback != nullptr)
+                callback("Failed to GetOverlappedResults for NamedPipe server", ::GetLastError());
+            rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::PollEvents::ERR;
+            delete[] pHandles;
+            return -1;
+        }
+        rgpIpcPollHandles[index]->pStream = new IpcStream(rgpIpcPollHandles[index]->pIpc->_hPipe, IpcStream::DiagnosticsIpc::ConnectionMode::SERVER);
+        rgpIpcPollHandles[index]->pIpc->_hPipe = INVALID_HANDLE_VALUE;
+        rgpIpcPollHandles[index]->pIpc->_isListening = false;
+        ::CloseHandle(rgpIpcPollHandles[index]->pIpc->_oOverlap.hEvent);
+        rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::PollEvents::SIGNALED;
+    }
+
     delete[] pHandles;
     return 1;
 }
@@ -251,11 +263,7 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
     _ASSERTE(lpBuffer != nullptr);
 
     DWORD nNumberOfBytesRead = 0;
-    // Server connections are Overlapped to allow non-blocking Accept calls
-    // Client connections are not
-    LPOVERLAPPED overlap = (_mode == DiagnosticsIpc::ConnectionMode::SERVER) ? 
-        const_cast<LPOVERLAPPED>(&_oOverlap) :
-        NULL;
+    LPOVERLAPPED overlap = const_cast<LPOVERLAPPED>(&_oOverlap);
     bool fSuccess = ::ReadFile(
         _hPipe,                 // handle to pipe
         lpBuffer,               // buffer to receive data
@@ -285,11 +293,7 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
     _ASSERTE(lpBuffer != nullptr);
 
     DWORD nNumberOfBytesWritten = 0;
-    // Server connections are Overlapped to allow non-blocking Accept calls
-    // Client connections are not
-    LPOVERLAPPED overlap = (_mode == DiagnosticsIpc::ConnectionMode::SERVER) ? 
-        const_cast<LPOVERLAPPED>(&_oOverlap) :
-        NULL;
+    LPOVERLAPPED overlap = const_cast<LPOVERLAPPED>(&_oOverlap);
     bool fSuccess = ::WriteFile(
         _hPipe,                 // handle to pipe
         lpBuffer,               // buffer to write from

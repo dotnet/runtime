@@ -23,16 +23,36 @@ public:
     bool Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten) const;
     bool Flush() const;
 
-    // Poll
-    // Paramters:
-    // - IpcStream **pStreams: Array of pointers to IpcStreams to poll
-    // - uint32_t nStreams: The number of streams to poll
-    // - int32_t timeoutMs: The timeout in milliseconds for the poll (-1 == infinite)
-    // - IpcStream **pStream: OUT PARAMETER nullptr for timeout or error, signalled stream for successful poll
-    // Returns:
-    // int32_t: -1 on error, 0 on timeout, >0 on successful poll
-    // - if ppStream is != nullptr and -1 is returned, that connection was hungup and it shouldn't be treated as an error
-    static int32_t Poll(IpcStream *const *const ppStreams, uint32_t nStreams, int32_t timeoutMs, IpcStream **ppStream, ErrorCallback callback = nullptr);
+    class DiagnosticsIpc;
+
+    enum class PollEvents : uint8_t
+    {
+        TIMEOUT  = 0x00, // implies timeout
+        SIGNALED = 0x01, // ready for use
+        HANGUP   = 0x02, // connection remotely closed
+        ERR      = 0x04  // other error
+    };
+
+    struct IpcPollHandle
+    {
+        DiagnosticsIpc *pIpc;
+
+        // After calling Poll, will contain a usable IpcStream
+        // IFF (revents & (uint8_t)PollEvents::SIGNALED) != 0
+        // 
+        // DiagnosticsIpc::ConnectionMode::CLIENT connections should place a usable
+        // IpcStream here before calling Poll.
+        // 
+        // DiagnosticsIpc::ConnectionMode::SERVER connections can leave this blank
+        IpcStream *pStream;
+
+        // contains some set of PollEvents
+        // will be set by Poll
+        uint8_t revents;
+    };
+
+    
+    // static int32_t Poll(IpcStream *const *const ppStreams, uint32_t nStreams, int32_t timeoutMs, IpcStream **ppStream, ErrorCallback callback = nullptr);
 
     class DiagnosticsIpc final
     {
@@ -43,6 +63,19 @@ public:
             SERVER
         };
 
+        // Poll
+        // Paramters:
+        // - IpcPollHandle *const * rgpIpcPollHandles: Array of pointers to IpcPollHandles to poll
+        // - uint32_t nHandles: The number of streams to poll
+        // - int32_t timeoutMs: The timeout in milliseconds for the poll (-1 == infinite)
+        // Returns:
+        // int32_t: -1 on error, 0 on timeout, >0 on successful poll
+        // Remarks:
+        // Check the events returned in revents for each IpcPollHandle to find the signaled handle.
+        // Signaled handles will have usable IpcStreams in the pStream field.
+        // The caller is responsible for cleaning up "hung up" connections.
+        static int32_t Poll(IpcPollHandle *const * rgpIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback = nullptr);
+
         ConnectionMode mode;
 
         ~DiagnosticsIpc();
@@ -50,9 +83,11 @@ public:
         //! Creates an IPC object
         static DiagnosticsIpc *Create(const char *const pIpcName, ConnectionMode mode, ErrorCallback callback = nullptr);
 
-        //! Enables the underlaying IPC implementation to accept connection.
-        IpcStream *Accept(bool shouldBlock, ErrorCallback callback = nullptr) const;
+        //! puts the DiagnosticsIpc into Listening Mode
+        //! Re-entrant safe
+        bool Listen(ErrorCallback callback = nullptr);
 
+        //! Connect to client connection (returns a usable stream)
         IpcStream *Connect(ErrorCallback callback = nullptr);
 
         //! Closes an open IPC.
@@ -73,9 +108,13 @@ public:
 #else
         static const uint32_t MaxNamedPipeNameLength = 256;
         char _pNamedPipeName[MaxNamedPipeNameLength]; // https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-createnamedpipea
+        HANDLE _hPipe = INVALID_HANDLE_VALUE;
+        OVERLAPPED _oOverlap = {};
 
         DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength], ConnectionMode mode = ConnectionMode::SERVER);
 #endif /* TARGET_UNIX */
+
+        bool _isListening;
 
         DiagnosticsIpc() = delete;
         DiagnosticsIpc(const DiagnosticsIpc &src) = delete;

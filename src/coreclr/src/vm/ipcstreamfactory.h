@@ -18,38 +18,7 @@ public:
     static bool HasActiveConnections();
     static void CloseConnections();
 private:
-    static CQuickArrayList<IpcStream::DiagnosticsIpc*> s_rgpIpcs;
-    static CQuickArray<IpcStream*> s_rgpActiveConnectionsCache;
-
-    static void ResizeCache(uint32_t size)
-    {
-        if (s_rgpActiveConnectionsCache != nullptr)
-            ClearCache();
-
-        // s_ppActiveConnectionsCache = new IpcStream*[size];
-        // s_ActiveConnectionsCacheSize = size;
-        // memset(s_ppActiveConnectionsCache, 0, size * sizeof(IpcStream*));
-        s_rgpActiveConnectionsCache.ReSizeThrows(size);
-    }
-
-    static void RemoveFromCache(IpcStream *pStream)
-    {
-        for (uint32_t i = 0; i < (uint32_t)s_rgpActiveConnectionsCache.Size(); i++)
-            if (s_rgpActiveConnectionsCache[i] == pStream)
-                s_rgpActiveConnectionsCache[i] = nullptr;
-    }
-
-    static void ClearCache()
-    {
-        for (uint32_t i = 0; i < (uint32_t)s_rgpActiveConnectionsCache.Size(); i++)
-        {
-            if (s_rgpActiveConnectionsCache[i] != nullptr)
-            {
-                delete s_rgpActiveConnectionsCache[i];
-                s_rgpActiveConnectionsCache[i] = nullptr;
-            }
-        }
-    }
+    static CQuickArrayList<IpcStream::IpcPollHandle> s_rgIpcPollHandles;
 };
 
 #endif // FEATURE_PERFTRACING
