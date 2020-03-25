@@ -1,19 +1,43 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
-using Mono.Linker.Tests.Cases.LinkXml.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
-	[SetupCompileBefore ("Library.dll", new [] { "Dependencies/CanPreserveMarkedChildrenOfUnrequiredType_Library.cs" })]
-	[KeptMemberInAssembly ("Library.dll", typeof (CanPreserveMarkedChildrenOfUnrequiredType_Library), "Field1", "Method1()", "Property1")]
-	[RemovedMemberInAssembly ("Library.dll", typeof (CanPreserveMarkedChildrenOfUnrequiredType_Library), "Field2", "Method2()", "Property2")]
-
 	class CanPreserveMarkedChildrenOfUnrequiredType
 	{
 		public static void Main () {
-			// Mark the type by calling its ctor.
-			new CanPreserveMarkedChildrenOfUnrequiredType_Library ();
+		}
+
+		[Kept]
+		public int Field1;
+
+		public int Field2;
+
+		[Kept]
+		public void Method1 () { }
+
+		public void Method2 () { }
+
+		[Kept]
+		public int Property1 {
+			[Kept]
+			get {
+				return Field1;
+			}
+			[Kept]
+			set {
+				Field1 = value;
+			}
+		}
+
+		public int Property2 {
+			get {
+				return Field2;
+			}
+			set {
+				Field2 = value;
+			}
 		}
 	}
 }
