@@ -716,7 +716,7 @@ namespace System.Reflection
         private extern MethodInfo MakeGenericMethod_impl(Type[] types);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public override extern Type[] GetGenericArguments();
+        public extern override Type[] GetGenericArguments();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern MethodInfo GetGenericMethodDefinition_impl();
@@ -730,13 +730,13 @@ namespace System.Reflection
             return res;
         }
 
-        public override extern bool IsGenericMethodDefinition
+        public extern override bool IsGenericMethodDefinition
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
         }
 
-        public override extern bool IsGenericMethod
+        public extern override bool IsGenericMethod
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;

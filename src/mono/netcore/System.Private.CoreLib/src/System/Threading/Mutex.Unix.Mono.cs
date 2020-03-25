@@ -68,10 +68,10 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern IntPtr CreateMutex_icall(bool initiallyOwned, char* name, int name_length, out bool created);
+        private static extern unsafe IntPtr CreateMutex_icall(bool initiallyOwned, char* name, int name_length, out bool created);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern IntPtr OpenMutex_icall(char* name, int name_length, int rights, out MonoIOError error);
+        private static extern unsafe IntPtr OpenMutex_icall(char* name, int name_length, int rights, out MonoIOError error);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool ReleaseMutex_internal(IntPtr handle);

@@ -83,7 +83,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal override extern object UnsafeGetValue(object obj);
+        internal extern override object UnsafeGetValue(object obj);
 
         internal override void CheckConsistency(object target)
         {
@@ -211,7 +211,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal override extern int GetFieldOffset();
+        internal extern override int GetFieldOffset();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern object GetValueInternal(object obj);
@@ -279,7 +279,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public override extern object GetRawConstantValue();
+        public extern override object GetRawConstantValue();
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {

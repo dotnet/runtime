@@ -341,7 +341,7 @@ namespace System.Threading
         private static extern string GetName(Thread thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern void SetName_icall(Thread thread, char* name, int nameLength);
+        private static extern unsafe void SetName_icall(Thread thread, char* name, int nameLength);
 
         private static unsafe void SetName(Thread thread, string name)
         {

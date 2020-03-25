@@ -60,7 +60,7 @@ namespace Mono
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static unsafe extern IntPtr GetTypeFromClass(RuntimeStructs.MonoClass* klass);
+        internal static extern unsafe IntPtr GetTypeFromClass(RuntimeStructs.MonoClass* klass);
 
         internal RuntimeTypeHandle GetTypeHandle() => new RuntimeTypeHandle(GetTypeFromClass(value));
     }

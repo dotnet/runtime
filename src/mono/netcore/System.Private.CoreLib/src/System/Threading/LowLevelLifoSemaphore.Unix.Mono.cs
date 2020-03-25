@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-    internal unsafe sealed partial class LowLevelLifoSemaphore : IDisposable
+    internal sealed unsafe partial class LowLevelLifoSemaphore : IDisposable
     {
         private IntPtr lifo_semaphore;
 

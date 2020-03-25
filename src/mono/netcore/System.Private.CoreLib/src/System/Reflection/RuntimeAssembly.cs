@@ -61,7 +61,7 @@ namespace System.Reflection
 
         private ResolveEventHolder resolve_event_holder;
 
-        public override extern MethodInfo? EntryPoint
+        public extern override MethodInfo? EntryPoint
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
@@ -144,10 +144,10 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public override extern string[] GetManifestResourceNames();
+        public extern override string[] GetManifestResourceNames();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public override extern Type[] GetExportedTypes();
+        public extern override Type[] GetExportedTypes();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern Type[] GetTopLevelForwardedTypes();

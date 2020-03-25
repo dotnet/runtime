@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tracing
         // These ICalls are used by the configuration APIs to interact with EventPipe.
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern ulong Enable(char* outputFile, EventPipeSerializationFormat format, uint circularBufferSizeInMB, EventPipeProviderConfigurationNative* providers, uint numProviders);
+        private static extern unsafe ulong Enable(char* outputFile, EventPipeSerializationFormat format, uint circularBufferSizeInMB, EventPipeProviderConfigurationNative* providers, uint numProviders);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void Disable(ulong sessionID);
