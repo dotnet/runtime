@@ -205,6 +205,14 @@ namespace System.Buffers.Tests
             Assert.Equal(sizeHint <= 256 ? 256 : sizeHint, memory.Length);
         }
 
+        [Fact]
+        public void GetMemory_ExceedMaximumBufferSize_WithSmallStartingSize()
+        {
+            var output = new ArrayBufferWriter<T>(256);
+            Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalFact(nameof(IsX64))]
         [OuterLoop]
         public void GetMemory_ExceedMaximumBufferSize()
