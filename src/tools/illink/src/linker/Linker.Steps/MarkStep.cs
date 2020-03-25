@@ -3609,6 +3609,98 @@ namespace Mono.Linker.Steps {
 							break;
 
 						//
+						// static Call (Type, String, Type[], Expression[])
+						//
+						case "Call" when calledMethod.DeclaringType.Name == "Expression"
+							&& calledMethod.Parameters.Count == 4
+							&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type": {
+
+								reflectionContext.AnalyzingPattern ();
+
+								foreach (var value in methodParams [0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										foreach (var stringParam in methodParams [1].UniqueValues ()) {
+											if (stringParam is KnownStringValue stringValue) {
+												MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+											} else {
+												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+											}
+										}
+									} else if (value == NullValue.Instance) {
+										reflectionContext.RecordHandledPattern ();
+									} else if (value is MethodParameterValue methodParameterValue) {
+										// TODO: Check if parameter is annotated.
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+									} else {
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+									}
+								}
+							}
+							break;
+
+						//
+						// static Field (Expression, Type, String)
+						// static Property (Expression, Type, String)
+						//
+						case "Field":
+						case "Property" when calledMethod.DeclaringType.Name == "Expression"
+							&& calledMethod.Parameters.Count == 3
+							&& calledMethod.Parameters[1].ParameterType.FullName == "System.Type": {
+
+								reflectionContext.AnalyzingPattern ();
+
+								foreach (var value in methodParams [1].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										// systemTypeValue.TypeRepresented is `declaringType`
+										foreach (var stringParam in methodParams [2].UniqueValues ()) {
+											if (stringParam is KnownStringValue stringValue) {
+												bool staticOnly = methodParams [0].Kind == ValueNodeKind.Null;
+												if (calledMethod.Name [0] == 'P') {
+													MarkPropertiesFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
+												} else {
+													MarkFieldsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
+												}
+											} else {
+												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
+											}
+										}
+									} else if (value == NullValue.Instance) {
+										reflectionContext.RecordHandledPattern ();
+									} else if (value is MethodParameterValue methodParameterValue) {
+										// TODO: Check if parameter is annotated.
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+									} else {
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+									}
+								}
+							}
+							break;
+
+						//
+						// static New (Type)
+						//
+						case "New" when calledMethod.DeclaringType.Name == "Expression"
+							&& calledMethod.Parameters.Count == 1
+							&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type": {
+
+								reflectionContext.AnalyzingPattern ();
+
+								foreach (var value in methodParams[0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", BindingFlags.Instance, parametersCount: 0);
+									} else if (value == NullValue.Instance) {
+										reflectionContext.RecordHandledPattern ();
+									} else if (value is MethodParameterValue methodParameterValue) {
+										// TODO: Check if parameter is annotated.
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+									} else {
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+									}
+								}
+							}
+							break;
+
+						//
 						// static CreateInstance (System.Type type)
 						// static CreateInstance (System.Type type, bool nonPublic)
 						// static CreateInstance (System.Type type, params object?[]? args)
@@ -3892,6 +3984,58 @@ namespace Mono.Linker.Steps {
 					return "None";
 
 				return string.Join (" | ", results.Select (r => r.ToString ()));
+			}
+
+			void MarkPropertiesFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
+			{
+				bool foundMatch = false;
+				foreach (var property in declaringType.Properties) {
+					if (property.Name != name)
+						continue;
+
+					bool markedAny = false;
+
+					// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
+					// Be conservative and mark everything for the property.
+					var getter = property.GetMethod;
+					if (getter != null && (!staticOnly || staticOnly && getter.IsStatic)) {
+						reflectionContext.RecordRecognizedPattern (getter, () => _markStep.MarkIndirectlyCalledMethod (getter));
+						markedAny = true;
+					}
+
+					var setter = property.SetMethod;
+					if (setter != null && (!staticOnly || staticOnly && setter.IsStatic)) {
+						reflectionContext.RecordRecognizedPattern (setter, () => _markStep.MarkIndirectlyCalledMethod (setter));
+						markedAny = true;
+					}
+
+					if (markedAny) {
+						foundMatch = true;
+						reflectionContext.RecordRecognizedPattern (property, () => _markStep.MarkProperty (property));
+					}
+				}
+
+				if (!foundMatch)
+					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve property `{name}` on type `{declaringType.FullName}`.");
+			}
+
+			void MarkFieldsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
+			{
+				bool foundMatch = false;
+				foreach (var field in declaringType.Fields) {
+					if (field.Name != name)
+						continue;
+
+					if (staticOnly && !field.IsStatic)
+						continue;
+
+					foundMatch = true;
+					reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field));
+					break;
+				}
+
+				if (!foundMatch)
+					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve field `{name}` on type `{declaringType.FullName}`.");
 			}
 		}
 	}
