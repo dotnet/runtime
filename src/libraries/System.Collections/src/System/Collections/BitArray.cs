@@ -335,9 +335,13 @@ namespace System.Collections
         =========================================================================*/
         public void SetAll(bool value)
         {
-            int fillValue = value ? -1 : 0;
             int arrayLength = GetInt32ArrayLengthFromBitLength(Length);
-            m_array.AsSpan(0, arrayLength).Fill(fillValue);
+            Span<int> span = m_array.AsSpan(0, arrayLength);
+            if (value)
+                span.Fill(-1);
+            else
+                span.Clear();
+
             _version++;
         }
 
