@@ -12,5 +12,8 @@
     <SystemReflectionMetadataVersion>1.5.0</SystemReflectionMetadataVersion>
     <MicrosoftBuildFrameworkVersion>15.4.8</MicrosoftBuildFrameworkVersion>
     <MicrosoftBuildUtilitiesCoreVersion>15.4.8</MicrosoftBuildUtilitiesCoreVersion>
+    <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20162.4</MicrosoftDotNetApiCompatVersion>
+    <!-- We depend on (and redistribute) the official Mono.Cecil NuGet package built from https://github.com/jbevain/cecil -->
+    <MonoCecilVersion>0.11.2</MonoCecilVersion>
   </PropertyGroup>
 </Project>

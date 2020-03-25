@@ -3,7 +3,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>Mono</RootNamespace>
-    <Version>0.2.0.0</Version>
     <Configurations>Debug;Release</Configurations>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
@@ -12,6 +11,7 @@
     <AssemblyName>illink</AssemblyName>
     <Description>IL Linker</Description>
     <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
+    <!-- Ensure that this netcore TFM matches that in LinkTask.cs's ILLinkPath. -->
     <TargetFrameworks>netcoreapp3.0;net471</TargetFrameworks>
   </PropertyGroup>
 
@@ -23,15 +23,9 @@
     <TargetFrameworks>net471</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-    <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="ref\**\*.cs" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(MonoBuild)' == ''">
     <Compile Remove="Linker\I18nAssemblies.cs" />
@@ -42,8 +36,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj" />
-    <ProjectReference Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
+    <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" />
+    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\Mono.Cecil.csproj" />
+    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(MonoBuild)' == ''">
@@ -51,7 +46,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(MonoBuild)' != ''">
-    <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
+    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
   </ItemGroup>
 
   <!-- When publishing illink as a dependency of ILLink.Tasks, we want
