@@ -99,13 +99,11 @@ namespace System.Reflection.Emit
         {
             get
             {
-                TypeBuilder tb = generic_type as TypeBuilder;
-                return tb != null ? tb.is_created : true;
+                return generic_type is TypeBuilder tb ? tb.is_created : true;
             }
         }
 
-        private const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic |
-        BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+        private const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
         private Type GetParentType()
         {

@@ -454,8 +454,8 @@ namespace System
                 {
                     using (currentProcess)
                     {
-                        object? result = processType!.GetMethod("get_WorkingSet64")?.Invoke(currentProcess, BindingFlags.DoNotWrapExceptions, null, null, null);
-                        if (result is long) return (long)result;
+                        if (processType!.GetMethod("get_WorkingSet64")?.Invoke(currentProcess, BindingFlags.DoNotWrapExceptions, null, null, null) is long result)
+                            return result;
                     }
                 }
 

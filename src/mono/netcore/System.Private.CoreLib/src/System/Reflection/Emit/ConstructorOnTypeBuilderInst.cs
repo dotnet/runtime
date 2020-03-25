@@ -125,9 +125,8 @@ namespace System.Reflection.Emit
         internal override ParameterInfo[] GetParametersInternal()
         {
             ParameterInfo[] res;
-            if (cb is ConstructorBuilder)
+            if (cb is ConstructorBuilder cbuilder)
             {
-                ConstructorBuilder cbuilder = (ConstructorBuilder)cb;
                 res = new ParameterInfo[cbuilder.parameters.Length];
                 for (int i = 0; i < cbuilder.parameters.Length; i++)
                 {

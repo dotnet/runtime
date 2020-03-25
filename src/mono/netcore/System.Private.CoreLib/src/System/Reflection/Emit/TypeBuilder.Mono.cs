@@ -651,9 +651,8 @@ namespace System.Reflection.Emit
             if (methodInfoBody.DeclaringType != this)
                 throw new ArgumentException("method body must belong to this type");
 
-            if (methodInfoBody is MethodBuilder)
+            if (methodInfoBody is MethodBuilder mb)
             {
-                MethodBuilder mb = (MethodBuilder)methodInfoBody;
                 mb.set_override(methodInfoDeclaration);
             }
         }
@@ -802,9 +801,9 @@ namespace System.Reflection.Emit
                     if (fb == null)
                         continue;
                     Type ft = fb.FieldType;
-                    if (!fb.IsStatic && (ft is TypeBuilder) && ft.IsValueType && (ft != this) && is_nested_in(ft))
+                    if (!fb.IsStatic && (ft is TypeBuilder builder) && ft.IsValueType && (ft != this) && is_nested_in(ft))
                     {
-                        TypeBuilder tb = (TypeBuilder)ft;
+                        TypeBuilder tb = builder;
                         if (!tb.is_created)
                         {
                             throw new NotImplementedException();
@@ -850,7 +849,7 @@ namespace System.Reflection.Emit
                         throw new BadImageFormatException();
                     if (!iface.IsInterface)
                         throw new TypeLoadException();
-                    if (iface is TypeBuilder && !((TypeBuilder)iface).is_created)
+                    if (iface is TypeBuilder builder && !builder.is_created)
                         throw new TypeLoadException();
                 }
             }
@@ -1437,7 +1436,7 @@ namespace System.Reflection.Emit
                         throw new Exception("Error in customattr");
                 }
 
-                Type ctor_type = customBuilder.Ctor is ConstructorBuilder ? ((ConstructorBuilder)customBuilder.Ctor).parameters[0] : customBuilder.Ctor.GetParametersInternal()[0].ParameterType;
+                Type ctor_type = customBuilder.Ctor is ConstructorBuilder builder ? builder.parameters[0] : customBuilder.Ctor.GetParametersInternal()[0].ParameterType;
                 int pos = 6;
                 if (ctor_type.FullName == "System.Int16")
                     pos = 4;

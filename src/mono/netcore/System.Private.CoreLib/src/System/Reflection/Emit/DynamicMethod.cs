@@ -167,9 +167,8 @@ namespace System.Reflection.Emit
                         {
                             for (int i = 0; i < refs.Length; ++i)
                             {
-                                if (refs[i] is DynamicMethod)
+                                if (refs[i] is DynamicMethod m)
                                 {
-                                    DynamicMethod m = (DynamicMethod)refs[i];
                                     if (!m.creating)
                                         m.CreateDynMethod();
                                 }

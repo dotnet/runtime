@@ -1568,12 +1568,7 @@ namespace System
                     }
                     else
                     {
-                        if (results == null)
-                        {
-                            results = new List<MethodInfo>(semiFinalists.Length);
-                            results.Add(finalist);
-                        }
-
+                        results ??= new List<MethodInfo>(semiFinalists.Length) { finalist };
                         results.Add(semiFinalist);
                     }
                 }
@@ -1622,12 +1617,7 @@ namespace System
                     }
                     else
                     {
-                        if (results == null)
-                        {
-                            results = new List<MethodInfo>(semiFinalists.Length);
-                            results.Add(finalist);
-                        }
-
+                        results ??= new List<MethodInfo>(semiFinalists.Length) { finalist };
                         results.Add(semiFinalist);
                     }
                 }
