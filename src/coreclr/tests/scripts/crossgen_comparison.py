@@ -125,6 +125,7 @@ def build_argument_parser():
     corelib_parser.add_argument('--crossgen', dest='crossgen_executable_filename', required=True)
     corelib_parser.add_argument('--il_corelib', dest='il_corelib_filename', required=True)
     corelib_parser.add_argument('--result_dir', dest='result_dirname', required=True)
+    corelib_parser.add_argument('--run_serial', dest='run_serial', action="store_true", default=False)
     corelib_parser.set_defaults(func=crossgen_corelib)
 
     framework_parser_description = """Runs crossgen on each assembly in Core_Root and
@@ -135,6 +136,7 @@ def build_argument_parser():
     framework_parser.add_argument('--il_corelib', dest='il_corelib_filename', required=True)
     framework_parser.add_argument('--core_root', dest='core_root', required=True)
     framework_parser.add_argument('--result_dir', dest='result_dirname', required=True)
+    framework_parser.add_argument('--run_serial', dest='run_serial', action="store_true", default=False)
     framework_parser.set_defaults(func=crossgen_framework)
 
     dotnet_sdk_parser_description = "Unpack .NET Core SDK archive file and runs crossgen on each assembly."
@@ -143,6 +145,7 @@ def build_argument_parser():
     dotnet_sdk_parser.add_argument('--il_corelib', dest='il_corelib_filename', required=True)
     dotnet_sdk_parser.add_argument('--dotnet_sdk', dest='dotnet_sdk_filename', required=True)
     dotnet_sdk_parser.add_argument('--result_dir', dest='result_dirname', required=True)
+    dotnet_sdk_parser.add_argument('--run_serial', dest='run_serial', action="store_true", default=False)
     dotnet_sdk_parser.set_defaults(func=crossgen_dotnet_sdk)
 
     compare_parser_description = "Compares crossgen results in directories {base_dir} and {diff_dir}"
@@ -150,6 +153,7 @@ def build_argument_parser():
     compare_parser = subparsers.add_parser('compare', description=compare_parser_description)
     compare_parser.add_argument('--base_dir', dest='base_dirname', required=True)
     compare_parser.add_argument('--diff_dir', dest='diff_dirname', required=True)
+    compare_parser.add_argument('--run_serial', dest='run_serial', action="store_true", default=False)
     compare_parser.set_defaults(func=compare_results)
 
     return parser
@@ -240,7 +244,8 @@ class AsyncSubprocessHelper:
         """
 
         reset_env = os.environ.copy()
-        asyncio.run(self.__run_to_completion__(async_callback, *extra_args))
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         os.environ.update(reset_env)
 
 ################################################################################
@@ -639,10 +644,12 @@ def crossgen_framework(args):
     ni_files_dirname, debugging_files_dirname = create_output_folders()
     g_Framework_Assemblies = [il_corelib_filename] + g_Framework_Assemblies
 
-    def run_crossgen_helper(print_prefix, assembly_name):
+    async def run_crossgen_helper(print_prefix, assembly_name):
+        platform_assemblies_paths = [args.core_root]
+        print("{}{} {}".format(print_prefix, args.crossgen_executable_filename, assembly_name))
+
         if assembly_name == il_corelib_filename:
             ni_corelib_filename = os.path.join(ni_files_dirname, os.path.basename(il_corelib_filename))
-            platform_assemblies_paths = [args.core_root]
             crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
             save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
         else:
@@ -651,8 +658,27 @@ def crossgen_framework(args):
             crossgen_results = run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
             save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
-    helper = AsyncSubprocessHelper(g_Framework_Assemblies)
-    helper.run_to_completion(run_crossgen_helper)
+    def run_crossgen_helper_serial(print_prefix, assembly_name):
+        platform_assemblies_paths = [args.core_root]
+        print("{}{} {}".format(print_prefix, args.crossgen_executable_filename, assembly_name))
+
+        if assembly_name == il_corelib_filename:
+            ni_corelib_filename = os.path.join(ni_files_dirname, os.path.basename(il_corelib_filename))
+            crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
+            save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
+        else:
+            il_filename = os.path.join(args.core_root, assembly_name)
+            ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
+            crossgen_results = run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
+            save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
+
+    if args.run_serial:
+        for index, item in enumerate(g_Framework_Assemblies):
+            run_crossgen_helper("[{}:{}]".format(index, len(g_Framework_Assemblies)), item)
+
+    else:
+        helper = AsyncSubprocessHelper(g_Framework_Assemblies, verbose=True)
+        helper.run_to_completion(run_crossgen_helper)
 
     shutil.rmtree(ni_files_dirname, ignore_errors=True)
 
