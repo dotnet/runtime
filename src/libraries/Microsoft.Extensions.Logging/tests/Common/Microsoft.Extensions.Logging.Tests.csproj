@@ -27,7 +27,6 @@
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <ReferenceFromRuntime Include="Microsoft.Extensions.Logging.Abstractions" />
     <ReferenceFromRuntime Include="Microsoft.Extensions.Logging.Console" />
-    <ReferenceFromRuntime Include="Microsoft.Extensions.Logging.Debug" />
     <ReferenceFromRuntime Include="Microsoft.Extensions.Logging.EventLog" />
   </ItemGroup>
 

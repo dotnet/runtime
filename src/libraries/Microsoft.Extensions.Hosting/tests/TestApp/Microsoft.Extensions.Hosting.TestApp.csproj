@@ -2,6 +2,6 @@
   <PropertyGroup>
     <TargetFramework>$(NetFrameworkCurrent)</TargetFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <TargetExt>.exe</TargetExt>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 </Project>
