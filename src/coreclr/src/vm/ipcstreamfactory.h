@@ -18,7 +18,7 @@ public:
     static bool HasActiveConnections();
     static void CloseConnections();
 private:
-    static CQuickArrayList<IpcStream::IpcPollHandle> s_rgIpcPollHandles;
+    static CQuickArrayList<IpcStream::DiagnosticsIpc::IpcPollHandle> s_rgIpcPollHandles;
 };
 
 #endif // FEATURE_PERFTRACING

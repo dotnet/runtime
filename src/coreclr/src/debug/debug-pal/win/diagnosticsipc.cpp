@@ -216,7 +216,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
     DWORD index = dwWait - WAIT_OBJECT_0;
     if (index < 0 || index > (nHandles - 1))
     {
-            // check if we abandoned something
+        // check if we abandoned something
         DWORD abandonedIndex = dwWait - WAIT_ABANDONED_0;
         if (abandonedIndex > 0 || abandonedIndex < (nHandles - 1))
         {

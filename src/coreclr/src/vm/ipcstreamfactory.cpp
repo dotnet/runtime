@@ -8,7 +8,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
-CQuickArrayList<IpcStream::IpcPollHandle> IpcStreamFactory::s_rgIpcPollHandles = CQuickArrayList<IpcStream::IpcPollHandle>();
+CQuickArrayList<IpcStream::DiagnosticsIpc::IpcPollHandle> IpcStreamFactory::s_rgIpcPollHandles = CQuickArrayList<IpcStream::DiagnosticsIpc::IpcPollHandle>();
 
 bool IpcStreamFactory::CreateServer(const char *const pIpcName, ErrorCallback callback)
 {
@@ -17,9 +17,8 @@ bool IpcStreamFactory::CreateServer(const char *const pIpcName, ErrorCallback ca
     {
         if (pIpc->Listen(callback))
         {
-            IpcStream::IpcPollHandle ipcPollHandle { .pIpc = pIpc, .pStream = nullptr, .revents = 0 };
+            IpcStream::DiagnosticsIpc::IpcPollHandle ipcPollHandle { .pIpc = pIpc, .pStream = nullptr, .revents = 0 };
             s_rgIpcPollHandles.Push(ipcPollHandle);
-            // s_rgpIpcs.Push(pIpc);
             return true;
         }
         else
@@ -39,9 +38,8 @@ bool IpcStreamFactory::CreateClient(const char *const pIpcName, ErrorCallback ca
     IpcStream::DiagnosticsIpc *pIpc = IpcStream::DiagnosticsIpc::Create(pIpcName, IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT, callback);
     if (pIpc != nullptr)
     {
-        IpcStream::IpcPollHandle ipcPollHandle { .pIpc = pIpc, .pStream = nullptr, .revents = 0 };
+        IpcStream::DiagnosticsIpc::IpcPollHandle ipcPollHandle { .pIpc = pIpc, .pStream = nullptr, .revents = 0 };
         s_rgIpcPollHandles.Push(ipcPollHandle);
-        // s_rgpIpcs.Push(pIpc);
         return true;
     }
     else
@@ -59,7 +57,7 @@ void IpcStreamFactory::CloseConnections()
 {
     while (s_rgIpcPollHandles.Size() > 0)
     {
-        IpcStream::IpcPollHandle ipcPollHandle = s_rgIpcPollHandles.Pop();
+        IpcStream::DiagnosticsIpc::IpcPollHandle ipcPollHandle = s_rgIpcPollHandles.Pop();
         if (ipcPollHandle.pStream != nullptr)
             delete ipcPollHandle.pStream;
         if (ipcPollHandle.pIpc != nullptr)
@@ -71,7 +69,7 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
 {
     IpcStream *pStream = nullptr;
     // View of s_rgIpcPollhandles
-    CQuickArrayList<IpcStream::IpcPollHandle*> pIpcPollHandles;
+    CQuickArrayList<IpcStream::DiagnosticsIpc::IpcPollHandle*> pIpcPollHandles;
     
     // Polling timeout semantics
     // If client connection is opted in
@@ -111,7 +109,6 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
                             return nullptr;
                         }
 
-                        // Add connection to cache
                         s_rgIpcPollHandles[i].pStream = pConnection;
                         pollTimeoutMs = pollTimeoutInfinite;
                         pIpcPollHandles.Push(&s_rgIpcPollHandles[i]);
@@ -143,22 +140,22 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
         {
             for (uint32_t i = 0; i < (uint32_t)pIpcPollHandles.Size(); i++)
             {
-                switch ((IpcStream::PollEvents)pIpcPollHandles[i]->revents)
+                switch ((IpcStream::DiagnosticsIpc::PollEvents)pIpcPollHandles[i]->revents)
                 {
-                    case IpcStream::PollEvents::HANGUP:
+                    case IpcStream::DiagnosticsIpc::PollEvents::HANGUP:
                         delete pIpcPollHandles[i]->pStream;
                         pIpcPollHandles[i]->pStream = nullptr; // clear the cache of the hung up connection; will trigger a reconnect poll
                         STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - Poll attempt: %d, connection hung up.\n", nPollAttempts);
                         pollTimeoutMs = pollTimeoutMinMs;
                         break;
-                    case IpcStream::PollEvents::SIGNALED:
+                    case IpcStream::DiagnosticsIpc::PollEvents::SIGNALED:
                         if (pStream == nullptr) // only use first signaled stream; will get others on subsequent calls
                         {
                             pStream = pIpcPollHandles[i]->pStream;
                             pIpcPollHandles[i]->pStream = nullptr; // pass ownership to caller so we aren't caching the connection anymore
                         }
                         break;
-                    case IpcStream::PollEvents::ERR:
+                    case IpcStream::DiagnosticsIpc::PollEvents::ERR:
                     default:
                         // TODO: Error handling
                         break;
@@ -171,7 +168,6 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
             pIpcPollHandles.Pop();
     }
 
-    // Clean the Active Connection Cache of a used connection
     return pStream;
 }
 

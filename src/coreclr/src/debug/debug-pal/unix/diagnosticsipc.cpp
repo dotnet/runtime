@@ -163,7 +163,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
     return new IpcStream(clientSocket, -1, ConnectionMode::CLIENT);
 }
 
-int32_t IpcStream::DiagnosticsIpc::Poll(IpcStream::IpcPollHandle *const * rgpIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback)
+int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback)
 {
     // prepare the pollfd structs
     pollfd *pollfds = new pollfd[nHandles];

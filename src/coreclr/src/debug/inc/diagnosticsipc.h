@@ -23,37 +23,6 @@ public:
     bool Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten) const;
     bool Flush() const;
 
-    class DiagnosticsIpc;
-
-    enum class PollEvents : uint8_t
-    {
-        TIMEOUT  = 0x00, // implies timeout
-        SIGNALED = 0x01, // ready for use
-        HANGUP   = 0x02, // connection remotely closed
-        ERR      = 0x04  // other error
-    };
-
-    struct IpcPollHandle
-    {
-        DiagnosticsIpc *pIpc;
-
-        // After calling Poll, will contain a usable IpcStream
-        // IFF (revents & (uint8_t)PollEvents::SIGNALED) != 0
-        // 
-        // DiagnosticsIpc::ConnectionMode::CLIENT connections should place a usable
-        // IpcStream here before calling Poll.
-        // 
-        // DiagnosticsIpc::ConnectionMode::SERVER connections can leave this blank
-        IpcStream *pStream;
-
-        // contains some set of PollEvents
-        // will be set by Poll
-        uint8_t revents;
-    };
-
-    
-    // static int32_t Poll(IpcStream *const *const ppStreams, uint32_t nStreams, int32_t timeoutMs, IpcStream **ppStream, ErrorCallback callback = nullptr);
-
     class DiagnosticsIpc final
     {
     public:
@@ -61,6 +30,33 @@ public:
         {
             CLIENT,
             SERVER
+        };
+
+        enum class PollEvents : uint8_t
+        {
+            TIMEOUT  = 0x00, // implies timeout
+            SIGNALED = 0x01, // ready for use
+            HANGUP   = 0x02, // connection remotely closed
+            ERR      = 0x04  // other error
+        };
+
+        struct IpcPollHandle
+        {
+            DiagnosticsIpc *pIpc;
+
+            // After calling Poll, will contain a usable IpcStream
+            // IFF (revents & (uint8_t)PollEvents::SIGNALED) != 0
+            // 
+            // DiagnosticsIpc::ConnectionMode::CLIENT connections should place a usable
+            // IpcStream here before calling Poll, i.e., pollHandle.pStream = pollHandle.pIpc->Connect()
+            // 
+            // DiagnosticsIpc::ConnectionMode::SERVER connections can leave this null
+            IpcStream *pStream;
+
+            // contains some set of PollEvents
+            // will be set by Poll
+            // Any values here are ignored by Poll
+            uint8_t revents;
         };
 
         // Poll
