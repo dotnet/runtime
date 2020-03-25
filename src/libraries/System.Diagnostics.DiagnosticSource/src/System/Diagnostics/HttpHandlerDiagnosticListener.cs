@@ -9,15 +9,15 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 
-// This HttpHandlerDiagnosticListener class is applicable only for .NET 4.6, and not for .NET core.
+// This HttpHandlerDiagnosticListener class is applicable only for .NET 4.5, and not for .NET core.
 
 namespace System.Diagnostics
 {
     /// <summary>
-    /// A HttpHandlerDiagnosticListener is a DiagnosticListener for .NET 4.6 and above where
+    /// A HttpHandlerDiagnosticListener is a DiagnosticListener for .NET 4.5 and above where
     /// HttpClient doesn't have a DiagnosticListener built in. This class is not used for .NET Core
     /// because HttpClient in .NET Core already emits DiagnosticSource events. This class compensates for
-    /// that in .NET 4.6 and above. HttpHandlerDiagnosticListener has no public constructor. To use this,
+    /// that in .NET 4.5 and above. HttpHandlerDiagnosticListener has no public constructor. To use this,
     /// the application just needs to call <see cref="DiagnosticListener.AllListeners" /> and
     /// <see cref="DiagnosticListener.AllListenerObservable.Subscribe(IObserver{DiagnosticListener})"/>,
     /// then in the <see cref="IObserver{DiagnosticListener}.OnNext(DiagnosticListener)"/> method,
@@ -65,14 +65,14 @@ namespace System.Diagnostics
         {
             lock (this)
             {
-                if (!this._initialized)
+                if (!_initialized)
                 {
                     try
                     {
                         // This flag makes sure we only do this once. Even if we failed to initialize in an
                         // earlier time, we should not retry because this initialization is not cheap and
                         // the likelihood it will succeed the second time is very small.
-                        this._initialized = true;
+                        _initialized = true;
 
                         PrepareReflectionObjects();
                         PerformInjection();
@@ -80,7 +80,7 @@ namespace System.Diagnostics
                     catch (Exception ex)
                     {
                         // If anything went wrong, just no-op. Write an event so at least we can find out.
-                        this.Write(InitializationFailed, new { Exception = ex });
+                        Write(InitializationFailed, new { Exception = ex });
                     }
                 }
             }
@@ -216,11 +216,9 @@ namespace System.Diagnostics
                 }
                 set
                 {
-                    WeakReference weakRef = value as WeakReference;
-                    if (weakRef != null && weakRef.IsAlive)
+                    if (value is WeakReference weakRef && weakRef.IsAlive)
                     {
-                        ServicePoint servicePoint = weakRef.Target as ServicePoint;
-                        if (servicePoint != null)
+                        if (weakRef.Target is ServicePoint servicePoint)
                         {
                             // Replace the ConnectionGroup hashtable inside this ServicePoint object,
                             // which allows us to intercept each new ConnectionGroup object added under
@@ -495,7 +493,7 @@ namespace System.Diagnostics
                     // which allows us to intercept each new HttpWebRequest object added under
                     // this Connection.
                     ArrayList originalArrayList = s_writeListField.GetValue(value) as ArrayList;
-                    HttpWebRequestArrayList newArrayList = new HttpWebRequestArrayList(value, originalArrayList ?? new ArrayList());
+                    HttpWebRequestArrayList newArrayList = new HttpWebRequestArrayList(originalArrayList ?? new ArrayList());
 
                     s_writeListField.SetValue(value, newArrayList);
                 }
@@ -513,11 +511,8 @@ namespace System.Diagnostics
         /// </summary>
         private sealed class HttpWebRequestArrayList : ArrayListWrapper
         {
-            private readonly object _connection;
-
-            public HttpWebRequestArrayList(object connection, ArrayList list) : base(list)
+            public HttpWebRequestArrayList(ArrayList list) : base(list)
             {
-                _connection = connection;
             }
 
             public override int Add(object value)
@@ -525,75 +520,12 @@ namespace System.Diagnostics
                 // Add before firing events so if some user code cancels/aborts the request it will be found in the outstanding list.
                 int index = base.Add(value);
 
-                HttpWebRequest request = value as HttpWebRequest;
-                if (request != null)
+                if (value is HttpWebRequest request)
                 {
                     s_instance.RaiseRequestEvent(request);
                 }
 
                 return index;
-            }
-
-            public override void RemoveAt(int index)
-            {
-                RemoveRequest(index);
-
-                base.RemoveAt(index);
-            }
-
-            public override void Clear()
-            {
-                for (int index = 0; index < Count; index++)
-                {
-                    RemoveRequest(index);
-                }
-
-                base.Clear();
-            }
-
-            private void RemoveRequest(int index)
-            {
-                HttpWebRequest request = base[index] as HttpWebRequest;
-                if (request != null)
-                {
-                    HttpWebResponse response = s_httpResponseAccessor(request);
-                    if (response != null)
-                    {
-                        s_instance.RaiseResponseEvent(request, response);
-                        return;
-                    }
-
-                    // In case reponse content length is 0 and request is async,
-                    // we won't have a HttpWebResponse set on request object when this method is called
-                    // http://referencesource.microsoft.com/#System/net/System/Net/HttpWebResponse.cs,525
-
-                    // But we there will be CoreResponseData object that is either exception
-                    // or the internal HTTP reponse representation having status, content and headers
-
-                    var coreResponse = s_coreResponseAccessor(request);
-                    if (coreResponse != null && s_coreResponseDataType.IsInstanceOfType(coreResponse))
-                    {
-                        HttpStatusCode status = s_coreStatusCodeAccessor(coreResponse);
-                        WebHeaderCollection headers = s_coreHeadersAccessor(coreResponse);
-
-                        // Manual creation of HttpWebResponse here is not possible as this method is eventually called from the
-                        // HttpWebResponse ctor. So we will send Stop event with the Status and Headers payload
-                        // to notify listeners about response;
-                        // We use two different names for Stop events since one event with payload type that varies creates
-                        // complications for efficient payload parsing and is not supported by DiagnosicSource helper
-                        // libraries (e.g. Microsoft.Extensions.DiagnosticAdapter)
-
-                        s_instance.RaiseResponseEvent(request, status, headers);
-                        return;
-                    }
-
-                    // If an Exception is thrown opening a connection (ex: DNS issues, TLS issue) or something is aborted really early on we will reach here.
-                    var error = s_errorField.GetValue(_connection) as WebExceptionStatus?;
-                    if (error.HasValue)
-                    {
-                        s_instance.RaiseExceptionEvent(request, error.Value, s_innerExceptionField.GetValue(_connection) as Exception);
-                    }
-                }
             }
         }
 
@@ -612,70 +544,50 @@ namespace System.Diagnostics
         {
             if (IsRequestInstrumented(request))
             {
-                // this request was instrumented by previous RaiseRequestEvent
+                // This request was instrumented by previous RaiseRequestEvent, such is the case with redirect responses where the same request is sent again.
                 return;
             }
 
-            if (this.IsEnabled(ActivityName, request))
+            if (IsEnabled(ActivityName, request))
             {
-                var activity = new Activity(ActivityName);
-
-                activity.Start();
-
                 // We don't call StartActivity here because it will fire into user code before the headers are added.
                 // In the case where user code cancels or aborts the request, this can lead to a Stop or Exception
                 // event NOT firing because IsRequestInstrumented will return false without the headers.
 
-                if (activity.IdFormat == ActivityIdFormat.W3C)
-                {
-                    // do not inject header if it was injected already
-                    // perhaps tracing systems wants to override it
-                    if (request.Headers.Get(TraceParentHeaderName) == null)
-                    {
-                        request.Headers.Add(TraceParentHeaderName, activity.Id);
+                var activity = new Activity(ActivityName);
+                activity.Start();
 
-                        var traceState = activity.TraceStateString;
-                        if (traceState != null)
-                        {
-                            request.Headers.Add(TraceStateHeaderName, traceState);
-                        }
-                    }
-                }
-                else if (request.Headers.Get(RequestIdHeaderName) == null)
-                {
-                    // do not inject header if it was injected already
-                    // perhaps tracing systems wants to override it
-                    request.Headers.Add(RequestIdHeaderName, activity.Id);
-                }
+                object asyncContext = s_readAResultAccessor(request);
 
-                if (request.Headers.Get(CorrelationContextHeaderName) == null)
-                {
-                    // we expect baggage to be empty or contain a few items
-                    using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
-                    {
-                        if (e.MoveNext())
-                        {
-                            StringBuilder baggage = new StringBuilder();
-                            do
-                            {
-                                KeyValuePair<string, string> item = e.Current;
-                                baggage.Append(WebUtility.UrlEncode(item.Key)).Append('=').Append(WebUtility.UrlEncode(item.Value)).Append(',');
-                            }
-                            while (e.MoveNext());
-                            baggage.Remove(baggage.Length - 1, 1);
-                            request.Headers.Add(CorrelationContextHeaderName, baggage.ToString());
-                        }
-                    }
-                }
+                // Step 1: Hook request._ReadAResult.m_AsyncObject to store the state (request + callback + object + activity) we will need later.
+                s_asyncObjectModifier(asyncContext, new Tuple<HttpWebRequest, object, AsyncCallback, Activity>(request, s_asyncObjectAccessor(asyncContext), s_asyncCallbackAccessor(asyncContext), activity));
+
+                // Step 2: Hook request._ReadAResult.m_AsyncCallback so we can fire our events when the request is complete.
+                s_asyncCallbackModifier(asyncContext, s_asyncCallback);
+
+                InstrumentRequest(request, activity);
 
                 // Only send start event to users who subscribed for it, but start activity anyway
-                if (this.IsEnabled(RequestStartName))
+                if (IsEnabled(RequestStartName))
                 {
                     Write(activity.OperationName + ".Start", new { Request = request });
                 }
+            }
+        }
 
-                // There is no guarantee that Activity.Current will flow to the Response, so let's stop it here
-                activity.Stop();
+        private void RaiseResponseEvent(HttpWebRequest request, HttpWebResponse response)
+        {
+            if (IsEnabled(RequestStopName))
+            {
+                Write(RequestStopName, new { Request = request, Response = response });
+            }
+        }
+
+        private void RaiseExceptionEvent(HttpWebRequest request, Exception exception)
+        {
+            if (IsEnabled(RequestExceptionName))
+            {
+                Write(RequestExceptionName, new { Request = request, Exception = exception });
             }
         }
 
@@ -684,53 +596,88 @@ namespace System.Diagnostics
             return request.Headers.Get(TraceParentHeaderName) != null || request.Headers.Get(RequestIdHeaderName) != null;
         }
 
-        private void RaiseResponseEvent(HttpWebRequest request, HttpWebResponse response)
+        private static void InstrumentRequest(HttpWebRequest request, Activity activity)
         {
-            // Response event could be received several times for the same request in case it was redirected
-            // IsLastResponse checks if response is the last one (no more redirects will happen)
-            // based on response StatusCode and number or redirects done so far
-            if (IsRequestInstrumented(request) && IsLastResponse(request, response.StatusCode))
+            if (activity.IdFormat == ActivityIdFormat.W3C)
             {
-                // only send Stop if request was instrumented
-                this.Write(RequestStopName, new { Request = request, Response = response });
-            }
-        }
-
-        private void RaiseResponseEvent(HttpWebRequest request, HttpStatusCode statusCode, WebHeaderCollection headers)
-        {
-            // Response event could be received several times for the same request in case it was redirected
-            // IsLastResponse checks if response is the last one (no more redirects will happen)
-            // based on response StatusCode and number or redirects done so far
-            if (IsRequestInstrumented(request) && IsLastResponse(request, statusCode))
-            {
-                this.Write(RequestStopExName, new { Request = request, StatusCode = statusCode, Headers = headers });
-            }
-        }
-
-        private void RaiseExceptionEvent(HttpWebRequest request, WebExceptionStatus status, Exception exception)
-        {
-            if (IsRequestInstrumented(request))
-            {
-                this.Write(RequestExceptionName, new { Request = request, Status = status, Exception = exception });
-            }
-        }
-
-        private bool IsLastResponse(HttpWebRequest request, HttpStatusCode statusCode)
-        {
-            if (request.AllowAutoRedirect)
-            {
-                if (statusCode == HttpStatusCode.Ambiguous ||  // 300
-                    statusCode == HttpStatusCode.Moved ||  // 301
-                    statusCode == HttpStatusCode.Redirect ||  // 302
-                    statusCode == HttpStatusCode.RedirectMethod ||  // 303
-                    statusCode == HttpStatusCode.RedirectKeepVerb ||  // 307
-                    (int)statusCode == 308) // 308 Permanent Redirect is not in .NET Framework yet, and so has to be specified this way.
+                // do not inject header if it was injected already
+                // perhaps tracing systems wants to override it
+                if (request.Headers.Get(TraceParentHeaderName) == null)
                 {
-                    return s_autoRedirectsAccessor(request) >= request.MaximumAutomaticRedirections;
+                    request.Headers.Add(TraceParentHeaderName, activity.Id);
+
+                    string traceState = activity.TraceStateString;
+                    if (traceState != null)
+                    {
+                        request.Headers.Add(TraceStateHeaderName, traceState);
+                    }
                 }
             }
+            else if (request.Headers.Get(RequestIdHeaderName) == null)
+            {
+                // do not inject header if it was injected already
+                // perhaps tracing systems wants to override it
+                request.Headers.Add(RequestIdHeaderName, activity.Id);
+            }
 
-            return true;
+            if (request.Headers.Get(CorrelationContextHeaderName) == null)
+            {
+                // we expect baggage to be empty or contain a few items
+                using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
+                {
+                    if (e.MoveNext())
+                    {
+                        StringBuilder baggage = new StringBuilder();
+                        do
+                        {
+                            KeyValuePair<string, string> item = e.Current;
+                            baggage.Append(WebUtility.UrlEncode(item.Key)).Append('=').Append(WebUtility.UrlEncode(item.Value)).Append(',');
+                        }
+                        while (e.MoveNext());
+                        baggage.Remove(baggage.Length - 1, 1);
+                        request.Headers.Add(CorrelationContextHeaderName, baggage.ToString());
+                    }
+                }
+            }
+        }
+
+        private static void AsyncCallback(IAsyncResult asyncResult)
+        {
+            // Retrieve the state we stuffed into m_AsyncObject.
+            Tuple<HttpWebRequest, object, AsyncCallback, Activity> state = (Tuple<HttpWebRequest, object, AsyncCallback, Activity>)s_asyncObjectAccessor(asyncResult);
+
+            // Restore the object in case it was important.
+            s_asyncObjectModifier(asyncResult, state.Item2);
+
+            try
+            {
+                // Call the true callback if it was set.
+                state.Item3?.Invoke(asyncResult);
+            }
+            catch
+            {
+            }
+
+            // Access the result of the request.
+            object result = s_resultAccessor(asyncResult);
+
+            try
+            {
+                if (result is Exception ex)
+                {
+                    s_instance.RaiseExceptionEvent(state.Item1, ex);
+                }
+                else
+                {
+                    s_instance.RaiseResponseEvent(state.Item1, (HttpWebResponse)result);
+                }
+            }
+            catch
+            {
+            }
+
+            // Activity.Current should be fine here because the AsyncCallback fires through ExecutionContext but it was easy enough to pass in and this will work even if context wasn't flowed, for some reason.
+            state.Item4.Stop();
         }
 
         private static void PrepareReflectionObjects()
@@ -744,32 +691,31 @@ namespace System.Diagnostics
             s_connectionListField = s_connectionGroupType?.GetField("m_ConnectionList", BindingFlags.Instance | BindingFlags.NonPublic);
             s_connectionType = systemNetHttpAssembly?.GetType("System.Net.Connection");
             s_writeListField = s_connectionType?.GetField("m_WriteList", BindingFlags.Instance | BindingFlags.NonPublic);
-            s_errorField = s_connectionType?.GetField("m_Error", BindingFlags.Instance | BindingFlags.NonPublic);
-            s_innerExceptionField = s_connectionType?.GetField("m_InnerException", BindingFlags.Instance | BindingFlags.NonPublic);
 
-            s_httpResponseAccessor = CreateFieldGetter<HttpWebRequest, HttpWebResponse>("_HttpResponse", BindingFlags.NonPublic | BindingFlags.Instance);
-            s_autoRedirectsAccessor = CreateFieldGetter<HttpWebRequest, int>("_AutoRedirects", BindingFlags.NonPublic | BindingFlags.Instance);
-            s_coreResponseAccessor = CreateFieldGetter<HttpWebRequest, object>("_CoreResponse", BindingFlags.NonPublic | BindingFlags.Instance);
+            s_readAResultAccessor = CreateFieldGetter<object>(typeof(HttpWebRequest), "_ReadAResult", BindingFlags.NonPublic | BindingFlags.Instance);
 
-            s_coreResponseDataType = systemNetHttpAssembly?.GetType("System.Net.CoreResponseData");
-            if (s_coreResponseDataType != null)
+            Type lazyAsyncResultType = systemNetHttpAssembly?.GetType("System.Net.LazyAsyncResult");
+            if (lazyAsyncResultType != null)
             {
-                s_coreStatusCodeAccessor = CreateFieldGetter<HttpStatusCode>(s_coreResponseDataType, "m_StatusCode", BindingFlags.Public | BindingFlags.Instance);
-                s_coreHeadersAccessor = CreateFieldGetter<WebHeaderCollection>(s_coreResponseDataType, "m_ResponseHeaders", BindingFlags.Public | BindingFlags.Instance);
+                s_asyncCallbackAccessor = CreateFieldGetter<AsyncCallback>(lazyAsyncResultType, "m_AsyncCallback", BindingFlags.NonPublic | BindingFlags.Instance);
+                s_asyncCallbackModifier = CreateFieldSetter<AsyncCallback>(lazyAsyncResultType, "m_AsyncCallback", BindingFlags.NonPublic | BindingFlags.Instance);
+                s_asyncObjectAccessor = CreateFieldGetter<object>(lazyAsyncResultType, "m_AsyncObject", BindingFlags.NonPublic | BindingFlags.Instance);
+                s_asyncObjectModifier = CreateFieldSetter<object>(lazyAsyncResultType, "m_AsyncObject", BindingFlags.NonPublic | BindingFlags.Instance);
+                s_resultAccessor = CreateFieldGetter<object>(lazyAsyncResultType, "m_Result", BindingFlags.NonPublic | BindingFlags.Instance);
             }
+
             // Double checking to make sure we have all the pieces initialized
             if (s_connectionGroupListField == null ||
                 s_connectionGroupType == null ||
                 s_connectionListField == null ||
                 s_connectionType == null ||
                 s_writeListField == null ||
-                s_errorField == null ||
-                s_innerExceptionField == null ||
-                s_httpResponseAccessor == null ||
-                s_autoRedirectsAccessor == null ||
-                s_coreResponseDataType == null ||
-                s_coreStatusCodeAccessor == null ||
-                s_coreHeadersAccessor == null)
+                s_readAResultAccessor == null ||
+                s_asyncCallbackAccessor == null ||
+                s_asyncCallbackModifier == null ||
+                s_asyncObjectAccessor == null ||
+                s_asyncObjectModifier == null ||
+                s_resultAccessor == null)
             {
                 // If anything went wrong here, just return false. There is nothing we can do.
                 throw new InvalidOperationException("Unable to initialize all required reflection objects");
@@ -790,24 +736,6 @@ namespace System.Diagnostics
 
             servicePointTableField.SetValue(null, newTable);
         }
-
-        private static Func<TClass, TField> CreateFieldGetter<TClass, TField>(string fieldName, BindingFlags flags) where TClass : class
-        {
-            FieldInfo field = typeof(TClass).GetField(fieldName, flags);
-            if (field != null)
-            {
-                string methodName = field.ReflectedType.FullName + ".get_" + field.Name;
-                DynamicMethod getterMethod = new DynamicMethod(methodName, typeof(TField), new[] { typeof(TClass) }, true);
-                ILGenerator generator = getterMethod.GetILGenerator();
-                generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(OpCodes.Ldfld, field);
-                generator.Emit(OpCodes.Ret);
-                return (Func<TClass, TField>)getterMethod.CreateDelegate(typeof(Func<TClass, TField>));
-            }
-
-            return null;
-        }
-
 
         /// <summary>
         /// Creates getter for a field defined in private or internal type
@@ -832,22 +760,47 @@ namespace System.Diagnostics
             return null;
         }
 
+        /// <summary>
+        /// Creates setter for a field defined in private or internal type
+        /// repesented with classType variable
+        /// </summary>
+        private static Action<object, TField> CreateFieldSetter<TField>(Type classType, string fieldName, BindingFlags flags)
+        {
+            FieldInfo field = classType.GetField(fieldName, flags);
+            if (field != null)
+            {
+                string methodName = classType.FullName + ".set_" + field.Name;
+                DynamicMethod setterMethod = new DynamicMethod(methodName, null, new[] { typeof(object), typeof(TField) }, true);
+                ILGenerator generator = setterMethod.GetILGenerator();
+                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Castclass, classType);
+                generator.Emit(OpCodes.Ldarg_1);
+                generator.Emit(OpCodes.Stfld, field);
+                generator.Emit(OpCodes.Ret);
+
+                return (Action<object, TField>)setterMethod.CreateDelegate(typeof(Action<object, TField>));
+            }
+
+            return null;
+        }
+
         #endregion
 
         internal static readonly HttpHandlerDiagnosticListener s_instance = new HttpHandlerDiagnosticListener();
 
         #region private fields
         private const string DiagnosticListenerName = "System.Net.Http.Desktop";
-        private const string ActivityName = "System.Net.Http.Desktop.HttpRequestOut";
-        private const string RequestStartName = "System.Net.Http.Desktop.HttpRequestOut.Start";
-        private const string RequestStopName = "System.Net.Http.Desktop.HttpRequestOut.Stop";
-        private const string RequestExceptionName = "System.Net.Http.Desktop.HttpRequestOut.Exception";
-        private const string RequestStopExName = "System.Net.Http.Desktop.HttpRequestOut.Ex.Stop";
-        private const string InitializationFailed = "System.Net.Http.InitializationFailed";
+        private const string ActivityName = DiagnosticListenerName + ".HttpRequestOut";
+        private const string RequestStartName = ActivityName + ".Start";
+        private const string RequestStopName = ActivityName + ".Stop";
+        private const string RequestExceptionName = ActivityName + ".Exception";
+        private const string InitializationFailed = DiagnosticListenerName + ".InitializationFailed";
         private const string RequestIdHeaderName = "Request-Id";
         private const string CorrelationContextHeaderName = "Correlation-Context";
         private const string TraceParentHeaderName = "traceparent";
         private const string TraceStateHeaderName = "tracestate";
+
+        private static readonly AsyncCallback s_asyncCallback = AsyncCallback;
 
         // Fields for controlling initialization of the HttpHandlerDiagnosticListener singleton
         private bool _initialized = false;
@@ -858,14 +811,12 @@ namespace System.Diagnostics
         private static FieldInfo s_connectionListField;
         private static Type s_connectionType;
         private static FieldInfo s_writeListField;
-        private static FieldInfo s_errorField;
-        private static FieldInfo s_innerExceptionField;
-        private static Func<HttpWebRequest, HttpWebResponse> s_httpResponseAccessor;
-        private static Func<HttpWebRequest, int> s_autoRedirectsAccessor;
-        private static Func<HttpWebRequest, object> s_coreResponseAccessor;
-        private static Func<object, HttpStatusCode> s_coreStatusCodeAccessor;
-        private static Func<object, WebHeaderCollection> s_coreHeadersAccessor;
-        private static Type s_coreResponseDataType;
+        private static Func<object, object> s_readAResultAccessor;
+        private static Func<object, AsyncCallback> s_asyncCallbackAccessor;
+        private static Action<object, AsyncCallback> s_asyncCallbackModifier;
+        private static Func<object, object> s_asyncObjectAccessor;
+        private static Action<object, object> s_asyncObjectModifier;
+        private static Func<object, object> s_resultAccessor;
 
         #endregion
     }

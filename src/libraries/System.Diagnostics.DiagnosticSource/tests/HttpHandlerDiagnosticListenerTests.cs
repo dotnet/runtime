@@ -8,7 +8,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -220,12 +219,12 @@ namespace System.Diagnostics.Tests
 
                     KeyValuePair<string, object> stopEvent;
                     Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
-                    Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Ex.Stop", stopEvent.Key);
+                    Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Stop", stopEvent.Key);
                     HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
                     Assert.NotNull(stopRequest);
 
-                    HttpStatusCode status = ReadPublicProperty<HttpStatusCode>(stopEvent.Value, "StatusCode");
-                    Assert.Equal(HttpStatusCode.OK, status);
+                    HttpWebResponse stopResponse = ReadPublicProperty<HttpWebResponse>(stopEvent.Value, "Response");
+                    Assert.NotNull(stopResponse);
                 }
             }
             finally
@@ -293,13 +292,8 @@ namespace System.Diagnostics.Tests
                     (await client.SendAsync(request)).Dispose();
                 }
 
-                Assert.Equal(1, eventRecords.Records.Count()); // Only Stop event is sent.
-
-                // Check to make sure: The first record must be a request, the next record must be a response.
-                Assert.True(eventRecords.Records.TryDequeue(out var evnt));
-                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(evnt.Value, "Request");
-                Assert.NotNull(startRequest);
-                Assert.Equal("|rootId.1.", startRequest.Headers["Request-Id"]);
+                // No events are sent.
+                Assert.Equal(0, eventRecords.Records.Count());
             }
         }
 
@@ -321,14 +315,8 @@ namespace System.Diagnostics.Tests
                         (await client.SendAsync(request)).Dispose();
                     }
 
-                    Assert.Equal(1, eventRecords.Records.Count()); // Only Stop event is sent.
-
-                    // Check to make sure: The first record must be a request, the next record must be a response.
-                    Assert.True(eventRecords.Records.TryDequeue(out var evnt));
-                    HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(evnt.Value, "Request");
-                    Assert.NotNull(startRequest);
-
-                    Assert.Equal("00-abcdef0123456789abcdef0123456789-abcdef0123456789-01", startRequest.Headers["traceparent"]);
+                    // No events are sent.
+                    Assert.Equal(0, eventRecords.Records.Count());
                 }
             }
             finally
@@ -363,14 +351,11 @@ namespace System.Diagnostics.Tests
 
                 KeyValuePair<string, object> stopEvent;
                 Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
-                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Ex.Stop", stopEvent.Key);
+                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Stop", stopEvent.Key);
                 HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
                 Assert.Equal(startRequest, stopRequest);
-                HttpStatusCode status = ReadPublicProperty<HttpStatusCode>(stopEvent.Value, "StatusCode");
-                Assert.Equal(HttpStatusCode.OK, status);
-
-                WebHeaderCollection headers = ReadPublicProperty<WebHeaderCollection>(stopEvent.Value, "Headers");
-                Assert.NotNull(headers);
+                HttpWebResponse stopResponse = ReadPublicProperty<HttpWebResponse>(stopEvent.Value, "Response");
+                Assert.NotNull(stopResponse);
             }
         }
 
@@ -427,8 +412,6 @@ namespace System.Diagnostics.Tests
                 Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Exception", exceptionEvent.Key);
                 HttpWebRequest exceptionRequest = ReadPublicProperty<HttpWebRequest>(exceptionEvent.Value, "Request");
                 Assert.Equal(startRequest, exceptionRequest);
-                WebExceptionStatus? exceptionStatus = ReadPublicProperty<WebExceptionStatus?>(exceptionEvent.Value, "Status");
-                Assert.Equal(WebExceptionStatus.NameResolutionFailure, exceptionStatus);
                 Exception exceptionException = ReadPublicProperty<Exception>(exceptionEvent.Value, "Exception");
                 Assert.Equal(webException, exceptionException);
             }
@@ -454,6 +437,74 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(2, eventRecords.Records.Count());
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Exception")));
+            }
+        }
+
+        /// <summary>
+        /// Test request connection exception: reflection hook does not throw
+        /// </summary>
+        [OuterLoop]
+        [Fact]
+        public async Task TestSecureTransportFailureRequest()
+        {
+            using (var eventRecords = new EventObserverAndRecorder())
+            {
+                using (var client = new HttpClient())
+                {
+                    var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(Configuration.Http.ExpiredCertRemoteServer));
+                    Assert.True(ex is HttpRequestException);
+                }
+
+                // We should have one Start event, no Stop event, and one Exception event.
+                Assert.Equal(2, eventRecords.Records.Count());
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Exception")));
+            }
+        }
+
+        /// <summary>
+        /// Test request connection retry: reflection hook does not throw
+        /// </summary>
+        [OuterLoop]
+        [Fact]
+        public async Task TestSecureTransportRetryFailureRequest()
+        {
+            // This test sends an https request to an endpoint only set up for http.
+            // It should retry. What we want to test for is 1 start, 1 exception event even
+            // though multiple are actually sent.
+
+            using (HttpListener server = new HttpListener())
+            {
+                server.Prefixes.Add("http://localhost:8018/dotnet/tests/");
+                server.Start();
+
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        // Request should never come into here.
+                        var context = server.GetContext();
+                        context.Response.StatusCode = (int)HttpStatusCode.NoContent;
+                        context.Response.Close();
+                    }
+                    catch (HttpListenerException)
+                    {
+                    }
+                });
+
+                using (var eventRecords = new EventObserverAndRecorder())
+                {
+                    using (var client = new HttpClient())
+                    {
+                        var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync("https://localhost:8018/dotnet/tests"));
+                        Assert.True(ex is HttpRequestException);
+                    }
+
+                    // We should have one Start event, no Stop event, and one Exception event.
+                    Assert.Equal(2, eventRecords.Records.Count());
+                    Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                    Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Exception")));
+                }
             }
         }
 
@@ -541,6 +592,10 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.True(evnt == "System.Net.Http.Desktop.HttpRequestOut.Start");
                 }
+                else if (eventNumber == 2)
+                {
+                    Assert.True(evnt == "System.Net.Http.Desktop.HttpRequestOut.Stop");
+                }
 
                 eventNumber++;
                 return true;
@@ -552,7 +607,7 @@ namespace System.Diagnostics.Tests
                 {
                     (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
                 }
-                Assert.Equal(2, eventNumber);
+                Assert.Equal(3, eventNumber);
             }
         }
 
