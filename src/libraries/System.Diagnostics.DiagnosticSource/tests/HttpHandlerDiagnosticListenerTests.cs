@@ -147,6 +147,134 @@ namespace System.Diagnostics.Tests
 
         [OuterLoop]
         [Fact]
+        public void TestBasicReceiveAndResponseWebRequestSyncEvents()
+        {
+            using (var eventRecords = new EventObserverAndRecorder(e =>
+            {
+                // Verify header is available when start event is fired.
+                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(e.Value, "Request");
+                Assert.NotNull(startRequest);
+                VerifyHeaders(startRequest);
+            }))
+            {
+                {
+                    // Send a random Http request to generate some events
+                    var webRequest = (HttpWebRequest)WebRequest.Create(Configuration.Http.RemoteEchoServer);
+
+                    using var webResponse = (HttpWebResponse)webRequest.GetResponse();
+                }
+
+                // We should have exactly one Start and one Stop event
+                Assert.Equal(2, eventRecords.Records.Count);
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+
+                // Check to make sure: The first record must be a request, the next record must be a response.
+                HttpWebRequest startRequest = AssertFirstEventWasStart(eventRecords);
+
+                VerifyHeaders(startRequest);
+
+                KeyValuePair<string, object> stopEvent;
+                Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
+                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Stop", stopEvent.Key);
+                HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
+                Assert.Equal(startRequest, stopRequest);
+                HttpWebResponse response = ReadPublicProperty<HttpWebResponse>(stopEvent.Value, "Response");
+                Assert.NotNull(response);
+            }
+        }
+
+        [OuterLoop]
+        [Fact]
+        public void TestBasicReceiveAndResponseWebRequestAsyncEvents()
+        {
+            using (var eventRecords = new EventObserverAndRecorder(e =>
+            {
+                // Verify header is available when start event is fired.
+                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(e.Value, "Request");
+                Assert.NotNull(startRequest);
+                VerifyHeaders(startRequest);
+            }))
+            {
+                {
+                    // Send a random Http request to generate some events
+                    var webRequest = (HttpWebRequest)WebRequest.Create(Configuration.Http.RemoteEchoServer);
+
+                    var asyncResult = webRequest.BeginGetResponse(null, null);
+
+                    asyncResult.AsyncWaitHandle.WaitOne();
+
+                    webRequest.EndGetResponse(asyncResult);
+                }
+
+                // We should have exactly one Start and one Stop event
+                Assert.Equal(2, eventRecords.Records.Count);
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+
+                // Check to make sure: The first record must be a request, the next record must be a response.
+                HttpWebRequest startRequest = AssertFirstEventWasStart(eventRecords);
+
+                VerifyHeaders(startRequest);
+
+                KeyValuePair<string, object> stopEvent;
+                Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
+                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Stop", stopEvent.Key);
+                HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
+                Assert.Equal(startRequest, stopRequest);
+                HttpWebResponse response = ReadPublicProperty<HttpWebResponse>(stopEvent.Value, "Response");
+                Assert.NotNull(response);
+            }
+        }
+
+        [OuterLoop]
+        [Fact]
+        public void TestBasicReceiveAndResponseWebRequestAsyncWithCallbackEvents()
+        {
+            using (var eventRecords = new EventObserverAndRecorder(e =>
+            {
+                // Verify header is available when start event is fired.
+                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(e.Value, "Request");
+                Assert.NotNull(startRequest);
+                VerifyHeaders(startRequest);
+            }))
+            {
+                bool callbackCalled = false;
+
+                using EventWaitHandle CallbackHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
+
+                {
+                    // Send a random Http request to generate some events
+                    var webRequest = (HttpWebRequest)WebRequest.Create(Configuration.Http.RemoteEchoServer);
+
+                    int state = 18;
+                    var asyncResult = webRequest.BeginGetResponse(
+                        ar =>
+                        {
+                            callbackCalled = true;
+                            Assert.Equal(state, (int)ar.AsyncState);
+                            CallbackHandle.Set();
+                        },
+                        state);
+
+                    asyncResult.AsyncWaitHandle.WaitOne();
+
+                    using var webResponse = webRequest.EndGetResponse(asyncResult);
+                }
+
+                CallbackHandle.WaitOne(TimeSpan.FromSeconds(10)); // Callback can fire on its own thread, give it a chance to execute.
+
+                Assert.True(callbackCalled);
+
+                // We should have exactly one Start and one Stop event
+                Assert.Equal(2, eventRecords.Records.Count);
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+            }
+        }
+
+        [OuterLoop]
+        [Fact]
         public async Task TestW3CHeaders()
         {
             try

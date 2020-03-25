@@ -559,8 +559,8 @@ namespace System.Diagnostics
 
                 object asyncContext = s_readAResultAccessor(request);
 
-                // Step 1: Hook request._ReadAResult.m_AsyncObject to store the state (request + callback + object + activity) we will need later.
-                s_asyncObjectModifier(asyncContext, new Tuple<HttpWebRequest, object, AsyncCallback, Activity>(request, s_asyncObjectAccessor(asyncContext), s_asyncCallbackAccessor(asyncContext), activity));
+                // Step 1: Hook request._ReadAResult.m_AsyncState to store the state (request + callback + state + activity) we will need later.
+                s_asyncStateModifier(asyncContext, new Tuple<HttpWebRequest, object, AsyncCallback, Activity>(request, s_asyncStateAccessor(asyncContext), s_asyncCallbackAccessor(asyncContext), activity));
 
                 // Step 2: Hook request._ReadAResult.m_AsyncCallback so we can fire our events when the request is complete.
                 s_asyncCallbackModifier(asyncContext, s_asyncCallback);
@@ -643,11 +643,11 @@ namespace System.Diagnostics
 
         private static void AsyncCallback(IAsyncResult asyncResult)
         {
-            // Retrieve the state we stuffed into m_AsyncObject.
-            Tuple<HttpWebRequest, object, AsyncCallback, Activity> state = (Tuple<HttpWebRequest, object, AsyncCallback, Activity>)s_asyncObjectAccessor(asyncResult);
+            // Retrieve the state we stuffed into m_AsyncState.
+            Tuple<HttpWebRequest, object, AsyncCallback, Activity> state = (Tuple<HttpWebRequest, object, AsyncCallback, Activity>)s_asyncStateAccessor(asyncResult);
 
             // Restore the object in case it was important.
-            s_asyncObjectModifier(asyncResult, state.Item2);
+            s_asyncStateModifier(asyncResult, state.Item2);
 
             try
             {
@@ -699,8 +699,8 @@ namespace System.Diagnostics
             {
                 s_asyncCallbackAccessor = CreateFieldGetter<AsyncCallback>(lazyAsyncResultType, "m_AsyncCallback", BindingFlags.NonPublic | BindingFlags.Instance);
                 s_asyncCallbackModifier = CreateFieldSetter<AsyncCallback>(lazyAsyncResultType, "m_AsyncCallback", BindingFlags.NonPublic | BindingFlags.Instance);
-                s_asyncObjectAccessor = CreateFieldGetter<object>(lazyAsyncResultType, "m_AsyncObject", BindingFlags.NonPublic | BindingFlags.Instance);
-                s_asyncObjectModifier = CreateFieldSetter<object>(lazyAsyncResultType, "m_AsyncObject", BindingFlags.NonPublic | BindingFlags.Instance);
+                s_asyncStateAccessor = CreateFieldGetter<object>(lazyAsyncResultType, "m_AsyncState", BindingFlags.NonPublic | BindingFlags.Instance);
+                s_asyncStateModifier = CreateFieldSetter<object>(lazyAsyncResultType, "m_AsyncState", BindingFlags.NonPublic | BindingFlags.Instance);
                 s_resultAccessor = CreateFieldGetter<object>(lazyAsyncResultType, "m_Result", BindingFlags.NonPublic | BindingFlags.Instance);
             }
 
@@ -713,8 +713,8 @@ namespace System.Diagnostics
                 s_readAResultAccessor == null ||
                 s_asyncCallbackAccessor == null ||
                 s_asyncCallbackModifier == null ||
-                s_asyncObjectAccessor == null ||
-                s_asyncObjectModifier == null ||
+                s_asyncStateAccessor == null ||
+                s_asyncStateModifier == null ||
                 s_resultAccessor == null)
             {
                 // If anything went wrong here, just return false. There is nothing we can do.
@@ -814,8 +814,8 @@ namespace System.Diagnostics
         private static Func<object, object> s_readAResultAccessor;
         private static Func<object, AsyncCallback> s_asyncCallbackAccessor;
         private static Action<object, AsyncCallback> s_asyncCallbackModifier;
-        private static Func<object, object> s_asyncObjectAccessor;
-        private static Action<object, object> s_asyncObjectModifier;
+        private static Func<object, object> s_asyncStateAccessor;
+        private static Action<object, object> s_asyncStateModifier;
         private static Func<object, object> s_resultAccessor;
 
         #endregion
