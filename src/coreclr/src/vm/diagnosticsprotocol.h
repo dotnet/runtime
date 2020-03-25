@@ -127,22 +127,22 @@ namespace DiagnosticsIpc
      * IS STANDARD DIAGNOSTICS IPC PROTOCOL COMMUNICATION.
      * 
      * The flow for Advertise is a one-way burst of 24 bytes consisting of
-     * 6 bytes - "AD_V1\0" (ASCII chars + null byte)
-     * 2 bytes - random 16 bit number cookie (little-endian)
-     * 8 bytes - PID (little-endian)
+     * 6 bytes  - "AD_V1\0" (ASCII chars + null byte)
+     * 16 bytes - random 128 bit number cookie (little-endian)
+     * 8 bytes  - PID (little-endian)
      */
 
     const uint8_t AdvertiseMagic_V1[6] = "AD_V1";
 
-    const uint32_t AdvertiseSize = 16;
+    const uint32_t AdvertiseSize = 30;
 
-    static uint16_t AdvertiseCookie_V1 = 0;
+    static GUID AdvertiseCookie_V1 = GUID_NULL;
 
-    inline uint16_t GetAdvertiseCookie_V1()
+    inline GUID GetAdvertiseCookie_V1()
     {
-        if (AdvertiseCookie_V1 == 0)
+        if (AdvertiseCookie_V1 == GUID_NULL)
         {
-            AdvertiseCookie_V1 = (uint16_t)GetRandomInt((int)((uint16_t)-1));
+            CoCreateGuid(&AdvertiseCookie_V1);
         }
 
         return AdvertiseCookie_V1;
@@ -150,7 +150,7 @@ namespace DiagnosticsIpc
 
     inline bool PopulateIpcAdvertisePayload_V1(uint8_t (&buf)[AdvertiseSize])
     {
-        uint16_t cookie = GetAdvertiseCookie_V1();
+        GUID cookie = GetAdvertiseCookie_V1();
         uint64_t pid = GetCurrentProcessId();
         uint8_t *bufferCursor = &buf[0];
         uint32_t bufferLen = sizeof(buf);
@@ -158,8 +158,18 @@ namespace DiagnosticsIpc
         for (uint32_t i = 0; i < sizeof(AdvertiseMagic_V1); i++)
             if (!TryWriteNumberLittleEndian(bufferCursor, bufferLen, AdvertiseMagic_V1[i]))
                 return false;
-        
-        if (!TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie) ||
+
+        if (!TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data1) ||
+            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data2) ||
+            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data3) ||
+            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[0]) ||
+            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[1]) ||
+            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[2]) ||
+            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[3]) ||
+            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[4]) ||
+            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[5]) ||
+            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[6]) ||
+            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[7]) ||
             !TryWriteNumberLittleEndian(bufferCursor, bufferLen, pid))
             return false;
 
