@@ -57,7 +57,7 @@
 
   <Target Name="GetDependencyVersionFiles" />
 
-  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
+  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
     <ItemGroup>
       <CoreCLRFiles>
         <TargetPath>runtimes/$(PackageRID)/native</TargetPath>

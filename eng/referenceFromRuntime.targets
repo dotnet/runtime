@@ -45,7 +45,7 @@
   <Target Name="GetFilesFromCoreCLR" 
           Condition="'$(RuntimeFlavor)' != 'Mono'"
           Returns="@(CoreCLRFiles)"
-          DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" />
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild" />
 
   <Target Name="GetFilesFromMono" 
           Condition="'$(RuntimeFlavor)' == 'Mono'"

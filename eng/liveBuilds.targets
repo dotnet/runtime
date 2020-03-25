@@ -78,10 +78,11 @@
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
   </PropertyGroup>
 
-  <Target Name="ResolveCoreCLRFilesFromLocalBuild">
-    <Error Condition="!Exists('$(CoreCLRArtifactsPath)')" Text="The CoreCLR artifacts path does not exist '$(CoreCLRArtifactsPath)'. The CoreCLR subset category must be built before building this project." />
+  <Target Name="ResolveRuntimeFilesFromLocalBuild">
+    <Error Condition="!Exists('$(CoreCLRArtifactsPath)') and '$(RuntimeFlavor)' == 'CoreCLR'" Text="The CoreCLR artifacts path does not exist '$(CoreCLRArtifactsPath)'. The CoreCLR subset category must be built before building this project." />
+    <Error Condition="!Exists('$(MonoArtifactsPath)') and '$(RuntimeFlavor)' == 'Mono'" Text="The Mono artifacts path does not exist '$(MonoArtifactsPath)'. The Mono subset category must be built before building this project." />
 
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
       <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)'))</CoreCLRArtifactsPath>
       <!--
         Even though CoreCLRSharedFrameworkDir is statically initialized, set it again in case the
@@ -91,7 +92,11 @@
       <CoreCLRCrossTargetComponentDir
         Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','$(CoreCLRCrossTargetComponentDirName)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
     </PropertyGroup>
-    <ItemGroup>
+    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)'))</MonoArtifactsPath>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
       <CoreCLRFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" IsNative="true" />
       <CoreCLRFiles Include="$(CoreCLRArtifactsPath)Redist/**/*.dll" />
@@ -122,8 +127,14 @@
         <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
       </CoreCLRCrossTargetFiles>
     </ItemGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <CoreCLRFiles Include="$(MonoArtifactsPath)\*.*" />
+      <CoreCLRFiles>
+        <IsNative>true</IsNative>
+      </CoreCLRFiles>
+    </ItemGroup>
 
-    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The CoreCLR subset category must be built before building this project." />
+    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The $(RuntimeFlavor) subset category must be built before building this project." />
   </Target>
 
   <Target Name="ResolveMonoFilesFromLocalBuild">

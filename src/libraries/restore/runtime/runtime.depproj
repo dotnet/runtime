@@ -74,7 +74,7 @@
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"
-          DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' != 'Mono'">
     <ItemGroup>
@@ -94,7 +94,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild">
+  <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
       <CoreCLRILFiles Include="$(CoreCLRArtifactsPath)/IL/*.*" />
     </ItemGroup>

@@ -185,7 +185,6 @@ jobs:
       value: >-
         --restore --build --ci --test
         /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
-        /p:DisableCrossgen=$(_DisableCrossgen)
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
         $(LiveOverridePathArgs)
