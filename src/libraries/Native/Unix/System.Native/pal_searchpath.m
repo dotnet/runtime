@@ -9,5 +9,6 @@ const char* SystemNative_SearchPath(int32_t folderId)
 {
     NSSearchPathDirectory spd = (NSSearchPathDirectory) folderId;
     NSURL* url = [[[NSFileManager defaultManager] URLsForDirectory:spd inDomains:NSUserDomainMask] lastObject];
-    return strdup ([[url path] UTF8String]);
+    const char* path = [[url path] UTF8String];
+    return path == NULL ? NULL : strdup (path);
 }
