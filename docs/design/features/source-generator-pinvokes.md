@@ -121,7 +121,7 @@ As a mitigation it would be possible to create a [Roslyn Analyzer and Code fix](
 
 ## Proposed API
 
-Given the Source Generator restrictions and potential confusion about overloaded attribute usage, the new attribute merges the existing `DllImportAttribute` with `GeneratedDllImportAttribute`.
+Given the Source Generator restrictions and potential confusion about overloaded attribute usage, the new `GeneratedDllImportAttribute` attribute mirrors the existing `DllImportAttribute`.
 
 ``` CSharp
 namespace System.Runtime.InteropServices
