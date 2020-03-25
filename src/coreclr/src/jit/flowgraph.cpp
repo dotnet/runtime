@@ -25346,7 +25346,7 @@ PhaseStatus Compiler::fgUpdateFinallyTargetFlags()
         JITDUMP("updating finally target flag bits\n");
         fgClearAllFinallyTargetBits();
         fgAddFinallyTargetFlags();
-        return PhaseStatus::PS_MODIFIED_FLOW;
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
     else
     {
