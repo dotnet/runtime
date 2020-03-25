@@ -399,7 +399,7 @@ namespace System.Threading
                 // Use the _log array as a circular array for log entries
                 int index = (_logStart + _logSize) % LogCapacity;
 
-                if(_logSize == LogCapacity)
+                if (_logSize == LogCapacity)
                 {
                     _logStart = (_logStart + 1) % LogCapacity;
                     _logSize--; // hide this slot while we update it
@@ -420,7 +420,7 @@ namespace System.Threading
 
             public void ForceChange(int newThreadCount, StateOrTransition state)
             {
-                if(_lastThreadCount != newThreadCount)
+                if (_lastThreadCount != newThreadCount)
                 {
                     _currentControlSetting += newThreadCount - _lastThreadCount;
                     ChangeThreadCount(newThreadCount, state);
@@ -442,7 +442,7 @@ namespace System.Threading
                 double cos = Math.Cos(w);
                 double coeff = 2 * cos;
                 double q0 = 0, q1 = 0, q2 = 0;
-                for(int i = 0; i < numSamples; ++i)
+                for (int i = 0; i < numSamples; ++i)
                 {
                     q0 = coeff * q1 - q2 + samples[(_totalSamples - numSamples + i) % _samplesToMeasure];
                     q2 = q1;

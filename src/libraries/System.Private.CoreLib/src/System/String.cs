@@ -49,10 +49,11 @@ namespace System
         [PreserveDependency("Ctor(System.Char[])", "System.String")]
         public extern String(char[]? value);
 
+        private
 #if !CORECLR
         static
 #endif
-        private string Ctor(char[]? value)
+        string Ctor(char[]? value)
         {
             if (value == null || value.Length == 0)
                 return Empty;
@@ -71,10 +72,11 @@ namespace System
         [PreserveDependency("Ctor(System.Char[],System.Int32,System.Int32)", "System.String")]
         public extern String(char[] value, int startIndex, int length);
 
+        private
 #if !CORECLR
         static
 #endif
-        private string Ctor(char[] value, int startIndex, int length)
+        string Ctor(char[] value, int startIndex, int length)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -106,10 +108,11 @@ namespace System
         [PreserveDependency("Ctor(System.Char*)", "System.String")]
         public extern unsafe String(char* value);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(char* ptr)
+        unsafe string Ctor(char* ptr)
         {
             if (ptr == null)
                 return Empty;
@@ -133,10 +136,11 @@ namespace System
         [PreserveDependency("Ctor(System.Char*,System.Int32,System.Int32)", "System.String")]
         public extern unsafe String(char* value, int startIndex, int length);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(char* ptr, int startIndex, int length)
+        unsafe string Ctor(char* ptr, int startIndex, int length)
         {
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
@@ -171,10 +175,11 @@ namespace System
         [PreserveDependency("Ctor(System.SByte*)", "System.String")]
         public extern unsafe String(sbyte* value);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(sbyte* value)
+        unsafe string Ctor(sbyte* value)
         {
             byte* pb = (byte*)value;
             if (pb == null)
@@ -190,10 +195,11 @@ namespace System
         [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32)", "System.String")]
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(sbyte* value, int startIndex, int length)
+        unsafe string Ctor(sbyte* value, int startIndex, int length)
         {
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
@@ -250,10 +256,11 @@ namespace System
         [PreserveDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)", "System.String")]
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding? enc)
+        unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding? enc)
         {
             if (enc == null)
                 return new string(value, startIndex, length);
@@ -285,10 +292,11 @@ namespace System
         [PreserveDependency("Ctor(System.Char,System.Int32)", "System.String")]
         public extern String(char c, int count);
 
+        private
 #if !CORECLR
         static
 #endif
-        private string Ctor(char c, int count)
+        string Ctor(char c, int count)
         {
             if (count <= 0)
             {
@@ -335,10 +343,11 @@ namespace System
         [PreserveDependency("Ctor(System.ReadOnlySpan`1<System.Char>)", "System.String")]
         public extern String(ReadOnlySpan<char> value);
 
+        private
 #if !CORECLR
         static
 #endif
-        private unsafe string Ctor(ReadOnlySpan<char> value)
+        unsafe string Ctor(ReadOnlySpan<char> value)
         {
             if (value.Length == 0)
                 return Empty;

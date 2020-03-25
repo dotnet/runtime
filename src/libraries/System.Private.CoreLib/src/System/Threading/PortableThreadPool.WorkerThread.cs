@@ -173,7 +173,7 @@ namespace System.Threading
                             newCounts.numExistingThreads -= (short)toCreate;
 
                             ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
-                            if(oldCounts == counts)
+                            if (oldCounts == counts)
                             {
                                 break;
                             }
