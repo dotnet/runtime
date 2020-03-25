@@ -1205,7 +1205,12 @@ namespace System.Net.Http
             }
             else
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 with TLS client cert not supported");
+                if (NetEventSource.IsEnabled)
+                {
+                    var error = WinHttpException.CreateExceptionUsingLastError(
+                        nameof(Interop.WinHttp.WinHttpQueryDataAvailable));
+                    NetEventSource.Info(this, $"HTTP/2 with TLS client cert not supported: {error}");
+                }
             }
         }
 

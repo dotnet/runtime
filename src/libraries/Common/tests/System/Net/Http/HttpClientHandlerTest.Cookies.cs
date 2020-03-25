@@ -4,8 +4,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Test.Common;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -17,6 +19,31 @@ namespace System.Net.Http.Functional.Tests
     using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
+    internal sealed class HttpEventListener : EventListener
+    {
+        private readonly ITestOutputHelper _output;
+
+        public HttpEventListener(ITestOutputHelper output) => _output = output;
+
+        protected override void OnEventSourceCreated(EventSource eventSource)
+        {
+            if (eventSource.Name == "Microsoft-System-Net-Http" || eventSource.Name == "Microsoft-System-Net-Http-WinHttpHandler")
+                EnableEvents(eventSource, EventLevel.LogAlways);
+        }
+
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            var sb = new StringBuilder().Append($"[{eventData.EventName}] ");
+            for (int i = 0; i < eventData.Payload?.Count; i++)
+            {
+                if (i > 0)
+                    sb.Append(", ");
+                sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
+            }
+            _output.WriteLine(sb.ToString());
+        }
+    }
+
     public abstract class HttpClientHandlerTest_Cookies : HttpClientHandlerTestBase
     {
         private const string s_cookieName = "ABC";
@@ -27,7 +54,18 @@ namespace System.Net.Http.Functional.Tests
 
         private const string s_simpleContent = "Hello world!";
 
-        public HttpClientHandlerTest_Cookies(ITestOutputHelper output) : base(output) { }
+        private EventListener _listener;
+
+        public HttpClientHandlerTest_Cookies(ITestOutputHelper output) : base(output)
+        {
+            _listener = new HttpEventListener(output);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _listener.Dispose();
+            base.Dispose(disposing);
+        }
 
         //
         // Send cookie tests
@@ -331,12 +369,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(CookieNamesValuesAndUseCookies))]
         public async Task GetAsync_ReceiveSetCookieHeader_CookieAdded(string cookieName, string cookieValue, bool useCookies)
         {
-            if (UseVersion.Major == 2)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/33930")]
-                return;
-            }
-
+            _output.WriteLine($"GetAsync_ReceiveSetCookieHeader_CookieAdded {cookieName}={cookieValue} {useCookies}");
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
