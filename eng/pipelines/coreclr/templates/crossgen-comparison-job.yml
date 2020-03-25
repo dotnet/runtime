@@ -101,7 +101,6 @@ jobs:
           artifactName: '$(librariesBuildArtifactName)'
           displayName: 'live-built libraries'
 
-
     # Populate Core_Root
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
       displayName: Populate Core_Root
@@ -116,7 +115,6 @@ jobs:
       - script: |
           mkdir $(workItemDirectory)\log\$(crossFlavor)
         displayName: Create directories
-        
 
     # Create baseline output on the host (x64) machine
     - task: PythonScript@0
@@ -140,7 +138,6 @@ jobs:
             --core_root  $(workItemDirectory)
             --result_dir $(workItemDirectory)\log\$(crossFlavor)
 
-
     # Dump contents and payload information
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: |
@@ -151,7 +148,6 @@ jobs:
       - script: |
           dir $(workItemDirectory)
         displayName: Dump contents and payload information
-
 
     # Send payload to Helix where the native output is generated and compared to the baseline
     - template: /eng/common/templates/steps/send-to-helix.yml
