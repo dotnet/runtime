@@ -9,6 +9,7 @@
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
 
     <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
     <DebugType>Portable</DebugType>
