@@ -26,4 +26,7 @@ typedef void  (*MonoFreeAotDataFunc)          (MonoAssembly *assembly, int size,
 MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_install_load_aot_data_hook (MonoLoadAotDataFunc load_func, MonoFreeAotDataFunc free_func, void* user_data);
 
+MONO_API int
+monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues);
+
 #endif /*__MONO_JIT_MONO_PRIVATE_UNSTABLE_H__*/
