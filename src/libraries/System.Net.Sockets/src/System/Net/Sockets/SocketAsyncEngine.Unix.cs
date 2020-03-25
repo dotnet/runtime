@@ -117,6 +117,8 @@ namespace System.Net.Sockets
         //
         private static readonly IntPtr ShutdownHandle = (IntPtr)(-1);
 
+        private static readonly double multiplier = double.Parse(Environment.GetEnvironmentVariable("MAGIC"));
+
         //
         // The next handle value to be allocated for this event port.
         // Must be accessed under s_lock.
@@ -461,7 +463,7 @@ namespace System.Net.Sockets
 
                     long timestampAfterAio = Stopwatch.GetTimestamp();
 
-                    IsBusyDoingAio = (timestampAfterAio - timestampAfterWait) >= (timestampAfterWait - timestampBeforeWait) * 13;
+                    IsBusyDoingAio = (timestampAfterAio - timestampAfterWait) >= (timestampAfterWait - timestampBeforeWait) * multiplier;
                 }
             }
         }
