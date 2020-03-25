@@ -229,7 +229,7 @@
 
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-depproj-'))">
-    <LibrariesDepprojToBuild Include="$(LibrariesProjectRoot)restore\dirs.proj" BuildInParallel="false" />
+    <LibrariesDepprojToBuild Include="$(LibrariesProjectRoot)restore\depproj.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(LibrariesDepprojToBuild)" />
   </ItemGroup>
 
