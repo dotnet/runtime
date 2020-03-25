@@ -235,7 +235,7 @@ PhaseStatus Compiler::fgTransformPatchpoints()
     if (opts.IsReversePInvoke())
     {
         JITDUMP(" -- unable to handle Reverse P/Invoke\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     PatchpointTransformer ppTransformer(this);
