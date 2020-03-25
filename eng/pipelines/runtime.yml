@@ -486,8 +486,6 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     runtimeFlavor: mono
     platforms:
-      - iOS_arm
-      - iOS_arm64
       - iOS_x64
     jobParameters:
       liveRuntimeBuildConfig: release
