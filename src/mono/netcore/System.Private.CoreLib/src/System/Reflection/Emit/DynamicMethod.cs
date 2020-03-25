@@ -91,7 +91,7 @@ namespace System.Reflection.Emit
         {
         }
 
-        public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, Type owner, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, owner, owner != null ? owner.Module : null, skipVisibility, false, true)
+        public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, Type owner, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, owner, owner?.Module, skipVisibility, false, true)
         {
         }
 
