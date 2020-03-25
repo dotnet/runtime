@@ -1,23 +1,25 @@
-<Project>
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+<Project Sdk="Microsoft.Build.Traversal">
 
   <PropertyGroup>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <BuildInParallel>true</BuildInParallel>
+    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\ref\*.*proj" Exclude="@(ProjectExclusions)" />
-    <ProjectReference Include="shims\generated\*.csproj" />
+    <GeneratedShimProject Include="shims\generated\*.csproj" />
   </ItemGroup>
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-  
-  <!-- Ordering matters! Overwriting the Build target after the Sdk.targets import. -->
-  <Target Name="Build" DependsOnTargets="BuildAllProjects" />
-  <Target Name="BuildAllProjects">
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\ref\*.*proj" Exclude="@(ProjectExclusions)" />
+    <!-- Restore only and build later. -->
+    <ProjectReference Include="@(GeneratedShimProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
+  </ItemGroup>
+
+  <Target Name="BuildGeneratedShims"
+          AfterTargets="Build">
     <MSBuild Targets="Build"
-             Projects="@(ProjectReference)"
-             Properties="BuildAllProjects=true"
-             ContinueOnError="ErrorAndStop" />
+             Projects="@(GeneratedShimProject)"
+             Properties="$(TraversalGlobalProperties)" />
   </Target>
+
 </Project>

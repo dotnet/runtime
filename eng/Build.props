@@ -15,10 +15,6 @@
       https://github.com/dotnet/arcade/issues/388
   -->
 
-  <PropertyGroup>
-    <RestoreUsingNuGetTargets>false</RestoreUsingNuGetTargets>
-  </PropertyGroup>
-
   <!-- Import to have access to properties/items used both during the Arcade phase and in the repo. -->
   <Import Project="$(MSBuildThisFileDirectory)Configurations.props" />
   <Import Project="$(MSBuildThisFileDirectory)Subsets.props" />
@@ -80,13 +76,13 @@
       <RepoTaskProjects Include="$(RepoTasksDir)**\*.csproj" />
     </ItemGroup>
 
-    <MSBuild Projects="@(RepoTaskProjects)"
-             Properties="Configuration=Debug;Platform=AnyCPU;__BuildPhase=Restore"
-             Targets="Restore" />
+    <MSBuild Targets="Restore"
+             Projects="@(RepoTaskProjects)"
+             Properties="Configuration=Debug;Platform=AnyCPU;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
 
-    <MSBuild Projects="@(RepoTaskProjects)"
-             Properties="Configuration=Debug;Platform=AnyCPU;__BuildPhase=Build"
-             Targets="Build" />
+    <MSBuild Targets="Build"
+             Projects="@(RepoTaskProjects)"
+             Properties="Configuration=Debug;Platform=AnyCPU" />
 
     <WriteLinesToFile File="$(RepoTasksOutputFile)"
                       Lines="$(RepoTasksOutputFile)"

@@ -1,6 +1,7 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
   [switch][Alias('h')]$help,
+  [switch][Alias('t')]$test,
   [string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
@@ -12,7 +13,7 @@ Param(
   [string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
   [string]$subsetCategory,
   [string]$subset,
-  [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration = "Debug",
+  [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string]$librariesConfiguration,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
@@ -100,8 +101,11 @@ if ($vs) {
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
 
-  # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
-  $env:RUNTIMECONFIGURATION=$runtimeConfiguration
+  if ($runtimeConfiguration)
+  {
+    # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
+    $env:RUNTIMECONFIGURATION=$runtimeConfiguration
+  }
 
   # Launch Visual Studio with the locally defined environment variables
   ."$vs"

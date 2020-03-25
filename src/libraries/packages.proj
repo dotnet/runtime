@@ -1,15 +1,14 @@
-<Project>
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+<Project Sdk="Microsoft.Build.Traversal">
 
   <PropertyGroup>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <BuildInParallel>true</BuildInParallel>
+    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
-    <Project Include="$(PkgDir)*\*.proj" />
-    <Project Remove="$(PkgDir)test\*.proj" />
-    <Project Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true'" />
+  <ItemGroup>
+    <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true'" />
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
@@ -23,7 +22,7 @@
     changes to the package index should be commited to the repo.
   -->
   <Target Name="UpdatePackageIndexWithStableVersions"
-          BeforeTargets="BuildAllProjects"
+          BeforeTargets="Build"
           Condition="'$(DotNetFinalVersionKind)' == 'release'">
     <ItemGroup>
       <!--
@@ -38,8 +37,7 @@
              BuildInParallel="$(BuildInParallel)"
              Projects="@(PkgProjects)"
              RemoveProperties="Configuration">
-      <Output TaskParameter="TargetOutputs"
-              ItemName="_StablePackages" />
+      <Output TaskParameter="TargetOutputs" ItemName="_StablePackages" />
     </MSBuild>
 
     <Message Text="Marking package '%(_StablePackages.Identity)' stable with version '%(_StablePackages.Version)'" />
@@ -52,22 +50,19 @@
 
   <!-- Generate a version text file we include in our packages -->
   <Target Name="GenerateVersionFileForPackages"
-          BeforeTargets="BuildAllProjects"
+          BeforeTargets="Build"
           DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
-
     <Error Condition="'$(SourceRevisionId)' == ''" Text="SourceRevisionId is not set, which means the SourceLink targets are not included in the build. Those are needed to produce a correct sha for our build outputs." />
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(VersionFileForPackages)))" />
-
-    <WriteLinesToFile
-      File="$(VersionFileForPackages)"
-      Lines="$(SourceRevisionId)"
-      Overwrite="true" />
+    <WriteLinesToFile File="$(VersionFileForPackages)"
+                      Lines="$(SourceRevisionId)"
+                      Overwrite="true" />
   </Target>
 
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"
           Condition="'$(ContinuousIntegrationBuild)' == 'true'"
-          AfterTargets="BuildAllProjects">
+          AfterTargets="Build">
     <ItemGroup>
       <_PackageReports Include="$(PackageReportDir)*.json" />
     </ItemGroup>
@@ -75,14 +70,4 @@
     <Message Condition="'@(_PackageReports)' != ''" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
   </Target>
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-
-  <!-- Ordering matters! Overwriting the Build target after the Sdk.targets import. -->
-  <Target Name="Build" DependsOnTargets="BuildAllProjects" />
-  <Target Name="BuildAllProjects">
-    <MSBuild Targets="Build"
-             Projects="@(Project)"
-             Properties="BuildAllProjects=true"
-             BuildInParallel="true" />
-  </Target>
 </Project>

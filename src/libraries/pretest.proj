@@ -1,14 +1,11 @@
-<Project>
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+<Project Sdk="Microsoft.Build.Traversal">
 
   <PropertyGroup>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-    <BuildDependsOnTargets>GenerateLaunchSettingsFiles</BuildDependsOnTargets>
-    <BuildDependsOnTargets Condition="'$(BinplaceTestSharedFramework)' == 'true'">$(BuildDependsOnTargets);GenerateTestSharedFrameworkDepsFile</BuildDependsOnTargets>
-    <BuildDependsOnTargets Condition="'$(PlatformManifestFile)' != ''">$(BuildDependsOnTargets);GenerateFileVersionProps</BuildDependsOnTargets>
+    <BuildInParallel>true</BuildInParallel>
+    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(SkipBuildProjects)' != 'true'">
     <!-- This is necessary as inside VS project references that aren't part of the sln aren't built. -->
     <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
   </ItemGroup>
@@ -30,7 +27,9 @@
   </Target>
 
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateFileVersionProps" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
+  <Target Name="GenerateFileVersionProps"
+          Condition="'$(PlatformManifestFile)' != '' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
+          BeforeTargets="Build">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
                               PackageId="Microsoft.NETCore.App"
                               PackageVersion="$(ProductVersion)"
@@ -45,32 +44,25 @@
     To use invoke target directly specifying NETCoreAppTestSharedFrameworkPath property.
   -->
   <UsingTask TaskName="GenerateTestSharedFrameworkDepsFile" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateTestSharedFrameworkDepsFile" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
+  <Target Name="GenerateTestSharedFrameworkDepsFile"
+          Condition="'$(BinplaceTestSharedFramework)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
+          BeforeTargets="Build">
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
                                          RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
                                          TargetRuntimeIdentifier="$(PackageRID)" />
   </Target>
 
   <!-- Generate launch settings support files to enable VS debugging. -->
-  <Target Name="GenerateLaunchSettingsFiles" Condition="'$(EnableLaunchSettings)' == 'true'">
+  <Target Name="GenerateLaunchSettingsFiles"
+          Condition="'$(EnableLaunchSettings)' == 'true'"
+          AfterTargets="Before">
     <ItemGroup>
       <!-- Keep in sync with pattern for test projects in tests.proj -->
-      <TestProjects Include="$(LibrariesProjectRoot)*\tests\**\*.Tests.csproj" />
+      <TestProject Include="$(LibrariesProjectRoot)*\tests\**\*.Tests.csproj" />
     </ItemGroup>
 
-    <MSBuild Projects="@(TestProjects)"
-             Targets="GenerateLaunchSettingsFile"
-             ContinueOnError="ErrorAndStop" />
-  </Target>
-
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-
-  <Target Name="Build"
-          Condition="'$(SkipPrepareTest)' != 'true'"
-          DependsOnTargets="GenerateLaunchSettingsFiles;GenerateTestSharedFrameworkDepsFile;GenerateFileVersionProps">
-    <MSBuild Targets="Build"
-             Projects="@(ProjectReference)"
-             BuildInParallel="true"
-             Condition="'$(SkipBuildProjects)' != 'true'"/>
+    <MSBuild Targets="GenerateLaunchSettingsFile"
+             Projects="@(TestProject)"
+             BuildInParallel="true" />
   </Target>
 </Project>

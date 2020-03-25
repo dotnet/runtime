@@ -1,28 +1,39 @@
-<Project>
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+<Project Sdk="Microsoft.Build.Traversal">
 
   <PropertyGroup>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <BuildInParallel>true</BuildInParallel>
+    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="Native\native-binplace.proj" />
+    <NativeBinPlaceProject Include="Native\native-binplace.proj" />
+    <ManualShimProject Include="shims\manual\*.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Restore only and build before. -->
+    <ProjectReference Include="@(NativeBinPlaceProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.csproj" Exclude="@(ProjectExclusions)" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.ilproj" Exclude="@(ProjectExclusions)" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.vbproj" Exclude="@(ProjectExclusions)" />
-    <!-- Explicitly include the runtime.depproj project here to correctly set up the test host. -->
+    <!-- Explicitly include the runtime.depproj project here to correctly set up the testhost. -->
     <ProjectReference Include="restore\runtime\runtime.depproj" />
-    <ProjectReference Include="shims\manual\*.csproj" />
+    <!-- Restore only and build later. -->
+    <ProjectReference Include="@(ManualShimProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-  
-  <!-- Ordering matters! Overwriting the Build target after the Sdk.targets import. -->
-  <Target Name="Build" DependsOnTargets="BuildAllProjects" />
-  <Target Name="BuildAllProjects">
+  <Target Name="NativeBinPlace"
+          BeforeTargets="Build">
     <MSBuild Targets="Build"
-             Projects="@(ProjectReference)"
-             Properties="BuildAllProjects=true"
-             ContinueOnError="ErrorAndStop" />
+             Projects="@(NativeBinPlaceProject)"
+             Properties="$(TraversalGlobalProperties)" />
   </Target>
+
+  <Target Name="BuildManualShims"
+          AfterTargets="Build">
+    <MSBuild Targets="Build"
+             Projects="@(ManualShimProject)"
+             Properties="$(TraversalGlobalProperties)" />
+  </Target>
+
 </Project>
