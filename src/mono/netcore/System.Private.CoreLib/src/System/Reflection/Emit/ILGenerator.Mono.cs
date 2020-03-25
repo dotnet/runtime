@@ -32,7 +32,6 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;

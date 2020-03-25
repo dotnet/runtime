@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Runtime.CompilerServices;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Mono;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT

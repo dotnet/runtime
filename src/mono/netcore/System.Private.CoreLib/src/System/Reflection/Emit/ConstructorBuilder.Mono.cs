@@ -32,13 +32,8 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Diagnostics.SymbolStore;
 
 namespace System.Reflection.Emit
 {

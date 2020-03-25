@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.Intrinsics.X86;
-using System.Runtime.CompilerServices;
 
 #if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
