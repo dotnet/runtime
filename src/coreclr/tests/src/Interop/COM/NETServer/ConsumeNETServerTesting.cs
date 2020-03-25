@@ -15,6 +15,9 @@ public class ConsumeNETServerTesting : Server.Contract.IConsumeNETServer
     public ConsumeNETServerTesting()
     {
         _ccw = Marshal.GetIUnknownForObject(this);
+
+        // At this point, the CCW has not been marked as COM-activated,
+        // so the returned RCW will be unwrapped.
         _rcwUnwrapped = Marshal.GetObjectForIUnknown(_ccw);
     }
 
