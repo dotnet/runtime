@@ -1,4 +1,5 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using System;
 using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -12,12 +13,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		public static void Main ()
 		{
 			// So that this test works with or without unreachable bodies
-			new Foo ();
-			
-			var e1 = Expression.Property (null, typeof (Foo), "TestOnlyStatic1");
-			var e2 = Expression.Property (null, typeof (Foo), "TestOnlyStatic2");
+			var Foo = new Foo ();
 
-			var e3 = Expression.Property (Expression.Parameter (typeof(int), "somename"), typeof (Foo), "TestName1");
+			Foo.Branch_SystemTypeValueNode_KnownStringValue_NonStatic ();
+			Foo.Branch_SystemTypeValueNode_KnownStringValue_SaticOnly ();
+			Foo.Branch_SystemTypeValueNode_UnknownStringValue ();
+			Foo.Branch_NullValueNode ();
+			Foo.Branch_MethodParameterValueNode (typeof (Foo), "Foo");
+			Foo.Branch_UnrecognizedPatterns ();
 		}
 
 		[KeptMember (".ctor()")]
@@ -32,6 +35,50 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptBackingField]
 			private int TestName1 { [Kept] get; }
+
+			[Kept]
+			private string UnknownString ()
+			{
+				return "unknownstring";
+			}
+
+			[Kept]
+			public void Branch_SystemTypeValueNode_KnownStringValue_NonStatic ()
+			{
+				var expr = Expression.Property (Expression.Parameter (typeof (int), "somename"), typeof (Foo), "TestName1");
+			}
+
+			[Kept]
+			public void Branch_SystemTypeValueNode_KnownStringValue_SaticOnly ()
+			{
+				var expr = Expression.Property (null, typeof (Foo), "TestOnlyStatic1");
+				expr = Expression.Property (null, typeof (Foo), "TestOnlyStatic2");
+			}
+
+			[Kept]
+			public void Branch_SystemTypeValueNode_UnknownStringValue ()
+			{
+				var expr = Expression.Property (null, typeof (Foo), UnknownString ());
+			}
+
+			[Kept]
+			public void Branch_NullValueNode ()
+			{
+				var expr = Expression.Property (null, UnknownString () == "unknownstring" ? null : typeof (Foo), "TestName1");
+			}
+
+			[Kept]
+			public void Branch_MethodParameterValueNode (Type T, string S)
+			{
+				var expr = Expression.Property (null, T, "TestName1");
+				expr = Expression.Property (null, typeof (Foo), S);
+			}
+
+			[Kept]
+			public void Branch_UnrecognizedPatterns ()
+			{
+				var expr = Expression.Property (null, Type.GetType ("Foo"), "TestName1");
+			}
 		}
 	}
 }
