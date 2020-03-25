@@ -6,6 +6,7 @@
     until https://github.com/dotnet/sdk/issues/10938 is fixed. -->
     <_RepoToolManifest Condition="'$(ContinuousIntegrationBuild)' == 'true'" />
   </PropertyGroup>
+
   <!-- Import to have access to properties/items used both during the Arcade phase and in the repo. -->
   <Import Project="$(MSBuildThisFileDirectory)Configurations.props" />
 
@@ -25,4 +26,5 @@
 
   <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
   <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\configurations.targets" />
 </Project>

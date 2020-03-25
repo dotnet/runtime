@@ -8,15 +8,14 @@
     <ProjectReference Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>
 
-  <Target Name="Restore"
-          DependsOnTargets="GenerateRuntimeOSPropsFile">
+  <Target Name="Restore">
     <MSBuild Projects="@(ProjectReference)"
-             Properties="__BuildPhase=Restore;BuildAllProjects=true"
+             Properties="BuildAllProjects=true;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
              BuildInParallel="true"
              Targets="Restore" />
 
     <MSBuild Projects="@(ProjectReference)"
-             Properties="__BuildPhase=Build;BuildAllProjects=true"
+             Properties="BuildAllProjects=true"
              BuildInParallel="true"
              Targets="Build" />
   </Target>

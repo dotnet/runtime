@@ -1,0 +1,20 @@
+<Project>
+
+  <ItemGroup>
+    <PackageDownload Include="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Version="[$(MicrosoftDotNetBuildTasksTargetFrameworkSdk)]" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFrameworkTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.targetframework.sdk\$(MicrosoftDotNetBuildTasksTargetFrameworkSdk)\tools\</TargetFrameworkTaskAssembly>
+    <TargetFrameworkTaskAssembly Condition="'$(MSBuildRuntimeType)' == 'core'">$(TargetFrameworkTaskAssembly)netcoreapp2.1\</TargetFrameworkTaskAssembly>
+    <TargetFrameworkTaskAssembly Condition="'$(MSBuildRuntimeType)' != 'core'">$(TargetFrameworkTaskAssembly)net472\</TargetFrameworkTaskAssembly>
+    <TargetFrameworkTaskAssembly>$(TargetFrameworkTaskAssembly)Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk.dll</TargetFrameworkTaskAssembly>
+  </PropertyGroup>
+
+  <UsingTask TaskName="GenerateRuntimeOSPropsFile" AssemblyFile="$(TargetFrameworkTaskAssembly)"/>
+  <Target Name="GenerateRuntimeOSPropsFile"
+          AfterTargets="Restore">
+    <GenerateRuntimeOSPropsFile RuntimePropsFilePath="$(RuntimePropsFile)" />
+  </Target>
+
+</Project>
