@@ -136,8 +136,14 @@ namespace System.Threading
 
     internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
     {
+        void IThreadPoolWorkItem.Execute() => CompleteWait();
+
         // Entry point from unmanaged code
-        private void CompleteWait() => ((IThreadPoolWorkItem)this).Execute();
+        private void CompleteWait()
+        {
+            Debug.Assert(ThreadPool.UsePortableThreadPool);
+            PortableThreadPool.CompleteWait(_registeredWaitHandle, _timedOut);
+        }
     }
 
     internal sealed class UnmanagedThreadPoolWorkItem : IThreadPoolWorkItem

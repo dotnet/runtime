@@ -21,6 +21,12 @@ namespace System.Threading
         /// <param name="handle">A description of the requested registration.</param>
         internal void RegisterWaitHandle(RegisteredWaitHandle handle)
         {
+            PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
+            if (log.IsEnabled())
+            {
+                log.ThreadPoolIOEnqueue(handle);
+            }
+
             _waitThreadLock.Acquire();
             try
             {
@@ -51,6 +57,17 @@ namespace System.Threading
             {
                 _waitThreadLock.Release();
             }
+        }
+
+        internal static void CompleteWait(RegisteredWaitHandle handle, bool timedOut)
+        {
+            PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
+            if (log.IsEnabled())
+            {
+                log.ThreadPoolIODequeue(handle);
+            }
+
+            handle.PerformCallback(timedOut);
         }
 
         /// <summary>

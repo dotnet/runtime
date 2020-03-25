@@ -38,6 +38,11 @@ namespace System.Threading
         public bool Unregister(WaitHandle waitObject) => UnregisterPortable(waitObject);
     }
 
+    internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
+    {
+        void IThreadPoolWorkItem.Execute() => PortableThreadPool.CompleteWait(_registeredWaitHandle, _timedOut);
+    }
+
     public static partial class ThreadPool
     {
         internal const bool SupportsTimeSensitiveWorkItems = true;

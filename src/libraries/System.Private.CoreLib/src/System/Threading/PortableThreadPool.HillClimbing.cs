@@ -48,8 +48,8 @@ namespace System.Threading
                 ClimbingMove,
                 ChangePoint,
                 Stabilizing,
-                Starvation, // Used as a message from the thread pool for a forced transition
-                ThreadTimedOut, // Usage as a message from the thread pool for a forced transition
+                Starvation,
+                ThreadTimedOut,
             }
 
             private struct LogEntry
@@ -189,7 +189,7 @@ namespace System.Threading
                 PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
                 if (log.IsEnabled())
                 {
-                    log.WorkerThreadAdjustmentSample(throughput);
+                    log.ThreadPoolWorkerThreadAdjustmentSample(throughput);
                 }
 
                 int sampleIndex = (int)(_totalSamples % _samplesToMeasure);
@@ -362,8 +362,8 @@ namespace System.Threading
 
                 if (log.IsEnabled())
                 {
-                    log.WorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
-                    throughputErrorEstimate, _averageThroughputNoise, ratio.Real, confidence, _currentControlSetting, (ushort)newThreadWaveMagnitude);
+                    log.ThreadPoolWorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
+                        throughputErrorEstimate, _averageThroughputNoise, ratio.Real, confidence, _currentControlSetting, (ushort)newThreadWaveMagnitude);
                 }
 
 
@@ -424,7 +424,7 @@ namespace System.Threading
                 PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
                 if (log.IsEnabled())
                 {
-                    log.WorkerThreadAdjustmentAdjustment(throughput, newThreadCount, (int)stateOrTransition);
+                    log.ThreadPoolWorkerThreadAdjustmentAdjustment(throughput, newThreadCount, (int)stateOrTransition);
                 }
             }
 

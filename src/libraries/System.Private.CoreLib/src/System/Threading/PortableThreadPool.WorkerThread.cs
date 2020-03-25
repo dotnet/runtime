@@ -30,7 +30,7 @@ namespace System.Threading
                 PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
                 if (log.IsEnabled())
                 {
-                    log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
+                    log.ThreadPoolWorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
                 }
 
                 while (true)
@@ -79,7 +79,7 @@ namespace System.Threading
 
                                 if (log.IsEnabled())
                                 {
-                                    log.WorkerThreadStop(newCounts.numExistingThreads);
+                                    log.ThreadPoolWorkerThreadStop(newCounts.numExistingThreads);
                                 }
                                 return;
                             }
@@ -101,8 +101,9 @@ namespace System.Threading
                 PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
                 if (log.IsEnabled())
                 {
-                    log.WorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
+                    log.ThreadPoolWorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
                 }
+
                 return s_semaphore.Wait(ThreadPoolThreadTimeoutMs);
             }
 

@@ -93,12 +93,12 @@ namespace System.Diagnostics.Tracing
             WriteEvent(30, workID);
         }
 
+        // The object's current location in memory was being used before. Since objects can be moved, it may be difficult to
+        // associate Enqueue/Dequeue events with the object's at-the-time location in memory, the ETW listeners would have to
+        // know specifics about the events and track GC movements to associate events. The hash code is a stable value and
+        // easier to use for association, though there may be collisions.
         [NonEvent]
-        public unsafe void ThreadPoolEnqueueWorkObject(object workID)
-        {
-            // convert the Object Id to a long
-            ThreadPoolEnqueueWork((long)*((void**)Unsafe.AsPointer(ref workID)));
-        }
+        public void ThreadPoolEnqueueWorkObject(object workID) => ThreadPoolEnqueueWork(workID.GetHashCode());
 
         [Event(31, Level = EventLevel.Verbose, Keywords = Keywords.ThreadPool | Keywords.ThreadTransfer)]
         public void ThreadPoolDequeueWork(long workID)
@@ -106,12 +106,12 @@ namespace System.Diagnostics.Tracing
             WriteEvent(31, workID);
         }
 
+        // The object's current location in memory was being used before. Since objects can be moved, it may be difficult to
+        // associate Enqueue/Dequeue events with the object's at-the-time location in memory, the ETW listeners would have to
+        // know specifics about the events and track GC movements to associate events. The hash code is a stable value and
+        // easier to use for association, though there may be collisions.
         [NonEvent]
-        public unsafe void ThreadPoolDequeueWorkObject(object workID)
-        {
-            // convert the Object Id to a long
-            ThreadPoolDequeueWork((long)*((void**)Unsafe.AsPointer(ref workID)));
-        }
+        public void ThreadPoolDequeueWorkObject(object workID) => ThreadPoolDequeueWork(workID.GetHashCode());
 
         // id -   represents a correlation ID that allows correlation of two activities, one stamped by
         //        ThreadTransferSend, the other by ThreadTransferReceive
@@ -131,13 +131,15 @@ namespace System.Diagnostics.Tracing
         //      keep track of GC movements in order to correlate the value passed to XyzSend with the
         //      (possibly changed) value passed to XyzReceive
         [NonEvent]
-        public unsafe void ThreadTransferSendObj(object id, int kind, string info, bool multiDequeues, int intInfo1, int intInfo2)
-        {
-            ThreadTransferSend((long)*((void**)Unsafe.AsPointer(ref id)), kind, info, multiDequeues, intInfo1, intInfo2);
-        }
+        public void ThreadTransferSendObj(object id, int kind, string info, bool multiDequeues, int intInfo1, int intInfo2) =>
+            ThreadTransferSend(id.GetHashCode(), kind, info, multiDequeues, intInfo1, intInfo2);
 
         // id -   represents a correlation ID that allows correlation of two activities, one stamped by
         //        ThreadTransferSend, the other by ThreadTransferReceive
+        //    -   The object's current location in memory was being used before. Since objects can be moved, it may be difficult to
+        //        associate Enqueue/Dequeue events with the object's at-the-time location in memory, the ETW listeners would have to
+        //        know specifics about the events and track GC movements to associate events. The hash code is a stable value and
+        //        easier to use for association, though there may be collisions.
         // kind - identifies the transfer: values below 64 are reserved for the runtime. Currently used values:
         //        1 - managed Timers ("roaming" ID)
         //        2 - managed async IO operations (FileStream, PipeStream, a.o.)
@@ -148,13 +150,14 @@ namespace System.Diagnostics.Tracing
         {
             WriteEvent(151, id, kind, info);
         }
-        // id - is a managed object. it gets translated to the object's address. ETW listeners must
-        //      keep track of GC movements in order to correlate the value passed to XyzSend with the
-        //      (possibly changed) value passed to XyzReceive
+
+        // id - is a managed object. it gets translated to the object's address.
+        //    - The object's current location in memory was being used before. Since objects can be moved, it may be difficult to
+        //      associate Enqueue/Dequeue events with the object's at-the-time location in memory, the ETW listeners would have to
+        //      know specifics about the events and track GC movements to associate events. The hash code is a stable value and
+        //      easier to use for association, though there may be collisions.
         [NonEvent]
-        public unsafe void ThreadTransferReceiveObj(object id, int kind, string? info)
-        {
-            ThreadTransferReceive((long)*((void**)Unsafe.AsPointer(ref id)), kind, info);
-        }
+        public void ThreadTransferReceiveObj(object id, int kind, string? info) =>
+            ThreadTransferReceive(id.GetHashCode(), kind, info);
     }
 }

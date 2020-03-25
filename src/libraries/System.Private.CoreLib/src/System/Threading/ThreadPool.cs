@@ -1155,6 +1155,7 @@ namespace System.Threading
                 s_callbackLock.Release();
             }
 #endif
+
             _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
             CompleteCallbackRequest();
         }
@@ -1257,8 +1258,6 @@ namespace System.Threading
             _registeredWaitHandle = registeredWaitHandle;
             _timedOut = timedOut;
         }
-
-        void IThreadPoolWorkItem.Execute() => _registeredWaitHandle.PerformCallback(_timedOut);
     }
 
     public static partial class ThreadPool
