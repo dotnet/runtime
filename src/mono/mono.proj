@@ -565,12 +565,12 @@
   </Target>
 
   <Target Name="Restore">
-    <MSBuild Projects="$(MonoProjectRoot)netcore\nuget\packages.proj" Targets="Restore" />
+    <MSBuild Projects="$(MonoProjectRoot)netcore\nuget\mono-packages.proj" Targets="Restore" />
     <MSBuild Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == '$(MonoObjDir)llvm'" Projects="$(MonoProjectRoot)llvm\llvm-init.proj" Targets="Restore" Properties="MonoObjDir=$(MonoObjDir);MonoLLVMDir=$(MonoLLVMDir)" />
   </Target>
 
   <Target Name="Pack">
-    <MSBuild Projects="$(MonoProjectRoot)netcore\nuget\packages.proj" Targets="Build" />
+    <MSBuild Projects="$(MonoProjectRoot)netcore\nuget\mono-packages.proj" Targets="Build" />
   </Target>
 
   <Target Name="Test" />

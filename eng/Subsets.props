@@ -216,7 +216,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-packages-'))">
-    <CoreClrPackagesProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\packages.proj" BuildInParallel="false" />
+    <CoreClrPackagesProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\coreclr-packages.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(CoreClrPackagesProjectToBuild)" />
   </ItemGroup>
 
@@ -264,7 +264,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-package-'))">
-    <LibrariesPackageToBuild Include="$(LibrariesProjectRoot)packages.proj" BuildInParallel="false" />
+    <LibrariesPackageToBuild Include="$(LibrariesProjectRoot)libraries-packages.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(LibrariesPackageToBuild)" />
   </ItemGroup>
 
