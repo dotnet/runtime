@@ -1296,6 +1296,7 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 				"Searching for '%s'.", import);
 
+#if !defined(ENABLE_NETCORE) || defined(HOST_WIN32) // For netcore, name mangling is Windows-exclusive
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE)
 		error_msg = mono_dl_symbol (module, import, &addr);
 	else {
@@ -1380,6 +1381,9 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 			}
 		}
 	}
+#else
+	error_msg = mono_dl_symbol (module, import, &addr);
+#endif
 
 	*error_msg_out = error_msg;
 	return addr;
