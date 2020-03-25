@@ -6579,7 +6579,19 @@ GenTree* Compiler::gtNewCpObjNode(GenTree* dstAddr, GenTree* srcAddr, CORINFO_CL
 
     if (lhs->OperIs(GT_OBJ))
     {
-        gtSetObjGcInfo(lhs->AsObj());
+        GenTreeObj* lhsObj = lhs->AsObj();
+#if DEBUG
+        // Codegen for CpObj assumes that we cannot have a struct with GC pointers whose size is not a multiple
+        // of the register size. The EE currently does not allow this to ensure that GC pointers are aligned
+        // if the struct is stored in an array. Note that this restriction doesn't apply to stack-allocated objects:
+        // they are never stored in arrays. We should never get to this method with stack-allocated objects since they
+        // are never copied so we don't need to exclude them from the assert below.
+        // Let's assert it just to be safe.
+        ClassLayout* layout = lhsObj->GetLayout();
+        unsigned     size   = layout->GetSize();
+        assert((layout->GetGCPtrCount() == 0) || (roundUp(size, REGSIZE_BYTES) == size));
+#endif
+        gtSetObjGcInfo(lhsObj);
     }
 
     if (srcAddr->OperGet() == GT_ADDR)
