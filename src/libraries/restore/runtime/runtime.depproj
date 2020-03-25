@@ -74,27 +74,27 @@
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"
-          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          DependsOnTargets="ResolveVMFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' != 'Mono'">
     <ItemGroup>
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
-      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
-      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
-      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
+      <VMFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
+      <VMFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
+      <ReferenceCopyLocalPaths Include="@(VMFiles)" />
     </ItemGroup>
   </Target>
 
   <Target Name="OverrideRuntimeMono"
-          DependsOnTargets="ResolveMonoFilesFromLocalBuild"
+          DependsOnTargets="ResolveVMFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="@(MonoFiles)" />
+      <ReferenceCopyLocalPaths Include="@(VMFiles)" />
     </ItemGroup>
   </Target>
 
-  <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+  <Target Name="GetCoreCLRILFiles" DependsOnTargets="ResolveVMFilesFromLocalBuild">
     <ItemGroup>
       <CoreCLRILFiles Include="$(CoreCLRArtifactsPath)/IL/*.*" />
     </ItemGroup>

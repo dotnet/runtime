@@ -57,15 +57,15 @@
 
   <Target Name="GetDependencyVersionFiles" />
 
-  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
+  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveVMFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
     <ItemGroup>
-      <CoreCLRFiles>
+      <VMFiles>
         <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
-      </CoreCLRFiles>
+      </VMFiles>
 
-      <CoreCLRFiles Condition="'%(FileName)' == 'crossgen'">
+      <VMFiles Condition="'%(FileName)' == 'crossgen'">
         <TargetPath>tools</TargetPath>
-      </CoreCLRFiles>
+      </VMFiles>
 
       <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
         <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
@@ -79,7 +79,7 @@
       <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
       </CoreCLRCrossTargetFiles>
-      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles);@(CoreCLRCrossTargetFiles)" />
+      <ReferenceCopyLocalPaths Include="@(VMFiles);@(CoreCLRCrossTargetFiles)" />
     </ItemGroup>
   </Target>
 

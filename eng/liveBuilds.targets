@@ -78,7 +78,7 @@
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
   </PropertyGroup>
 
-  <Target Name="ResolveRuntimeFilesFromLocalBuild">
+  <Target Name="ResolveVMFilesFromLocalBuild">
     <Error Condition="!Exists('$(CoreCLRArtifactsPath)') and '$(RuntimeFlavor)' == 'CoreCLR'" Text="The CoreCLR artifacts path does not exist '$(CoreCLRArtifactsPath)'. The CoreCLR subset category must be built before building this project." />
     <Error Condition="!Exists('$(MonoArtifactsPath)') and '$(RuntimeFlavor)' == 'Mono'" Text="The Mono artifacts path does not exist '$(MonoArtifactsPath)'. The Mono subset category must be built before building this project." />
 
@@ -97,25 +97,25 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
-      <CoreCLRFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
+      <VMFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" IsNative="true" />
-      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)Redist/**/*.dll" />
-      <CoreCLRFiles>
+      <VMFiles Include="$(CoreCLRArtifactsPath)Redist/**/*.dll" />
+      <VMFiles>
         <IsNative>true</IsNative>
-      </CoreCLRFiles>
+      </VMFiles>
       <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
                              Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')" />
       <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll"
                              Condition="Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll') and '@(_systemPrivateCoreLib)' == ''" />
-      <CoreCLRFiles Include="@(_systemPrivateCoreLib)" />
-      <CoreCLRFiles
+      <VMFiles Include="@(_systemPrivateCoreLib)" />
+      <VMFiles
         Include="
           $(CoreCLRSharedFrameworkDir)PDB/*.pdb;
           $(CoreCLRSharedFrameworkDir)PDB/*.dbg;
           $(CoreCLRSharedFrameworkDir)PDB/*.dwarf" />
-      <CoreCLRFiles
+      <VMFiles
         Include="$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.pdb;" />
-      <CoreCLRFiles Condition="Exists('$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.ni.pdb')"
+      <VMFiles Condition="Exists('$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.ni.pdb')"
         Include="$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.ni.pdb" />
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
         Include="
@@ -128,23 +128,13 @@
       </CoreCLRCrossTargetFiles>
     </ItemGroup>
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <CoreCLRFiles Include="$(MonoArtifactsPath)\*.*" />
-      <CoreCLRFiles>
+      <VMFiles Include="$(MonoArtifactsPath)\*.*" />
+      <VMFiles>
         <IsNative>true</IsNative>
-      </CoreCLRFiles>
+      </VMFiles>
     </ItemGroup>
 
-    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The $(RuntimeFlavor) subset category must be built before building this project." />
-  </Target>
-
-  <Target Name="ResolveMonoFilesFromLocalBuild">
-    <Error Condition="!Exists('$(MonoArtifactsPath)')" Text="The Mono artifacts path does not exist '$(MonoArtifactsPath)'. The Mono subset category must be built before building this project." />
-
-    <ItemGroup>
-      <MonoFiles Include="$(MonoArtifactsPath)\*.*" />
-    </ItemGroup>
-
-    <Error Condition="'@(MonoFiles)' == ''" Text="The Mono subset category must be built before building this project." />
+    <Error Condition="'@(VMFiles)' == ''" Text="The $(RuntimeFlavor) subset category must be built before building this project." />
   </Target>
 
   <Target Name="EnsureLocalArtifactsExist">

@@ -170,9 +170,6 @@ jobs:
     - name: _PortableBuild
       value: ${{ eq(parameters.osSubgroup, '') }}
 
-    - name: _DisableCrossgen
-      value: false
-
     - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
       # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)

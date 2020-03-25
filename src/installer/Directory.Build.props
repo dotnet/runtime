@@ -128,8 +128,9 @@
 
   <PropertyGroup>
     <DisableCrossgen>false</DisableCrossgen>
+    <DisableCrossgen Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableCrossgen>
     <!-- Disable cross-gen on FreeBSD for now. This can be revisited when we have full support. -->
-    <DisableCrossgen Condition="'$(TargetOS)'=='FreeBSD' or '$(RuntimeFlavor)' == 'Mono'">true</DisableCrossgen>
+    <DisableCrossgen Condition="'$(TargetOS)'=='FreeBSD'">true</DisableCrossgen> 
     <OutputVersionBadge>$(AssetOutputPath)sharedfx_$(OutputRid)_$(Configuration)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
 
@@ -147,10 +148,10 @@
 
     <!-- OSX specific intermediate package suffix . OSX specific intermediate packages are suffixed with -internal to avoid name collision for bundle package (dotnet-runtime-*)
          and runtime ( earlier as dotnet-sharedframework-*)	-->
-    <InstallerStartSuffix Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS'">internal</InstallerStartSuffix>
-    <SharedHostInstallerStart Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
-    <HostFxrInstallerStart Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
-    <SharedFrameworkInstallerStart Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
+    <InstallerStartSuffix Condition="'$(TargetOS)' == 'OSX'">internal</InstallerStartSuffix>
+    <SharedHostInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
+    <HostFxrInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
+    <SharedFrameworkInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
 
   </PropertyGroup>
 
@@ -283,7 +284,7 @@
     <CompressedFileExtension Condition="'$(TargetOS)' == 'Windows_NT'">.zip</CompressedFileExtension>
     <CompressedFileExtension Condition="'$(TargetOS)' != 'Windows_NT'">.tar.gz</CompressedFileExtension>
     <InstallerExtension Condition="'$(TargetOS)' == 'Windows_NT'">.msi</InstallerExtension>
-    <InstallerExtension Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS'">.pkg</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetOS)' == 'OSX'">.pkg</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true' or '$(TargetsLinuxMint)' == 'true' or '$(HostMachineRidTargetsDebianPackages)' == 'true'">.deb</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true' or '$(TargetsOpensuse)' == 'true' or '$(TargetsFedora)' == 'true' or '$(TargetsOracle)' == 'true' or '$(TargetsSles)' == 'true' or '$(HostMachineRidTargetsRpmPackages)' == 'true'">.rpm</InstallerExtension>
     <CombinedInstallerExtension Condition="'$(TargetOS)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
