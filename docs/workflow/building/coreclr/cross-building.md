@@ -13,11 +13,11 @@ Cross compiling CoreCLR
 
 Build using "arm" as the architecture. For example:
 
-    C:\runtime> .\build.cmd -subsetCategory CoreClr -subset Runtime -arch arm -c debug
+    C:\runtime> build.cmd -subsetCategory CoreClr -subset Runtime -arch arm -c debug
 
 -or-
 
-    C:\runtime> .\src\coreclr\build-runtime.cmd -arm -debug
+    C:\runtime> src\coreclr\build-runtime.cmd -arm -debug
 
 
 Cross Compilation for ARM, ARM64 or x86 on Linux
