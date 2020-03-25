@@ -672,7 +672,7 @@ namespace System.IO
                 cancellationToken, bytesFromBuffer, semaphoreLockTask).AsTask();
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -1074,7 +1074,7 @@ namespace System.IO
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             // Fast path check for cancellation already requested
             if (cancellationToken.IsCancellationRequested)

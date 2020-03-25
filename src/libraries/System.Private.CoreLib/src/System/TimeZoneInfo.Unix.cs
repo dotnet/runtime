@@ -938,8 +938,8 @@ namespace System
                         DateTime.MinValue,
                         endTransitionDate.AddTicks(-1),
                         daylightDelta,
-                        default(TransitionTime),
-                        default(TransitionTime),
+                        default,
+                        default,
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
@@ -974,7 +974,7 @@ namespace System
                 }
                 else
                 {
-                    dstStart = default(TransitionTime);
+                    dstStart = default;
                 }
 
                 AdjustmentRule r = AdjustmentRule.CreateAdjustmentRule(
@@ -982,7 +982,7 @@ namespace System
                         endTransitionDate.AddTicks(-1),
                         daylightDelta,
                         dstStart,
-                        default(TransitionTime),
+                        default,
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
@@ -1144,8 +1144,8 @@ namespace System
                                startTransitionDate,
                                DateTime.MaxValue,
                                TimeSpan.Zero,
-                               default(TransitionTime),
-                               default(TransitionTime),
+                               default,
+                               default,
                                baseOffset,
                                noDaylightTransitions: true);
                     }
@@ -1359,7 +1359,7 @@ namespace System
 
             month = 0;
             week = 0;
-            dayOfWeek = default(DayOfWeek);
+            dayOfWeek = default;
             return false;
         }
 

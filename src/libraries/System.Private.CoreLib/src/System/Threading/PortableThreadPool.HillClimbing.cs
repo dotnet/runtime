@@ -197,10 +197,10 @@ namespace System.Threading
                 //
                 // Set up defaults for our metrics
                 //
-                Complex threadWaveComponent = default(Complex);
-                Complex throughputWaveComponent = default(Complex);
+                Complex threadWaveComponent = default;
+                Complex throughputWaveComponent = default;
                 double throughputErrorEstimate = 0;
-                Complex ratio = default(Complex);
+                Complex ratio = default;
                 double confidence = 0;
 
                 StateOrTransition state = StateOrTransition.Warmup;
