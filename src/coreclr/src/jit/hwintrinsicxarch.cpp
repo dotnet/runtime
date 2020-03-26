@@ -1173,12 +1173,11 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
 GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
-    GenTree* retNode  = nullptr;
-    GenTree* op1      = nullptr;
-    GenTree* op2      = nullptr;
-    GenTree* op3      = nullptr;
-    GenTree* op4      = nullptr;
-    int      simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+    GenTree*  retNode  = nullptr;
+    GenTree*  op1      = nullptr;
+    GenTree*  op2      = nullptr;
+    int       simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+    var_types baseType = TYP_UNKNOWN;
 
     // The Prefetch and StoreFence intrinsics don't take any SIMD operands
     // and have a simdSize of 0
@@ -1186,6 +1185,179 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
     switch (intrinsic)
     {
+        case NI_SSE_CompareGreaterThan:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_FLOAT);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_Compare, baseType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareLessThan, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE_CompareGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_FLOAT);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_Compare, baseType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareLessThanOrEqual, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE_CompareNotGreaterThan:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_FLOAT);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_Compare, baseType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareNotLessThan, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE_CompareNotGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_FLOAT);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_Compare, baseType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareNotLessThanOrEqual, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE_CompareScalarGreaterThan:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_FLOAT);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_CompareScalar, baseType, simdSize);
+            }
+            else
+            {
+                GenTree* clonedOp1 = nullptr;
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                        nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarLessThan, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE_MoveScalar, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE_CompareScalarGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_FLOAT);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_CompareScalar, baseType, simdSize);
+            }
+            else
+            {
+                GenTree* clonedOp1 = nullptr;
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                        nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThanOrEqual"));
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarLessThanOrEqual, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE_MoveScalar, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE_CompareScalarNotGreaterThan:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_FLOAT);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_CompareScalar, baseType, simdSize);
+            }
+            else
+            {
+
+                GenTree* clonedOp1 = nullptr;
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                        nullptr DEBUGARG("Clone op1 for Sse.CompareScalarNotGreaterThan"));
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarNotLessThan, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE_MoveScalar, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE_CompareScalarNotGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_FLOAT);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_CompareScalar, baseType, simdSize);
+            }
+            else
+            {
+                GenTree* clonedOp1 = nullptr;
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                        nullptr DEBUGARG("Clone op1 for Sse.CompareScalarNotGreaterThanOrEqual"));
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarNotLessThanOrEqual, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE_MoveScalar, baseType, simdSize);
+            }
+            break;
+        }
+
         case NI_SSE_Prefetch0:
         case NI_SSE_Prefetch1:
         case NI_SSE_Prefetch2:
@@ -1229,12 +1401,54 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
     switch (intrinsic)
     {
+        case NI_SSE2_CompareGreaterThan:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+
+            if (baseType != TYP_DOUBLE)
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE2_CompareGreaterThan, baseType, simdSize);
+            }
+            else if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_Compare, baseType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareLessThan, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE2_CompareGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_DOUBLE);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_Compare, baseType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareLessThanOrEqual, baseType, simdSize);
+            }
+            break;
+        }
+
         case NI_SSE2_CompareLessThan:
         {
             assert(sig->numArgs == 2);
             op2      = impSIMDPopStack(TYP_SIMD16);
             op1      = impSIMDPopStack(TYP_SIMD16);
             baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+
             if (baseType == TYP_DOUBLE)
             {
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, baseType, simdSize);
@@ -1243,6 +1457,140 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             {
                 retNode =
                     gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareGreaterThan, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE2_CompareNotGreaterThan:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_DOUBLE);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_Compare, baseType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareNotLessThan, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE2_CompareNotGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_DOUBLE);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_Compare, baseType, simdSize);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareNotLessThanOrEqual, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE2_CompareScalarGreaterThan:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_DOUBLE);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_CompareScalar, baseType, simdSize);
+            }
+            else
+            {
+                GenTree* clonedOp1 = nullptr;
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                        nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarLessThan, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE2_MoveScalar, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE2_CompareScalarGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_DOUBLE);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_CompareScalar, baseType, simdSize);
+            }
+            else
+            {
+                GenTree* clonedOp1 = nullptr;
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                        nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThanOrEqual"));
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarLessThanOrEqual, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE2_MoveScalar, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE2_CompareScalarNotGreaterThan:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_DOUBLE);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_CompareScalar, baseType, simdSize);
+            }
+            else
+            {
+                GenTree* clonedOp1 = nullptr;
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                        nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarNotGreaterThan"));
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarNotLessThan, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE2_MoveScalar, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
+        {
+            assert(sig->numArgs == 2);
+            op2      = impSIMDPopStack(TYP_SIMD16);
+            op1      = impSIMDPopStack(TYP_SIMD16);
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(baseType == TYP_DOUBLE);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_CompareScalar, baseType, simdSize);
+            }
+            else
+            {
+                GenTree* clonedOp1 = nullptr;
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                        nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarNotGreaterThanOrEqual"));
+
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarNotLessThanOrEqual, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE2_MoveScalar, baseType, simdSize);
             }
             break;
         }
