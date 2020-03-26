@@ -10897,7 +10897,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 	 * result to 0 (indicating success). */
 	LLVMWriteBitcodeToFile (module->lmodule, filename);
 
-#if 1
+#if 0
 	{
 		char *verifier_err;
 
