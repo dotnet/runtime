@@ -17,9 +17,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData(100000.0, "fa47c35000")]
         [InlineData(3.4028234663852886e+38, "fa7f7fffff")]
-        [InlineData(Single.PositiveInfinity, "fa7f800000")]
-        [InlineData(Single.NegativeInfinity, "faff800000")]
-        [InlineData(Single.NaN, "faffc00000")]
+        [InlineData(float.PositiveInfinity, "fa7f800000")]
+        [InlineData(float.NegativeInfinity, "faff800000")]
+        [InlineData(float.NaN, "faffc00000")]
         internal static void WriteSingle_SingleValue_HappyPath(float input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
@@ -33,9 +33,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(1.0e+300, "fb7e37e43c8800759c")]
         [InlineData(-4.1, "fbc010666666666666")]
         [InlineData(3.1415926, "fb400921fb4d12d84a")]
-        [InlineData(Double.PositiveInfinity, "fb7ff0000000000000")]
-        [InlineData(Double.NegativeInfinity, "fbfff0000000000000")]
-        [InlineData(Double.NaN, "fbfff8000000000000")]
+        [InlineData(double.PositiveInfinity, "fb7ff0000000000000")]
+        [InlineData(double.NegativeInfinity, "fbfff0000000000000")]
+        [InlineData(double.NaN, "fbfff8000000000000")]
         internal static void WriteDouble_SingleValue_HappyPath(double input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();

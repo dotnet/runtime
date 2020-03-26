@@ -31,6 +31,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     case int i: writer.WriteInt64(i); break;
                     case long i: writer.WriteInt64(i); break;
                     case ulong i: writer.WriteUInt64(i); break;
+                    case float f: writer.WriteSingle(f); break;
+                    case double d: writer.WriteDouble(d); break;
                     case string s: writer.WriteTextString(s); break;
                     case byte[] b: writer.WriteByteString(b); break;
                     case byte[][] chunks: WriteChunkedByteString(writer, chunks); break;

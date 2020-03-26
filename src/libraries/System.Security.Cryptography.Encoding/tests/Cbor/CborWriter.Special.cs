@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             EnsureWriteCapacity(5);
             WriteInitialByte(new CborInitialByte(CborMajorType.Special, CborAdditionalInfo.Additional32BitData));
-            BinaryPrimitives.WriteSingleBigEndian(_buffer.AsSpan(1), value);
+            BinaryPrimitives.WriteSingleBigEndian(_buffer.AsSpan(_offset), value);
             _offset += 4;
             DecrementRemainingItemCount();
         }
@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             EnsureWriteCapacity(9);
             WriteInitialByte(new CborInitialByte(CborMajorType.Special, CborAdditionalInfo.Additional64BitData));
-            BinaryPrimitives.WriteDoubleBigEndian(_buffer.AsSpan(1), value);
+            BinaryPrimitives.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
             _offset += 8;
             DecrementRemainingItemCount();
         }

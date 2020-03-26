@@ -41,6 +41,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         ulong u = reader.ReadUInt64();
                         Assert.Equal(expected, u);
                         break;
+                    case float expected:
+                        Assert.Equal(CborReaderState.Single, reader.Peek());
+                        float f = reader.ReadSingle();
+                        Assert.Equal(expected, f);
+                        break;
+                    case double expected:
+                        Assert.Equal(CborReaderState.Double, reader.Peek());
+                        double d = reader.ReadDouble();
+                        Assert.Equal(expected, d);
+                        break;
                     case string expected:
                         Assert.Equal(CborReaderState.TextString, reader.Peek());
                         string s = reader.ReadTextString();
