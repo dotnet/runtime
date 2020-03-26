@@ -19,8 +19,6 @@ namespace System
         {
             Debug.Assert(variable != null);
 
-            variable = TrimStringOnFirstZero(variable);
-
             if (s_environment == null)
             {
                 using (var h = RuntimeMarshal.MarshalString(variable))
@@ -29,19 +27,12 @@ namespace System
                 }
             }
 
-            string value = "";
+            variable = TrimStringOnFirstZero(variable);
             lock (s_environment)
             {
-                if (!s_environment.TryGetValue(variable, out value))
-                {
-                    using (var h = RuntimeMarshal.MarshalString(variable))
-                    {
-                        value = internalGetEnvironmentVariable_native(h.Value);
-                        s_environment[variable] = value;
-                    }
-                }
+                s_environment.TryGetValue(variable, out string value);
+                return value;
             }
-            return value;
         }
 
         private static unsafe void SetEnvironmentVariableCore(string variable, string? value)
