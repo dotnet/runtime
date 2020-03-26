@@ -4429,6 +4429,8 @@ public:
     void fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw);
     void fgMorphBlocks();
 
+    void fgMergeBlockReturn(BasicBlock* block);
+
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
 
     void fgSetOptions();
