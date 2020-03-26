@@ -288,6 +288,17 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> CompareOrdered(Vector256<double> left, Vector256<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m128d _mm_cmp_sd (__m128d a, __m128d b, const int imm8)
+        ///   VCMPSS xmm, xmm, xmm/m32, imm8
+        /// </summary>
+        public static Vector128<double> CompareScalar(Vector128<double> left, Vector128<double> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_cmp_ss (__m128 a, __m128 b, const int imm8)
+        ///   VCMPSD xmm, xmm, xmm/m64, imm8
+        /// </summary>
+        public static Vector128<float> CompareScalar(Vector128<float> left, Vector128<float> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m256 _mm256_cmpunord_ps (__m256 a,  __m256 b)
         ///   CMPPS ymm, ymm/m256, imm8(3)
         /// The above native signature does not exist. We provide this additional overload for completeness.
@@ -299,17 +310,6 @@ namespace System.Runtime.Intrinsics.X86
         /// The above native signature does not exist. We provide this additional overload for completeness.
         /// </summary>
         public static Vector256<double> CompareUnordered(Vector256<double> left, Vector256<double> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// __m128d _mm_cmp_sd (__m128d a, __m128d b, const int imm8)
-        ///   VCMPSS xmm, xmm, xmm/m32, imm8
-        /// </summary>
-        public static Vector128<double> CompareScalar(Vector128<double> left, Vector128<double> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __m128 _mm_cmp_ss (__m128 a, __m128 b, const int imm8)
-        ///   VCMPSD xmm, xmm, xmm/m64, imm8
-        /// </summary>
-        public static Vector128<float> CompareScalar(Vector128<float> left, Vector128<float> right, FloatComparisonMode mode) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_cvtpd_epi32 (__m256d a)
