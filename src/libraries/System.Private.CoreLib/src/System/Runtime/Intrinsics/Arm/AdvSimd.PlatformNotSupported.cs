@@ -3595,6 +3595,76 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<uint> ExtractVector64(Vector64<uint> upper, Vector64<uint> lower, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint8x16_t vextq_s8 (uint8x16_t a, uint8x16_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #n
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #n
+        /// </summary>
+        public static Vector128<byte> ExtractVector128(Vector128<byte> upper, Vector128<byte> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x2_t vextq_f64 (float64x2_t a, float64x2_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*8)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*8)
+        /// </summary>
+        public static Vector128<double> ExtractVector128(Vector128<double> upper, Vector128<double> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vextq_s16 (int16x8_t a, int16x8_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*2)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*2)
+        /// </summary>
+        public static Vector128<short> ExtractVector128(Vector128<short> upper, Vector128<short> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vextq_s32 (int32x4_t a, int32x4_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*4)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*4)
+        /// </summary>
+        public static Vector128<int> ExtractVector128(Vector128<int> upper, Vector128<int> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x2_t vextq_s64 (int64x2_t a, int64x2_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*8)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*8)
+        /// </summary>
+        public static Vector128<long> ExtractVector128(Vector128<long> upper, Vector128<long> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vextq_s8 (int8x16_t a, int8x16_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #n
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #n
+        /// </summary>
+        public static Vector128<sbyte> ExtractVector128(Vector128<sbyte> upper, Vector128<sbyte> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vextq_f32 (float32x4_t a, float32x4_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*4)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*4)
+        /// </summary>
+        public static Vector128<float> ExtractVector128(Vector128<float> upper, Vector128<float> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vextq_s16 (uint16x8_t a, uint16x8_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*2)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*2)
+        /// </summary>
+        public static Vector128<ushort> ExtractVector128(Vector128<ushort> upper, Vector128<ushort> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vextq_s32 (uint32x4_t a, uint32x4_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*4)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*4)
+        /// </summary>
+        public static Vector128<uint> ExtractVector128(Vector128<uint> upper, Vector128<uint> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x2_t vextq_s64 (uint64x2_t a, uint64x2_t b, const int n)
+        ///   A32: VEXT.8 Qd, Qn, Qm, #(n*8)
+        ///   A64: EXT Vd.16B, Vn.16B, Vm.16B, #(n*8)
+        /// </summary>
+        public static Vector128<ulong> ExtractVector128(Vector128<ulong> upper, Vector128<ulong> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float32x2_t vfma_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
         ///   A32: VFMA.F32 Dd, Dn, Dm
         ///   A64: FMLA Vd.2S, Vn.2S, Vm.2S
