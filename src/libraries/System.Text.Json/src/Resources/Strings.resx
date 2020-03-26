@@ -503,4 +503,7 @@
   <data name="ExtensionDataCannotBindToCtorParam" xml:space="preserve">
     <value>The extension data property '{0}' on type '{1}' cannot bind with a parameter in constructor '{2}'.</value>
   </data>
+  <data name="BufferMaximumSizeExceeded" xml:space="preserve">
+    <value>Cannot allocate a buffer of size {0}.</value>
+  </data>
 </root>

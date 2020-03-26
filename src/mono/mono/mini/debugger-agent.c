@@ -4359,6 +4359,9 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 	MonoDomain* old_domain;
 	AgentDomainInfo *info = NULL;
 
+	if (mono_domain_is_unloading (domain))
+		return;
+
 	info = get_agent_domain_info (domain);
 	g_assert (info);
 
@@ -4378,6 +4381,9 @@ send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 {
 	GSList *tmp;
 	MonoDomain* old_domain;
+
+	if (mono_domain_is_unloading (domain))
+		return;
 
 	old_domain = mono_domain_get ();
 
@@ -6864,6 +6870,10 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	MonoType *t;
 	GSList *tmp;
 	MonoDomain *domain = (MonoDomain*)key;
+
+	if (mono_domain_is_unloading (domain))
+		return;
+
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
@@ -6902,6 +6912,9 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 
 	GetTypesForSourceFileArgs *ud = (GetTypesForSourceFileArgs*)user_data;
 	MonoDomain *domain = (MonoDomain*)key;
+
+	if (mono_domain_is_unloading (domain))
+		return;
 
 	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
 

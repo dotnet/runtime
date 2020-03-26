@@ -368,7 +368,7 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
                     </MyNameSpace:Data>
                 </settings>";
             var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
-            var expectedMsg = Resources.FormatError_NamespaceIsNotSupported(Resources.FormatMsg_LineInfo(1, 11));
+            var expectedMsg = SR.Format(SR.Error_NamespaceIsNotSupported, SR.Format(SR.Msg_LineInfo, 1, 11));
 
             var exception = Assert.Throws<FormatException>(() => xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml)));
 
@@ -378,7 +378,7 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         [Fact]
         public void ThrowExceptionWhenPassingNullAsFilePath()
         {
-            var expectedMsg = new ArgumentException(Resources.Error_InvalidFilePath, "path").Message;
+            var expectedMsg = new ArgumentException(SR.Error_InvalidFilePath, "path").Message;
 
             var exception = Assert.Throws<ArgumentException>(() => new ConfigurationBuilder().AddXmlFile(path: null));
 
@@ -388,7 +388,7 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         [Fact]
         public void ThrowExceptionWhenPassingEmptyStringAsFilePath()
         {
-            var expectedMsg = new ArgumentException(Resources.Error_InvalidFilePath, "path").Message;
+            var expectedMsg = new ArgumentException(SR.Error_InvalidFilePath, "path").Message;
 
             var exception = Assert.Throws<ArgumentException>(() => new ConfigurationBuilder().AddXmlFile(string.Empty));
 
@@ -411,8 +411,8 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
                     </Data>
                 </settings>";
             var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
-            var expectedMsg = Resources.FormatError_KeyIsDuplicated("Data:DefaultConnection:ConnectionString",
-                Resources.FormatMsg_LineInfo(8, 52));
+            var expectedMsg = SR.Format(SR.Error_KeyIsDuplicated, "Data:DefaultConnection:ConnectionString",
+                SR.Format(SR.Msg_LineInfo, 8, 52));
 
             var exception = Assert.Throws<FormatException>(() => xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml)));
 

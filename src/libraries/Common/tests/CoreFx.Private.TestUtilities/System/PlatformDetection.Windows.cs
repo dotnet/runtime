@@ -63,6 +63,8 @@ namespace System
         // Per https://docs.microsoft.com/en-us/windows-insider/flight-hub/ the first 20H1 build is 18836.
         public static bool IsWindows10Version2004OrGreater => IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 18836;
+        
+        public static bool IsWindows10Version2004Build19573OrGreater => IsWindows10Version2004OrGreater && GetWindowsBuildNumber() >= 19573;
 
         public static bool IsWindowsIoTCore
         {

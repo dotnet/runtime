@@ -38,7 +38,7 @@ jobs:
       archType: arm
       platform: Linux_arm
       container:
-        image: ubuntu-16.04-cross-14.04-23cacb0-20200121150126
+        image: ubuntu-18.04-cross-arm-16.04-09ec757-20200324125113
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

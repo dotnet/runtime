@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Logging.TraceSource.cs" />
-    <Reference Include="Microsoft.Extensions.Logging"  />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Logging\ref\Microsoft.Extensions.Logging.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj" />
   </ItemGroup>
 </Project>
