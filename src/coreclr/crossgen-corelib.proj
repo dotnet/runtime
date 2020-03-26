@@ -6,7 +6,7 @@
     <ItemGroup>
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
-      <_CoreClrBuildArg Condition="'$(TargetOS)' != '' and '$(TargetOS)' != '$(HostOS)'" Include="-os $(TargetOS) " />
+      <_CoreClrBuildArg Condition="'$(TargetOS)' == 'FreeBSD'" Include="$(BuildArgs) -os FreeBSD" />
     </ItemGroup>
 
     <PropertyGroup>

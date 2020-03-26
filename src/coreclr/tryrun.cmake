@@ -64,7 +64,6 @@ if(TARGET_ARCH_NAME MATCHES "^(armel|arm|arm64|x86)$" OR FREEBSD)
     set_cache_value(UNGETC_NOT_RETURN_EOF_EXITCODE 0)
   endif()
 
-  #
   if (FREEBSD)
     set_cache_value(HAVE_BROKEN_FIFO_KEVENT_EXITCODE 1)
     set_cache_value(HAVE_PROCFS_MAPS 0)

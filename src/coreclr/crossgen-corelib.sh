@@ -94,7 +94,7 @@ __UnprocessedBuildArgs=
 
 source "$__ProjectRoot"/_build-commons.sh
 
-if [[ "${__BuildArch}" != "${__HostArch}" ]] || [[ "$__HostOS" != "$__TargetOS" ]]; then
+if [[ "${__BuildArch}" != "${__HostArch}" ]] || [[ "$__BuildOS" != "$__HostOS" ]]; then
     __CrossBuild=1
 fi
 

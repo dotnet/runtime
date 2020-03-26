@@ -111,9 +111,9 @@ elseif(CLR_CMAKE_HOST_UNIX)
 
     add_dependencies(mscordbi mscordaccore)
 
-    if(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_TARGET_FREEBSD)
+    if(CLR_CMAKE_HOST_LINUX)
         add_dependencies(mscordbi pal_redefines_file)
-    endif(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_TARGET_FREEBSD)
+    endif(CLR_CMAKE_HOST_LINUX)
 
 endif(CLR_CMAKE_HOST_WIN32)
 
