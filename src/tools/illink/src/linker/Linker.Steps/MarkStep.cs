@@ -3392,6 +3392,14 @@ namespace Mono.Linker.Steps {
 					methodReturnValue = null;
 
 					switch (calledMethod.Name) {
+						case "GetTypeInfo" when calledMethod.DeclaringType.Name == "IntrospectionExtensions": {
+								// typeof(Foo).GetTypeInfo()... will be commonly present in code targeting
+								// the dead-end reflection refactoring. The call doesn't do anything and we
+								// don't want to lose the annotation.
+								methodReturnValue = methodParams [0];
+							}
+							break;
+
 						case "GetTypeFromHandle" when calledMethod.DeclaringType.Name == "Type": {
 								// Infrastructure piece to support "typeof(Foo)"
 								var typeHnd = methodParams[0] as RuntimeTypeHandleValue;
