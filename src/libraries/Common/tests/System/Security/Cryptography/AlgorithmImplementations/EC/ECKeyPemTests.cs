@@ -12,7 +12,6 @@ namespace System.Security.Cryptography.Tests
     {
         protected abstract TAlg CreateKey();
         protected abstract ECParameters ExportParameters(TAlg key, bool includePrivateParameters);
-        public static bool SupportsExplicitCurves { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported;
 
         [Fact]
         public void ImportFromPem_NoPem()
@@ -63,56 +62,6 @@ Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
             ECParameters ecParameters = ExportParameters(key, false);
             ECParameters expected = EccTestData.GetNistP256ReferenceKey();
             EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
-        }
-
-        [Fact]
-        public void ImportFromPem_ECPrivateKey_ExplicitParams()
-        {
-            if (!SupportsExplicitCurves)
-            {
-                return;
-            }
-
-            using TAlg key = CreateKey();
-            key.ImportFromPem(@"
------BEGIN EC PRIVATE KEY-----
-MIIBaAIBAQQgcKEsLbFoRe1W/2jPwhpHKz8E19aFG/Y0ny19WzRSs4qggfowgfcC
-AQEwLAYHKoZIzj0BAQIhAP////8AAAABAAAAAAAAAAAAAAAA////////////////
-MFsEIP////8AAAABAAAAAAAAAAAAAAAA///////////////8BCBaxjXYqjqT57Pr
-vVV2mIa8ZR0GsMxTsPY7zjw+J9JgSwMVAMSdNgiG5wSTamZ44ROdJreBn36QBEEE
-axfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpZP40Li/hp/m47n60p8D54W
-K84zV2sxXs7LtkBoN79R9QIhAP////8AAAAA//////////+85vqtpxeehPO5ysL8
-YyVRAgEBoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSum
-HVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
------END EC PRIVATE KEY-----");
-            ECParameters ecParameters = ExportParameters(key, true);
-            ECParameters expected = EccTestData.GetNistP256ReferenceKeyExplicit();
-            EccTestBase.AssertEqual(expected, ecParameters);
-        }
-
-        [Fact]
-        public void ImportFromPem_Pkcs8_ExplicitParams()
-        {
-            if (!SupportsExplicitCurves)
-            {
-                return;
-            }
-
-            using TAlg key = CreateKey();
-            key.ImportFromPem(@"
------BEGIN PRIVATE KEY-----
-MIIBeQIBADCCAQMGByqGSM49AgEwgfcCAQEwLAYHKoZIzj0BAQIhAP////8AAAAB
-AAAAAAAAAAAAAAAA////////////////MFsEIP////8AAAABAAAAAAAAAAAAAAAA
-///////////////8BCBaxjXYqjqT57PrvVV2mIa8ZR0GsMxTsPY7zjw+J9JgSwMV
-AMSdNgiG5wSTamZ44ROdJreBn36QBEEEaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg
-9KE5RdiYwpZP40Li/hp/m47n60p8D54WK84zV2sxXs7LtkBoN79R9QIhAP////8A
-AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBG0wawIBAQQgcKEsLbFoRe1W
-/2jPwhpHKz8E19aFG/Y0ny19WzRSs4qhRANCAASBAezkdGSm6tcM9ppuK9PYhpGj
-Ji0iy6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
------END PRIVATE KEY-----");
-            ECParameters ecParameters = ExportParameters(key, true);
-            ECParameters expected = EccTestData.GetNistP256ReferenceKeyExplicit();
-            EccTestBase.AssertEqual(expected, ecParameters);
         }
 
         [Fact]
