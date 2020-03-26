@@ -2352,7 +2352,7 @@ void Compiler::compSetProcessor()
 #endif
 
     instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
-    opts.setSupportedISAs(jitFlags.GetInstructionSetFlags());
+    opts.setSupportedISAs(instructionSetFlags);
 
 #ifdef TARGET_XARCH
     if (!compIsForInlining())
