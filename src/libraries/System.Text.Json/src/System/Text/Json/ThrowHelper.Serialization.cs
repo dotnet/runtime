@@ -28,6 +28,13 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowNotSupportedException_CannotDeserializeOpenGeneric(Type type)
+        {
+            throw new NotSupportedException(SR.Format(SR.CannotDeserializeOpenGeneric, type));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static NotSupportedException ThrowNotSupportedException_ConstructorMaxOf64Parameters(ConstructorInfo constructorInfo, Type type)
         {
             throw new NotSupportedException(SR.Format(SR.ConstructorMaxOf64Parameters, constructorInfo, type));
@@ -181,7 +188,7 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static NotSupportedException ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(
+        public static void ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(
             PropertyInfo propertyInfo,
             Type classType,
             ConstructorInfo constructorInfo)

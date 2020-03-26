@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -421,6 +421,28 @@ namespace System.Text.Json.Serialization.Tests
 
             string str = JsonSerializer.Deserialize<string>(json);
             Assert.True(json.AsSpan(1, json.Length - 2).SequenceEqual(str.AsSpan()));
+        }
+
+        [Theory]
+        [MemberData(nameof(TypesWithOpenGenerics))]
+        public static void DeserializeOpenGeneric(Type type)
+        {
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("", type));
+            Assert.Contains(type.ToString(), ex.ToString());
+        }
+
+        private class Test<T> { }
+
+        private static IEnumerable<object[]> TypesWithOpenGenerics()
+        {
+            yield return new object[] { typeof(Test<>) };
+            yield return new object[] { typeof(Nullable<>) };
+            yield return new object[] { typeof(List<>) };
+            yield return new object[] { typeof(List<>).MakeGenericType(typeof(Test<>)) };
+            yield return new object[] { typeof(Test<>).MakeGenericType(typeof(List<>)) };
+            yield return new object[] { typeof(Dictionary<,>) };
+            yield return new object[] { typeof(Dictionary<,>).MakeGenericType(typeof(string), typeof(Nullable<>)) };
+            yield return new object[] { typeof(Dictionary<,>).MakeGenericType(typeof(Nullable<>), typeof(string)) };
         }
     }
 }
