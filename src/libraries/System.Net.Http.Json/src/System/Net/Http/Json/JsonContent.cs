@@ -18,7 +18,7 @@ namespace System.Net.Http.Json
         internal const string JsonType = "application";
         internal const string JsonSubtype = "json";
         private static MediaTypeHeaderValue DefaultMediaType
-            => MediaTypeHeaderValue.Parse(string.Format("{0}; charset={1}", JsonMediaType, Encoding.UTF8.WebName));
+            => new MediaTypeHeaderValue(JsonMediaType) { CharSet = "utf-8" };
 
         internal static JsonSerializerOptions DefaultSerializerOptions
             => new JsonSerializerOptions { PropertyNameCaseInsensitive = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
