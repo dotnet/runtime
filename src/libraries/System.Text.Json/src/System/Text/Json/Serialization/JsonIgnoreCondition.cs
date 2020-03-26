@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         WhenNull = 1,
         /// <summary>
-        /// Property will always be serialized and deserialized, regardless of <see cref="JsonSerializerOptions"/> configuration.
+        /// Property will always be serialized and deserialized, regardless of <see cref="JsonSerializerOptions.IgnoreNullValues"/> configuration.
         /// </summary>
         Never = 2
     }

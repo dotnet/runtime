@@ -457,27 +457,19 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(json, jsonSerialized);
         }
 
-        [Fact]
-        public static void JsonIgnoreConditionSetToAlwaysWorks()
+        [Theory]
+        [InlineData(typeof(ClassWithProperty_IgnoreConditionAlways))]
+        [InlineData(typeof(ClassWithProperty_IgnoreConditionAlways_Ctor))]
+        public static void JsonIgnoreConditionSetToAlwaysWorks(Type type)
         {
             string json = @"{""MyString"":""Random"",""MyDateTime"":""2020-03-23"",""MyInt"":4}";
 
-            var obj1 = JsonSerializer.Deserialize<ClassWithProperty_IgnoreConditionAlways>(json);
-            Assert.Equal("Random", obj1.MyString);
-            Assert.Equal(default, obj1.MyDateTime);
-            Assert.Equal(4, obj1.MyInt);
+            object obj = JsonSerializer.Deserialize(json, type);
+            Assert.Equal("Random", (string)type.GetProperty("MyString").GetValue(obj));
+            Assert.Equal(default, (DateTime)type.GetProperty("MyDateTime").GetValue(obj));
+            Assert.Equal(4, (int)type.GetProperty("MyInt").GetValue(obj));
 
-            var obj2 = JsonSerializer.Deserialize<ClassWithProperty_IgnoreConditionAlways_Ctor>(json);
-            Assert.Equal("Random", obj2.MyString);
-            Assert.Equal(default, obj2.MyDateTime);
-            Assert.Equal(4, obj1.MyInt);
-
-            string serialized = JsonSerializer.Serialize(obj1);
-            Assert.Contains(@"""MyString"":""Random""", serialized);
-            Assert.Contains(@"""MyInt"":4", serialized);
-            Assert.DoesNotContain(@"""MyDateTime"":", serialized);
-
-            serialized = JsonSerializer.Serialize(obj2);
+            string serialized = JsonSerializer.Serialize(obj);
             Assert.Contains(@"""MyString"":""Random""", serialized);
             Assert.Contains(@"""MyInt"":4", serialized);
             Assert.DoesNotContain(@"""MyDateTime"":", serialized);
@@ -551,19 +543,22 @@ namespace System.Text.Json.Serialization.Tests
         {
             public int Int1 { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenNull)]
-            public string MyString { get; } = "DefaultString";
+            public string MyString { get; set; } = "DefaultString";
             public int Int2 { get; set; }
 
             public ClassWithClassProperty_IgnoreConditionWhenNull_Ctor(string myString)
             {
-                MyString = myString;
+                if (myString != null)
+                {
+                    MyString = myString;
+                }
             }
         }
 
         private static IEnumerable<object[]> JsonIgnoreConditionWhenNull_ClassProperty_TestData()
         {
             yield return new object[] { typeof(ClassWithClassProperty_IgnoreConditionWhenNull), new JsonSerializerOptions() };
-            //yield return new object[] { typeof(ClassWithClassProperty_IgnoreConditionWhenNull_Ctor), new JsonSerializerOptions { IgnoreNullValues = true } };
+            yield return new object[] { typeof(ClassWithClassProperty_IgnoreConditionWhenNull_Ctor), new JsonSerializerOptions { IgnoreNullValues = true } };
         }
 
         [Theory]
@@ -709,7 +704,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void JsonIgnoreCondition_CaseInsensitivityWorks()
+        public static void JsonIgnoreCondition_LastOneWins()
         {
             string json = @"{""MyString"":""Random"",""MYSTRING"":null}";
 
