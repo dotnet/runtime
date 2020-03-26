@@ -56,5 +56,80 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             StatelessResetToken.ToSpan(writer.GetWritableSpan(StatelessResetToken.Length), token);
         }
+
+        internal static bool TryReadQuicVersion(this QuicReader reader, out QuicVersion version)
+        {
+            if (!reader.TryReadUInt32(out uint ver))
+            {
+                version = default;
+                return false;
+            }
+
+            version = (QuicVersion)ver;
+            return true;
+        }
+
+        internal static void WriteQuicVersion(this QuicWriter writer, QuicVersion version)
+        {
+            writer.WriteUInt32((uint) version);
+        }
+
+        internal static bool TryReadTruncatedPacketNumber(this QuicReader reader, int length, out uint truncatedPn)
+        {
+            bool success;
+
+            switch (length)
+            {
+                case 0:
+                {
+                    success = reader.TryReadUInt8(out byte res);
+                    truncatedPn = res;
+                    break;
+                }
+                case 1:
+                {
+                    success = reader.TryReadUInt16(out ushort res);
+                    truncatedPn = res;
+                    break;
+                }
+                case 2:
+                {
+                    success = reader.TryReadUInt24(out uint res);
+                    truncatedPn = res;
+                    break;
+                }
+                case 3:
+                {
+                    success = reader.TryReadUInt32(out uint res);
+                    truncatedPn = res;
+                    break;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+            return success;
+        }
+
+        internal static void WriteTruncatedPacketNumber(this QuicWriter writer, int length, uint truncatedPn)
+        {
+            switch (length)
+            {
+                case 1:
+                    writer.WriteUInt8((byte) truncatedPn);
+                    break;
+                case 2:
+                    writer.WriteUInt16((ushort) truncatedPn);
+                    break;
+                case 3:
+                    writer.WriteUInt24(truncatedPn);
+                    break;
+                case 4:
+                    writer.WriteUInt32(truncatedPn);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(length));
+            }
+        }
     }
 }

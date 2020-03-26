@@ -8,6 +8,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
     /// </summary>
     internal class CryptoSealAesGcm : CryptoSealAesBase
     {
+        internal const int IntegrityTagLength = 16;
         // AES-128 and AES-256 implementation for actual packet payload protection
         private readonly AesGcm _aesGcm;
 
@@ -19,7 +20,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             _aesGcm = new AesGcm(key);
         }
 
-        internal override int TagLength => 16;
+        internal override int TagLength => IntegrityTagLength;
 
         internal override void Encrypt(ReadOnlySpan<byte> nonce, Span<byte> buffer, Span<byte> tag,
             ReadOnlySpan<byte> aad)

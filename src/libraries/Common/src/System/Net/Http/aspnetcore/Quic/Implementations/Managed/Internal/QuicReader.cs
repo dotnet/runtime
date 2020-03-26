@@ -1,23 +1,36 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
+    /// <summary>
+    ///     Helper class for reading QUIC primitives from a byte array.
+    /// </summary>
     internal class QuicReader
     {
         // Underlying buffer from which data are read.
         private byte[] _buffer;
 
+        // Number of bytes from _buffer to use.
+        private int _maxOffset;
+
         // number of bytes read from the buffer.
         private int _consumed;
 
         internal QuicReader(byte[] buffer)
+            : this (buffer, buffer.Length)
         {
-            _buffer = buffer;
+        }
+
+        internal QuicReader(byte[] buffer, int count)
+        {
+            _buffer = buffer; //to get rid of the warning.
+            Reset(buffer, count);
         }
 
         public int BytesRead => _consumed;
 
-        public int BytesLeft => _buffer.Length - _consumed;
+        public int BytesLeft => _maxOffset - _consumed;
 
         internal bool TryReadUInt8(out byte result)
         {
@@ -95,14 +108,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return result;
         }
 
-        private void Advance(int bytes)
+        internal void Advance(int bytes)
         {
             _consumed += bytes;
         }
 
-        internal void Reset(byte[] buffer)
+        internal void Reset(byte[] buffer, int count)
         {
+            Debug.Assert(count >= buffer.Length);
+
             _buffer = buffer;
+            _maxOffset = count;
             _consumed = 0;
         }
 

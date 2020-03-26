@@ -2,6 +2,9 @@ using System.Buffers.Binary;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
+    /// <summary>
+    ///     Helper class for writing QUIC primitives to a byte buffer.
+    /// </summary>
     internal class QuicWriter
     {
         // underlying buffer to which data are being written.
