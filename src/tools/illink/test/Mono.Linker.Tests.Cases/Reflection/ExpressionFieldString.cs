@@ -45,18 +45,24 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			expr = Expression.Field (null, typeof (ExpressionFieldString), "TestOnlyStatic2");
 		}
 
+		[UnrecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 		[Kept]
 		static void Branch_SystemTypeValueNode_UnknownStringValue ()
 		{
 			var expr = Expression.Field (null, typeof (ExpressionFieldString), UnknownString ());
 		}
 
+		[UnrecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 		[Kept]
 		static void Branch_NullValueNode ()
 		{
 			var expr = Expression.Field (null, UnknownString () == "unknownstring" ? null : typeof (ExpressionFieldString), "TestName1");
 		}
 
+		[UnrecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 		[Kept]
 		static void Branch_MethodParameterValueNode (Type T, string S)
 		{
@@ -64,6 +70,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			expr = Expression.Field (null, typeof (ExpressionFieldString), S);
 		}
 
+		[UnrecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 		[Kept]
 		static void Branch_UnrecognizedPatterns ()
 		{
