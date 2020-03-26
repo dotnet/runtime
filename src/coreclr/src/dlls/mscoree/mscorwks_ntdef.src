@@ -25,3 +25,6 @@ EXPORTS
         coreclr_initialize
         coreclr_shutdown
         coreclr_shutdown_2
+
+        ; Used by profilers
+        MetaDataGetDispenser
