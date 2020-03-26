@@ -8,9 +8,11 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(IsReferenceAssembly)' == 'true' ">
     <ProduceOnlyReferenceAssembly>true</ProduceOnlyReferenceAssembly>
-    <!-- used by Arcade to compute OutputPath, IntermediateOutputPath, etc. early in the import chain. -->
+    <!-- No symbols are produced for ref assemblies, but some parts of the SDK still expect pdbs, so we explicitly tell it there are none. -->
+    <DebugType>none</DebugType>
+    <!-- Used by Arcade to compute OutputPath, IntermediateOutputPath, etc. early in the import chain. -->
     <OutDirName>$(MSBuildProjectName)/ref</OutDirName>
-    <!-- don't try to publish PDBs for ref assemblies that have none. -->
+    <!-- Don't try to publish PDBs for ref assemblies that have none. -->
     <PublishWindowsPdb>false</PublishWindowsPdb>
     <RunApiCompat>false</RunApiCompat>
   </PropertyGroup>
