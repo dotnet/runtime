@@ -86,6 +86,7 @@ jobs:
       - script: |
           wget https://dl.google.com/android/repository/android-ndk-r21-linux-x86_64.zip
           mkdir -p ~/Android/Sdk
+          yum -y install unzip
           unzip android-ndk-r21-linux-x86_64.zip -d ~/Android/Sdk
           mv ~/Android/Sdk/*ndk* ~/Android/Sdk/ndk
         displayName: Install Android NDK
