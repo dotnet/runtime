@@ -84,7 +84,7 @@ cmakeargs=''
 extraargs=''
 build=false
 subsetCategory=''
-checkedSoltuionBuild=false
+checkedSolutionBuild=false
 crossBuild=0
 
 source $scriptroot/native/init-os-and-arch.sh
@@ -174,8 +174,8 @@ while [[ $# > 0 ]]; do
       *)
       ea=$1
 
-      if [[ $checkedSoltuionBuild == false ]]; then
-        checkedSoltuionBuild=true
+      if [[ $checkedSolutionBuild == false ]]; then
+        checkedSolutionBuild=true
 
         if [[ -d "$1" ]]; then
           ea="-projects $1"
