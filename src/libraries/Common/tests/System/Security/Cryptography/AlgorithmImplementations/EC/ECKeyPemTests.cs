@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Tests
     {
         protected abstract TAlg CreateKey();
         protected abstract ECParameters ExportParameters(TAlg key, bool includePrivateParameters);
+        public static bool SupportsExplicitCurves { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported;
 
         [Fact]
         public void ImportFromPem_NoPem()
@@ -67,6 +68,11 @@ Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         [Fact]
         public void ImportFromPem_ECPrivateKey_ExplicitParams()
         {
+            if (!SupportsExplicitCurves)
+            {
+                return;
+            }
+
             using TAlg key = CreateKey();
             key.ImportFromPem(@"
 -----BEGIN EC PRIVATE KEY-----
@@ -87,6 +93,11 @@ HVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         [Fact]
         public void ImportFromPem_Pkcs8_ExplicitParams()
         {
+            if (!SupportsExplicitCurves)
+            {
+                return;
+            }
+
             using TAlg key = CreateKey();
             key.ImportFromPem(@"
 -----BEGIN PRIVATE KEY-----
