@@ -654,9 +654,10 @@ namespace System.Threading.Threads.Tests
             // To avoid that, .NET ignores requests to change the main thread name.
             RemoteExecutor.Invoke(() =>
             {
-                const string threadName = "my-thread";
-                Thread.CurrentThread.Name = threadName;
-                Assert.NotEqual(threadName, Process.GetCurrentProcess().ProcessName);
+                const string ThreadName = "my-thread";
+                Thread.CurrentThread.Name = ThreadName;
+                Assert.Equal(ThreadName, Thread.CurrentThread.Name);
+                Assert.NotEqual(ThreadName, Process.GetCurrentProcess().ProcessName);
             }).Dispose();
         }
 
