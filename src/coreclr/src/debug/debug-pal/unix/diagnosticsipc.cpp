@@ -153,6 +153,9 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
         return nullptr;
     }
 
+    // We don't expect this to block since this is a Unix Domain Socket.  `connect` may block until the 
+    // TCP handshake is complete for TCP/IP sockets, but UDS don't use TCP.  `connect` will return even if
+    // the server hasn't called `accept`.
     if (::connect(clientSocket, (struct sockaddr *)_pServerAddress, sizeof(*_pServerAddress)) < 0)
     {
         if (callback != nullptr)
