@@ -209,7 +209,7 @@ jobs:
       archType: x64
       platform: Android_x64
       container:
-        image: ubuntu-16.04-bfcd90a-20200121150106
+        image: centos-7-359e48e-20200313130914
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -231,7 +231,7 @@ jobs:
       archType: arm
       platform: Android_x64
       container:
-        image: ubuntu-16.04-bfcd90a-20200121150106
+        image: centos-7-359e48e-20200313130914
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -253,7 +253,7 @@ jobs:
       archType: arm64
       platform: Android_x64
       container:
-        image: ubuntu-16.04-bfcd90a-20200121150106
+        image: centos-7-359e48e-20200313130914
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
