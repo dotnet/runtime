@@ -21,7 +21,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
         public void EncryptPacket(Span<byte> buffer, int payloadOffset, int payloadLength, ulong packetNumber)
         {
-            var nonce = new byte[IV.Length];
+            Span<byte> nonce = stackalloc byte[IV.Length];
             MakeNonce(IV, packetNumber, nonce);
 
             // split packet buffer into spans
@@ -33,7 +33,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             _algorithm.Encrypt(nonce, payload, tag, header);
 
             // apply header protection
-            var protectionMask = new byte[5];
+            Span<byte> protectionMask = stackalloc byte[5];
             _algorithm.CreateProtectionMask(payload.Slice(0, _algorithm.SampleLength), protectionMask);
 
             ProtectHeader(header, protectionMask);
@@ -70,7 +70,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             // this works on unprotected header only
             // int pnLength = (buffer[0] & 0x03) + 1;
 
-            var protectionMask = new byte[5];
+            Span<byte> protectionMask = stackalloc byte[5];
             _algorithm.CreateProtectionMask(buffer.Slice(pnOffset + 4, _algorithm.SampleLength), protectionMask);
             // pass header span as if packet number had the maximum 4 bytes
             int pnLength = UnprotectHeader(buffer.Slice(0, pnOffset + 4), protectionMask, pnOffset);
@@ -85,7 +85,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             }
             packetNumber = QuicEncoding.DecodePacketNumber(0, packetNumber, pnLength);
 
-            var nonce = new byte[IV.Length];
+            Span<byte> nonce = stackalloc byte[IV.Length];
             MakeNonce(IV, packetNumber, nonce);
 
             var ciphertext = buffer.Slice(header.Length, payloadLength);
