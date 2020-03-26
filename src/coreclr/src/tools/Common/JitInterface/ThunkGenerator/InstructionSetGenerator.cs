@@ -586,7 +586,10 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
                 {
                     if (instructionSet.Architecture != architecture) continue;
                     if (_64BitArchitectures.Contains(architecture) && _64bitVariants[architecture].Contains(instructionSet.JitName))
+                    {
                         AddImplication(architecture, instructionSet.JitName, $"{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}");
+                        AddImplication(architecture, $"{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}", instructionSet.JitName);
+                    }
                 }
                 foreach (var implication in _implications)
                 {
