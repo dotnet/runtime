@@ -193,7 +193,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
 #if NETCOREAPP
-#if !WINHTTPHANDLER_TEST
+#if !WINHTTPHANDLER_TEST // [ActiveIssue("https://github.com/dotnet/runtime/issues/33930")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
     public sealed class PlatformHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
     {
