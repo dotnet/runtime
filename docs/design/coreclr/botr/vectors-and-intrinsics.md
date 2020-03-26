@@ -171,7 +171,7 @@ Since System.Private.CoreLib.dll is known to be code reviewed with the code revi
 
 # Mechanisms in the JIT to generate correct code to handle varied instruction set support
 
-The JIT receives flags which instruct it on what instruction sets are valid to use at, and the jit interface api s`notifyInstructionSetUsage(isa, bool supportBehaviorRequired)`. 
+The JIT receives flags which instruct it on what instruction sets are valid to use, and has access to a new jit interface api `notifyInstructionSetUsage(isa, bool supportBehaviorRequired)`. 
 
 The notifyInstructionSetUsage api is used to notify the AOT compiler infrastructure that the code may only execute if the runtime environment of the code is exactly the same as the boolean parameter indicates it should be. For instance, if `notifyInstructionSetUsage(Avx, false)` is used, then the code generated must not be used if the `Avx` instruction set is useable. Similarly `notifyInstructionSetUsage(Avx, true)` will indicate that the code may only be used if the `Avx` instruction set is available.
 
