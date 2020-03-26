@@ -28,11 +28,6 @@ namespace System.Text.Json
             _idx = idx;
         }
 
-        /// <summary>
-        ///   Indicates whether or not this instance is immutable.
-        /// </summary>
-        public bool IsImmutable => _idx != -1;
-
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private JsonTokenType TokenType
         {

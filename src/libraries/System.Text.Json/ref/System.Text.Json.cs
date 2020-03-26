@@ -39,7 +39,6 @@ namespace System.Text.Json
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
-        public bool IsImmutable { get { throw null; } }
         public System.Text.Json.JsonElement this[int index] { get { throw null; } }
         public System.Text.Json.JsonValueKind ValueKind { get { throw null; } }
         public System.Text.Json.JsonElement Clone() { throw null; }
