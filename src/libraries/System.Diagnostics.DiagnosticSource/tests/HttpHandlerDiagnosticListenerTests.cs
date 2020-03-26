@@ -161,7 +161,7 @@ namespace System.Diagnostics.Tests
                     // Send a random Http request to generate some events
                     var webRequest = (HttpWebRequest)WebRequest.Create(Configuration.Http.RemoteEchoServer);
 
-                    using var webResponse = webRequest.GetResponse();
+                    webRequest.GetResponse().Dispose();
                 }
 
                 // We should have exactly one Start and one Stop event
@@ -188,12 +188,27 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestBasicReceiveAndResponseWebRequestAsyncResultEvents()
         {
+            using EventWaitHandle CallbackHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
+
+            HttpStatusCode? responseStatusCode = null;
+
             using (var eventRecords = new EventObserverAndRecorder(e =>
             {
-                // Verify header is available when start event is fired.
-                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(e.Value, "Request");
-                Assert.NotNull(startRequest);
-                VerifyHeaders(startRequest);
+                if (e.Key.EndsWith("Stop"))
+                {
+                    // Make sure response instance does not get disposed while we're working on it.
+                    Thread.Sleep(TimeSpan.FromSeconds(5));
+                    HttpWebResponse response = ReadPublicProperty<HttpWebResponse>(e.Value, "Response");
+                    Assert.NotNull(response);
+                    try
+                    {
+                        responseStatusCode = response.StatusCode;
+                    }
+                    catch
+                    {
+                    }
+                    CallbackHandle.Set();
+                }
             }))
             {
                 {
@@ -202,10 +217,13 @@ namespace System.Diagnostics.Tests
 
                     var asyncResult = webRequest.BeginGetResponse(null, null);
 
-                    asyncResult.AsyncWaitHandle.WaitOne();
-
-                    using var webResponse = webRequest.EndGetResponse(asyncResult);
+                    webRequest.EndGetResponse(asyncResult).Dispose();
                 }
+
+                CallbackHandle.WaitOne(TimeSpan.FromSeconds(10)); // Give the callback time to complete.
+
+                Assert.True(responseStatusCode.HasValue);
+                Assert.Equal(HttpStatusCode.OK, responseStatusCode);
 
                 // We should have exactly one Start and one Stop event
                 Assert.Equal(2, eventRecords.Records.Count);
@@ -257,12 +275,10 @@ namespace System.Diagnostics.Tests
                         },
                         state);
 
-                    asyncResult.AsyncWaitHandle.WaitOne();
-
-                    using var webResponse = webRequest.EndGetResponse(asyncResult);
+                    webRequest.EndGetResponse(asyncResult).Dispose();
                 }
 
-                CallbackHandle.WaitOne(TimeSpan.FromSeconds(10)); // Callback can fire on its own thread, give it a chance to execute.
+                CallbackHandle.WaitOne(TimeSpan.FromSeconds(10)); // Callback fires on its own thread, give it a chance to execute.
 
                 Assert.True(callbackCalled);
 
@@ -289,7 +305,7 @@ namespace System.Diagnostics.Tests
                     // Send a random Http request to generate some events
                     var webRequest = (HttpWebRequest)WebRequest.Create(Configuration.Http.RemoteEchoServer);
 
-                    using var webResponse = await webRequest.GetResponseAsync();
+                    (await webRequest.GetResponseAsync()).Dispose();
                 }
 
                 // We should have exactly one Start and one Stop event

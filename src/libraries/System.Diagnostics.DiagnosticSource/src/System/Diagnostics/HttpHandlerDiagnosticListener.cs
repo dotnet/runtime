@@ -646,30 +646,42 @@ namespace System.Diagnostics
             // Retrieve the state we stuffed into m_AsyncState.
             Tuple<HttpWebRequest, object, AsyncCallback, Activity> state = (Tuple<HttpWebRequest, object, AsyncCallback, Activity>)s_asyncStateAccessor(asyncResult);
 
-            // Restore the object in case it was important.
-            s_asyncStateModifier(asyncResult, state.Item2);
+            AsyncCallback asyncCallback = state.Item3;
 
             try
             {
-                // Call the true callback if it was set.
-                state.Item3?.Invoke(asyncResult);
-            }
-            catch
-            {
-            }
+                // Access the result of the request.
+                object result = s_resultAccessor(asyncResult);
 
-            // Access the result of the request.
-            object result = s_resultAccessor(asyncResult);
-
-            try
-            {
                 if (result is Exception ex)
                 {
                     s_instance.RaiseExceptionEvent(state.Item1, ex);
                 }
                 else
                 {
-                    s_instance.RaiseResponseEvent(state.Item1, (HttpWebResponse)result);
+                    HttpWebResponse response = (HttpWebResponse)result;
+
+                    if (asyncCallback == null && s_isContextAwareResultChecker(asyncResult))
+                    {
+                        // For async calls (where asyncResult is ContextAwareResult)...
+                        // If no callback was set assume the user is manually calling BeginGetResponse & EndGetResponse
+                        // in which case they could dispose the HttpWebResponse before our listeners have a chance to work with it.
+                        // Disposed HttpWebResponse throws when accessing properties, so let's make a copy of the data to ensure that doesn't happen.
+
+                        using HttpWebResponse responseCopy = s_httpWebResponseCtor(
+                            new object[]
+                            {
+                                s_uriAccessor(response), s_verbAccessor(response), s_coreResponseDataAccessor(response), s_mediaTypeAccessor(response),
+                                s_usesProxySemanticsAccessor(response), DecompressionMethods.None,
+                                s_isWebSocketResponseAccessor(response), s_connectionGroupNameAccessor(response)
+                            });
+
+                        s_instance.RaiseResponseEvent(state.Item1, responseCopy);
+                    }
+                    else
+                    {
+                        s_instance.RaiseResponseEvent(state.Item1, response);
+                    }
                 }
             }
             catch
@@ -678,15 +690,21 @@ namespace System.Diagnostics
 
             // Activity.Current should be fine here because the AsyncCallback fires through ExecutionContext but it was easy enough to pass in and this will work even if context wasn't flowed, for some reason.
             state.Item4.Stop();
+
+            // Restore the state in case anyone downstream is reliant on it.
+            s_asyncStateModifier(asyncResult, state.Item2);
+
+            // Fire the user's callback, if it was set. No try/catch so calling HttpWebRequest can abort on failure.
+            asyncCallback?.Invoke(asyncResult);
         }
 
         private static void PrepareReflectionObjects()
         {
             // At any point, if the operation failed, it should just throw. The caller should catch all exceptions and swallow.
 
-            // First step: Get all the reflection objects we will ever need.
-            Assembly systemNetHttpAssembly = typeof(ServicePoint).Assembly;
-            s_connectionGroupListField = typeof(ServicePoint).GetField("m_ConnectionGroupList", BindingFlags.Instance | BindingFlags.NonPublic);
+            Type servicePointType = typeof(ServicePoint);
+            Assembly systemNetHttpAssembly = servicePointType.Assembly;
+            s_connectionGroupListField = servicePointType.GetField("m_ConnectionGroupList", BindingFlags.Instance | BindingFlags.NonPublic);
             s_connectionGroupType = systemNetHttpAssembly?.GetType("System.Net.ConnectionGroup");
             s_connectionListField = s_connectionGroupType?.GetField("m_ConnectionList", BindingFlags.Instance | BindingFlags.NonPublic);
             s_connectionType = systemNetHttpAssembly?.GetType("System.Net.Connection");
@@ -694,6 +712,23 @@ namespace System.Diagnostics
 
             s_readAResultAccessor = CreateFieldGetter<object>(typeof(HttpWebRequest), "_ReadAResult", BindingFlags.NonPublic | BindingFlags.Instance);
 
+            // Double checking to make sure we have all the pieces initialized
+            if (s_connectionGroupListField == null ||
+                s_connectionGroupType == null ||
+                s_connectionListField == null ||
+                s_connectionType == null ||
+                s_writeListField == null ||
+                s_readAResultAccessor == null ||
+                !PrepareAsyncResultReflectionObjects(systemNetHttpAssembly) ||
+                !PrepareHttpWebResponseReflectionObjects(systemNetHttpAssembly))
+            {
+                // If anything went wrong here, just return false. There is nothing we can do.
+                throw new InvalidOperationException("Unable to initialize all required reflection objects");
+            }
+        }
+
+        private static bool PrepareAsyncResultReflectionObjects(Assembly systemNetHttpAssembly)
+        {
             Type lazyAsyncResultType = systemNetHttpAssembly?.GetType("System.Net.LazyAsyncResult");
             if (lazyAsyncResultType != null)
             {
@@ -704,22 +739,60 @@ namespace System.Diagnostics
                 s_resultAccessor = CreateFieldGetter<object>(lazyAsyncResultType, "m_Result", BindingFlags.NonPublic | BindingFlags.Instance);
             }
 
-            // Double checking to make sure we have all the pieces initialized
-            if (s_connectionGroupListField == null ||
-                s_connectionGroupType == null ||
-                s_connectionListField == null ||
-                s_connectionType == null ||
-                s_writeListField == null ||
-                s_readAResultAccessor == null ||
-                s_asyncCallbackAccessor == null ||
-                s_asyncCallbackModifier == null ||
-                s_asyncStateAccessor == null ||
-                s_asyncStateModifier == null ||
-                s_resultAccessor == null)
+            Type contextAwareResultType = systemNetHttpAssembly?.GetType("System.Net.ContextAwareResult");
+            if (contextAwareResultType != null)
             {
-                // If anything went wrong here, just return false. There is nothing we can do.
-                throw new InvalidOperationException("Unable to initialize all required reflection objects");
+                s_isContextAwareResultChecker = CreateTypeChecker(contextAwareResultType);
             }
+
+            return s_asyncCallbackAccessor != null
+                && s_asyncCallbackModifier != null
+                && s_asyncStateAccessor != null
+                && s_asyncStateModifier != null
+                && s_resultAccessor != null
+                && s_isContextAwareResultChecker != null;
+        }
+
+        private static bool PrepareHttpWebResponseReflectionObjects(Assembly systemNetHttpAssembly)
+        {
+            Type knownHttpVerbType = systemNetHttpAssembly?.GetType("System.Net.KnownHttpVerb");
+            Type coreResponseData = systemNetHttpAssembly?.GetType("System.Net.CoreResponseData");
+
+            if (knownHttpVerbType != null && coreResponseData != null)
+            {
+                ConstructorInfo ctor = typeof(HttpWebResponse).GetConstructor(
+                    BindingFlags.NonPublic | BindingFlags.Instance,
+                    null,
+                    new Type[]
+                    {
+                        typeof(Uri), knownHttpVerbType, coreResponseData, typeof(string),
+                        typeof(bool), typeof(DecompressionMethods),
+                        typeof(bool), typeof(string)
+                    },
+                    null);
+
+                if (ctor != null)
+                {
+                    s_httpWebResponseCtor = CreateTypeInstance<HttpWebResponse>(ctor);
+                }
+            }
+
+            s_uriAccessor = CreateFieldGetter<HttpWebResponse, Uri>("m_Uri", BindingFlags.NonPublic | BindingFlags.Instance);
+            s_verbAccessor = CreateFieldGetter<HttpWebResponse, object>("m_Verb", BindingFlags.NonPublic | BindingFlags.Instance);
+            s_mediaTypeAccessor = CreateFieldGetter<HttpWebResponse, string>("m_MediaType", BindingFlags.NonPublic | BindingFlags.Instance);
+            s_usesProxySemanticsAccessor = CreateFieldGetter<HttpWebResponse, bool>("m_UsesProxySemantics", BindingFlags.NonPublic | BindingFlags.Instance);
+            s_coreResponseDataAccessor = CreateFieldGetter<HttpWebResponse, object>("m_CoreResponseData", BindingFlags.NonPublic | BindingFlags.Instance);
+            s_isWebSocketResponseAccessor = CreateFieldGetter<HttpWebResponse, bool>("m_IsWebSocketResponse", BindingFlags.NonPublic | BindingFlags.Instance);
+            s_connectionGroupNameAccessor = CreateFieldGetter<HttpWebResponse, string>("m_ConnectionGroupName", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            return s_httpWebResponseCtor != null
+                && s_uriAccessor != null
+                && s_verbAccessor != null
+                && s_mediaTypeAccessor != null
+                && s_usesProxySemanticsAccessor != null
+                && s_coreResponseDataAccessor != null
+                && s_isWebSocketResponseAccessor != null
+                && s_connectionGroupNameAccessor != null;
         }
 
         private static void PerformInjection()
@@ -735,6 +808,23 @@ namespace System.Diagnostics
             ServicePointHashtable newTable = new ServicePointHashtable(originalTable ?? new Hashtable());
 
             servicePointTableField.SetValue(null, newTable);
+        }
+
+        private static Func<TClass, TField> CreateFieldGetter<TClass, TField>(string fieldName, BindingFlags flags) where TClass : class
+        {
+            FieldInfo field = typeof(TClass).GetField(fieldName, flags);
+            if (field != null)
+            {
+                string methodName = field.ReflectedType.FullName + ".get_" + field.Name;
+                DynamicMethod getterMethod = new DynamicMethod(methodName, typeof(TField), new[] { typeof(TClass) }, true);
+                ILGenerator generator = getterMethod.GetILGenerator();
+                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Ldfld, field);
+                generator.Emit(OpCodes.Ret);
+                return (Func<TClass, TField>)getterMethod.CreateDelegate(typeof(Func<TClass, TField>));
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -784,6 +874,60 @@ namespace System.Diagnostics
             return null;
         }
 
+        /// <summary>
+        /// Creates an "is" method for the private or internal type.
+        /// </summary>
+        private static Func<object, bool> CreateTypeChecker(Type classType)
+        {
+            string methodName = classType.FullName + ".typeCheck";
+            DynamicMethod setterMethod = new DynamicMethod(methodName, typeof(bool), new[] { typeof(object) }, true);
+            ILGenerator generator = setterMethod.GetILGenerator();
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Isinst, classType);
+            generator.Emit(OpCodes.Ldnull);
+            generator.Emit(OpCodes.Cgt_Un);
+            generator.Emit(OpCodes.Ret);
+
+            return (Func<object, bool>)setterMethod.CreateDelegate(typeof(Func<object, bool>));
+        }
+
+        /// <summary>
+        /// Creates an instance of T using a private or internal ctor.
+        /// </summary>
+        private static Func<object[], T> CreateTypeInstance<T>(ConstructorInfo constructorInfo)
+        {
+            Type classType = typeof(T);
+            string methodName = classType.FullName + ".ctor";
+            DynamicMethod setterMethod = new DynamicMethod(methodName, classType, new Type[] { typeof(object[]) }, true);
+            ILGenerator generator = setterMethod.GetILGenerator();
+
+            ParameterInfo[] ctorParams = constructorInfo.GetParameters();
+            for (int i = 0; i < ctorParams.Length; i++)
+            {
+                generator.Emit(OpCodes.Ldarg_0);
+                switch (i)
+                {
+                    case 0: generator.Emit(OpCodes.Ldc_I4_0); break;
+                    case 1: generator.Emit(OpCodes.Ldc_I4_1); break;
+                    case 2: generator.Emit(OpCodes.Ldc_I4_2); break;
+                    case 3: generator.Emit(OpCodes.Ldc_I4_3); break;
+                    case 4: generator.Emit(OpCodes.Ldc_I4_4); break;
+                    case 5: generator.Emit(OpCodes.Ldc_I4_5); break;
+                    case 6: generator.Emit(OpCodes.Ldc_I4_6); break;
+                    case 7: generator.Emit(OpCodes.Ldc_I4_7); break;
+                    case 8: generator.Emit(OpCodes.Ldc_I4_8); break;
+                    default: generator.Emit(OpCodes.Ldc_I4, i); break;
+                }
+                generator.Emit(OpCodes.Ldelem_Ref);
+                Type paramType = ctorParams[i].ParameterType;
+                generator.Emit(paramType.IsValueType ? OpCodes.Unbox_Any : OpCodes.Castclass, paramType);
+            }
+            generator.Emit(OpCodes.Newobj, constructorInfo);
+            generator.Emit(OpCodes.Ret);
+
+            return (Func<object[], T>)setterMethod.CreateDelegate(typeof(Func<object[], T>));
+        }
+
         #endregion
 
         internal static readonly HttpHandlerDiagnosticListener s_instance = new HttpHandlerDiagnosticListener();
@@ -812,11 +956,24 @@ namespace System.Diagnostics
         private static Type s_connectionType;
         private static FieldInfo s_writeListField;
         private static Func<object, object> s_readAResultAccessor;
+
+        // LazyAsyncResult & ContextAwareResult
         private static Func<object, AsyncCallback> s_asyncCallbackAccessor;
         private static Action<object, AsyncCallback> s_asyncCallbackModifier;
         private static Func<object, object> s_asyncStateAccessor;
         private static Action<object, object> s_asyncStateModifier;
         private static Func<object, object> s_resultAccessor;
+        private static Func<object, bool> s_isContextAwareResultChecker;
+
+        // HttpWebResponse
+        private static Func<object[], HttpWebResponse> s_httpWebResponseCtor;
+        private static Func<HttpWebResponse, Uri> s_uriAccessor;
+        private static Func<HttpWebResponse, object> s_verbAccessor;
+        private static Func<HttpWebResponse, string> s_mediaTypeAccessor;
+        private static Func<HttpWebResponse, bool> s_usesProxySemanticsAccessor;
+        private static Func<HttpWebResponse, object> s_coreResponseDataAccessor;
+        private static Func<HttpWebResponse, bool> s_isWebSocketResponseAccessor;
+        private static Func<HttpWebResponse, string> s_connectionGroupNameAccessor;
 
         #endregion
     }
