@@ -118,7 +118,6 @@
     <XUnitVersion>2.4.1</XUnitVersion>
     <TraceEventVersion>2.0.5</TraceEventVersion>
     <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
-    <XUnitXmlTestLoggerVersion>2.1.26</XUnitXmlTestLoggerVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>3.1.0-preview-20200129.1</MicrosoftPrivateIntellisenseVersion>

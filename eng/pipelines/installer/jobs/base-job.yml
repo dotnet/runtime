@@ -123,7 +123,6 @@ jobs:
       value: >-
         $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
         -configuration $(_BuildConfig)
-        /p:StripSymbols=true
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
@@ -192,7 +191,6 @@ jobs:
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OutputRidArg)
-        /p:StripSymbols=true
 
     - name: PublishArguments
       value: >-

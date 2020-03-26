@@ -298,7 +298,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 54
+#define MINOR_VERSION 55
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -3921,7 +3921,10 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 				return;
 		}
 	}
-
+	
+	if (event == EVENT_KIND_VM_START) 
+		suspend_policy = agent_config.suspend ? SUSPEND_POLICY_ALL : SUSPEND_POLICY_NONE;	
+	
 	nevents = g_slist_length (events);
 	buffer_init (&buf, 128);
 	buffer_add_byte (&buf, suspend_policy);
@@ -4032,7 +4035,6 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	}
 
 	if (event == EVENT_KIND_VM_START) {
-		suspend_policy = agent_config.suspend ? SUSPEND_POLICY_ALL : SUSPEND_POLICY_NONE;
 		if (!agent_config.defer) {
 			ERROR_DECL (error);
 			start_debugger_thread (error);
@@ -4359,6 +4361,9 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 	MonoDomain* old_domain;
 	AgentDomainInfo *info = NULL;
 
+	if (mono_domain_is_unloading (domain))
+		return;
+
 	info = get_agent_domain_info (domain);
 	g_assert (info);
 
@@ -4378,6 +4383,9 @@ send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 {
 	GSList *tmp;
 	MonoDomain* old_domain;
+
+	if (mono_domain_is_unloading (domain))
+		return;
 
 	old_domain = mono_domain_get ();
 
@@ -6864,6 +6872,10 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 	MonoType *t;
 	GSList *tmp;
 	MonoDomain *domain = (MonoDomain*)key;
+
+	if (mono_domain_is_unloading (domain))
+		return;
+
 	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
 	GetTypesArgs *ud = (GetTypesArgs*)user_data;
 
@@ -6902,6 +6914,9 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 
 	GetTypesForSourceFileArgs *ud = (GetTypesForSourceFileArgs*)user_data;
 	MonoDomain *domain = (MonoDomain*)key;
+
+	if (mono_domain_is_unloading (domain))
+		return;
 
 	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
 

@@ -33,6 +33,6 @@ G_EXTERN_C void mini_llvm_init_method          (MonoAotFileInfo *info, gpointer 
 
 G_EXTERN_C void mini_llvmonly_throw_nullref_exception (void);
 
-G_EXTERN_C void mini_llvmonly_throw_missing_method_exception (void);
+G_EXTERN_C void mini_llvmonly_throw_aot_failed_exception (const char *name);
 
 #endif

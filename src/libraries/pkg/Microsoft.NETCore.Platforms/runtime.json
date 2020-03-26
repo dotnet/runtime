@@ -832,6 +832,12 @@
         "unix"
       ]
     },
+    "ios-arm": {
+      "#import": [
+        "ios",
+        "unix-arm"
+      ]
+    },
     "ios-arm64": {
       "#import": [
         "ios",
@@ -844,21 +850,44 @@
         "unix-x64"
       ]
     },
+    "ios.10": {
+      "#import": [
+        "ios.9"
+      ]
+    },
+    "ios.10-arm": {
+      "#import": [
+        "ios.10",
+        "ios.9-arm"
+      ]
+    },
+    "ios.10-arm64": {
+      "#import": [
+        "ios.10",
+        "ios.9-arm64"
+      ]
+    },
+    "ios.10-x64": {
+      "#import": [
+        "ios.10",
+        "ios.9-x64"
+      ]
+    },
     "ios.11": {
       "#import": [
-        "ios"
+        "ios.10"
       ]
     },
     "ios.11-arm64": {
       "#import": [
         "ios.11",
-        "ios-arm64"
+        "ios.10-arm64"
       ]
     },
     "ios.11-x64": {
       "#import": [
         "ios.11",
-        "ios-x64"
+        "ios.10-x64"
       ]
     },
     "ios.12": {
@@ -893,6 +922,52 @@
       "#import": [
         "ios.13",
         "ios.12-x64"
+      ]
+    },
+    "ios.8": {
+      "#import": [
+        "ios"
+      ]
+    },
+    "ios.8-arm": {
+      "#import": [
+        "ios.8",
+        "ios-arm"
+      ]
+    },
+    "ios.8-arm64": {
+      "#import": [
+        "ios.8",
+        "ios-arm64"
+      ]
+    },
+    "ios.8-x64": {
+      "#import": [
+        "ios.8",
+        "ios-x64"
+      ]
+    },
+    "ios.9": {
+      "#import": [
+        "ios.8"
+      ]
+    },
+    "ios.9-arm": {
+      "#import": [
+        "ios.9",
+        "ios.8-arm"
+      ]
+    },
+    "ios.9-arm64": {
+      "#import": [
+        "ios.9",
+        "ios.8-arm64"
+      ]
+    },
+    "ios.9-x64": {
+      "#import": [
+        "ios.9",
+        "ios.8-x64"
       ]
     },
     "linux": {

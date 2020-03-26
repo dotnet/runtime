@@ -4,6 +4,7 @@
 
 using System.Runtime.CompilerServices;
 
+#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
 using nuint = System.UInt64;
 #else
@@ -12,25 +13,26 @@ using nuint = System.UInt32;
 
 namespace System
 {
-	partial class Buffer
-	{
-		internal static unsafe void Memcpy (byte* dest, byte* src, int len) => Memmove (dest, src, (nuint) len);
+    public partial class Buffer
+    {
+        internal static unsafe void Memcpy(byte* dest, byte* src, int len) => Memmove(dest, src, (nuint)len);
 
-		[MethodImpl (MethodImplOptions.InternalCall)]
-		static extern unsafe void __Memmove (byte* dest, byte* src, nuint len);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
 
-		[MethodImpl (MethodImplOptions.InternalCall)]
-		static extern void BulkMoveWithWriteBarrier (ref byte dmem, ref byte smem, nuint size);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void BulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
 
-		[MethodImpl(MethodImplOptions.NoInlining)]
-		internal static unsafe void _ZeroMemory(ref byte b, nuint byteLength)
-		{
-			fixed (byte* bytePointer = &b) {
-				__ZeroMemory (bytePointer, byteLength);
-			}
-		}
-		
-		[MethodImpl (MethodImplOptions.InternalCall)]
-		static extern unsafe void __ZeroMemory (void* p, nuint byteLength);
-	}
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static unsafe void _ZeroMemory(ref byte b, nuint byteLength)
+        {
+            fixed (byte* bytePointer = &b)
+            {
+                __ZeroMemory(bytePointer, byteLength);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe void __ZeroMemory(void* p, nuint byteLength);
+    }
 }

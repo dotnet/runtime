@@ -207,23 +207,6 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="System\Text\Json\Node\DuplicatePropertyNameHandlingStrategy.cs" />
-    <Compile Include="System\Text\Json\Node\JsonArray.cs" />
-    <Compile Include="System\Text\Json\Node\JsonArrayEnumerator.cs" />
-    <Compile Include="System\Text\Json\Node\JsonBoolean.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.RecursionStackFrame.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.Traversal.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.TraversalHelpers.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNodeOptions.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNull.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNumber.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObject.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObjectEnumerator.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObjectProperty.cs" />
-    <Compile Include="System\Text\Json\Node\JsonString.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true'">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->

@@ -187,7 +187,6 @@ usage()
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-skipgenerateversion: disable version generation even if MSBuild is supported."
-    echo "-stripsymbols: skip native image generation."
     echo "-verbose: optional argument to enable verbose build output."
     echo ""
     echo "Additional Options:"
@@ -334,9 +333,6 @@ while :; do
 
         skipgenerateversion|-skipgenerateversion)
             __SkipGenerateVersion=1
-            ;;
-
-        stripsymbols|-stripsymbols)
             ;;
 
         verbose|-verbose)

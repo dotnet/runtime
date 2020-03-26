@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Configuration.Json
             {
                 if (doc.RootElement.ValueKind != JsonValueKind.Object)
                 {
-                    throw new FormatException(Resources.FormatError_UnsupportedJSONToken(doc.RootElement.ValueKind));
+                    throw new FormatException(SR.Format(SR.Error_UnsupportedJSONToken, doc.RootElement.ValueKind));
                 }
                 VisitElement(doc.RootElement);
             }
@@ -78,13 +78,13 @@ namespace Microsoft.Extensions.Configuration.Json
                     var key = _currentPath;
                     if (_data.ContainsKey(key))
                     {
-                        throw new FormatException(Resources.FormatError_KeyIsDuplicated(key));
+                        throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key));
                     }
                     _data[key] = value.ToString();
                     break;
 
                 default:
-                    throw new FormatException(Resources.FormatError_UnsupportedJSONToken(value.ValueKind));
+                    throw new FormatException(SR.Format(SR.Error_UnsupportedJSONToken, value.ValueKind));
             }
         }
 

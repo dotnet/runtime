@@ -1316,7 +1316,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 		return TRUE;
 
 	// Stack start limit is stack lower bound. Make sure there is enough room left.
-	void *limit = ((uint8_t *)thread->stack_start_limit) + MONO_MIN_EXECUTION_STACK_SIZE;
+	void *limit = ((uint8_t *)thread->stack_start_limit) + ALIGN_TO (MONO_STACK_OVERFLOW_GUARD_SIZE + MONO_MIN_EXECUTION_STACK_SIZE, ((gssize)mono_pagesize ()));
 
 	if (current < limit)
 		return FALSE;

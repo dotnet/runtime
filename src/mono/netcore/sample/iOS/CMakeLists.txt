@@ -37,6 +37,7 @@ set_target_properties(HelloiOS PROPERTIES
 target_link_libraries(
     HelloiOS
     "-framework Foundation"
+    "-framework Security"
     "-framework UIKit"
     "-framework GSS"
     "-lz"
@@ -44,6 +45,7 @@ target_link_libraries(
     "-force_load ../../../../../artifacts/bin/mono/iOS.${MONO_ARCH}.${MONO_CONFIG}/libmono.a"
     "-force_load ../../../../../artifacts/bin/native/netcoreapp5.0-iOS-${MONO_CONFIG}-${MONO_ARCH}/libSystem.IO.Compression.Native.a"
     "-force_load ../../../../../artifacts/bin/native/netcoreapp5.0-iOS-${MONO_CONFIG}-${MONO_ARCH}/libSystem.Native.a"
+    "-force_load ../../../../../artifacts/bin/native/netcoreapp5.0-iOS-${MONO_CONFIG}-${MONO_ARCH}/libSystem.Net.Security.Native.a"
     "-force_load ../../../../../artifacts/bin/native/netcoreapp5.0-iOS-${MONO_CONFIG}-${MONO_ARCH}/libSystem.Security.Cryptography.Native.Apple.a"
     ${DLLS_AOT}
 )
