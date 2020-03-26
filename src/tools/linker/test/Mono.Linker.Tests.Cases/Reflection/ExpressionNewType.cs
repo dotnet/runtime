@@ -55,18 +55,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			var expr = Expression.New (typeof (T1));
 		}
 
+		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type [] { typeof (Type) })]
 		[Kept]
 		static void Branch_NullValueNode ()
 		{
 			var expr = Expression.New (Helper1 () + Helper2 () == 12 ? null : typeof (T1));
 		}
 
+		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type [] { typeof (Type) })]
 		[Kept]
 		static void Branch_MethodParameterValueNode (Type T)
 		{
 			var expr = Expression.New (T);
 		}
 
+		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New) , new Type [] { typeof (Type) })]
 		[Kept]
 		static void Branch_UnrecognizedPatterns ()
 		{

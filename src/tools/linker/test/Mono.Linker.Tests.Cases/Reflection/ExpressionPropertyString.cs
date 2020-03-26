@@ -55,18 +55,24 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				expr = Expression.Property (null, typeof (Foo), "TestOnlyStatic2");
 			}
 
+			[UnrecognizedReflectionAccessPattern (
+				typeof (Expression), nameof (Expression.Property), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 			[Kept]
 			public void Branch_SystemTypeValueNode_UnknownStringValue ()
 			{
 				var expr = Expression.Property (null, typeof (Foo), UnknownString ());
 			}
 
+			[UnrecognizedReflectionAccessPattern (
+				typeof (Expression), nameof (Expression.Property), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 			[Kept]
 			public void Branch_NullValueNode ()
 			{
 				var expr = Expression.Property (null, UnknownString () == "unknownstring" ? null : typeof (Foo), "TestName1");
 			}
 
+			[UnrecognizedReflectionAccessPattern (
+				typeof (Expression), nameof (Expression.Property), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 			[Kept]
 			public void Branch_MethodParameterValueNode (Type T, string S)
 			{
@@ -74,6 +80,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				expr = Expression.Property (null, typeof (Foo), S);
 			}
 
+			[UnrecognizedReflectionAccessPattern (
+				typeof (Expression), nameof (Expression.Property), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 			[Kept]
 			public void Branch_UnrecognizedPatterns ()
 			{
