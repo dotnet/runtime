@@ -2152,6 +2152,15 @@ namespace Mono.Linker.Steps {
 		{
 			TypeDefinition returnTypeDefinition = method.ReturnType.Resolve ();
 
+			if (!string.IsNullOrEmpty(_context.PInvokesListFile) && method.IsPInvokeImpl) {
+				_context.PInvokes.Add (new PInvokeInfo {
+					AssemblyName = method.DeclaringType.Module.Name,
+					EntryPoint = method.PInvokeInfo.EntryPoint,
+					FullName = method.FullName,
+					ModuleName = method.PInvokeInfo.Module.Name
+				});
+			}
+
 			const bool includeStaticFields = false;
 			if (returnTypeDefinition != null && !returnTypeDefinition.IsImport) {
 				MarkDefaultConstructor (returnTypeDefinition);

@@ -120,6 +120,10 @@ namespace Mono.Linker {
 
 		public List<string> Substitutions { get; private set; }
 
+		public List<PInvokeInfo> PInvokes { get; private set; }
+
+		public string PInvokesListFile;
+
 		public System.Collections.IDictionary Actions {
 			get { return _actions; }
 		}
@@ -195,6 +199,7 @@ namespace Mono.Linker {
 			ReflectionPatternRecorder = new LoggingReflectionPatternRecorder (this);
 			MarkedKnownMembers = new KnownMembers ();
 			StripResources = true;
+			PInvokes = new List<PInvokeInfo> ();
 
 			// See https://github.com/mono/linker/issues/612
 			const CodeOptimizations defaultOptimizations =
@@ -490,7 +495,7 @@ namespace Mono.Linker {
 			}
 
 			if (!perAssembly.ContainsKey (assemblyContext)) {
-				perAssembly.Add (assemblyContext, ~optimizations);
+				perAssembly.Add (assemblyContext, 0);
 				return;
 			}
 
@@ -530,5 +535,10 @@ namespace Mono.Linker {
 		/// Option to do interprocedural constant propagation on return values
 		/// </summary>
 		IPConstantPropagation = 1 << 5,
+
+		/// <summary>
+		/// Devirtualizes methods and seals types
+		/// </summary>
+		Sealer = 1 << 6
 	}
 }
