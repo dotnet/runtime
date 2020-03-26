@@ -1,0 +1,8 @@
+<Project>
+
+  <!-- This file is an Arcade extension point that specifies additional tools to restore. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatVersion)" />
+  </ItemGroup>
+
+</Project>

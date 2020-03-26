@@ -1,0 +1,9 @@
+﻿<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.CanPreserveMarkedChildrenOfUnrequiredType" required="false">
+      <field name="Field1" />
+      <method name="Method1" />
+      <property name="Property1" />
+    </type>
+  </assembly>
+</linker>

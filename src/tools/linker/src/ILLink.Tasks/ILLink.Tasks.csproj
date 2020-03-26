@@ -1,25 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Keep these in sync with _ILLinkTasksTFM in Sdk.props. -->
     <TargetFrameworks>netcoreapp3.0;net472</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <IsPackable>true</IsPackable>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>MSBuild tasks for running the IL Linker</Description>
-    <!-- Don't include the build output. Instead, we want to include
-         the TargetFramework-specific publish output. -->
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <!-- Suppress NuGet warning for package which sets IncludeBuildOutput=false, see https://github.com/NuGet/Home/issues/8583 -->
-    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>true</IsPackable>
     <!-- We want to package the tasks package together with its
          transitive dependencies and the linker, without marking them
-         as dependencies in the tasks package.
-
-         Pack doesn't support including project references
-         (https://github.com/NuGet/Home/issues/3891), so we work
-         around this by explicitly including the publish output in the
-         package. -->
-    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_LayoutPackage</TargetsForTfmSpecificContentInPackage>
-    <LangVersion>latest</LangVersion>
+         as dependencies in the tasks package. -->
+    <IncludePublishOutput>true</IncludePublishOutput>
+    <!-- Include deps.json and runtimeconfig.json since we run illink.dll as a separate process. -->
+    <IncludeJsonFilesInPackage>true</IncludeJsonFilesInPackage>
+    <BuildOutputTargetFolder>tools</BuildOutputTargetFolder>
+    <!-- Recommended by arcade for tools projects. generates an assembly version that includes patch number derived from date and build revision -->
+    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
+    <!-- Place linker and cecil alongside ILLink.Tasks in the output, for integration tests. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,42 +40,13 @@
     </Content>
   </ItemGroup>
 
-  <Target Name="_LayoutPackage">
-
-    <PropertyGroup>
-      <PublishDir>$(BaseOutputPath)$(TargetFramework)</PublishDir>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <ProjectsToPublish Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>TargetFramework=$(TargetFramework);PublishDir=$(PublishDir)</AdditionalProperties>
-      </ProjectsToPublish>
-    </ItemGroup>
-
-    <!-- Clean the publish directory in case there are any left-over
-         artifacts (publish does not work incrementally). -->
-    <ItemGroup>
-      <_FilesToDelete Remove="@(_FilesToDelete)" />
-      <_FilesToDelete Include="$(PublishDir)/*.dll" />
-      <_FilesToDelete Include="$(PublishDir)/*.json" />
-    </ItemGroup>
-    <Delete Files="@(_FilesToDelete)" />
-
-    <MSBuild Projects="@(ProjectsToPublish)" Targets="Publish" />
-    <ItemGroup>
-      <TfmSpecificPackageFile Include="$(PublishDir)/*.dll" PackagePath="tools\$(TargetFramework)" />
-      <TfmSpecificPackageFile Include="$(PublishDir)/*.json" PackagePath="tools\$(TargetFramework)" />
-    </ItemGroup>
-
-  </Target>
-
   <ItemGroup>
     <ProjectReference Include="../linker/Mono.Linker.csproj" PrivateAssets="All" />
-    <ProjectReference Include="../../external/cecil/Mono.Cecil.csproj" PrivateAssets="All" />
+    <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" PrivateAssets="All" />
+    <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="../../external/cecil/Mono.Cecil.csproj" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
-
     <!-- We use private assets for the Microsoft.Build packages to
          prevent them from being published with the tasks dll, because
          these are already a part of the SDK. -->

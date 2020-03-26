@@ -301,7 +301,7 @@ namespace Mono.Linker.Steps
 				if (!RemoveConditions ())
 					return false;
 
-				var reachableInstrs = GetReachableInstructionsMap (out var unreachableEH);
+				BitArray reachableInstrs = GetReachableInstructionsMap (out var unreachableEH);
 				if (reachableInstrs == null)
 					return false;
 
@@ -313,8 +313,28 @@ namespace Mono.Linker.Steps
 
 				bodySweeper.Process (conditionInstrsToRemove);
 				InstructionsReplaced = bodySweeper.InstructionsReplaced;
+				if (InstructionsReplaced == 0)
+					return false;
 
-				return InstructionsReplaced > 0;
+				reachableInstrs = GetReachableInstructionsMap (out _);
+				if (reachableInstrs != null)
+					RemoveUnreachableInstructions (reachableInstrs);
+
+				return true;
+			}
+
+			void RemoveUnreachableInstructions (BitArray reachable)
+			{
+				ILProcessor processor = Body.GetILProcessor ();
+
+				int removed = 0;
+				for (int i = 0; i < reachable.Count; ++i) {
+					if (reachable [i])
+						continue;
+
+					processor.RemoveAt (i - removed);
+					++removed;
+				}
 			}
 
 			bool RemoveConditions ()
@@ -741,7 +761,6 @@ namespace Mono.Linker.Steps
 			readonly List<ExceptionHandler> unreachableExceptionHandlers;
 			readonly LinkContext context;
 			ILProcessor ilprocessor;
-			List<int> returnInits;
 
 			public BodySweeper (MethodBody body, BitArray reachable, List<ExceptionHandler> unreachableEH, LinkContext context)
 			{
@@ -752,7 +771,6 @@ namespace Mono.Linker.Steps
 
 				InstructionsReplaced = 0;
 				ilprocessor = null;
-				returnInits = null;
 			}
 
 			public int InstructionsReplaced { get; set; }
@@ -786,22 +804,8 @@ namespace Mono.Linker.Steps
 				}
 
 				//
-				// Makes the unreachable code at the end of method valid/verifiable
-				//
-				if (body.Method.ReturnType.MetadataType != MetadataType.Void && instrs.Count > 1) {
-					var retExprIndex = instrs.Count - 2;
-
-					if (!reachable [retExprIndex]) {
-						if (returnInits == null)
-							returnInits = new List<int> ();
-
-						returnInits.Add (retExprIndex);
-					}
-				}
-
-				//
-				// Reusing same reachable map to force skipping processing for instructions
-				// which will remain same
+				// Reusing same reachable map and altering it at indexes which
+				// which will remain same during replacement processing
 				//
 				for (int i = 0; i < instrs.Count; ++i) {
 					if (reachable [i])
@@ -828,11 +832,10 @@ namespace Mono.Linker.Steps
 			public void Process (List<int> conditionInstrsToRemove)
 			{
 				List<VariableDefinition> removedVariablesReferences = null;
-				Dictionary<Instruction, Instruction []> injectingInstructions = null;
 
 				//
 				// Initial pass which replaces unreachable instructions with nops or
-				// ret/leave to keep the body verifiable
+				// ret to keep the body verifiable
 				//
 				var instrs = body.Instructions;
 				for (int i = 0; i < instrs.Count; ++i) {
@@ -842,19 +845,7 @@ namespace Mono.Linker.Steps
 					var instr = instrs [i];
 
 					Instruction newInstr;
-					if (returnInits?.Contains (i) == true) {
-						newInstr = GetReturnInitialization (out var initInstructions);
-
-						//
-						// Any new instruction injection needs to be postponed until reachableMap
-						// is fully processed to simplify the logic and avoid any re-indexing 
-						//
-						if (initInstructions != null) {
-							if (injectingInstructions == null)
-								injectingInstructions = new Dictionary<Instruction, Instruction []> ();
-							injectingInstructions.Add (newInstr, initInstructions);
-						}
-					} else if (i == instrs.Count - 1) {
+					if (i == instrs.Count - 1) {
 						newInstr = Instruction.Create (OpCodes.Ret);
 					} else {
 						newInstr = Instruction.Create (OpCodes.Nop);
@@ -917,77 +908,12 @@ namespace Mono.Linker.Steps
 				}
 
 				//
-				// To this point the original and modified bodies had exactly same number of
-				// instructions
-				//
-				if (injectingInstructions != null) {
-					foreach (var key in injectingInstructions) {
-						int index = instrs.IndexOf (key.Key);
-						Debug.Assert (index >= 0);
-
-						var newInstrs = key.Value;
-						index--;
-
-						// TODO: Simplify when Cecil has better API
-						if (IsNopRange (instrs, index, newInstrs.Length)) {
-							int counter = 0;
-							for (int i = index - newInstrs.Length + 1; i <= index; i++) {
-								ilprocessor.Replace (i, newInstrs [counter++]);
-							}
-						} else {
-							// FIXME: This could break short range jumps. We could fix
-							// that during final il optimization step once we have it
-							for (int i = newInstrs.Length; i != 0; i--) {
-								ilprocessor.InsertAfter (index, newInstrs [i - 1]);
-							}
-						}
-					}
-				}
-
-				//
 				// Replacing instructions with nops can make local variables unused. Process them
 				// as the last step to reduce more type dependencies
 				//
 				if (removedVariablesReferences != null) {
 					CleanRemovedVariables (removedVariablesReferences);
 				}
-			}
-
-			Instruction GetReturnInitialization (out Instruction[] initInstructions)
-			{
-				var rtype = body.Method.ReturnType;
-
-				var cinstr = CodeRewriterStep.CreateConstantResultInstruction (rtype);
-				if (cinstr != null) {
-					initInstructions = null;
-					return cinstr;
-				}
-
-				var td = rtype.Resolve ();
-				switch (td.MetadataType) {
-				case MetadataType.MVar:
-				case MetadataType.ValueType:
-					var vd = new VariableDefinition (rtype);
-					body.Variables.Add (vd);
-					body.InitLocals = true;
-
-					initInstructions = new [] {
-						Instruction.Create (OpCodes.Ldloca_S, vd),
-						Instruction.Create (OpCodes.Initobj, rtype)
-					};
-
-					return CreateVariableLoadingInstruction (vd);
-				case MetadataType.Pointer:
-				case MetadataType.IntPtr:
-				case MetadataType.UIntPtr:
-					initInstructions = new [] {
-						Instruction.Create (OpCodes.Ldc_I4_0)
-					};
-
-					return Instruction.Create (OpCodes.Conv_I);
-				}
-
-				throw new NotImplementedException ($"Initialization of return value kind '{td.MetadataType}' in method '{body.Method.FullName}'");
 			}
 
 			void CleanRemovedVariables (List<VariableDefinition> variables)
@@ -1012,7 +938,7 @@ namespace Mono.Linker.Steps
 
 					//
 					// Remove variable only if it's the last one. Instead of
-					// re-indexing all variables we mark change it to object,
+					// re-indexing all variables change it to System.Object,
 					// which is enough to drop the dependency
 					//
 					if (index == body_variables.Count - 1) {
@@ -1031,19 +957,6 @@ namespace Mono.Linker.Steps
 
 				foreach (var eh in unreachableExceptionHandlers)
 					body.ExceptionHandlers.Remove (eh);
-			}
-
-			static Instruction CreateVariableLoadingInstruction (VariableDefinition variable)
-			{
-				return variable.Index switch {
-					0 => Instruction.Create (OpCodes.Ldloc_0),
-					1 => Instruction.Create (OpCodes.Ldloc_1),
-					2 => Instruction.Create (OpCodes.Ldloc_2),
-					3 => Instruction.Create (OpCodes.Ldloc_3),
-					_ => variable.Index < 256 ?
-						Instruction.Create(OpCodes.Ldloc_S, variable) :
-						Instruction.Create(OpCodes.Ldloc, variable),
-				};
 			}
 
 			VariableDefinition GetVariableReference (Instruction instruction)
@@ -1067,19 +980,6 @@ namespace Mono.Linker.Steps
 					return vr.Resolve ();
 
 				return null;
-			}
-
-			static bool IsNopRange (Collection<Instruction> collection, int startIndex, int count)
-			{
-				if (startIndex - count < 0)
-					return false;
-
-				while (count-- > 0) {
-					if (collection [startIndex--].OpCode != OpCodes.Nop)
-						return false;
-				}
-
-				return true;
 			}
 
 			static bool IsSideEffectFreeLoad (Instruction instr)

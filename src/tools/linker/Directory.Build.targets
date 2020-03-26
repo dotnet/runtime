@@ -1,8 +1,65 @@
 <Project>
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(MonoBuild)' == ''" />
 
+  <Import Project="$(_ToolsProjectTargets)" Condition="Exists('$(_ToolsProjectTargets)')" />
+
   <Target Name="VSTestIfTestProject">
     <CallTarget Targets="VSTest" Condition="'$(IsTestProject)' == 'true'" />
+  </Target>
+
+  <!-- set up ApiCompat with ref assemblies -->
+  <PropertyGroup Condition=" '$(RunApiCompat)' == 'true' ">
+    <ContractProject Condition="'$(ContractProject)' == ''">$(MSBuildProjectDirectory)\ref\$(MSBuildProjectName).csproj</ContractProject>
+    <HasMatchingContract Condition="Exists('$(ContractProject)')">true</HasMatchingContract>
+    <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(HasMatchingContract)' == 'true' ">
+    <ProjectReference Include="$(ContractProject)">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>ResolvedMatchingContract</OutputItemType>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- Shared logic to publish multiple projects in the same
+       package. Pack doesn't support including project references
+       (https://github.com/NuGet/Home/issues/3891), so we work around
+       this by explicitly including the publish output in the
+       package. -->
+  <PropertyGroup>
+    <IncludePublishOutput Condition="'$(IncludePublishOutput)' == ''">false</IncludePublishOutput>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IncludePublishOutput)' == 'true'">
+    <!-- Don't include the build output. Instead, we want to include the TargetFramework-specific publish output. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- Suppress NuGet warning for package which sets IncludeBuildOutput=false, see https://github.com/NuGet/Home/issues/8583 -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <!-- Option to include Json files in the package. Default is to just include dlls. -->
+    <IncludeJsonFilesInPackage Condition="'$(IncludeJsonFilesInPackage)' == ''">false</IncludeJsonFilesInPackage>
+    <!-- Use a NuGet extension point to publish and set up the package files. -->
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddPublishOutputToPackage</TargetsForTfmSpecificContentInPackage>
+  </PropertyGroup>
+
+  <Target Name="_AddPublishOutputToPackage" Condition="'$(IncludePublishOutput)' == 'true'">
+    <PropertyGroup>
+      <PublishDir>$(BaseOutputPath)$(TargetFramework)</PublishDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <ProjectsToPublish Include="$(MSBuildProjectFile)">
+        <AdditionalProperties>TargetFramework=$(TargetFramework);PublishDir=$(PublishDir)</AdditionalProperties>
+      </ProjectsToPublish>
+    </ItemGroup>
+    <!-- Clean the publish directory in case there are any left-over artifacts (publish does not work incrementally). -->
+    <ItemGroup>
+      <_FilesToDelete Remove="@(_FilesToDelete)" />
+      <_FilesToDelete Include="$(PublishDir)/*.dll" />
+      <_FilesToDelete Include="$(PublishDir)/*.json" />
+    </ItemGroup>
+    <Delete Files="@(_FilesToDelete)" />
+    <MSBuild Projects="@(ProjectsToPublish)" Targets="Publish" />
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(PublishDir)/*.dll" PackagePath="$(BuildOutputTargetFolder)\$(TargetFramework)" />
+      <TfmSpecificPackageFile Include="$(PublishDir)/*.json" PackagePath="$(BuildOutputTargetFolder)\$(TargetFramework)" Condition="'$(IncludeJsonFilesInPackage)' == 'true'" />
+    </ItemGroup>
   </Target>
 
 </Project>
