@@ -1316,7 +1316,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 		return TRUE;
 
 	// Stack start limit is stack lower bound. Make sure there is enough room left.
-	void *limit = ((uint8_t *)thread->stack_start_limit) + ALIGN_TO (MONO_STACK_OVERFLOW_GUARD_SIZE + MONO_MIN_EXECUTION_STACK_SIZE, ((gssize)mono_pagesize ()));
+	void *limit = ((uint8_t *)thread->stack_start_limit) + MONO_MIN_EXECUTION_STACK_SIZE;
 
 	if (current < limit)
 		return FALSE;
@@ -7632,7 +7632,8 @@ ves_icall_System_Environment_GetEnvironmentVariable_native (const gchar *utf8_na
  */
 #ifndef _MSC_VER
 #ifndef __MINGW32_VERSION
-#if defined(__APPLE__) && defined(TARGET_OSX)
+#if defined(__APPLE__)
+#if defined (TARGET_OSX)
 /* Apple defines this in crt_externs.h but doesn't provide that header for 
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
  * in fact exist on all implementations (so far) 
@@ -7641,6 +7642,17 @@ G_BEGIN_DECLS
 gchar ***_NSGetEnviron(void);
 G_END_DECLS
 #define environ (*_NSGetEnviron())
+#else
+#ifdef ENABLE_NETCORE
+G_BEGIN_DECLS
+extern
+char **environ;
+G_END_DECLS
+#else
+static char *mono_environ[1] = { NULL };
+#define environ mono_environ
+#endif
+#endif /* defined (TARGET_OSX) */
 #else
 G_BEGIN_DECLS
 extern
