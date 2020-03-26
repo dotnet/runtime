@@ -44,6 +44,39 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(new object[] { }, "9fff")]
+        [InlineData(new object[] { 42 }, "9f182aff")]
+        [InlineData(new object[] { 1, 2, 3 }, "9f010203ff")]
+        [InlineData(new object[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 }, "9f0102030405060708090a0b0c0d0e0f101112131415161718181819ff")]
+        [InlineData(new object[] { 1, -1, "", new byte[] { 7 } }, "9f0120604107ff")]
+        [InlineData(new object[] { "lorem", "ipsum", "dolor" }, "9f656c6f72656d65697073756d65646f6c6f72ff")]
+        public static void WriteArray_IndefiniteLength_HappyPath(object[] values, string expectedHexEncoding)
+        {
+            byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
+
+            using var writer = new CborWriter();
+            Helpers.WriteArray(writer, values, useDefiniteLengthCollections: false);
+
+            byte[] actualEncoding = writer.ToArray();
+            AssertHelper.HexEqual(expectedEncoding, actualEncoding);
+        }
+
+        [Theory]
+        [InlineData(new object[] { new object[] { } }, "9f9fffff")]
+        [InlineData(new object[] { 1, new object[] { 2, 3 }, new object[] { 4, 5 } }, "9f019f0203ff9f0405ffff")]
+        [InlineData(new object[] { "", new object[] { new object[] { }, new object[] { 1, new byte[] { 10 } } } }, "9f609f9fff9f01410affffff")]
+        public static void WriteArray_IndefiniteLength_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
+        {
+            byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
+
+            using var writer = new CborWriter();
+            Helpers.WriteArray(writer, values, useDefiniteLengthCollections: false);
+
+            byte[] actualEncoding = writer.ToArray();
+            AssertHelper.HexEqual(expectedEncoding, actualEncoding);
+        }
+
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(3)]

@@ -16,9 +16,10 @@ enum class CreateComInterfaceFlagsEx : int32_t
     TrackerSupport = InteropLib::Com::CreateComInterfaceFlags_TrackerSupport,
 
     // Highest bit is reserved for internal usage
+    IsComActivated = 1 << 30,
     IsPegged = 1 << 31,
 
-    InternalMask = IsPegged,
+    InternalMask = IsPegged | IsComActivated,
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CreateComInterfaceFlagsEx);

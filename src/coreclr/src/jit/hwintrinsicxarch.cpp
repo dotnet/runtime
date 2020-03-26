@@ -15,7 +15,7 @@
 //
 // Return Value:
 //    The 64-bit only InstructionSet associated with isa
-static InstructionSet X64VersionOfIsa(InstructionSet isa)
+static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {
@@ -48,7 +48,7 @@ static InstructionSet X64VersionOfIsa(InstructionSet isa)
 //
 // Return Value:
 //    The InstructionSet associated with className
-static InstructionSet lookupInstructionSet(const char* className)
+static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 {
     assert(className != nullptr);
     if (className[0] == 'A')
@@ -147,7 +147,7 @@ static InstructionSet lookupInstructionSet(const char* className)
 //
 // Return Value:
 //    The InstructionSet associated with className and enclosingClassName
-InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const char* enclosingClassName)
+CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const char* enclosingClassName)
 {
     assert(className != nullptr);
 
@@ -253,7 +253,7 @@ bool HWIntrinsicInfo::isAVX2GatherIntrinsic(NamedIntrinsic id)
 //
 // Return Value:
 //    true if isa is supported; otherwise, false
-bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
+bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {
@@ -302,7 +302,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
 //
 // Return Value:
 //    true if isa is scalar; otherwise, false
-bool HWIntrinsicInfo::isScalarIsa(InstructionSet isa)
+bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
     {

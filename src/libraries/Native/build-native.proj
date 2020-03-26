@@ -20,7 +20,6 @@
         then we should consider calling Environment.ProcessorCount
       -->
       <_ProcessorCountArg> -numproc $(MSBuildNodeCount)</_ProcessorCountArg>
-      <_StripSymbolsArg Condition="'$(BuildNativeStripSymbols)' == 'true' and '$(TargetOS)' != 'WebAssembly' and '$(TargetOS)' != 'iOS'"> -stripsymbols</_StripSymbolsArg>
       <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
       <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
       <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> $(CMakeArgs)</_CMakeArgs>
@@ -30,7 +29,7 @@
         used to force a specific compiler toolset.
       -->
       <_BuildNativeCompilerArg Condition="'$(BuildNativeCompiler)' != ''"> $(BuildNativeCompiler)</_BuildNativeCompilerArg>
-      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessCountArg)$(_StripSymbolsArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_CMakeArgs) $(Compiler)</_BuildNativeUnixArgs>
+      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_CMakeArgs) $(Compiler)</_BuildNativeUnixArgs>
     </PropertyGroup>
 
     <Message Text="$(MSBuildProjectDirectory)/build-native.sh $(_BuildNativeUnixArgs)" Importance="High"/>

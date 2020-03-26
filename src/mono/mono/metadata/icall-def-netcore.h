@@ -381,6 +381,7 @@ HANDLES(ALC_4, "InternalGetLoadedAssemblies", ves_icall_System_Runtime_Loader_As
 HANDLES(ALC_2, "InternalInitializeNativeALC", ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalInitializeNativeALC, gpointer, 3, (gpointer, MonoBoolean, MonoBoolean))
 HANDLES(ALC_1, "InternalLoadFile", ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFile, MonoReflectionAssembly, 3, (gpointer, MonoString, MonoStackCrawlMark_ptr))
 HANDLES(ALC_3, "InternalLoadFromStream", ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalLoadFromStream, MonoReflectionAssembly, 5, (gpointer, gpointer, gint32, gpointer, gint32))
+HANDLES(ALC_6, "PrepareForAssemblyLoadContextRelease", ves_icall_System_Runtime_Loader_AssemblyLoadContext_PrepareForAssemblyLoadContextRelease, void, 2, (gpointer, gpointer))
 
 ICALL_TYPE(RFH, "System.RuntimeFieldHandle", RFH_1)
 HANDLES(RFH_1, "GetValueDirect", ves_icall_System_RuntimeFieldHandle_GetValueDirect, MonoObject, 4, (MonoReflectionField, MonoReflectionType, MonoTypedRef_ptr, MonoReflectionType))

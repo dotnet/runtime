@@ -9,6 +9,7 @@
 
 #include <Security/Security.h>
 
+#ifndef TARGET_IOS
 /*
 Get a CFRetain()ed SecKeychainRef value for the keychain to which the keychain item belongs.
 
@@ -137,3 +138,4 @@ pOSStatus: Receives the last OSStatus value..
 */
 PALEXPORT int32_t
 AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, uint8_t isReadOnlyMode, int32_t* pOSStatus);
+#endif

@@ -44,7 +44,7 @@ namespace Microsoft.AspNetCore.Testing
             {
                 return false;
             }
-#elif NETSTANDARD2_0
+#elif NETSTANDARD2_0 || NETCOREAPP
             if (excludedFrameworks.HasFlag(RuntimeFrameworks.CoreCLR))
             {
                 return false;

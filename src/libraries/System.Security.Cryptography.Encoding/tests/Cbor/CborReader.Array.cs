@@ -12,17 +12,42 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public ulong? ReadStartArray()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Array);
-            ulong arrayLength = checked((ulong)ReadUnsignedInteger(header, out int additionalBytes));
-            AdvanceBuffer(1 + additionalBytes);
-            _remainingDataItems--;
 
-            PushDataItem(CborMajorType.Array, arrayLength);
-            return arrayLength;
+            if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
+            {
+                AdvanceBuffer(1);
+                DecrementRemainingItemCount();
+                PushDataItem(CborMajorType.Array, null);
+                return null;
+            }
+            else
+            {
+                ulong arrayLength = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
+                AdvanceBuffer(1 + additionalBytes);
+                DecrementRemainingItemCount();
+                PushDataItem(CborMajorType.Array, arrayLength);
+                return arrayLength;
+            }
         }
 
         public void ReadEndArray()
         {
-            PopDataItem(expectedType: CborMajorType.Array);
+            if (_remainingDataItems == null)
+            {
+                CborInitialByte value = PeekInitialByte();
+
+                if (value.InitialByte != CborInitialByte.IndefiniteLengthBreakByte)
+                {
+                    throw new InvalidOperationException("Not at end of indefinite-length array.");
+                }
+
+                PopDataItem(expectedType: CborMajorType.Array);
+                AdvanceBuffer(1);
+            }
+            else
+            {
+                PopDataItem(expectedType: CborMajorType.Array);
+            }
         }
     }
 }

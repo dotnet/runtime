@@ -6,9 +6,9 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
-	// Mono runtime relies on exact layout
-	[StructLayout (LayoutKind.Sequential)]
-	public abstract partial class SafeHandle
-	{
-	}
+    // Mono runtime relies on exact layout
+    [StructLayout(LayoutKind.Sequential)]
+    public abstract partial class SafeHandle
+    {
+    }
 }

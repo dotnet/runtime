@@ -2377,6 +2377,7 @@ lookup_start:
 			g_assert (vtable);
 			if (!mono_runtime_class_init_full (vtable, error))
 				return NULL;
+			MONO_PROFILER_RAISE (jit_done, (method, info));
 			return mono_create_ftnptr (target_domain, info->code_start);
 		}
 	}
@@ -4672,7 +4673,7 @@ register_icalls (void)
 	register_icall (mini_llvmonly_init_delegate, mono_icall_sig_void_object, TRUE);
 	register_icall (mini_llvmonly_init_delegate_virtual, mono_icall_sig_void_object_object_ptr, TRUE);
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
-	register_icall (mini_llvmonly_throw_missing_method_exception, mono_icall_sig_void, TRUE);
+	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
 
 	register_icall (mono_get_assembly_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);

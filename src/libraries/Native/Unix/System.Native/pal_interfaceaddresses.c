@@ -48,6 +48,7 @@
 #endif
 #endif
 
+#if HAVE_GETIFADDRS
 // Convert mask to prefix length e.g. 255.255.255.0 -> 24
 // mask parameter is pointer to buffer where address starts and length is
 // buffer length e.g. 4 for IPv4 and 16 for IPv6.
@@ -87,11 +88,13 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 
     return len;
 }
+#endif
 
 int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
+#if HAVE_GETIFADDRS
     struct ifaddrs* headAddr;
     if (getifaddrs(&headAddr) == -1)
     {
@@ -203,10 +206,19 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
 
     freeifaddrs(headAddr);
     return 0;
+#else
+    // Not supported on e.g. Android. Also, prevent a compiler error because parameters are unused
+    (void)onIpv4Found;
+    (void)onIpv6Found;
+    (void)onLinkLayerFound;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
+#if HAVE_GETIFADDRS
     struct ifaddrs* head;   // Pointer to block allocated by getifaddrs().
     struct ifaddrs* ifaddrsEntry;
     IpAddressInfo *ai;
@@ -408,6 +420,15 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     }
 
     return 0;
+#else
+    // Not supported on e.g. Android. Also, prevent a compiler error because parameters are unused
+    (void)interfaceCount;
+    (void)interfaceList;
+    (void)addressCount;
+    (void)addressList;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 #if HAVE_RT_MSGHDR

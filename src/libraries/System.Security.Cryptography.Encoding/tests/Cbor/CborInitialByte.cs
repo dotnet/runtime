@@ -30,7 +30,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     /// Represents the Cbor Data item initial byte structure
     internal readonly struct CborInitialByte
     {
+        public const byte IndefiniteLengthBreakByte = 0xff;
         private const byte AdditionalInformationMask = 0b000_11111;
+
         public byte InitialByte { get; }
 
         internal CborInitialByte(CborMajorType majorType, CborAdditionalInfo additionalInfo)

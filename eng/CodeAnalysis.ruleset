@@ -41,7 +41,7 @@
       <Rule Id="CA1066" Action="None" />             <!-- Type {0} should implement IEquatable<T> because it overrides Equals -->
       <Rule Id="CA1067" Action="None" />             <!-- Override Object.Equals(object) when implementing IEquatable<T> -->
       <Rule Id="CA1068" Action="None" />             <!-- CancellationToken parameters must come last -->
-      <Rule Id="CA1069" Action="Warning" />          <!-- Enums values should not be duplicated -->
+      <Rule Id="CA1069" Action="None" />             <!-- Enums values should not be duplicated -->
       <Rule Id="CA1200" Action="Warning" />          <!-- Avoid using cref tags with a prefix -->
       <Rule Id="CA1303" Action="None" />             <!-- Do not pass literals as localized parameters -->
       <Rule Id="CA1304" Action="None" />             <!-- Specify CultureInfo -->
@@ -98,6 +98,7 @@
       <Rule Id="CA2010" Action="None" />             <!-- Always consume the value returned by methods marked with PreserveSigAttribute -->
       <Rule Id="CA2011" Action="Warning" />          <!-- Avoid infinite recursion -->
       <Rule Id="CA2012" Action="Warning" />          <!-- Use ValueTasks correctly -->
+      <Rule Id="CA2013" Action="Warning" />          <!-- Do not use ReferenceEquals with value types -->
       <Rule Id="CA2100" Action="None" />             <!-- Review SQL queries for security vulnerabilities -->
       <Rule Id="CA2101" Action="None" />             <!-- Specify marshaling for P/Invoke string arguments -->
       <Rule Id="CA2119" Action="None" />             <!-- Seal methods that satisfy private interfaces -->
