@@ -31,11 +31,11 @@ else(CLR_CMAKE_HOST_WIN32)
     # Add dependency on export file
     add_custom_target(mscordaccore_exports DEPENDS ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_TARGET_FREEBSD)
+    if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_TARGET_FREEBSD)
+    endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
-    if(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_TARGET_FREEBSD)
+    if(CLR_CMAKE_HOST_LINUX)
 
         # Generate DAC export file with the DAC_ prefix
         generate_exports_file_prefix(${DEF_SOURCES} ${EXPORTS_FILE} DAC_)
@@ -70,7 +70,7 @@ else(CLR_CMAKE_HOST_WIN32)
 
         # Add lib redefines file to DAC
         list(APPEND CLR_DAC_SOURCES libredefines.S)
-    endif(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_TARGET_FREEBSD)
+    endif(CLR_CMAKE_HOST_LINUX)
 endif(CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
@@ -104,9 +104,9 @@ add_library_clr(mscordaccore SHARED ${CLR_DAC_SOURCES} $<TARGET_OBJECTS:mscordac
 
 set_target_properties(mscordacobj mscordaccore PROPERTIES DAC_COMPONENT TRUE)
 
-if(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_TARGET_FREEBSD)
+if(CLR_CMAKE_HOST_LINUX)
     add_dependencies(mscordaccore lib_redefines_inc)
-endif(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_TARGET_FREEBSD)
+endif(CLR_CMAKE_HOST_LINUX)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_dependencies(mscordaccore mscordaccore_exports)
