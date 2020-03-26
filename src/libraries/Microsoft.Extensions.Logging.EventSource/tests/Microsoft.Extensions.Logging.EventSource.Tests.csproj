@@ -7,5 +7,6 @@
 
   <ItemGroup>
     <ReferenceFromRuntime Include="Microsoft.Extensions.Logging.EventSource" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
 </Project>
