@@ -141,6 +141,22 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 
 void IpcStream::DiagnosticsIpc::Close(ErrorCallback)
 {
+    if (_hPipe != INVALID_HANDLE_VALUE)
+    {
+        if (mode == DiagnosticsIpc::ConnectionMode::SERVER)
+        {
+            const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
+            _ASSERTE(fSuccessDisconnectNamedPipe != 0);
+        }
+
+        const BOOL fSuccessCloseHandle = ::CloseHandle(_hPipe);
+        _ASSERTE(fSuccessCloseHandle != 0);
+    }
+
+    if (_oOverlap.hEvent != INVALID_HANDLE_VALUE)
+    {
+        ::CloseHandle(_oOverlap.hEvent);
+    }
 }
 
 IpcStream::IpcStream(HANDLE hPipe, DiagnosticsIpc::ConnectionMode mode) :
