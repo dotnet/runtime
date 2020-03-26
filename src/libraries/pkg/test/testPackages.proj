@@ -3,6 +3,8 @@
 
   <ItemGroup>
     <TestPackages Condition="'$(TestPackages)' != ''" Include="$(TestPackages)" />
+    <!-- transport package not expected to be closure complete  -->
+    <ExcludePackages Include="Microsoft.Extensions.Internal.Transport" />
     <ExcludePackages Include="$(ExcludePackages)" />
 
     <PackageReports Condition="'@(TestPackages)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>

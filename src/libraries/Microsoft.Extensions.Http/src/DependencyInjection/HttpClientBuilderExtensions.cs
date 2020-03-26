@@ -611,7 +611,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             if (handlerLifetime != Timeout.InfiniteTimeSpan && handlerLifetime < HttpClientFactoryOptions.MinimumHandlerLifetime)
             {
-                throw new ArgumentException(Resources.HandlerLifetime_InvalidValue, nameof(handlerLifetime));
+                throw new ArgumentException(SR.HandlerLifetime_InvalidValue, nameof(handlerLifetime));
             }
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options => options.HandlerLifetime = handlerLifetime);
