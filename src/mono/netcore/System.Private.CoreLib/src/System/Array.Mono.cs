@@ -522,14 +522,14 @@ namespace System
         [Intrinsic]
         private void GetGenericValueImpl<T>(int pos, out T value)
         {
-            Array? self = this;
+            Array self = this;
             GetGenericValue_icall(ref self, pos, out value);
         }
 
         [Intrinsic]
         private void SetGenericValueImpl<T>(int pos, ref T value)
         {
-            Array? self = this;
+            Array self = this;
             SetGenericValue_icall(ref self, pos, ref value);
         }
 
