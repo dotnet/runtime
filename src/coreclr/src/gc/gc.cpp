@@ -2418,7 +2418,6 @@ static static_data static_data_table[latency_level_last - latency_level_first + 
         // loh
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0},
         // poh
-        // TODO: tuning https://github.com/dotnet/runtime/issues/13739
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0},
     },
 
@@ -2439,7 +2438,6 @@ static static_data static_data_table[latency_level_last - latency_level_first + 
         // loh
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0},
         // poh
-        // TODO: tuning https://github.com/dotnet/runtime/issues/13739
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0}
     },
 };
@@ -13439,7 +13437,7 @@ int bgc_allocate_spin(size_t min_gc_size, size_t bgc_begin_size, size_t bgc_size
 
     if (((bgc_begin_size / end_size) >= 2) || (bgc_size_increased >= bgc_begin_size))
     {
-        if ((bgc_begin_size / end_size) > 2)
+        if ((bgc_begin_size / end_size) >= 2)
         {
             dprintf (3, ("alloc-ed too much before bgc started"));
         }
@@ -13590,7 +13588,14 @@ BOOL gc_heap::uoh_try_fit (int gen_number,
 #ifdef BACKGROUND_GC
         if (can_allocate && recursive_gc_sync::background_running_p())
         {
-            bgc_loh_size_increased += size;
+            if (gen_number == poh_generation)
+            {
+                bgc_poh_size_increased += size;
+            }
+            else
+            {
+                bgc_loh_size_increased += size;
+            }
         }
 #endif //BACKGROUND_GC
     }
@@ -36381,10 +36386,8 @@ HRESULT GCHeap::Initialize()
 
 #ifdef MULTIPLE_HEAPS
     gc_heap::n_heaps = nhp;
-    // TODO: tuning https://github.com/dotnet/runtime/issues/13739
     hr = gc_heap::initialize_gc (seg_size, large_seg_size /*loh_segment_size*/, large_seg_size /*poh_segment_size*/, nhp);
 #else
-    // TODO: tuning https://github.com/dotnet/runtime/issues/13739
     hr = gc_heap::initialize_gc (seg_size, large_seg_size /*loh_segment_size*/, large_seg_size /*poh_segment_size*/);
 #endif //MULTIPLE_HEAPS
 
