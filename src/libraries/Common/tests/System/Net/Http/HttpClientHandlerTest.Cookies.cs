@@ -331,12 +331,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(CookieNamesValuesAndUseCookies))]
         public async Task GetAsync_ReceiveSetCookieHeader_CookieAdded(string cookieName, string cookieValue, bool useCookies)
         {
-            if (UseVersion.Major == 2)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/33930")]
-                return;
-            }
-
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
