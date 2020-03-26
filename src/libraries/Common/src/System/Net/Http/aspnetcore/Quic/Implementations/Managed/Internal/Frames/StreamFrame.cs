@@ -38,12 +38,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         internal static bool Read(QuicReader reader, out StreamFrame frame)
         {
             var type = reader.ReadFrameType();
-            // Stream type is a bit special
+            // Stream type is a bit special, it is in form 0b0000_1XXX
             Debug.Assert((type & FrameType.StreamMask) == type);
 
-            bool hasOffset = (type & FrameType.StreamWithOffset ^ FrameType.Stream) != 0;
-            bool hasLength = (type & FrameType.StreamWithLength ^ FrameType.Stream) != 0;
-            bool hasFin = (type & FrameType.StreamWithFin ^ FrameType.Stream) != 0;
+            bool hasOffset = (type & FrameType.StreamOffBit) != 0;
+            bool hasLength = (type & FrameType.StreamLenBit) != 0;
+            bool hasFin = (type & FrameType.StreamFinBit) != 0;
 
             ulong length = 0;
             ulong offset = 0;
@@ -66,9 +66,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         internal static void Write(QuicWriter writer, in StreamFrame frame)
         {
             // TODO-RZ: leave out length if this is the last frame
-            var type = FrameType.StreamWithLength;
-            if (frame.Offset != 0) type |= FrameType.StreamWithOffset;
-            if (frame.Fin) type |= FrameType.StreamWithFin;
+            var type = FrameType.Stream | FrameType.StreamLenBit;
+            if (frame.Offset != 0) type |= FrameType.StreamOffBit;
+            if (frame.Fin) type |= FrameType.StreamFinBit;
 
             writer.WriteFrameType(type);
 

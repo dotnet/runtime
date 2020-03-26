@@ -4,14 +4,14 @@ using Xunit;
 
 namespace System.Net.Quic.Tests
 {
-    public class FrameTests
+    public class FrameSerializationTests
     {
         private QuicReader reader;
         private QuicWriter writer;
 
         private byte[] buffer;
 
-        public FrameTests()
+        public FrameSerializationTests()
         {
             buffer = new byte[1024];
             reader = new QuicReader(buffer);
