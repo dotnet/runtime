@@ -1235,6 +1235,15 @@
     ]
   },
   {
+    "Name": "System.Net.Http.Json",
+    "Description": "Provides extension methods for System.Net.Http.HttpClient and System.Net.Http.HttpContent that perform automatic serialization and deserialization using System.Text.Json.",
+    "CommonTypes": [
+      "System.Net.Http.Json.HttpClientJsonExtensions",
+      "System.Net.Http.Json.HttpContentJsonExtensions",
+      "System.Net.Http.Json.JsonContent"
+    ]
+  },
+  {
     "Name": "System.Net.Requests",
     "Description": "Provides older classes (such as HttpWebRequest and HttpWebResponse) for sending HTTP requests and receiving HTTP responses from a resource identified by a URI. Developers should prefer the classes in the System.Net.Http package.",
     "CommonTypes": [
