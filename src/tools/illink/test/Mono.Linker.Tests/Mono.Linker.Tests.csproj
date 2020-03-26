@@ -51,11 +51,10 @@
          and targets from the restored package. -->
     <PropertyGroup>
       <IlasmProject>$(MSBuildThisFileDirectory)../../eng/ilasm.ilproj</IlasmProject>
-      <IlasmDir>$(ArtifactsDir)tools</IlasmDir>
     </PropertyGroup>
 
-    <MSBuild Projects="$(IlasmProject)" Targets="Restore" Properties="BaseIntermediateOutputPath=$(IlasmDir)" />
-    <MSBuild Projects="$(IlasmProject)" Targets="CopyILAsmTool" Properties="BaseIntermediateOutputPath=$(IlasmDir);__BuildPhase=Copy" />
+    <MSBuild Projects="$(IlasmProject)" Targets="Restore" />
+    <MSBuild Projects="$(IlasmProject)" Targets="CopyILAsmTool" />
   </Target>
 
   <ItemGroup Condition="'$(MonoBuild)' != ''">

@@ -7,4 +7,11 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
 
+  <Target Name="CopyILAsmTool" DependsOnTargets="ResolveIlasmToolPaths" Condition="'$(MonoBuild)' == ''">
+    <PropertyGroup>
+      <IlasmFileName Condition=" '$(OS)' != 'Windows_NT' ">ilasm</IlasmFileName>
+      <IlasmFileName Condition=" '$(OS)' == 'Windows_NT' ">ilasm.exe</IlasmFileName>
+    </PropertyGroup>
+    <Copy SourceFiles="$(_IlasmDir)\$(IlasmFileName)" DestinationFolder="$(ArtifactsDir)tools\ilasm" />
+  </Target>
 </Project>
