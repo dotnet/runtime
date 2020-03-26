@@ -32,9 +32,6 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -151,7 +148,7 @@ namespace System.Reflection.Emit
                 return false;
             if (type.IsArray && type.GetElementType().IsValueType)
             {
-                foreach (var v in (Array)value)
+                foreach (object v in (Array)value)
                 {
                     if (v == null)
                         return false;
@@ -436,41 +433,25 @@ namespace System.Reflection.Emit
             }
         }
 
-        private static Type elementTypeToType(int elementType)
-        {
+        private static Type elementTypeToType(int elementType) =>
             /* Partition II, section 23.1.16 */
-            switch (elementType)
+            elementType switch
             {
-                case 0x02:
-                    return typeof(bool);
-                case 0x03:
-                    return typeof(char);
-                case 0x04:
-                    return typeof(sbyte);
-                case 0x05:
-                    return typeof(byte);
-                case 0x06:
-                    return typeof(short);
-                case 0x07:
-                    return typeof(ushort);
-                case 0x08:
-                    return typeof(int);
-                case 0x09:
-                    return typeof(uint);
-                case 0x0a:
-                    return typeof(long);
-                case 0x0b:
-                    return typeof(ulong);
-                case 0x0c:
-                    return typeof(float);
-                case 0x0d:
-                    return typeof(double);
-                case 0x0e:
-                    return typeof(string);
-                default:
-                    throw new Exception("Unknown element type '" + elementType + "'");
-            }
-        }
+                0x02 => typeof(bool),
+                0x03 => typeof(char),
+                0x04 => typeof(sbyte),
+                0x05 => typeof(byte),
+                0x06 => typeof(short),
+                0x07 => typeof(ushort),
+                0x08 => typeof(int),
+                0x09 => typeof(uint),
+                0x0a => typeof(long),
+                0x0b => typeof(ulong),
+                0x0c => typeof(float),
+                0x0d => typeof(double),
+                0x0e => typeof(string),
+                _ => throw new Exception("Unknown element type '" + elementType + "'"),
+            };
 
         private static object decode_cattr_value(Type t, byte[] data, int pos, out int rpos)
         {

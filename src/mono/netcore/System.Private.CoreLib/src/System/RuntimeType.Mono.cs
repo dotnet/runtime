@@ -601,7 +601,7 @@ namespace System
                         continue;
                     else if (genericParamCount > 0 && !is_generic)
                         continue;
-                    var args = methodInfo.GetGenericArguments();
+                    Type[]? args = methodInfo.GetGenericArguments();
                     if (args.Length != genericParamCount)
                         continue;
                 }
@@ -897,7 +897,7 @@ namespace System
                 }
                 else
                 {
-                    if ((object)returnType == null)
+                    if (returnType is null)
                         // if we are here we have no args or property type to select over and we have more than one property with that name
                         throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
                 }
@@ -999,7 +999,7 @@ namespace System
             FilterHelper(bindingAttr, ref name, out ignoreCase, out listType);
 
             List<RuntimeType> list = null;
-            var nameComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            StringComparison nameComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
             foreach (RuntimeType t in GetInterfaces())
             {
 
@@ -1017,7 +1017,7 @@ namespace System
             if (list == null)
                 return null;
 
-            var cache = list.ToArray();
+            RuntimeType[]? cache = list.ToArray();
             RuntimeType match = null;
 
             for (int i = 0; i < cache.Length; i++)
@@ -1155,7 +1155,7 @@ namespace System
         public override bool IsEquivalentTo(Type? other)
         {
             RuntimeType otherRtType = other as RuntimeType;
-            if ((object)otherRtType == null)
+            if (otherRtType is null)
                 return false;
 
             if (otherRtType == this)
@@ -1568,12 +1568,7 @@ namespace System
                     }
                     else
                     {
-                        if (results == null)
-                        {
-                            results = new List<MethodInfo>(semiFinalists.Length);
-                            results.Add(finalist);
-                        }
-
+                        results ??= new List<MethodInfo>(semiFinalists.Length) { finalist };
                         results.Add(semiFinalist);
                     }
                 }
@@ -1622,12 +1617,7 @@ namespace System
                     }
                     else
                     {
-                        if (results == null)
-                        {
-                            results = new List<MethodInfo>(semiFinalists.Length);
-                            results.Add(finalist);
-                        }
-
+                        results ??= new List<MethodInfo>(semiFinalists.Length) { finalist };
                         results.Add(semiFinalist);
                     }
                 }
@@ -1872,13 +1862,13 @@ namespace System
 
         internal RuntimeConstructorInfo GetDefaultConstructor()
         {
-            var cache = Cache;
+            TypeCache? cache = Cache;
             RuntimeConstructorInfo ctor = null;
 
             if (Volatile.Read(ref cache.default_ctor_cached))
                 return cache.default_ctor;
 
-            var ctors = GetConstructorCandidates(
+            ListBuilder<ConstructorInfo> ctors = GetConstructorCandidates(
                 null,
                 BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, CallingConventions.Any,
                 Array.Empty<Type>(), false);
@@ -1961,7 +1951,7 @@ namespace System
 
         private object CreateInstanceMono(bool nonPublic, bool wrapExceptions)
         {
-            var ctor = GetDefaultConstructor();
+            RuntimeConstructorInfo? ctor = GetDefaultConstructor();
             if (!nonPublic && ctor != null && !ctor.IsPublic)
             {
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, FullName));
@@ -1991,7 +1981,7 @@ namespace System
         internal object CheckValue(object value, Binder binder, CultureInfo culture, BindingFlags invokeAttr)
         {
             bool failed = false;
-            var res = TryConvertToType(value, ref failed);
+            object? res = TryConvertToType(value, ref failed);
             if (!failed)
                 return res;
 
@@ -2013,7 +2003,7 @@ namespace System
 
             if (IsByRef)
             {
-                var elementType = GetElementType();
+                Type? elementType = GetElementType();
                 if (value == null || elementType.IsInstanceOfType(value))
                 {
                     return value;
@@ -2025,22 +2015,22 @@ namespace System
 
             if (IsEnum)
             {
-                var type = Enum.GetUnderlyingType(this);
+                Type? type = Enum.GetUnderlyingType(this);
                 if (type == value.GetType())
                     return value;
-                var res = IsConvertibleToPrimitiveType(value, this);
+                object? res = IsConvertibleToPrimitiveType(value, this);
                 if (res != null)
                     return res;
             }
             else if (IsPrimitive)
             {
-                var res = IsConvertibleToPrimitiveType(value, this);
+                object? res = IsConvertibleToPrimitiveType(value, this);
                 if (res != null)
                     return res;
             }
             else if (IsPointer)
             {
-                var vtype = value.GetType();
+                Type? vtype = value.GetType();
                 if (vtype == typeof(IntPtr) || vtype == typeof(UIntPtr))
                     return value;
                 if (value is Pointer pointer)
@@ -2061,7 +2051,7 @@ namespace System
         // long value can be used with int based enum
         private static object IsConvertibleToPrimitiveType(object value, Type targetType)
         {
-            var type = value.GetType();
+            Type? type = value.GetType();
             if (type.IsEnum)
             {
                 type = Enum.GetUnderlyingType(type);
@@ -2069,8 +2059,8 @@ namespace System
                     return value;
             }
 
-            var from = GetTypeCode(type);
-            var to = GetTypeCode(targetType);
+            TypeCode from = GetTypeCode(type);
+            TypeCode to = GetTypeCode(targetType);
 
             switch (to)
             {
@@ -2213,17 +2203,6 @@ namespace System
             return null;
         }
 
-        private string GetCachedName(TypeNameKind kind)
-        {
-            switch (kind)
-            {
-                case TypeNameKind.SerializationName:
-                    return ToString();
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern Type make_array_type(int rank);
 
@@ -2302,7 +2281,7 @@ namespace System
         internal static object CreateInstanceForAnotherGenericParameter(Type genericType, RuntimeType genericArgument)
         {
             var gt = (RuntimeType)MakeGenericType(genericType, new Type[] { genericArgument });
-            var ctor = gt.GetDefaultConstructor();
+            RuntimeConstructorInfo? ctor = gt.GetDefaultConstructor();
             return ctor.InternalInvoke(null, null, wrapExceptions: true);
         }
 
@@ -2318,7 +2297,7 @@ namespace System
             using (var namePtr = new Mono.SafeStringMarshal(name))
             using (var h = new Mono.SafeGPtrArrayHandle(GetMethodsByName_native(namePtr.Value, bindingAttr, listType)))
             {
-                var n = h.Length;
+                int n = h.Length;
                 var a = new RuntimeMethodInfo[n];
                 for (int i = 0; i < n; i++)
                 {
@@ -2340,7 +2319,7 @@ namespace System
             var refh = new RuntimeTypeHandle(reflectedType);
             using (var h = new Mono.SafeGPtrArrayHandle(GetConstructors_native(bindingAttr)))
             {
-                var n = h.Length;
+                int n = h.Length;
                 var a = new RuntimeConstructorInfo[n];
                 for (int i = 0; i < n; i++)
                 {
@@ -2357,7 +2336,7 @@ namespace System
             using (var namePtr = new Mono.SafeStringMarshal(name))
             using (var h = new Mono.SafeGPtrArrayHandle(GetPropertiesByName_native(namePtr.Value, bindingAttr, listType)))
             {
-                var n = h.Length;
+                int n = h.Length;
                 var a = new RuntimePropertyInfo[n];
                 for (int i = 0; i < n; i++)
                 {
@@ -2373,7 +2352,7 @@ namespace System
             if (IsGenericParameter)
                 throw new InvalidOperationException(Environment.GetResourceString("Arg_GenericParameter"));
 
-            if ((object)ifaceType == null)
+            if (ifaceType is null)
                 throw new ArgumentNullException(nameof(ifaceType));
 
             RuntimeType ifaceRtType = ifaceType as RuntimeType;
@@ -2541,7 +2520,7 @@ namespace System
                     return null;
 
                 string fullName;
-                var cache = Cache;
+                TypeCache? cache = Cache;
                 if ((fullName = cache.full_name) == null)
                     fullName = cache.full_name = getFullName(true, false);
 
@@ -2569,7 +2548,7 @@ namespace System
 
         public override bool IsSubclassOf(Type type)
         {
-            if ((object)type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
             RuntimeType rtType = type as RuntimeType;

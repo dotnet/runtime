@@ -314,7 +314,7 @@ namespace System
                 return (RuntimeType)a.GetType(typeName.Substring(0, idx), throwOnError, ignoreCase);
             }
 
-            var t = internal_from_name(typeName, ref stackMark, null, throwOnError, ignoreCase, false);
+            RuntimeType? t = internal_from_name(typeName, ref stackMark, null, throwOnError, ignoreCase, false);
             if (throwOnError && t == null)
                 throw new TypeLoadException("Error loading '" + typeName + "'");
             return t;

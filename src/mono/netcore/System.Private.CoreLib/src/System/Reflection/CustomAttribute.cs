@@ -23,9 +23,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Reflection;
-using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -85,7 +82,7 @@ namespace System.Reflection
         private static object[] GetPseudoCustomAttributes(Type type)
         {
             int count = 0;
-            var Attributes = type.Attributes;
+            TypeAttributes Attributes = type.Attributes;
 
             /* IsSerializable returns true for delegates/enums as well */
             if ((Attributes & TypeAttributes.Serializable) != 0)
@@ -192,7 +189,7 @@ namespace System.Reflection
                     inherit = false;
             }
 
-            var initialSize = Math.Max(res.Length, 16);
+            int initialSize = Math.Max(res.Length, 16);
             List<object> a = null;
             ICustomAttributeProvider btype = obj;
             object[] array;
@@ -362,12 +359,12 @@ namespace System.Reflection
             // there's no use in scanning base types
             if ((attributeType != null && attributeType.IsSealed) && inherit)
             {
-                var usageAttribute = RetrieveAttributeUsage(attributeType);
+                AttributeUsageAttribute? usageAttribute = RetrieveAttributeUsage(attributeType);
                 if (!usageAttribute.Inherited)
                     inherit = false;
             }
 
-            var initialSize = Math.Max(res.Count, 16);
+            int initialSize = Math.Max(res.Count, 16);
             List<CustomAttributeData> a = null;
             ICustomAttributeProvider btype = obj;
 
@@ -527,7 +524,7 @@ namespace System.Reflection
         private static CustomAttributeData[] GetPseudoCustomAttributesData(Type type)
         {
             int count = 0;
-            var Attributes = type.Attributes;
+            TypeAttributes Attributes = type.Attributes;
 
             /* IsSerializable returns true for delegates/enums as well */
             if ((Attributes & TypeAttributes.Serializable) != 0)
@@ -661,7 +658,7 @@ namespace System.Reflection
                 method = (MethodInfo)obj;
             if (obj is RuntimeParameterInfo parinfo)
             {
-                var member = parinfo.Member;
+                MemberInfo? member = parinfo.Member;
                 if (member is MethodInfo)
                 {
                     method = (MethodInfo)member;

@@ -33,16 +33,10 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
-using System.Text;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics.SymbolStore;
 
 namespace System.Reflection.Emit
 {
@@ -651,9 +645,8 @@ namespace System.Reflection.Emit
             if (methodInfoBody.DeclaringType != this)
                 throw new ArgumentException("method body must belong to this type");
 
-            if (methodInfoBody is MethodBuilder)
+            if (methodInfoBody is MethodBuilder mb)
             {
-                MethodBuilder mb = (MethodBuilder)methodInfoBody;
                 mb.set_override(methodInfoDeclaration);
             }
         }
@@ -802,9 +795,9 @@ namespace System.Reflection.Emit
                     if (fb == null)
                         continue;
                     Type ft = fb.FieldType;
-                    if (!fb.IsStatic && (ft is TypeBuilder) && ft.IsValueType && (ft != this) && is_nested_in(ft))
+                    if (!fb.IsStatic && (ft is TypeBuilder builder) && ft.IsValueType && (ft != this) && is_nested_in(ft))
                     {
-                        TypeBuilder tb = (TypeBuilder)ft;
+                        TypeBuilder tb = builder;
                         if (!tb.is_created)
                         {
                             throw new NotImplementedException();
@@ -842,7 +835,7 @@ namespace System.Reflection.Emit
                 throw new TypeLoadException("Could not load type '" + FullName + "' from assembly '" + Assembly + "' because it is an enum with methods.");
             if (interfaces != null)
             {
-                foreach (var iface in interfaces)
+                foreach (Type iface in interfaces)
                 {
                     if (iface.IsNestedPrivate && iface.Assembly != Assembly)
                         throw new TypeLoadException("Could not load type '" + FullName + "' from assembly '" + Assembly + "' because it is implements the inaccessible interface '" + iface.FullName + "'.");
@@ -850,7 +843,7 @@ namespace System.Reflection.Emit
                         throw new BadImageFormatException();
                     if (!iface.IsInterface)
                         throw new TypeLoadException();
-                    if (iface is TypeBuilder && !((TypeBuilder)iface).is_created)
+                    if (iface is TypeBuilder builder && !builder.is_created)
                         throw new TypeLoadException();
                 }
             }
@@ -899,7 +892,7 @@ namespace System.Reflection.Emit
             ResolveUserTypes(interfaces);
             if (fields != null)
             {
-                foreach (var fb in fields)
+                foreach (FieldBuilder fb in fields)
                 {
                     if (fb != null)
                         fb.ResolveUserTypes();
@@ -907,7 +900,7 @@ namespace System.Reflection.Emit
             }
             if (methods != null)
             {
-                foreach (var mb in methods)
+                foreach (MethodBuilder mb in methods)
                 {
                     if (mb != null)
                         mb.ResolveUserTypes();
@@ -915,7 +908,7 @@ namespace System.Reflection.Emit
             }
             if (ctors != null)
             {
-                foreach (var cb in ctors)
+                foreach (ConstructorBuilder cb in ctors)
                 {
                     if (cb != null)
                         cb.ResolveUserTypes();
@@ -1117,21 +1110,13 @@ namespace System.Reflection.Emit
                     if (m.IsStatic && !flatten)
                         continue;
 
-                    switch (mattrs & MethodAttributes.MemberAccessMask)
+                    match = (mattrs & MethodAttributes.MemberAccessMask) switch
                     {
-                        case MethodAttributes.Public:
-                            match = (bindingAttr & BindingFlags.Public) != 0;
-                            break;
-                        case MethodAttributes.Assembly:
-                            match = (bindingAttr & BindingFlags.NonPublic) != 0;
-                            break;
-                        case MethodAttributes.Private:
-                            match = false;
-                            break;
-                        default:
-                            match = (bindingAttr & BindingFlags.NonPublic) != 0;
-                            break;
-                    }
+                        MethodAttributes.Public => (bindingAttr & BindingFlags.Public) != 0,
+                        MethodAttributes.Assembly => (bindingAttr & BindingFlags.NonPublic) != 0,
+                        MethodAttributes.Private => false,
+                        _ => (bindingAttr & BindingFlags.NonPublic) != 0,
+                    };
 
                     if (match)
                         parent_candidates.Add(m);
@@ -1421,23 +1406,15 @@ namespace System.Reflection.Emit
                 layout_kind = (int)data[2];
                 layout_kind |= ((int)data[3]) << 8;
                 attrs &= ~TypeAttributes.LayoutMask;
-                switch ((LayoutKind)layout_kind)
+                attrs |= ((LayoutKind)layout_kind) switch
                 {
-                    case LayoutKind.Auto:
-                        attrs |= TypeAttributes.AutoLayout;
-                        break;
-                    case LayoutKind.Explicit:
-                        attrs |= TypeAttributes.ExplicitLayout;
-                        break;
-                    case LayoutKind.Sequential:
-                        attrs |= TypeAttributes.SequentialLayout;
-                        break;
-                    default:
-                        // we should ignore it since it can be any value anyway...
-                        throw new Exception("Error in customattr");
-                }
+                    LayoutKind.Auto => TypeAttributes.AutoLayout,
+                    LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
+                    LayoutKind.Sequential => TypeAttributes.SequentialLayout,
+                    _ => throw new Exception("Error in customattr"), // we should ignore it since it can be any value anyway...
+                };
 
-                var ctor_type = customBuilder.Ctor is ConstructorBuilder ? ((ConstructorBuilder)customBuilder.Ctor).parameters[0] : customBuilder.Ctor.GetParametersInternal()[0].ParameterType;
+                Type ctor_type = customBuilder.Ctor is ConstructorBuilder builder ? builder.parameters[0] : customBuilder.Ctor.GetParametersInternal()[0].ParameterType;
                 int pos = 6;
                 if (ctor_type.FullName == "System.Int16")
                     pos = 4;

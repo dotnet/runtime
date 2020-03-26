@@ -164,12 +164,9 @@ namespace System.Reflection
         {
             get
             {
-                if (MemberImpl is PropertyInfo)
+                if (MemberImpl is PropertyInfo prop)
                 {
-                    PropertyInfo prop = (PropertyInfo)MemberImpl;
-                    MethodInfo mi = prop.GetGetMethod(true);
-                    if (mi == null)
-                        mi = prop.GetSetMethod(true);
+                    MethodInfo mi = prop.GetGetMethod(true) ?? prop.GetSetMethod(true);
 
                     return mi.GetParametersInternal()[PositionImpl].MetadataToken;
                 }

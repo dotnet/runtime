@@ -21,10 +21,10 @@ namespace System.Reflection
             if (assemblyName.Length == 0 || assemblyName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
-            using (var name = RuntimeMarshal.MarshalString(assemblyName))
+            using (SafeStringMarshal name = RuntimeMarshal.MarshalString(assemblyName))
             {
                 // TODO: Should use CoreRT AssemblyNameParser
-                if (!ParseAssemblyName(name.Value, out var nativeName, out var isVersionDefined, out var isTokenDefined))
+                if (!ParseAssemblyName(name.Value, out MonoAssemblyName nativeName, out bool isVersionDefined, out bool isTokenDefined))
                     throw new FileLoadException("The assembly name is invalid.");
 
                 try
@@ -78,8 +78,8 @@ namespace System.Reflection
 
             if (addVersion)
             {
-                var build = native->build == 65535 ? -1 : native->build;
-                var revision = native->revision == 65535 ? -1 : native->revision;
+                int build = native->build == 65535 ? -1 : native->build;
+                int revision = native->revision == 65535 ? -1 : native->revision;
 
                 if (build == -1)
                     _version = new Version(native->major, native->minor);
@@ -126,7 +126,7 @@ namespace System.Reflection
         {
             unsafe
             {
-                Assembly.InternalGetAssemblyName(Path.GetFullPath(assemblyFile), out var nativeName, out var codebase);
+                Assembly.InternalGetAssemblyName(Path.GetFullPath(assemblyFile), out MonoAssemblyName nativeName, out string? codebase);
 
                 var aname = new AssemblyName();
                 try

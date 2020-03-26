@@ -32,14 +32,8 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics.SymbolStore;
-using System.Collections.Generic;
 
 namespace System.Reflection.Emit
 {
@@ -358,7 +352,7 @@ namespace System.Reflection.Emit
         {
             if (override_methods != null)
             {
-                foreach (var m in override_methods)
+                foreach (MethodInfo m in override_methods)
                 {
                     if (m.IsVirtual && !IsVirtual)
                         throw new TypeLoadException(string.Format("Method '{0}' override '{1}' but it is not virtual", name, m));
@@ -388,12 +382,12 @@ namespace System.Reflection.Emit
             TypeBuilder.ResolveUserTypes(returnModOpt);
             if (paramModReq != null)
             {
-                foreach (var types in paramModReq)
+                foreach (Type[] types in paramModReq)
                     TypeBuilder.ResolveUserTypes(types);
             }
             if (paramModOpt != null)
             {
-                foreach (var types in paramModOpt)
+                foreach (Type[] types in paramModOpt)
                     TypeBuilder.ResolveUserTypes(types);
             }
         }

@@ -55,7 +55,7 @@ namespace System
             }
 
             // Resolve base type
-            var type = ResolveType(assembly, pname.Names, typeResolver, throwOnError, ignoreCase, ref stackMark);
+            Type? type = ResolveType(assembly, pname.Names, typeResolver, throwOnError, ignoreCase, ref stackMark);
             if (type == null)
                 return null;
 
@@ -76,7 +76,7 @@ namespace System
             if (pname.Modifiers != null)
             {
                 bool bounded = false;
-                foreach (var mod in pname.Modifiers)
+                foreach (int mod in pname.Modifiers)
                 {
                     switch (mod)
                     {
@@ -130,7 +130,7 @@ namespace System
             }
             else
             {
-                var assembly = assemblyResolver(aname);
+                Assembly? assembly = assemblyResolver(aname);
                 if (assembly == null && throwOnError)
                     throw new FileNotFoundException(SR.FileNotFound_ResolveAssembly, name);
                 return assembly;
@@ -378,7 +378,7 @@ namespace System
                                     fqname = true;
                                 }
 
-                                var arg = ParseName(name, true, pos, out pos);
+                                ParsedName? arg = ParseName(name, true, pos, out pos);
                                 if (arg == null)
                                     return null;
                                 res.TypeArguments.Add(arg);

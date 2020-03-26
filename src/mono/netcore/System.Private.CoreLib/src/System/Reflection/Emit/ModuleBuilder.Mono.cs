@@ -32,13 +32,9 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
-using System.Reflection;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics.SymbolStore;
 using System.IO;
 using System.Globalization;
 
@@ -143,7 +139,7 @@ namespace System.Reflection.Emit
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
 
-            var maskedAttributes = attributes & ~FieldAttributes.ReservedMask;
+            FieldAttributes maskedAttributes = attributes & ~FieldAttributes.ReservedMask;
             FieldBuilder fb = DefineDataImpl(name, data.Length, maskedAttributes | FieldAttributes.HasFieldRVA);
             fb.SetRVAData(data);
 
@@ -426,7 +422,7 @@ namespace System.Reflection.Emit
 
             if (!ignoreCase)
             {
-                var displayNestedName = ts.TypeNameWithoutModifiers();
+                ITypeName displayNestedName = ts.TypeNameWithoutModifiers();
                 name_cache.TryGetValue(displayNestedName, out result);
             }
             else
@@ -449,7 +445,7 @@ namespace System.Reflection.Emit
                     if (tb.is_created)
                         mt = tb.CreateType();
                 }
-                foreach (var mod in ts.Modifiers)
+                foreach (IModifierSpec mod in ts.Modifiers)
                 {
                     if (mod is PointerSpec)
                         mt = mt.MakePointerType();
@@ -487,7 +483,7 @@ namespace System.Reflection.Emit
                 table_indexes[0x02] = 2;
             }
             // Console.WriteLine ("getindex for table "+table.ToString()+" got "+table_indexes [table].ToString());
-            var index = table_indexes[table];
+            int index = table_indexes[table];
             table_indexes[table] += count;
             return index;
         }
@@ -647,7 +643,7 @@ namespace System.Reflection.Emit
         private int GetPseudoToken(MemberInfo member, bool create_open_instance)
         {
             int token;
-            var dict = create_open_instance ? inst_tokens_open : inst_tokens;
+            Dictionary<MemberInfo, int> dict = create_open_instance ? inst_tokens_open : inst_tokens;
             if (dict == null)
             {
                 dict = new Dictionary<MemberInfo, int>(ReferenceEqualityComparer<MemberInfo>.Instance);

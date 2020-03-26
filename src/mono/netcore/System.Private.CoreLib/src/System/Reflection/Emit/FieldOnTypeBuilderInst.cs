@@ -29,9 +29,7 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
 using System.Globalization;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -149,7 +147,7 @@ namespace System.Reflection.Emit
         // Called from the runtime to return the corresponding finished FieldInfo object
         internal FieldInfo RuntimeResolve()
         {
-            var type = instantiation.RuntimeResolve();
+            Type type = instantiation.RuntimeResolve();
             return type.GetField(fb);
         }
     }

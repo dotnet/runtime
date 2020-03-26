@@ -33,12 +33,8 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Collections;
-using System.Runtime.CompilerServices;
 using System.Globalization;
-using System.Runtime.Serialization;
 using System.Text;
 using System.Runtime.InteropServices;
 
@@ -88,7 +84,7 @@ namespace System.Reflection.Emit
                 throw new NotImplementedException();
             for (int i = 0; i < type_arguments.Length; ++i)
             {
-                var t = type_arguments[i];
+                Type t = type_arguments[i];
                 if (t is TypeBuilder && !(t as TypeBuilder).IsCreated())
                     throw new NotImplementedException();
             }
@@ -99,13 +95,11 @@ namespace System.Reflection.Emit
         {
             get
             {
-                TypeBuilder tb = generic_type as TypeBuilder;
-                return tb != null ? tb.is_created : true;
+                return generic_type is TypeBuilder tb ? tb.is_created : true;
             }
         }
 
-        private const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic |
-        BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+        private const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
         private Type GetParentType()
         {
@@ -509,7 +503,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                foreach (var t in type_arguments)
+                foreach (Type t in type_arguments)
                 {
                     if (t.IsUserType)
                         return true;
