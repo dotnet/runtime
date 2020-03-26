@@ -6,7 +6,7 @@ case "$OSName" in
 FreeBSD|Linux|NetBSD|OpenBSD|SunOS)
     os=$OSName ;;
 Darwin)
-	os=OSX ;;
+    os=OSX ;;
 *)
     echo "Unsupported OS $OSName detected, configuring as if for Linux"
     os=Linux ;;
