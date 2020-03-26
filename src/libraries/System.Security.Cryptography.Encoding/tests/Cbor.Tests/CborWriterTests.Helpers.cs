@@ -26,6 +26,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 switch (value)
                 {
+                    case null: writer.WriteNull(); break;
+                    case bool b: writer.WriteBoolean(b); break;
                     case int i: writer.WriteInt64(i); break;
                     case long i: writer.WriteInt64(i); break;
                     case ulong i: writer.WriteUInt64(i); break;

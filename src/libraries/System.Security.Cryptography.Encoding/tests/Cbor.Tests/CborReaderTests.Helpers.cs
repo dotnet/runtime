@@ -17,6 +17,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 switch (expectedValue)
                 {
+                    case null:
+                        Assert.Equal(CborReaderState.Null, reader.Peek());
+                        reader.ReadNull();
+                        break;
+                    case bool expected:
+                        Assert.Equal(CborReaderState.Boolean, reader.Peek());
+                        bool b = reader.ReadBoolean();
+                        Assert.Equal(expected, b);
+                        break;
                     case int expected:
                         VerifyPeekInteger(reader, isUnsignedInteger: expected >= 0);
                         long i = reader.ReadInt64();
@@ -39,8 +48,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         break;
                     case byte[] expected:
                         Assert.Equal(CborReaderState.ByteString, reader.Peek());
-                        byte[] b = reader.ReadByteString();
-                        Assert.Equal(expected.ByteArrayToHex(), b.ByteArrayToHex());
+                        byte[] bytes = reader.ReadByteString();
+                        Assert.Equal(expected.ByteArrayToHex(), bytes.ByteArrayToHex());
                         break;
                     case string[] expectedChunks:
                         Assert.Equal(CborReaderState.StartTextString, reader.Peek());

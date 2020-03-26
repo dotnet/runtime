@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(CborMajorType.Array, CborReaderState.StartArray)]
         [InlineData(CborMajorType.Map, CborReaderState.StartMap)]
         [InlineData(CborMajorType.Tag, CborReaderState.Tag)]
-        [InlineData(CborMajorType.Special, CborReaderState.Special)]
+        [InlineData(CborMajorType.Special, CborReaderState.SpecialValue)]
         internal static void Peek_SingleByteBuffer_ShouldReturnExpectedState(CborMajorType majorType, CborReaderState expectedResult)
         {
             ReadOnlyMemory<byte> buffer = new byte[] { (byte)((byte)majorType << 5) };

@@ -25,7 +25,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         EndArray,
         EndMap,
         Tag,
-        Special,
+        Null,
+        Boolean,
+        Single,
+        Double,
+        SpecialValue,
         Finished,
         FormatError,
         EndOfData,
@@ -135,9 +139,25 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 CborMajorType.Array => CborReaderState.StartArray,
                 CborMajorType.Map => CborReaderState.StartMap,
                 CborMajorType.Tag => CborReaderState.Tag,
-                CborMajorType.Special => CborReaderState.Special,
+                CborMajorType.Special => MapSpecialValueTagToReaderState(initialByte.AdditionalInfo),
                 _ => CborReaderState.FormatError,
             };
+
+            static CborReaderState MapSpecialValueTagToReaderState (CborAdditionalInfo value)
+            {
+                // https://tools.ietf.org/html/rfc7049#section-2.3
+
+                switch (value)
+                {
+                    case CborAdditionalInfo.SpecialValueNull: return CborReaderState.Null;
+                    case CborAdditionalInfo.SpecialValueFalse:
+                    case CborAdditionalInfo.SpecialValueTrue: return CborReaderState.Boolean;
+                    case CborAdditionalInfo.Additional16BitData:
+                    case CborAdditionalInfo.Additional32BitData: return CborReaderState.Single;
+                    case CborAdditionalInfo.Additional64BitData: return CborReaderState.Double;
+                    default: return CborReaderState.SpecialValue;
+                }
+            }
         }
 
         private CborInitialByte PeekInitialByte()

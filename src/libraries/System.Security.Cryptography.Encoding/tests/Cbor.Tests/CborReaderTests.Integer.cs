@@ -114,8 +114,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Equal(CborReaderState.Tag, reader.Peek());
-            ulong tag = reader.ReadTag();
-            Assert.Equal(expectedTag, tag);
+            CborTag tag = reader.ReadTag();
+            Assert.Equal(expectedTag, (ulong)tag);
 
             Helpers.VerifyValue(reader, expectedValue);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
@@ -135,8 +135,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             foreach (ulong expectedTag in expectedTags)
             {
                 Assert.Equal(CborReaderState.Tag, reader.Peek());
-                ulong tag = reader.ReadTag();
-                Assert.Equal(expectedTag, tag);
+                CborTag tag = reader.ReadTag();
+                Assert.Equal(expectedTag, (ulong)tag);
             }
 
             Helpers.VerifyValue(reader, expectedValue);
@@ -212,6 +212,23 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
             InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
+
+            Assert.Equal("Data item major type mismatch.", exn.Message);
+        }
+
+        [Theory]
+        [InlineData("40")] // empty text string
+        [InlineData("60")] // empty byte string
+        [InlineData("f6")] // null
+        [InlineData("80")] // []
+        [InlineData("a0")] // {}
+        [InlineData("f97e00")] // NaN
+        [InlineData("fb3ff199999999999a")] // 1.1
+        public static void ReadTag_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => reader.ReadTag());
 
             Assert.Equal("Data item major type mismatch.", exn.Message);
         }

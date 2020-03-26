@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            writer.WriteTag(tag);
+            writer.WriteTag((CborTag)tag);
             Helpers.WriteValue(writer, value);
             AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
         }
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             using var writer = new CborWriter();
             foreach (var tag in tags)
             {
-                writer.WriteTag(tag);
+                writer.WriteTag((CborTag)tag);
             }
             Helpers.WriteValue(writer, value);
             AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
