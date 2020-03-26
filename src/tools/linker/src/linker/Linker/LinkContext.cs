@@ -495,7 +495,7 @@ namespace Mono.Linker {
 			}
 
 			if (!perAssembly.ContainsKey (assemblyContext)) {
-				perAssembly.Add (assemblyContext, ~optimizations);
+				perAssembly.Add (assemblyContext, 0);
 				return;
 			}
 
@@ -535,5 +535,10 @@ namespace Mono.Linker {
 		/// Option to do interprocedural constant propagation on return values
 		/// </summary>
 		IPConstantPropagation = 1 << 5,
+
+		/// <summary>
+		/// Devirtualizes methods and seals types
+		/// </summary>
+		Sealer = 1 << 6
 	}
 }

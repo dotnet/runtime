@@ -147,6 +147,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("UnreachableBlock");
 		}
 
+		public static IEnumerable<TestCaseData> SealerTests ()
+		{
+			return NUnitCasesBySuiteName ("Sealer");
+		}
+
 		public static IEnumerable<TestCaseData> SubstitutionsTests ()
 		{
 			return NUnitCasesBySuiteName ("Substitutions");

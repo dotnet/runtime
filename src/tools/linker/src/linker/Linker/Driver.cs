@@ -553,6 +553,7 @@ namespace Mono.Linker {
 
 				p.AddStepBefore (typeof (MarkStep), new RemoveUnreachableBlocksStep ());
 				p.AddStepBefore (typeof (OutputStep), new ClearInitLocalsStep ());
+				p.AddStepBefore (typeof (OutputStep), new SealerStep ());
 
 				//
 				// Pipeline setup with all steps enabled
@@ -754,6 +755,9 @@ namespace Mono.Linker {
 			case "ipconstprop":
 				optimization = CodeOptimizations.IPConstantPropagation;
 				return true;
+			case "sealer":
+				optimization = CodeOptimizations.Sealer;
+				return true;
 			}
 
 			Console.WriteLine ($"Invalid optimization value '{text}'");
@@ -891,6 +895,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("                              unusedinterfaces: Removes interface types from declaration when not used");
 			Console.WriteLine ("  --enable-opt NAME [ASM]   Enable one of the additional optimizations globaly or for a specific assembly name");
 			Console.WriteLine ("                              clearinitlocals: Remove initlocals");
+			Console.WriteLine ("                              sealer: Any method or type which does not have override is marked as sealed");
 			Console.WriteLine ("  --exclude-feature NAME    Any code which has a feature <name> in linked assemblies will be removed");
 			Console.WriteLine ("                              com: Support for COM Interop");
 			Console.WriteLine ("                              etw: Event Tracing for Windows");
