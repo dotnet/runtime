@@ -15758,10 +15758,10 @@ void Compiler::fgMorphBlocks()
         // Process all statement trees in the basic block.
         fgMorphStmts(block, &lnot, &loadw);
 
-        // Are we using a single return block?
-        if (block->bbJumpKind == BBJ_RETURN)
+        // Do we need to merge the result of this block into a single return block?
+        if ((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {
-            if ((genReturnBB != nullptr) && (genReturnBB != block) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+            if ((genReturnBB != nullptr) && (genReturnBB != block))
             {
                 fgMergeBlockReturn(block);
             }
@@ -15781,18 +15781,28 @@ void Compiler::fgMorphBlocks()
 #endif
 }
 
+//------------------------------------------------------------------------
+// fgMergeBlockReturn: assign the block return value (if any) into the single return temp
+//   and branch to the single return block.
+//
+// Arguments:
+//   block - the block to process.
+//
+// Notes:
+//   A block is not guaranteed to have a last stmt if its jump kind is BBJ_RETURN.
+//   For example a method returning void could have an empty block with jump kind BBJ_RETURN.
+//   Such blocks do materialize as part of in-lining.
+//
+//   A block with jump kind BBJ_RETURN does not necessarily need to end with GT_RETURN.
+//   It could end with a tail call or rejected tail call or monitor.exit or a GT_INTRINSIC.
+//   For now it is safe to explicitly check whether last stmt is GT_RETURN if genReturnLocal
+//   is BAD_VAR_NUM.
+//
 void Compiler::fgMergeBlockReturn(BasicBlock* block)
 {
+    assert((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0));
+    assert((genReturnBB != nullptr) && (genReturnBB != block));
 
-    // Note 1: A block is not guaranteed to have a last stmt if its jump kind is BBJ_RETURN.
-    // For example a method returning void could have an empty block with jump kind BBJ_RETURN.
-    // Such blocks do materialize as part of in-lining.
-    //
-    // Note 2: A block with jump kind BBJ_RETURN does not necessarily need to end with GT_RETURN.
-    // It could end with a tail call or rejected tail call or monitor.exit or a GT_INTRINSIC.
-    // For now it is safe to explicitly check whether last stmt is GT_RETURN if genReturnLocal
-    // is BAD_VAR_NUM.
-    //
     // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.
 
     Statement* lastStmt = block->lastStmt();
@@ -15804,7 +15814,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
     }
     else
     {
-        /* We'll jump to the genReturnBB */
+        // We'll jump to the genReturnBB.
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(TARGET_X86)
