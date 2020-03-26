@@ -101,7 +101,7 @@ namespace System.Reflection.Emit
             pmodule = mb;
         }
 
-        internal TypeBuilder(ModuleBuilder mb, string fullName, TypeAttributes attr, Type parent, Type[] interfaces, PackingSize packing_size, int type_size, Type nesting_type)
+        internal TypeBuilder(ModuleBuilder mb, string fullname, TypeAttributes attr, Type parent, Type[] interfaces, PackingSize packing_size, int type_size, Type nesting_type)
         {
             int sep_index;
             this.parent = ResolveUserType(parent);
@@ -110,20 +110,20 @@ namespace System.Reflection.Emit
             this.packing_size = packing_size;
             this.nesting_type = nesting_type;
 
-            check_name(nameof(fullName), fullName);
+            check_name(nameof(fullname), fullname);
 
             if (parent == null && (attr & TypeAttributes.Interface) != 0 && (attr & TypeAttributes.Abstract) == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
 
-            sep_index = fullName.LastIndexOf('.');
+            sep_index = fullname.LastIndexOf('.');
             if (sep_index != -1)
             {
-                this.tname = fullName.Substring(sep_index + 1);
-                this.nspace = fullName.Substring(0, sep_index);
+                this.tname = fullname.Substring(sep_index + 1);
+                this.nspace = fullname.Substring(0, sep_index);
             }
             else
             {
-                this.tname = fullName;
+                this.tname = fullname;
                 this.nspace = string.Empty;
             }
             if (interfaces != null)
@@ -138,7 +138,7 @@ namespace System.Reflection.Emit
 
             // skip .<Module> ?
             table_idx = mb.get_next_table_index(this, 0x02, 1);
-            fullname = GetFullName();
+            this.fullname = GetFullName();
         }
 
         public override Assembly Assembly
