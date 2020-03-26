@@ -17,8 +17,9 @@ namespace System.Net.Http.Json
     {
         private static readonly int OverflowBufferSize = Encoding.UTF8.GetMaxByteCount(1); // The most number of bytes used to represent a single UTF char
 
+        // Default size of the buffer that will hold the bytes from the underlying stream.
+        // Those bytes are expected to be encoded in the sourceEncoding passed into the .ctor.
         internal const int MaxByteBufferSize = 4096;
-        internal const int MaxCharBufferSize = 4096;
 
         private readonly Stream _stream;
         private readonly Decoder _decoder;
@@ -39,9 +40,8 @@ namespace System.Net.Http.Json
 
             // Attempt to allocate a char buffer than can tolerate the worst-case scenario for this
             // encoding. This would allow the byte -> char conversion to complete in a single call.
-            // However limit the buffer size to prevent an encoding that has a very poor worst-case scenario.
             // The conversion process is tolerant of char buffer that is not large enough to convert all the bytes at once.
-            int maxCharBufferSize = Math.Min(MaxCharBufferSize, sourceEncoding.GetMaxCharCount(MaxByteBufferSize));
+            int maxCharBufferSize = sourceEncoding.GetMaxCharCount(MaxByteBufferSize);
             _charBuffer = new ArraySegment<char>(ArrayPool<char>.Shared.Rent(maxCharBufferSize), 0, count: 0);
 
             _overflowBuffer = new ArraySegment<byte>(ArrayPool<byte>.Shared.Rent(OverflowBufferSize), 0, count: 0);
@@ -124,6 +124,7 @@ namespace System.Net.Http.Json
             bool completed = false;
             int charsRead = default;
             int bytesWritten = default;
+            // Since Convert() could fail if the destination buffer cannot fit at least one encoded char.
             // If the destination buffer is smaller than GetMaxByteCount(1), we avoid encoding to the destination and we use the overflow buffer instead.
             if (readBuffer.Count > OverflowBufferSize || _charBuffer.Count == 0)
             {

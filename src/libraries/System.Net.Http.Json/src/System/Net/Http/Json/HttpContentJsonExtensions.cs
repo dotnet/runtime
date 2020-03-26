@@ -85,8 +85,9 @@ namespace System.Net.Http.Json
             int index = 0;
             int typeLength = mediaType.IndexOf('/');
 
+            ReadOnlySpan<char> type = mediaType.Slice(index, typeLength);
             if (typeLength < 0 ||
-                mediaType.Slice(index, typeLength).CompareTo(JsonContent.JsonType.AsSpan(), StringComparison.OrdinalIgnoreCase) != 0)
+                type.CompareTo(JsonContent.JsonType.AsSpan(), StringComparison.OrdinalIgnoreCase) != 0)
             {
                 return false;
             }
@@ -101,8 +102,8 @@ namespace System.Net.Http.Json
             }
 
             index += suffixStart + 1;
-            ReadOnlySpan<char> mediaTypeSuffix = mediaType.Slice(index);
-            if (mediaTypeSuffix.CompareTo(JsonContent.JsonSubtype.AsSpan(), StringComparison.OrdinalIgnoreCase) != 0)
+            ReadOnlySpan<char> suffix = mediaType.Slice(index);
+            if (suffix.CompareTo(JsonContent.JsonSubtype.AsSpan(), StringComparison.OrdinalIgnoreCase) != 0)
             {
                 return false;
             }

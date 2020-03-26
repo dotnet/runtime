@@ -18,11 +18,11 @@ namespace System.Net.Http.Json.Functional.Tests
         private readonly List<HttpHeaderData> _headers = new List<HttpHeaderData> { new HttpHeaderData("Content-Type", "application/json") };
 
         [Fact]
-        public async Task ThrowOnNull()
+        public void ThrowOnNull()
         {
             HttpContent content = null;
-            await Assert.ThrowsAsync<ArgumentNullException>(() => content.ReadFromJsonAsync<Person>());
-            await Assert.ThrowsAsync<ArgumentNullException>(() => content.ReadFromJsonAsync(typeof(Person)));
+            AssertExtensions.Throws<ArgumentNullException>("content", () => content.ReadFromJsonAsync<Person>());
+            AssertExtensions.Throws<ArgumentNullException>("content", () => content.ReadFromJsonAsync(typeof(Person)));
         }
 
         [Fact]
@@ -35,7 +35,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     using (HttpClient client = new HttpClient())
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        var response = await client.SendAsync(request);
+                        HttpResponseMessage response = await client.SendAsync(request);
                         object obj = await response.Content.ReadFromJsonAsync(typeof(Person));
                         Person per = Assert.IsType<Person>(obj);
                         per.Validate();
@@ -64,7 +64,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     using (HttpClient client = new HttpClient())
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        var response = await client.SendAsync(request);
+                        HttpResponseMessage response = await client.SendAsync(request);
                         object obj = await response.Content.ReadFromJsonAsync(typeof(Person));
                         Assert.Null(obj);
 
@@ -91,7 +91,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     using (HttpClient client = new HttpClient())
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        var response = await client.SendAsync(request);
+                        HttpResponseMessage response = await client.SendAsync(request);
 
                         // As of now, we pass the message body to the serializer even when its empty which causes the serializer to throw.
                         JsonException ex = await Assert.ThrowsAsync<JsonException>(() => response.Content.ReadFromJsonAsync(typeof(Person)));
@@ -110,7 +110,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     using (HttpClient client = new HttpClient())
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        var response = await client.SendAsync(request);
+                        HttpResponseMessage response = await client.SendAsync(request);
 
                         await Assert.ThrowsAsync<NotSupportedException>(() => response.Content.ReadFromJsonAsync<Person>());
                     }
@@ -132,7 +132,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     using (HttpClient client = new HttpClient())
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        var response = await client.SendAsync(request);
+                        HttpResponseMessage response = await client.SendAsync(request);
 
                         Person person = await response.Content.ReadFromJsonAsync<Person>();
                         person.Validate();
@@ -155,7 +155,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     using (HttpClient client = new HttpClient())
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        var response = await client.SendAsync(request);
+                        HttpResponseMessage response = await client.SendAsync(request);
 
                         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => response.Content.ReadFromJsonAsync<Person>());
                         Assert.IsType<ArgumentException>(ex.InnerException);
@@ -175,7 +175,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     using (HttpClient client = new HttpClient())
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        var response = await client.SendAsync(request);
+                        HttpResponseMessage response = await client.SendAsync(request);
 
                         Person per = Assert.IsType<Person>(await response.Content.ReadFromJsonAsync(typeof(Person)));
                         per.Validate();
@@ -218,7 +218,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     using (HttpClient client = new HttpClient())
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        var response = await client.SendAsync(request);
+                        HttpResponseMessage response = await client.SendAsync(request);
                         await response.Content.ReadFromJsonAsync(typeof(EnsureDefaultOptions));
                     }
                 },
@@ -244,7 +244,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     using (HttpClient client = new HttpClient())
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        var response = await client.SendAsync(request);
+                        HttpResponseMessage response = await client.SendAsync(request);
 
                         Person person = await response.Content.ReadFromJsonAsync<Person>();
                         person.Validate();
@@ -274,7 +274,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     using (HttpClient client = new HttpClient())
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        var response = await client.SendAsync(request);
+                        HttpResponseMessage response = await client.SendAsync(request);
 
                         Exception ex = await Assert.ThrowsAsync<NotSupportedException>(() => response.Content.ReadFromJsonAsync<Person>());
                         Assert.Contains("application/json", ex.Message);

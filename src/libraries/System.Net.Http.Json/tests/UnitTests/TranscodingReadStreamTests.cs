@@ -21,8 +21,8 @@ namespace System.Net.Http.Json.Functional.Tests
         public async Task ReadAsync_SingleByte()
         {
             // Arrange
-            var input = "Hello world";
-            var encoding = Encoding.Unicode;
+            string input = "Hello world";
+            Encoding encoding = Encoding.Unicode;
             using (TranscodingReadStream stream = new TranscodingReadStream(new MemoryStream(encoding.GetBytes(input)), encoding))
             {
                 var bytes = new byte[4];
@@ -68,15 +68,15 @@ namespace System.Net.Http.Json.Functional.Tests
         public async Task ReadAsync_CompletedInSecondIteration()
         {
             // Arrange
-            var input = new string('A', 1024 + 10);
-            var encoding = Encoding.Unicode;
+            string input = new string('A', 1024 + 10);
+            Encoding encoding = Encoding.Unicode;
             using (TranscodingReadStream stream = new TranscodingReadStream(new MemoryStream(encoding.GetBytes(input)), encoding))
             {
                 var bytes = new byte[1024];
-                var expected = Encoding.UTF8.GetBytes(input.Substring(0, bytes.Length));
+                byte[] expected = Encoding.UTF8.GetBytes(input.Substring(0, bytes.Length));
 
                 // Act
-                var readBytes = await stream.ReadAsync(bytes, 0, bytes.Length);
+                int readBytes = await stream.ReadAsync(bytes, 0, bytes.Length);
 
                 // Assert
                 Assert.Equal(bytes.Length, readBytes);
@@ -98,15 +98,15 @@ namespace System.Net.Http.Json.Functional.Tests
         {
             // Arrange
             // Test ensures that the overflow buffer works correctly
-            var input = "\u2600";
-            var encoding = Encoding.Unicode;
+            string input = "\u2600";
+            Encoding encoding = Encoding.Unicode;
             using (TranscodingReadStream stream = new TranscodingReadStream(new MemoryStream(encoding.GetBytes(input)), encoding))
             {
                 var bytes = new byte[1];
-                var expected = Encoding.UTF8.GetBytes(input);
+                byte[] expected = Encoding.UTF8.GetBytes(input);
 
                 // Act
-                var readBytes = await stream.ReadAsync(bytes, 0, bytes.Length);
+                int readBytes = await stream.ReadAsync(bytes, 0, bytes.Length);
 
                 // Assert
                 Assert.Equal(1, readBytes);
@@ -127,37 +127,36 @@ namespace System.Net.Http.Json.Functional.Tests
             }
         }
 
-        public static TheoryData<string> ReadAsync_WithOverflowBuffer_AtBoundariesData => new TheoryData<string>
+        public static TheoryData<string> ReadAsync_WithOverflowBuffer_AtBoundariesData(string encoding)
         {
-            new string('a', TranscodingReadStream.MaxCharBufferSize - 1) + '\u2600',
-            new string('a', TranscodingReadStream.MaxCharBufferSize - 2) + '\u2600',
-            new string('a', TranscodingReadStream.MaxCharBufferSize) + '\u2600',
-        };
+            int maxCharBufferSize = Encoding.GetEncoding(encoding).GetMaxCharCount(TranscodingReadStream.MaxByteBufferSize);
+
+            return new TheoryData<string>
+            {
+                new string('a', maxCharBufferSize - 1) + '\u2600',
+                new string('a', maxCharBufferSize - 2) + '\u2600',
+                new string('a', maxCharBufferSize) + '\u2600',
+            };
+        }
 
         [Theory]
-        [MemberData(nameof(ReadAsync_WithOverflowBuffer_AtBoundariesData))]
+        [MemberData(nameof(ReadAsync_WithOverflowBuffer_AtBoundariesData), "utf-16")]
         public Task ReadAsync_WithOverflowBuffer_WithBufferSize1(string input) => ReadAsync_WithOverflowBufferAtCharBufferBoundaries(input, bufferSize: 1);
-
-        [Theory]
-        [MemberData(nameof(ReadAsync_WithOverflowBuffer_AtBoundariesData))]
-        public Task ReadAsync_WithOverflowBuffer_WithBufferSize2(string input) => ReadAsync_WithOverflowBufferAtCharBufferBoundaries(input, bufferSize: 1);
 
         private static async Task ReadAsync_WithOverflowBufferAtCharBufferBoundaries(string input, int bufferSize)
         {
             // Arrange
             // Test ensures that the overflow buffer works correctly
-            var encoding = Encoding.Unicode;
+            Encoding encoding = Encoding.Unicode;
             using (TranscodingReadStream stream = new TranscodingReadStream(new MemoryStream(encoding.GetBytes(input)), encoding))
             {
-                var bytes = new byte[1];
-                var expected = Encoding.UTF8.GetBytes(input);
+                byte[] expected = Encoding.UTF8.GetBytes(input);
 
                 // Act
-                int read;
                 var buffer = new byte[bufferSize];
                 var actual = new List<byte>();
 
-                while ((read = await stream.ReadAsync(buffer, 0, bufferSize)) != 0)
+                while (await stream.ReadAsync(buffer, 0, bufferSize) != 0)
                 {
                     actual.AddRange(buffer);
                 }
@@ -166,11 +165,17 @@ namespace System.Net.Http.Json.Functional.Tests
             }
         }
 
-        public static TheoryData ReadAsyncInputLatin =>
-            GetLatinTextInput(TranscodingReadStream.MaxCharBufferSize, TranscodingReadStream.MaxByteBufferSize);
+        public static TheoryData ReadAsyncInputLatin(string encoding)
+        {
+            int maxCharBufferSize = Encoding.GetEncoding(encoding).GetMaxCharCount(TranscodingReadStream.MaxByteBufferSize);
+            return GetLatinTextInput(maxCharBufferSize, TranscodingReadStream.MaxByteBufferSize);
+        }
 
-        public static TheoryData ReadAsyncInputUnicode =>
-            GetUnicodeText(TranscodingReadStream.MaxCharBufferSize);
+        public static TheoryData ReadAsyncInputUnicode(string encoding)
+        {
+            int maxCharBufferSize = Encoding.GetEncoding(encoding).GetMaxCharCount(TranscodingReadStream.MaxByteBufferSize);
+            return GetUnicodeText(maxCharBufferSize);
+        }
 
         internal static TheoryData GetLatinTextInput(int maxCharBufferSize, int maxByteBufferSize)
         {
@@ -210,60 +215,60 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ReadAsyncInputLatin))]
-        [MemberData(nameof(ReadAsyncInputUnicode))]
+        [MemberData(nameof(ReadAsyncInputLatin), "utf-32")]
+        [MemberData(nameof(ReadAsyncInputUnicode), "utf-32")]
         public Task ReadAsync_Works_WhenInputIs_UTF32(string message)
         {
-            var sourceEncoding = Encoding.UTF32;
+            Encoding sourceEncoding = Encoding.UTF32;
             return ReadAsyncTest(sourceEncoding, message);
         }
 
         [Theory]
-        [MemberData(nameof(ReadAsyncInputLatin))]
-        [MemberData(nameof(ReadAsyncInputUnicode))]
+        [MemberData(nameof(ReadAsyncInputLatin), "utf-16")]
+        [MemberData(nameof(ReadAsyncInputUnicode), "utf-16")]
         public Task ReadAsync_Works_WhenInputIs_Unicode(string message)
         {
-            var sourceEncoding = Encoding.Unicode;
+            Encoding sourceEncoding = Encoding.Unicode;
             return ReadAsyncTest(sourceEncoding, message);
         }
 
         [Theory]
-        [MemberData(nameof(ReadAsyncInputLatin))]
-        [MemberData(nameof(ReadAsyncInputUnicode))]
+        [MemberData(nameof(ReadAsyncInputLatin), "utf-7")]
+        [MemberData(nameof(ReadAsyncInputUnicode), "utf-7")]
         public Task ReadAsync_Works_WhenInputIs_UTF7(string message)
         {
-            var sourceEncoding = Encoding.UTF7;
+            Encoding sourceEncoding = Encoding.UTF7;
             return ReadAsyncTest(sourceEncoding, message);
         }
 
         [Theory]
-        [MemberData(nameof(ReadAsyncInputLatin))]
+        [MemberData(nameof(ReadAsyncInputLatin), "iso-8859-1")]
         public Task ReadAsync_Works_WhenInputIs_WesternEuropeanEncoding(string message)
         {
             // Arrange
-            var sourceEncoding = Encoding.GetEncoding(28591);
+            Encoding sourceEncoding = Encoding.GetEncoding(28591);
             return ReadAsyncTest(sourceEncoding, message);
         }
 
         [Theory]
-        [MemberData(nameof(ReadAsyncInputLatin))]
+        [MemberData(nameof(ReadAsyncInputLatin), "us-ascii")]
         public Task ReadAsync_Works_WhenInputIs_ASCII(string message)
         {
             // Arrange
-            var sourceEncoding = Encoding.ASCII;
+            Encoding sourceEncoding = Encoding.ASCII;
             return ReadAsyncTest(sourceEncoding, message);
         }
 
         private static async Task ReadAsyncTest(Encoding sourceEncoding, string message)
         {
-            var input = $"{{ \"Message\": \"{message}\" }}";
+            string input = $"{{ \"Message\": \"{message}\" }}";
             var stream = new MemoryStream(sourceEncoding.GetBytes(input));
 
             using (var transcodingStream = new TranscodingReadStream(stream, sourceEncoding))
             {
 
-                var model = await JsonSerializer.DeserializeAsync(transcodingStream, typeof(TestModel));
-                var testModel = Assert.IsType<TestModel>(model);
+                object model = await JsonSerializer.DeserializeAsync(transcodingStream, typeof(TestModel));
+                TestModel testModel = Assert.IsType<TestModel>(model);
 
                 Assert.Equal(message, testModel.Message);
             }

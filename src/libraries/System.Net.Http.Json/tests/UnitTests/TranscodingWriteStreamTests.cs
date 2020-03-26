@@ -29,7 +29,7 @@ namespace System.Net.Http.Json.Functional.Tests
         [MemberData(nameof(WriteAsyncInputUnicode))]
         public Task WriteAsync_Works_WhenOutputIs_UTF32(string message)
         {
-            var targetEncoding = Encoding.UTF32;
+            Encoding targetEncoding = Encoding.UTF32;
             return WriteAsyncTest(targetEncoding, message);
         }
 
@@ -38,7 +38,7 @@ namespace System.Net.Http.Json.Functional.Tests
         [MemberData(nameof(WriteAsyncInputUnicode))]
         public Task WriteAsync_Works_WhenOutputIs_Unicode(string message)
         {
-            var targetEncoding = Encoding.Unicode;
+            Encoding targetEncoding = Encoding.Unicode;
             return WriteAsyncTest(targetEncoding, message);
         }
 
@@ -46,7 +46,7 @@ namespace System.Net.Http.Json.Functional.Tests
         [MemberData(nameof(WriteAsyncInputLatin))]
         public Task WriteAsync_Works_WhenOutputIs_UTF7(string message)
         {
-            var targetEncoding = Encoding.UTF7;
+            Encoding targetEncoding = Encoding.UTF7;
             return WriteAsyncTest(targetEncoding, message);
         }
 
@@ -55,7 +55,7 @@ namespace System.Net.Http.Json.Functional.Tests
         public Task WriteAsync_Works_WhenOutputIs_WesternEuropeanEncoding(string message)
         {
             // Arrange
-            var targetEncoding = Encoding.GetEncoding(28591);
+            Encoding targetEncoding = Encoding.GetEncoding(28591);
             return WriteAsyncTest(targetEncoding, message);
         }
 
@@ -65,7 +65,7 @@ namespace System.Net.Http.Json.Functional.Tests
         public Task WriteAsync_Works_WhenOutputIs_ASCII(string message)
         {
             // Arrange
-            var targetEncoding = Encoding.ASCII;
+            Encoding targetEncoding = Encoding.ASCII;
             return WriteAsyncTest(targetEncoding, message);
         }
 
@@ -84,7 +84,7 @@ namespace System.Net.Http.Json.Functional.Tests
             await transcodingStream.FinalWriteAsync(default);
             await transcodingStream.FlushAsync();
 
-            var actual = targetEncoding.GetString(stream.ToArray());
+            string actual = targetEncoding.GetString(stream.ToArray());
             Assert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
 
