@@ -7632,8 +7632,7 @@ ves_icall_System_Environment_GetEnvironmentVariable_native (const gchar *utf8_na
  */
 #ifndef _MSC_VER
 #ifndef __MINGW32_VERSION
-#if defined(__APPLE__)
-#if defined (TARGET_OSX)
+#if defined(__APPLE__) && defined(TARGET_OSX)
 /* Apple defines this in crt_externs.h but doesn't provide that header for 
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
  * in fact exist on all implementations (so far) 
@@ -7642,10 +7641,6 @@ G_BEGIN_DECLS
 gchar ***_NSGetEnviron(void);
 G_END_DECLS
 #define environ (*_NSGetEnviron())
-#else
-static char *mono_environ[1] = { NULL };
-#define environ mono_environ
-#endif /* defined (TARGET_OSX) */
 #else
 G_BEGIN_DECLS
 extern
