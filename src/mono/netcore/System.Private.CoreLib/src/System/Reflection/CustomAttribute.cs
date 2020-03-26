@@ -140,7 +140,8 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(obj));
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
-            if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute) && attributeType != typeof(object))
+            if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface
+                && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute) && attributeType != typeof(object))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
             if (attributeType == typeof(CustomAttribute))
