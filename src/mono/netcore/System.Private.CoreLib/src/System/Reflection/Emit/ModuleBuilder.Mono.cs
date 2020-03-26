@@ -415,7 +415,7 @@ namespace System.Reflection.Emit
             if (className == null)
                 throw new ArgumentNullException(nameof(className));
             if (className.Length == 0)
-                throw new ArgumentException(nameof(className));
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(className));
 
             TypeBuilder result = null;
 
