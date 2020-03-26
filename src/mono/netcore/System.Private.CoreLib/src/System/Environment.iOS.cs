@@ -85,7 +85,7 @@ namespace System
                     return Interop.Sys.SearchPath(NSSearchPathDirectory.NSCachesDirectory);
 
                 case SpecialFolder.UserProfile:
-                    return Environment.GetEnvironmentVariable("HOME");
+                    return InternalGetEnvironmentVariable("HOME");
 
                 case SpecialFolder.CommonApplicationData:
                     return "/usr/share";

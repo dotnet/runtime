@@ -27,12 +27,7 @@ namespace System
             variable = TrimStringOnFirstZero(variable);
             lock (s_environment)
             {
-                string value;
-                if (!s_environment.TryGetValue(variable, out value))
-                {
-                    value = InternalGetEnvironmentVariable(variable);
-                    s_environment[variable] = value;
-                }
+                s_environment.TryGetValue(variable, out string value);
                 return value;
             }
         }
@@ -107,10 +102,7 @@ namespace System
             {
                 if (name != null)
                 {
-                    using (var h = RuntimeMarshal.MarshalString(name))
-                    {
-                        results.Add(name, internalGetEnvironmentVariable_native(h.Value));
-                    }
+                    results.Add(InternalGetEnvironmentVariable(name));
                 }
             }
 
