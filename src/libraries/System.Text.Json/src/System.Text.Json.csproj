@@ -131,6 +131,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonDictionaryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonExtensionDataAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonIgnoreAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonIgnoreCondition.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonObjectConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonParameterInfo.cs" />
