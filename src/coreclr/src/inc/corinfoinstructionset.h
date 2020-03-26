@@ -179,10 +179,16 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
 #ifdef TARGET_ARM64
         if (resultflags.HasInstructionSet(InstructionSet_ArmBase) && !resultflags.HasInstructionSet(InstructionSet_ArmBase_Arm64))
             resultflags.RemoveInstructionSet(InstructionSet_ArmBase);
+        if (resultflags.HasInstructionSet(InstructionSet_ArmBase_Arm64) && !resultflags.HasInstructionSet(InstructionSet_ArmBase))
+            resultflags.RemoveInstructionSet(InstructionSet_ArmBase_Arm64);
         if (resultflags.HasInstructionSet(InstructionSet_AdvSimd) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd_Arm64))
             resultflags.RemoveInstructionSet(InstructionSet_AdvSimd);
+        if (resultflags.HasInstructionSet(InstructionSet_AdvSimd_Arm64) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd))
+            resultflags.RemoveInstructionSet(InstructionSet_AdvSimd_Arm64);
         if (resultflags.HasInstructionSet(InstructionSet_Crc32) && !resultflags.HasInstructionSet(InstructionSet_Crc32_Arm64))
             resultflags.RemoveInstructionSet(InstructionSet_Crc32);
+        if (resultflags.HasInstructionSet(InstructionSet_Crc32_Arm64) && !resultflags.HasInstructionSet(InstructionSet_Crc32))
+            resultflags.RemoveInstructionSet(InstructionSet_Crc32_Arm64);
         if (resultflags.HasInstructionSet(InstructionSet_AdvSimd) && !resultflags.HasInstructionSet(InstructionSet_ArmBase))
             resultflags.RemoveInstructionSet(InstructionSet_AdvSimd);
         if (resultflags.HasInstructionSet(InstructionSet_Aes) && !resultflags.HasInstructionSet(InstructionSet_ArmBase))
@@ -197,20 +203,36 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
 #ifdef TARGET_AMD64
         if (resultflags.HasInstructionSet(InstructionSet_SSE) && !resultflags.HasInstructionSet(InstructionSet_SSE_X64))
             resultflags.RemoveInstructionSet(InstructionSet_SSE);
+        if (resultflags.HasInstructionSet(InstructionSet_SSE_X64) && !resultflags.HasInstructionSet(InstructionSet_SSE))
+            resultflags.RemoveInstructionSet(InstructionSet_SSE_X64);
         if (resultflags.HasInstructionSet(InstructionSet_SSE2) && !resultflags.HasInstructionSet(InstructionSet_SSE2_X64))
             resultflags.RemoveInstructionSet(InstructionSet_SSE2);
+        if (resultflags.HasInstructionSet(InstructionSet_SSE2_X64) && !resultflags.HasInstructionSet(InstructionSet_SSE2))
+            resultflags.RemoveInstructionSet(InstructionSet_SSE2_X64);
         if (resultflags.HasInstructionSet(InstructionSet_SSE41) && !resultflags.HasInstructionSet(InstructionSet_SSE41_X64))
             resultflags.RemoveInstructionSet(InstructionSet_SSE41);
+        if (resultflags.HasInstructionSet(InstructionSet_SSE41_X64) && !resultflags.HasInstructionSet(InstructionSet_SSE41))
+            resultflags.RemoveInstructionSet(InstructionSet_SSE41_X64);
         if (resultflags.HasInstructionSet(InstructionSet_SSE42) && !resultflags.HasInstructionSet(InstructionSet_SSE42_X64))
             resultflags.RemoveInstructionSet(InstructionSet_SSE42);
+        if (resultflags.HasInstructionSet(InstructionSet_SSE42_X64) && !resultflags.HasInstructionSet(InstructionSet_SSE42))
+            resultflags.RemoveInstructionSet(InstructionSet_SSE42_X64);
         if (resultflags.HasInstructionSet(InstructionSet_BMI1) && !resultflags.HasInstructionSet(InstructionSet_BMI1_X64))
             resultflags.RemoveInstructionSet(InstructionSet_BMI1);
+        if (resultflags.HasInstructionSet(InstructionSet_BMI1_X64) && !resultflags.HasInstructionSet(InstructionSet_BMI1))
+            resultflags.RemoveInstructionSet(InstructionSet_BMI1_X64);
         if (resultflags.HasInstructionSet(InstructionSet_BMI2) && !resultflags.HasInstructionSet(InstructionSet_BMI2_X64))
             resultflags.RemoveInstructionSet(InstructionSet_BMI2);
+        if (resultflags.HasInstructionSet(InstructionSet_BMI2_X64) && !resultflags.HasInstructionSet(InstructionSet_BMI2))
+            resultflags.RemoveInstructionSet(InstructionSet_BMI2_X64);
         if (resultflags.HasInstructionSet(InstructionSet_LZCNT) && !resultflags.HasInstructionSet(InstructionSet_LZCNT_X64))
             resultflags.RemoveInstructionSet(InstructionSet_LZCNT);
+        if (resultflags.HasInstructionSet(InstructionSet_LZCNT_X64) && !resultflags.HasInstructionSet(InstructionSet_LZCNT))
+            resultflags.RemoveInstructionSet(InstructionSet_LZCNT_X64);
         if (resultflags.HasInstructionSet(InstructionSet_POPCNT) && !resultflags.HasInstructionSet(InstructionSet_POPCNT_X64))
             resultflags.RemoveInstructionSet(InstructionSet_POPCNT);
+        if (resultflags.HasInstructionSet(InstructionSet_POPCNT_X64) && !resultflags.HasInstructionSet(InstructionSet_POPCNT))
+            resultflags.RemoveInstructionSet(InstructionSet_POPCNT_X64);
         if (resultflags.HasInstructionSet(InstructionSet_SSE2) && !resultflags.HasInstructionSet(InstructionSet_SSE))
             resultflags.RemoveInstructionSet(InstructionSet_SSE2);
         if (resultflags.HasInstructionSet(InstructionSet_SSE3) && !resultflags.HasInstructionSet(InstructionSet_SSE2))
