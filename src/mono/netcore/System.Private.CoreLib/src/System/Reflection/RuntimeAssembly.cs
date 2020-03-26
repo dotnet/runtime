@@ -117,8 +117,8 @@ namespace System.Reflection
             }
         }
 
-        // TODO:
-        public override bool IsCollectible => false;
+        // TODO: consider a dedicated icall instead
+        public override bool IsCollectible => AssemblyLoadContext.GetLoadContext((Assembly)this).IsCollectible;
 
         internal static AssemblyName CreateAssemblyName(string assemblyString, out RuntimeAssembly assemblyFromResolveEvent)
         {
