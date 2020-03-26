@@ -68,6 +68,9 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'iOS') }}:
       - name: osOverride
         value: -os iOS
+    - ${{ if eq(parameters.osGroup, 'Android') }}:
+      - name: osOverride
+        value: -os Android
     - ${{ parameters.variables }}
 
     steps:
@@ -79,6 +82,13 @@ jobs:
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
+    - ${{ if in(parameters.osGroup, 'Android') }}:
+      - script: |
+          wget https://dl.google.com/android/repository/android-ndk-r21-linux-x86_64.zip
+          mkdir -p ~/Android/Sdk
+          unzip android-ndk-r21-linux-x86_64.zip -d ~/Android/Sdk
+          mv ~/Android/Sdk/*ndk* ~/Android/Sdk/ndk
+        displayName: Install Android NDK
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # Necessary to install python
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
