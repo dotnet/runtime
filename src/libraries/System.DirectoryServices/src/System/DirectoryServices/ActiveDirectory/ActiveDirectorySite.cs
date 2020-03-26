@@ -419,7 +419,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (existing)
                 {
                     // for existing site, nTDSSiteSettings needs to exist
-                    DirectoryEntry tmp = NTDSSiteEntry;
+                    _ = NTDSSiteEntry;
                 }
 
                 _topologyTouched = true;
@@ -1329,7 +1329,6 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (count > 0)
                     {
                         Debug.Assert(val != (IntPtr)0);
-                        int status = Marshal.ReadInt32(val);
                         IntPtr tmpPtr = (IntPtr)0;
                         for (int i = 0; i < count; i++)
                         {
