@@ -50,6 +50,7 @@
 -nonamespace System.Drawing.Tests
 -nonamespace System.Drawing.Text.Tests
 -nonamespace MonoTests.System.Drawing
+-nonamespace System.Reflection.Emit.Tests
 
 -nomethod System.Diagnostics.Tests.CounterSampleTests.*
 -nomethod Tests.Integration.DiscoveryTests.DiscoverAddinsWithCombinedCustomExportAndMetadataAttribute
