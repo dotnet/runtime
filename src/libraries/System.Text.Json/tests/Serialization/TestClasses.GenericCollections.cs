@@ -1349,16 +1349,16 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class HashSetWithBackingClollection : ICollection<string>
+    public class HashSetWithBackingCollection : ICollection<string>
     {
         private readonly ICollection<string> _inner;
 
-        public HashSetWithBackingClollection()
+        public HashSetWithBackingCollection()
         {
             _inner = new HashSet<string>();
         }
 
-        public HashSetWithBackingClollection(IEnumerable<string> values)
+        public HashSetWithBackingCollection(IEnumerable<string> values)
         {
             _inner = new HashSet<string>(values);
         }

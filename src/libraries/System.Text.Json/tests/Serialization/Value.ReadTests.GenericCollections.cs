@@ -1267,17 +1267,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(json, serialized);
         }
 
-        public class Client
+        private class Client
         {
-            private ICollection<string> _allowedGrantTypes = new HashSetWithBackingClollection();
+            private ICollection<string> _allowedGrantTypes = new HashSetWithBackingCollection();
 
             public ICollection<string> AllowedGrantTypes
             {
                 get { return _allowedGrantTypes; }
-                set
-                {
-                    _allowedGrantTypes = new HashSetWithBackingClollection(value);
-                }
+                set { _allowedGrantTypes = new HashSetWithBackingCollection(value); }
             }
         }
     }
