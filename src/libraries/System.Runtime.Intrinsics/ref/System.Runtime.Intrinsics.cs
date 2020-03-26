@@ -1481,7 +1481,9 @@ namespace System.Runtime.Intrinsics.X86
         public unsafe static void StoreNonTemporal(int* address, int value) { }
         public unsafe static void StoreNonTemporal(uint* address, uint value) { }
         public unsafe static void StoreScalar(double* address, System.Runtime.Intrinsics.Vector128<double> source) { }
+        public unsafe static void StoreScalar(int* address, System.Runtime.Intrinsics.Vector128<int> source) { }
         public unsafe static void StoreScalar(long* address, System.Runtime.Intrinsics.Vector128<long> source) { }
+        public unsafe static void StoreScalar(uint* address, System.Runtime.Intrinsics.Vector128<uint> source) { }
         public unsafe static void StoreScalar(ulong* address, System.Runtime.Intrinsics.Vector128<ulong> source) { }
         public static System.Runtime.Intrinsics.Vector128<byte> Subtract(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Subtract(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
