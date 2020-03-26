@@ -364,22 +364,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32359")]
-        public static void ExtensionPropertyRoundTripFails()
-        {
-            try
-            {
-                JsonSerializer.Deserialize<ClassWithExtensionProperty>(@"{""MyNestedClass"":{""UnknownProperty"":bad}}");
-                Assert.True(false, "Expected JsonException was not thrown.");
-            }
-            catch (JsonException e)
-            {
-                // Until JsonElement supports populating Path ("UnknownProperty"), which will be prepended by the serializer ("MyNestedClass"), this will fail.
-                Assert.Equal("$.MyNestedClass.UnknownProperty", e.Path);
-            }
-        }
-
-        [Fact]
         public static void CaseInsensitiveFails()
         {
             var options = new JsonSerializerOptions();
