@@ -57,23 +57,6 @@ bool TryParseString(uint8_t *&bufferCursor, uint32_t &bufferLen, const T *&resul
     return true;
 }
 
-template <typename T>
-bool TryWriteNumberLittleEndian(uint8_t *&bufferCursor, uint32_t &bufferLen, const T &value)
-{
-    static_assert(std::is_integral<T>::value, "Can only write integral types");
-
-    if (bufferLen < sizeof(value))
-        return false;
-
-    for (uint32_t i = 0; i < sizeof(value); i++)
-    {
-        *bufferCursor++ = (value >> (i * 8)) & 0xFF;
-        bufferLen -= 1;
-    }
-
-    return true;
-}
-
 namespace DiagnosticsIpc
 {
     enum class IpcMagicVersion : uint8_t
@@ -126,15 +109,17 @@ namespace DiagnosticsIpc
      * the runtime must advertise itself over the connection.  ALL SUBSEQUENT COMMUNICATION 
      * IS STANDARD DIAGNOSTICS IPC PROTOCOL COMMUNICATION.
      * 
+     * See spec in: dotnet/diagnostics@documentation/design-docs/ipc-spec.md
+     * 
      * The flow for Advertise is a one-way burst of 24 bytes consisting of
-     * 6 bytes  - "AD_V1\0" (ASCII chars + null byte)
+     * 8 bytes  - "ADVR_V1\0" (ASCII chars + null byte)
      * 16 bytes - random 128 bit number cookie (little-endian)
      * 8 bytes  - PID (little-endian)
      */
 
-    const uint8_t AdvertiseMagic_V1[6] = "AD_V1";
+    const uint8_t AdvertiseMagic_V1[8] = "ADVR_V1";
 
-    const uint32_t AdvertiseSize = 30;
+    const uint32_t AdvertiseSize = 32;
 
     static GUID AdvertiseCookie_V1 = GUID_NULL;
 
@@ -148,39 +133,17 @@ namespace DiagnosticsIpc
         return AdvertiseCookie_V1;
     }
 
-    inline bool PopulateIpcAdvertisePayload_V1(uint8_t (&buf)[AdvertiseSize])
-    {
-        GUID cookie = GetAdvertiseCookie_V1();
-        uint64_t pid = GetCurrentProcessId();
-        uint8_t *bufferCursor = &buf[0];
-        uint32_t bufferLen = sizeof(buf);
-
-        for (uint32_t i = 0; i < sizeof(AdvertiseMagic_V1); i++)
-            if (!TryWriteNumberLittleEndian(bufferCursor, bufferLen, AdvertiseMagic_V1[i]))
-                return false;
-
-        if (!TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data1) ||
-            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data2) ||
-            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data3) ||
-            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[0]) ||
-            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[1]) ||
-            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[2]) ||
-            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[3]) ||
-            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[4]) ||
-            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[5]) ||
-            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[6]) ||
-            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, cookie.Data4[7]) ||
-            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, pid))
-            return false;
-
-        return true;
-    }
-
     inline bool SendIpcAdvertise_V1(IpcStream *pStream)
     {
         uint8_t advertiseBuffer[DiagnosticsIpc::AdvertiseSize];
-        if (!DiagnosticsIpc::PopulateIpcAdvertisePayload_V1(advertiseBuffer))
-            return false;
+        GUID cookie = GetAdvertiseCookie_V1();
+        uint64_t pid = GetCurrentProcessId();
+
+        uint64_t *buffer = (uint64_t*)advertiseBuffer;
+        buffer[0] = *(uint64_t*)AdvertiseMagic_V1;
+        buffer[1] = (((uint64_t)VAL32(cookie.Data1) << 32) | ((uint64_t)VAL16(cookie.Data2) << 16) | VAL16((uint64_t)cookie.Data3));
+        buffer[2] = *(uint64_t*)cookie.Data4;
+        buffer[3] = VAL64(pid);
 
         uint32_t nBytesWritten = 0;
         if (!pStream->Write(advertiseBuffer, sizeof(advertiseBuffer), nBytesWritten))
