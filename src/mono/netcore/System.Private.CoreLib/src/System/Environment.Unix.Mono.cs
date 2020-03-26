@@ -21,17 +21,27 @@ namespace System
 
             if (s_environment == null)
             {
-                using (var h = RuntimeMarshal.MarshalString(variable))
-                {
-                    return internalGetEnvironmentVariable_native(h.Value);
-                }
+                return InternalGetEnvironmentVariable(variable);
             }
 
             variable = TrimStringOnFirstZero(variable);
             lock (s_environment)
             {
-                s_environment.TryGetValue(variable, out string value);
+                string value;
+                if (!s_environment.TryGetValue(variable, out value))
+                {
+                    value = InternalGetEnvironmentVariable(variable);
+                    s_environment[variable] = value;
+                }
                 return value;
+            }
+        }
+
+        private static string InternalGetEnvironmentVariable(string name)
+        {
+            using (SafeStringMarshal handle = RuntimeMarshal.MarshalString(name))
+            {
+                return internalGetEnvironmentVariable_native(handle.Value);
             }
         }
 
