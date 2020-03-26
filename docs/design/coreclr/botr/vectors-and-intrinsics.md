@@ -3,14 +3,14 @@ Vectors and Hardware Intrinsics Support
 ---
 
 # Introduction
-The CoreCLR runtime has support for several varieties of hardware intrinsics, and various ways to compile code which uses them. This support varies by what processor the logic is running on, and the code executed depends on how the RyuJIT was invoked. This document describes the various behaviors of intrinsics in the runtime, and concludes with documentation on what implications this has for developers working on the runtime and libraries portions of the runtime. 
+The CoreCLR runtime has support for several varieties of hardware intrinsics, and various ways to compile code which uses them. This support varies by target processor, and the code produced depends on how the jit compiler is invoked. This document describes the various behaviors of intrinsics in the runtime, and concludes with implications  for developers working on the runtime and libraries portions of the runtime. 
 
 # Intrinsics apis
 Most hardware intrinsics support is tied to the use of various Vector apis. There are 4 major api surfaces that are supported by the runtime
 
-- The fixed size float vectors. `Vector2`, `Vector3`, and `Vector4`. These vector types represent a struct of floats of various sizes. For type layout, ABI and, interop purposes they are represented in exactly the same way as a structure with an appropriate number of floats in it. Operations on these vector types are supported on all architectures and platforms, although some architectures may optimize various operations.
-- The variable sized `Vector<T>`. This represents vector data of indeterminate size. In any given process the size of a `Vector<T>` is the same in all methods, but this size may differ between various machines or environment variable settings read at startup of the process. The `T` type variable may be any of the primitive types, and allows use of integer or double data within a vector. The size and alignment of `Vector<T>` is unknown to the developer, and `Vector<T>` may not exist in any interop signature. Operations on these vector types are supported on all architectures and platforms, although some architectures may optimize various operations.
-- `Vector64<T>`, `Vector128<T>`, and `Vector256<T>` represent sized vectors that closely resemble the fixed size vectors available in C++. These structures can be used in any code that runs, but very few features are supported. These vector types define very few direct features, but instead most operations other than creation use the processor specific hardware intrinsics apis.
+- The fixed length float vectors. `Vector2`, `Vector3`, and `Vector4`. These vector types represent a struct of floats of various lengths. For type layout, ABI and, interop purposes they are represented in exactly the same way as a structure with an appropriate number of floats in it. Operations on these vector types are supported on all architectures and platforms, although some architectures may optimize various operations.
+- The variable length `Vector<T>`. This represents vector data of runtime-determined length. In any given process the length of a `Vector<T>` is the same in all methods, but this length may differ between various machines or environment variable settings read at startup of the process. The `T` type variable may be any of the primitive types, and allows use of integer or double data within a vector. The length and alignment of `Vector<T>` is unknown to the developer, and `Vector<T>` may not exist in any interop signature. Operations on these vector types are supported on all architectures and platforms, although some architectures may optimize various operations.
+- `Vector64<T>`, `Vector128<T>`, and `Vector256<T>` represent fixed-sized vectors that closely resemble the fixed- sized vectors available in C++. These structures can be used in any code that runs, but very few features are supported. These vector types define very few direct methods; most operations other than creation use the processor specific hardware intrinsics apis.
 - Processor specific hardware intrinsics apis such as `System.Runtime.Intrinsics.X86.Ssse3`. These apis map directly to individual instructions or short instruction sequences that are specific to a particular hardware instruction. These apis are only useable on hardware that supports the particular instruction. See https://github.com/dotnet/designs/blob/master/accepted/2018/platform-intrinsics.md for the design of these.
 
 # How to use intrinsics apis
@@ -23,9 +23,9 @@ There are 3 models for use of intrinsics apis.
 
 # Effect of usage of hardware intrinsics on how code is generated
 
-Hardware intrinsics have dramatic impacts on codegen, and the codegen of these hardware intrinsics is dependent on what knowledge of the target machine is available when the code is compiled.
+Hardware intrinsics have dramatic impacts on codegen, and the codegen of these hardware intrinsics is dependent on the ISA available for the target machine when the code is compiled.
 
-If the code is compiled at runtime by the JIT in a just-in-time manner, then the JIT will generate the best code it can for a given intrinsic usage when compiling tier 1 code, and generate functionally equivalent code when compiling tier 0 code. MethodImplOptions.AggressiveOptimization may be used to disable compilation of tier 0 code.
+If the code is compiled at runtime by the JIT in a just-in-time manner, then the JIT will generate the best code it can based on the current processor's ISA when compiling tier 1 code, and generate functionally equivalent code when compiling tier 0 code. MethodImplOptions.AggressiveOptimization may be used to bypass compilation of tier 0 code and always produce tier 1 code for the method.
 
 For ahead of time compilation, the situation is far more complex. This is due to the following principles of how our ahead of time compilation model works.
 
@@ -33,7 +33,7 @@ For ahead of time compilation, the situation is far more complex. This is due to
 2. If ahead of time code is generated, it should be used unless there is an overriding reason to avoid using it.
 3. It must be exceedingly difficult to misuse the ahead of time compilation tool to violate principle 1.
 
-There are 2 different implementations of ahead of time compilation under development at this time. The crossgen1 model (which is currently supported on all platforms and architectures), and the crossgen2 model, which is under active development, and expected to replace crossgen1 at some point. Any developer wishing to use hardware intrinsics in the runtime or libraries should be aware of the crossgen1 model, which will hopefully be replaced with the crossgen2 model at some point. Thankfully, the restrictions implied on managed developers are strictly expected to be relaxed with crossgen2.
+There are 2 different implementations of ahead of time compilation under development at this time. The crossgen1 model (which is currently supported on all platforms and architectures), and the crossgen2 model, which is under active development. Any developer wishing to use hardware intrinsics in the runtime or libraries should be aware of the restrictions imposed by the crossgen1 model. Crossgen2, which we expect will replace crossgen1 at some point in the future, has strictly fewer restrictions.
 
 ## Crossgen1 model of hardware intrinsic usage
 
