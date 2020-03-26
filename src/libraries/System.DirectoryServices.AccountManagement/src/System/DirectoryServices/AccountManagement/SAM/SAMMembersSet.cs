@@ -26,8 +26,7 @@ namespace System.DirectoryServices.AccountManagement
                                     ctxBase.Path);
 
             _storeCtx = storeCtx;
-            _ctxBase = ctxBase;
-
+            
             _group = group;
             _originalGroup = group;
             _recursive = recursive;

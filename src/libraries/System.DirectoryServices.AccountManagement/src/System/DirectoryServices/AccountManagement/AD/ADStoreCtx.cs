@@ -1424,6 +1424,7 @@ namespace System.DirectoryServices.AccountManagement
             DirectoryEntry dncContainer = null;
             string fspWkDn = null;
             DirectoryEntry fspContainer = null;
+            ResultSet resultSet = null;
             DirectorySearcher ds = null;
 
             try

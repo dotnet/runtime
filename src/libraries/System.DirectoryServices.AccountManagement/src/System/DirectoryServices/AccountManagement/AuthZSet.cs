@@ -32,7 +32,6 @@ namespace System.DirectoryServices.AccountManagement
                                     userStoreCtx.GetType());
 
             _userType = userStoreCtx.OwningContext.ContextType;
-            _userCtxBase = userCtxBase;
             _userStoreCtx = userStoreCtx;
             _credentials = credentials;
             _contextOptions = contextOptions;

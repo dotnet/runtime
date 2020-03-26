@@ -485,7 +485,6 @@ namespace System.DirectoryServices.AccountManagement
 
             string name;
             string domainName;
-            int accountUsage;
 
             // Map the SID to a machine and account name
             // If this fails, there's no match
