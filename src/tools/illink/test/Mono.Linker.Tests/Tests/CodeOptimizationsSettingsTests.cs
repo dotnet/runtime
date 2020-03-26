@@ -40,5 +40,16 @@ namespace Mono.Linker.Tests
 			Assert.False (cos.IsEnabled (CodeOptimizations.ClearInitLocals, "any"));
 			Assert.That (cos.IsEnabled (CodeOptimizations.BeforeFieldInit, "testasm.dll"));
 		}
+
+		[Test]
+		public void OnlyOneOptIsDisabled ()
+		{
+			CodeOptimizationsSettings cos = new CodeOptimizationsSettings (CodeOptimizations.OverrideRemoval);
+			cos.Disable (CodeOptimizations.BeforeFieldInit, "testasm.dll");
+
+			Assert.False (cos.IsEnabled (CodeOptimizations.BeforeFieldInit, "testasm.dll"));
+			Assert.False (cos.IsEnabled (CodeOptimizations.Sealer, "testasm.dll"));
+			Assert.False (cos.IsEnabled (CodeOptimizations.UnreachableBodies, "testasm.dll"));
+		}
 	}
 }
