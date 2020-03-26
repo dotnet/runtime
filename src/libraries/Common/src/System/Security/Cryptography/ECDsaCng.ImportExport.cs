@@ -35,13 +35,14 @@ namespace System.Security.Cryptography
 
                 ECCurve curve = parameters.Curve;
                 bool includePrivateParameters = (parameters.D != null);
+                bool hasPublicParameters = parameters.Q.X is object && parameters.Q.Y is object;
 
                 if (curve.IsPrime)
                 {
                     byte[] ecExplicitBlob = ECCng.GetPrimeCurveBlob(ref parameters, ecdh: false);
                     ImportFullKeyBlob(ecExplicitBlob, includePrivateParameters);
                 }
-                else if (curve.IsNamed)
+                else if (curve.IsNamed && hasPublicParameters)
                 {
                     // FriendlyName is required; an attempt was already made to default it in ECCurve
                     if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
@@ -49,6 +50,13 @@ namespace System.Security.Cryptography
 
                     byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref parameters, ecdh: false);
                     ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, includePrivateParameters);
+                }
+                else if (curve.IsNamed && !hasPublicParameters && includePrivateParameters)
+                {
+                    // Import through PKCS8 so that the public key can be reconstructed from the
+                    // private key if the public ECPoint is not specified.
+
+                    ImportLimitedPrivateKeyBlob(parameters);
                 }
                 else
                 {

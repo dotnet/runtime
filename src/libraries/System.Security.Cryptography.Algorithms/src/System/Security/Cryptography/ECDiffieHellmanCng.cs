@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
+using System.Security.Cryptography.Asn1;
 using static Internal.NativeCrypto.BCryptNative;
 
 namespace System.Security.Cryptography
@@ -53,6 +54,15 @@ namespace System.Security.Cryptography
 
                 _key.SetHandle(keyHandle, ECCng.EcdhCurveNameToAlgorithm(curveName));
                 ForceSetKeySize(_key.KeySize);
+            }
+
+            private void ImportLimitedPrivateKeyBlob(in ECParameters ecParams)
+            {
+                Debug.Assert(ecParams.Q.X is null && ecParams.Q.Y is null);
+                AsnWriter writer = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParams);
+                byte[] pkcs8 = writer.Encode();
+                ImportPkcs8PrivateKey(pkcs8, out int bytesRead);
+                Debug.Assert(pkcs8.Length == bytesRead);
             }
 
             private byte[] ExportKeyBlob(bool includePrivateParameters)
