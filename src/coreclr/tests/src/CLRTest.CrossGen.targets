@@ -165,7 +165,7 @@ if defined RunCrossGen2 (
     )
 
     set __ResponseFile=!scriptPath!\composite-r2r.dll.rsp
-    del /Y !__ResponseFile!
+    del /Q !__ResponseFile!
 
     set __Command=!_DebuggerFullPath!
     set __Command=!__Command! "!CORE_ROOT!\CoreRun.exe"
@@ -191,7 +191,7 @@ if defined RunCrossGen2 (
     echo -r:!CORE_ROOT!\mscorlib.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\netstandard.dll>>!__ResponseFile!
 
-    echo "Response file: !__ReponseFile!"
+    echo Response file: !__ResponseFile!
     type !__ResponseFile!
 
     echo "!__Command!"
