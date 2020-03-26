@@ -17,6 +17,7 @@ namespace System.Net.Http.Json
         // Default size of the char buffer that will hold the passed-in bytes when decoded from UTF-8.
         // The buffer holds them and then they are encoded to the targetEncoding and written to the underlying stream.
         internal const int MaxCharBufferSize = 4096;
+        // Upper bound that limits the byte buffer size to prevent an encoding that has a very poor worst-case scenario.
         internal const int MaxByteBufferSize = 4 * MaxCharBufferSize;
         private readonly int _maxByteBufferSize;
 
