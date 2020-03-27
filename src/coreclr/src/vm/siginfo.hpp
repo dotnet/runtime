@@ -975,12 +975,24 @@ class MetaSig
         // for covariant return types on MethodImpls.
         static BOOL CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allowDerivedClass);
 
+        // Compare two type tokens and check if they are equal, or if the second type token is a
+        // derived type of the first type token
+        static BOOL CompareTypeTokensForEqualityOrInheritance(mdToken tk1, Module* pModule1, mdToken tk2, Module* pModule2);
+
+        // Extract the parent type's signature and stubstitution from the input type signature
+        static BOOL GetParentSignatureAndSubstitution(
+            PCCOR_SIGNATURE     pSig,
+            PCCOR_SIGNATURE     pEndSig,
+            Module*             pModule,
+            const Substitution* pSubst,
+            Module**            ppParentTypeModule,
+            SigBuilder&         parentTypeSig,
+            Substitution&       parentTypeSubst);
+
         // Compare types in two signatures, first applying
         // - optional substitutions pSubst1 and pSubst2
         //   to class type parameters (E_T_VAR) in the respective signatures
-        static
-        BOOL
-        CompareElementType(
+        static BOOL CompareElementType(
             PCCOR_SIGNATURE &    pSig1,
             PCCOR_SIGNATURE &    pSig2,
             PCCOR_SIGNATURE      pEndSig1,

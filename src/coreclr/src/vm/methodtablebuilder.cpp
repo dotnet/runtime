@@ -2244,6 +2244,11 @@ MethodTableBuilder::EnumerateMethodImpls()
 
     if (bmtMethod->dwNumberMethodImpls != 0)
     {
+        if (strstr(this->GetHalfBakedClass()->m_szDebugClassName, "Foo") != NULL || strstr(this->GetHalfBakedClass()->m_szDebugClassName, "Bar") != NULL)
+        {
+            int a = 0;
+        }
+
         //
         // Allocate the structures to keep track of the impl matches
         //
@@ -2368,42 +2373,44 @@ MethodTableBuilder::EnumerateMethodImpls()
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MISSING_SIG_BODY);
                 }
 
-                hr = pMDInternalImport->GetParentToken(theDecl, &tkParent);
-                if (FAILED(hr))
-                    BuildMethodTableThrowException(hr, *bmtError);
-
-                // Note on covariant return types: right now we only support covariant returns for MethodImpls on
-                // class, where the MethodDecl is also on a class. Interface methods are not supported. In order to allow
-                // covariant return type checking in the call to CompareMethodSigs, we need to verify whether the type with
-                // the MethodDecl is an interface.
-                // We will also allow covariant return types if both the MethodImpl and MethodDecl are not on the same type.
-
-                BOOL isBodyOnInterface = IsInterface();
-                BOOL isDeclOnInterface = FALSE;
-                BOOL methodImplAndMethodDeclOnSameType = (GetCl() == tkParent);
-
-                if (!isBodyOnInterface && !methodImplAndMethodDeclOnSameType)
+                BOOL allowCovariantReturn = FALSE;
+                if (!IsValueClass() && !IsInterface())
                 {
-                    // Skip checking if the declaring type is an interface if we already know this is a scenario where
-                    // we can't allow for covariant returns
+                    // Note on covariant return types: right now we only support covariant returns for MethodImpls on
+                    // class, where the MethodDecl is also on a class. Interface methods are not supported. In order to allow
+                    // covariant return type checking in the call to CompareMethodSigs, we need to verify whether the type with
+                    // the MethodDecl is an interface.
+                    // We will also allow covariant return types if both the MethodImpl and MethodDecl are not on the same type.
 
-                    CONTRACT_VIOLATION(LoadsTypeViolation);
-                    MethodTable* pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
-                        GetModule(),
-                        tkParent,
-                        &bmtGenerics->typeContext,
-                        ClassLoader::ThrowIfNotFound,
-                        ClassLoader::PermitUninstDefOrRef,
-                        ClassLoader::LoadTypes,
-                        CLASS_LOAD_APPROXPARENTS,
-                        TRUE).GetMethodTable()->GetCanonicalMethodTable();
+                    hr = pMDInternalImport->GetParentToken(theDecl, &tkParent);
+                    if (FAILED(hr))
+                        BuildMethodTableThrowException(hr, *bmtError);
 
-                    CONSISTENCY_CHECK(pDeclMT != NULL);
+                    if (GetCl() != tkParent)
+                    {
+                        // Skip checking if the declaring type is an interface if we already know this is a scenario where
+                        // we can't allow for covariant returns
 
-                    isDeclOnInterface = pDeclMT->IsInterface();
+                        CONTRACT_VIOLATION(LoadsTypeViolation);
+                        MethodTable* pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
+                            GetModule(),
+                            tkParent,
+                            &bmtGenerics->typeContext,
+                            ClassLoader::ThrowIfNotFound,
+                            ClassLoader::PermitUninstDefOrRef,
+                            ClassLoader::LoadTypes,
+                            CLASS_LOAD_APPROXPARENTS).GetMethodTable()->GetCanonicalMethodTable();
+
+                        CONSISTENCY_CHECK(pDeclMT != NULL);
+
+                        if (!pDeclMT->IsInterface())
+                        {
+                            allowCovariantReturn = TRUE;
+                        }
+                    }
                 }
 
-                if (strstr(this->GetHalfBakedClass()->m_szDebugClassName, "MyFoo") != NULL || strstr(this->GetHalfBakedClass()->m_szDebugClassName, "MyBar") != NULL)
+                if (strstr(this->GetHalfBakedClass()->m_szDebugClassName, "Foo") != NULL || strstr(this->GetHalfBakedClass()->m_szDebugClassName, "Bar") != NULL)
                 {
                     int a = 0;
                 }
@@ -2419,7 +2426,7 @@ MethodTableBuilder::EnumerateMethodImpls()
                         cbSigBody,
                         GetModule(),
                         NULL,
-                        !isBodyOnInterface && !isDeclOnInterface && !methodImplAndMethodDeclOnSameType))
+                        allowCovariantReturn))
                 {
                     BuildMethodTableThrowException(IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH);
                 }
