@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Equal(CborReaderState.Single, reader.Peek());
+            Assert.Equal(CborReaderState.SinglePrecisionFloat, reader.Peek());
             float actualResult = reader.ReadSingle();
             Assert.Equal(expectedResult, actualResult);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Equal(CborReaderState.Double, reader.Peek());
+            Assert.Equal(CborReaderState.DoublePrecisionFloat, reader.Peek());
             double actualResult = reader.ReadDouble();
             Assert.Equal(expectedResult, actualResult);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
@@ -58,8 +58,52 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            Assert.Equal(CborReaderState.Single, reader.Peek());
+            Assert.Equal(CborReaderState.SinglePrecisionFloat, reader.Peek());
             double actualResult = reader.ReadDouble();
+            Assert.Equal(expectedResult, actualResult);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData(0.0, "f90000")]
+        [InlineData(-0.0, "f98000")]
+        [InlineData(1.0, "f93c00")]
+        [InlineData(1.5, "f93e00")]
+        [InlineData(65504.0, "f97bff")]
+        [InlineData(5.960464477539063e-8, "f90001")]
+        [InlineData(0.00006103515625, "f90400")]
+        [InlineData(-4.0, "f9c400")]
+        [InlineData(double.PositiveInfinity, "f97c00")]
+        [InlineData(double.NaN, "f97e00")]
+        [InlineData(double.NegativeInfinity, "f9fc00")]
+        internal static void ReadDouble_HalfPrecisionValue_ShouldCoerceToDouble(double expectedResult, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            Assert.Equal(CborReaderState.HalfPrecisionFloat, reader.Peek());
+            double actualResult = reader.ReadDouble();
+            Assert.Equal(expectedResult, actualResult);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData(0.0, "f90000")]
+        [InlineData(-0.0, "f98000")]
+        [InlineData(1.0, "f93c00")]
+        [InlineData(1.5, "f93e00")]
+        [InlineData(65504.0, "f97bff")]
+        [InlineData(5.960464477539063e-8, "f90001")]
+        [InlineData(0.00006103515625, "f90400")]
+        [InlineData(-4.0, "f9c400")]
+        [InlineData(float.PositiveInfinity, "f97c00")]
+        [InlineData(float.NaN, "f97e00")]
+        [InlineData(float.NegativeInfinity, "f9fc00")]
+        internal static void ReadSingle_HalfPrecisionValue_ShouldCoerceToSingle(float expectedResult, string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+            Assert.Equal(CborReaderState.HalfPrecisionFloat, reader.Peek());
+            float actualResult = reader.ReadSingle();
             Assert.Equal(expectedResult, actualResult);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }

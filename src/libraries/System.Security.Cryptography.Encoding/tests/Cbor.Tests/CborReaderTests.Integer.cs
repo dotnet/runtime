@@ -200,6 +200,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData("c2")]
+        public static void ReadTag_NoSubsequentData_ShouldPeekEndOfData(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+            reader.ReadTag();
+            Assert.Equal(CborReaderState.EndOfData, reader.Peek());
+        }
+
+        [Theory]
         [InlineData("40")] // empty text string
         [InlineData("60")] // empty byte string
         [InlineData("f6")] // null

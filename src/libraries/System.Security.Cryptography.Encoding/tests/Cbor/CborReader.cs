@@ -27,8 +27,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         Tag,
         Null,
         Boolean,
-        Single,
-        Double,
+        HalfPrecisionFloat,
+        SinglePrecisionFloat,
+        DoublePrecisionFloat,
         SpecialValue,
         Finished,
         FormatError,
@@ -152,9 +153,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     case CborAdditionalInfo.SpecialValueNull: return CborReaderState.Null;
                     case CborAdditionalInfo.SpecialValueFalse:
                     case CborAdditionalInfo.SpecialValueTrue: return CborReaderState.Boolean;
-                    case CborAdditionalInfo.Additional16BitData:
-                    case CborAdditionalInfo.Additional32BitData: return CborReaderState.Single;
-                    case CborAdditionalInfo.Additional64BitData: return CborReaderState.Double;
+                    case CborAdditionalInfo.Additional16BitData: return CborReaderState.HalfPrecisionFloat;
+                    case CborAdditionalInfo.Additional32BitData: return CborReaderState.SinglePrecisionFloat;
+                    case CborAdditionalInfo.Additional64BitData: return CborReaderState.DoublePrecisionFloat;
                     default: return CborReaderState.SpecialValue;
                 }
             }

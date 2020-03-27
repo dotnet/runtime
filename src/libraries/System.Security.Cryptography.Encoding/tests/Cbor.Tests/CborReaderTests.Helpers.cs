@@ -42,12 +42,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         Assert.Equal(expected, u);
                         break;
                     case float expected:
-                        Assert.Equal(CborReaderState.Single, reader.Peek());
+                        Assert.Equal(CborReaderState.SinglePrecisionFloat, reader.Peek());
                         float f = reader.ReadSingle();
                         Assert.Equal(expected, f);
                         break;
                     case double expected:
-                        Assert.Equal(CborReaderState.Double, reader.Peek());
+                        Assert.Equal(CborReaderState.DoublePrecisionFloat, reader.Peek());
                         double d = reader.ReadDouble();
                         Assert.Equal(expected, d);
                         break;

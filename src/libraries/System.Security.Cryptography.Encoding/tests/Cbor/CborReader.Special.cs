@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 case CborAdditionalInfo.Additional16BitData:
                     EnsureBuffer(buffer, 3);
-                    result = Read16BitFloatBigEndian(buffer.Slice(1));
+                    result = (float)ReadHalfBigEndian(buffer.Slice(1));
                     AdvanceBuffer(3);
                     DecrementRemainingItemCount();
                     return result;
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 case CborAdditionalInfo.Additional16BitData:
                     EnsureBuffer(buffer, 3);
-                    result = Read16BitFloatBigEndian(buffer.Slice(1));
+                    result = ReadHalfBigEndian(buffer.Slice(1));
                     AdvanceBuffer(3);
                     DecrementRemainingItemCount();
                     return result;
@@ -134,9 +134,31 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        private static float Read16BitFloatBigEndian(ReadOnlySpan<byte> buffer)
+        private const float foo = 5.9604644775390625e-08f; // 2 ^ -24
+
+        // half-precision float decoder adapted from https://tools.ietf.org/html/rfc7049#appendix-D
+        private static double ReadHalfBigEndian(ReadOnlySpan<byte> buffer)
         {
-            throw new NotImplementedException(nameof(Read16BitFloatBigEndian));
+            int half = (buffer[0] << 8) + buffer[1];
+            bool isNegative = (half >> 15) != 0;
+            int exp = (half >> 10) & 0x1f;
+            int mant = half & 0x3ff;
+            double value;
+
+            if (exp == 0)
+            {
+                value = mant * 5.9604644775390625e-08 /* precomputed 2^-24 */;
+            }
+            else if (exp != 31)
+            {
+                value = (mant + 1024) * Math.Pow(2, exp - 25);
+            }
+            else
+            {
+                value = (mant == 0) ? double.PositiveInfinity : double.NaN;
+            }
+
+            return isNegative ? -value : value;
         }
     }
 }

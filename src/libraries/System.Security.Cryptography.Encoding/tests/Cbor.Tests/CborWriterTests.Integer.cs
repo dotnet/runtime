@@ -112,6 +112,23 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Helpers.WriteValue(writer, value);
             AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
         }
+
+        [Theory]
+        [InlineData(new ulong[] { 2 })]
+        [InlineData(new ulong[] { 1, 2, 3 })]
+        public static void WriteTag_NoValue_ShouldThrowInvalidOperationException(ulong[] tags)
+        {
+            using var writer = new CborWriter();
+
+            foreach (ulong tag in tags)
+            {
+                writer.WriteTag((CborTag)tag);
+            }
+
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => writer.ToArray());
+
+            Assert.Equal("Buffer contains incomplete CBOR document.", exn.Message);
+        }
     }
 
     internal static class AssertHelper
