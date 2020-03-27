@@ -80,7 +80,7 @@ STDAPI_(BSTR) SysAllocStringLen(const OLECHAR *psz, UINT len)
     if (FAILED(CbSysStringSize(len, FALSE, &cbTotal)))
         return NULL;
 
-    bstr = (OLECHAR *)HeapAlloc(GetProcessHeap(), 0, cbTotal);
+    bstr = (OLECHAR *)PAL_malloc(cbTotal);
 
     if(bstr != NULL){
 
@@ -133,7 +133,7 @@ SysAllocStringByteLen(const char FAR* psz, unsigned int len)
     if (FAILED(CbSysStringSize(len, TRUE, &cbTotal)))
         return FALSE;
 
-    bstr = (OLECHAR *)HeapAlloc(GetProcessHeap(), 0, cbTotal);
+    bstr = (OLECHAR *)PAL_malloc(cbTotal);
 
     if (bstr != NULL) {
 #if defined(HOST_64BIT)
@@ -172,7 +172,7 @@ STDAPI_(void) SysFreeString(BSTR bstr)
 {
     if(bstr == NULL)
       return;
-    HeapFree(GetProcessHeap(), 0, (BYTE *)bstr-sizeof(DWORD_PTR));
+    free((BYTE *)bstr-sizeof(DWORD_PTR));
 }
 
 /***
