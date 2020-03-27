@@ -181,17 +181,18 @@ namespace System.Reflection.Emit
             if (fieldValues == null)
                 throw new ArgumentNullException(nameof(fieldValues));
             if (con.GetParametersCount() != constructorArgs.Length)
-                throw new ArgumentException("Parameter count does not match " +
-                        "passed in argument value count.");
+                throw new ArgumentException(SR.Argument_BadParameterCountsForConstructor);
             if (namedProperties.Length != propertyValues.Length)
-                throw new ArgumentException("Array lengths must be the same.",
-                        "namedProperties, propertyValues");
+                throw new ArgumentException(SR.Arg_ArrayLengthsDiffer, "namedProperties, propertyValues");
             if (namedFields.Length != fieldValues.Length)
-                throw new ArgumentException("Array lengths must be the same.",
-                        "namedFields, fieldValues");
+                throw new ArgumentException(SR.Arg_ArrayLengthsDiffer, "namedFields, fieldValues");
             if ((con.Attributes & MethodAttributes.Static) == MethodAttributes.Static ||
                     (con.Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private)
-                throw new ArgumentException("Cannot have private or static constructor.");
+                throw new ArgumentException(SR.Argument_BadConstructor);
+
+            // Here coreclr does
+            // if ((con.CallingConvention & CallingConventions.Standard) != CallingConventions.Standard)
+            //    throw new ArgumentException(SR.Argument_BadConstructorCallConv);
 
             Type atype = ctor.DeclaringType;
             int i;

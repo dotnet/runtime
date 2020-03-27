@@ -341,7 +341,7 @@ namespace System.Reflection.Emit
             Type returnType, Type[] types,
             ParameterModifier[] modifiers)
         {
-            throw CreateNotSupportedException();
+            throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         protected override bool HasElementTypeImpl()
@@ -433,11 +433,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
-        }
-
-        private Exception CreateNotSupportedException()
-        {
-            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
 
         internal override bool IsUserType

@@ -674,11 +674,11 @@ namespace System.Reflection.Emit
             if (local == null)
                 throw new ArgumentNullException(nameof(local));
             if (local.ilgen != this)
-                throw new ArgumentException("Trying to emit a local from a different ILGenerator.");
+                throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
 
             uint pos = local.position;
             if ((opcode == OpCodes.Ldloca_S || opcode == OpCodes.Ldloc_S || opcode == OpCodes.Stloc_S) && pos > 255)
-                throw new InvalidOperationException("Opcodes using a short-form index cannot address a local position over 255.");
+                throw new InvalidOperationException(SR.InvalidOperation_BadInstructionOrIndexOutOfBound);
 
             bool load_addr = false;
             bool is_store = false;

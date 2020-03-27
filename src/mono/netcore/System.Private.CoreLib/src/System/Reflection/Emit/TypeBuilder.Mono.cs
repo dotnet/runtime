@@ -95,7 +95,7 @@ namespace System.Reflection.Emit
             pmodule = mb;
         }
 
-        internal TypeBuilder(ModuleBuilder mb, string name, TypeAttributes attr, Type parent, Type[] interfaces, PackingSize packing_size, int type_size, Type nesting_type)
+        internal TypeBuilder(ModuleBuilder mb, string fullname, TypeAttributes attr, Type parent, Type[] interfaces, PackingSize packing_size, int type_size, Type nesting_type)
         {
             int sep_index;
             this.parent = ResolveUserType(parent);
@@ -104,20 +104,20 @@ namespace System.Reflection.Emit
             this.packing_size = packing_size;
             this.nesting_type = nesting_type;
 
-            check_name("fullname", name);
+            check_name(nameof(fullname), fullname);
 
             if (parent == null && (attr & TypeAttributes.Interface) != 0 && (attr & TypeAttributes.Abstract) == 0)
-                throw new InvalidOperationException("Interface must be declared abstract.");
+                throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
 
-            sep_index = name.LastIndexOf('.');
+            sep_index = fullname.LastIndexOf('.');
             if (sep_index != -1)
             {
-                this.tname = name.Substring(sep_index + 1);
-                this.nspace = name.Substring(0, sep_index);
+                this.tname = fullname.Substring(sep_index + 1);
+                this.nspace = fullname.Substring(0, sep_index);
             }
             else
             {
-                this.tname = name;
+                this.tname = fullname;
                 this.nspace = string.Empty;
             }
             if (interfaces != null)
@@ -132,7 +132,7 @@ namespace System.Reflection.Emit
 
             // skip .<Module> ?
             table_idx = mb.get_next_table_index(this, 0x02, 1);
-            fullname = GetFullName();
+            this.fullname = GetFullName();
         }
 
         public override Assembly Assembly
@@ -390,7 +390,7 @@ namespace System.Reflection.Emit
             /* This breaks mcs
             if (((attrs & TypeAttributes.VisibilityMask) == TypeAttributes.Public) ||
                 ((attrs & TypeAttributes.VisibilityMask) == TypeAttributes.NotPublic))
-                throw new ArgumentException ("attr", "Bad type flags for nested type.");
+                throw new ArgumentException (nameof(attr), "Bad type flags for nested type.");
             */
             if (interfaces != null)
             {
@@ -549,7 +549,7 @@ namespace System.Reflection.Emit
 
         public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers, Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers)
         {
-            check_name("name", name);
+            check_name(nameof(name), name);
             check_not_created();
             if (IsInterface && (
                 !((attributes & MethodAttributes.Abstract) != 0) ||
@@ -590,9 +590,9 @@ namespace System.Reflection.Emit
                         CallingConvention nativeCallConv,
                         CharSet nativeCharSet)
         {
-            check_name("name", name);
-            check_name("dllName", dllName);
-            check_name("entryName", entryName);
+            check_name(nameof(name), name);
+            check_name(nameof(dllName), dllName);
+            check_name(nameof(entryName), entryName);
             if ((attributes & MethodAttributes.Abstract) != 0)
                 throw new ArgumentException("PInvoke methods must be static and native and cannot be abstract.");
             if (IsInterface)
@@ -658,7 +658,7 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineField(string fieldName, Type type, Type[] requiredCustomModifiers, Type[] optionalCustomModifiers, FieldAttributes attributes)
         {
-            check_name("fieldName", fieldName);
+            check_name(nameof(fieldName), fieldName);
             if (type == typeof(void))
                 throw new ArgumentException("Bad field type in defining field.");
             check_not_created();
@@ -708,7 +708,7 @@ namespace System.Reflection.Emit
 
         public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers, Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers)
         {
-            check_name("name", name);
+            check_name(nameof(name), name);
             if (parameterTypes != null)
                 foreach (Type param in parameterTypes)
                     if (param == null)
@@ -1521,12 +1521,12 @@ namespace System.Reflection.Emit
 
         public EventBuilder DefineEvent(string name, EventAttributes attributes, Type eventtype)
         {
-            check_name("name", name);
+            check_name(nameof(name), name);
             if (eventtype == null)
                 throw new ArgumentNullException("type");
             check_not_created();
             if (eventtype.IsByRef)
-                throw new ArgumentException(nameof(eventtype));
+                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
             EventBuilder res = new EventBuilder(this, name, attributes, eventtype);
             if (events != null)
             {
@@ -1666,10 +1666,8 @@ namespace System.Reflection.Emit
         {
             if (name == null)
                 throw new ArgumentNullException(argName);
-            if (name.Length == 0)
-                throw new ArgumentException("Empty name is not legal", argName);
-            if (name[0] == ((char)0))
-                throw new ArgumentException("Illegal name", argName);
+            if (name.Length == 0 || name[0] == ((char)0))
+                throw new ArgumentException(SR.Argument_EmptyName, argName);
         }
 
         public override string ToString()
@@ -1789,7 +1787,7 @@ namespace System.Reflection.Emit
             if (names == null)
                 throw new ArgumentNullException(nameof(names));
             if (names.Length == 0)
-                throw new ArgumentException("names");
+                throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
             generic_params = new GenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)

@@ -717,7 +717,7 @@ namespace System.Reflection
             // anyone from using IL ofcourse
             if (attribs.Length > 1)
             {
-                throw new FormatException("Duplicate AttributeUsageAttribute cannot be specified on an attribute type.");
+                throw new FormatException(SR.Format(SR.Format_AttributeUsage, attributeType.GetType().FullName));
             }
 
             return ((AttributeUsageAttribute)attribs[0]);

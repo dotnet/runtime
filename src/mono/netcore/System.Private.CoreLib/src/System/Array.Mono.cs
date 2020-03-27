@@ -381,7 +381,7 @@ namespace System
 
             int lb = GetLowerBound(0);
             if (index < lb || index > GetUpperBound(0))
-                throw new IndexOutOfRangeException("Index has to be between upper and lower bound of the array.");
+                throw new IndexOutOfRangeException(SR.Argument_IndexOutOfArrayBounds);
 
             if (GetType().GetElementType()!.IsPointer)
                 throw new NotSupportedException(SR.NotSupported_Type);
@@ -428,7 +428,7 @@ namespace System
 
             int lb = GetLowerBound(0);
             if (index < lb || index > GetUpperBound(0))
-                throw new IndexOutOfRangeException("Index has to be >= lower bound and <= upper bound of the array.");
+                throw new IndexOutOfRangeException(SR.Argument_IndexOutOfArrayBounds);
 
             if (GetType().GetElementType()!.IsPointer)
                 throw new NotSupportedException(SR.NotSupported_Type);

@@ -159,7 +159,7 @@ namespace System.Reflection.Emit
             RejectIfCreated();
 
             /*if (defaultValue.GetType() != type)
-                throw new ArgumentException ("Constant doesn't match field type");*/
+                throw new ArgumentException("Constant doesn't match field type");*/
             def_value = defaultValue;
         }
 
