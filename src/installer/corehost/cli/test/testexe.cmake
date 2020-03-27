@@ -10,6 +10,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/../common.cmake)
 
 add_executable(${DOTNET_PROJECT_NAME} ${SOURCES})
 
-install_with_stripped_symbols(${DOTNET_PROJECT_NAME} corehost_test)
+install_with_stripped_symbols(${DOTNET_PROJECT_NAME} TARGETS corehost_test)
 
 set_common_libs("exe")

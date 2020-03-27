@@ -76,7 +76,7 @@ if (GEN_SHARED_LIB)
         dl
     )
 
-    install_library_and_symbols (System.Globalization.Native)
+    install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
 endif()
 
 add_library(System.Globalization.Native-Static

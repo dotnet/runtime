@@ -43,5 +43,5 @@ set(HEADERS
 
 include(../lib.cmake)
 
-install_with_stripped_symbols(hostfxr corehost)
+install_with_stripped_symbols(hostfxr TARGETS corehost)
 target_link_libraries(hostfxr libhostcommon)

@@ -42,5 +42,5 @@ if (CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(comhost ${WINLIBS})
 endif()
 
-install_with_stripped_symbols(comhost corehost)
+install_with_stripped_symbols(comhost TARGETS corehost)
 target_link_libraries(comhost libhostcommon)

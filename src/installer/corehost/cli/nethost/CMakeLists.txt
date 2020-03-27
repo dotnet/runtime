@@ -28,4 +28,4 @@ add_definitions(-DNETHOST_EXPORT)
 
 install(FILES nethost.h DESTINATION corehost)
 install(TARGETS libnethost DESTINATION corehost)
-install_with_stripped_symbols(nethost corehost)
+install_with_stripped_symbols(nethost TARGETS corehost)
