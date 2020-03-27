@@ -3618,10 +3618,14 @@ BOOL MetaSig::CompareTypeTokensForEqualityOrInheritance(mdToken tk1, Module* pMo
     }
     CONTRACTL_END;
 
-    while (pModule2->GetMDImport()->IsValidToken(tk2))
+    mdToken previousTk2 = mdTokenNil;
+
+    while (previousTk2 != tk2)
     {
         if (CompareTypeTokens(tk1, tk2, pModule1, pModule2, NULL))
             return TRUE;
+
+        previousTk2 = tk2;
 
         // Ensure we are working with the typedef token
         mdToken foundToken2;
@@ -3637,6 +3641,10 @@ BOOL MetaSig::CompareTypeTokensForEqualityOrInheritance(mdToken tk1, Module* pMo
         IfFailThrow(pModule2->GetMDImport()->GetTypeDefProps(tk2, &attr, &tkTypeParent));
 
         if (!pModule2->GetMDImport()->IsValidToken(tkTypeParent))
+            break;
+
+        // Interfaces not supported with covariant return types.
+        if (IsTdInterface(attr))
             break;
 
         if (TypeFromToken(tkTypeParent) == mdtTypeSpec)
@@ -3991,35 +3999,33 @@ MetaSig::CompareElementType(
         }
         else
         {
-            if (allowDerivedClass)
+            if (allowDerivedClass && (Type1 == ELEMENT_TYPE_OBJECT || Type1 == ELEMENT_TYPE_CLASS || Type1 == ELEMENT_TYPE_GENERICINST))
             {
+                // Obvious case: string derives from object.
                 if (Type1 == ELEMENT_TYPE_OBJECT && Type2 == ELEMENT_TYPE_STRING)
                 {
-                    // Obvious case: string derives from object.
                     return TRUE;
                 }
-                else
-                {
-                    Module* pParentTypeModule;
-                    Substitution parentTypeSubst;
-                    SigBuilder parentTypeSigBuilder;
-                    if (GetParentSignatureAndSubstitution(pSig2Start, pEndSig2, pModule2, pSubst2, &pParentTypeModule, parentTypeSigBuilder, parentTypeSubst))
-                    {
-                        DWORD cbParentTypeSig;
-                        PCCOR_SIGNATURE pParentTypeSig = (PCCOR_SIGNATURE)parentTypeSigBuilder.GetSignature(&cbParentTypeSig);
-                        PCCOR_SIGNATURE pParentTypeSigEnd = pParentTypeSig + cbParentTypeSig;
 
-                        return CompareElementType(
-                            pSig1Start,
-                            pParentTypeSig,
-                            pEndSig1,
-                            pParentTypeSigEnd,
-                            pModule1,
-                            pParentTypeModule,
-                            pSubst1,
-                            parentTypeSubst.GetInst().IsNull() ? NULL : &parentTypeSubst,
-                            allowDerivedClass);
-                    }
+                Module* pParentTypeModule;
+                Substitution parentTypeSubst;
+                SigBuilder parentTypeSigBuilder;
+                if (GetParentSignatureAndSubstitution(pSig2Start, pEndSig2, pModule2, pSubst2, &pParentTypeModule, parentTypeSigBuilder, parentTypeSubst))
+                {
+                    DWORD cbParentTypeSig;
+                    PCCOR_SIGNATURE pParentTypeSig = (PCCOR_SIGNATURE)parentTypeSigBuilder.GetSignature(&cbParentTypeSig);
+                    PCCOR_SIGNATURE pParentTypeSigEnd = pParentTypeSig + cbParentTypeSig;
+
+                    return CompareElementType(
+                        pSig1Start,
+                        pParentTypeSig,
+                        pEndSig1,
+                        pParentTypeSigEnd,
+                        pModule1,
+                        pParentTypeModule,
+                        pSubst1,
+                        parentTypeSubst.GetInst().IsNull() ? NULL : &parentTypeSubst,
+                        allowDerivedClass);
                 }
             }
 
@@ -4160,19 +4166,16 @@ MetaSig::CompareElementType(
                 IfFailThrow(pFoundModule1->GetMDImport()->GetTypeDefProps(foundToken1, &attr, NULL));
                 if (IsTdInterface(attr))
                 {
-                    // Covariant return types are not supported for interfaces today.
+                    // Interfaces are not currently supported in the derived type checking
                     return FALSE;
                 }
 
                 HENUMInternal   hEnumGenericPars;
                 IfFailThrow(pFoundModule1->GetMDImport()->EnumInit(mdtGenericParam, foundToken1, &hEnumGenericPars));
-                if (pFoundModule1->GetMDImport()->EnumGetCount(&hEnumGenericPars) > 0)
+                if (pFoundModule1->GetMDImport()->EnumGetCount(&hEnumGenericPars) == 0)
                 {
-                    // Type1 is generic. We cannot compare the base type chain of Type2 for inheritance in that case.
-                    return FALSE;
+                    return CompareTypeTokensForEqualityOrInheritance(foundToken1, pFoundModule1, tk2, pModule2);
                 }
-
-                return CompareTypeTokensForEqualityOrInheritance(foundToken1, pFoundModule1, tk2, pModule2);
             }
 
             return FALSE;
@@ -4231,6 +4234,8 @@ MetaSig::CompareElementType(
 
         case ELEMENT_TYPE_GENERICINST:
         {
+            PCCOR_SIGNATURE pCurSig1 = pSig1;
+
             TokenPairList newVisited = TokenPairList::AdjustForTypeSpec(
                 pVisited,
                 pModule1,
@@ -4253,6 +4258,31 @@ MetaSig::CompareElementType(
             {
                 if (allowDerivedClass)
                 {
+                    CorElementType elementType;
+                    IfFailThrow(CorSigUncompressElementType_EndPtr(pCurSig1, pEndSig1, &elementType));
+                    if (elementType != ELEMENT_TYPE_CLASS)
+                    {
+                        // No point in checking anything other than ELEMENT_TYPE_CLASS for type inheritance 
+                        return FALSE;
+                    }
+
+                    // Interfaces are not currently supported for derived type checking
+                    {
+                        mdToken tk1;
+                        mdToken foundToken1;
+                        Module* pFoundModule1;
+                        IfFailThrow(CorSigUncompressToken_EndPtr(pCurSig1, pEndSig1, &tk1));
+                        if (!ClassLoader::ResolveTokenToTypeDefThrowing(pModule1, tk1, &pFoundModule1, &foundToken1))
+                        {
+                            return FALSE;
+                        }
+
+                        DWORD attr;
+                        IfFailThrow(pFoundModule1->GetMDImport()->GetTypeDefProps(foundToken1, &attr, NULL));
+                        if (IsTdInterface(attr))
+                            return FALSE;
+                    }
+
                     Module* pParentTypeModule;
                     Substitution parentTypeSubst;
                     SigBuilder parentTypeSigBuilder;
