@@ -3550,7 +3550,7 @@ namespace Mono.Linker.Steps {
 
 							// To get good reporting of errors we need to track the origin of the value for all method calls
 							// but except Newobj as those are special.
-							if (calledMethodDefinition.ReturnType.MetadataType != MetadataType.Void && operation.OpCode.Code != Code.Newobj) {
+							if (calledMethodDefinition.ReturnType.MetadataType != MetadataType.Void) {
 								methodReturnValue = new MethodReturnValue (returnValueDynamicallyAccessedMemberKinds) {
 									SourceContext = calledMethodDefinition
 								};
