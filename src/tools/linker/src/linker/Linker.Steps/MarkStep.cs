@@ -2886,67 +2886,17 @@ namespace Mono.Linker.Steps {
 							// static CreateInstance (string assemblyName, string typeName)
 							// static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
 							// static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
-							//
-							// static CreateInstance (System.Type type)
-							// static CreateInstance (System.Type type, bool nonPublic)
-							// static CreateInstance (System.Type type, params object?[]? args)
-							// static CreateInstance (System.Type type, object?[]? args, object?[]? activationAttributes)
-							// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture)
-							// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
-							//
 							case "CreateInstance": {
-									reflectionContext.AnalyzingPattern ();
 
 									var parameters = methodCalled.Parameters;
 									if (parameters.Count < 1)
 										break;
 
 									if (parameters [0].ParameterType.MetadataType == MetadataType.String) {
+										reflectionContext.AnalyzingPattern ();
 										ProcessActivatorCallWithStrings (ref reflectionContext, instructionIndex - 1, parameters.Count < 4);
 										break;
 									}
-
-									var first_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, methodCalled.Parameters.Count);
-									if (first_arg_instr < 0) {
-										reflectionContext.RecordUnrecognizedPattern ($"Activator call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-										break;
-									}
-
-									if (parameters [0].ParameterType.IsTypeOf ("System", "Type")) {
-										declaringType = FindReflectionTypeForLookup (_instructions, first_arg_instr + 1);
-										if (declaringType == null) {
-											reflectionContext.RecordUnrecognizedPattern ($"Activator call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 1st argument expression which cannot be analyzed");
-											break;
-										}
-
-										BindingFlags bindingFlags = BindingFlags.Instance;
-										int? parametersCount = null;
-
-										if (methodCalled.Parameters.Count == 1) {
-											parametersCount = 0;
-										} else {
-											var second_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, methodCalled.Parameters.Count - 1);
-											second_argument = _instructions [second_arg_instr];
-											switch (second_argument.OpCode.Code) {
-												case Code.Ldc_I4_0 when parameters [1].ParameterType.MetadataType == MetadataType.Boolean:
-													parametersCount = 0;
-													bindingFlags |= BindingFlags.Public;
-													break;
-												case Code.Ldc_I4_1 when parameters [1].ParameterType.MetadataType == MetadataType.Boolean:
-													parametersCount = 0;
-													break;
-												case Code.Ldc_I4_S when parameters [1].ParameterType.IsTypeOf ("System.Reflection", "BindingFlags"):
-													bindingFlags = (BindingFlags)(sbyte)second_argument.Operand;
-													break;
-											}
-										}
-
-										MarkMethodsFromReflectionCall (ref reflectionContext, declaringType, ".ctor", 0, bindingFlags, parametersCount);
-									}
-									else {
-										reflectionContext.RecordUnrecognizedPattern ($"Activator call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 1st argument expression which cannot be analyzed");
-									}
-
 								}
 
 								break;
