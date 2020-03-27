@@ -36,12 +36,12 @@ namespace System.Security.Cryptography
         /// </exception>
         public void Validate()
         {
-            bool hasErrors = (Q.X, Q.Y, D) switch
-            {
-                (null, null, {}) => false,
-                (byte[] x, byte[] y, _) when x.Length == y.Length => false,
-                _ => true
-            };
+            bool hasErrors = true;
+
+            if (D is object && Q.Y is null && Q.X is null)
+                hasErrors = false;
+            if (Q.Y is object && Q.X is object)
+                hasErrors = false;
 
             if (!hasErrors)
             {
