@@ -47,7 +47,7 @@ namespace ComWrappersTests
                 return entryRaw;
             }
 
-            protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
+            protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
             {
                 var iid = typeof(ITrackerObject).GUID;
                 IntPtr iTrackerComObject;
@@ -202,7 +202,7 @@ namespace ComWrappersTests
                 }
             }
 
-            protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
+            protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
             {
                 switch (CreateObjectMode)
                 {
