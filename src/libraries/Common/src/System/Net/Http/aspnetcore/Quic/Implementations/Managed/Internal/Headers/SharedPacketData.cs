@@ -26,7 +26,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         }
 
         /// <summary>
-        ///     Number of least significant bytes of the packet number transferred in this packet. The transfered value is accessible in <see cref="TruncatedPacketNumber"/>.
+        ///     Number of least significant bytes of the packet number transferred in this packet. The transfered value is
+        ///     accessible in <see cref="TruncatedPacketNumber" />.
         /// </summary>
         internal int PacketNumberLength
         {
@@ -34,7 +35,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         }
 
         /// <summary>
-        ///     Value of the token provided to the peer previously by <see cref="NewTokenFrame"/>. Only used when type of the packet is Initial.
+        ///     Value of the token provided to the peer previously by <see cref="NewTokenFrame" />. Only used when type of the
+        ///     packet is Initial.
         /// </summary>
         internal readonly ReadOnlySpan<byte> Token;
 
@@ -45,7 +47,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         internal readonly ulong Length;
 
         /// <summary>
-        ///     Lower part of the packet number. Number of significant bytes is encoded in <see cref="PacketNumberLength"/>.
+        ///     Lower part of the packet number. Number of significant bytes is encoded in <see cref="PacketNumberLength" />.
         /// </summary>
         internal readonly uint TruncatedPacketNumber;
 

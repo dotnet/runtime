@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace System.Net.Quic.Tests
 {
-    static internal class HexHelpers
+    internal static class HexHelpers
     {
         public static string ToHexString(ReadOnlySpan<byte> data)
         {
@@ -31,8 +31,8 @@ namespace System.Net.Quic.Tests
         private static void FromHexStringInternal(string hexNoWs, Span<byte> target)
         {
             if (hexNoWs.Length > target.Length * 2) throw new ArgumentException("Buffer too short");
-            for (var i = 0; i < hexNoWs.Length / 2; i++)
-                target[i] = Byte.Parse(hexNoWs.AsSpan(i * 2, 2), NumberStyles.HexNumber);
+            for (int i = 0; i < hexNoWs.Length / 2; i++)
+                target[i] = byte.Parse(hexNoWs.AsSpan(i * 2, 2), NumberStyles.HexNumber);
         }
     }
 }

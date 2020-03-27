@@ -6,17 +6,17 @@ namespace System.Net.Quic.Tests
 {
     public class FrameSerializationTests
     {
-        private QuicReader reader;
-        private QuicWriter writer;
-
-        private byte[] buffer;
-
         public FrameSerializationTests()
         {
             buffer = new byte[1024];
             reader = new QuicReader(buffer);
             writer = new QuicWriter(buffer);
         }
+
+        private readonly QuicReader reader;
+        private readonly QuicWriter writer;
+
+        private readonly byte[] buffer;
 
         [Fact]
         public void SerializeAckFrame()

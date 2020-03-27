@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Runtime.InteropServices;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 {
@@ -19,7 +18,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 
             internal QuicVersion this[int i]
             {
-                get => (QuicVersion) BinaryPrimitives.ReadUInt32BigEndian(rawData.Slice(sizeof(uint) * i));
+                get => (QuicVersion)BinaryPrimitives.ReadUInt32BigEndian(rawData.Slice(sizeof(uint) * i));
             }
 
             internal int Count => rawData.Length / sizeof(uint);

@@ -1,4 +1,3 @@
-using System.Data;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using Xunit;
 
@@ -18,6 +17,18 @@ namespace System.Net.Quic.Tests
             string actualHex = HexHelpers.ToHexString(actual);
 
             Assert.Equal(expectedHex, actualHex);
+        }
+
+        private static CryptoSeal DeriveClientCryptoSeal()
+        {
+            var initial =
+                KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(ReferenceData.InitialSecretHex));
+            var key = KeyDerivation.DeriveKey(initial);
+            var iv = KeyDerivation.DeriveIv(initial);
+            var hp = KeyDerivation.DeriveHp(initial);
+
+            var seal = new CryptoSeal(iv, key, hp, CipherAlgorithm.AEAD_AES_128_GCM);
+            return seal;
         }
 
         [Fact]
@@ -131,18 +142,6 @@ namespace System.Net.Quic.Tests
 
             var hp = KeyDerivation.DeriveHp(initial);
             Assert.Equal(ReferenceData.ServerInitialHpHex, HexHelpers.ToHexString(hp));
-        }
-
-        private static CryptoSeal DeriveClientCryptoSeal()
-        {
-            var initial =
-                KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(ReferenceData.InitialSecretHex));
-            var key = KeyDerivation.DeriveKey(initial);
-            var iv = KeyDerivation.DeriveIv(initial);
-            var hp = KeyDerivation.DeriveHp(initial);
-
-            var seal = new CryptoSeal(iv, key, hp, CipherAlgorithm.AEAD_AES_128_GCM);
-            return seal;
         }
     }
 }

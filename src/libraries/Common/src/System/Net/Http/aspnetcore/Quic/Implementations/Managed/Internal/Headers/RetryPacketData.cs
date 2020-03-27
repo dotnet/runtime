@@ -13,7 +13,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         internal readonly ReadOnlySpan<byte> RetryToken;
 
         /// <summary>
-        ///     Integrity tag computed for the <see cref="RetryToken"/>.
+        ///     Integrity tag computed for the <see cref="RetryToken" />.
         /// </summary>
         internal readonly ReadOnlySpan<byte> RetryIntegrityTag;
 
@@ -41,6 +41,5 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
             writer.WriteSpan(data.RetryToken);
             writer.WriteSpan(data.RetryIntegrityTag);
         }
-
     }
 }

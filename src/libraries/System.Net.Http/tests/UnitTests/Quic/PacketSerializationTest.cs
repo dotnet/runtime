@@ -1,26 +1,24 @@
 using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
-using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Net.Quic.Tests
 {
     public class PacketSerializationTest
     {
-        private QuicReader reader;
-        private QuicWriter writer;
-
-        private byte[] buffer;
-
         public PacketSerializationTest()
         {
             buffer = new byte[2048];
             reader = new QuicReader(buffer);
             writer = new QuicWriter(buffer);
         }
+
+        private readonly QuicReader reader;
+        private readonly QuicWriter writer;
+
+        private readonly byte[] buffer;
 
         [Fact]
         public void DeserializeReferenceClientInitialPacket()
@@ -43,7 +41,8 @@ namespace System.Net.Quic.Tests
             Assert.Equal(0, data.ReservedBits);
             Assert.Equal(4, data.PacketNumberLength);
             // length includes packet number and integrity tag
-            Assert.Equal(ReferenceData.ClientInitialPayloadLength, (int) data.Length - CryptoSealAesGcm.IntegrityTagLength - data.PacketNumberLength);
+            Assert.Equal(ReferenceData.ClientInitialPayloadLength,
+                (int)data.Length - CryptoSealAesGcm.IntegrityTagLength - data.PacketNumberLength);
             Assert.Equal(2ul, data.TruncatedPacketNumber);
 
             Assert.Equal(0, reader.BytesLeft);
@@ -52,7 +51,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public void SerializeLongPacketHeader()
         {
-            var pnLength = 2;
+            int pnLength = 2;
             var scid = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
             var dcid = scid.Select(i => (byte)(i * 10)).ToArray();
             var expected = new LongPacketHeader(PacketType.Initial, pnLength, QuicVersion.Draft27, dcid, scid);
@@ -96,9 +95,9 @@ namespace System.Net.Quic.Tests
         [Fact]
         public void SerializeSharedPacketData()
         {
-            var pnLength = 2;
+            int pnLength = 2;
             var token = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
-            var firstByte = HeaderHelpers.ComposeLongHeaderByte(PacketType.Initial, pnLength);
+            byte firstByte = HeaderHelpers.ComposeLongHeaderByte(PacketType.Initial, pnLength);
 
             var expected = new SharedPacketData(firstByte, token, 1234, 5);
 

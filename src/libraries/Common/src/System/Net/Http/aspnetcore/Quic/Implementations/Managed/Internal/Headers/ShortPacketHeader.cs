@@ -9,7 +9,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
     internal readonly ref struct ShortPacketHeader
     {
         /// <summary>
-        ///     First byte of the header, contains compacted data from <see cref="FixedBit"/>, <see cref="SpinBit"/>, <see cref="ReservedBits"/> and <see cref="PacketNumberLength"/>.
+        ///     First byte of the header, contains compacted data from <see cref="FixedBit" />, <see cref="SpinBit" />,
+        ///     <see cref="ReservedBits" /> and <see cref="PacketNumberLength" />.
         /// </summary>
         internal readonly byte FirstByte;
 
@@ -34,12 +35,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         internal bool KeyPhaseBit => HeaderHelpers.GetKeyPhase(FirstByte);
 
         /// <summary>
-        ///     Number of least significant bytes of the packet number transferred in this packet. The transfered value is accessible in <see cref="TruncatedPacketNumber"/>.
+        ///     Number of least significant bytes of the packet number transferred in this packet. The transfered value is
+        ///     accessible in <see cref="TruncatedPacketNumber" />.
         /// </summary>
         internal int PacketNumberLength => HeaderHelpers.GetPacketNumberLength(FirstByte);
 
         /// <summary>
-        ///     Lower part of the packet number. Number of significant bytes is encoded in <see cref="PacketNumberLength"/>.
+        ///     Lower part of the packet number. Number of significant bytes is encoded in <see cref="PacketNumberLength" />.
         /// </summary>
         internal readonly uint TruncatedPacketNumber;
 
@@ -50,14 +52,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 
         internal ShortPacketHeader(byte firstByte, uint truncatedPacketNumber, ConnectionId destinationConnectionId)
         {
-            this.FirstByte = firstByte;
+            FirstByte = firstByte;
             TruncatedPacketNumber = truncatedPacketNumber;
             DestinationConnectionId = destinationConnectionId;
         }
 
         internal ShortPacketHeader(bool spin, bool keyPhase, int packetNumberLength, uint truncatedPacketNumber,
             ConnectionId destinationConnectionId)
-            : this(HeaderHelpers.ComposeShortHeaderByte(spin, keyPhase, packetNumberLength), truncatedPacketNumber, destinationConnectionId)
+            : this(HeaderHelpers.ComposeShortHeaderByte(spin, keyPhase, packetNumberLength), truncatedPacketNumber,
+                destinationConnectionId)
         {
         }
 
@@ -75,7 +78,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
             }
 
             reader.Advance(dcid.Data.Length);
-            if (!reader.TryReadTruncatedPacketNumber(HeaderHelpers.GetPacketNumberLength(firstByte), out uint truncatedPacketNumber))
+            if (!reader.TryReadTruncatedPacketNumber(HeaderHelpers.GetPacketNumberLength(firstByte),
+                out uint truncatedPacketNumber))
             {
                 header = default;
                 return false;
