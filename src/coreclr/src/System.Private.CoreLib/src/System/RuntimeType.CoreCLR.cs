@@ -3472,7 +3472,19 @@ namespace System
                 // pass LCID_ENGLISH_US if no explicit culture is specified to match the behavior of VB
                 int lcid = (culture == null ? 0x0409 : culture.LCID);
 
-                return InvokeDispMethod(name, bindingFlags, target, providedArgs, isByRef, lcid, namedParams);
+                // If a request to not wrap exceptions was made, we will unwrap
+                // the TargetInvocationException since that is what will be thrown.
+                bool unwrapExceptions = (bindingFlags & BindingFlags.DoNotWrapExceptions) != 0;
+                try
+                {
+                    return InvokeDispMethod(name, bindingFlags, target, providedArgs, isByRef, lcid, namedParams);
+                }
+                catch (TargetInvocationException e) when (unwrapExceptions)
+                {
+                    // For target invocation exceptions, we need to unwrap the inner exception and
+                    // re-throw it.
+                    throw e.InnerException!;
+                }
             }
 #endif // FEATURE_COMINTEROP
 
@@ -4066,18 +4078,9 @@ namespace System
                 }
             }
 
-            object? ret;
-            try
-            {
-                // The IDispatch codepath doesn't support BindingFlags.DoNotWrapExceptions.
-                ret = InvokeMember(memberName, flags, null, target, aArgs, aParamMod, null, null);
-            }
-            catch (TargetInvocationException e)
-            {
-                // For target invocation exceptions, we need to unwrap the inner exception and
-                // re-throw it.
-                throw e.InnerException!;
-            }
+            // For target invocation exceptions, the exception is wrapped.
+            flags |= BindingFlags.DoNotWrapExceptions;
+            object? ret = InvokeMember(memberName, flags, null, target, aArgs, aParamMod, null, null);
 
             // Convert each ByRef argument that is _not_ of the proper type to
             // the parameter type.
