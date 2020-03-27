@@ -40,5 +40,16 @@ namespace Mono.Linker
 		/// <remarks>The source and target are typically Cecil metadata objects (MethodDefinition, TypeDefinition, ...)
 		/// but they can also be the linker steps or really any other object.</remarks>
 		void RecordDependency (object source, object target, bool marked);
+
+		/// <summary>
+		/// Reports a dependency detected by the linker, with a well-defined reason for keeping the dependency.
+		/// </summary>
+		/// <param name="target">The target of the dependency (for example the callee method).</param>
+		/// <param name="reason">The reason for including the target dependency (for example a direct call from another method).</param>
+		/// <param name="marked">true if the target is also marked by the MarkStep as a result of this particular reason.</param>
+		/// <remarks>The target is typically a Cecil metadata object (MethodDefinition, TypeDefinition, ...)
+		/// but can also be the linker steps or really any other object. "marked" may be false for a target that
+		/// is still marked for some other reason.</remarks>
+		void RecordDependency (object target, in DependencyInfo reason, bool marked);
 	}
 }
