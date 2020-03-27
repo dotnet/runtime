@@ -2937,5 +2937,10 @@ namespace Internal.JitInterface
 
             return (uint)sizeof(CORJIT_FLAGS);
         }
+
+        private void notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
+        {
+            // Do nothing. This is currently just a notification that has no impact on anything
+        }
     }
 }
