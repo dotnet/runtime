@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public abstract class ECKeyFileTests<T> where T : AsymmetricAlgorithm
+    public abstract partial class ECKeyFileTests<T> where T : AsymmetricAlgorithm
     {
         protected abstract T CreateKey();
         protected abstract byte[] ExportECPrivateKey(T key);

@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
                 bool includePrivateParameters = (parameters.D != null);
                 bool hasPublicParameters = parameters.Q.X is object && parameters.Q.Y is object;
 
-                if (curve.IsPrime)
+                if (curve.IsPrime && hasPublicParameters)
                 {
                     byte[] ecExplicitBlob = ECCng.GetPrimeCurveBlob(ref parameters, ecdh: false);
                     ImportFullKeyBlob(ecExplicitBlob, includePrivateParameters);
