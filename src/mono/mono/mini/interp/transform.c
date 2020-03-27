@@ -1391,7 +1391,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	const char *tm = target_method->name;
 	int type_index = mono_class_get_magic_index (target_method->klass);
 	gboolean in_corlib = m_class_get_image (target_method->klass) == mono_defaults.corlib;
-	const char *klass_name_space = m_class_get_name_space (target_method->klass);
+	const char *klass_name_space;
+	if (m_class_get_nested_in (target_method->klass))
+		klass_name_space = m_class_get_name_space (m_class_get_nested_in (target_method->klass));
+	else
+		klass_name_space = m_class_get_name_space (target_method->klass);
 	const char *klass_name = m_class_get_name (target_method->klass);
 
 	if (target_method->klass == mono_defaults.string_class) {
@@ -1797,14 +1801,21 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_CEQ_I4;
 			}
 		}
-	} else if (in_corlib &&
+	}
+#ifdef ENABLE_NETCORE
+	else if (in_corlib &&
 			   !strcmp ("System.Runtime.CompilerServices", klass_name_space) &&
 			   !strcmp ("RuntimeFeature", klass_name)) {
 		if (!strcmp (tm, "get_IsDynamicCodeSupported"))
 			*op = MINT_LDC_I4_1;
 		else if (!strcmp (tm, "get_IsDynamicCodeCompiled"))
 			*op = MINT_LDC_I4_0;
+	} else if (in_corlib &&
+			!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
+			!strcmp (tm, "get_IsSupported")) {
+		*op = MINT_LDC_I4_0;
 	}
+#endif
 
 	return FALSE;
 }
@@ -1954,9 +1965,6 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 {
 	MonoMethodHeaderSummary header;
 
-	if (td->method == method)
-		return FALSE;
-
 	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
 		/* Used to mark methods containing StackCrawlMark locals */
 		return FALSE;
@@ -1999,6 +2007,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 		return FALSE;
 
 	if (td->prof_coverage)
+		return FALSE;
+
+	if (g_list_find (td->dont_inline, method))
 		return FALSE;
 
 	return TRUE;
@@ -3429,6 +3440,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			local_locals [i] = create_interp_local (td, header->locals [i]);
 	}
 
+	td->dont_inline = g_list_prepend (td->dont_inline, method);
 	while (td->ip < end) {
 		g_assert (td->sp >= td->stack);
 		g_assert (td->vt_sp < 0x10000000);
@@ -6296,6 +6308,7 @@ exit_ret:
 	g_free (arg_locals);
 	g_free (local_locals);
 	mono_basic_block_free (original_bb);
+	td->dont_inline = g_list_remove (td->dont_inline, method);
 
 	return ret;
 exit:
