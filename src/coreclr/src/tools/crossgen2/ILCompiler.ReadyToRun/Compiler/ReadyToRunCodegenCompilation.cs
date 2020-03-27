@@ -228,8 +228,6 @@ namespace ILCompiler
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
 
-        public AggressiveOptimizationBehavior AggressiveOptimizationBehavior { get; }
-
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
@@ -239,7 +237,6 @@ namespace ILCompiler
             DevirtualizationManager devirtualizationManager,
             IEnumerable<string> inputFiles,
             InstructionSetSupport instructionSetSupport,
-            AggressiveOptimizationBehavior aggressiveOptimizationBehavior,
             bool resilient,
             bool generateMapFile,
             int parallelism)
@@ -253,7 +250,6 @@ namespace ILCompiler
                   logger,
                   instructionSetSupport)
         {
-            AggressiveOptimizationBehavior = aggressiveOptimizationBehavior;
             _resilient = resilient;
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;

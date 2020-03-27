@@ -26,7 +26,6 @@ namespace ILCompiler
         private bool _generateMapFile;
         private int _parallelism;
         private InstructionSetSupport _instructionSetSupport;
-        private AggressiveOptimizationBehavior _optimizationBehavior = AggressiveOptimizationBehavior.DontCompile;
 
         private string _jitPath;
 
@@ -116,12 +115,6 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseAggressiveOptimizationBehavior(AggressiveOptimizationBehavior optimizationBehavior)
-        {
-            _optimizationBehavior = optimizationBehavior;
-            return this;
-        }
-
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -202,7 +195,6 @@ namespace ILCompiler
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
                 _inputFiles,
                 _instructionSetSupport,
-                _optimizationBehavior,
                 _resilient,
                 _generateMapFile,
                 _parallelism);

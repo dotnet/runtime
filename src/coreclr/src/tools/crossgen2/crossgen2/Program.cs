@@ -418,13 +418,12 @@ namespace ILCompiler
                     else
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(null);
 
-                    AggressiveOptimizationBehavior aggressiveOptBehavior = _commandLineOptions.CompileAggressiveOptimizationMethods? AggressiveOptimizationBehavior.Compile: AggressiveOptimizationBehavior.DontCompile;
                     if (singleMethod == null)
                     {
                         // For non-single-method compilations add compilation roots.
                         foreach (var module in rootingModules)
                         {
-                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager, aggressiveOptBehavior, _commandLineOptions.Partial));
+                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager, _commandLineOptions.Partial));
 
                             if (!_commandLineOptions.InputBubble)
                             {
