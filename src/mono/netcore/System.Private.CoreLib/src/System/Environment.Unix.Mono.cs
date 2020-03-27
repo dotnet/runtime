@@ -102,7 +102,7 @@ namespace System
             {
                 if (name != null)
                 {
-                    results.Add(InternalGetEnvironmentVariable(name));
+                    results.Add(name, InternalGetEnvironmentVariable(name));
                 }
             }
 
