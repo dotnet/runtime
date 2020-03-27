@@ -634,7 +634,7 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             }
             tr.Write(@"
         default:
-            return """";
+            return ""UnknownInstructionSet"";
     }
 #ifdef _MSC_VER
 #pragma warning(pop)

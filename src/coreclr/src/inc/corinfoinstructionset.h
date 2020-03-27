@@ -421,7 +421,7 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
 #endif // TARGET_X86
 
         default:
-            return "";
+            return "UnknownInstructionSet";
     }
 #ifdef _MSC_VER
 #pragma warning(pop)
