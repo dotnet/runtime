@@ -15467,10 +15467,6 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
 {
     fgRemoveRestOfBlock = false;
 
-    /* Make the current basic block address available globally */
-
-    compCurBB = block;
-
     *lnot = *loadw = false;
 
     fgCurrentlyInUseArgTemps = hashBv::Create(this);
@@ -15668,10 +15664,6 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
     }
 #endif
 
-#ifdef DEBUG
-    compCurBB = (BasicBlock*)INVALID_POINTER_VALUE;
-#endif
-
     // Reset this back so that it doesn't leak out impacting other blocks
     fgRemoveRestOfBlock = false;
 }
@@ -15754,6 +15746,8 @@ void Compiler::fgMorphBlocks()
             optAssertionReset(0);
         }
 #endif
+        // Make the current basic block address available globally.
+        compCurBB = block;
 
         // Process all statement trees in the basic block.
         fgMorphStmts(block, &lnot, &loadw);
@@ -15766,12 +15760,13 @@ void Compiler::fgMorphBlocks()
                 fgMergeBlockReturn(block);
             }
         }
+
         block = block->bbNext;
-    } while (block);
+    } while (block != nullptr);
 
-    /* We are done with the global morphing phase */
-
+    // We are done with the global morphing phase
     fgGlobalMorph = false;
+    compCurBB     = nullptr;
 
 #ifdef DEBUG
     if (verboseTrees)
