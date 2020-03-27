@@ -9,7 +9,6 @@
 //----------------------------------------------------------
 
 #include "standardpch.h"
-#include "md5.h"
 #include "methodcontext.h"
 #include "compileresult.h"
 #include "lightweightmap.h"
@@ -35,6 +34,9 @@
 #define DEBUG_REC(x)
 #define DEBUG_REP(x)
 #endif
+
+// static variable initialization
+Hash MethodContext::m_hash;
 
 MethodContext::MethodContext()
 {
@@ -288,7 +290,7 @@ void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen
     {
         mcPackets packetType = (mcPackets)buff2[buffIndex++];
         memcpy(&localsize, &buff2[buffIndex], sizeof(unsigned int));
-        buffIndex += 4;
+        buffIndex += sizeof(unsigned int);
 
         switch (packetType)
         {
@@ -6195,44 +6197,56 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
     return value;
 }
 
-int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName /* = false */)
+int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName /* = false */, CORINFO_METHOD_INFO* optInfo /* = nullptr */, unsigned optFlags /* = 0 */)
 {
-    char* obuff = buff;
-
     if (len < METHOD_IDENTITY_INFO_SIZE)
         return -1;
 
     // Obtain the Method Info structure for this method
-    CORINFO_METHOD_INFO info;
-    unsigned            flags = 0;
+    CORINFO_METHOD_INFO  info;
+    CORINFO_METHOD_INFO* pInfo = nullptr;
+    unsigned             flags = 0;
 
-    repCompileMethod(&info, &flags);
+    if (optInfo != nullptr)
+    {
+        // Use the info we've already retrieved from repCompileMethod().
+        pInfo = optInfo;
+        flags = optFlags;
+    }
+    else
+    {
+        repCompileMethod(&info, &flags);
+        pInfo = &info;
+    }
+
+    char* obuff = buff;
 
     // Add the Method Signature
-    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, info.ftn, info.args, ignoreMethodName));
+    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, pInfo->ftn, pInfo->args, ignoreMethodName));
     buff += t;
     len -= t;
 
     // Add Calling convention information, CorInfoOptions and CorInfoRegionKind
-    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d ", info.args.callConv,
-                  info.options, info.regionKind);
+    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d ", pInfo->args.callConv,
+                  pInfo->options, pInfo->regionKind);
     buff += t;
     len -= t;
 
     // Hash the IL Code for this method and append it to the ID info
     char ilHash[MD5_HASH_BUFFER_SIZE];
-    dumpMD5HashToBuffer(info.ILCode, info.ILCodeSize, ilHash, MD5_HASH_BUFFER_SIZE);
+    dumpMD5HashToBuffer(pInfo->ILCode, pInfo->ILCodeSize, ilHash, MD5_HASH_BUFFER_SIZE);
     t = sprintf_s(buff, len, "ILCode Hash: %s", ilHash);
     buff += t;
     len -= t;
 
     return (int)(buff - obuff);
 }
-int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName /* = false */)
+
+int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName /* = false */, CORINFO_METHOD_INFO* optInfo /* = nullptr */, unsigned optFlags /* = 0 */)
 {
     char bufferIdentityInfo[METHOD_IDENTITY_INFO_SIZE];
 
-    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE, ignoreMethodName);
+    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE, ignoreMethodName, optInfo, optFlags);
 
     if (cbLen < 0)
         return cbLen;
@@ -6244,74 +6258,17 @@ int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMet
 
 int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, int hashLen)
 {
-#ifdef TARGET_UNIX
-
-    MD5HASHDATA md5_hashdata;
-    MD5         md5_hasher;
-
-    if (hashLen < MD5_HASH_BUFFER_SIZE)
-        return -1;
-
-    md5_hasher.Hash(pBuffer, (ULONG)bufLen, &md5_hashdata);
-
-    DWORD md5_hashdata_size = sizeof(md5_hashdata.rgb) / sizeof(BYTE);
-    Assert(md5_hashdata_size == MD5_HASH_BYTE_SIZE);
-
-    for (DWORD i = 0; i < md5_hashdata_size; i++)
+    // Lazy initialize the MD5 hasher.
+    if (!m_hash.IsInitialized())
     {
-        sprintf_s(hash + i * 2, hashLen - i * 2, "%02X", md5_hashdata.rgb[i]);
+        if (!m_hash.Initialize())
+        {
+            AssertMsg(false, "Failed to initialize the MD5 hasher");
+            return -1;
+        }
     }
 
-    return MD5_HASH_BUFFER_SIZE; // if we had success we wrote MD5_HASH_BUFFER_SIZE bytes to the buffer
-
-#else // !TARGET_UNIX
-
-    HCRYPTPROV hProv = NULL; // CryptoProvider
-    HCRYPTHASH hHash = NULL;
-    BYTE       bHash[MD5_HASH_BYTE_SIZE];
-    DWORD      cbHash = MD5_HASH_BYTE_SIZE;
-
-    if (hashLen < MD5_HASH_BUFFER_SIZE)
-        return -1;
-
-    // Get handle to the crypto provider
-    if (!CryptAcquireContextA(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
-        goto OnError;
-
-    if (!CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
-        goto OnError;
-
-    if (!CryptHashData(hHash, pBuffer, bufLen, 0))
-        goto OnError;
-
-    if (!CryptGetHashParam(hHash, HP_HASHVAL, bHash, &cbHash, 0))
-        goto OnError;
-
-    if (cbHash != MD5_HASH_BYTE_SIZE)
-        goto OnError;
-
-    for (DWORD i = 0; i < MD5_HASH_BYTE_SIZE; i++)
-    {
-        sprintf_s(hash + i * 2, hashLen - i * 2, "%02X", bHash[i]);
-    }
-
-    if (hHash != NULL)
-        CryptDestroyHash(hHash);
-    if (hProv != NULL)
-        CryptReleaseContext(hProv, 0);
-
-    return MD5_HASH_BUFFER_SIZE; // if we had success we wrote MD5_HASH_BUFFER_SIZE bytes to the buffer
-
-OnError:
-    AssertMsg(false, "Failed to create a hash using the Crypto API (Error %X)", GetLastError());
-
-    if (hHash != NULL)
-        CryptDestroyHash(hHash);
-    if (hProv != NULL)
-        CryptReleaseContext(hProv, 0);
-    return -1;
-
-#endif // !TARGET_UNIX
+    return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
 MethodContext::Environment MethodContext::cloneEnvironment()

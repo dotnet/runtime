@@ -19,6 +19,7 @@ public:
         , m_index(0)
         , m_indexes(nullptr)
         , m_progressReport(progressReport)
+        , m_progressRate(1000)
         , m_timer(nullptr)
     {
         if (m_progressReport)
@@ -36,6 +37,7 @@ public:
         , m_index(0)
         , m_indexes(indexes)
         , m_progressReport(progressReport)
+        , m_progressRate(1000)
         , m_timer(nullptr)
     {
         if (m_progressReport)
@@ -98,5 +100,6 @@ private:
     // Should we log a progress report as we are loading the method contexts?
     // The timer is only used when m_progressReport==true.
     bool         m_progressReport;
+    const int    m_progressRate;    // Report progress every `m_progressRate` method contexts.
     SimpleTimer* m_timer;
 };
