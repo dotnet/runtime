@@ -8315,14 +8315,10 @@ private:
     // If the result is false, then the target machine may have support for the instruction
     bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
     {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         if ((opts.compSupportsISA & (1ULL << isa)) != 0)
             return compExactlyDependsOn(isa);
         else
             return false;
-#else
-        return false;
-#endif
     }
 
     bool canUseVexEncoding() const
@@ -8423,14 +8419,11 @@ public:
     {
         JitFlags* jitFlags; // all flags passed from the EE
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         uint64_t compSupportsISA;
-#endif
+        uint64_t compSupportsISAReported;
         void setSupportedISAs(CORINFO_InstructionSetFlags isas)
         {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             compSupportsISA = isas.GetFlagsRaw();
-#endif
         }
 
         unsigned compFlags; // method attributes

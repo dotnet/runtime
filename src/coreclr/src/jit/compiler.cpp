@@ -2194,10 +2194,10 @@ void Compiler::compSetProcessor()
 #endif // TARGET_X86
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
-
-#ifdef TARGET_XARCH
     opts.compSupportsISA         = 0;
     opts.compSupportsISAReported = 0;
+
+#ifdef TARGET_XARCH
     bool avxSupported = false;
 
     if (JitConfig.EnableHWIntrinsic())

@@ -13245,63 +13245,8 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
 
 bool IsInstructionSetSupported(CORJIT_FLAGS jitFlags, ReadyToRunInstructionSet r2rInstructionSet)
 {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    switch (r2rInstructionSet)
-    {
-        case READYTORUN_INSTRUCTION_Aes:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_AES);
-        case READYTORUN_INSTRUCTION_Avx:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX);
-        case READYTORUN_INSTRUCTION_Avx2:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
-        case READYTORUN_INSTRUCTION_Bmi1:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1);
-        case READYTORUN_INSTRUCTION_Bmi2:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2);
-        case READYTORUN_INSTRUCTION_Fma:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_FMA);
-        case READYTORUN_INSTRUCTION_Lzcnt:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_LZCNT);
-        case READYTORUN_INSTRUCTION_Pclmuldq:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ);
-        case READYTORUN_INSTRUCTION_Popcnt:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT);
-        case READYTORUN_INSTRUCTION_Sse:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
-        case READYTORUN_INSTRUCTION_Sse2:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
-        case READYTORUN_INSTRUCTION_Sse3:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3);
-        case READYTORUN_INSTRUCTION_Ssse3:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_SSSE3);
-        case READYTORUN_INSTRUCTION_Sse41:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE41);
-        case READYTORUN_INSTRUCTION_Sse42:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE42);
-        default:
-            return false;
-    }
-#elif defined(TARGET_ARM64)
-    switch (r2rInstructionSet)
-    {
-        case READYTORUN_INSTRUCTION_Aes:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_AES);
-        case READYTORUN_INSTRUCTION_AdvSimd:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD);
-        case READYTORUN_INSTRUCTION_ArmBase:
-            return true;
-        case READYTORUN_INSTRUCTION_Crc32:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_CRC32);
-        case READYTORUN_INSTRUCTION_Sha1:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA1);
-        case READYTORUN_INSTRUCTION_Sha256:
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA256);
-        default:
-            return false;
-    }
-#else
-    return false;
-#endif
+    CORINFO_InstructionSet instructionSet = InstructionSetFromR2RInstructionSet(r2rInstructionSet);
+    return jitFlags.IsSet(instructionSet);
 }
 
 BOOL LoadDynamicInfoEntry(Module *currentModule,

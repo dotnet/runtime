@@ -361,29 +361,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 };
 
-enum ReadyToRunInstructionSet
-{
-    READYTORUN_INSTRUCTION_Aes                  = 0x01,
-    READYTORUN_INSTRUCTION_Avx                  = 0x02,
-    READYTORUN_INSTRUCTION_Avx2                 = 0x03,
-    READYTORUN_INSTRUCTION_Bmi1                 = 0x04,
-    READYTORUN_INSTRUCTION_Bmi2                 = 0x05,
-    READYTORUN_INSTRUCTION_Fma                  = 0x06,
-    READYTORUN_INSTRUCTION_Lzcnt                = 0x07,
-    READYTORUN_INSTRUCTION_Pclmuldq             = 0x08,
-    READYTORUN_INSTRUCTION_Popcnt               = 0x09,
-    READYTORUN_INSTRUCTION_Sse                  = 0x0A,
-    READYTORUN_INSTRUCTION_Sse2                 = 0x0B,
-    READYTORUN_INSTRUCTION_Sse3                 = 0x0C,
-    READYTORUN_INSTRUCTION_Ssse3                = 0x0D,
-    READYTORUN_INSTRUCTION_Sse41                = 0x0E,
-    READYTORUN_INSTRUCTION_Sse42                = 0x0F,
-    READYTORUN_INSTRUCTION_AdvSimd              = 0x10,
-    READYTORUN_INSTRUCTION_ArmBase              = 0x11,
-    READYTORUN_INSTRUCTION_Crc32                = 0x12,
-    READYTORUN_INSTRUCTION_Sha1                 = 0x13,
-    READYTORUN_INSTRUCTION_Sha256               = 0x14,
-};
+#include "readytoruninstructionset.h"
 
 //
 // Exception info
