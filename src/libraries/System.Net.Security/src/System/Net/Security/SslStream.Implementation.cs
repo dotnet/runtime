@@ -234,8 +234,8 @@ namespace System.Net.Security
         private async Task ForceAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, bool receiveFirst, byte[]? reAuthenticationData, bool isApm = false)
              where TIOAdapter : ISslIOAdapter
         {
-            _framing = Framing.Unknown;
             ProtocolToken message;
+            bool handshakeCompleted = false;
 
             if (reAuthenticationData == null)
             {
@@ -262,10 +262,22 @@ namespace System.Net.Security
                         // tracing done in NextMessage()
                         throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                     }
+
+                    if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    {
+                        // We can finish renegotiation without doing any read.
+                        handshakeCompleted = true;
+                    }
                 }
 
-                _handshakeBuffer = new ArrayBuffer(InitialHandshakeBufferSize);
-                do
+                if (!handshakeCompleted)
+                {
+                    // get ready to receive first frame
+                    _handshakeBuffer = new ArrayBuffer(InitialHandshakeBufferSize);
+                    _framing = Framing.Unknown;
+                }
+
+                while (!handshakeCompleted)
                 {
                     message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
                     if (message.Size > 0)
@@ -278,7 +290,12 @@ namespace System.Net.Security
                     {
                         throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                     }
-                } while (message.Status.ErrorCode != SecurityStatusPalErrorCode.OK);
+                    else if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    {
+                        // We can finish renegotiation without doing any read.
+                        handshakeCompleted = true;
+                    }
+                }
 
                 if (_handshakeBuffer.ActiveLength > 0)
                 {
@@ -686,7 +703,9 @@ namespace System.Net.Security
 
                         if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                         {
-                            if (!_sslAuthenticationOptions!.AllowRenegotiation)
+                            // Tls1.3 does not have renegotiation. However on Windows this error code is used
+                            // for session management e.g. anything lsass needs to see.
+                            if (!_sslAuthenticationOptions!.AllowRenegotiation && SslProtocol != SslProtocols.Tls13)
                             {
                                 _handshakeWaiter!.SetResult(false);
                                 _handshakeWaiter = null;
