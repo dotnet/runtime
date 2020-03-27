@@ -49,7 +49,7 @@ namespace Mono.Linker {
 			return true;
 		}
 
-		public static IEnumerable<InterfaceImplementation> GetReferencedInterfaces (AnnotationStore annotations, MethodBody body)
+		public static IEnumerable<(InterfaceImplementation, TypeDefinition)> GetReferencedInterfaces (AnnotationStore annotations, MethodBody body)
 		{
 			var possibleStackTypes = AllPossibleStackTypes (body.Method);
 			if (possibleStackTypes.Count == 0)
@@ -59,7 +59,7 @@ namespace Mono.Linker {
 			if (interfaceTypes.Length == 0)
 				return null;
 
-			var interfaceImplementations = new HashSet<InterfaceImplementation> ();
+			var interfaceImplementations = new HashSet<(InterfaceImplementation, TypeDefinition)> ();
 
 			// If a type could be on the stack in the body and an interface it implements could be on the stack on the body
 			// then we need to mark that interface implementation.  When this occurs it is not safe to remove the interface implementation from the type
@@ -126,11 +126,11 @@ namespace Mono.Linker {
 			return types;
 		}
 
-		static void AddMatchingInterfaces (HashSet<InterfaceImplementation> results, TypeDefinition type, TypeDefinition [] interfaceTypes)
+		static void AddMatchingInterfaces (HashSet<(InterfaceImplementation, TypeDefinition)> results, TypeDefinition type, TypeDefinition [] interfaceTypes)
 		{
 			foreach (var interfaceType in interfaceTypes) {
 				if (type.HasInterface (interfaceType, out InterfaceImplementation implementation))
-					results.Add (implementation);
+					results.Add ((implementation, type));
 			}
 		}
 
