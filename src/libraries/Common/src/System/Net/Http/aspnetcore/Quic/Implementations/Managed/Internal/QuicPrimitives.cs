@@ -6,7 +6,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     {
         internal static int WriteVarInt(Span<byte> destination, ulong value)
         {
-            int log = GetVarIntLogLength(value);
+            int log = GetVarIntLengthLogarithm(value);
             int bytes = 1 << log;
 
             // prefix with log length
@@ -80,7 +80,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return success ? bytes : 0;
         }
 
-        internal static int GetVarIntLogLength(ulong value)
+        internal static int GetVarIntLengthLogarithm(ulong value)
         {
             if (value <= 63) return 0;
             if (value <= 16_383) return 1;
@@ -88,6 +88,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (value <= 4_611_686_018_427_387_903) return 3;
 
             throw new ArgumentOutOfRangeException(nameof(value));
+        }
+
+        internal static int GetVarIntLength(ulong value)
+        {
+            return 1 << GetVarIntLengthLogarithm(value);
         }
     }
 }

@@ -57,7 +57,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void WriteVarInt(ulong value)
         {
-            QuicPrimitives.WriteVarInt(GetWritableSpan(1 << QuicPrimitives.GetVarIntLogLength(value)), value);
+            QuicPrimitives.WriteVarInt(GetWritableSpan(1 << QuicPrimitives.GetVarIntLengthLogarithm(value)), value);
         }
 
         internal void WriteSpan(ReadOnlySpan<byte> data)

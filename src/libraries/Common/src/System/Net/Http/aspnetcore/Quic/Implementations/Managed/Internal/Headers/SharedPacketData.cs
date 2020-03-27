@@ -9,9 +9,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
     /// </summary>
     internal readonly ref struct SharedPacketData
     {
-        private const byte ReservedBitsMask = 0x0c;
-        private const byte PacketNumberLengthMask = 0x03;
-
         /// <summary>
         ///     Copy of the first byte from the long packet header.
         /// </summary>
@@ -20,19 +17,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         /// <summary>
         ///     Reserved bits. Reception of any value other than 00 implies PROTOCOL_VIOLATION connection error.
         /// </summary>
-        internal byte ReservedBits
-        {
-            get => (byte)((firstByte & ReservedBitsMask) >> 2);
-        }
+        internal byte ReservedBits => HeaderHelpers.GetShortHeaderReservedBits(firstByte);
 
         /// <summary>
         ///     Number of least significant bytes of the packet number transferred in this packet. The transfered value is
         ///     accessible in <see cref="TruncatedPacketNumber" />.
         /// </summary>
-        internal int PacketNumberLength
-        {
-            get => HeaderHelpers.GetPacketNumberLength(firstByte);
-        }
+        internal int PacketNumberLength => HeaderHelpers.GetPacketNumberLength(firstByte);
 
         /// <summary>
         ///     Value of the token provided to the peer previously by <see cref="NewTokenFrame" />. Only used when type of the

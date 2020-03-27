@@ -1,8 +1,6 @@
-using System.Collections.Generic;
-
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
-    internal class ConnectionId
+    internal class ConnectionId : IEquatable<ConnectionId>
     {
         public ConnectionId(byte[] data)
         {
@@ -10,47 +8,42 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         }
 
         internal byte[] Data { get; }
-    }
 
-    internal class ConnectionIdCollection
-    {
-        private readonly List<ConnectionId> _connectionIds;
-
-        public ConnectionIdCollection()
+        public bool Equals(ConnectionId? other)
         {
-            _connectionIds = new List<ConnectionId>();
-        }
-
-        public void Add(byte[] connectionId)
-        {
-            foreach (var id in _connectionIds)
+            if (ReferenceEquals(null, other))
             {
-                if (id.Data.AsSpan().StartsWith(connectionId))
-                {
-                    throw new InvalidOperationException("New connection id must not be a prefix of an existing one");
-                }
+                return false;
             }
 
-            _connectionIds.Add(new ConnectionId(connectionId));
-        }
-
-        /// <summary>
-        ///     Checks if the provided connection id is present in the collection.
-        /// </summary>
-        /// <param name="dcidSpan"></param>
-        /// <returns></returns>
-        public ConnectionId? FindConnectionId(in ReadOnlySpan<byte> dcidSpan)
-        {
-            // TODO-RZ Aho-Corassick might be more efficient
-            foreach (var connectionId in _connectionIds)
+            if (ReferenceEquals(this, other))
             {
-                if (dcidSpan.StartsWith(connectionId.Data))
-                {
-                    return connectionId;
-                }
+                return true;
             }
 
-            return null;
+            return Data.AsSpan().SequenceEqual(other.Data);
         }
+
+        public override bool Equals(object? obj)
+        {
+            if (ReferenceEquals(null, obj))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            if (obj.GetType() != this.GetType())
+            {
+                return false;
+            }
+
+            return Equals((ConnectionId) obj);
+        }
+
+        public override int GetHashCode() => Data.GetHashCode();
     }
 }

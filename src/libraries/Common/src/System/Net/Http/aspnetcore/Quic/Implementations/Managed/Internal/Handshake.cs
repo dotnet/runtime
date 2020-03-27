@@ -9,9 +9,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     internal class Handshake : IQuicCallback, IDisposable
     {
         private readonly IntPtr _ssl;
+        private readonly bool isServer;
 
-        public Handshake(IntPtr ctx, string? address = null, string? cert = null, string? privateKey = null)
+        private readonly TransportParameters localTransportParams;
+        private TransportParameters? remoteTransportParams;
+
+        public Handshake(IntPtr ctx, TransportParameters localTransportParams, string? address = null, string? cert = null, string? privateKey = null)
         {
+            this.localTransportParams = localTransportParams;
+            isServer = address == null;
+
             var gcHandle = GCHandle.Alloc(this);
             ToSend = new List<(SslEncryptionLevel, byte[])>();
 
@@ -21,6 +28,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMinProtoVersion, (long)OpenSslTlsVersion.Tls13, IntPtr.Zero);
             Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMaxProtoVersion, (long)OpenSslTlsVersion.Tls13, IntPtr.Zero);
+
+            SetTransportParams(localTransportParams);
 
             if (cert != null)
                 Interop.OpenSslQuic.SslUseCertificateFile(_ssl, cert, SslFiletype.Pem);
@@ -36,6 +45,37 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 Interop.OpenSslQuic.SslSetConnectState(_ssl);
                 Interop.OpenSslQuic.SslSetTlsExHostName(_ssl, address);
             }
+        }
+
+        private unsafe int SetTransportParams(TransportParameters transportParameters)
+        {
+            byte[] buffer = new byte[1024];
+            var writer = new QuicWriter(buffer);
+            TransportParameters.Write(writer, isServer, transportParameters);
+            fixed (byte* pData = buffer)
+            {
+                return Interop.OpenSslQuic.SslSetQuicTransportParams(_ssl, pData, new IntPtr(writer.BytesWritten));
+            }
+        }
+
+        public unsafe TransportParameters GetPeerTransportParams()
+        {
+            if (remoteTransportParams == null)
+            {
+                byte[] buffer = new byte[1024];
+                byte* data;
+                IntPtr length;
+                Interop.OpenSslQuic.SslGetPeerQuicTransportParams(_ssl, out data, out length);
+
+                new Span<byte>(data, length.ToInt32()).CopyTo(buffer);
+                var reader = new QuicReader(buffer, length.ToInt32());
+                if (!TransportParameters.Read(reader, isServer, out remoteTransportParams))
+                {
+                    throw new InvalidOperationException("Failed to get peers transport params");
+                }
+            }
+
+            return remoteTransportParams;
         }
 
         public List<(SslEncryptionLevel, byte[])> ToSend { get; }
@@ -74,9 +114,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return 1;
         }
 
-        public int DoHandshake()
+        public SslError DoHandshake()
         {
-            return Interop.OpenSslQuic.SslDoHandshake(_ssl);
+            var status = Interop.OpenSslQuic.SslDoHandshake(_ssl);
+            if (status < 0)
+            {
+                return (SslError) Interop.OpenSslQuic.SslGetError(_ssl, status);
+            }
+
+            return SslError.None;
         }
 
         public int OnDataReceived(SslEncryptionLevel level, byte[] data)

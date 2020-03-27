@@ -40,6 +40,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             writer.WriteVarInt((ulong)frameType);
         }
 
+        internal static bool TryReadTranportParameterName(this QuicReader reader, out TransportParameterName name)
+        {
+            bool success = reader.TryReadVarInt(out ulong nameAsUlong);
+            name = (TransportParameterName)nameAsUlong;
+            return success;
+        }
+
+        internal static void WriteTransportParameterName(this QuicWriter writer, TransportParameterName name)
+        {
+            writer.WriteVarInt((ulong)name);
+        }
+
         internal static bool TryReadStatelessResetToken(this QuicReader reader, out StatelessResetToken token)
         {
             if (!reader.TryReadSpan(StatelessResetToken.Length, out var data))
