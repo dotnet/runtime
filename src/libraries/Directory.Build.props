@@ -52,7 +52,7 @@
     <BuildSettings Condition="'$(BuildSettings)' == ''">$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup)</BuildSettings>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisDirectory)dir.common.props" />
+  <Import Project="$(MSBuildThisDirectory)targetframework.props" />
 
   <!-- Define test projects and companions -->
   <PropertyGroup>

@@ -50,7 +50,7 @@
     <_UnsupportedTargetFrameworkError>true</_UnsupportedTargetFrameworkError>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisDirectory)dir.common.props" />
+  <Import Project="$(MSBuildThisDirectory)targetframework.props" />
   
   <PropertyGroup>
     <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
