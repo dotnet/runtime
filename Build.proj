@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <!--
+    Subsets are already imported by Directory.Build.props.
+    Reference the projects for traversal build.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="@(CoreClrProject)" />
+    <ProjectReference Include="@(LibrariesProject)" />
+    <ProjectReference Include="@(MonoProject)" />
+    <ProjectReference Include="@(InstallerProject)" />
+  </ItemGroup>
+
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+
+  <Import Project="$(RepositoryEngineeringDir)SubsetValidation.targets" />
+
+</Project>

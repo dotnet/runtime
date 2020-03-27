@@ -28,7 +28,7 @@ libraries -test /p:TestNoBuild=true
 
 ## Running tests on the command line
 
-To build tests you need to specify the `tests` subset when invoking build.cmd/sh: `libraries -subset tests`.
+To build tests you need to specify the `tests` subset when invoking build.cmd/sh: `libraries -subset test`.
 
 The easiest (and recommended) way to build and run the tests for a specific library, is to invoke the `Test` target on that library:
 ```cmd

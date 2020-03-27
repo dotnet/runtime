@@ -54,15 +54,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultLibrariesSubsets>depprojs-native-ref-src</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>depproj-native-ref-src</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(DefaultLibrariesSubsets)-apicompat</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">$(DefaultLibrariesSubsets)-pretest</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets Condition="'$(IncludeLibrariesTestSubset)' == 'true'">$(DefaultLibrariesSubsets)-tests</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets Condition="'$(IncludeLibrariesTestSubset)' == 'true'">$(DefaultLibrariesSubsets)-test</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)-package</DefaultLibrariesSubsets>
-    <!-- Only build package projects for pack target.-->
-    <DefaultLibrariesSubsets Condition="'$(Pack)' == 'true'">package</DefaultLibrariesSubsets>
-    <!-- Only build test projects for test target. -->
-    <DefaultLibrariesSubsets Condition="'$(Test)' == 'true'">tests</DefaultLibrariesSubsets>
 
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS'">depproj-pkgproj</DefaultInstallerSubsets>
@@ -91,14 +87,14 @@
 
   <ItemGroup>
     <!-- Libraries -->
-    <SubsetName Include="DepProjs" Category="Libraries" Description="The upfront restore projects which are necessary to compose the libraries." />
+    <SubsetName Include="DepProj" Category="Libraries" Description="The upfront restore projects which are necessary to compose the libraries." />
     <SubsetName Include="Native" Category="Libraries" Description="The native libraries used in the shared framework." />
     <SubsetName Include="Ref" Category="Libraries" Description="The managed reference libraries." />
     <SubsetName Include="Src" Category="Libraries" Description="The managed implementation libraries." />
     <SubsetName Include="ApiCompat" Category="Libraries" Description="The ApiCompat tool which scans for api compatibility." />
     <SubsetName Include="PreTest" Category="Libraries" Description="Test assets which are necessary to run tests." />
     <SubsetName Include="Package" Category="Libraries" Description="The projects that produce NuGet packages from libraries." />
-    <SubsetName Include="Tests" Category="Libraries" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
+    <SubsetName Include="Test" Category="Libraries" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
 
     <!-- CoreClr -->
     <SubsetName Include="Runtime" Category="CoreClr" Description="The CoreCLR .NET runtime." />
@@ -123,183 +119,135 @@
     <SubsetName Include="Test" Category="Installer" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
   </ItemGroup>
 
-  <ItemDefinitionGroup Condition="'$(CoreCLRConfiguration)' != ''">
-    <CoreClrProjectToBuild>
-      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
-    </CoreClrProjectToBuild>
-    <CoreClrCoreLibProjectToBuild>
-      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
-    </CoreClrCoreLibProjectToBuild>
-    <CoreClrNativeCoreLibProjectToBuild>
-      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
-    </CoreClrNativeCoreLibProjectToBuild>
-    <CoreClrManagedToolsProjectToBuild>
-      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
-    </CoreClrManagedToolsProjectToBuild>
-    <CoreClrPackagesProjectToBuild>
-      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
-    </CoreClrPackagesProjectToBuild>
-    <CoreClrLinuxDacProjectToBuild>
-      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
-    </CoreClrLinuxDacProjectToBuild>
-    <CoreClrAlpineLinuxDacProjectToBuild>
-      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
-    </CoreClrAlpineLinuxDacProjectToBuild>
-  </ItemDefinitionGroup>
-
-  <ItemDefinitionGroup Condition="'$(MonoConfiguration)' != ''">
-    <MonoProjectToBuild>
-      <AdditionalProperties>Configuration=$(MonoConfiguration)</AdditionalProperties>
-    </MonoProjectToBuild>
-  </ItemDefinitionGroup>
-
-  <ItemDefinitionGroup Condition="'$(LibrariesConfiguration)' != ''">
-    <LibrariesDepprojToBuild>
-      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-    </LibrariesDepprojToBuild>
-    <LibrariesNativeToBuild>
-      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-    </LibrariesNativeToBuild>
-    <LibrariesRefToBuild>
-      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-    </LibrariesRefToBuild>
-    <LibrariesSrcToBuild>
-      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-    </LibrariesSrcToBuild>
-    <LibrariesApiCompatToBuild>
-      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-    </LibrariesApiCompatToBuild>
-    <LibrariesPreTestToBuild>
-      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-    </LibrariesPreTestToBuild>
-    <LibrariesTestToBuild>
-      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-    </LibrariesTestToBuild>
-    <LibrariesPackageToBuild>
-      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
-    </LibrariesPackageToBuild>
+  <!-- Default targets, parallelization and configurations. -->
+  <ItemDefinitionGroup>
+    <CoreClrProject>
+      <Test>false</Test>
+      <Pack>false</Pack>
+      <BuildInParallel>false</BuildInParallel>
+      <AdditionalProperties Condition="'$(CoreCLRConfiguration)' != ''">Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
+    </CoreClrProject>
+    <MonoProject>
+      <BuildInParallel>false</BuildInParallel>
+      <AdditionalProperties Condition="'$(MonoConfiguration)' != ''">Configuration=$(MonoConfiguration)</AdditionalProperties>
+    </MonoProject>
+    <LibrariesProject>
+      <Test>false</Test>
+      <Pack>false</Pack>
+      <BuildInParallel>false</BuildInParallel>
+      <AdditionalProperties Condition="'$(LibrariesConfiguration)' != ''">Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+    </LibrariesProject>
+    <InstallerProject>
+      <Test>false</Test>
+      <Pack>true</Pack>
+      <BuildInParallel>false</BuildInParallel>
+    </InstallerProject>
   </ItemDefinitionGroup>
 
   <!-- CoreClr sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-corelib-'))">
-    <CoreClrCoreLibProjectToBuild Include="$(CoreClrProjectRoot)src\System.Private.CoreLib\System.Private.CoreLib.csproj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(CoreClrCoreLibProjectToBuild)" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)src\System.Private.CoreLib\System.Private.CoreLib.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-runtime-'))">
-    <CoreClrProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(CoreClrProjectToBuild)" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)runtime.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-linuxdac-')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
-    <CoreClrLinuxDacProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" BuildInParallel="false" AdditionalProperties="%(AdditionalProperties);CrossDac=linux" />
-    <ProjectToBuild Include="@(CoreClrLinuxDacProjectToBuild)" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);CrossDac=linux" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-alpinedac-')) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' != 'x86'">
-    <CoreClrAlpineLinuxDacProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" BuildInParallel="false" AdditionalProperties="%(AdditionalProperties);CrossDac=alpine" />
-    <ProjectToBuild Include="@(CoreClrAlpineLinuxDacProjectToBuild)" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)runtime.proj" AdditionalProperties="%(AdditionalProperties);CrossDac=alpine" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-nativecorelib-'))">
-    <CoreClrNativeCoreLibProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(CoreClrNativeCoreLibProjectToBuild)" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)crossgen-corelib.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-tools-'))">
-    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj" />
-    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj" />
-    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\dotnet-pgo\dotnet-pgo.csproj" />
-    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\ReadyToRun.SuperIlc\ReadyToRun.SuperIlc.csproj" />
-    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\crossgen2\crossgen2\crossgen2.csproj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(CoreClrManagedToolsProjectToBuild)" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj" BuildInParallel="true" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj" BuildInParallel="true" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\dotnet-pgo\dotnet-pgo.csproj" BuildInParallel="true" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\ReadyToRun.SuperIlc\ReadyToRun.SuperIlc.csproj" BuildInParallel="true" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)src\tools\crossgen2\crossgen2\crossgen2.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-packages-'))">
-    <CoreClrPackagesProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\coreclr-packages.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(CoreClrPackagesProjectToBuild)" />
+    <CoreClrProject Include="$(CoreClrProjectRoot)src\.nuget\coreclr-packages.proj" Pack="true" />
   </ItemGroup>
 
   <!-- Mono sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('-all-'))">
-    <MonoProjectToBuild Include="$(MonoProjectRoot)mono.proj" BuildInParallel="false" />
-    <MonoProjectToBuild Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(MonoProjectToBuild)" />
+    <MonoProject Include="$(MonoProjectRoot)mono.proj" />
+    <MonoProject Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj" Test="false" Pack="false" />
   </ItemGroup>
 
   <!-- Libraries sets -->
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-depprojs-'))">
-    <LibrariesDepprojToBuild Include="$(LibrariesProjectRoot)restore\depproj.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(LibrariesDepprojToBuild)" />
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-depproj-'))">
+    <LibrariesProject Include="$(LibrariesProjectRoot)restore\depproj.proj" Build="false" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-native-'))">
-    <LibrariesNativeToBuild Include="$(LibrariesProjectRoot)Native\build-native.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(LibrariesNativeToBuild)" />
+    <LibrariesProject Include="$(LibrariesProjectRoot)Native\build-native.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-ref-'))">
-    <LibrariesRefToBuild Include="$(LibrariesProjectRoot)ref.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(LibrariesRefToBuild)" />
+    <LibrariesProject Include="$(LibrariesProjectRoot)ref.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-src-'))">
-    <LibrariesSrcToBuild Include="$(LibrariesProjectRoot)src.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(LibrariesSrcToBuild)" />
+    <LibrariesProject Include="$(LibrariesProjectRoot)src.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-apicompat-'))">
-    <LibrariesApiCompatToBuild Include="$(LibrariesProjectRoot)shims\ApiCompat.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(LibrariesApiCompatToBuild)" />
+    <LibrariesProject Include="$(LibrariesProjectRoot)shims\ApiCompat.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-pretest-'))">
-    <LibrariesPreTestToBuild Include="$(LibrariesProjectRoot)pretest.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(LibrariesPreTestToBuild)" />
+    <LibrariesProject Include="$(LibrariesProjectRoot)pretest.proj"  />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-tests-'))">
-    <LibrariesTestToBuild Include="$(LibrariesProjectRoot)tests.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(LibrariesTestToBuild)" />
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-test-'))">
+    <LibrariesProject Include="$(LibrariesProjectRoot)tests.proj" Test="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-package-'))">
-    <LibrariesPackageToBuild Include="$(LibrariesProjectRoot)libraries-packages.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(LibrariesPackageToBuild)" />
+    <LibrariesProject Include="$(LibrariesProjectRoot)libraries-packages.proj" Pack="true" />
   </ItemGroup>
 
   <!-- Installer sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-corehost-'))">
     <CorehostProjectToBuild Include="$(InstallerProjectRoot)corehost\build.proj" SignPhase="Binaries" />
-    <ProjectToBuild Include="@(CorehostProjectToBuild)" />
+    <InstallerProject Include="@(CorehostProjectToBuild)" BuildInParallel="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-managed-'))">
     <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" SignPhase="Binaries" />
     <ManagedProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\pack-managed.proj" />
-    <ProjectToBuild Include="@(ManagedProjectToBuild)" />
+    <InstallerProject Include="@(ManagedProjectToBuild)" BuildInParallel="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-depproj-'))">
-    <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="R2RBinaries" BuildInParallel="false" />
-    <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="Binaries" BuildInParallel="false" />
-    <ProjectToBuild Include="@(DepprojProjectToBuild)" />
+    <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="R2RBinaries" />
+    <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="Binaries" />
+    <InstallerProject Include="@(DepprojProjectToBuild)" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-pkgproj-'))">
-    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" BuildInParallel="false" />
-    <ProjectToBuild Include="@(PkgprojProjectToBuild)" />
+    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" />
+    <InstallerProject Include="@(PkgprojProjectToBuild)" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-bundle-'))">
-    <BundleProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.bundleproj" SignPhase="BundleInstallerFiles" BuildInParallel="false" />
-    <ProjectToBuild Include="@(BundleProjectToBuild)" />
+    <BundleProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.bundleproj" SignPhase="BundleInstallerFiles" />
+    <InstallerProject Include="@(BundleProjectToBuild)" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-installers-'))">
-    <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\installers.proj" BuildInParallel="false" />
-    <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\vs-insertion-packages.proj" BuildInParallel="false" />
-    <ProjectToBuild Include="@(InstallerProjectToBuild)" />
+    <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\installers.proj" />
+    <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\vs-insertion-packages.proj" />
+    <InstallerProject Include="@(InstallerProjectToBuild)" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-test-'))">
@@ -309,7 +257,7 @@
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.ComHost.Tests\Microsoft.NET.HostModel.ComHost.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\HostActivation.Tests\HostActivation.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
-    <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="false" />
+    <InstallerProject Include="@(TestProjectToBuild)" Pack="false" Test="true" />
   </ItemGroup>
 
 </Project>
