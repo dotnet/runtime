@@ -41,5 +41,48 @@ namespace Microsoft.Extensions.DependencyInjection
             optionsBuilder.Services.Configure<TOptions>(optionsBuilder.Name, config, configureBinder);
             return optionsBuilder;
         }
+
+        /// <summary>
+        /// Registers the dependency injection container to bind <typeparamref name="TOptions"/> against
+        /// the <see cref="IConfiguration"/> obtained from the DI service provider.
+        /// </summary>
+        /// <typeparam name="TOptions">The options type to be configured.</typeparam>
+        /// <param name="optionsBuilder">The options builder to add the services to.</param>
+        /// <param name="sectionName">
+        /// The name of the configuration section to bind from. If omitted, or
+        /// <see langword="null"/> the name of the <paramref name="optionsBuilder"/>
+        /// is used.
+        /// </param>
+        /// <param name="configureBinder">Optional. Used to configure the <see cref="BinderOptions"/>.</param>
+        /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="optionsBuilder"/> is <see langword="null"/>.
+        /// </exception>
+        /// <seealso cref="Bind{TOptions}(OptionsBuilder{TOptions}, IConfiguration, Action{BinderOptions})"/>
+        public static OptionsBuilder<TOptions> BindConfiguration<TOptions>(
+            this OptionsBuilder<TOptions> optionsBuilder,
+            string sectionName = null,
+            Action<BinderOptions> configureBinder = null)
+            where TOptions : class
+        {
+            _ = optionsBuilder ?? throw new ArgumentNullException(nameof(optionsBuilder));
+
+            optionsBuilder.Configure<IConfiguration>((opts, config) =>
+            {
+                IConfiguration section = sectionName switch
+                {
+                    string nonEmptySectionName
+                    when !string.IsNullOrEmpty(nonEmptySectionName) =>
+                        config?.GetSection(nonEmptySectionName),
+                    null
+                    when optionsBuilder.Name is string builderName &&
+                    !(string.IsNullOrEmpty(builderName)) =>
+                        config?.GetSection(builderName),
+                    _ => config,
+                };
+                config?.Bind(opts, configureBinder);
+            });
+            return optionsBuilder;
+        }
     }
 }
