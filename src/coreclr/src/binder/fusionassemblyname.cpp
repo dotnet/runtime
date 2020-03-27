@@ -132,7 +132,7 @@ HRESULT CPropertyArray::Get(DWORD PropertyId,
 
     if (pItem->cb > *pcbProperty)
         hr = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-    else if (pItem->cb)
+    else if (pItem->cb && pvProperty)
         memcpy(pvProperty, (pItem->cb > sizeof(DWORD) ?
             pItem->pv : (LPBYTE) &(pItem->pv)), pItem->cb);
 
