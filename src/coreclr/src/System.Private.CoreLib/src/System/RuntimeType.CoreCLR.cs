@@ -4066,9 +4066,18 @@ namespace System
                 }
             }
 
-            // For target invocation exceptions, the exception is wrapped.
-            flags |= BindingFlags.DoNotWrapExceptions;
-            object? ret = InvokeMember(memberName, flags, null, target, aArgs, aParamMod, null, null);
+            object? ret;
+            try
+            {
+                // The IDispatch codepath doesn't support BindingFlags.DoNotWrapExceptions.
+                ret = InvokeMember(memberName, flags, null, target, aArgs, aParamMod, null, null);
+            }
+            catch (TargetInvocationException e)
+            {
+                // For target invocation exceptions, we need to unwrap the inner exception and
+                // re-throw it.
+                throw e.InnerException!;
+            }
 
             // Convert each ByRef argument that is _not_ of the proper type to
             // the parameter type.
