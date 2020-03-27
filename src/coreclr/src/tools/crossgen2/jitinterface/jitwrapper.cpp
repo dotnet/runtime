@@ -34,7 +34,6 @@ static const GUID JITEEVersionIdentifier = { /* 6ae798bf-44bd-4e8a-b8fc-dbe1d1f4
     {0xb8, 0xfc, 0xdb, 0xe1, 0xd1, 0xf4, 0x02, 0x9e}
 };
 
-
 class Jit
 {
 public:
