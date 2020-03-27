@@ -112,7 +112,7 @@ jobs:
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
 
-  - ${{ if or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')) }}:
+  - ${{ if eq(parameters.osGroup, 'OSX') }}:
 
     - name: CommonMSBuildArgs
       value: >-
@@ -123,6 +123,24 @@ jobs:
       value: >-
         $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
         -configuration $(_BuildConfig)
+        $(LiveOverridePathArgs)
+        $(CommonMSBuildArgs)
+        $(OfficialBuildArg)
+
+ - ${{ if eq(parameters.osGroup, 'iOS') }}:
+
+    - name: CommonMSBuildArgs
+      value: >-
+        /p:PortableBuild=true
+        /p:SkipTests=$(SkipTests)
+
+    - name: BaseJobBuildCommand
+      value: >-
+        $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
+        -configuration $(_BuildConfig)
+        -os $(parameters.osGroup)
+        -arch $(parameters.archType)
+        /p:StripSymbols=true
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
