@@ -15862,9 +15862,6 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
                 fgInsertStmtAfter(block, pAfterStatement, newStmt);
                 lastStmt = newStmt;
             }
-
-            // make sure that copy-prop ignores this assignment.
-            lastStmt->GetRootNode()->gtFlags |= GTF_DONT_CSE;
         }
         else if (ret != nullptr && ret->OperGet() == GT_RETURN)
         {
