@@ -7,13 +7,16 @@ using System.Text;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[SetupCSharpCompilerToUse ("csc")]
 	[KeptMember(".ctor()")]
 	public class MethodParametersDataFlow
 	{
 		public static void Main ()
 		{
 			var instance = new MethodParametersDataFlow ();
+
+			// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
+			//   - so the main validation is done by the UnrecognizedReflectionAccessPattern attributes.
+			// The test doesn't really validate that things are marked correctly, so Kept attributes are here to make it work mostly.
 
 			DefaultConstructorParameter (typeof (TestType));
 			PublicConstructorsParameter (typeof (TestType));
