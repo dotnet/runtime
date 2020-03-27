@@ -43,6 +43,14 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        /// <summary>
+        /// Returns an opaque string that identifies the platform on which an app is running.
+        /// </summary>
+        /// <remarks>
+        /// The property returns a string that identifies the operating system, typically including version,
+        /// and processor architecture of the currently executing process.
+        /// Since this string is opaque, it is not recommended to parse the string into its constituent parts.
+        /// </remarks>
         public static string RuntimeIdentifier
         {
             get
