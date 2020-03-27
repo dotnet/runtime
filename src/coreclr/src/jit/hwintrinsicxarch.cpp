@@ -1195,7 +1195,8 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_Compare, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_Compare, baseType,
+                                                   simdSize);
             }
             else
             {
@@ -1214,11 +1215,13 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_Compare, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_Compare, baseType,
+                                                   simdSize);
             }
             else
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareLessThanOrEqual, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareLessThanOrEqual, baseType, simdSize);
             }
             break;
         }
@@ -1233,7 +1236,8 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_Compare, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_Compare, baseType,
+                                                   simdSize);
             }
             else
             {
@@ -1252,11 +1256,13 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_Compare, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_Compare, baseType,
+                                                   simdSize);
             }
             else
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareNotLessThanOrEqual, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareNotLessThanOrEqual, baseType,
+                                                   simdSize);
             }
             break;
         }
@@ -1271,16 +1277,19 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_CompareScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_CompareScalar,
+                                                   baseType, simdSize);
             }
             else
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                        nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
+                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
 
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarLessThan, baseType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE_MoveScalar, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarLessThan, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, baseType, simdSize);
             }
             break;
         }
@@ -1295,16 +1304,19 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_CompareScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_CompareScalar,
+                                                   baseType, simdSize);
             }
             else
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                        nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThanOrEqual"));
+                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThanOrEqual"));
 
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarLessThanOrEqual, baseType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE_MoveScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarLessThanOrEqual, baseType,
+                                                   simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, baseType, simdSize);
             }
             break;
         }
@@ -1319,17 +1331,20 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_CompareScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_CompareScalar,
+                                                   baseType, simdSize);
             }
             else
             {
 
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                        nullptr DEBUGARG("Clone op1 for Sse.CompareScalarNotGreaterThan"));
+                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarNotGreaterThan"));
 
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarNotLessThan, baseType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE_MoveScalar, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarNotLessThan, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, baseType, simdSize);
             }
             break;
         }
@@ -1344,16 +1359,19 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_CompareScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_CompareScalar,
+                                                   baseType, simdSize);
             }
             else
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                        nullptr DEBUGARG("Clone op1 for Sse.CompareScalarNotGreaterThanOrEqual"));
+                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarNotGreaterThanOrEqual"));
 
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarNotLessThanOrEqual, baseType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE_MoveScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_CompareScalarNotLessThanOrEqual,
+                                                   baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, baseType, simdSize);
             }
             break;
         }
@@ -1410,11 +1428,13 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (baseType != TYP_DOUBLE)
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE2_CompareGreaterThan, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, NI_SSE2_CompareGreaterThan, baseType, simdSize);
             }
             else if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_Compare, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_Compare, baseType,
+                                                   simdSize);
             }
             else
             {
@@ -1433,11 +1453,13 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_Compare, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_Compare, baseType,
+                                                   simdSize);
             }
             else
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareLessThanOrEqual, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareLessThanOrEqual, baseType, simdSize);
             }
             break;
         }
@@ -1471,11 +1493,13 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_Compare, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_Compare, baseType,
+                                                   simdSize);
             }
             else
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareNotLessThan, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareNotLessThan, baseType, simdSize);
             }
             break;
         }
@@ -1490,11 +1514,13 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_Compare, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_Compare, baseType,
+                                                   simdSize);
             }
             else
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareNotLessThanOrEqual, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareNotLessThanOrEqual, baseType,
+                                                   simdSize);
             }
             break;
         }
@@ -1509,16 +1535,19 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_CompareScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(14), NI_AVX_CompareScalar,
+                                                   baseType, simdSize);
             }
             else
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                        nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
+                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
 
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarLessThan, baseType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE2_MoveScalar, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarLessThan, baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, baseType, simdSize);
             }
             break;
         }
@@ -1533,16 +1562,19 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_CompareScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(13), NI_AVX_CompareScalar,
+                                                   baseType, simdSize);
             }
             else
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                        nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThanOrEqual"));
+                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThanOrEqual"));
 
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarLessThanOrEqual, baseType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE2_MoveScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarLessThanOrEqual, baseType,
+                                                   simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, baseType, simdSize);
             }
             break;
         }
@@ -1557,16 +1589,19 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_CompareScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(10), NI_AVX_CompareScalar,
+                                                   baseType, simdSize);
             }
             else
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                        nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarNotGreaterThan"));
+                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarNotGreaterThan"));
 
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarNotLessThan, baseType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE2_MoveScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarNotLessThan, baseType,
+                                                   simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, baseType, simdSize);
             }
             break;
         }
@@ -1581,16 +1616,19 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
 
             if (compSupports(InstructionSet_AVX))
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_CompareScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(9), NI_AVX_CompareScalar,
+                                                   baseType, simdSize);
             }
             else
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                        nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarNotGreaterThanOrEqual"));
+                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarNotGreaterThanOrEqual"));
 
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarNotLessThanOrEqual, baseType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode,  NI_SSE2_MoveScalar, baseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareScalarNotLessThanOrEqual,
+                                                   baseType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, baseType, simdSize);
             }
             break;
         }
