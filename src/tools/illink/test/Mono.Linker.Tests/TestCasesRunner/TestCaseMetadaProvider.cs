@@ -95,7 +95,18 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				customizations.CustomizeContext += context => {
 					context.ReflectionPatternRecorder = customizations.ReflectionPatternRecorder;
 				};
-			};
+			} else if (_testCaseTypeDefinition.HasNestedTypes
+				  && _testCaseTypeDefinition.NestedTypes.Any (nestedType =>
+					  nestedType.CustomAttributes.Any (attr =>
+						  attr.AttributeType.Name == nameof (VerifyAllReflectionAccessPatternsAreValidatedAttribute)
+					  || _testCaseTypeDefinition.AllMethods ().Any (method => method.CustomAttributes.Any (attr =>
+						  attr.AttributeType.Name == nameof (RecognizedReflectionAccessPatternAttribute) ||
+						  attr.AttributeType.Name == nameof (UnrecognizedReflectionAccessPatternAttribute)))))) {
+				customizations.ReflectionPatternRecorder = new TestReflectionPatternRecorder ();
+				customizations.CustomizeContext += context => {
+					context.ReflectionPatternRecorder = customizations.ReflectionPatternRecorder;
+				};
+			}
 		}
 
 #if NETCOREAPP
