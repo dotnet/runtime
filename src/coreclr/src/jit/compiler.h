@@ -8184,6 +8184,11 @@ public:
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (opts.IsReadyToRun())
         {
+            // Return constant instead of maxSIMDStructBytes, as maxSIMDStructBytes performs
+            // checks that are effected by the current level of instruction set support would
+            // otherwise cause the highest level of instruction set support to be reported to crossgen2.
+            // and this api is only ever used as an optimization or assert, so no reporting should
+            // ever happen.
             return YMM_REGSIZE_BYTES;
         }
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)

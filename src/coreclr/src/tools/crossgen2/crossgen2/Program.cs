@@ -214,13 +214,14 @@ namespace ILCompiler
             // Ready to run images are built with certain instruction sets that are optimistically assumed to be present
             if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
             {
-                // For ReadyToRun we set these hardware features as enabled always, as the overwhelming majority
+                // For ReadyToRun we set these hardware features as enabled always, as most
                 // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
                 // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
                 // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
                 // support AVX instructions. As the jit generates logic that depends on these features it will call
                 // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
                 // code.
+                // 
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Sse");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Sse2");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Sse41");
