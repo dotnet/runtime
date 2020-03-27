@@ -296,6 +296,13 @@ function(strip_symbols targetName outputFilename)
   endif(CLR_CMAKE_HOST_UNIX)
 endfunction()
 
+function(install_with_stripped_symbols targetName destination)
+    strip_symbols(${targetName} symbol_file)
+    install_symbols(${symbol_file} ${destination})
+    set(install_source_file $<TARGET_FILE:${targetName}>)
+    install(PROGRAMS ${install_source_file} DESTINATION ${destination})
+endfunction()
+
 function(install_symbols symbol_file destination_path)
   if(CLR_CMAKE_TARGET_WIN32)
     install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB)
