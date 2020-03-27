@@ -79,7 +79,7 @@ namespace System.Threading
             {
                 counts = new ThreadCounts
                 {
-                    numThreadsGoal = _minThreads
+                    NumThreadsGoal = _minThreads
                 }
             };
         }
@@ -93,37 +93,35 @@ namespace System.Threading
                 {
                     return false;
                 }
-                else
+
+                if (s_forcedMinWorkerThreads != 0)
                 {
-                    short threads = (short)Math.Max(1, Math.Min(minThreads, MaxPossibleThreadCount));
-                    if (s_forcedMinWorkerThreads == 0)
-                    {
-                        _minThreads = threads;
-
-                        ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-                        while (counts.numThreadsGoal < _minThreads)
-                        {
-                            ThreadCounts newCounts = counts;
-                            newCounts.numThreadsGoal = _minThreads;
-
-                            ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref _separated.counts, newCounts, counts);
-                            if (oldCounts == counts)
-                            {
-                                counts = newCounts;
-
-                                if (newCounts.numThreadsGoal > oldCounts.numThreadsGoal && _separated.numRequestedWorkers > 0)
-                                {
-                                    WorkerThread.MaybeAddWorkingWorker();
-                                }
-                            }
-                            else
-                            {
-                                counts = oldCounts;
-                            }
-                        }
-                    }
                     return true;
                 }
+
+                short newMinThreads = (short)Math.Max(1, Math.Min(minThreads, MaxPossibleThreadCount));
+                _minThreads = newMinThreads;
+
+                ThreadCounts counts = _separated.counts.VolatileRead();
+                while (counts.NumThreadsGoal < newMinThreads)
+                {
+                    ThreadCounts newCounts = counts;
+                    newCounts.NumThreadsGoal = newMinThreads;
+
+                    ThreadCounts oldCounts = _separated.counts.InterlockedCompareExchange(newCounts, counts);
+                    if (oldCounts == counts)
+                    {
+                        if (_separated.numRequestedWorkers > 0)
+                        {
+                            WorkerThread.MaybeAddWorkingWorker();
+                        }
+                        break;
+                    }
+
+                    counts = oldCounts;
+                }
+
+                return true;
             }
             finally
             {
@@ -142,32 +140,31 @@ namespace System.Threading
                 {
                     return false;
                 }
-                else
+
+                if (s_forcedMaxWorkerThreads != 0)
                 {
-                    short threads = (short)Math.Min(maxThreads, MaxPossibleThreadCount);
-                    if (s_forcedMaxWorkerThreads == 0)
-                    {
-                        _maxThreads = threads;
-
-                        ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-                        while (counts.numThreadsGoal > _maxThreads)
-                        {
-                            ThreadCounts newCounts = counts;
-                            newCounts.numThreadsGoal = _maxThreads;
-
-                            ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref _separated.counts, newCounts, counts);
-                            if (oldCounts == counts)
-                            {
-                                counts = newCounts;
-                            }
-                            else
-                            {
-                                counts = oldCounts;
-                            }
-                        }
-                    }
                     return true;
                 }
+
+                short newMaxThreads = (short)Math.Min(maxThreads, MaxPossibleThreadCount);
+                _maxThreads = newMaxThreads;
+
+                ThreadCounts counts = _separated.counts.VolatileRead();
+                while (counts.NumThreadsGoal > newMaxThreads)
+                {
+                    ThreadCounts newCounts = counts;
+                    newCounts.NumThreadsGoal = newMaxThreads;
+
+                    ThreadCounts oldCounts = _separated.counts.InterlockedCompareExchange(newCounts, counts);
+                    if (oldCounts == counts)
+                    {
+                        break;
+                    }
+
+                    counts = oldCounts;
+                }
+
+                return true;
             }
             finally
             {
@@ -179,8 +176,8 @@ namespace System.Threading
 
         public int GetAvailableThreads()
         {
-            ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-            int count = _maxThreads - counts.numProcessingWork;
+            ThreadCounts counts = _separated.counts.VolatileRead();
+            int count = _maxThreads - counts.NumProcessingWork;
             if (count < 0)
             {
                 return 0;
@@ -188,7 +185,7 @@ namespace System.Threading
             return count;
         }
 
-        public int ThreadCount => ThreadCounts.VolatileReadCounts(ref _separated.counts).numExistingThreads;
+        public int ThreadCount => _separated.counts.VolatileRead().NumExistingThreads;
         public long CompletedWorkItemCount => _completionCounter.Count;
 
         internal void NotifyWorkItemProgress()
@@ -234,16 +231,16 @@ namespace System.Threading
                 int totalNumCompletions = (int)_completionCounter.Count;
                 int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
 
-                ThreadCounts currentCounts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
+                ThreadCounts currentCounts = _separated.counts.VolatileRead();
                 int newMax;
-                (newMax, _threadAdjustmentIntervalMs) = HillClimbing.ThreadPoolHillClimber.Update(currentCounts.numThreadsGoal, elapsedSeconds, numCompletions);
+                (newMax, _threadAdjustmentIntervalMs) = HillClimbing.ThreadPoolHillClimber.Update(currentCounts.NumThreadsGoal, elapsedSeconds, numCompletions);
 
-                while (newMax != currentCounts.numThreadsGoal)
+                while (newMax != currentCounts.NumThreadsGoal)
                 {
                     ThreadCounts newCounts = currentCounts;
-                    newCounts.numThreadsGoal = (short)newMax;
+                    newCounts.NumThreadsGoal = (short)newMax;
 
-                    ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref _separated.counts, newCounts, currentCounts);
+                    ThreadCounts oldCounts = _separated.counts.InterlockedCompareExchange(newCounts, currentCounts);
                     if (oldCounts == currentCounts)
                     {
                         //
@@ -252,23 +249,21 @@ namespace System.Threading
                         //
                         // If we're reducing the max, whichever threads notice this first will sleep and timeout themselves.
                         //
-                        if (newMax > oldCounts.numThreadsGoal)
+                        if (newMax > oldCounts.NumThreadsGoal)
                         {
                             WorkerThread.MaybeAddWorkingWorker();
                         }
                         break;
                     }
-                    else
-                    {
-                        if (oldCounts.numThreadsGoal > currentCounts.numThreadsGoal && oldCounts.numThreadsGoal >= newMax)
-                        {
-                            // someone (probably the gate thread) increased the thread count more than
-                            // we are about to do.  Don't interfere.
-                            break;
-                        }
 
-                        currentCounts = oldCounts;
+                    if (oldCounts.NumThreadsGoal > currentCounts.NumThreadsGoal && oldCounts.NumThreadsGoal >= newMax)
+                    {
+                        // someone (probably the gate thread) increased the thread count more than
+                        // we are about to do.  Don't interfere.
+                        break;
                     }
+
+                    currentCounts = oldCounts;
                 }
 
                 _separated.priorCompletionCount = totalNumCompletions;
@@ -293,8 +288,8 @@ namespace System.Threading
                 // threads processing work to stop in response to a decreased thread count goal. The logic here is a bit
                 // different from the original CoreCLR code from which this implementation was ported because in this
                 // implementation there are no retired threads, so only the count of threads processing work is considered.
-                ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
-                return counts.numProcessingWork <= counts.numThreadsGoal && !HillClimbing.IsDisabled;
+                ThreadCounts counts = _separated.counts.VolatileRead();
+                return counts.NumProcessingWork <= counts.NumThreadsGoal && !HillClimbing.IsDisabled;
             }
             return false;
         }
