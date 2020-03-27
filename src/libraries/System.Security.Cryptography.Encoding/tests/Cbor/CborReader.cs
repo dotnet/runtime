@@ -150,13 +150,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                 switch (value)
                 {
-                    case CborAdditionalInfo.SpecialValueNull: return CborReaderState.Null;
+                    case CborAdditionalInfo.SpecialValueNull:
+                        return CborReaderState.Null;
                     case CborAdditionalInfo.SpecialValueFalse:
-                    case CborAdditionalInfo.SpecialValueTrue: return CborReaderState.Boolean;
-                    case CborAdditionalInfo.Additional16BitData: return CborReaderState.HalfPrecisionFloat;
-                    case CborAdditionalInfo.Additional32BitData: return CborReaderState.SinglePrecisionFloat;
-                    case CborAdditionalInfo.Additional64BitData: return CborReaderState.DoublePrecisionFloat;
-                    default: return CborReaderState.SpecialValue;
+                    case CborAdditionalInfo.SpecialValueTrue:
+                        return CborReaderState.Boolean;
+                    case CborAdditionalInfo.Additional16BitData:
+                        return CborReaderState.HalfPrecisionFloat;
+                    case CborAdditionalInfo.Additional32BitData:
+                        return CborReaderState.SinglePrecisionFloat;
+                    case CborAdditionalInfo.Additional64BitData:
+                        return CborReaderState.DoublePrecisionFloat;
+                    default:
+                        return CborReaderState.SpecialValue;
                 }
             }
         }
