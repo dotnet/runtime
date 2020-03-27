@@ -719,7 +719,7 @@ namespace System.Net.Security.Tests
                     Task serverTask = server.WriteAsync(data, 0, data.Length);
                     for (int i = 0; i < data.Length; i++)
                     {
-                        Assert.True(client.ReadAsync(data, 0, 1).Wait(TestConfiguration.PassingTestTimeoutMilliseconds),
+                        Assert.True(client.ReadAsync(receivedData, 0, 1).Wait(TestConfiguration.PassingTestTimeoutMilliseconds),
                                                                         $"Read task failed to finish in {TestConfiguration.PassingTestTimeoutMilliseconds}ms.");
                         Assert.Equal(data[i], receivedData[0]);
                     }
