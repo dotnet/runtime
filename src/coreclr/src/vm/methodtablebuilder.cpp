@@ -2428,7 +2428,14 @@ MethodTableBuilder::EnumerateMethodImpls()
                         NULL,
                         allowCovariantReturn))
                 {
-                    BuildMethodTableThrowException(IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH);
+                    MetaSig::CompareMethodSigs(pSigDecl, cbSigDecl, GetModule(), &theDeclSubst, pSigBody, cbSigBody, GetModule(), NULL, allowCovariantReturn);
+                    printf("MethodImpl %x with MethodDecl %x failed\n", theBody, theDecl);
+                    //BuildMethodTableThrowException(IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH);
+                }
+                else
+                {
+                    if (strstr(GetModule()->GetSimpleName(), "CovRetInterfaces") != NULL)
+                        printf("MethodImpl %x with MethodDecl %x OK\n", theBody, theDecl);
                 }
             }
             else
