@@ -112,7 +112,7 @@ jobs:
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
 
-  - ${{ if eq(parameters.osGroup, 'OSX') }}:
+  - ${{ if or(eq(parameters.osGroup, 'OSX'), eq(parameters.osGroup, 'iOS')) }}:
 
     - name: CommonMSBuildArgs
       value: >-
