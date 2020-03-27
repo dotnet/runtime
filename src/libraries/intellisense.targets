@@ -50,66 +50,9 @@
     <_UnsupportedTargetFrameworkError>true</_UnsupportedTargetFrameworkError>
   </PropertyGroup>
 
-  <Choose>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Windows_NT'">
-      <PropertyGroup>
-        <TargetsWindows>true</TargetsWindows>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Unix'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Linux'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsLinux>true</TargetsLinux>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'OSX'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsOSX>true</TargetsOSX>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'iOS'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsiOS>true</TargetsiOS>
-        <PackageTargetRuntime>ios</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'FreeBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsFreeBSD>true</TargetsFreeBSD>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'NetBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsNetBSD>true</TargetsNetBSD>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'WebAssembly'">
-      <PropertyGroup>
-        <TargetsLinux>true</TargetsLinux>
-        <TargetsWebAssembly>true</TargetsWebAssembly>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == ''">
-      <PropertyGroup>
-        <TargetsAnyOS>true</TargetsAnyOS>
-      </PropertyGroup>
-    </When>
-  </Choose>
-
+  <Import Project="$(MSBuildThisDirectory)dir.common.props" />
+  
   <PropertyGroup>
-    <TargetsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
-    <TargetsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</TargetsNetStandard>
-    <TargetsNetFx Condition="$(TargetFramework.StartsWith('net4'))">true</TargetsNetFx>
-    
     <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
   </PropertyGroup>
 </Project>
