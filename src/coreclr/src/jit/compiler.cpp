@@ -2198,6 +2198,7 @@ void Compiler::compSetProcessor()
 #ifdef TARGET_XARCH
     // Instruction set flags for Intel hardware intrinsics
     opts.compSupportsISA = 0;
+    opts.compSupportsISAReported = 0;
 
     if (JitConfig.EnableHWIntrinsic())
     {
