@@ -93,5 +93,10 @@ namespace Mono.Linker
 				di.Scope = null;
 			}
 		}
+
+		public static bool HasImplicitThis (this MethodDefinition method)
+		{
+			return method.HasThis && !method.ExplicitThis;
+		}
 	}
 }
