@@ -3563,6 +3563,12 @@ ErrExit:
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
 
+//---------------------------------------------------------------------------------------
+//
+// Compare two type handles for equality, or that hType2 is a derived class of hType1.
+// The derived type check is used by the covariant returns feature, which only supports
+// class today (interface types are not supported right now)
+//
 // static
 BOOL MetaSig::CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allowDerivedClass)
 {
@@ -3581,20 +3587,195 @@ BOOL MetaSig::CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allo
     if (!allowDerivedClass)
         return FALSE;
 
-    CorElementType et1 = hType1.GetInternalCorElementType();
-    CorElementType et2 = hType2.GetInternalCorElementType();
-    // TODO: ELEMENT_TYPE_GENERICINST
-    if ((et1 == ELEMENT_TYPE_OBJECT || et1 == ELEMENT_TYPE_CLASS) && et2 == ELEMENT_TYPE_CLASS)
+    if (hType1.IsNull() || hType2.IsValueType() || hType2.IsInterface())
     {
-        while (!hType2.IsNull())
+        return FALSE;
+    }
+
+    while (!hType2.IsNull())
+    {
+        if (hType1 == hType2)
+            return TRUE;
+        hType2 = hType2.GetParent();
+    }
+
+    return FALSE;
+}
+
+// static
+BOOL MetaSig::CompareTypeTokensForEqualityOrInheritance(mdToken tk1, Module* pModule1, mdToken tk2, Module* pModule2)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+        PRECONDITION(CheckPointer(pModule1));
+        PRECONDITION(CheckPointer(pModule2));
+        PRECONDITION(TypeFromToken(tk1) == mdtTypeRef || TypeFromToken(tk1) == mdtTypeDef);
+        PRECONDITION(TypeFromToken(tk2) == mdtTypeRef || TypeFromToken(tk2) == mdtTypeDef);
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    while (pModule2->GetMDImport()->IsValidToken(tk2))
+    {
+        if (CompareTypeTokens(tk1, tk2, pModule1, pModule2, NULL))
+            return TRUE;
+
+        // Ensure we are working with the typedef token
+        mdToken foundToken2;
+        Module* pFoundModule2;
+        if (!ClassLoader::ResolveTokenToTypeDefThrowing(pModule2, tk2, &pFoundModule2, &foundToken2))
+            return FALSE;
+
+        pModule2 = pFoundModule2;
+        tk2 = foundToken2;
+
+        DWORD attr;
+        mdToken tkTypeParent;
+        IfFailThrow(pModule2->GetMDImport()->GetTypeDefProps(tk2, &attr, &tkTypeParent));
+
+        if (!pModule2->GetMDImport()->IsValidToken(tkTypeParent))
+            break;
+
+        if (TypeFromToken(tkTypeParent) == mdtTypeSpec)
         {
-            if (hType1 == hType2)
-                return TRUE;
-            hType2 = hType2.GetParent();
+            ULONG cbSig;
+            PCCOR_SIGNATURE pSig;
+            IfFailThrow(pModule2->GetMDImport()->GetSigFromToken(tkTypeParent, &cbSig, &pSig));
+
+            PCCOR_SIGNATURE pEndSig = pSig + cbSig;
+            CorElementType elementType = ELEMENT_TYPE_MAX;
+
+            IfFailThrow(CorSigUncompressElementType_EndPtr(pSig, pEndSig, &elementType));
+            if (elementType == ELEMENT_TYPE_GENERICINST)
+            {
+                IfFailThrow(CorSigUncompressElementType_EndPtr(pSig, pEndSig, &elementType));
+            }
+
+            if (elementType != ELEMENT_TYPE_CLASS)
+            {
+                break;
+            }
+
+            IfFailThrow(CorSigUncompressToken_EndPtr(pSig, pEndSig, &tk2));
+        }
+        else if (TypeFromToken(tkTypeParent) == mdtTypeRef || TypeFromToken(tkTypeParent) == mdtTypeDef)
+        {
+            CONSISTENCY_CHECK(tk2 != tkTypeParent);
+            tk2 = tkTypeParent;
+        }
+        else
+        {
+            break;
         }
     }
 
     return FALSE;
+}
+
+// static
+BOOL MetaSig::GetParentSignatureAndSubstitution(
+    PCCOR_SIGNATURE     pSig,
+    PCCOR_SIGNATURE     pEndSig,
+    Module*             pModule,
+    const Substitution* pSubst,
+    Module**            ppParentTypeModule,
+    SigBuilder&         parentTypeSig,
+    Substitution&       parentTypeSubst)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+        PRECONDITION(CheckPointer(pModule));
+        PRECONDITION(CheckPointer(ppParentTypeModule));
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    CorElementType elementType = ELEMENT_TYPE_MAX;
+
+    IfFailThrow(CorSigUncompressElementType_EndPtr(pSig, pEndSig, &elementType));
+
+    if (elementType == ELEMENT_TYPE_GENERICINST)
+    {
+        IfFailThrow(CorSigUncompressElementType_EndPtr(pSig, pEndSig, &elementType));
+    }
+
+    // Getting the parent siganture is only applicable to classes, so exclude anything else
+    if (elementType != ELEMENT_TYPE_CLASS)
+    {
+        return FALSE;
+    }
+
+    mdToken typeRefOrDefToken;
+    IfFailThrow(CorSigUncompressToken_EndPtr(pSig, pEndSig, &typeRefOrDefToken));
+
+    // Ensure we are working with the typedef token
+    mdToken typeDefToken;
+    Module* pFoundModule;
+    if (!ClassLoader::ResolveTokenToTypeDefThrowing(pModule, typeRefOrDefToken, &pFoundModule, &typeDefToken))
+        return FALSE;
+
+    DWORD attr;
+    mdToken parentTypeDefOrRefToken;
+    IfFailThrow(pFoundModule->GetMDImport()->GetTypeDefProps(typeDefToken, &attr, &parentTypeDefOrRefToken));
+
+    if (!pFoundModule->GetMDImport()->IsValidToken(parentTypeDefOrRefToken))
+    {
+        return FALSE;
+    }
+
+    if (IsTdInterface(attr))
+    {
+        // Interfaces not supported with covariant return types
+        return FALSE;
+    }
+
+    // We load the uninstantiated type here, and we will also return back a valid substitution
+    // for the caller to use (when applicable)
+
+    if (TypeFromToken(parentTypeDefOrRefToken) == mdtTypeSpec)
+    {
+        ULONG cbParentTypeSig;
+        PCCOR_SIGNATURE pParentTypeSig;
+        IfFailThrow(pFoundModule->GetMDImport()->GetSigFromToken(parentTypeDefOrRefToken, &cbParentTypeSig, &pParentTypeSig));
+
+        parentTypeSig.AppendSignature(pParentTypeSig, pParentTypeSig + cbParentTypeSig);
+        parentTypeSubst = Substitution(parentTypeDefOrRefToken, pFoundModule, pSubst);
+        *ppParentTypeModule = pFoundModule;
+    }
+    else if (TypeFromToken(parentTypeDefOrRefToken) == mdtTypeDef || TypeFromToken(parentTypeDefOrRefToken) == mdtTypeRef)
+    {
+        // We need to special case type System.Object since it has its own element type. We don't need to do the same for type String
+        // because it's a sealed type, and no other class can derive from it.
+
+        Module* pParentModule;
+        mdTypeDef parentTypeDefToken;
+        BOOL resolvedToken = ClassLoader::ResolveTokenToTypeDefThrowing(pFoundModule, parentTypeDefOrRefToken, &pParentModule, &parentTypeDefToken);
+
+        if (resolvedToken && pParentModule == g_pObjectClass->GetModule() && parentTypeDefToken == g_pObjectClass->GetCl())
+        {
+            parentTypeSig.AppendElementType(ELEMENT_TYPE_OBJECT);
+        }
+        else
+        {
+            parentTypeSig.AppendElementType(ELEMENT_TYPE_CLASS);
+            parentTypeSig.AppendToken(parentTypeDefOrRefToken);
+        }
+
+        parentTypeSubst = pSubst == NULL ? Substitution() : Substitution(*pSubst);
+        *ppParentTypeModule = pFoundModule;
+    }
+    else
+    {
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 //---------------------------------------------------------------------------------------
@@ -3622,7 +3803,10 @@ MetaSig::CompareElementType(
         INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
-    CONTRACTL_END
+    CONTRACTL_END;
+
+    PCCOR_SIGNATURE pSig1Start = pSig1;
+    PCCOR_SIGNATURE pSig2Start = pSig2;
 
  redo:
     // We jump here if the Type was a ET_CMOD prefix.
@@ -3756,9 +3940,16 @@ MetaSig::CompareElementType(
                     }
                     else
                     {
-                        // Type1 is ELEMENT_TYPE_OBJECT. Return true if Type1 is object or any other class deriving
-                        // from object if allowDerivedClass is TRUE
-                        return CompareTypeHandles(TypeHandle(g_pObjectClass), hType2, allowDerivedClass);
+                        // Type1 is ELEMENT_TYPE_OBJECT. Return true if Type2 is type System.Object or any other class
+                        // if allowDerivedClass is TRUE.
+                        if (hType2.AsMethodTable() == g_pObjectClass)
+                        {
+                            return TRUE;
+                        }
+                        else
+                        {
+                            return allowDerivedClass ? CompareTypeHandles(TypeHandle(g_pObjectClass), hType2, TRUE) : FALSE;
+                        }
                     }
                 }
                 case ELEMENT_TYPE_STRING:
@@ -3800,11 +3991,36 @@ MetaSig::CompareElementType(
         }
         else
         {
-            // Types must be the same, or type2 must derive from type1.
-            if (allowDerivedClass && Type1 == ELEMENT_TYPE_OBJECT)
+            if (allowDerivedClass)
             {
-                // TODO: ELEMENT_TYPE_GENERICINST
-                return Type2 == ELEMENT_TYPE_STRING || Type2 == ELEMENT_TYPE_CLASS;
+                if (Type1 == ELEMENT_TYPE_OBJECT && Type2 == ELEMENT_TYPE_STRING)
+                {
+                    // Obvious case: string derives from object.
+                    return TRUE;
+                }
+                else
+                {
+                    Module* pParentTypeModule;
+                    Substitution parentTypeSubst;
+                    SigBuilder parentTypeSigBuilder;
+                    if (GetParentSignatureAndSubstitution(pSig2Start, pEndSig2, pModule2, pSubst2, &pParentTypeModule, parentTypeSigBuilder, parentTypeSubst))
+                    {
+                        DWORD cbParentTypeSig;
+                        PCCOR_SIGNATURE pParentTypeSig = (PCCOR_SIGNATURE)parentTypeSigBuilder.GetSignature(&cbParentTypeSig);
+                        PCCOR_SIGNATURE pParentTypeSigEnd = pParentTypeSig + cbParentTypeSig;
+
+                        return CompareElementType(
+                            pSig1Start,
+                            pParentTypeSig,
+                            pEndSig1,
+                            pParentTypeSigEnd,
+                            pModule1,
+                            pParentTypeModule,
+                            pSubst1,
+                            parentTypeSubst.GetInst().IsNull() ? NULL : &parentTypeSubst,
+                            allowDerivedClass);
+                    }
+                }
             }
 
             return FALSE;
@@ -3912,12 +4128,53 @@ MetaSig::CompareElementType(
                 return TRUE;
             }
 
-            if (allowDerivedClass)
+            if (allowDerivedClass && Type1 == ELEMENT_TYPE_CLASS)
             {
-                TypeHandle hType1 = ClassLoader::LoadTypeDefOrRefThrowing(pModule1, tk1, ClassLoader::ReturnNullIfNotFound, ClassLoader::FailIfUninstDefOrRef);
-                TypeHandle hType2 = ClassLoader::LoadTypeDefOrRefThrowing(pModule2, tk2, ClassLoader::ReturnNullIfNotFound, ClassLoader::FailIfUninstDefOrRef);
-                return CompareTypeHandles(hType1, hType2, TRUE);
+                // We load the uninstantiated types and check if type2 derives from type1.
+                // Note that if both Type1 is a generic type, we cannot check for equality here because
+                // we need to properly keep track of substitutions.
+                // Here's an example:
+                //      class Class0<A,B> { }
+                //      class Class1<ARG1, ARG2> : Class0<!ARG1, !ARG2> { }
+                //      class Class2<T> : class Class1<!T, int16> { }
+                //      class Class3 : class Class2<int32> { }
+                //      class Class4 : Class3{ }
+                //
+                // In that example, simply loading the TypeHandles for Class0<A,B> and Class4, and traversing the
+                // parent chain of Class4, we will not end up with a TypeHandle that will be equal to Class0<A,B>, and
+                // this is because TypeHandle of Class0 in the parent chain of Class4 is expressed in terms of the
+                // generic instantiation arguments in the substitutions:
+                //      A -> ARG1 -> T -> int32
+                //      b -> ARG2 -> int16
+                //
+                // To handle that case, we compute the parent *AND* substitution chain of type2, and recompare that with
+                // type1 starting from the ELEMENT_TYPE_GENERICINST (see how ELEMENT_TYPE_GENERICINST is handled a few
+                // lines below).
+
+                mdToken foundToken1;
+                Module* pFoundModule1;
+                if (!ClassLoader::ResolveTokenToTypeDefThrowing(pModule1, tk1, &pFoundModule1, &foundToken1))
+                    return FALSE;
+
+                DWORD attr;
+                IfFailThrow(pFoundModule1->GetMDImport()->GetTypeDefProps(foundToken1, &attr, NULL));
+                if (IsTdInterface(attr))
+                {
+                    // Covariant return types are not supported for interfaces today.
+                    return FALSE;
+                }
+
+                HENUMInternal   hEnumGenericPars;
+                IfFailThrow(pFoundModule1->GetMDImport()->EnumInit(mdtGenericParam, foundToken1, &hEnumGenericPars));
+                if (pFoundModule1->GetMDImport()->EnumGetCount(&hEnumGenericPars) > 0)
+                {
+                    // Type1 is generic. We cannot compare the base type chain of Type2 for inheritance in that case.
+                    return FALSE;
+                }
+
+                return CompareTypeTokensForEqualityOrInheritance(foundToken1, pFoundModule1, tk2, pModule2);
             }
+
             return FALSE;
         }
 
@@ -3994,6 +4251,31 @@ MetaSig::CompareElementType(
                     allowDerivedClass,
                     &newVisitedAlwaysForbidden))
             {
+                if (allowDerivedClass)
+                {
+                    Module* pParentTypeModule;
+                    Substitution parentTypeSubst;
+                    SigBuilder parentTypeSigBuilder;
+                    if (GetParentSignatureAndSubstitution(pSig2Start, pEndSig2, pModule2, pSubst2, &pParentTypeModule, parentTypeSigBuilder, parentTypeSubst))
+                    {
+                        DWORD cbParentTypeSig;
+                        PCCOR_SIGNATURE pParentTypeSig = (PCCOR_SIGNATURE)parentTypeSigBuilder.GetSignature(&cbParentTypeSig);
+                        PCCOR_SIGNATURE pParentTypeSigEnd = pParentTypeSig + cbParentTypeSig;
+
+                        return CompareElementType(
+                            pSig1Start,
+                            pParentTypeSig,
+                            pEndSig1,
+                            pParentTypeSigEnd,
+                            pModule1,
+                            pParentTypeModule,
+                            pSubst1,
+                            parentTypeSubst.GetInst().IsNull() ? NULL : &parentTypeSubst,
+                            allowDerivedClass,
+                            &newVisitedAlwaysForbidden);
+                    }
+                }
+
                 return FALSE;
             }
 

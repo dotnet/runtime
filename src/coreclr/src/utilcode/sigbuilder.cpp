@@ -119,6 +119,22 @@ void SigBuilder::AppendBlob(const PVOID pBlob, SIZE_T cbBlob)
     m_dwLength += (DWORD)cbBlob;
 }
 
+void SigBuilder::AppendSignature(const PCCOR_SIGNATURE pSig, const PCCOR_SIGNATURE pSigEnd)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Overflow checks
+    if (pSigEnd < pSig)
+        ThrowOutOfMemory();
+
+    DWORD cbSig = (DWORD)(pSigEnd - pSig);
+
+    Ensure(cbSig);
+    memcpy(&m_pBuffer[m_dwLength], pSig, cbSig);
+
+    m_dwLength += cbSig;
+}
+
 void SigBuilder::Grow(SIZE_T cbMin)
 {
     STANDARD_VM_CONTRACT;

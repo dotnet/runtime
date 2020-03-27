@@ -74,6 +74,8 @@ public:
     }
 
     void AppendBlob(const PVOID pBlob, SIZE_T cbBlob);
+
+    void AppendSignature(const PCCOR_SIGNATURE pSig, const PCCOR_SIGNATURE pSigEnd);
 };
 
 #endif // _SIGBUILDER_H_
