@@ -134,8 +134,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        private const float foo = 5.9604644775390625e-08f; // 2 ^ -24
-
         // half-precision float decoder adapted from https://tools.ietf.org/html/rfc7049#appendix-D
         private static double ReadHalfBigEndian(ReadOnlySpan<byte> buffer)
         {
