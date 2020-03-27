@@ -55,6 +55,7 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisDirectory)targetframework.props" />
+  
   <PropertyGroup>
     <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
