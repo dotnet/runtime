@@ -1965,9 +1965,6 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 {
 	MonoMethodHeaderSummary header;
 
-	if (td->method == method)
-		return FALSE;
-
 	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
 		/* Used to mark methods containing StackCrawlMark locals */
 		return FALSE;
@@ -2010,6 +2007,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 		return FALSE;
 
 	if (td->prof_coverage)
+		return FALSE;
+
+	if (g_list_find (td->dont_inline, method))
 		return FALSE;
 
 	return TRUE;
@@ -3440,6 +3440,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			local_locals [i] = create_interp_local (td, header->locals [i]);
 	}
 
+	td->dont_inline = g_list_prepend (td->dont_inline, method);
 	while (td->ip < end) {
 		g_assert (td->sp >= td->stack);
 		g_assert (td->vt_sp < 0x10000000);
@@ -6307,6 +6308,7 @@ exit_ret:
 	g_free (arg_locals);
 	g_free (local_locals);
 	mono_basic_block_free (original_bb);
+	td->dont_inline = g_list_remove (td->dont_inline, method);
 
 	return ret;
 exit:
