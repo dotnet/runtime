@@ -22,7 +22,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             string osd = RuntimeInformation.OSDescription.Trim();
             string osv = Environment.OSVersion.ToString();
             string osa = RuntimeInformation.OSArchitecture.ToString();
-            Console.WriteLine($"### OS: Distro={dvs} Description={osd} Version={osv} Arch={osa}");
+            string rid = RuntimeInformation.RuntimeIdentifier;
+            Console.WriteLine($"### OS: Distro={dvs} Description={osd} Version={osv} Arch={osa} Rid={rid}");
 
             string lcr = PlatformDetection.LibcRelease;
             string lcv = PlatformDetection.LibcVersion;

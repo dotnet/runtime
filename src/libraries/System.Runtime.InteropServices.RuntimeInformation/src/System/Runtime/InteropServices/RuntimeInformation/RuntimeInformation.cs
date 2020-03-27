@@ -10,6 +10,7 @@ namespace System.Runtime.InteropServices
     {
         private const string FrameworkName = ".NET Core";
         private static string? s_frameworkDescription;
+        private static string? s_runtimeIdentifier;
 
         public static string FrameworkDescription
         {
@@ -39,6 +40,19 @@ namespace System.Runtime.InteropServices
                 }
 
                 return s_frameworkDescription;
+            }
+        }
+
+        public static string RuntimeIdentifier
+        {
+            get
+            {
+                if (s_runtimeIdentifier == null)
+                {
+                    s_runtimeIdentifier = (string?)AppContext.GetData("RUNTIME_IDENTIFIER") ?? "unknown";
+                }
+
+                return s_runtimeIdentifier;
             }
         }
     }
