@@ -54,15 +54,15 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultLibrariesSubsets>depproj-native-ref-src</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>depprojs-native-ref-src</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(DefaultLibrariesSubsets)-apicompat</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">$(DefaultLibrariesSubsets)-pretest</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets Condition="'$(IncludeLibrariesTestSubset)' == 'true'">$(DefaultLibrariesSubsets)-test</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets Condition="'$(IncludeLibrariesTestSubset)' == 'true'">$(DefaultLibrariesSubsets)-tests</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)-package</DefaultLibrariesSubsets>
     <!-- Only build package projects for pack target.-->
     <DefaultLibrariesSubsets Condition="'$(Pack)' == 'true'">package</DefaultLibrariesSubsets>
     <!-- Only build test projects for test target. -->
-    <DefaultLibrariesSubsets Condition="'$(Test)' == 'true'">test</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets Condition="'$(Test)' == 'true'">tests</DefaultLibrariesSubsets>
 
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS'">depproj-pkgproj</DefaultInstallerSubsets>
@@ -91,14 +91,14 @@
 
   <ItemGroup>
     <!-- Libraries -->
-    <SubsetName Include="DepProj" Category="Libraries" Description="The upfront restore projects which are necessary to compose the libraries." />
+    <SubsetName Include="DepProjs" Category="Libraries" Description="The upfront restore projects which are necessary to compose the libraries." />
     <SubsetName Include="Native" Category="Libraries" Description="The native libraries used in the shared framework." />
     <SubsetName Include="Ref" Category="Libraries" Description="The managed reference libraries." />
     <SubsetName Include="Src" Category="Libraries" Description="The managed implementation libraries." />
     <SubsetName Include="ApiCompat" Category="Libraries" Description="The ApiCompat tool which scans for api compatibility." />
     <SubsetName Include="PreTest" Category="Libraries" Description="Test assets which are necessary to run tests." />
     <SubsetName Include="Package" Category="Libraries" Description="The projects that produce NuGet packages from libraries." />
-    <SubsetName Include="Test" Category="Libraries" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
+    <SubsetName Include="Tests" Category="Libraries" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
 
     <!-- CoreClr -->
     <SubsetName Include="Runtime" Category="CoreClr" Description="The CoreCLR .NET runtime." />
@@ -228,7 +228,7 @@
   </ItemGroup>
 
   <!-- Libraries sets -->
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-depproj-'))">
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-depprojs-'))">
     <LibrariesDepprojToBuild Include="$(LibrariesProjectRoot)restore\depproj.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(LibrariesDepprojToBuild)" />
   </ItemGroup>
@@ -258,7 +258,7 @@
     <ProjectToBuild Include="@(LibrariesPreTestToBuild)" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-test-'))">
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-tests-'))">
     <LibrariesTestToBuild Include="$(LibrariesProjectRoot)tests.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(LibrariesTestToBuild)" />
   </ItemGroup>
