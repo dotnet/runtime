@@ -168,7 +168,6 @@
   <Import Project="$(RepositoryEngineeringDir)packaging.props" />
 
   <PropertyGroup>
-    <CustomBeforeMicrosoftCommonTargets Condition="'$(IsTestProject)' != 'true'">$(CustomBeforeMicrosoftCommonTargets);$(RepositoryEngineeringDir)intellisense.targets</CustomBeforeMicrosoftCommonTargets>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
 
