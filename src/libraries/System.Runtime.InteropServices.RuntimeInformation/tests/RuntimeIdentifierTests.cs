@@ -11,7 +11,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 {
     public class RuntimeIdentifierTests
     {
-        [Fact(Skip = "#26780 Need new testhost")]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyOSRid()
         {
             Assert.NotNull(RuntimeInformation.RuntimeIdentifier);
@@ -19,7 +20,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.EndsWith(RuntimeInformation.ProcessArchitecture.ToString(), RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact(Skip = "#26780 Need new testhost")]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyEnvironmentVariable()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -42,13 +44,33 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             }).Dispose();
         }
 
-        [Fact(Skip = "#26780 Need new testhost"), PlatformSpecific(TestPlatforms.Windows)]
+        [Fact]
+        public void VerifyAppContextVariableUnknown()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.SetData("RUNTIME_IDENTIFIER", null);
+
+                Assert.Equal("unknown", RuntimeInformation.RuntimeIdentifier);
+            }).Dispose();
+
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.SetData("RUNTIME_IDENTIFIER", new object());
+
+                Assert.Equal("unknown", RuntimeInformation.RuntimeIdentifier);
+            }).Dispose();
+        }
+
+        [Fact, PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyWindowsRid()
         {
             Assert.StartsWith("win", RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact(Skip = "#26780 Need new testhost"), PlatformSpecific(TestPlatforms.Linux)]
+        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyLinuxRid()
         {
             string expectedOSName = File.ReadAllLines("/etc/os-release")
@@ -59,13 +81,15 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.StartsWith(expectedOSName, RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact(Skip = "#26780 Need new testhost"), PlatformSpecific(TestPlatforms.FreeBSD)]
+        [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyFreeBSDRid()
         {
             Assert.StartsWith("freebsd", RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact(Skip = "#26780 Need new testhost"), PlatformSpecific(TestPlatforms.OSX)]
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyOSXRid()
         {
             Assert.StartsWith("osx", RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);

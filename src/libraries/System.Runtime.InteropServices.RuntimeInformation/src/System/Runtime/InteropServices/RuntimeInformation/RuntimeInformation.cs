@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices
             {
                 if (s_frameworkDescription == null)
                 {
-                    string? versionString = (string?)AppContext.GetData("FX_PRODUCT_VERSION");
+                    string? versionString = AppContext.GetData("FX_PRODUCT_VERSION") as string;
 
                     if (versionString == null)
                     {
@@ -50,18 +50,10 @@ namespace System.Runtime.InteropServices
         /// The property returns a string that identifies the operating system, typically including version,
         /// and processor architecture of the currently executing process.
         /// Since this string is opaque, it is not recommended to parse the string into its constituent parts.
+        ///
+        /// For more information, see https://docs.microsoft.com/dotnet/core/rid-catalog.
         /// </remarks>
-        public static string RuntimeIdentifier
-        {
-            get
-            {
-                if (s_runtimeIdentifier == null)
-                {
-                    s_runtimeIdentifier = (string?)AppContext.GetData("RUNTIME_IDENTIFIER") ?? "unknown";
-                }
-
-                return s_runtimeIdentifier;
-            }
-        }
+        public static string RuntimeIdentifier =>
+            s_runtimeIdentifier ??= AppContext.GetData("RUNTIME_IDENTIFIER") as string ?? "unknown";
     }
 }
