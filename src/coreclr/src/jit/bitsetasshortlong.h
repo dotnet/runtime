@@ -412,7 +412,7 @@ public:
             char*    ptr             = res;
             if (sizeof(size_t) == sizeof(int64_t))
             {
-                sprintf_s(ptr, remaining, "%016llX", bits);
+                sprintf_s(ptr, remaining, "%016llX", (ULONG_PTR)bits);
             }
             else
             {
