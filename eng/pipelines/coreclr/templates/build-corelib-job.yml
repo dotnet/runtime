@@ -58,26 +58,11 @@ jobs:
       value: ''
     - name: publishLogsArtifactPrefix
       value: 'BuildLogs_CoreLib'
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-      # Variables used to publish packages to blob feed
-      - name: dotnetfeedUrl
-        value: https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json
-      - name: dotnetfeedPAT
-        value: $(dotnetfeed-storage-access-key-1)
-      # Variables used by arcade to gather asset manifests
-      - name: _DotNetPublishToBlobFeed
-        value: true
     - name: officialBuildIdArg
       value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '/p:OfficialBuildId=$(Build.BuildNumber)'
-    - name: enforcePgoArg
-      value: ''
-    # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
-    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'Windows_NT'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
-      - name: enforcePgoArg
-        value: '-enforcepgo'
 
     - ${{ parameters.variables }}
 
@@ -107,6 +92,18 @@ jobs:
     # Build Private CoreLib
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build System.Private.CoreLib only
+
+
+    # Publish corelib output directory for consumption by libraries.
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(buildProductRootFolderPath)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: $(corelibProductArtifactName)
+        displayName: 'corelib build'
 
     # Save packages using the prepare-signed-artifacts format.
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
