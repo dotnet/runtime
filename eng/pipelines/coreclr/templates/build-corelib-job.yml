@@ -1,7 +1,6 @@
 parameters:
   archType: ''
   buildConfig: ''
-  compilerName: 'clang'
   condition: true
   container: ''
   crossrootfsDir: ''
@@ -32,14 +31,9 @@ jobs:
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
 
-    # Compute job name from template parameters
-    ${{ if eq(parameters.compilerName, 'gcc') }}:
-      name: ${{ format('coreclr_{0}_corelib_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    ${{ if eq(parameters.compilerName, 'clang') }}:
-      name: ${{ format('coreclr_corelib_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('CoreCLR Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-
+    name: ${{ format('coreclr_corelib_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('CoreLib Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
     container: ${{ parameters.container }}
@@ -63,24 +57,7 @@ jobs:
     - name: compilerArg
       value: ''
     - name: publishLogsArtifactPrefix
-      value: 'BuildLogs_CoreCLR'
-    - ${{ if eq(parameters.compilerName, 'gcc') }}:
-      - name: compilerArg
-        value: '-gcc'
-      - name: publishLogsArtifactPrefix
-        value: 'BuildLogs_CoreCLR_GCC'
-      # workaround for gcc directory not in PATH
-      - name: CLR_CC
-        value: /opt/rh/devtoolset-7/root/usr/bin/gcc
-      - name: CLR_CXX
-        value: /opt/rh/devtoolset-7/root/usr/bin/g++
-    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), eq(parameters.compilerName, 'clang')) }}:
-      - name: compilerArg
-        value: '-clang9'
-      # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
-      - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
-        - name: compilerArg
-          value: '-clang6.0'
+      value: 'BuildLogs_CoreLib'
       # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: compilerArg
@@ -138,14 +115,6 @@ jobs:
     # Build Private CoreLib
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build System.Private.CoreLib only
-
-    # Get key vault secrets for publishing
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-      - task: AzureKeyVault@1
-        inputs:
-          azureSubscription: 'DotNet-Engineering-Services_KeyVault'
-          KeyVaultName: EngKeyVault
-          SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
 
     # Save packages using the prepare-signed-artifacts format.
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
