@@ -22,6 +22,7 @@ namespace Mono.Linker.Dataflow
 		ConstInt,                       // known value - Int32
 
 		MethodParameter,                // symbolic placeholder
+		MethodReturn,                   // symbolic placeholder
 
 		MergePoint,                     // structural, multiplexer - Values
 		GetTypeFromString,              // structural, could be known value - KnownString
@@ -633,14 +634,28 @@ namespace Mono.Linker.Dataflow
 	}
 
 	/// <summary>
+	/// Base class for all nodes which can have dynamically accessed member annotation.
+	/// </summary>
+	abstract class LeafValueWithDynamicallyAccessedMemberNode : LeafValueNode
+	{
+		public object SourceContext { get; set; }
+
+		/// <summary>
+		/// The bitfield of dynamically accessed member kinds the node guarantees
+		/// </summary>
+		public DynamicallyAccessedMemberKinds DynamicallyAccessedMemberKinds { get; protected set; }
+	}
+
+	/// <summary>
 	/// A value that came from a method parameter - such as the result of a ldarg.
 	/// </summary>
-	class MethodParameterValue : LeafValueNode
+	class MethodParameterValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public MethodParameterValue (int parameterIndex)
+		public MethodParameterValue (int parameterIndex, DynamicallyAccessedMemberKinds dynamicallyAccessedMemberKinds)
 		{
 			Kind = ValueNodeKind.MethodParameter;
 			ParameterIndex = parameterIndex;
+			DynamicallyAccessedMemberKinds = dynamicallyAccessedMemberKinds;
 		}
 
 		public int ParameterIndex { get; }
@@ -652,17 +667,51 @@ namespace Mono.Linker.Dataflow
 			if (this.Kind != other.Kind)
 				return false;
 
-			return this.ParameterIndex != ((MethodParameterValue)other).ParameterIndex;
+			var otherValue = (MethodParameterValue)other;
+			return this.ParameterIndex == otherValue.ParameterIndex && this.DynamicallyAccessedMemberKinds == otherValue.DynamicallyAccessedMemberKinds;
 		}
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode (Kind, ParameterIndex);
+			return HashUtils.CalcHashCode (Kind, HashUtils.CalcHashCode(ParameterIndex, (int)DynamicallyAccessedMemberKinds));
 		}
 
 		protected override string NodeToString ()
 		{
-			return ValueNodeDump.ValueNodeToString (this, ParameterIndex);
+			return ValueNodeDump.ValueNodeToString (this, ParameterIndex, DynamicallyAccessedMemberKinds);
+		}
+	}
+
+	/// <summary>
+	/// Return value from a method
+	/// </summary>
+	class MethodReturnValue : LeafValueWithDynamicallyAccessedMemberNode
+	{
+		public MethodReturnValue (DynamicallyAccessedMemberKinds dynamicallyAccessedMemberKinds)
+		{
+			Kind = ValueNodeKind.MethodReturn;
+			DynamicallyAccessedMemberKinds = dynamicallyAccessedMemberKinds;
+		}
+
+		public override bool Equals (ValueNode other)
+		{
+			if (other == null)
+				return false;
+			if (this.Kind != other.Kind)
+				return false;
+
+			var otherValue = (MethodReturnValue)other;
+			return this.DynamicallyAccessedMemberKinds == otherValue.DynamicallyAccessedMemberKinds;
+		}
+
+		public override int GetHashCode ()
+		{
+			return HashUtils.CalcHashCode (Kind, (int)DynamicallyAccessedMemberKinds);
+		}
+
+		protected override string NodeToString ()
+		{
+			return ValueNodeDump.ValueNodeToString (this, DynamicallyAccessedMemberKinds);
 		}
 	}
 

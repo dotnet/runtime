@@ -34,7 +34,7 @@ namespace Mono.Linker.Dataflow
 		/// <returns></returns>
 		public DynamicallyAccessedMemberKinds GetParameterAnnotation (MethodDefinition method, int parameterIndex)
 		{
-			if (GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation)) {
+			if (GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation) && annotation.ParameterAnnotations != null) {
 				return annotation.ParameterAnnotations [parameterIndex];
 			}
 
