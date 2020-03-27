@@ -1391,7 +1391,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	const char *tm = target_method->name;
 	int type_index = mono_class_get_magic_index (target_method->klass);
 	gboolean in_corlib = m_class_get_image (target_method->klass) == mono_defaults.corlib;
-	const char *klass_name_space = m_class_get_name_space (target_method->klass);
+	const char *klass_name_space;
+	if (m_class_get_nested_in (target_method->klass))
+		klass_name_space = m_class_get_name_space (m_class_get_nested_in (target_method->klass));
+	else
+		klass_name_space = m_class_get_name_space (target_method->klass);
 	const char *klass_name = m_class_get_name (target_method->klass);
 
 	if (target_method->klass == mono_defaults.string_class) {
@@ -1797,14 +1801,21 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_CEQ_I4;
 			}
 		}
-	} else if (in_corlib &&
+	}
+#ifdef ENABLE_NETCORE
+	else if (in_corlib &&
 			   !strcmp ("System.Runtime.CompilerServices", klass_name_space) &&
 			   !strcmp ("RuntimeFeature", klass_name)) {
 		if (!strcmp (tm, "get_IsDynamicCodeSupported"))
 			*op = MINT_LDC_I4_1;
 		else if (!strcmp (tm, "get_IsDynamicCodeCompiled"))
 			*op = MINT_LDC_I4_0;
+	} else if (in_corlib &&
+			!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
+			!strcmp (tm, "get_IsSupported")) {
+		*op = MINT_LDC_I4_0;
 	}
+#endif
 
 	return FALSE;
 }
