@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 
 using Internal.TypeSystem;
+using Internal.JitInterface;
 
 namespace ILCompiler
 {
@@ -16,29 +17,32 @@ namespace ILCompiler
         private static Dictionary<ValueTuple<TargetArchitecture, string, string>, bool> s_apiSupportViaImplication = new Dictionary<ValueTuple<TargetArchitecture, string, string>, bool>();
         private static object s_lock = new object();
 
-        private readonly HashSet<string> _supportedInstructionSets = new HashSet<string>();
-        private readonly HashSet<string> _unsupportedInstructionSets = new HashSet<string>();
         private readonly TargetArchitecture _targetArchitecture;
+        private InstructionSetFlags _optimisticInstructionSets;
+        private InstructionSetFlags _supportedInstructionSets;
+        private InstructionSetFlags _unsupportedInstructionSets;
 
-        internal InstructionSetSupport(IEnumerable<string> supportedInstructionSets, IEnumerable<string> unsupportedInstructionSets, TargetArchitecture architecture)
+        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, TargetArchitecture architecture)
         {
-            _supportedInstructionSets.UnionWith(supportedInstructionSets);
-            _unsupportedInstructionSets.UnionWith(unsupportedInstructionSets);
+            _supportedInstructionSets = supportedInstructionSets;
+            _unsupportedInstructionSets = unsupportedInstructionSets;
+            _optimisticInstructionSets = optimisticInstructionSets;
             _targetArchitecture = architecture;
         }
 
-        public bool IsInstructionSetSupported(string instructionSet)
+        public bool IsInstructionSetSupported(InstructionSet instructionSet)
         {
-            return _supportedInstructionSets.Contains(instructionSet);
+            return _supportedInstructionSets.HasInstructionSet(instructionSet);
         }
 
-        public bool IsInstructionSetExplicitlyUnsupported(string instructionSet)
+        public bool IsInstructionSetExplicitlyUnsupported(InstructionSet instructionSet)
         {
-            return _unsupportedInstructionSets.Contains(instructionSet);
+            return _unsupportedInstructionSets.HasInstructionSet(instructionSet);
         }
 
-        public IEnumerable<string> SupportedInstructionSets => _supportedInstructionSets;
-        public IEnumerable<string> ExplicitlyUnsupportedInstructionSets => _unsupportedInstructionSets;
+        public InstructionSetFlags OptimisticFlags => _optimisticInstructionSets;
+        public InstructionSetFlags SupportedFlags => _supportedInstructionSets;
+        public InstructionSetFlags ExplicitlyUnsupportedFlags => _unsupportedInstructionSets;
 
         public TargetArchitecture Architecture => _targetArchitecture;
 
@@ -81,18 +85,15 @@ namespace ILCompiler
             return potentialType.Name;
         }
 
-        public bool IsSupportedInstructionSetIntrinsic(MethodDesc method)
-        {
-            return IsInstructionSetSupported(GetHardwareIntrinsicId(_targetArchitecture, method.OwningType));
-        }
-
         public SimdVectorLength GetVectorTSimdVector()
         {
             if ((_targetArchitecture == TargetArchitecture.X64) || (_targetArchitecture == TargetArchitecture.X86))
             {
-                if (IsInstructionSetSupported("Avx2"))
+                Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
+                Debug.Assert(InstructionSet.X64_SSE2 == InstructionSet.X86_SSE2);
+                if (IsInstructionSetSupported(InstructionSet.X86_AVX2))
                     return SimdVectorLength.Vector256Bit;
-                else if (IsInstructionSetExplicitlyUnsupported("Avx2") && IsInstructionSetSupported("Sse2"))
+                else if (IsInstructionSetExplicitlyUnsupported(InstructionSet.X86_AVX2) && IsInstructionSetSupported(InstructionSet.X64_SSE2))
                     return SimdVectorLength.Vector128Bit;
                 else
                     return SimdVectorLength.None;
@@ -110,168 +111,42 @@ namespace ILCompiler
                 throw new InternalCompilerErrorException("Unknown architecture");
             }
         }
-
-        public static bool DoesInstructionSetImplyOtherInstructionSet(TargetArchitecture architecture, string instructionSet, string impliedInstructionSet)
-        {
-            lock (s_lock)
-            {
-                if (!s_apiSupportViaImplication.TryGetValue((architecture, instructionSet, impliedInstructionSet), out bool instructionSetImplied))
-                {
-                    InstructionSetSupportBuilder builder = new InstructionSetSupportBuilder(architecture);
-                    builder.AddSupportedInstructionSet(instructionSet);
-                    instructionSetImplied = builder.CreateInstructionSetSupport(null).IsInstructionSetSupported(impliedInstructionSet);
-                    s_apiSupportViaImplication.Add((architecture, instructionSet, impliedInstructionSet), instructionSetImplied);
-                }
-                return instructionSetImplied;
-            }
-        }
     }
 
     public class InstructionSetSupportBuilder
     {
-        static Dictionary<TargetArchitecture, Dictionary<string, string[]>> s_instructionSetSupport = ComputeInstructionSetSupport();
-        static Dictionary<TargetArchitecture, string[]> s_baselineSupport = ComputeStandardBaselineSupport();
+        static Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>> s_instructionSetSupport = ComputeInstructionSetSupport();
 
-        private static Dictionary<TargetArchitecture, Dictionary<string, string[]>> ComputeInstructionSetSupport()
+        private static Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>> ComputeInstructionSetSupport()
         {
-            var supportMatrix = new Dictionary<TargetArchitecture, Dictionary<string, string[]>>();
-            supportMatrix[TargetArchitecture.ARM] = new Dictionary<string, string[]>();
-            supportMatrix[TargetArchitecture.X64] = ComputeInstructSetSupportForX64();
-            supportMatrix[TargetArchitecture.X86] = supportMatrix[TargetArchitecture.X64]; // At the moment support for x86 matches X64;
-            supportMatrix[TargetArchitecture.ARM64] = ComputeInstructSetSupportForArm64();
-
-            return supportMatrix;
-        }
-
-        private static Dictionary<TargetArchitecture, string[]> ComputeStandardBaselineSupport()
-        {
-            var supportMatrix = new Dictionary<TargetArchitecture, string[]>();
-            supportMatrix[TargetArchitecture.ARM] = Array.Empty<string>();
-            supportMatrix[TargetArchitecture.X64] = new string[] { "Sse", "Sse2" };
-            supportMatrix[TargetArchitecture.X86] = supportMatrix[TargetArchitecture.X64]; // At the moment support for x86 matches X64;
-            supportMatrix[TargetArchitecture.ARM64] = new string[] { "ArmBase", "AdvSimd" };
-
-            return supportMatrix;
-        }
-
-        private static Dictionary<string, string[]> ComputeInstructSetSupportForX64()
-        {
-            var support = new Dictionary<string, string[]>();
-            support["Aes"] = new string[] { "Sse2" };
-            support["Avx"] = new string[] { "Sse42" };
-            support["Avx2"] = new string[] { "Avx" };
-            support["Bmi1"] = new string[] { "Avx" };
-            support["Bmi2"] = new string[] { "Avx" };
-            support["Fma"] = new string[] { "Avx" };
-            support["Lzcnt"] = Array.Empty<string>();
-            support["Pclmulqdq"] = new string[] { "Sse2" };
-            support["Popcnt"] = new string[] { "Sse42" };
-            support["Sse"] = Array.Empty<string>();
-            support["Sse2"] = new string[] { "Sse" };
-            support["Sse3"] = new string[] { "Sse2" };
-            support["Ssse3"] = new string[] { "Sse3" };
-            support["Sse41"] = new string[] { "Ssse3" };
-            support["Sse42"] = new string[] { "Sse41" };
-
-            return support;
-        }
-
-        private static Dictionary<string, string[]> ComputeInstructSetSupportForArm64()
-        {
-            var support = new Dictionary<string, string[]>();
-            support["ArmBase"] = Array.Empty<string>();
-            support["AdvSimd"] = new string[] { "ArmBase" };
-            support["Aes"] = new string[] { "ArmBase" };
-            support["Crc32"] = new string[] { "ArmBase" };
-            support["Sha1"] = new string[] { "ArmBase" };
-            support["Sha256"] = new string[] { "ArmBase" };
-
-            return support;
-        }
-
-        /// <summary>
-        /// Validate that the instruction set support values hardcoded above are actually accurate and up to date
-        /// </summary>
-        /// <param name="coreLibModule"></param>
-        [Conditional("DEBUG")]
-        public static void ValidateInstructionSetSupport(ModuleDesc coreLibModule)
-        {
-            var moduleDefinedSupportMatrix = new Dictionary<TargetArchitecture, Dictionary<string, string[]>>();
-            moduleDefinedSupportMatrix[TargetArchitecture.ARM] = new Dictionary<string, string[]>();
-            moduleDefinedSupportMatrix[TargetArchitecture.X64] = ComputeInstructionSetSupportMatrixFromPEFile(coreLibModule, "System.Runtime.Intrinsics.X86");
-            moduleDefinedSupportMatrix[TargetArchitecture.X86] = moduleDefinedSupportMatrix[TargetArchitecture.X64]; // At the moment support for x86 matches X64;
-            moduleDefinedSupportMatrix[TargetArchitecture.ARM64] = ComputeInstructionSetSupportMatrixFromPEFile(coreLibModule, "System.Runtime.Intrinsics.Arm");
-
-            Debug.Assert(moduleDefinedSupportMatrix.Count == s_instructionSetSupport.Count);
-            foreach (var moduleDefinedArchitectureSupport in moduleDefinedSupportMatrix)
+            var supportMatrix = new Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>>();
+            foreach (TargetArchitecture arch in Enum.GetValues(typeof(TargetArchitecture)))
             {
-                Debug.Assert(s_instructionSetSupport.ContainsKey(moduleDefinedArchitectureSupport.Key));
-                var instructionSetsOnArch = s_instructionSetSupport[moduleDefinedArchitectureSupport.Key];
-
-                Debug.Assert(moduleDefinedArchitectureSupport.Value.Count == instructionSetsOnArch.Count);
-                foreach (var moduleDefinedInstructionSetSupport in moduleDefinedArchitectureSupport.Value)
-                {
-                    Debug.Assert(instructionSetsOnArch.ContainsKey(moduleDefinedInstructionSetSupport.Key));
-                    string[] impliedInstructionSets = instructionSetsOnArch[moduleDefinedInstructionSetSupport.Key];
-
-                    Debug.Assert(moduleDefinedInstructionSetSupport.Value.Length == impliedInstructionSets.Length);
-                    foreach (string moduleDefinedImpliedInstructionSet in moduleDefinedInstructionSetSupport.Value)
-                    {
-                        Debug.Assert(impliedInstructionSets.Contains(moduleDefinedImpliedInstructionSet));
-                    }
-                }
+                supportMatrix[arch] = ComputeInstructSetSupportForArch(arch);
             }
+
+            return supportMatrix;
         }
 
-        private static Dictionary<string, string[]> ComputeInstructionSetSupportMatrixFromPEFile(ModuleDesc coreLibModule, string @namespace)
+        private static Dictionary<string, InstructionSet> ComputeInstructSetSupportForArch(TargetArchitecture architecture)
         {
-            var support = new Dictionary<string, string[]>();
-
-            foreach (MetadataType type in coreLibModule.GetAllTypes())
+            var support = new Dictionary<string, InstructionSet>();
+            foreach (var instructionSet in InstructionSetFlags.ArchitectureToValidInstructionSets(architecture))
             {
-                if (type.Namespace == @namespace)
-                {
-                    // Ignore the FloatComparisonMode type.
-                    if (@namespace == "System.Runtime.Intrinsics.X86" && type.Name == "FloatComparisonMode")
-                        continue;
-
-                    // Bmi1 implies Avx even though it doesn't in the api surface.
-                    if (type.Name == "Bmi1")
-                    {
-                        support.Add(type.Name, new string[] { "Avx" });
-                        continue;
-                    }
-
-                    // Bmi2 implies Avx even though it doesn't in the api surface.
-                    if (type.Name == "Bmi2")
-                    {
-                        support.Add(type.Name, new string[] { "Avx" });
-                        continue;
-                    }
-
-
-                    if (type.BaseType == type.Context.GetWellKnownType(WellKnownType.Object))
-                    {
-                        support.Add(type.Name, Array.Empty<string>());
-                    }
-                    else
-                    {
-                        support.Add(type.Name, new string[] { type.BaseType.Name });
-                    }
-                }
+                if (!instructionSet.Key.StartsWith("Vector"))
+                    support.Add(instructionSet.Key, instructionSet.Value);
             }
 
             return support;
         }
 
-        private readonly HashSet<string> _supportedInstructionSets = new HashSet<string>();
-        private readonly HashSet<string> _unsupportedInstructionSets = new HashSet<string>();
+        private readonly SortedSet<string> _supportedInstructionSets = new SortedSet<string>();
+        private readonly SortedSet<string> _unsupportedInstructionSets = new SortedSet<string>();
         private readonly TargetArchitecture _architecture;
 
         public InstructionSetSupportBuilder(TargetArchitecture architecture)
         {
             _architecture = architecture;
-            _supportedInstructionSets.UnionWith(s_baselineSupport[architecture]);
         }
 
         /// <summary>
@@ -306,32 +181,43 @@ namespace ILCompiler
         /// Seal modifications to instruction set support
         /// </summary>
         /// <returns>returns "false" if instruction set isn't valid on this architecture</returns>
-        public InstructionSetSupport CreateInstructionSetSupport(Action<string, string> invalidInstructionSetImplication)
+        public bool ComputeInstructionSetFlags(out InstructionSetFlags supportedInstructionSets,
+                                                              out InstructionSetFlags unsupportedInstructionSets,
+                                                              Action<string, string> invalidInstructionSetImplication)
         {
-            string[] initialSupportedInstructionSets = _supportedInstructionSets.ToArray();
-            foreach (string specifiedInstructionSet in initialSupportedInstructionSets)
+            supportedInstructionSets = new InstructionSetFlags();
+            unsupportedInstructionSets = new InstructionSetFlags();
+            Dictionary<string, InstructionSet> instructionSetConversion = s_instructionSetSupport[_architecture];
+
+            foreach (string unsupported in _unsupportedInstructionSets)
             {
-                if (!AddImpliedInstructionSetSupport(specifiedInstructionSet, specifiedInstructionSet, invalidInstructionSetImplication))
-                    return null;
+                unsupportedInstructionSets.AddInstructionSet(instructionSetConversion[unsupported]);
             }
+            unsupportedInstructionSets.ExpandInstructionSetByReverseImplication(_architecture);
+            unsupportedInstructionSets.Set64BitInstructionSetVariants(_architecture);
 
-            return new InstructionSetSupport(_supportedInstructionSets, _unsupportedInstructionSets, _architecture);
-        }
-
-        private bool AddImpliedInstructionSetSupport(string initialInstructionSet, string instructionSet, Action<string, string> invalidInstructionSetImplication)
-        {
-            foreach (string impliedInstructionSet in s_instructionSetSupport[_architecture][instructionSet])
+            foreach (string supported in _supportedInstructionSets)
             {
-                if (_supportedInstructionSets.Add(impliedInstructionSet))
+                supportedInstructionSets.AddInstructionSet(instructionSetConversion[supported]);
+                supportedInstructionSets.ExpandInstructionSetByImplication(_architecture);
+
+                foreach (string unsupported in _unsupportedInstructionSets)
                 {
-                    if (_unsupportedInstructionSets.Contains(impliedInstructionSet))
+                    InstructionSetFlags checkForExplictUnsupport = new InstructionSetFlags();
+                    checkForExplictUnsupport.AddInstructionSet(instructionSetConversion[unsupported]);
+                    checkForExplictUnsupport.ExpandInstructionSetByReverseImplication(_architecture);
+                    checkForExplictUnsupport.Set64BitInstructionSetVariants(_architecture);
+
+                    InstructionSetFlags supportedTemp = supportedInstructionSets;
+                    supportedTemp.Remove(checkForExplictUnsupport);
+
+                    // If removing the explicitly unsupported instruction sets, changes the set of
+                    // supported instruction sets, then the parameter is invalid
+                    if (!supportedTemp.Equals(supportedInstructionSets))
                     {
-                        invalidInstructionSetImplication(initialInstructionSet, impliedInstructionSet);
+                        invalidInstructionSetImplication(supported, unsupported);
                         return false;
                     }
-
-                    if (!AddImpliedInstructionSetSupport(initialInstructionSet, impliedInstructionSet, invalidInstructionSetImplication))
-                        return false;
                 }
             }
 

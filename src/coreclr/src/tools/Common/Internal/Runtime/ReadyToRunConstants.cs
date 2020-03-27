@@ -311,30 +311,6 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeTypeHandle,
     }
 
-    public enum ReadyToRunInstructionSet
-    {
-        Aes = 0x01,
-        Avx = 0x02,
-        Avx2 = 0x03,
-        Bmi1 = 0x04,
-        Bmi2 = 0x05,
-        Fma = 0x06,
-        Lzcnt = 0x07,
-        Pclmuldq = 0x08,
-        Popcnt = 0x09,
-        Sse = 0x0A,
-        Sse2 = 0x0B,
-        Sse3 = 0x0C,
-        Ssse3 = 0x0D,
-        Sse41 = 0x0E,
-        Sse42 = 0x0F,
-        AdvSimd = 0x10,
-        ArmBase = 0x11,
-        Crc32 = 0x12,
-        Sha1 = 0x13,
-        Sha256 = 0x14,
-    }
-
     public static class ReadyToRunRuntimeConstants
     {
         public const int READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11;

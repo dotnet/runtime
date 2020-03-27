@@ -8,6 +8,7 @@
 // using /src/coreclr/src/tools/Common/JitInterface/ThunkGenerator/gen.bat
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Internal.TypeSystem;
@@ -83,7 +84,7 @@ namespace Internal.JitInterface
 
     }
 
-    public struct InstructionSetFlags
+    public struct InstructionSetFlags : IEnumerable<InstructionSet>
     {
         ulong _flags;
         
@@ -107,7 +108,49 @@ namespace Internal.JitInterface
             return _flags == other._flags;
         }
 
-        public static InstructionSetFlags ExpandInstructionSetByImplication(TargetArchitecture architecture, InstructionSetFlags input)
+        public void Add(InstructionSetFlags other)
+        {
+            _flags |= other._flags;
+        }
+
+        public void IntersectionWith(InstructionSetFlags other)
+        {
+            _flags &= other._flags;
+        }
+
+        public void Remove(InstructionSetFlags other)
+        {
+            _flags &= ~other._flags;
+        }
+
+        public bool IsEmpty()
+        {
+            return _flags == 0;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public IEnumerator<InstructionSet> GetEnumerator()
+        {
+            for (int i = 1; i < (int)InstructionSet.NONE; i ++)
+            {
+                InstructionSet instructionSet = (InstructionSet)i;
+                if (HasInstructionSet(instructionSet))
+                {
+                    yield return instructionSet;
+                }
+            }
+        }
+
+        public void ExpandInstructionSetByImplication(TargetArchitecture architecture)
+        {
+            this = ExpandInstructionSetByImplicationHelper(architecture, this);
+        }
+
+        public static InstructionSetFlags ExpandInstructionSetByImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
         {
             InstructionSetFlags oldflags = input;
             InstructionSetFlags resultflags = input;
@@ -208,6 +251,119 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_SSE2);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_POPCNT))
                         resultflags.AddInstructionSet(InstructionSet.X86_SSE42);
+                    break;
+
+                }
+            } while (!oldflags.Equals(resultflags));
+            return resultflags;
+        }
+
+        public void ExpandInstructionSetByReverseImplication(TargetArchitecture architecture)
+        {
+            this = ExpandInstructionSetByReverseImplicationHelper(architecture, this);
+        }
+
+        private static InstructionSetFlags ExpandInstructionSetByReverseImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
+        {
+            InstructionSetFlags oldflags = input;
+            InstructionSetFlags resultflags = input;
+            do
+            {
+                oldflags = resultflags;
+                switch(architecture)
+                {
+
+                case TargetArchitecture.ARM64:
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha256);
+                    break;
+
+                case TargetArchitecture.X64:
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE41_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE41);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE42_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE42);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_BMI1_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_BMI1);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_BMI2_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_BMI2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_LZCNT_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_LZCNT);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_POPCNT_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_POPCNT);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE3);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE3))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSSE3);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSSE3))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE41);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE41))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE42);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE42))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AES);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X64_BMI1);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X64_BMI2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X64_FMA);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE42))
+                        resultflags.AddInstructionSet(InstructionSet.X64_POPCNT);
+                    break;
+
+                case TargetArchitecture.X86:
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SSE2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SSE3);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE3))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SSSE3);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSSE3))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SSE41);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE41))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SSE42);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE42))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVX);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AES);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X86_BMI1);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X86_BMI2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X86_FMA);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE42))
+                        resultflags.AddInstructionSet(InstructionSet.X86_POPCNT);
                     break;
 
                 }

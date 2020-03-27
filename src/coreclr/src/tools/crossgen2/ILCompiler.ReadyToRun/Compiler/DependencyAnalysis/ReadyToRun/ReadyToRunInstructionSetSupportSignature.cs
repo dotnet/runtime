@@ -8,6 +8,7 @@ using System.Linq;
 using Internal.Text;
 using Internal.ReadyToRunConstants;
 using System.Text;
+using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -17,32 +18,37 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public static string ToInstructionSetSupportString(InstructionSetSupport instructionSetSupport)
         {
-            IEnumerable<string> instructionSetsSupported = instructionSetSupport.SupportedInstructionSets;
-            IEnumerable<string> instructionSetsExplicitlyUnsupported = instructionSetSupport.ExplicitlyUnsupportedInstructionSets;
-
             StringBuilder builder = new StringBuilder();
-            string[] supportedInstructionSets = instructionSetsSupported.ToArray();
+            InstructionSet[] supportedInstructionSets = instructionSetSupport.SupportedFlags.ToArray();
             Array.Sort(supportedInstructionSets);
-            string[] explicitlyUnsupportedInstructionSets = instructionSetsExplicitlyUnsupported.ToArray();
+            InstructionSet[] explicitlyUnsupportedInstructionSets = instructionSetSupport.ExplicitlyUnsupportedFlags.ToArray();
             Array.Sort(explicitlyUnsupportedInstructionSets);
 
             bool addDelimeter = false;
-            foreach (string instructionSetSupported in supportedInstructionSets)
+            foreach (var instructionSetSupported in supportedInstructionSets)
             {
+                var r2rInstructionSet = instructionSetSupported.R2RInstructionSet(instructionSetSupport.Architecture);
+                if (r2rInstructionSet == null)
+                    continue;
+
                 if (addDelimeter)
                     builder.Append('+');
                 addDelimeter = true;
-                builder.Append(instructionSetSupported);
+                builder.Append(r2rInstructionSet.Value.ToString());
             }
             builder.Append(',');
 
             addDelimeter = false;
-            foreach (string instructionSetUnsupported in explicitlyUnsupportedInstructionSets)
+            foreach (var instructionSetUnsupported in explicitlyUnsupportedInstructionSets)
             {
+                var r2rInstructionSet = instructionSetUnsupported.R2RInstructionSet(instructionSetSupport.Architecture);
+                if (r2rInstructionSet == null)
+                    continue;
+                    
                 if (addDelimeter)
                     builder.Append('-');
                 addDelimeter = true;
-                builder.Append(instructionSetUnsupported);
+                builder.Append(r2rInstructionSet.Value.ToString());
             }
 
             return builder.ToString();
@@ -53,11 +59,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _instructionSetsSupport = instructionSetsSupport;
         }
 
-        private ReadyToRunInstructionSet InstructionSetFromString(string instructionSetString)
+        private ReadyToRunInstructionSet? InstructionSetFromString(string instructionSetString)
         {
-            var enumEntry = typeof(ReadyToRunInstructionSet).GetField(instructionSetString);
-            return (ReadyToRunInstructionSet)enumEntry.GetValue(null);
+            return (ReadyToRunInstructionSet)Enum.Parse(typeof(ReadyToRunInstructionSet), instructionSetString);
         }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder();

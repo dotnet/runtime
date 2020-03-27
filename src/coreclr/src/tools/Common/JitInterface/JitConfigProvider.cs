@@ -78,96 +78,11 @@ namespace Internal.JitInterface
                 jitFlagBuilder.Add(jitFlag);
             }
 
-            if (instructionSetSupport.IsInstructionSetSupported("Sse2") || instructionSetSupport.IsInstructionSetSupported("AdvSimd"))
+            Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
+            if (instructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2) || instructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd))
             {
                 jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
             }
-
-            foreach (string instructionSet in instructionSetSupport.SupportedInstructionSets)
-            {
-                if (instructionSetSupport.Architecture == TypeSystem.TargetArchitecture.X64 || instructionSetSupport.Architecture == TypeSystem.TargetArchitecture.X86)
-                {
-                    switch (instructionSet)
-                    {
-                        case "Sse":
-                        case "Sse2":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                            break;
-                        case "Sse3":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_SSE3);
-                            break;
-                        case "Ssse3":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_SSSE3);
-                            break;
-                        case "Sse41":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_SSE41);
-                            break;
-                        case "Sse42":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_SSE42);
-                            break;
-                        case "Aes":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_AES);
-                            break;
-                        case "Avx":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_AVX);
-                            break;
-                        case "Avx2":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_AVX2);
-                            break;
-                        case "Avx512":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_AVX_512);
-                            break;
-                        case "Bmi1":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_BMI1);
-                            break;
-                        case "Bmi2":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_BMI2);
-                            break;
-                        case "Fma":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_FMA);
-                            break;
-                        case "Lzcnt":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_LZCNT);
-                            break;
-                        case "Pclmulqdq":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_PCLMULQDQ);
-                            break;
-                        case "Popcnt":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_POPCNT);
-                            break;
-                        default:
-                            throw new Exception("Unknown instruction set");
-                    }
-                }
-                if (instructionSetSupport.Architecture == TypeSystem.TargetArchitecture.ARM64)
-                {
-                    switch (instructionSet)
-                    {
-                        case "ArmBase":
-                            // No flag to enable this
-                            break;
-                        case "AdvSimd":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_SIMD);
-                            break;
-                        case "Aes":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_AES);
-                            break;
-                        case "Crc32":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_CRC32);
-                            break;
-                        case "Sha1":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_SHA1);
-                            break;
-                        case "Sha256":
-                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_SHA256);
-                            break;
-                        default:
-                            throw new Exception("Unknown instruction set");
-                    }
-                }
-            }
-
 
             _jitFlags = jitFlagBuilder.ToArray();
 

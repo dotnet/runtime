@@ -151,6 +151,18 @@ namespace ILCompiler
 
             InstructionSetSupportBuilder instructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
 
+            // Ready to run images are built with certain instruction set baselines
+            if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
+            {
+                instructionSetSupportBuilder.AddSupportedInstructionSet("Sse");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("Sse2");
+            }
+            else if (_targetArchitecture == TargetArchitecture.ARM64)
+            {
+                instructionSetSupportBuilder.AddSupportedInstructionSet("ArmBase");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("AdvSimd");
+            }
+
             if (_commandLineOptions.InstructionSet != null && _commandLineOptions.InstructionSet.Length > 0)
             {
                 // At this time, instruction sets may only be specified with --input-bubble, as
@@ -192,9 +204,39 @@ namespace ILCompiler
                     }
                 }
             }
-            InstructionSetSupport instructionSetSupport = instructionSetSupportBuilder.CreateInstructionSetSupport(
+
+            instructionSetSupportBuilder.ComputeInstructionSetFlags(out var supportedInstructionSet, out var unsupportedInstructionSet,
                 (string specifiedInstructionSet, string impliedInstructionSet) =>
                     throw new CommandLineException(String.Format(SR.InstructionSetInvalidImplication, specifiedInstructionSet, impliedInstructionSet)));
+
+            InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
+
+            // Ready to run images are built with certain instruction sets that are optimistically assumed to be present
+            if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
+            {
+                // For ReadyToRun we set these hardware features as enabled always, as the overwhelming majority
+                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
+                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
+                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
+                // support AVX instructions. As the jit generates logic that depends on these features it will call
+                // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
+                // code.
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Sse");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Sse2");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Sse41");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Sse42");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Aes");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Pclmulqdq");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Popcnt");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Lzcnt");
+            }
+
+            optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _, 
+                (string specifiedInstructionSet, string impliedInstructionSet) => throw new NotSupportedException());
+            optimisticInstructionSet.Remove(unsupportedInstructionSet);
+            optimisticInstructionSet.Add(supportedInstructionSet);
+
+            var instructionSetSupport = new InstructionSetSupport(supportedInstructionSet, unsupportedInstructionSet, optimisticInstructionSet, _targetArchitecture);
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
@@ -288,11 +330,6 @@ namespace ILCompiler
 
                     if (typeSystemContext.InputFilePaths.Count == 0)
                         throw new CommandLineException(SR.NoInputFiles);
-
-
-                    // ON DEBUG BUILDS validate that the hardcoded list of instruction sets in InstructionSetSupportBuilder
-                    // matches with what is defined in System.Private.CoreLib. This function call is Conditional on the DEBUG #define
-                    InstructionSetSupportBuilder.ValidateInstructionSetSupport(typeSystemContext.SystemModule);
 
                     //
                     // Initialize compilation group and compilation roots

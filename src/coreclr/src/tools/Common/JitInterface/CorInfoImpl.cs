@@ -266,35 +266,33 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
 
             // Detect cases where the instruction set support used is a superset of the baseline instruction set specification
-            if (_actualInstructionSetSupport != null)
+            var baselineSupport = _compilation.InstructionSetSupport;
+            bool needPerMethodInstructionSetFixup = false;
+            foreach (var instructionSet in _actualInstructionSetSupported)
             {
-                var baselineSupport = _compilation.InstructionSetSupport;
-                var actualSupport = _actualInstructionSetSupport.CreateInstructionSetSupport(null);
-                bool needPerMethodInstructionSetFixup = false;
-
-                foreach (string instructionSet in actualSupport.SupportedInstructionSets)
+                if (!baselineSupport.IsInstructionSetSupported(instructionSet))
                 {
-                    if (!baselineSupport.IsInstructionSetSupported(instructionSet))
-                    {
-                        needPerMethodInstructionSetFixup = true;
-                        break;
-                    }
+                    needPerMethodInstructionSetFixup = true;
                 }
-
-                foreach (string instructionSet in actualSupport.ExplicitlyUnsupportedInstructionSets)
+            }
+            foreach (var instructionSet in _actualInstructionSetUnsupported)
+            {
+                if (!baselineSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
                 {
-                    if (!baselineSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
-                    {
-                        needPerMethodInstructionSetFixup = true;
-                        break;
-                    }
+                    needPerMethodInstructionSetFixup = true;
                 }
+            }
 
-                if (needPerMethodInstructionSetFixup)
-                {
-                    var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
-                    ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
-                }
+            if (needPerMethodInstructionSetFixup)
+            {
+                TargetArchitecture architecture = _compilation.TypeSystemContext.Target.Architecture;
+                _actualInstructionSetSupported.ExpandInstructionSetByImplication(architecture);
+                _actualInstructionSetUnsupported.ExpandInstructionSetByReverseImplication(architecture);
+                _actualInstructionSetUnsupported.Set64BitInstructionSetVariants(architecture);
+
+                InstructionSetSupport actualSupport = new InstructionSetSupport(_actualInstructionSetSupported, _actualInstructionSetUnsupported, _actualInstructionSetSupported, architecture);
+                var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
+                ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
             }
 #endif
             PublishProfileData();
@@ -396,7 +394,8 @@ namespace Internal.JitInterface
             _profileDataNode = null;
             _inlinedMethods = new ArrayBuilder<MethodDesc>();
 #endif
-            _actualInstructionSetSupport = null;
+            _actualInstructionSetSupported = default(InstructionSetFlags);
+            _actualInstructionSetUnsupported = default(InstructionSetFlags);
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -2873,6 +2872,8 @@ namespace Internal.JitInterface
             foreach (var flag in JitConfigProvider.Instance.Flags)
                 flags.Set(flag);
 
+            flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
+
             // Set the rest of the flags that don't make sense to expose publically.
             flags.Set(CorJitFlag.CORJIT_FLAG_SKIP_VERIFICATION);
             flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
@@ -2884,68 +2885,6 @@ namespace Internal.JitInterface
 
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
-
-            if (targetArchitecture == TargetArchitecture.X86)
-            {
-                flags.Set(InstructionSet.X86_SSE);
-                flags.Set(InstructionSet.X86_SSE2);
-#if !READYTORUN
-                // This list needs to match the list of intrinsics we can generate detection code for
-                // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
-#else
-                // For ReadyToRun we set these hardware features as enabled always, as the overwhelming majority
-                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
-                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
-                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
-                // support AVX instructions. As the jit generates logic that depends on these features it will call
-                // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
-                // code.
-#endif
-                flags.Set(InstructionSet.X86_AES);
-                flags.Set(InstructionSet.X86_PCLMULQDQ);
-                flags.Set(InstructionSet.X86_SSE3);
-                flags.Set(InstructionSet.X86_SSSE3);
-                flags.Set(InstructionSet.X86_LZCNT);
-#if READYTORUN
-                flags.Set(InstructionSet.X86_SSE41);
-                flags.Set(InstructionSet.X86_SSE42);
-                flags.Set(InstructionSet.X86_POPCNT);
-#endif
-            }
-            else if (targetArchitecture == TargetArchitecture.X64)
-            {
-                flags.Set(InstructionSet.X64_SSE);
-                flags.Set(InstructionSet.X64_SSE2);
-#if !READYTORUN
-                // This list needs to match the list of intrinsics we can generate detection code for
-                // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
-#else
-                // For ReadyToRun we set these hardware features as enabled always, as the overwhelming majority
-                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
-                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
-                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
-                // support AVX instructions. As the jit generates logic that depends on these features it will call
-                // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
-                // code.
-#endif
-                flags.Set(InstructionSet.X64_AES);
-                flags.Set(InstructionSet.X64_PCLMULQDQ);
-                flags.Set(InstructionSet.X64_SSE3);
-                flags.Set(InstructionSet.X64_SSSE3);
-                flags.Set(InstructionSet.X64_LZCNT);
-#if READYTORUN
-                flags.Set(InstructionSet.X64_SSE41);
-                flags.Set(InstructionSet.X64_SSE42);
-                flags.Set(InstructionSet.X64_POPCNT);
-#endif
-            }
-            else if (targetArchitecture == TargetArchitecture.ARM64)
-            {
-                flags.Set(InstructionSet.ARM64_ArmBase);
-                flags.Set(InstructionSet.ARM64_AdvSimd);
-            }
-
-            flags.Set64BitInstructionSetVariants(targetArchitecture);
 
             if (this.MethodBeingCompiled.IsNativeCallable)
             {
@@ -2971,19 +2910,15 @@ namespace Internal.JitInterface
             return (uint)sizeof(CORJIT_FLAGS);
         }
 
-        InstructionSetSupportBuilder _actualInstructionSetSupport;
+
+        InstructionSetFlags _actualInstructionSetSupported;
+        InstructionSetFlags _actualInstructionSetUnsupported;
 
         private void notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
-            if (_actualInstructionSetSupport == null)
-            {
-                _actualInstructionSetSupport = new InstructionSetSupportBuilder(_compilation.InstructionSetSupport.Architecture);
-            }
-
-            string instructionSetNameString = new string(instructionSetName);
             if (supportEnabled)
             {
-                _actualInstructionSetSupport.AddSupportedInstructionSet(instructionSetNameString);
+                _actualInstructionSetSupported.AddInstructionSet(instructionSet);
             }
             else
             {
@@ -2993,7 +2928,7 @@ namespace Internal.JitInterface
                 if (!isMethodDefinedInCoreLib())
 #endif
                 {
-                    _actualInstructionSetSupport.RemoveInstructionSetSupport(instructionSetNameString);
+                    _actualInstructionSetSupported.AddInstructionSet(instructionSet);
                 }
             }
         }

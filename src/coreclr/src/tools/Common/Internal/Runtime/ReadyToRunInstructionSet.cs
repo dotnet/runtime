@@ -9,6 +9,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 
 namespace Internal.ReadyToRunConstants
@@ -41,7 +42,7 @@ namespace Internal.ReadyToRunConstants
 
     public static class ReadyToRunInstructionSetHelper
     {
-        ReadyToRunInstructionSet? R2RInstructionSetFromJitInstructionSet(TargetArchitecture architecture, Internal.JitInterface.InstructionSet instructionSet)
+        public static ReadyToRunInstructionSet? R2RInstructionSet(this InstructionSet instructionSet, TargetArchitecture architecture)
         {
             switch (architecture)
             {

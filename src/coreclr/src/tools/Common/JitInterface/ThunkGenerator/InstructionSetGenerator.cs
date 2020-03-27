@@ -251,6 +251,7 @@ namespace Thunkerator
 
 using System;
 using System.Runtime.InteropServices;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 
 namespace Internal.ReadyToRunConstants
@@ -268,7 +269,7 @@ namespace Internal.ReadyToRunConstants
 
     public static class ReadyToRunInstructionSetHelper
     {
-        ReadyToRunInstructionSet? R2RInstructionSetFromJitInstructionSet(TargetArchitecture architecture, Internal.JitInterface.InstructionSet instructionSet)
+        public static ReadyToRunInstructionSet? R2RInstructionSet(this InstructionSet instructionSet, TargetArchitecture architecture)
         {
             switch (architecture)
             {
@@ -325,6 +326,7 @@ namespace Internal.ReadyToRunConstants
 // using /src/coreclr/src/tools/Common/JitInterface/ThunkGenerator/gen.bat
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Internal.TypeSystem;
@@ -348,7 +350,7 @@ namespace Internal.JitInterface
             tr.Write(@"
     }
 
-    public struct InstructionSetFlags
+    public struct InstructionSetFlags : IEnumerable<InstructionSet>
     {
         ulong _flags;
         
@@ -372,7 +374,49 @@ namespace Internal.JitInterface
             return _flags == other._flags;
         }
 
-        public static InstructionSetFlags ExpandInstructionSetByImplication(TargetArchitecture architecture, InstructionSetFlags input)
+        public void Add(InstructionSetFlags other)
+        {
+            _flags |= other._flags;
+        }
+
+        public void IntersectionWith(InstructionSetFlags other)
+        {
+            _flags &= other._flags;
+        }
+
+        public void Remove(InstructionSetFlags other)
+        {
+            _flags &= ~other._flags;
+        }
+
+        public bool IsEmpty()
+        {
+            return _flags == 0;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public IEnumerator<InstructionSet> GetEnumerator()
+        {
+            for (int i = 1; i < (int)InstructionSet.NONE; i ++)
+            {
+                InstructionSet instructionSet = (InstructionSet)i;
+                if (HasInstructionSet(instructionSet))
+                {
+                    yield return instructionSet;
+                }
+            }
+        }
+
+        public void ExpandInstructionSetByImplication(TargetArchitecture architecture)
+        {
+            this = ExpandInstructionSetByImplicationHelper(architecture, this);
+        }
+
+        public static InstructionSetFlags ExpandInstructionSetByImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
         {
             InstructionSetFlags oldflags = input;
             InstructionSetFlags resultflags = input;
@@ -397,6 +441,46 @@ namespace Internal.JitInterface
                 {
                     if (implication.Architecture != architecture) continue;
                     AddImplication(architecture, implication.JitName, implication.ImpliedJitName);
+                }
+                tr.WriteLine("                    break;");
+            }
+
+            tr.Write(@"
+                }
+            } while (!oldflags.Equals(resultflags));
+            return resultflags;
+        }
+
+        public void ExpandInstructionSetByReverseImplication(TargetArchitecture architecture)
+        {
+            this = ExpandInstructionSetByReverseImplicationHelper(architecture, this);
+        }
+
+        private static InstructionSetFlags ExpandInstructionSetByReverseImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
+        {
+            InstructionSetFlags oldflags = input;
+            InstructionSetFlags resultflags = input;
+            do
+            {
+                oldflags = resultflags;
+                switch(architecture)
+                {
+");
+            foreach (string architecture in _architectures)
+            {
+                tr.Write($@"
+                case TargetArchitecture.{architecture}:
+");
+                foreach (var instructionSet in _instructionSets)
+                {
+                    if (instructionSet.Architecture != architecture) continue;
+                    if (_64BitArchitectures.Contains(architecture) && _64bitVariants[architecture].Contains(instructionSet.JitName))
+                        AddReverseImplication(architecture, instructionSet.JitName, $"{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}");
+                }
+                foreach (var implication in _implications)
+                {
+                    if (implication.Architecture != architecture) continue;
+                    AddReverseImplication(architecture, implication.JitName, implication.ImpliedJitName);
                 }
                 tr.WriteLine("                    break;");
             }
@@ -458,6 +542,11 @@ namespace Internal.JitInterface
 }
 ");
             return;
+            void AddReverseImplication(string architecture, string jitName, string impliedJitName)
+            {
+                AddImplication(architecture, impliedJitName, jitName);
+            }
+
             void AddImplication(string architecture, string jitName, string impliedJitName)
             {
                 tr.WriteLine($"                    if (resultflags.HasInstructionSet(InstructionSet.{architecture}_{jitName}))");
