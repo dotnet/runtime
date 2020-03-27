@@ -859,6 +859,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg3()));
             break;
 
+        case IF_DV_3G: // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
+            assert(isValidVectorDatasize(id->idOpSize()));
+            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+            assert(isValidVectorIndex(id->idOpSize(), EA_1BYTE, emitGetInsSC(id)));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
+            break;
+
         case IF_DV_4A: // DR_4A   .........X.mmmmm .aaaaannnnnddddd      Rd Rn Rm Ra (scalar)
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isVectorRegister(id->idReg1()));
@@ -947,6 +956,7 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_3D:  // DV_3D   .........X.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
         case IF_DV_3DI: // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by elem)
         case IF_DV_3E:  // DV_3E   ...........mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
+        case IF_DV_3G:  // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
         case IF_DV_4A:  // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
             // Tracked GC pointers cannot be placed into the SIMD registers.
             return false;
@@ -2129,6 +2139,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case IF_DV_3DI:
         case IF_DV_3E:
         case IF_DV_3F:
+        case IF_DV_3G:
         case IF_DV_4A:
         case IF_SN_0A:
         case IF_SI_0A:
@@ -6056,6 +6067,17 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             // Load/Store single structure  post-indexed by a register
             reg2 = encodingSPtoZR(reg2);
             fmt  = IF_LS_3G;
+            break;
+
+        case INS_ext:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isValidVectorDatasize(size));
+            assert(isValidArrangement(size, opt));
+            assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_16B));
+            assert(isValidVectorIndex(size, EA_1BYTE, imm));
+            fmt = IF_DV_3G;
             break;
 
         default:
@@ -10654,6 +10676,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_DV_3G: // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
+            imm  = emitGetInsSC(id);
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeVectorsize(id->idOpSize()); // Q
+            code |= insEncodeReg_Vm(id->idReg3());       // mmmmm
+            code |= ((code_t)imm << 11);                 // iiii
+            code |= insEncodeReg_Vn(id->idReg2());       // nnnnn
+            code |= insEncodeReg_Vd(id->idReg1());       // ddddd
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_DV_4A: // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
             code     = emitInsCode(ins, fmt);
             elemsize = id->idOpSize();
@@ -12268,6 +12301,13 @@ void emitter::emitDispIns(
             emitDispReg(id->idReg2(), size, true);
             elemsize = size;
             emitDispVectorRegIndex(id->idReg3(), elemsize, emitGetInsSC(id), false);
+            break;
+
+        case IF_DV_3G: // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
+            emitDispVectorReg(id->idReg3(), id->idInsOpt(), true);
+            emitDispImm(emitGetInsSC(id), false);
             break;
 
         case IF_DV_4A: // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
@@ -13946,6 +13986,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_DV_3E: // add, sub, cmeq, cmge, cmgt, cmhi, cmhs, ctst, (scalar)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DV_3G: // ext
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;

@@ -216,6 +216,7 @@ IF_DEF(DV_3D, IS_NONE, NONE)  // DV_3D   .........X.mmmmm ......nnnnnddddd      
 IF_DEF(DV_3DI, IS_NONE, NONE) // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by elem)
 IF_DEF(DV_3E, IS_NONE, NONE)  // DV_3E   ...........mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
 IF_DEF(DV_3F, IS_NONE, NONE)  // DV_3F   ...........mmmmm ......nnnnnddddd      Qd Sn Vm   (Qd used as both source and destination)
+IF_DEF(DV_3G, IS_NONE, NONE)  // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
 
 IF_DEF(DV_4A, IS_NONE, NONE) // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Vn Vm Va (scalar)
 

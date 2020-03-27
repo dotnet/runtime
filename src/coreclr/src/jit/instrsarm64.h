@@ -1296,6 +1296,10 @@ INST1(sha256su0, "sha256su0",  0, 0, IF_DV_2P,  0x5E282800)
 INST1(sha256su1, "sha256su1",  0, 0, IF_DV_3F,  0x5E006000)
                                    // sha256su1  Vd.4S,Vn.4S,Vm.4S  DV_3F  01011110000mmmmm 011000nnnnnddddd   5E00 6000  Vd.4S Vn.4S Vm.4S   (vector)
 
+INST1(ext,     "ext",    0, 0, IF_DV_3G,  0x2E000000)
+                                   // C7.2.36 EXT
+                                   //  ext     Vd,Vn,Vm,index       DV_3G  0Q101110000mmmmm 0iiii0nnnnnddddd   2E00 0000   Vd Vn Vm index  (vector)
+
 INST1(sbfm,    "sbfm",   0, 0, IF_DI_2D,  0x13000000)
                                    //  sbfm    Rd,Rn,imr,ims        DI_2D  X00100110Nrrrrrr ssssssnnnnnddddd   1300 0000   imr, ims
 
