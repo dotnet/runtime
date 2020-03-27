@@ -138,8 +138,8 @@ jobs:
       value: >-
         $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
         -configuration $(_BuildConfig)
-        -os $(parameters.osGroup)
-        -arch $(parameters.archType)
+        -os ${{ parameters.osGroup }}
+        -arch ${{ parameters.archType }}
         /p:StripSymbols=true
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
