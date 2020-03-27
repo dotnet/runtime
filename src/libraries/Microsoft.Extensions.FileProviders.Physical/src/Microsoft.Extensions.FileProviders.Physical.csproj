@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Extensions\EmptyDisposable.cs">
+      <Link>Common\src\Extensions\EmptyDisposable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\NonCapturingTimer\NonCapturingTimer.cs">
+      <Link>Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
+    <Reference Include="Microsoft.Extensions.FileSystemGlobbing" />
+    <Reference Include="Microsoft.Extensions.Primitives"  />
+  </ItemGroup>
+
+</Project>

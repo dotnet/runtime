@@ -35,6 +35,7 @@
 #cmakedefine01 HAVE_TIOCGWINSZ
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
 #cmakedefine01 HAVE_SCHED_SETAFFINITY
+#cmakedefine01 HAVE_PTHREAD_SETCANCELSTATE
 #cmakedefine01 HAVE_ARC4RANDOM_BUF
 #cmakedefine01 KEVENT_HAS_VOID_UDATA
 #cmakedefine01 HAVE_FDS_BITS
@@ -61,7 +62,11 @@
 #cmakedefine01 HAVE_TCSANOW
 #cmakedefine01 HAVE_IN_PKTINFO
 #cmakedefine01 HAVE_IP_MREQN
-#cmakedefine01 HAVE_TCP_VAR_H
+#cmakedefine01 HAVE_NETINET_TCP_VAR_H
+#cmakedefine01 HAVE_NETINET_UDP_VAR_H
+#cmakedefine01 HAVE_NETINET_IP_VAR_H
+#cmakedefine01 HAVE_NETINET_ICMP_VAR_H
+#cmakedefine01 HAVE_IOS_NET_ROUTE_H
 #cmakedefine01 HAVE_RT_MSGHDR
 #cmakedefine01 HAVE_RT_MSGHDR2
 #cmakedefine01 HAVE_IF_MSGHDR2

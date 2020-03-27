@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Windows.Foundation;
 using Windows.Storage.Streams;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO
 {
@@ -128,7 +129,7 @@ namespace System.IO
 
         private static bool CanApplyReadMemoryStreamOptimization(Stream stream)
         {
-            MemoryStream memStream = stream as MemoryStream;
+            MemoryStream? memStream = stream as MemoryStream;
             if (memStream == null)
                 return false;
 
@@ -154,7 +155,7 @@ namespace System.IO
 
         #region Instance variables
 
-        private Stream _managedStream = null;
+        private Stream? _managedStream = null;
         private bool _leaveUnderlyingStreamOpen = true;
         private readonly StreamReadOperationOptimization _readOptimization;
 
@@ -176,7 +177,7 @@ namespace System.IO
         }
 
 
-        public Stream GetManagedStream()
+        public Stream? GetManagedStream()
         {
             return _managedStream;
         }
@@ -184,7 +185,7 @@ namespace System.IO
 
         private Stream EnsureNotDisposed()
         {
-            Stream str = _managedStream;
+            Stream? str = _managedStream;
 
             if (str == null)
             {
@@ -204,7 +205,7 @@ namespace System.IO
         /// <summary>Implements IDisposable.Dispose (IClosable.Close in WinRT)</summary>
         void IDisposable.Dispose()
         {
-            Stream str = _managedStream;
+            Stream? str = _managedStream;
             if (str == null)
                 return;
 
@@ -412,7 +413,7 @@ namespace System.IO
         // for IRandonAccessStream.
         // Cloning can be added in future, however, it would be quite complex
         // to support it correctly for generic streams.
-
+        [DoesNotReturn]
         private static void ThrowCloningNotSupported(string methodName)
         {
             NotSupportedException nse = new NotSupportedException(SR.Format(SR.NotSupported_CloningNotSupported, methodName));

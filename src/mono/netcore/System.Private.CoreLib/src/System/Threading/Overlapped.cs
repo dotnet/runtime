@@ -11,10 +11,10 @@ namespace System.Threading
 
     internal unsafe class _IOCompletionCallback
     {
-        private IOCompletionCallback _ioCompletionCallback;
-        private ExecutionContext _executionContext;
+        private readonly IOCompletionCallback _ioCompletionCallback;
+        private readonly ExecutionContext _executionContext;
         private uint _errorCode; // Error code
-        private uint _numBytes; // No. of bytes transferred 
+        private uint _numBytes; // No. of bytes transferred
         private NativeOverlapped* _pNativeOverlapped;
 
         internal _IOCompletionCallback(IOCompletionCallback ioCompletionCallback, ExecutionContext executionContext)
@@ -65,13 +65,13 @@ namespace System.Threading
 
     #region class OverlappedData
 
-    internal unsafe sealed class OverlappedData
+    internal sealed unsafe class OverlappedData
     {
         internal IAsyncResult _asyncResult;
         internal object _callback; // IOCompletionCallback or _IOCompletionCallback
         internal Overlapped _overlapped;
         private object _userObject;
-        private NativeOverlapped * _pNativeOverlapped;
+        private NativeOverlapped* _pNativeOverlapped;
         private IntPtr _eventHandle;
         private int _offsetLow;
         private int _offsetHigh;
@@ -141,9 +141,9 @@ namespace System.Threading
                 }
 
                 //CORERT: NativeOverlapped* pNativeOverlapped = (NativeOverlapped*)Interop.MemAlloc((UIntPtr)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
-                NativeOverlapped* pNativeOverlapped = (NativeOverlapped*) Marshal.AllocHGlobal((IntPtr) (sizeof(NativeOverlapped) + sizeof(GCHandle)));
+                NativeOverlapped* pNativeOverlapped = (NativeOverlapped*)Marshal.AllocHGlobal((IntPtr)(sizeof(NativeOverlapped) + sizeof(GCHandle)));
 
-                *(GCHandle*)(pNativeOverlapped + 1) = default(GCHandle);
+                *(GCHandle*)(pNativeOverlapped + 1) = default;
                 _pNativeOverlapped = pNativeOverlapped;
 
                 _pNativeOverlapped->InternalLow = default;
@@ -166,7 +166,7 @@ namespace System.Threading
 
         internal static unsafe void FreeNativeOverlapped(NativeOverlapped* nativeOverlappedPtr)
         {
-            OverlappedData overlappedData = OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr);
+            OverlappedData overlappedData = GetOverlappedFromNative(nativeOverlappedPtr);
             overlappedData.FreeNativeOverlapped();
         }
 
@@ -263,8 +263,8 @@ namespace System.Threading
 
         /*====================================================================
         *  Packs a managed overlapped class into native Overlapped struct.
-        *  Roots the iocb and stores it in the ReservedCOR field of native Overlapped 
-        *  Pins the native Overlapped struct and returns the pinned index. 
+        *  Roots the iocb and stores it in the ReservedCOR field of native Overlapped
+        *  Pins the native Overlapped struct and returns the pinned index.
         ====================================================================*/
         [Obsolete("This method is not safe.  Use Pack (iocb, userData) instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         [CLSCompliant(false)]
@@ -293,7 +293,7 @@ namespace System.Threading
         }
 
         /*====================================================================
-        *  Unpacks an unmanaged native Overlapped struct. 
+        *  Unpacks an unmanaged native Overlapped struct.
         *  Unpins the native Overlapped struct
         ====================================================================*/
         [CLSCompliant(false)]

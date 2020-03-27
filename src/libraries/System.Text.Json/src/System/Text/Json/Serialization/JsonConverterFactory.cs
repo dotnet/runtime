@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization
         {
             get
             {
-                return ClassType.Invalid;
+                return ClassType.None;
             }
         }
 
@@ -46,20 +46,30 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal sealed override Type? ElementType => null;
-
-        internal JsonConverter? GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
+        internal override JsonParameterInfo CreateJsonParameterInfo()
         {
-            Debug.Assert(CanConvert(typeToConvert));
-            return CreateConverter(typeToConvert, options);
+            throw new InvalidOperationException();
         }
 
-        internal sealed override bool TryReadAsObject(
+        internal sealed override Type? ElementType => null;
+
+        internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Assert(CanConvert(typeToConvert));
+
+            JsonConverter? converter = CreateConverter(typeToConvert, options);
+            if (converter == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_SerializerConverterFactoryReturnsNull(GetType());
+            }
+
+            return converter!;
+        }
+
+        internal sealed override object ReadCoreAsObject(
             ref Utf8JsonReader reader,
-            Type typeToConvert,
             JsonSerializerOptions options,
-            ref ReadStack state,
-            out object? value)
+            ref ReadStack state)
         {
             // We should never get here.
             Debug.Assert(false);
@@ -67,7 +77,11 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
+        internal sealed override bool TryWriteAsObject(
+            Utf8JsonWriter writer,
+            object? value,
+            JsonSerializerOptions options,
+            ref WriteStack state)
         {
             // We should never get here.
             Debug.Assert(false);
@@ -76,5 +90,17 @@ namespace System.Text.Json.Serialization
         }
 
         internal sealed override Type TypeToConvert => null!;
+
+        internal sealed override bool WriteCoreAsObject(
+            Utf8JsonWriter writer,
+            object? value,
+            JsonSerializerOptions options,
+            ref WriteStack state)
+        {
+            // We should never get here.
+            Debug.Assert(false);
+
+            throw new InvalidOperationException();
+        }
     }
 }

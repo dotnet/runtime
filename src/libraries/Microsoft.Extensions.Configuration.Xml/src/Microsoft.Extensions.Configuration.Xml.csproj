@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Xml.ReaderWriter" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Configuration" />
+    <Reference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <Reference Include="Microsoft.Extensions.Configuration.FileExtensions" />
+    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
+    <Reference Include="System.Security.Cryptography.Xml" />
+  </ItemGroup>
+
+</Project>

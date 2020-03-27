@@ -191,6 +191,8 @@ Section ends
 ; Inlined version of GetThread
 ; Trashes rax and r11
 ;
+gCurrentThreadInfo  TEXTEQU <?gCurrentThreadInfo@@3UThreadLocalInfo@@A>
+
 INLINE_GETTHREAD macro Reg
 
         EXTERN _tls_index : DWORD

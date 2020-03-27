@@ -180,11 +180,11 @@ namespace System.Drawing.Printing
                 // PRINTER_INFO_4 is 12 or 24 bytes in size depending on the architecture.
                 if (IntPtr.Size == 8)
                 {
-                    sizeofstruct = (IntPtr.Size * 2) + (Marshal.SizeOf(typeof(int)) * 1) + Padding64Bit;
+                    sizeofstruct = (IntPtr.Size * 2) + (sizeof(int) * 1) + Padding64Bit;
                 }
                 else
                 {
-                    sizeofstruct = (IntPtr.Size * 2) + (Marshal.SizeOf(typeof(int)) * 1);
+                    sizeofstruct = (IntPtr.Size * 2) + (sizeof(int) * 1);
                 }
 
                 int bufferSize;
@@ -454,7 +454,7 @@ namespace System.Drawing.Printing
                 HandleRef hdc = new HandleRef(dc, dc.Hdc);
                 try
                 {
-                    isDirectPrintingSupported = SafeNativeMethods.ExtEscape(hdc, SafeNativeMethods.QUERYESCSUPPORT, Marshal.SizeOf(typeof(int)), ref nEscape, 0, out outData) > 0;
+                    isDirectPrintingSupported = SafeNativeMethods.ExtEscape(hdc, SafeNativeMethods.QUERYESCSUPPORT, sizeof(int), ref nEscape, 0, out outData) > 0;
                 }
                 finally
                 {
@@ -480,32 +480,26 @@ namespace System.Drawing.Printing
                 try
                 {
                     image.Save(stream, image.RawFormat);
-                    stream.Position = 0;
-                    using (BufferedStream inStream = new BufferedStream(stream))
+
+                    byte[] pvImage = stream.ToArray();
+
+                    int nEscape = image.RawFormat.Equals(ImageFormat.Jpeg) ? SafeNativeMethods.CHECKJPEGFORMAT : SafeNativeMethods.CHECKPNGFORMAT;
+                    int outData = 0;
+
+                    DeviceContext dc = CreateInformationContext(DefaultPageSettings);
+                    HandleRef hdc = new HandleRef(dc, dc.Hdc);
+                    try
                     {
-                        int pvImageLen = (int)inStream.Length;
-                        byte[] pvImage = new byte[pvImageLen];
-
-                        int nRead = inStream.Read(pvImage, 0, (int)pvImageLen);
-
-                        int nEscape = image.RawFormat.Equals(ImageFormat.Jpeg) ? SafeNativeMethods.CHECKJPEGFORMAT : SafeNativeMethods.CHECKPNGFORMAT;
-                        int outData = 0;
-
-                        DeviceContext dc = CreateInformationContext(DefaultPageSettings);
-                        HandleRef hdc = new HandleRef(dc, dc.Hdc);
-                        try
+                        bool querySupported = SafeNativeMethods.ExtEscape(hdc, SafeNativeMethods.QUERYESCSUPPORT, sizeof(int), ref nEscape, 0, out outData) > 0;
+                        if (querySupported)
                         {
-                            bool querySupported = SafeNativeMethods.ExtEscape(hdc, SafeNativeMethods.QUERYESCSUPPORT, Marshal.SizeOf(typeof(int)), ref nEscape, 0, out outData) > 0;
-                            if (querySupported)
-                            {
-                                isDirectPrintingSupported = (SafeNativeMethods.ExtEscape(hdc, nEscape, pvImageLen, pvImage, Marshal.SizeOf(typeof(int)), out outData) > 0)
-                                                            && (outData == 1);
-                            }
+                            isDirectPrintingSupported = (SafeNativeMethods.ExtEscape(hdc, nEscape, pvImage.Length, pvImage, sizeof(int), out outData) > 0)
+                                                        && (outData == 1);
                         }
-                        finally
-                        {
-                            dc.Dispose();
-                        }
+                    }
+                    finally
+                    {
+                        dc.Dispose();
                     }
                 }
                 finally

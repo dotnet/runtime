@@ -9,7 +9,7 @@
 // Currently, this is all keyed off of whether the include tcp_var.h
 // exists, but we may want to make this more granular for differnet platforms.
 
-#if HAVE_TCP_VAR_H
+#if HAVE_NETINET_TCP_VAR_H
 
 #include "pal_utilities.h"
 #include "pal_networkstatistics.h"
@@ -20,7 +20,11 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/socket.h>
+#if HAVE_IOS_NET_ROUTE_H
+#include "ios/net/route.h"
+#else
 #include <net/route.h>
+#endif
 #include <net/if.h>
 
 #include <sys/types.h>
@@ -36,14 +40,22 @@
 #include <netinet/in_pcb.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
+#if HAVE_NETINET_IP_VAR_H
 #include <netinet/ip_var.h>
+#endif
 #include <netinet/tcp.h>
+#if HAVE_TCP_FSM_H
 #include <netinet/tcp_fsm.h>
+#endif
 #include <netinet/tcp_var.h>
 #include <netinet/udp.h>
+#if HAVE_NETINET_UDP_VAR_H
 #include <netinet/udp_var.h>
+#endif
 #include <netinet/icmp6.h>
+#if HAVE_NETINET_ICMP_VAR_H
 #include <netinet/icmp_var.h>
+#endif
 
 int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
 {
@@ -80,6 +92,7 @@ int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
 
 int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
 {
+#if HAVE_NETINET_IP_VAR_H
     size_t oldlenp;
 
     assert(retStats != NULL);
@@ -120,10 +133,15 @@ int32_t SystemNative_GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
     }
 
     return 0;
+#else
+    memset(retStats, 0, sizeof(IPv4GlobalStatistics)); // out parameter must be initialized.
+    return -1;
+#endif
 }
 
 int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
 {
+#if HAVE_NETINET_UDP_VAR_H
     size_t oldlenp;
 
     assert(retStats != NULL);
@@ -155,10 +173,15 @@ int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
 #endif
 
     return 0;
+#else
+    memset(retStats, 0, sizeof(UdpGlobalStatistics)); // out parameter must be initialized.
+    return -1;
+#endif
 }
 
 int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
 {
+#if HAVE_NETINET_ICMP_VAR_H
     size_t oldlenp;
 
     assert(retStats != NULL);
@@ -198,6 +221,10 @@ int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
     retStats->TimestampRequestsSent = outHist[ICMP_TSTAMP];
 
     return 0;
+#else
+    memset(retStats, 0, sizeof(Icmpv4GlobalStatistics)); // out parameter must be initialized.
+    return -1;
+#endif
 }
 
 int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
@@ -627,4 +654,4 @@ int32_t SystemNative_GetNumRoutes()
 #endif // HAVE_RT_MSGHDR2
     return count;
 }
-#endif // HAVE_TCP_VAR_H
+#endif // HAVE_NETINET_TCP_VAR_H

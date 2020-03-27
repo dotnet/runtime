@@ -13,7 +13,7 @@ namespace System.Net.Http
     internal abstract class HttpConnectionBase : IHttpTrace
     {
         public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
-        public abstract void Trace(string message, [CallerMemberName] string memberName = null);
+        public abstract void Trace(string message, [CallerMemberName] string? memberName = null);
 
         protected void TraceConnection(Stream stream)
         {

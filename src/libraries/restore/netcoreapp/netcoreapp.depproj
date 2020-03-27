@@ -5,7 +5,7 @@
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
     <BinPlaceRef>true</BinPlaceRef>
-    <TargetFrameworks>netcoreapp2.0;netcoreapp2.1;netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.0;netcoreapp2.1;netcoreapp3.0;netcoreapp3.1</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp2.'))">

@@ -218,11 +218,12 @@ namespace Internal.JitInterface
             }
 
             PublishCode();
+            PublishROData();
         }
 
         private void PublishCode()
         {
-            var relocs = _relocs.ToArray();
+            var relocs = _codeRelocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
             int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
@@ -265,6 +266,23 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
 #endif
             PublishProfileData();
+        }
+
+        private void PublishROData()
+        {
+            if (_roDataBlob == null)
+            {
+                return;
+            }
+
+            var relocs = _roDataRelocs.ToArray();
+            Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
+            var objectData = new ObjectNode.ObjectData(_roData,
+                                                       relocs,
+                                                       _roDataAlignment,
+                                                       new ISymbolDefinitionNode[] { _roDataBlob });
+
+            _roDataBlob.InitializeData(objectData);
         }
 
         partial void PublishProfileData();
@@ -321,7 +339,8 @@ namespace Internal.JitInterface
             _roData = null;
             _roDataBlob = null;
 
-            _relocs = new ArrayBuilder<Relocation>();
+            _codeRelocs = new ArrayBuilder<Relocation>();
+            _roDataRelocs = new ArrayBuilder<Relocation>();
 
             _numFrameInfos = 0;
             _usedFrameInfos = 0;
@@ -2201,7 +2220,7 @@ namespace Internal.JitInterface
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
 
-            pEEInfoOut.sizeOfReversePInvokeFrame = (uint)(2 * pointerSize);
+            pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
 
             pEEInfoOut.osPageSize = new UIntPtr(0x1000);
 
@@ -2495,7 +2514,8 @@ namespace Internal.JitInterface
 
         private byte[] _roData;
 
-        private BlobNode _roDataBlob;
+        private SettableReadOnlyDataBlob _roDataBlob;
+        private int _roDataAlignment;
 
         private int _numFrameInfos;
         private int _usedFrameInfos;
@@ -2523,26 +2543,25 @@ namespace Internal.JitInterface
 
             if (roDataSize != 0)
             {
-                int alignment = 8;
+                _roDataAlignment = 8;
 
                 if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
                 {
-                    alignment = 32;
+                    _roDataAlignment = 32;
                 }
                 else if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
                 {
-                    alignment = 16;
+                    _roDataAlignment = 16;
                 }
                 else if (roDataSize < 8)
                 {
-                    alignment = PointerSize;
+                    _roDataAlignment = PointerSize;
                 }
 
                 _roData = new byte[roDataSize];
 
-                _roDataBlob = _compilation.NodeFactory.ReadOnlyDataBlob(
-                    "__readonlydata_" + _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled),
-                    _roData, alignment);
+                _roDataBlob = _compilation.NodeFactory.SettableReadOnlyDataBlob(
+                    "__readonlydata_" + _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled));
 
                 roDataBlock = (void*)GetPin(_roData);
             }
@@ -2611,7 +2630,9 @@ namespace Internal.JitInterface
         {
         }
 
-        private ArrayBuilder<Relocation> _relocs;
+        private ArrayBuilder<Relocation> _codeRelocs;
+        private ArrayBuilder<Relocation> _roDataRelocs;
+
 
         /// <summary>
         /// Various type of block.
@@ -2679,6 +2700,21 @@ namespace Internal.JitInterface
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
+        private ref ArrayBuilder<Relocation> findRelocBlock(BlockType blockType, out int length)
+        {
+            switch (blockType)
+            {
+                case BlockType.Code:
+                    length = _code.Length;
+                    return ref _codeRelocs;
+                case BlockType.ROData:
+                    length = _roData.Length;
+                    return ref _roDataRelocs;
+                default:
+                    throw new NotImplementedException("Arbitrary relocs"); 
+            }
+        }
+
         // Translates relocation type constants used by JIT (defined in winnt.h) to RelocType enumeration
         private static RelocType GetRelocType(TargetArchitecture targetArchitecture, ushort fRelocType)
         {
@@ -2709,15 +2745,8 @@ namespace Internal.JitInterface
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
 
-            TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
-
-            if (locationBlock != BlockType.Code)
-            {
-                // TODO: https://github.com/dotnet/corert/issues/3877
-                if (targetArchitecture == TargetArchitecture.ARM)
-                    return;
-                throw new NotImplementedException("Arbitrary relocs"); 
-            }
+            int length;
+            ref ArrayBuilder<Relocation> sourceBlock = ref findRelocBlock(locationBlock, out length);
 
             int relocDelta;
             BlockType targetBlock = findKnownBlock(target, out relocDelta);
@@ -2752,13 +2781,14 @@ namespace Internal.JitInterface
 
             relocDelta += addlDelta;
 
+            TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
             RelocType relocType = GetRelocType(targetArchitecture, fRelocType);
             // relocDelta is stored as the value
             Relocation.WriteValue(relocType, location, relocDelta);
 
-            if (_relocs.Count == 0)
-                _relocs.EnsureCapacity(_code.Length / 32 + 1);
-            _relocs.Add(new Relocation(relocType, relocOffset, relocTarget));
+            if (sourceBlock.Count == 0)
+                sourceBlock.EnsureCapacity(length / 32 + 1);
+            sourceBlock.Add(new Relocation(relocType, relocOffset, relocTarget));
         }
 
         private ushort getRelocTypeHint(void* target)
@@ -2819,24 +2849,83 @@ namespace Internal.JitInterface
             flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
 
-            if ((_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86
-                || _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64)
-#if READYTORUN
-                && isMethodDefinedInCoreLib()
-#endif
-               )
+            TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
+
+            if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
+                flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
+
+            if (targetArchitecture == TargetArchitecture.X86)
             {
+                flags.Set(InstructionSet.X86_SSE);
+                flags.Set(InstructionSet.X86_SSE2);
+#if !READYTORUN
                 // This list needs to match the list of intrinsics we can generate detection code for
                 // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_AES);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_PCLMULQDQ);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE3);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSSE3);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_LZCNT);
+#else
+                // For ReadyToRun, this list needs to match up with the behavior of FilterNamedIntrinsicMethodAttribs
+                // In particular, that this list of supported hardware will not generate non-SSE2 safe instruction
+                // sequences when paired with the behavior in FilterNamedIntrinsicMethodAttribs
+                if (isMethodDefinedInCoreLib())
+#endif
+                {
+                    flags.Set(InstructionSet.X86_AES);
+                    flags.Set(InstructionSet.X86_PCLMULQDQ);
+                    flags.Set(InstructionSet.X86_SSE3);
+                    flags.Set(InstructionSet.X86_SSSE3);
+                    flags.Set(InstructionSet.X86_LZCNT);
+#if READYTORUN
+                    flags.Set(InstructionSet.X86_SSE41);
+                    flags.Set(InstructionSet.X86_SSE42);
+                    flags.Set(InstructionSet.X86_POPCNT);
+#endif
+                }
+            }
+            else if (targetArchitecture == TargetArchitecture.X64)
+            {
+                flags.Set(InstructionSet.X64_SSE);
+                flags.Set(InstructionSet.X64_SSE2);
+#if !READYTORUN
+                // This list needs to match the list of intrinsics we can generate detection code for
+                // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
+#else
+                // For ReadyToRun, this list needs to match up with the behavior of FilterNamedIntrinsicMethodAttribs
+                // In particular, that this list of supported hardware will not generate non-SSE2 safe instruction
+                // sequences when paired with the behavior in FilterNamedIntrinsicMethodAttribs
+                if (isMethodDefinedInCoreLib())
+#endif
+                {
+                    flags.Set(InstructionSet.X64_AES);
+                    flags.Set(InstructionSet.X64_PCLMULQDQ);
+                    flags.Set(InstructionSet.X64_SSE3);
+                    flags.Set(InstructionSet.X64_SSSE3);
+                    flags.Set(InstructionSet.X64_LZCNT);
+#if READYTORUN
+                    flags.Set(InstructionSet.X64_SSE41);
+                    flags.Set(InstructionSet.X64_SSE42);
+                    flags.Set(InstructionSet.X64_POPCNT);
+#endif
+                }
+            }
+            else if (targetArchitecture == TargetArchitecture.ARM64)
+            {
+                flags.Set(InstructionSet.ARM64_ArmBase);
+                flags.Set(InstructionSet.ARM64_AdvSimd);
             }
 
+            flags.Set64BitInstructionSetVariants(targetArchitecture);
+
             if (this.MethodBeingCompiled.IsNativeCallable)
+            {
+#if READYTORUN
+                if (targetArchitecture == TargetArchitecture.X86
+                    && _compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
+                {
+                    throw new RequiresRuntimeJitException("ReadyToRun: Methods with NativeCallableAttribute not implemented");
+                }
+#endif
+
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
+            }
 
             if (this.MethodBeingCompiled.IsPInvoke)
             {

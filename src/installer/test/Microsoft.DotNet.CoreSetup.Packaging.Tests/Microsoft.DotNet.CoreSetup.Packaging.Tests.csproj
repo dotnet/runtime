@@ -6,10 +6,6 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
-    <LangVersion>7.1</LangVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="NuGet.Packaging" Version="$(RefOnlyNugetPackagingVersion)" />
   </ItemGroup>

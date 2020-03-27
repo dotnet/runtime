@@ -61,6 +61,31 @@ stages:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
 
   #
+  # Build Mono release
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - iOS_x64
+      - iOS_arm
+      - iOS_arm64
+      - OSX_x64
+      - Linux_x64
+      - Linux_arm
+      - Linux_arm64
+      - Linux_musl_x64
+      # - Linux_musl_arm64
+      - Windows_NT_x64
+      # - Windows_NT_x86
+      # - Windows_NT_arm
+      # - Windows_NT_arm64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+
+  #
   # Build libraries using live CoreLib from CoreCLR
   #
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -78,6 +103,22 @@ stages:
       - Windows_NT_x64
       - Windows_NT_arm
       - Windows_NT_arm64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        liveRuntimeBuildConfig: release
+
+  #
+  # Build libraries using live CoreLib from Mono
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Release
+      runtimeFlavor: mono
+      platforms:
+      - iOS_x64
+      - iOS_arm
+      - iOS_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release

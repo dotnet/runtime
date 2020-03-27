@@ -620,6 +620,7 @@ namespace ILCompiler.PEWriter
                 machine: target.MachineFromTarget(),
                 sectionAlignment: sectionAlignment,
                 fileAlignment: fileAlignment,
+                imageBase: imageBase,
                 majorLinkerVersion: PEHeaderConstants.MajorLinkerVersion,
                 minorLinkerVersion: PEHeaderConstants.MinorLinkerVersion,
                 majorOperatingSystemVersion: PEHeaderConstants.MajorOperatingSystemVersion,

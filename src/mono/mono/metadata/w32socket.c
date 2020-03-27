@@ -1127,7 +1127,7 @@ create_sockaddr_from_handle (MonoObjectHandle saddr_obj, socklen_t *sa_size, gin
 	len = MONO_HANDLE_GET_FIELD_VAL (saddr_obj, int, domain->sockaddr_data_length_field);
 	g_assert (len >= 2);
 
-	uint32_t gchandle;
+	MonoGCHandle gchandle;
 	guint8 *buf = MONO_ARRAY_HANDLE_PIN (data, guint8, 0, &gchandle);
 	family = convert_family ((MonoAddressFamily)(buf[0] + (buf[1] << 8)));
 	if (family == AF_INET) {
@@ -1901,7 +1901,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_icall (gsize sock, gint3
 
 	valsize = mono_array_handle_length (byte_val);
 
-	uint32_t gchandle;
+	MonoGCHandle gchandle;
 	guchar *buf = MONO_ARRAY_HANDLE_PIN (byte_val, guchar, 0, &gchandle);
 
 	ret = mono_w32socket_getsockopt (sock, system_level, system_name, buf, &valsize);
@@ -2137,7 +2137,7 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_icall (gsize sock, gint32 le
 		}
 	} else if (!MONO_HANDLE_IS_NULL (byte_val)) {
 		int valsize = mono_array_handle_length (byte_val);
-		uint32_t gchandle;
+		MonoGCHandle gchandle;
 		guchar *buf = MONO_ARRAY_HANDLE_PIN (byte_val, guchar, 0, &gchandle);
 		
 		switch(name) {
@@ -2254,8 +2254,8 @@ ves_icall_System_Net_Sockets_Socket_IOControl_icall (gsize sock, gint32 code, Mo
 #endif
 	gchar *i_buffer, *o_buffer;
 	gint i_len, o_len;
-	uint32_t i_gchandle = 0;
-	uint32_t o_gchandle = 0;
+	MonoGCHandle i_gchandle = 0;
+	MonoGCHandle o_gchandle = 0;
 	gint ret;
 
 	error_init (error);
@@ -2567,8 +2567,8 @@ ves_icall_System_Net_Sockets_Socket_SendFile_icall (gsize sock, MonoStringHandle
 	HANDLE file;
 	gboolean ret;
 	TRANSMIT_FILE_BUFFERS buffers;
-	uint32_t pre_buffer_gchandle = 0;
-	uint32_t post_buffer_gchandle = 0;
+	MonoGCHandle pre_buffer_gchandle = 0;
+	MonoGCHandle post_buffer_gchandle = 0;
 
 	error_init (error);
 	*werror = 0;
@@ -2578,7 +2578,7 @@ ves_icall_System_Net_Sockets_Socket_SendFile_icall (gsize sock, MonoStringHandle
 
 	/* FIXME: replace file by a proper fd that we can call open and close on, as they are interruptible */
 
-	uint32_t filename_gchandle;
+	MonoGCHandle filename_gchandle;
 	gunichar2 *filename_chars = mono_string_handle_pin_chars (filename, &filename_gchandle);
 	file = mono_w32file_create (filename_chars, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, 0);
 	mono_gchandle_free_internal (filename_gchandle);

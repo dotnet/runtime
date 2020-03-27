@@ -462,12 +462,6 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 }
 
 guint32
-mono_arch_cpu_enumerate_simd_versions (void)
-{
-	return 0;
-}
-
-guint32
 mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
 	/* No arch specific passes yet */

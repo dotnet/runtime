@@ -5,7 +5,6 @@
 using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal static partial class Interop
 {

@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected static JsonConverter<TElement> GetElementConverter(ref ReadStack state)
         {
-            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.JsonClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo.ConverterBase;
             Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
 
             return converter;
@@ -143,7 +143,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
                     }
 
-                    state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PolicyProperty!;
+                    state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
                 }
 
@@ -268,7 +268,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.MetadataPropertyName = metadata;
                     }
 
-                    state.Current.DeclaredJsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PolicyProperty!;
+                    state.Current.DeclaredJsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
                 }
 
                 success = OnWriteResume(writer, value, options, ref state);

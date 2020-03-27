@@ -335,8 +335,9 @@ FCIMPL2(UINT32, MarshalNative::SizeOfClass, ReflectClassBaseObject* refClassUNSA
     // refClass is validated to be non-NULL RuntimeType by callers
     TypeHandle th = refClass->GetType();
 
-    if (throwIfNotMarshalable)
+    if (throwIfNotMarshalable && !th.IsBlittable())
     {
+        GCX_PREEMP();
         // Determine if the type is marshalable
         if (!IsStructMarshalable(th))
         {
@@ -372,32 +373,48 @@ FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
     FieldDesc *pField = refField->GetField();
     TypeHandle th = TypeHandle(pField->GetApproxEnclosingMethodTable());
 
-    // Determine if the type is marshalable.
-    if (!IsStructMarshalable(th))
+    if (th.IsBlittable())
     {
-        // It isn't marshalable so throw an ArgumentException.
-        HELPER_METHOD_FRAME_BEGIN_RET_1(refField);
-
-        StackSString strTypeName;
-        TypeString::AppendType(strTypeName, th);
-        COMPlusThrow(kArgumentException, IDS_CANNOT_MARSHAL, strTypeName.GetUnicode(), NULL, NULL);
-
-        HELPER_METHOD_FRAME_END();
+        return pField->GetOffset();
     }
 
-    NativeFieldDescriptor *pNFD = th.GetMethodTable()->GetLayoutInfo()->GetNativeFieldDescriptors();
-    UINT  numReferenceFields = th.GetMethodTable()->GetLayoutInfo()->GetNumCTMFields();
+    UINT32 externalOffset;
 
-    while (numReferenceFields--)
+    HELPER_METHOD_FRAME_BEGIN_RET_1(refField);
     {
-        if (pNFD->GetFieldDesc() == pField)
+        GCX_PREEMP();
+        // Determine if the type is marshalable.
+        if (!IsStructMarshalable(th))
         {
-            return pNFD->GetExternalOffset();
+            // It isn't marshalable so throw an ArgumentException.
+            StackSString strTypeName;
+            TypeString::AppendType(strTypeName, th);
+            COMPlusThrow(kArgumentException, IDS_CANNOT_MARSHAL, strTypeName.GetUnicode(), NULL, NULL);
         }
-        pNFD++;
-    }
+        EEClassNativeLayoutInfo const* pNativeLayoutInfo = th.GetMethodTable()->GetNativeLayoutInfo();
 
-    UNREACHABLE_MSG("We should never hit this point since we already verified that the requested field was present from managed code");
+        NativeFieldDescriptor const*pNFD = pNativeLayoutInfo->GetNativeFieldDescriptors();
+        UINT  numReferenceFields = pNativeLayoutInfo->GetNumFields();
+
+#ifdef _DEBUG
+        bool foundField = false;
+#endif
+        while (numReferenceFields--)
+        {
+            if (pNFD->GetFieldDesc() == pField)
+            {
+                externalOffset = pNFD->GetExternalOffset();
+                INDEBUG(foundField = true);
+                break;
+            }
+            pNFD++;
+        }
+
+        CONSISTENCY_CHECK_MSG(foundField, "We should never hit this point since we already verified that the requested field was present from managed code");
+    }
+    HELPER_METHOD_FRAME_END();
+
+    return externalOffset;
 }
 FCIMPLEND
 
@@ -785,11 +802,7 @@ FCIMPL2(IUnknown*, MarshalNative::GetIUnknownForObjectNative, Object* orefUNSAFE
     OBJECTREF oref = (OBJECTREF) orefUNSAFE;
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
-    HRESULT hr = S_OK;
-
-    if(!oref)
-        COMPlusThrowArgumentNull(W("o"));
-
+    _ASSERTE(oref != NULL);
     // Ensure COM is started up.
     EnsureComStarted();
 
@@ -851,11 +864,7 @@ FCIMPL2(IDispatch*, MarshalNative::GetIDispatchForObjectNative, Object* orefUNSA
     OBJECTREF oref = (OBJECTREF) orefUNSAFE;
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
-    HRESULT hr = S_OK;
-
-    if(!oref)
-        COMPlusThrowArgumentNull(W("o"));
-
+    _ASSERTE(oref != NULL);
     // Ensure COM is started up.
     EnsureComStarted();
 
@@ -882,13 +891,8 @@ FCIMPL4(IUnknown*, MarshalNative::GetComInterfaceForObjectNative, Object* orefUN
     REFLECTCLASSBASEREF refClass = (REFLECTCLASSBASEREF) refClassUNSAFE;
     HELPER_METHOD_FRAME_BEGIN_RET_2(oref, refClass);
 
-    HRESULT hr = S_OK;
-
-    if(!oref)
-        COMPlusThrowArgumentNull(W("o"));
-    if(!refClass)
-        COMPlusThrowArgumentNull(W("t"));
-
+    _ASSERTE(oref != NULL);
+    _ASSERTE(refClass != NULL);
     // Ensure COM is started up.
     EnsureComStarted();
 
@@ -929,22 +933,17 @@ FCIMPLEND
 //====================================================================
 // return an Object for IUnknown
 //====================================================================
-FCIMPL1(Object*, MarshalNative::GetObjectForIUnknown, IUnknown* pUnk)
+FCIMPL1(Object*, MarshalNative::GetObjectForIUnknownNative, IUnknown* pUnk)
 {
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
+        PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
 
     OBJECTREF oref = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-
-    HRESULT hr = S_OK;
-
-    if(!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
 
     // Ensure COM is started up.
     EnsureComStarted();
@@ -957,12 +956,12 @@ FCIMPL1(Object*, MarshalNative::GetObjectForIUnknown, IUnknown* pUnk)
 FCIMPLEND
 
 
-FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknown, IUnknown* pUnk)
+FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownNative, IUnknown* pUnk)
 {
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
+        PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;
 
@@ -970,9 +969,6 @@ FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknown, IUnknown* pUnk)
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
 
     HRESULT hr = S_OK;
-
-    if(!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
 
     // Ensure COM is started up.
     EnsureComStarted();

@@ -1,16 +1,36 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ProjectGuid>{7AF57E6B-2CED-45C9-8BCA-5BBA60D018E0}</ProjectGuid>
     <!-- disable warnings about obsolete APIs -->
     <NoWarn>$(NoWarn);0809;0618</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.0;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false'">
     <Compile Include="System.Utf8String.Experimental.cs" />
+    <Compile Include="System.Utf8String.Experimental.Forwards.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Include="System.Utf8String.Experimental.Range.cs" />
+    <Compile Include="System.Utf8String.Experimental.Rune.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.1'">
+    <Compile Include="System.Utf8String.Experimental.Rune.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="System.Utf8String.Experimental.netcoreapp5.0.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="System.Memory" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <Reference Include="netstandard" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="..\..\System.Net.Http\ref\System.Net.Http.csproj" />
     <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

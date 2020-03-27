@@ -67,6 +67,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizer.cpp
+  patchpoint.cpp
   phase.cpp
   rangecheck.cpp
   rationalize.cpp
@@ -316,7 +317,7 @@ else()
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
 
     set(JIT_EXPORTS_LINKER_OPTION -Wl,--version-script=${JIT_EXPORTS_FILE})
-  elseif(CLR_CMAKE_TARGET_DARWIN)
+  elseif(CLR_CMAKE_TARGET_OSX)
     set(JIT_EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${JIT_EXPORTS_FILE})
   endif()
 
@@ -335,7 +336,7 @@ set(JIT_ARCH_LINK_LIBRARIES
 
 if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
-       mscorrc_debug
+       mscorrc
        coreclrpal
        palrt
     )

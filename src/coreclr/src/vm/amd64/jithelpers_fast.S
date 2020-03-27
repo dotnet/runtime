@@ -395,148 +395,21 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
 LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 
 #ifdef FEATURE_WRITEBARRIER_COPY
-        // When JIT_WriteBarrier is copied into an allocated page, the JIT_Stelem_Ref and its
+        // When JIT_WriteBarrier is copied into an allocated page,
         // helpers use this global variable to jump to it. This variable is set in InitThreadManager.
         .global _JIT_WriteBarrier_Loc
         .zerofill __DATA,__common,_JIT_WriteBarrier_Loc,8,3
+
+// ------------------------------------------------------------------
+// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
+.balign 16
+LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
+    // JIT_WriteBarrier(Object** dst, Object* src)
+    jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
+LEAF_END JIT_WriteBarrier_Callable, _TEXT
+
 #endif // FEATURE_WRITEBARRIER_COPY
 
-// TODO: put definition for this in asmconstants.h
-#define CanCast 1
-
-//__declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)
-.balign 16
-LEAF_ENTRY JIT_Stelem_Ref, _TEXT
-        // check for null PtrArray*
-        test    rdi, rdi
-        je      LOCAL_LABEL(ThrowNullReferenceException)
-
-        // we only want the lower 32-bits of rsi, it might be dirty
-        or      esi, esi
-
-        // check that index is in bounds
-        cmp     esi, dword ptr [rdi + OFFSETOF__PtrArray__m_NumComponents] // 8h -> array size offset
-        jae     LOCAL_LABEL(ThrowIndexOutOfRangeException)
-
-        // r10 = Array MT
-        mov     r10, [rdi]
-
-        // if we're assigning a null object* then we don't need a write barrier
-        test    rdx, rdx
-        jz      LOCAL_LABEL(AssigningNull)
-
-        mov     rcx, [r10 + OFFSETOF__MethodTable__m_ElementType]   // 10h -> typehandle offset
-
-        // check for exact match
-        cmp     rcx, [rdx]
-        jne     LOCAL_LABEL(NotExactMatch)
-
-    LOCAL_LABEL(DoWrite):
-        lea     rdi, [rdi + 8*rsi]
-        add     rdi, OFFSETOF__PtrArray__m_Array
-        mov     rsi, rdx
-
-        // JIT_WriteBarrier(Object** dst, Object* src)
-#ifdef FEATURE_WRITEBARRIER_COPY
-        jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
-#else
-        jmp     C_FUNC(JIT_WriteBarrier)
-#endif
-
-    LOCAL_LABEL(AssigningNull):
-        // write barrier is not needed for assignment of NULL references
-        mov     [rdi + 8*rsi + OFFSETOF__PtrArray__m_Array], rdx
-        ret
-
-    LOCAL_LABEL(NotExactMatch):
-        PREPARE_EXTERNAL_VAR g_pObjectClass, r11
-        cmp     rcx, [r11]
-        je      LOCAL_LABEL(DoWrite)
-
-        jmp     C_FUNC(JIT_Stelem_Ref__ObjIsInstanceOfCached_Helper)
-
-    LOCAL_LABEL(ThrowNullReferenceException):
-        mov     rdi, CORINFO_NullReferenceException_ASM
-        jmp     C_FUNC(JIT_InternalThrow)
-
-    LOCAL_LABEL(ThrowIndexOutOfRangeException):
-        mov     rdi, CORINFO_IndexOutOfRangeException_ASM
-        jmp     C_FUNC(JIT_InternalThrow)
-LEAF_END JIT_Stelem_Ref, _TEXT
-
-LEAF_ENTRY JIT_Stelem_Ref__ObjIsInstanceOfCached_Helper, _TEXT
-        push_nonvol_reg rbp
-        mov     rbp, rsp
-        set_cfa_register rbp, 16
-
-        sub     rsp, 0x20
-        mov     [rbp - 0x08], rdi
-        mov     [rbp - 0x10], rsi
-        mov     [rbp - 0x18], rdx
-
-        // need to get TypeHandle before setting rcx to be the Obj* because that trashes the PtrArray*
-        mov     rsi, rcx
-        mov     rdi, rdx
-
-        // TypeHandle::CastResult ObjIsInstanceOfCached(Object *pElement, TypeHandle toTypeHnd)
-        call    C_FUNC(ObjIsInstanceOfCached)
-
-        mov     rdi, [rbp - 0x08]
-        mov     rsi, [rbp - 0x10]
-        mov     rdx, [rbp - 0x18]
-
-        RESET_FRAME_WITH_RBP
-
-        cmp     eax, CanCast
-        jne     LOCAL_LABEL(NeedCheck)
-
-        lea     rdi, [rdi + 8*rsi]
-        add     rdi, OFFSETOF__PtrArray__m_Array
-        mov     rsi, rdx
-
-        // JIT_WriteBarrier(Object** dst, Object* src)
-#ifdef FEATURE_WRITEBARRIER_COPY
-        jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
-#else
-        jmp     C_FUNC(JIT_WriteBarrier)
-#endif
-
-    LOCAL_LABEL(NeedCheck):
-        jmp     C_FUNC(JIT_Stelem_Ref__ArrayStoreCheck_Helper)
-LEAF_END JIT_Stelem_Ref__ObjIsInstanceOfCached_Helper, _TEXT
-
-// Need to save reg to provide a stack address for the Object*
-LEAF_ENTRY JIT_Stelem_Ref__ArrayStoreCheck_Helper, _TEXT
-        push_nonvol_reg rbp
-        mov     rbp, rsp
-        set_cfa_register rbp, 16
-
-        sub     rsp, 0x20
-        mov     [rbp - 0x10], rdi
-        mov     [rbp - 0x18], rsi
-        mov     [rbp - 0x20], rdx
-
-        mov     rdi, rsp
-        lea     rsi, [rbp - 0x10]
-        // HCIMPL2(FC_INNER_RET, ArrayStoreCheck, Object** pElement, PtrArray** pArray)
-        call    C_FUNC(ArrayStoreCheck)
-        mov     rdi, [rbp - 0x10]
-        mov     rsi, [rbp - 0x18]
-        mov     rdx, [rbp - 0x20]
-
-        lea     rdi, [rdi + 8*rsi]
-        add     rdi, OFFSETOF__PtrArray__m_Array
-        mov     rsi, rdx
-
-        RESET_FRAME_WITH_RBP
-
-        // JIT_WriteBarrier(Object** dst, Object* src)
-#ifdef FEATURE_WRITEBARRIER_COPY
-        jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
-#else
-        jmp     C_FUNC(JIT_WriteBarrier)
-#endif
-LEAF_END JIT_Stelem_Ref__ArrayStoreCheck_Helper, _TEXT
 
 // The following helper will access ("probe") a word on each page of the stack
 // starting with the page right beneath rsp down to the one pointed to by r11.

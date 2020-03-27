@@ -1392,11 +1392,11 @@ mono_class_get_marshal_info (MonoClass *klass);
 void
 mono_class_set_marshal_info (MonoClass *klass, MonoMarshalType *marshal_info);
 
-guint32
+MonoGCHandle
 mono_class_get_ref_info_handle (MonoClass *klass);
 
-guint32
-mono_class_set_ref_info_handle (MonoClass *klass, guint32 value);
+MonoGCHandle
+mono_class_set_ref_info_handle (MonoClass *klass, gpointer value);
 
 MonoErrorBoxed*
 mono_class_get_exception_data (MonoClass *klass);

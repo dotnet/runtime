@@ -28,9 +28,9 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     - Windows_NT_x86
-    # Currently no Windows arm32, Windows arm64 hardware in Helix. https://github.com/dotnet/runtime/issues/1097
+    # Currently no Windows arm32 testing. https://github.com/dotnet/runtime/issues/1097
     #- Windows_NT_arm
-    #- Windows_NT_arm64
+    - Windows_NT_arm64
     jobParameters:
       testGroup: jitstressregs
 
@@ -46,9 +46,9 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     - Windows_NT_x86
-    # Currently no Windows arm32, Windows arm64 hardware in Helix. https://github.com/dotnet/runtime/issues/1097
+    # Currently no Windows arm32 testing. https://github.com/dotnet/runtime/issues/1097
     #- Windows_NT_arm
-    #- Windows_NT_arm64
+    - Windows_NT_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

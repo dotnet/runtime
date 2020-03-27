@@ -26,7 +26,11 @@ jobs:
     name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     helixType: 'format'
-    pool: ${{ parameters.pool }}
+    ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      pool: 
+        vmImage: 'windows-2019'
+    ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      pool: ${{ parameters.pool }}
     variables: ${{ parameters.variables }}
     condition: ${{ parameters.condition }}
     steps:
@@ -38,6 +42,12 @@ jobs:
         version: '3.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x' 
+        addToPath: true 
+        architecture: 'x64'
+      condition: ${{ eq(parameters.osGroup, 'Windows_NT') }}
     - task: PythonScript@0
       displayName: Run tests/scripts/format.py
       inputs:

@@ -143,7 +143,7 @@ mono_runtime_object_init_handle (MonoObjectHandle this_obj, MonoError *error)
 	g_assertf (method, "Could not lookup zero argument constructor for class %s", mono_type_get_full_name (klass));
 
 	if (m_class_is_valuetype (method->klass)) {
-		guint gchandle = 0;
+		MonoGCHandle gchandle = NULL;
 		gpointer raw = mono_object_handle_pin_unbox (this_obj, &gchandle);
 		mono_runtime_invoke_checked (method, raw, NULL, error);
 		mono_gchandle_free_internal (gchandle);
@@ -4144,7 +4144,7 @@ mono_nullable_init_from_handle (guint8 *buf, MonoObjectHandle value, MonoClass *
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	if (!MONO_HANDLE_IS_NULL (value)) {
-		uint32_t value_gchandle = 0;
+		MonoGCHandle value_gchandle = NULL;
 		gpointer src = mono_object_handle_pin_unbox (value, &value_gchandle);
 		mono_nullable_init_unboxed (buf, src, klass);
 
@@ -6220,7 +6220,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, Mo
 	error_init (error);
 
 	/* Pin source array here - if bounds is non-NULL, it's a pointer into the object data */
-	uint32_t src_handle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, array_handle), TRUE);
+	MonoGCHandle src_handle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, array_handle), TRUE);
 	
 	MonoArrayBounds *array_bounds = MONO_HANDLE_GETVAL (array_handle, bounds);
 	MonoArrayHandle o;
@@ -6243,7 +6243,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array_handle, Mo
 		goto_if_nok (error, leave);
 	}
 
-	uint32_t dst_handle;
+	MonoGCHandle dst_handle;
 	dst_handle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, o), TRUE);
 	array_full_copy_unchecked_size (MONO_HANDLE_RAW (array_handle), MONO_HANDLE_RAW (o), klass, size);
 	mono_gchandle_free_internal (dst_handle);
@@ -6607,13 +6607,12 @@ mono_string_empty_handle (MonoDomain *domain)
 MonoString *
 mono_string_new_utf16 (MonoDomain *domain, const mono_unichar2 *text, gint32 len)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	ERROR_DECL (error);
 	MonoString *res = NULL;
+	MONO_ENTER_GC_UNSAFE;
+	ERROR_DECL (error);
 	res = mono_string_new_utf16_checked (domain, text, len, error);
 	mono_error_cleanup (error);
-
+	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
 
@@ -6710,10 +6709,12 @@ mono_string_new_utf32 (MonoDomain *domain, const mono_unichar4 *text, gint32 len
 MonoString *
 mono_string_new_size (MonoDomain *domain, gint32 len)
 {
+	MonoString *str;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoString *str = mono_string_new_size_checked (domain, len, error);
+	str = mono_string_new_size_checked (domain, len, error);
 	mono_error_cleanup (error);
-
+	MONO_EXIT_GC_UNSAFE;
 	return str;
 }
 
@@ -7546,9 +7547,12 @@ mono_string_intern (MonoString *str_raw)
 MonoString*
 mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 {
+	MonoString *result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoString *result = mono_ldstr_checked (domain, image, idx, error);
+	result = mono_ldstr_checked (domain, image, idx, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 

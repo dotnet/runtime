@@ -20,20 +20,20 @@ namespace System.Text.Json.Serialization
 
             Type valueTypeToConvert = typeToConvert.GetGenericArguments()[0];
 
-            JsonConverter? valueConverter = options.GetConverter(valueTypeToConvert);
-            if (valueConverter == null)
-            {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(valueTypeToConvert);
-            }
+            JsonConverter valueConverter = options.GetConverter(valueTypeToConvert);
+            Debug.Assert(valueConverter != null);
 
-            JsonConverter converter = (JsonConverter)Activator.CreateInstance(
+            return CreateValueConverter(valueTypeToConvert, valueConverter);
+        }
+
+        public static JsonConverter CreateValueConverter(Type valueTypeToConvert, JsonConverter valueConverter)
+        {
+            return (JsonConverter)Activator.CreateInstance(
                 typeof(NullableConverter<>).MakeGenericType(valueTypeToConvert),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: new object[] { valueConverter },
                 culture: null)!;
-
-            return converter;
         }
     }
 }

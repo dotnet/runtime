@@ -95,6 +95,7 @@ CORINFO_GENERICHANDLE_RESULT*,ref CORINFO_GENERICHANDLE_RESULT,void*
 CORINFO_METHOD_INFO*,CORINFO_METHOD_INFO*,void*
 CORINFO_FIELD_INFO*,CORINFO_FIELD_INFO*,void*
 CORINFO_CALL_INFO*,CORINFO_CALL_INFO*,void*
+PatchpointInfo*,PatchpointInfo*,void*
 DelegateCtorArgs*,ref DelegateCtorArgs,void*
 ICorDynamicInfo*,IntPtr,void*
 va_list,IntPtr
@@ -184,6 +185,8 @@ FUNCTIONS
     void methodMustBeLoadedBeforeCodeIsRun(        CORINFO_METHOD_HANDLE       method        );
     CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(        CORINFO_METHOD_HANDLE       method        );
     void getGSCookie(        GSCookie * pCookieVal,        GSCookie ** ppCookieVal        );
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
+    PatchpointInfo* getOSRInfo(unsigned * ilOffset);
     void resolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
     void tryResolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
     void findSig(        CORINFO_MODULE_HANDLE       module,        unsigned                    sigTOK,        CORINFO_CONTEXT_HANDLE      context,        CORINFO_SIG_INFO           *sig        );

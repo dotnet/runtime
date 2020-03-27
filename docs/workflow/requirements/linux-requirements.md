@@ -48,7 +48,7 @@ These instructions might fall stale often enough as we change our images as our 
 | Alpine                         | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-WithNode-0fc54a3-20190918214015`             | -                    |
 | CentOS 6 (build for RHEL 6)    | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-6aaa05d-20191106231336`                        | -                    |
 | CentOS 7 (build for Linux x64) | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-6aaa05d-20191106231356`                        | -                    |
-| Ubuntu 16.04                   | arm32(armhf)    | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-14.04-23cacb0-20191023143847`        | `/crossrootfs/arm`   |
+| Ubuntu 16.04                   | arm32(armhf)    | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm-16.04-09ec757-20200324125113`        | `/crossrootfs/arm`   |
 | Ubuntu 16.04                   | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-cfdd435-20191023143847`        | `/crossrootfs/arm64` |
 | Alpine                         | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-406629a-20191023143847` | `/crossrootfs/arm64` |
 

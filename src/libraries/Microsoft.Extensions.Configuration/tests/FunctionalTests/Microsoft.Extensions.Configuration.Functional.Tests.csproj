@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs">
+      <Link>Common\ConfigurationProviderExtensions.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+
+</Project>

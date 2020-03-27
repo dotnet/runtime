@@ -26,13 +26,13 @@ namespace Windows.UI.Xaml.Automation
             HResult = HResults.E_ELEMENTNOTAVAILABLE;
         }
 
-        public ElementNotAvailableException(string message)
+        public ElementNotAvailableException(string? message)
             : base(message)
         {
             HResult = HResults.E_ELEMENTNOTAVAILABLE;
         }
 
-        public ElementNotAvailableException(string message, Exception innerException)
+        public ElementNotAvailableException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.E_ELEMENTNOTAVAILABLE;

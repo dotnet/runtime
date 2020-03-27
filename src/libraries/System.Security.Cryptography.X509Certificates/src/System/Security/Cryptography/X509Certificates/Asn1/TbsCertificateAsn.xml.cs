@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct TbsCertificateAsn
     {
-        private static readonly byte[] s_defaultVersion = { 0x02, 0x01, 0x00 };
+        private static ReadOnlySpan<byte> DefaultVersion => new byte[] { 0x02, 0x01, 0x00 };
 
         internal int Version;
         internal ReadOnlyMemory<byte> SerialNumber;
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             TbsCertificateAsn decoded = default;
             AsnValueReader reader;
 
-            reader = new AsnValueReader(s_defaultVersion, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultVersion, AsnEncodingRules.DER);
 
             if (!reader.TryReadInt32(out decoded.Version))
             {
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                     tmp.WriteInteger(Version);
                     ReadOnlySpan<byte> encoded = tmp.EncodeAsSpan();
 
-                    if (!encoded.SequenceEqual(s_defaultVersion))
+                    if (!encoded.SequenceEqual(DefaultVersion))
                     {
                         writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                         writer.WriteEncodedValue(encoded);
@@ -168,7 +168,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(s_defaultVersion, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultVersion, AsnEncodingRules.DER);
 
                 if (!defaultReader.TryReadInt32(out decoded.Version))
                 {

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <DefineConstants Condition="'$(TargetsNetFx)' != 'true'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
@@ -14,6 +14,7 @@
     <Compile Include="DebuggerTests.cs" />
     <Compile Include="FixedSizedBufferWriter.cs" />
     <Compile Include="InvalidBufferWriter.cs" />
+    <Compile Include="JsonBase64TestData.cs" />
     <Compile Include="JsonDateTimeTestData.cs" />
     <Compile Include="JsonDocumentTests.cs" />
     <Compile Include="JsonElementCloneTests.cs" />
@@ -35,6 +36,11 @@
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
     <Compile Include="Serialization\CamelCaseUnitTests.cs" />
+    <Compile Include="Serialization\ConstructorTests.AttributePresence.cs" />
+    <Compile Include="Serialization\ConstructorTests.Cache.cs" />
+    <Compile Include="Serialization\ConstructorTests.Exceptions.cs" />
+    <Compile Include="Serialization\ConstructorTests.ParameterMatching.cs" />
+    <Compile Include="Serialization\ConstructorTests.Stream.cs" />
     <Compile Include="Serialization\CustomConverterTests.Array.cs" />
     <Compile Include="Serialization\CustomConverterTests.Attribute.cs" />
     <Compile Include="Serialization\CustomConverterTests.BadConverters.cs" />
@@ -50,6 +56,7 @@
     <Compile Include="Serialization\CustomConverterTests.Exceptions.cs" />
     <Compile Include="Serialization\CustomConverterTests.Int32.cs" />
     <Compile Include="Serialization\CustomConverterTests.List.cs" />
+    <Compile Include="Serialization\CustomConverterTests.NullableTypes.cs" />
     <Compile Include="Serialization\CustomConverterTests.NullValueType.cs" />
     <Compile Include="Serialization\CustomConverterTests.Object.cs" />
     <Compile Include="Serialization\CustomConverterTests.Point.cs" />
@@ -57,6 +64,7 @@
     <Compile Include="Serialization\CustomConverterTests.ReadAhead.cs" />
     <Compile Include="Serialization\CustomConverterTests.Callback.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
+    <Compile Include="Serialization\DeserializationWrapper.cs" />
     <Compile Include="Serialization\DictionaryTests.cs" />
     <Compile Include="Serialization\DictionaryTests.KeyPolicy.cs" />
     <Compile Include="Serialization\EnumConverterTests.cs" />
@@ -78,13 +86,16 @@
     <Compile Include="Serialization\ReferenceHandlingTests.Deserialize.cs" />
     <Compile Include="Serialization\ReferenceHandlingTests.Serialize.cs" />
     <Compile Include="Serialization\SampleTestData.OrderPayload.cs" />
+    <Compile Include="Serialization\SerializationWrapper.cs" />
     <Compile Include="Serialization\SpanTests.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
     <Compile Include="Serialization\TestClasses.cs" />
+    <Compile Include="Serialization\TestClasses.ConcurrentCollections.cs" />
     <Compile Include="Serialization\TestClasses.GenericCollections.cs" />
     <Compile Include="Serialization\TestClasses.ImmutableCollections.cs" />
     <Compile Include="Serialization\TestClasses.NonGenericCollections.cs" />
+    <Compile Include="Serialization\TestClasses.Constructor.cs" />
     <Compile Include="Serialization\TestClasses.Polymorphic.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestClass.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestClassWithNullables.cs" />
@@ -117,20 +128,6 @@
     <Compile Include="Utf8JsonReaderTests.TryGet.Date.cs" />
     <Compile Include="Utf8JsonReaderTests.ValueTextEquals.cs" />
     <Compile Include="Utf8JsonWriterTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="JsonArrayTests.cs" />
-    <Compile Include="JsonBooleanTests.cs" />
-    <Compile Include="JsonElementWithNodeParentTests.cs" />
-    <Compile Include="JsonNodeTestData.cs" />
-    <Compile Include="JsonNode.AsJsonElementTests.cs" />
-    <Compile Include="JsonNode.CloneTests.cs" />
-    <Compile Include="JsonNode.TraversalTests.cs" />
-    <Compile Include="JsonNodeOptionsTests.cs" />
-    <Compile Include="JsonNullTests.cs" />
-    <Compile Include="JsonNumberTests.cs" />
-    <Compile Include="JsonObjectTests.cs" />
-    <Compile Include="JsonStringTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />

@@ -1,0 +1,5 @@
+{
+    "diagnosticMessages": false,
+    "longRunningTestSeconds": 120,
+    "shadowCopy": false
+}

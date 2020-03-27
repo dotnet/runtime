@@ -149,12 +149,6 @@ const char* PrettyPrintSig(
 {
     STATIC_CONTRACT_THROWS;
 
-    // This had a _try/__except handler earlier that would swallow exceptions like
-    // SO and breakpoint. Obviously, swallowing any of them is not the right thing to do.
-    //
-    // Thus, we replace it with EX_TRY/EX_CATCH that automatically kicks in with SO
-    // handling if it sees any SO going past it. Also, C++ catch will not swallow
-    // the breakpoint exception (which is what we want).
     EX_TRY
     {
         PrettyPrintSignature(typePtr,
@@ -170,12 +164,7 @@ const char* PrettyPrintSig(
         out->Shrink(0);
         appendStr(out,"ERROR PARSING THE SIGNATURE");
     }
-#if defined(__ILDASM__)
-    // Dont allow ildasm to swallow bad SEH exceptions
-    EX_END_CATCH(RethrowCorruptingExceptions);
-#else // __ILDASM__
     EX_END_CATCH(SwallowAllExceptions);
-#endif // __ILDASM__
 
     return(asString(out));
 }

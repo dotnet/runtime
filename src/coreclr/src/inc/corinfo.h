@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* b2e40020-6125-41e4-a0fc-821127ec192a */
-    0xb2e40020,
-    0x6125,
-    0x41e4,
-    {0xa0, 0xfc, 0x82, 0x11, 0x27, 0xec, 0x19, 0x2a}
+SELECTANY const GUID JITEEVersionIdentifier = { /* 2296da7b-3823-4d8a-8a6d-b7d4481d41e0 */
+    0x2296da7b,
+    0x3823,
+    0x4d8a,
+    {0x8a, 0x6d, 0xb7, 0xd4, 0x48, 0x1d, 0x41, 0xe0}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -630,6 +630,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
 
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
+
+    CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
 
     CORINFO_HELP_COUNT,
 };
@@ -1082,6 +1084,11 @@ enum CorInfoHelperTailCallSpecialHandling
 inline bool dontInline(CorInfoInline val) {
     return(val < 0);
 }
+
+// Patchpoint info is passed back and forth across the interface
+// but is opaque.
+
+struct PatchpointInfo;
 
 // Cookie types consumed by the code generator (these are opaque values
 // not inspected by the code generator):
@@ -2143,6 +2150,16 @@ public:
     virtual void getGSCookie(
             GSCookie * pCookieVal,                     // OUT
             GSCookie ** ppCookieVal                    // OUT
+            ) = 0;
+
+    // Provide patchpoint info for the method currently being jitted.
+    virtual void setPatchpointInfo(
+            PatchpointInfo* patchpointInfo
+            ) = 0;
+
+    // Get patchpoint info and il offset for the method currently being jitted.
+    virtual PatchpointInfo* getOSRInfo(
+            unsigned                       *ilOffset        // [OUT] il offset of OSR entry point
             ) = 0;
 
     /**********************************************************************************/

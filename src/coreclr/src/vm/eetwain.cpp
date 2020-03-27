@@ -5741,11 +5741,6 @@ ReturnKind EECodeManager::GetReturnKind(GCInfoToken gcInfoToken)
     SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    if (!gcInfoToken.IsReturnKindAvailable())
-    {
-        return RT_Illegal;
-    }
-
 #ifndef USE_GC_INFO_DECODER
     hdrInfo info;
 

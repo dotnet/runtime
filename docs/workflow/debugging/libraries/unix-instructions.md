@@ -5,7 +5,7 @@ CoreFX can be debugged on unix using both lldb and visual studio code
 
 ## Using lldb and SOS
 
-- Run the test using msbuild at least once with `/t:BuildAndTest`.
+- Run the test using msbuild at least once with `/t:Test`.
 - [Install version 3.9 of lldb](../coreclr/debugging.md#debugging-core-dumps-with-lldb) and launch lldb with dotnet as the process and arguments matching the arguments used when running the test through msbuild.
 - Load the sos plugin using `plugin load libsosplugin.so`.
 - Type `soshelp` to get help. You can now use all sos commands like `bpmd`.

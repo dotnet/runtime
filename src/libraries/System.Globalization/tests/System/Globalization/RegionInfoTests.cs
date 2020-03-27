@@ -52,7 +52,7 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("name", () => new RegionInfo(name));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
         public void CurrentRegion()
         {
             using (new ThreadCultureChange("en-US"))
@@ -61,6 +61,21 @@ namespace System.Globalization.Tests
                 Assert.True(RegionInfo.CurrentRegion.Equals(ri) || RegionInfo.CurrentRegion.Equals(new RegionInfo(CultureInfo.CurrentCulture.Name)));
                 Assert.Same(RegionInfo.CurrentRegion, RegionInfo.CurrentRegion);
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        public void TestCurrentRegion()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                RegionInfo ri = RegionInfo.CurrentRegion;
+                CultureInfo.CurrentCulture.ClearCachedData(); // clear the current region cached data
+
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("ja-JP");
+
+                // Changing the current culture shouldn't affect the default current region as we get it from Windows settings.
+                Assert.Equal(ri.TwoLetterISORegionName, RegionInfo.CurrentRegion.TwoLetterISORegionName);
+            }).Dispose();
         }
 
         [Theory]

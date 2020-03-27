@@ -6,6 +6,7 @@ using System.Threading;
 using System.IO;
 using System.Collections;
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -13,14 +14,16 @@ namespace System.Diagnostics
     {
         private class TraceProvider : DebugProvider
         {
-            public override void Fail(string message, string detailMessage) { TraceInternal.Fail(message, detailMessage); }
+#pragma warning disable CS8770 // Method lacks `[DoesNotReturn]` annotation to match overridden member.
+            public override void Fail(string? message, string? detailMessage) { TraceInternal.Fail(message, detailMessage); }
+#pragma warning restore CS8770
             public override void OnIndentLevelChanged(int indentLevel)
             {
                 lock (TraceInternal.critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.IndentLevel = indentLevel;
+                        listener!.IndentLevel = indentLevel;
                     }
                 }
             }
@@ -29,18 +32,18 @@ namespace System.Diagnostics
             {
                 lock (TraceInternal.critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.IndentSize = indentSize;
+                        listener!.IndentSize = indentSize;
                     }
                 }
             }
-            public override void Write(string message) { TraceInternal.Write(message); }
-            public override void WriteLine(string message) { TraceInternal.WriteLine(message); }
+            public override void Write(string? message) { TraceInternal.Write(message); }
+            public override void WriteLine(string? message) { TraceInternal.WriteLine(message); }
         }
 
-        private static volatile string s_appName = null;
-        private static volatile TraceListenerCollection s_listeners;
+        private static volatile string? s_appName = null;
+        private static volatile TraceListenerCollection? s_listeners;
         private static volatile bool s_autoFlush;
         private static volatile bool s_useGlobalLock;
         private static volatile bool s_settingsInitialized;
@@ -161,17 +164,17 @@ namespace System.Diagnostics
                 {
                     lock (critSec)
                     {
-                        foreach (TraceListener listener in Listeners)
+                        foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                         {
-                            listener.Flush();
+                            listener!.Flush();
                         }
                     }
                 }
                 else
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        if (!listener.IsThreadSafe)
+                        if (!listener!.IsThreadSafe)
                         {
                             lock (listener)
                             {
@@ -194,9 +197,9 @@ namespace System.Diagnostics
                 // Use global lock
                 lock (critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.Close();
+                        listener!.Close();
                     }
                 }
             }
@@ -208,36 +211,36 @@ namespace System.Diagnostics
             Fail(string.Empty);
         }
 
-        public static void Assert(bool condition, string message)
+        public static void Assert(bool condition, string? message)
         {
             if (condition) return;
             Fail(message);
         }
 
-        public static void Assert(bool condition, string message, string detailMessage)
+        public static void Assert(bool condition, string? message, string? detailMessage)
         {
             if (condition) return;
             Fail(message, detailMessage);
         }
 
-        public static void Fail(string message)
+        public static void Fail(string? message)
         {
             if (UseGlobalLock)
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.Fail(message);
+                        listener!.Fail(message);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener listener in Listeners)
+                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 {
-                    if (!listener.IsThreadSafe)
+                    if (!listener!.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -254,24 +257,24 @@ namespace System.Diagnostics
             }
         }
 
-        public static void Fail(string message, string detailMessage)
+        public static void Fail(string? message, string? detailMessage)
         {
             if (UseGlobalLock)
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.Fail(message, detailMessage);
+                        listener!.Fail(message, detailMessage);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener listener in Listeners)
+                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 {
-                    if (!listener.IsThreadSafe)
+                    if (!listener!.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -319,7 +322,7 @@ namespace System.Diagnostics
             InitializeSettings();
         }
 
-        public static void TraceEvent(TraceEventType eventType, int id, string format, params object[] args)
+        public static void TraceEvent(TraceEventType eventType, int id, string? format, params object?[]? args)
         {
             TraceEventCache EventCache = new TraceEventCache();
 
@@ -329,17 +332,17 @@ namespace System.Diagnostics
                 {
                     if (args == null)
                     {
-                        foreach (TraceListener listener in Listeners)
+                        foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                         {
-                            listener.TraceEvent(EventCache, AppName, eventType, id, format);
+                            listener!.TraceEvent(EventCache, AppName, eventType, id, format);
                             if (AutoFlush) listener.Flush();
                         }
                     }
                     else
                     {
-                        foreach (TraceListener listener in Listeners)
+                        foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                         {
-                            listener.TraceEvent(EventCache, AppName, eventType, id, format, args);
+                            listener!.TraceEvent(EventCache, AppName, eventType, id, format!, args);
                             if (AutoFlush) listener.Flush();
                         }
                     }
@@ -349,9 +352,9 @@ namespace System.Diagnostics
             {
                 if (args == null)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        if (!listener.IsThreadSafe)
+                        if (!listener!.IsThreadSafe)
                         {
                             lock (listener)
                             {
@@ -368,19 +371,19 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        if (!listener.IsThreadSafe)
+                        if (!listener!.IsThreadSafe)
                         {
                             lock (listener)
                             {
-                                listener.TraceEvent(EventCache, AppName, eventType, id, format, args);
+                                listener.TraceEvent(EventCache, AppName, eventType, id, format!, args);
                                 if (AutoFlush) listener.Flush();
                             }
                         }
                         else
                         {
-                            listener.TraceEvent(EventCache, AppName, eventType, id, format, args);
+                            listener.TraceEvent(EventCache, AppName, eventType, id, format!, args);
                             if (AutoFlush) listener.Flush();
                         }
                     }
@@ -389,24 +392,24 @@ namespace System.Diagnostics
         }
 
 
-        public static void Write(string message)
+        public static void Write(string? message)
         {
             if (UseGlobalLock)
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.Write(message);
+                        listener!.Write(message);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener listener in Listeners)
+                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 {
-                    if (!listener.IsThreadSafe)
+                    if (!listener!.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -423,24 +426,24 @@ namespace System.Diagnostics
             }
         }
 
-        public static void Write(object value)
+        public static void Write(object? value)
         {
             if (UseGlobalLock)
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.Write(value);
+                        listener!.Write(value);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener listener in Listeners)
+                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 {
-                    if (!listener.IsThreadSafe)
+                    if (!listener!.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -457,24 +460,24 @@ namespace System.Diagnostics
             }
         }
 
-        public static void Write(string message, string category)
+        public static void Write(string? message, string? category)
         {
             if (UseGlobalLock)
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.Write(message, category);
+                        listener!.Write(message, category);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener listener in Listeners)
+                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 {
-                    if (!listener.IsThreadSafe)
+                    if (!listener!.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -491,24 +494,24 @@ namespace System.Diagnostics
             }
         }
 
-        public static void Write(object value, string category)
+        public static void Write(object? value, string? category)
         {
             if (UseGlobalLock)
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.Write(value, category);
+                        listener!.Write(value, category);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener listener in Listeners)
+                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 {
-                    if (!listener.IsThreadSafe)
+                    if (!listener!.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -525,24 +528,24 @@ namespace System.Diagnostics
             }
         }
 
-        public static void WriteLine(string message)
+        public static void WriteLine(string? message)
         {
             if (UseGlobalLock)
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.WriteLine(message);
+                        listener!.WriteLine(message);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener listener in Listeners)
+                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 {
-                    if (!listener.IsThreadSafe)
+                    if (!listener!.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -559,24 +562,24 @@ namespace System.Diagnostics
             }
         }
 
-        public static void WriteLine(object value)
+        public static void WriteLine(object? value)
         {
             if (UseGlobalLock)
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.WriteLine(value);
+                        listener!.WriteLine(value);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener listener in Listeners)
+                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 {
-                    if (!listener.IsThreadSafe)
+                    if (!listener!.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -593,24 +596,24 @@ namespace System.Diagnostics
             }
         }
 
-        public static void WriteLine(string message, string category)
+        public static void WriteLine(string? message, string? category)
         {
             if (UseGlobalLock)
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.WriteLine(message, category);
+                        listener!.WriteLine(message, category);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener listener in Listeners)
+                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 {
-                    if (!listener.IsThreadSafe)
+                    if (!listener!.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -627,24 +630,24 @@ namespace System.Diagnostics
             }
         }
 
-        public static void WriteLine(object value, string category)
+        public static void WriteLine(object? value, string? category)
         {
             if (UseGlobalLock)
             {
                 lock (critSec)
                 {
-                    foreach (TraceListener listener in Listeners)
+                    foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                     {
-                        listener.WriteLine(value, category);
+                        listener!.WriteLine(value, category);
                         if (AutoFlush) listener.Flush();
                     }
                 }
             }
             else
             {
-                foreach (TraceListener listener in Listeners)
+                foreach (TraceListener? listener in Listeners) // TODO-NULLABLE https://github.com/dotnet/csharplang/issues/3214
                 {
-                    if (!listener.IsThreadSafe)
+                    if (!listener!.IsThreadSafe)
                     {
                         lock (listener)
                         {
@@ -661,49 +664,49 @@ namespace System.Diagnostics
             }
         }
 
-        public static void WriteIf(bool condition, string message)
+        public static void WriteIf(bool condition, string? message)
         {
             if (condition)
                 Write(message);
         }
 
-        public static void WriteIf(bool condition, object value)
+        public static void WriteIf(bool condition, object? value)
         {
             if (condition)
                 Write(value);
         }
 
-        public static void WriteIf(bool condition, string message, string category)
+        public static void WriteIf(bool condition, string? message, string? category)
         {
             if (condition)
                 Write(message, category);
         }
 
-        public static void WriteIf(bool condition, object value, string category)
+        public static void WriteIf(bool condition, object? value, string? category)
         {
             if (condition)
                 Write(value, category);
         }
 
-        public static void WriteLineIf(bool condition, string message)
+        public static void WriteLineIf(bool condition, string? message)
         {
             if (condition)
                 WriteLine(message);
         }
 
-        public static void WriteLineIf(bool condition, object value)
+        public static void WriteLineIf(bool condition, object? value)
         {
             if (condition)
                 WriteLine(value);
         }
 
-        public static void WriteLineIf(bool condition, string message, string category)
+        public static void WriteLineIf(bool condition, string? message, string? category)
         {
             if (condition)
                 WriteLine(message, category);
         }
 
-        public static void WriteLineIf(bool condition, object value, string category)
+        public static void WriteLineIf(bool condition, object? value, string? category)
         {
             if (condition)
                 WriteLine(value, category);

@@ -77,6 +77,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader SecWebSocketProtocol = new KnownHeader("Sec-WebSocket-Protocol");
         public static readonly KnownHeader SecWebSocketVersion = new KnownHeader("Sec-WebSocket-Version");
         public static readonly KnownHeader Server = new KnownHeader("Server", HttpHeaderType.Response, ProductInfoHeaderParser.MultipleValueParser, null, H2StaticTable.Server, H3StaticTable.Server);
+        public static readonly KnownHeader ServerTiming = new KnownHeader("Server-Timing");
         public static readonly KnownHeader SetCookie = new KnownHeader("Set-Cookie", HttpHeaderType.Custom | HttpHeaderType.NonTrailing, null, null, H2StaticTable.SetCookie, H3StaticTable.SetCookie);
         public static readonly KnownHeader SetCookie2 = new KnownHeader("Set-Cookie2", HttpHeaderType.Custom | HttpHeaderType.NonTrailing, null, null);
         public static readonly KnownHeader StrictTransportSecurity = new KnownHeader("Strict-Transport-Security", H2StaticTable.StrictTransportSecurity, H3StaticTable.StrictTransportSecurityMaxAge31536000);
@@ -140,7 +141,7 @@ namespace System.Net.Http.Headers
         // Matching is case-insenstive.
         // NOTE: Because of this, we do not preserve the case of the original header,
         // whether from the wire or from the user explicitly setting a known header using a header name string.
-        private static KnownHeader GetCandidate<T>(T key)
+        private static KnownHeader? GetCandidate<T>(T key)
             where T : struct, IHeaderNameAccessor     // Enforce struct for performance
         {
             int length = key.Length;
@@ -252,15 +253,16 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 13:
-                    switch (key[6])
+                    switch (key[12])
                     {
-                        case '-': return AcceptRanges;            // Accept[-]Ranges
-                        case 'I': case 'i': return Authorization; // Author[i]zation
-                        case 'C': case 'c': return CacheControl;  // Cache-[C]ontrol
-                        case 'T': case 't': return ContentRange;  // Conten[t]-Range
-                        case 'E': case 'e': return IfNoneMatch;   // If-Non[e]-Match
-                        case 'O': case 'o': return LastModified;  // Last-M[o]dified
-                        case 'S': case 's': return ProxySupport;  // Proxy-[S]upport
+                        case 'S': case 's': return AcceptRanges;  // Accept-Range[s]
+                        case 'N': case 'n': return Authorization; // Authorizatio[n]
+                        case 'L': case 'l': return CacheControl;  // Cache-Contro[l]
+                        case 'E': case 'e': return ContentRange;  // Content-Rang[e]
+                        case 'H': case 'h': return IfNoneMatch;   // If-None-Matc[h]
+                        case 'D': case 'd': return LastModified;  // Last-Modifie[d]
+                        case 'T': case 't': return ProxySupport;  // Proxy-Suppor[t]
+                        case 'G': case 'g': return ServerTiming;  // Server-Timin[g]
                     }
                     break;
 
@@ -371,9 +373,9 @@ namespace System.Net.Http.Headers
             return null;
         }
 
-        internal static KnownHeader TryGetKnownHeader(string name)
+        internal static KnownHeader? TryGetKnownHeader(string name)
         {
-            KnownHeader candidate = GetCandidate(new StringAccessor(name));
+            KnownHeader? candidate = GetCandidate(new StringAccessor(name));
             if (candidate != null && StringComparer.OrdinalIgnoreCase.Equals(name, candidate.Name))
             {
                 return candidate;
@@ -382,11 +384,11 @@ namespace System.Net.Http.Headers
             return null;
         }
 
-        internal static unsafe KnownHeader TryGetKnownHeader(ReadOnlySpan<byte> name)
+        internal static unsafe KnownHeader? TryGetKnownHeader(ReadOnlySpan<byte> name)
         {
             fixed (byte* p = &MemoryMarshal.GetReference(name))
             {
-                KnownHeader candidate = GetCandidate(new BytePtrAccessor(p, name.Length));
+                KnownHeader? candidate = GetCandidate(new BytePtrAccessor(p, name.Length));
                 if (candidate != null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate.Name, name))
                 {
                     return candidate;
