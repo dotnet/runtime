@@ -5,12 +5,11 @@
   <Import Project="..\..\Directory.Build.props" />
 
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
-    <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <!-- Temporarily ignore nit warning/errors (e.g. extra whitespace) from Extensions projects -->
     <NoWarn Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">$(NoWarn);SA1129;SA1028;SA1027;SA1121;CA1200;SA1000;CA1507;CA1802;CA1825;CA1018;SA1648;CA2007;SA1001;SA1026;CA1810;SA1206</NoWarn>
     <NoWarn Condition="!$(MSBuildProjectName.Contains('ref'))">$(NoWarn);CS0618</NoWarn>
-    </PropertyGroup>
+  </PropertyGroup>
 
   <PropertyGroup>
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
@@ -244,6 +243,9 @@
   <PropertyGroup>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
+
+    <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
+    <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
 
     <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
     <DebugType Condition="'$(TargetsNetFx)' == 'true' and '$(TargetOS)' == 'Windows_NT'" />

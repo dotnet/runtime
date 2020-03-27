@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Logging.EventSource;
@@ -809,7 +810,7 @@ namespace Microsoft.Extensions.Logging.Test
             { "E6MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 6, null, LogLevel.Warning) },
 
             { "E7FM", (e) => VerifySingleEvent(e, "Logger3", EventTypes.FormattedMessage, 7, null, LogLevel.Information,
-                @"""FormattedMessage"":""Logger3 Event7 Information inner scope closed " + DoubleParam2.ToString() + " 37") },
+                @"""FormattedMessage"":""Logger3 Event7 Information inner scope closed " + DoubleParam2.ToString("G", CultureInfo.InvariantCulture) + " 37") },
             { "E7JS", (e) => VerifySingleEvent(e, "Logger3", EventTypes.MessageJson, 7, null, LogLevel.Information,
                         @"""ArgumentsJson"":{""stringParam"":""inner scope closed"",""doubleParam"":""" + DoubleParam2.ToString() + @""",""intParam"":""37""") },
             { "E7MSG", (e) => VerifySingleEvent(e, "Logger3", EventTypes.Message, 7, null, LogLevel.Information,

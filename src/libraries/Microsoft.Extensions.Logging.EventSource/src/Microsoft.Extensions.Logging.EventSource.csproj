@@ -37,12 +37,4 @@
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
 
-  <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Extensions.Logging.EventSource.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Extensions.Logging.EventSource.Tests" />
-  </ItemGroup>
-
 </Project>
