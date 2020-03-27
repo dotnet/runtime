@@ -166,6 +166,11 @@ namespace System.Security.Cryptography
             Key = ECCng.ImportKeyBlob(ecfullKeyBlob, curveName, includePrivateParameters);
         }
 
+        private void ImportLimitedPrivateKeyBlob(in ECParameters ecParams)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         private byte[] ExportKeyBlob(bool includePrivateParameters)
         {
             return ECCng.ExportKeyBlob(Key, includePrivateParameters);
