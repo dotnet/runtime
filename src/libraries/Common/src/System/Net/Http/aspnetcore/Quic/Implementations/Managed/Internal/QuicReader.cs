@@ -115,7 +115,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void Reset(byte[] buffer, int count)
         {
-            Debug.Assert(count >= buffer.Length);
+            Debug.Assert(count <= buffer.Length);
 
             _buffer = buffer;
             _maxOffset = count;

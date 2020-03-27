@@ -8,37 +8,30 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
     /// </summary>
     internal readonly ref struct LongPacketHeader
     {
-        private const byte FixedBitMask = 0x40;
-        private const byte TypeSpecificBitsMask = 0x0f;
-
         /// <summary>
-        ///     First byte of the header, contains compacted data from <see cref="FixedBit"/>, <see cref=""/>, <see cref="ReservedBits"/> and <see cref="PacketNumberLength"/>.
+        ///     First byte of the header, contains compacted data from <see cref="FixedBit"/>, <see cref="PacketType"/> and <see cref="TypeSpecificBits"/>.
         /// </summary>
         internal readonly byte FirstByte;
 
         /// <summary>
         ///     Bit with fixed value 1. Reception of value 0 implies that the packet must be quietly discarded.
         /// </summary>
-        internal bool FixedBit
-        {
-            get => (FirstByte & FixedBitMask) != 0;
-        }
+        internal bool FixedBit => HeaderHelpers.GetFixedBit(FirstByte);
 
         /// <summary>
         ///     Bit with fixed value 1. Reception of value 0 implies that the packet must be quietly discarded.
         /// </summary>
-        internal PacketType PacketType
-        {
-            get => HeaderHelpers.GetPacketType(FirstByte);
-        }
+        internal PacketType PacketType => HeaderHelpers.GetPacketType(FirstByte);
 
         /// <summary>
-        ///     Four bits of reserved data for individual packet types.
+        ///     How many lower bytes are encoded in this packet. Contains valid valid value only when <see cref="PacketType"/> is <see cref="PacketType.Initial"/>, <see cref="PacketType.ZeroRtt"/>, <see cref="PacketType.Handshake"/>.
         /// </summary>
-        internal byte TypeSpecificBits
-        {
-            get => (byte)((FirstByte & TypeSpecificBitsMask) >> 3);
-        }
+        internal int PacketNumberLength => HeaderHelpers.GetPacketNumberLength(FirstByte);
+
+        /// <summary>
+        ///     Bits reserved for future versions of the QUIC protocol, should be always 0.
+        /// </summary>
+        internal byte ReservedBits => HeaderHelpers.GetLongHeaderReservedBits(FirstByte);
 
         /// <summary>
         ///     Version of the QUIC protocol used.
@@ -55,18 +48,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         /// </summary>
         internal readonly ReadOnlySpan<byte> SourceConnectionId;
 
-        private static byte ComposeFirstByte(PacketType type, byte typeSpecificData)
-        {
-            Debug.Assert((uint) type <= 3, "Wrong type of packet when creating long header.");
-            Debug.Assert(typeSpecificData <= 0x0f, "Type specific data overflow.");
-
-            // first two bits are always set (form + fixed bit)
-            return (byte)(0xc0 | ((int)type << 4) | typeSpecificData);
-        }
-
-        internal LongPacketHeader(PacketType type, byte typeSpecificData, QuicVersion version, ReadOnlySpan<byte> destinationConnectionId,
+        internal LongPacketHeader(PacketType type, int packetNumberLength, QuicVersion version, ReadOnlySpan<byte> destinationConnectionId,
             ReadOnlySpan<byte> sourceConnectionId)
-            : this(ComposeFirstByte(type, typeSpecificData), version, destinationConnectionId, sourceConnectionId)
+            : this(HeaderHelpers.ComposeLongHeaderByte(type, packetNumberLength), version, destinationConnectionId, sourceConnectionId)
         {
         }
 

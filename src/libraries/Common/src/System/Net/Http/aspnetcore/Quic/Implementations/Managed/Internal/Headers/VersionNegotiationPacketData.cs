@@ -8,7 +8,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
     /// </summary>
     internal readonly ref struct VersionNegotiationPacketData
     {
-        private readonly ref struct QuicVersionCollection
+        internal readonly ref struct QuicVersionCollection
         {
             private readonly ReadOnlySpan<byte> rawData;
 
@@ -28,7 +28,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         /// <summary>
         ///     List of versions the peer supports.
         /// </summary>
-        private readonly QuicVersionCollection SupportedVersions;
+        internal readonly QuicVersionCollection SupportedVersions;
 
         internal VersionNegotiationPacketData(ReadOnlySpan<byte> rawData)
         {

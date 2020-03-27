@@ -6,19 +6,81 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 {
     internal static class HeaderHelpers
     {
-        internal const byte FormBitMask = 0x80;
+        // shared
+        private const byte FormBitMask = 0x80;
+        private const byte FixedBitMask = 0x40;
+        private const byte PacketNumberLengthMask = 0x03;
+
+        // long header bits
         private const byte TypeBitsMask = 0x30;
+        private const byte LongReservedBitsMask = 0x0c;
+
+        // short header bits
+        private const byte SpinBitMask = 0x20;
+        private const byte ShortReservedBitsMask = 0x18;
+        private const byte KeyPhaseBitMask = 0x04;
 
         internal const int MaxConnectionIdLength = 160/8;
 
-        public static bool IsLongHeader(byte firstByte)
+        internal static bool IsLongHeader(byte firstByte)
         {
             return (firstByte & FormBitMask) != 0;
         }
 
-        public static PacketType GetPacketType(byte firstByte)
+        internal static PacketType GetPacketType(byte firstByte)
         {
-            return (PacketType) (firstByte & FormBitMask >> 4);
+            return (PacketType) ((firstByte & TypeBitsMask) >> 4);
+        }
+
+        internal static int GetPacketNumberLength(byte firstByte)
+        {
+            return (firstByte & PacketNumberLengthMask) + 1;
+        }
+
+        internal static byte ComposeShortHeaderByte(bool spin, bool keyPhase, int packetNumberLength)
+        {
+            Debug.Assert((uint) packetNumberLength - 1 <= 3, "Too large packet number encoding");
+
+            // Fixed bit is always 1, reserved bits always 0
+            int firstByte = (packetNumberLength - 1) | FixedBitMask;
+            if (spin) firstByte |= SpinBitMask;
+            if (keyPhase) firstByte |= KeyPhaseBitMask;
+
+            return (byte)firstByte;
+        }
+
+        internal static byte ComposeLongHeaderByte(PacketType packetType, int packetNumberLength)
+        {
+            Debug.Assert((uint) packetType <= 3, "Wrong type of packet when creating long header.");
+            Debug.Assert((uint) packetNumberLength - 1 <= 3, "Too large packet number encoding");
+
+            // first two bits are always set (form + fixed bit)
+            return (byte)(0xc0 | ((int)packetType << 4) | (packetNumberLength - 1));
+        }
+
+        internal static bool GetFixedBit(byte firstByte)
+        {
+            return (firstByte & FixedBitMask) != 0;
+        }
+
+        internal static bool GetSpinBit(byte firstByte)
+        {
+            return (firstByte & SpinBitMask) != 0;
+        }
+
+        internal static byte GetShortHeaderReservedBits(byte firstByte)
+        {
+            return (byte)((firstByte & ShortReservedBitsMask) >> 3);
+        }
+
+        internal static byte GetLongHeaderReservedBits(byte firstByte)
+        {
+            return (byte)((firstByte & LongReservedBitsMask) >> 2);
+        }
+
+        internal static bool GetKeyPhase(byte firstByte)
+        {
+            return (firstByte & KeyPhaseBitMask) != 0;
         }
     }
 }

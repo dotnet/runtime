@@ -37,7 +37,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal void WriteUInt16(ushort value)
         {
             BinaryPrimitives.WriteUInt16BigEndian(GetWritableSpan(sizeof(ushort)), value);
-            Advance(sizeof(ushort));
         }
 
         internal void WriteUInt24(uint value)

@@ -80,25 +80,25 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             switch (length)
             {
-                case 0:
+                case 1:
                 {
                     success = reader.TryReadUInt8(out byte res);
                     truncatedPn = res;
                     break;
                 }
-                case 1:
+                case 2:
                 {
                     success = reader.TryReadUInt16(out ushort res);
                     truncatedPn = res;
                     break;
                 }
-                case 2:
+                case 3:
                 {
                     success = reader.TryReadUInt24(out uint res);
                     truncatedPn = res;
                     break;
                 }
-                case 3:
+                case 4:
                 {
                     success = reader.TryReadUInt32(out uint res);
                     truncatedPn = res;

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
 
@@ -29,7 +30,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         /// </summary>
         internal int PacketNumberLength
         {
-            get => (firstByte & PacketNumberLengthMask) + 1;
+            get => HeaderHelpers.GetPacketNumberLength(firstByte);
         }
 
         /// <summary>
@@ -58,7 +59,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 
         internal static bool Read(QuicReader reader, byte firstHeaderByte, out SharedPacketData data)
         {
-            int pnLength = firstHeaderByte & PacketNumberLengthMask;
+            int pnLength = HeaderHelpers.GetPacketNumberLength(firstHeaderByte);
             var type = HeaderHelpers.GetPacketType(firstHeaderByte);
 
             ReadOnlySpan<byte> token = ReadOnlySpan<byte>.Empty;
@@ -76,6 +77,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 
         internal static void Write(QuicWriter writer, in SharedPacketData data)
         {
+            Debug.Assert(HeaderHelpers.GetPacketType(data.firstByte) == PacketType.Initial ||
+                         data.Token.IsEmpty, "Trying to include Token in non-initial packet.");
+
             writer.WriteLengthPrefixedSpan(data.Token);
             writer.WriteVarInt(data.Length);
             writer.WriteTruncatedPacketNumber(data.PacketNumberLength, data.TruncatedPacketNumber);
