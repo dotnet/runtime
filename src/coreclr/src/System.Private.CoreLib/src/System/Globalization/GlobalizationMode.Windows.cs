@@ -6,9 +6,27 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
+        internal static bool UseIcu { get; private set; } = GetUseIcuMode();
+
         private static bool GetGlobalizationInvariantMode()
         {
             return GetInvariantSwitchValue();
+        }
+
+        private static bool GetUseIcuMode()
+        {
+            bool useNlsValue = GetUseNlsSwitchValue();
+            if (!Invariant)
+            {
+                if (useNlsValue || Interop.Globalization.LoadICU() == 0)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            return !useNlsValue;
         }
     }
 }

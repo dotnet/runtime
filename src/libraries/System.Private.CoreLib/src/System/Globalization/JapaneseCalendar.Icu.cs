@@ -9,7 +9,7 @@ namespace System.Globalization
 {
     public partial class JapaneseCalendar : Calendar
     {
-        private static EraInfo[]? GetJapaneseEras()
+        private static EraInfo[]? IcuGetJapaneseEras()
         {
             if (GlobalizationMode.Invariant)
             {

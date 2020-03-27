@@ -32,7 +32,7 @@ namespace System.Globalization
 
     internal partial class CalendarData
     {
-        private bool LoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
+        private bool IcuLoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
             bool result = true;
 
@@ -80,7 +80,7 @@ namespace System.Globalization
             return result;
         }
 
-        internal static int GetTwoDigitYearMax(CalendarId calendarId)
+        internal static int IcuGetTwoDigitYearMax(CalendarId calendarId)
         {
             // There is no user override for this value on Linux or in ICU.
             // So just return -1 to use the hard-coded defaults.
@@ -88,7 +88,7 @@ namespace System.Globalization
         }
 
         // Call native side to figure out which calendars are allowed
-        internal static int GetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
+        internal static int IcuGetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -105,7 +105,7 @@ namespace System.Globalization
             return count;
         }
 
-        private static bool SystemSupportsTaiwaneseCalendar()
+        private static bool IcuSystemSupportsTaiwaneseCalendar()
         {
             return true;
         }
@@ -134,7 +134,7 @@ namespace System.Globalization
         {
             datePatterns = null;
 
-            EnumCalendarsData callbackContext = default;
+            IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             callbackContext.DisallowDuplicates = true;
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
@@ -359,7 +359,7 @@ namespace System.Globalization
         {
             monthNames = null;
 
-            EnumCalendarsData callbackContext = default;
+            IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
             if (result)
@@ -407,7 +407,7 @@ namespace System.Globalization
         {
             calendarData = null;
 
-            EnumCalendarsData callbackContext = default;
+            IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, ref callbackContext);
             if (result)
@@ -418,7 +418,7 @@ namespace System.Globalization
             return result;
         }
 
-        private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref EnumCalendarsData callbackContext)
+        private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, ref IcuEnumCalendarsData callbackContext)
         {
             return Interop.Globalization.EnumCalendarInfo(EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)Unsafe.AsPointer(ref callbackContext));
         }
@@ -427,7 +427,7 @@ namespace System.Globalization
         {
             try
             {
-                ref EnumCalendarsData callbackContext = ref Unsafe.As<byte, EnumCalendarsData>(ref *(byte*)context);
+                ref IcuEnumCalendarsData callbackContext = ref Unsafe.As<byte, IcuEnumCalendarsData>(ref *(byte*)context);
 
                 if (callbackContext.DisallowDuplicates)
                 {
@@ -451,7 +451,7 @@ namespace System.Globalization
             }
         }
 
-        private struct EnumCalendarsData
+        public struct IcuEnumCalendarsData
         {
             public List<string> Results;
             public bool DisallowDuplicates;

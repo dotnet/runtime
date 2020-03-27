@@ -10,7 +10,7 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        internal static unsafe IntPtr GetSortHandle(string cultureName)
+        internal static unsafe IntPtr NlsGetSortHandle(string cultureName)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -34,12 +34,6 @@ namespace System.Globalization
             }
 
             return IntPtr.Zero;
-        }
-
-        private void InitSort(CultureInfo culture)
-        {
-            _sortName = culture.SortName;
-            _sortHandle = GetSortHandle(_sortName);
         }
 
         private static unsafe int FindStringOrdinal(
@@ -75,7 +69,7 @@ namespace System.Globalization
             }
         }
 
-        internal static int IndexOfOrdinalCore(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning)
+        private static int NlsIndexOfOrdinalCore(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -86,7 +80,7 @@ namespace System.Globalization
             return FindStringOrdinal(positionFlag, source, value, ignoreCase);
         }
 
-        internal static int LastIndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
+        private static int NlsLastIndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -102,7 +96,7 @@ namespace System.Globalization
             return result;
         }
 
-        private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options)
+        private unsafe int NlsGetHashCodeOfString(ReadOnlySpan<char> source, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -166,7 +160,7 @@ namespace System.Globalization
             }
         }
 
-        private static unsafe int CompareStringOrdinalIgnoreCase(ref char string1, int count1, ref char string2, int count2)
+        private static unsafe int NlsCompareStringOrdinalIgnoreCase(ref char string1, int count1, ref char string2, int count2)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -192,7 +186,7 @@ namespace System.Globalization
         // TODO https://github.com/dotnet/runtime/issues/8890:
         // This method shouldn't be necessary, as we should be able to just use the overload
         // that takes two spans.  But due to this issue, that's adding significant overhead.
-        private unsafe int CompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
+        private unsafe int NlsCompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
         {
             Debug.Assert(string2 != null);
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -237,7 +231,7 @@ namespace System.Globalization
             }
         }
 
-        private unsafe int CompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
+        private unsafe int NlsCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -337,7 +331,7 @@ namespace System.Globalization
             }
         }
 
-        internal unsafe int IndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
+        private unsafe int NlsIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -354,7 +348,7 @@ namespace System.Globalization
             return -1;
         }
 
-        internal unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
+        private unsafe int NlsIndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -365,7 +359,7 @@ namespace System.Globalization
             return FindString(positionFlag | (uint)GetNativeCompareFlags(options), source, target, matchLengthPtr);
         }
 
-        private unsafe int LastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
+        private unsafe int NlsLastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -392,7 +386,7 @@ namespace System.Globalization
             return -1;
         }
 
-        private unsafe bool StartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        private unsafe bool NlsStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -403,7 +397,7 @@ namespace System.Globalization
             return FindString(FIND_STARTSWITH | (uint)GetNativeCompareFlags(options), source, prefix, null) >= 0;
         }
 
-        private unsafe bool EndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
+        private unsafe bool NlsEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -412,10 +406,6 @@ namespace System.Globalization
 
             return FindString(FIND_ENDSWITH | (uint)GetNativeCompareFlags(options), source, suffix, null) >= 0;
         }
-
-        // PAL ends here
-        [NonSerialized]
-        private IntPtr _sortHandle;
 
         private const uint LCMAP_SORTKEY = 0x00000400;
 
@@ -468,7 +458,7 @@ namespace System.Globalization
             return retValue;
         }
 
-        private unsafe SortKey CreateSortKey(string source, CompareOptions options)
+        private unsafe SortKey NlsCreateSortKey(string source, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -521,7 +511,7 @@ namespace System.Globalization
             return new SortKey(this, source, options, keyData);
         }
 
-        private static unsafe bool IsSortable(char* text, int length)
+        private static unsafe bool NlsIsSortable(char* text, int length)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(text != null);
@@ -567,7 +557,7 @@ namespace System.Globalization
             return nativeCompareFlags;
         }
 
-        private unsafe SortVersion GetSortVersion()
+        private unsafe SortVersion NlsGetSortVersion()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 

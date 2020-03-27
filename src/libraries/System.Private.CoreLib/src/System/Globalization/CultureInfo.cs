@@ -819,6 +819,20 @@ namespace System.Globalization
             return new GregorianCalendar();
         }
 
+        internal static CultureInfo GetUserDefaultCulture()
+        {
+            return GlobalizationMode.UseIcu ?
+                IcuGetUserDefaultCulture() :
+                NlsGetUserDefaultCulture();
+        }
+
+        private static CultureInfo GetUserDefaultUICulture()
+        {
+            return GlobalizationMode.UseIcu ?
+                IcuGetUserDefaultUICulture() :
+                NlsGetUserDefaultUICulture();
+        }
+
         /// <summary>
         /// Return/set the default calendar used by this culture.
         /// This value can be overridden by regional option if this is a current culture.
@@ -1123,7 +1137,9 @@ namespace System.Globalization
 
             if (predefinedOnly)
             {
-                return GetPredefinedCultureInfo(name);
+                return GlobalizationMode.UseIcu ?
+                    IcuGetPredefinedCultureInfo(name) :
+                    NlsGetPredefinedCultureInfo(name);
             }
 
             return GetCultureInfo(name);

@@ -10,7 +10,7 @@ namespace System.Globalization
 {
     internal static partial class Normalization
     {
-        internal static bool IsNormalized(string strInput, NormalizationForm normalizationForm)
+        private static bool NlsIsNormalized(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -54,7 +54,7 @@ namespace System.Globalization
             return result;
         }
 
-        internal static string Normalize(string strInput, NormalizationForm normalizationForm)
+        private static string NlsNormalize(string strInput, NormalizationForm normalizationForm)
         {
             if (GlobalizationMode.Invariant)
             {

@@ -6,6 +6,8 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
+        internal static bool UseIcu => true;
+
         private static bool GetGlobalizationInvariantMode()
         {
             bool invariantEnabled = GetInvariantSwitchValue();

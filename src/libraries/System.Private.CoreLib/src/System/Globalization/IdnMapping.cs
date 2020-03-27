@@ -92,7 +92,9 @@ namespace System.Globalization
             {
                 fixed (char* pUnicode = unicode)
                 {
-                    return GetAsciiCore(unicode, pUnicode + index, count);
+                    return GlobalizationMode.UseIcu ?
+                        IcuGetAsciiCore(unicode, pUnicode + index, count) :
+                        NlsGetAsciiCore(unicode, pUnicode + index, count);
                 }
             }
         }
@@ -134,7 +136,9 @@ namespace System.Globalization
             {
                 fixed (char* pAscii = ascii)
                 {
-                    return GetUnicodeCore(ascii, pAscii + index, count);
+                    return GlobalizationMode.UseIcu ?
+                        IcuGetUnicodeCore(ascii, pAscii + index, count) :
+                        NlsGetUnicodeCore(ascii, pAscii + index, count);
                 }
             }
         }
@@ -172,6 +176,17 @@ namespace System.Globalization
 
         // Legal "dot" separators (i.e: . in www.microsoft.com)
         private static readonly char[] s_dotSeparators = { '.', '\u3002', '\uFF0E', '\uFF61' };
+
+        private uint Flags
+        {
+            get
+            {
+                int flags =
+                    (AllowUnassigned ? Interop.Globalization.AllowUnassigned : 0) |
+                    (UseStd3AsciiRules ? Interop.Globalization.UseStd3AsciiRules : 0);
+                return (uint)flags;
+            }
+        }
 
         private string GetAsciiInvariant(string unicode, int index, int count)
         {

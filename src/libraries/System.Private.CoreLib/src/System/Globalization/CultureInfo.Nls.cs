@@ -6,7 +6,7 @@ namespace System.Globalization
 {
     public partial class CultureInfo : IFormatProvider
     {
-        internal static CultureInfo GetUserDefaultCulture()
+        internal static CultureInfo NlsGetUserDefaultCulture()
         {
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
@@ -26,7 +26,7 @@ namespace System.Globalization
             return GetCultureByName(strDefault);
         }
 
-        private static CultureInfo GetPredefinedCultureInfo(string name)
+        private static CultureInfo NlsGetPredefinedCultureInfo(string name)
         {
             CultureInfo culture = GetCultureInfo(name);
             string englishName = culture.EnglishName;
@@ -44,7 +44,7 @@ namespace System.Globalization
             return culture;
         }
 
-        private static unsafe CultureInfo GetUserDefaultUICulture()
+        private static unsafe CultureInfo NlsGetUserDefaultUICulture()
         {
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;

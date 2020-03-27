@@ -10,7 +10,7 @@ namespace System.Globalization
 {
     public sealed partial class IdnMapping
     {
-        private unsafe string GetAsciiCore(string unicodeString, char* unicode, int count)
+        private unsafe string NlsGetAsciiCore(string unicodeString, char* unicode, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(unicodeString != null && unicodeString.Length >= count);
@@ -29,19 +29,19 @@ namespace System.Globalization
             if (length < StackAllocThreshold)
             {
                 char* output = stackalloc char[length];
-                return GetAsciiCore(unicodeString, unicode, count, flags, output, length);
+                return NlsGetAsciiCore(unicodeString, unicode, count, flags, output, length);
             }
             else
             {
                 char[] output = new char[length];
                 fixed (char* pOutput = &output[0])
                 {
-                    return GetAsciiCore(unicodeString, unicode, count, flags, pOutput, length);
+                    return NlsGetAsciiCore(unicodeString, unicode, count, flags, pOutput, length);
                 }
             }
         }
 
-        private unsafe string GetAsciiCore(string unicodeString, char* unicode, int count, uint flags, char* output, int outputLength)
+        private unsafe string NlsGetAsciiCore(string unicodeString, char* unicode, int count, uint flags, char* output, int outputLength)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(unicodeString != null && unicodeString.Length >= count);
@@ -55,7 +55,7 @@ namespace System.Globalization
             return GetStringForOutput(unicodeString, unicode, count, output, length);
         }
 
-        private unsafe string GetUnicodeCore(string asciiString, char* ascii, int count)
+        private unsafe string NlsGetUnicodeCore(string asciiString, char* ascii, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(asciiString != null && asciiString.Length >= count);
@@ -74,19 +74,19 @@ namespace System.Globalization
             if (length < StackAllocThreshold)
             {
                 char* output = stackalloc char[length];
-                return GetUnicodeCore(asciiString, ascii, count, flags, output, length);
+                return NlsGetUnicodeCore(asciiString, ascii, count, flags, output, length);
             }
             else
             {
                 char[] output = new char[length];
                 fixed (char* pOutput = &output[0])
                 {
-                    return GetUnicodeCore(asciiString, ascii, count, flags, pOutput, length);
+                    return NlsGetUnicodeCore(asciiString, ascii, count, flags, pOutput, length);
                 }
             }
         }
 
-        private unsafe string GetUnicodeCore(string asciiString, char* ascii, int count, uint flags, char* output, int outputLength)
+        private unsafe string NlsGetUnicodeCore(string asciiString, char* ascii, int count, uint flags, char* output, int outputLength)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(asciiString != null && asciiString.Length >= count);
@@ -103,17 +103,6 @@ namespace System.Globalization
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
-
-        private uint Flags
-        {
-            get
-            {
-                int flags =
-                    (AllowUnassigned ? Interop.Normaliz.IDN_ALLOW_UNASSIGNED : 0) |
-                    (UseStd3AsciiRules ? Interop.Normaliz.IDN_USE_STD3_ASCII_RULES : 0);
-                return (uint)flags;
-            }
-        }
 
         [DoesNotReturn]
         private static void ThrowForZeroLength(bool unicode)

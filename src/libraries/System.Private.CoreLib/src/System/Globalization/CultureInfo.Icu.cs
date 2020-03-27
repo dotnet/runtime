@@ -8,7 +8,7 @@ namespace System.Globalization
 {
     public partial class CultureInfo : IFormatProvider
     {
-        internal static CultureInfo GetUserDefaultCulture()
+        internal static CultureInfo IcuGetUserDefaultCulture()
         {
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
@@ -28,7 +28,7 @@ namespace System.Globalization
             return cultureInfo;
         }
 
-        private static CultureInfo GetPredefinedCultureInfo(string name)
+        private static CultureInfo IcuGetPredefinedCultureInfo(string name)
         {
             if (!Interop.Globalization.IsPredefinedLocale(name))
             {
@@ -38,7 +38,7 @@ namespace System.Globalization
             return GetCultureInfo(name);
         }
 
-        private static CultureInfo GetUserDefaultUICulture()
+        private static CultureInfo IcuGetUserDefaultUICulture()
         {
             return InitializeUserDefaultCulture();
         }

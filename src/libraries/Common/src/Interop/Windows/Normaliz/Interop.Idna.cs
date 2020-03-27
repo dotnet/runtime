@@ -27,8 +27,5 @@ internal static partial class Interop
                                         int cchASCIIChar,
                                         char* lpUnicodeCharStr,
                                         int cchUnicodeChar);
-
-        internal const int IDN_ALLOW_UNASSIGNED = 0x1;
-        internal const int IDN_USE_STD3_ASCII_RULES = 0x2;
     }
 }
