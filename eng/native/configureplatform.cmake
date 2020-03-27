@@ -344,19 +344,23 @@ else()
 endif()
 
 if(NOT CLR_CMAKE_HOST_ARCH_WASM)
-if(NOT CLR_CMAKE_TARGET_ANDROID) # Android requires PIC and CMake handles this so we don't need the check
-    # All code we build should be compiled as position independent
-    get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
-    if("CXX" IN_LIST languages)
-        set(CLR_PIE_LANGUAGE CXX)
-    else()
-        set(CLR_PIE_LANGUAGE C)
-    endif()
-    check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES ${CLR_PIE_LANGUAGE})
-    if(NOT MSVC AND NOT CMAKE_${CLR_PIE_LANGUAGE}_LINK_PIE_SUPPORTED)
-        message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
-                  "PIE link options will not be passed to linker.")
-    endif()
+    # Skip check_pie_supported call on Android as ld from llvm toolchain with NDK API level 21
+    # complains about missing linker flag `-no-pie` (while level 28's ld does support this flag,
+    # but since we know that PIE is supported, we can safely skip this redundant check).
+    if(NOT CLR_CMAKE_TARGET_ANDROID)
+        # All code we build should be compiled as position independent
+        get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+        if("CXX" IN_LIST languages)
+            set(CLR_PIE_LANGUAGE CXX)
+        else()
+            set(CLR_PIE_LANGUAGE C)
+        endif()
+        check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES ${CLR_PIE_LANGUAGE})
+        if(NOT MSVC AND NOT CMAKE_${CLR_PIE_LANGUAGE}_LINK_PIE_SUPPORTED)
+            message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
+                      "PIE link options will not be passed to linker.")
+        endif()
+    endif(NOT CLR_CMAKE_TARGET_ANDROID)
+
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif(NOT CLR_CMAKE_TARGET_ANDROID)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
