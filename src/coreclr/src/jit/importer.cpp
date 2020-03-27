@@ -7636,7 +7636,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     // it may cause registered args to be spilled. Simply spill it.
 
                     unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
-                    impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_ALL);
+                    impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_NONE);
                     stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                     // Create the actual call node
