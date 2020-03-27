@@ -615,6 +615,8 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
+		protected abstract ValueNode GetMethodParameterValue (MethodDefinition method, int parameterIndex);
+
 		private void ScanLdarg (Instruction operation, Stack<StackSlot> currentStack, MethodDefinition thisMethod, MethodBody methodBody)
 		{
 			int paramNum;
@@ -628,7 +630,7 @@ namespace Mono.Linker.Dataflow
 			}
 
 			// TODO: isbyref
-			StackSlot slot = new StackSlot (new MethodParameterValue (paramNum), isByRef: false);
+			StackSlot slot = new StackSlot (GetMethodParameterValue (thisMethod, paramNum), isByRef: false);
 			currentStack.Push (slot);
 		}
 
