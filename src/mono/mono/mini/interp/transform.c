@@ -1616,6 +1616,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_CEQ_P;
 		} else if (!strcmp (tm, "SkipInit")) {
 			*op = MINT_POP;
+		} else if (!strcmp (tm, "InitBlockUnaligned")) {
+			*op = MINT_INITBLK;
 		}
 #endif
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
