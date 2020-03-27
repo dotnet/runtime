@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -84,11 +85,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		class Test4
 		{
-			[Kept] // TODO: Should not be kept
-			public Test4 ()
-			{
-			}
-
 			[Kept]
 			public Test4 (int i, object o)
 			{
@@ -142,13 +138,18 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public FromParameterOnStaticMethodTypeB (int arg) { }
 		}
 
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type [] { typeof (Type), typeof (object []) })]
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type [] { typeof (Type), typeof (BindingFlags), typeof (Binder), typeof (object []), typeof (CultureInfo) })]
 		[Kept]
 		private void FromParameterOnInstanceMethod (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
 		{
+			// Only default ctor is available from the parameter, so only the first one should work
 			Activator.CreateInstance (type);
+			Activator.CreateInstance (type, new object [] { 1 });
+			Activator.CreateInstance (type, BindingFlags.NonPublic, null, new object [] { 1, 2 }, null);
 		}
 
 		[Kept]
@@ -157,8 +158,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public FromParameterOnInstanceMethodType () { }
 			public FromParameterOnInstanceMethodType (int arg) { }
+			public FromParameterOnInstanceMethodType (int arg, int arg2) { }
 		}
 
+		[RecognizedReflectionAccessPattern]
 		[Kept]
 		private static void FromParameterWithConstructors (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
@@ -183,6 +186,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			private FromParameterWithConstructorsType (int arg, int arg2) { }
 		}
 
+		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type [] { typeof (Type), typeof (BindingFlags), typeof (Binder), typeof (object []), typeof (CultureInfo) })]
 		[Kept]
 		private static void FromParameterWithPublicConstructors (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
@@ -192,6 +196,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			// Only public ctors and default ctor are required, so only those cases should work
 			Activator.CreateInstance (type);
 			Activator.CreateInstance (type, new object [] { 1 });
+			Activator.CreateInstance (type, BindingFlags.NonPublic, null, new object [] { 1, 2 }, null);
 		}
 
 		[Kept]
