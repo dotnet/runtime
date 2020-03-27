@@ -2196,8 +2196,7 @@ void Compiler::compSetProcessor()
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
 
 #ifdef TARGET_XARCH
-    // Instruction set flags for Intel hardware intrinsics
-    opts.compSupportsISA = 0;
+    opts.compSupportsISA         = 0;
     opts.compSupportsISAReported = 0;
 
     if (JitConfig.EnableHWIntrinsic())
