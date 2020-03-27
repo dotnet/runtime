@@ -10,6 +10,8 @@ namespace System.Security.Cryptography.Tests
 {
     public abstract partial class ECKeyFileTests<T>
     {
+        private static bool LimitedPrivateKeySupported { get; } = !PlatformDetection.IsOSX;
+
         [Fact]
         public void ReadWriteNistP521Pkcs8_LimitedPrivate()
         {
@@ -18,7 +20,7 @@ MGACAQAwEAYHKoZIzj0CAQYFK4EEACMESTBHAgEBBEIBpV+HhaVzC67h1rPTAQaf
 f9ZNiwTM6lfv1ZYeaPM/q0NUUWbKZVPNOP9xPRKJxpi9fQhrVeAbW9XtJ+NjA3ax
 FmY=";
 
-            ReadWriteBase64Pkcs8(base64, EccTestData.GetNistP521Key2());
+            ReadWriteBase64Pkcs8(base64, EccTestData.GetNistP521Key2(), LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -38,7 +40,8 @@ PFzVQfJ396S+yx4IIC4=";
                     PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
                     HashAlgorithmName.SHA1,
                     12321),
-                EccTestData.GetNistP521Key2());
+                EccTestData.GetNistP521Key2(),
+                LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -58,7 +61,8 @@ PFzVQfJ396S+yx4IIC4=";
                     PbeEncryptionAlgorithm.Aes256Cbc,
                     HashAlgorithmName.SHA1,
                     12321),
-                EccTestData.GetNistP521Key2());
+                EccTestData.GetNistP521Key2(),
+                LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -70,7 +74,8 @@ AwEH";
 
             ReadWriteBase64ECPrivateKey(
                 base64,
-                EccTestData.GetNistP256ReferenceKey());
+                EccTestData.GetNistP256ReferenceKey(),
+                LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -111,7 +116,7 @@ AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBCcwJQIBAQQgcKEsLbFoRe1W
             ReadWriteBase64ECPrivateKey(
                 "MCYCAQEEFMXZRFR94RXbJYjcb966O0c+nE2WoAsGCSskAwMCCAEBAQ==",
                 EccTestData.BrainpoolP160r1Key1,
-                SupportsBrainpool);
+                SupportsBrainpool && LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -122,7 +127,7 @@ AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBCcwJQIBAQQgcKEsLbFoRe1W
 MDYCAQAwFAYHKoZIzj0CAQYJKyQDAwIIAQEBBBswGQIBAQQUxdlEVH3hFdsliNxv
 3ro7Rz6cTZY=",
                 EccTestData.BrainpoolP160r1Key1,
-                SupportsBrainpool);
+                SupportsBrainpool && LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -140,7 +145,7 @@ heDtThcoFBJUsNhEHrc=",
                     HashAlgorithmName.SHA384,
                     4096),
                 EccTestData.BrainpoolP160r1Key1,
-                SupportsBrainpool);
+                SupportsBrainpool && LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -149,7 +154,7 @@ heDtThcoFBJUsNhEHrc=",
             ReadWriteBase64ECPrivateKey(
                 "MCMCAQEEFQPBmVrfrowFGNwT3+YwS7AQF+akEqAHBgUrgQQAAQ==",
                 EccTestData.Sect163k1Key1,
-                SupportsSect163k1);
+                SupportsSect163k1 && LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -160,7 +165,7 @@ heDtThcoFBJUsNhEHrc=",
 MDMCAQAwEAYHKoZIzj0CAQYFK4EEAAEEHDAaAgEBBBUDwZla366MBRjcE9/mMEuw
 EBfmpBI=",
                 EccTestData.Sect163k1Key1,
-                SupportsSect163k1);
+                SupportsSect163k1 && LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -178,7 +183,7 @@ DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEENKfCUCiZgnSk3NJ1fYNsfsEQEiv
                     HashAlgorithmName.SHA256,
                     7),
                 EccTestData.Sect163k1Key1,
-                SupportsSect163k1);
+                SupportsSect163k1 && LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -189,7 +194,7 @@ DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEENKfCUCiZgnSk3NJ1fYNsfsEQEiv
 MDICAQEEJAC08a4ef9zUsOggU8CKkIhSsmIx5sAWcPzGw+osXT/tQO3wN6AHBgUr
 gQQAEA==",
                 EccTestData.Sect283k1Key1,
-                SupportsSect283k1);
+                SupportsSect283k1 && LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -200,7 +205,7 @@ gQQAEA==",
 MEICAQAwEAYHKoZIzj0CAQYFK4EEABAEKzApAgEBBCQAtPGuHn/c1LDoIFPAipCI
 UrJiMebAFnD8xsPqLF0/7UDt8Dc=",
                 EccTestData.Sect283k1Key1,
-                SupportsSect283k1);
+                SupportsSect283k1 && LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -218,7 +223,7 @@ vW82QOEXDhi1gO24nhx2gUeqVTHjhFq14blAu5l5",
                     HashAlgorithmName.SHA384,
                     4096),
                 EccTestData.Sect283k1Key1,
-                SupportsSect283k1);
+                SupportsSect283k1 && LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -227,7 +232,7 @@ vW82QOEXDhi1gO24nhx2gUeqVTHjhFq14blAu5l5",
             ReadWriteBase64ECPrivateKey(
                 "MCYCAQEEFQD00koUBxIvRFlnvh2TwAk6ZTZ5hqAKBggqhkjOPQMAAQ==",
                 EccTestData.C2pnb163v1Key1,
-                SupportsC2pnb163v1);
+                SupportsC2pnb163v1 && LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -238,7 +243,7 @@ vW82QOEXDhi1gO24nhx2gUeqVTHjhFq14blAu5l5",
 MDYCAQAwEwYHKoZIzj0CAQYIKoZIzj0DAAEEHDAaAgEBBBUA9NJKFAcSL0RZZ74d
 k8AJOmU2eYY=",
                 EccTestData.C2pnb163v1Key1,
-                SupportsC2pnb163v1);
+                SupportsC2pnb163v1 && LimitedPrivateKeySupported);
         }
 
         [Fact]
@@ -256,7 +261,7 @@ DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEEKWBssmLHI618uBvF0PA4VoEQIDy
                     HashAlgorithmName.SHA512,
                     1024),
                 EccTestData.C2pnb163v1Key1,
-                SupportsC2pnb163v1);
+                SupportsC2pnb163v1 && LimitedPrivateKeySupported);
         }
     }
 }
