@@ -67,7 +67,8 @@ namespace System.IO.Tests
             item.Delete();
             Assert.All(times, time =>
             {
-                Assert.Equal(time.Value, time.Key.Getter(item));
+                // We check for the time update from refresh
+                Assert.True(time.Value < DateTime.UtcNow);
             });
         }
     }
