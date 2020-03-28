@@ -8111,7 +8111,14 @@ parse_cpu_features (const gchar *attr)
 		feature = (MonoCPUFeatures) (MONO_CPU_X86_FULL_SSEAVX_COMBINED & ~feature);
 	
 #elif defined(TARGET_ARM64)
-	// TODO: neon, sha1, sha2, asimd, etc...
+	if (!strcmp (attr + prefix, "base"))
+		feature = MONO_CPU_ARM64_BASE;
+	else if (!strcmp (attr + prefix, "neon"))
+		feature = MONO_CPU_ARM64_NEON;
+	else if (!strcmp (attr + prefix, "crypto"))
+		feature = MONO_CPU_ARM64_CRYPTO;
+	else if (!strcmp (attr + prefix, "crc"))
+		feature = MONO_CPU_ARM64_CRC;
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;

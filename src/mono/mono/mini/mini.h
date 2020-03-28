@@ -313,7 +313,12 @@ enum {
 #define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
+#ifdef TARGET_ARM64
+// FIXME: enable for Arm64
+#define MONO_CLASS_IS_SIMD(cfg, klass) (0)
+#else
 #define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass))
+#endif
 
 #else
 
@@ -2839,6 +2844,12 @@ typedef enum {
 #endif
 #ifdef TARGET_WASM
 	MONO_CPU_WASM_SIMD = 1 << 1,
+#endif
+#ifdef TARGET_ARM64
+	MONO_CPU_ARM64_BASE   = 1 << 1,
+	MONO_CPU_ARM64_NEON   = 1 << 2,
+	MONO_CPU_ARM64_CRYPTO = 1 << 3,
+	MONO_CPU_ARM64_CRC    = 1 << 4,
 #endif
 } MonoCPUFeatures;
 
