@@ -3593,6 +3593,13 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	}
 	g_free (names);
 
+	if (sig->hasthis) {
+		/* Handle this arguments as inputs to phi nodes */
+		int reg = cfg->args [0]->dreg;
+		if (ctx->vreg_types [reg])
+			ctx->values [reg] = convert (ctx, ctx->values [reg], ctx->vreg_types [reg]);
+	}
+
 	if (cfg->vret_addr)
 		emit_volatile_store (ctx, cfg->vret_addr->dreg);
 	if (sig->hasthis)
