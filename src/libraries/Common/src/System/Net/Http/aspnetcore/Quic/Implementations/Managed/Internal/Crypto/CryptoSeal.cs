@@ -11,6 +11,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
         private byte[] Key { get; }
         private byte[] HeaderKey { get; }
 
+        public int TagLength => _algorithm.TagLength;
+
         public CryptoSeal(CipherAlgorithm alg, ReadOnlySpan<byte> secret)
         {
             IV = KeyDerivation.DeriveIv(secret);
@@ -19,6 +21,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             _algorithm = CryptoSealAlgorithm.Create(alg, Key, HeaderKey);
         }
 
+        // TODO-RZ: payloadLength should include/not include the tag in both cases.
         public void EncryptPacket(Span<byte> buffer, int payloadOffset, int payloadLength, ulong packetNumber)
         {
             Span<byte> nonce = stackalloc byte[IV.Length];
@@ -46,11 +49,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
             if (HeaderHelpers.IsLongHeader(header[0]))
             {
-                header[0] ^= (byte)(mask[0] & 0x1f);
+                header[0] ^= (byte)(mask[0] & 0x0f);
             }
             else
             {
-                header[0] ^= (byte)(mask[0] & 0x0f);
+                header[0] ^= (byte)(mask[0] & 0x1f);
             }
 
             int ii = 1;
@@ -60,16 +63,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             }
         }
 
-        public void DecryptPacket(Span<byte> buffer)
+        public bool DecryptPacket(Span<byte> buffer, ulong largestAckedPn, int pnOffset, int payloadLength)
         {
             // remove header protection
-            // TODO-RZ: calculate these properly by parsing the header
-            int pnOffset = 18;
-            int payloadLength = 1162;
-
-            // this works on unprotected header only
-            // int pnLength = (buffer[0] & 0x03) + 1;
-
             Span<byte> protectionMask = stackalloc byte[5];
             _algorithm.CreateProtectionMask(buffer.Slice(pnOffset + 4, _algorithm.SampleLength), protectionMask);
             // pass header span as if packet number had the maximum 4 bytes
@@ -78,12 +74,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             // now we can get correct span size after establishing the packet number length
             var header = buffer.Slice(0, pnOffset + pnLength);
 
+            // read the actual packet number
+            // TODO-RZ: Do this in an endian-aware way
             ulong packetNumber = 0;
             for (int i = 0; i < pnLength; ++i)
             {
                 packetNumber = (packetNumber << 8) | buffer[pnOffset + i];
             }
-            packetNumber = QuicEncoding.DecodePacketNumber(0, packetNumber, pnLength);
+            packetNumber = QuicEncoding.DecodePacketNumber(largestAckedPn, packetNumber, pnLength);
 
             Span<byte> nonce = stackalloc byte[IV.Length];
             MakeNonce(IV, packetNumber, nonce);
@@ -91,7 +89,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             var ciphertext = buffer.Slice(header.Length, payloadLength);
             var tag = buffer.Slice(header.Length + ciphertext.Length, _algorithm.TagLength);
 
-            _algorithm.Decrypt(nonce, ciphertext, tag, header);
+            return _algorithm.Decrypt(nonce, ciphertext, tag, header);
         }
 
         public static int UnprotectHeader(Span<byte> header, Span<byte> mask, int pnOffset)
@@ -100,14 +98,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
             if (HeaderHelpers.IsLongHeader(header[0]))
             {
-                header[0] ^= (byte)(mask[0] & 0x1f);
+                header[0] ^= (byte)(mask[0] & 0x0f);
             }
             else
             {
-                header[0] ^= (byte)(mask[0] & 0x0f);
+                header[0] ^= (byte)(mask[0] & 0x1f);
             }
 
-            int pnLength = (header[0] & 0x03) + 1;
+            int pnLength = HeaderHelpers.GetPacketNumberLength(header[0]);
             int ii = 1;
             // header span is passed as if the packet number had full 4 bytes, so we need to
             // need to leave out a couple of bytes at the end

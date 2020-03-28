@@ -23,7 +23,10 @@ namespace System.Net.Quic.Tests
             // derive keying material (we need client material to decrypt client's message)
             var seal = DeriveClientCryptoSeal();
 
-            seal.DecryptPacket(packet);
+            // These would normally be calculated
+            int pnOffset = 18;
+            int payloadLength = 1162;
+            seal.DecryptPacket(packet, 0, pnOffset, payloadLength);
 
             const string headerHex = ReferenceData.ClientInitialPacketHeaderHex;
             int headerLen = headerHex.Length / 2;
