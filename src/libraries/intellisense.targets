@@ -57,10 +57,7 @@
   <Import Project="$(MSBuildThisDirectory)targetframework.props" />
   
   <PropertyGroup>
-    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)\</IntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)\</IntermediateOutputPath>
+    <GeneratedAssemblyInfoFile>$(IntermediateOutputPath)$(MSBuildProjectName).AssemblyInfo$(DefaultLanguageSourceExtension)</GeneratedAssemblyInfoFile>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' != '' and '$(TargetFrameworkVersion)' != ''">
@@ -69,39 +66,11 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == ''">$(MSBuildProjectExtensionsPath)/project.assets.json</ProjectAssetsFile>
-    <ProjectAssetsFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(ProjectAssetsFile)))</ProjectAssetsFile>
-    
     <!-- Note that the assets.cache file has contents that are unique to the current TFM and configuration and therefore cannot
          be stored in a shared directory next to the assets.json file -->
     <ProjectAssetsCacheFile Condition="'$(ProjectAssetsCacheFile)' == ''">$(IntermediateOutputPath)$(MSBuildProjectName).assets.cache</ProjectAssetsCacheFile>
     <ProjectAssetsCacheFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(ProjectAssetsCacheFile)))</ProjectAssetsCacheFile>
-
-    <!-- Don't copy local for netstandard projects. -->
-    <CopyLocalLockFileAssemblies Condition="'$(CopyLocalLockFileAssemblies)' == '' and
-                                            '$(TargetFrameworkIdentifier)' == '.NETStandard'">false</CopyLocalLockFileAssemblies>
-
-    <!-- Don't copy local for netcoreapp projects before 3.0 or non-exe and non-component projects. -->
-    <CopyLocalLockFileAssemblies Condition="'$(CopyLocalLockFileAssemblies)' == '' and
-                                            '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                                            ('$(_TargetFrameworkVersionWithoutV)' &lt; '3.0' or
-                                             ('$(HasRuntimeOutput)' != 'true' and '$(EnableDynamicLoading)' != 'true'))">false</CopyLocalLockFileAssemblies>
-
-    <!-- All other project types should copy local. -->
-    <CopyLocalLockFileAssemblies Condition="'$(CopyLocalLockFileAssemblies)' == ''">true</CopyLocalLockFileAssemblies>
-
-    <ContentPreprocessorOutputDirectory Condition="'$(ContentPreprocessorOutputDirectory)' == ''">$(IntermediateOutputPath)NuGet\</ContentPreprocessorOutputDirectory>
-
-    <UseTargetPlatformAsNuGetTargetMoniker Condition="'$(UseTargetPlatformAsNuGetTargetMoniker)' == '' AND '$(TargetFrameworkMoniker)' == '.NETCore,Version=v5.0'">true</UseTargetPlatformAsNuGetTargetMoniker>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == '' AND '$(UseTargetPlatformAsNuGetTargetMoniker)' == 'true'">$(TargetPlatformIdentifier),Version=v$([System.Version]::Parse('$(TargetPlatformMinVersion)').ToString(3))</NuGetTargetMoniker>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == '' AND '$(UseTargetPlatformAsNuGetTargetMoniker)' != 'true'">$(TargetFrameworkMoniker)</NuGetTargetMoniker>
-
-    <EmitAssetsLogMessages Condition="'$(EmitAssetsLogMessages)' == ''">true</EmitAssetsLogMessages>
+    <NuGetTargetMoniker>$(TargetFrameworkMoniker)</NuGetTargetMoniker>
   </PropertyGroup>
 
-  <!-- Target Moniker + RID-->
-  <PropertyGroup Condition="'$(_NugetTargetMonikerAndRID)' == ''">
-    <_NugetTargetMonikerAndRID Condition="'$(RuntimeIdentifier)' == ''">$(NuGetTargetMoniker)</_NugetTargetMonikerAndRID>
-    <_NugetTargetMonikerAndRID Condition="'$(RuntimeIdentifier)' != ''">$(NuGetTargetMoniker)/$(RuntimeIdentifier)</_NugetTargetMonikerAndRID>
-  </PropertyGroup>
 </Project>

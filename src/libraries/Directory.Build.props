@@ -241,9 +241,7 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(BuildSettings)'))</RuntimePath>
-    <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
     <BuildTargetFrameworkRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(BuildTargetFramework)'))</BuildTargetFrameworkRefPath>
-    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
     <NetStandard20RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.0'))</NetStandard20RefPath>
     <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
     <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(NetFrameworkCurrent)'))</NetFxRefPath>
@@ -275,9 +273,6 @@
     <!-- setting the output paths -->
     <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)\</OutputPath>
     <OutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseOutputPath)$(TargetFramework)-$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)\</IntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)\</IntermediateOutputPath>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
