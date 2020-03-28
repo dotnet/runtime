@@ -24,6 +24,7 @@ We welcome contributions! Many people all over the world have helped make this p
 
 * [Contributing](CONTRIBUTING.md) explains what kinds of changes we welcome
 - [Workflow Instructions](docs/workflow/README.md) explains how to build and test
+* Try the latest versions of libraries from the [nightly build package feed](https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet5/nuget/v3/index.json) and test them in your projects.
 
 ## Reporting security issues and security bugs
 
