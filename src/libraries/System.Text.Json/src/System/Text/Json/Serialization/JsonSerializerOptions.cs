@@ -339,7 +339,7 @@ namespace System.Text.Json
             {
                 if (type.ContainsGenericParameters)
                 {
-                    ThrowHelper.ThrowNotSupportedException_CannotDeserializeOpenGeneric(type);
+                    ThrowHelper.ThrowInvalidOperationException_CannotSerializeOpenGeneric(type);
                 }
 
                 result = _classes.GetOrAdd(type, new JsonClassInfo(type, this));

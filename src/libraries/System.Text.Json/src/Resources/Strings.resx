@@ -506,7 +506,7 @@
   <data name="BufferMaximumSizeExceeded" xml:space="preserve">
     <value>Cannot allocate a buffer of size {0}.</value>
   </data>
-  <data name="CannotDeserializeOpenGeneric" xml:space="preserve">
-    <value>Deserialization of types that contain generic parameters is not supported: '{0}'.</value>
+  <data name="CannotSerializeOpenGeneric" xml:space="preserve">
+    <value>Serialization or deserialization of types that contain generic parameters is invalid: '{0}'.</value>
   </data>
 </root>
