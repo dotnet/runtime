@@ -32,6 +32,7 @@ namespace System.Runtime.InteropServices
     }
     public static partial class RuntimeInformation
     {
+        public static string RuntimeIdentifier { get { throw null; } }
         public static string FrameworkDescription { get { throw null; } }
         public static System.Runtime.InteropServices.Architecture OSArchitecture { get { throw null; } }
         public static string OSDescription { get { throw null; } }
