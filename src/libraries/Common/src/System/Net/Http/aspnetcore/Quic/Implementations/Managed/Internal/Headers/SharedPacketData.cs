@@ -31,7 +31,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         internal readonly ReadOnlySpan<byte> Token;
 
         /// <summary>
-        ///     The length of the rest of the packet, including packet number.
+        ///     The length of the rest of the packet, including packet number and integrity tag (for encrypted packets).
         /// </summary>
         internal readonly ulong Length;
 

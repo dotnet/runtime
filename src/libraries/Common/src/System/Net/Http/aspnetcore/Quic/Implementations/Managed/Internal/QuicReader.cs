@@ -15,6 +15,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private int _maxOffset;
 
         // number of bytes read from the buffer.
+
         private int _consumed;
 
         internal QuicReader(byte[] buffer)
@@ -31,6 +32,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         public int BytesRead => _consumed;
 
         public int BytesLeft => _maxOffset - _consumed;
+
+        public byte[] Buffer => _buffer;
 
         internal bool TryReadUInt8(out byte result)
         {
@@ -102,6 +105,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return bytes > 0;
         }
 
+        internal ulong PeekVarInt()
+        {
+            QuicPrimitives.ReadVarInt(PeekSpan(BytesLeft), out ulong result);
+            return result;
+        }
+
         internal ulong ReadVarInt()
         {
             if (!TryReadVarInt(out ulong result)) throw new InvalidOperationException("Buffer too short");
@@ -145,6 +154,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             CheckSizeAvailable(length);
             return _buffer.AsSpan(_consumed, length);
+        }
+
+        internal byte PeekUInt8()
+        {
+            return _buffer[_consumed];
         }
 
         private void CheckSizeAvailable(int size)

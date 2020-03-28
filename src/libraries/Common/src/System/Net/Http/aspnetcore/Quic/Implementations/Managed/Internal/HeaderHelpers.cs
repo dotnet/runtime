@@ -4,6 +4,11 @@ using System.Security.Cryptography;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 {
+    internal static class QuicConstants
+    {
+        internal const int MinimumClientInitialDatagramSize = 1200;
+    }
+
     internal static class HeaderHelpers
     {
         // shared

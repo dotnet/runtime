@@ -23,6 +23,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             reader.WriteSpan(data);
         }
 
+        internal static FrameType PeekFrameType(this QuicReader reader)
+        {
+            return (FrameType)reader.PeekVarInt();
+        }
+
         internal static FrameType ReadFrameType(this QuicReader reader)
         {
             return (FrameType)reader.ReadVarInt();

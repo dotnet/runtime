@@ -21,31 +21,33 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             _algorithm = CryptoSealAlgorithm.Create(alg, Key, HeaderKey);
         }
 
-        // TODO-RZ: payloadLength should include/not include the tag in both cases.
-        public void EncryptPacket(Span<byte> buffer, int payloadOffset, int payloadLength, ulong packetNumber)
+        public void EncryptPacket(Span<byte> buffer, int pnOffset, int payloadLength, ulong packetNumber)
         {
+            int pnLength = HeaderHelpers.GetPacketNumberLength(buffer[0]);
+
             Span<byte> nonce = stackalloc byte[IV.Length];
             MakeNonce(IV, packetNumber, nonce);
 
             // split packet buffer into spans
-            var header = buffer.Slice(0, payloadOffset);
-            var payload = buffer.Slice(payloadOffset, payloadLength);
-            var tag = buffer.Slice(payloadOffset + payloadLength, _algorithm.TagLength);
+            var header = buffer.Slice(0, pnOffset + pnLength);
+            var payload = buffer.Slice(pnOffset + pnLength, payloadLength - pnLength - _algorithm.TagLength);
+            var tag = buffer.Slice(pnOffset + payloadLength - _algorithm.TagLength, _algorithm.TagLength);
 
             // encrypt payload in-place
             _algorithm.Encrypt(nonce, payload, tag, header);
 
             // apply header protection
             Span<byte> protectionMask = stackalloc byte[5];
-            _algorithm.CreateProtectionMask(payload.Slice(0, _algorithm.SampleLength), protectionMask);
 
-            ProtectHeader(header, protectionMask);
+            // sample as if pnLength == 4
+            _algorithm.CreateProtectionMask(buffer.Slice(pnOffset + 4, _algorithm.SampleLength), protectionMask);
+
+            ProtectHeader(header, protectionMask, pnLength);
         }
 
-        public static void ProtectHeader(Span<byte> header, Span<byte> mask)
+        public static void ProtectHeader(Span<byte> header, Span<byte> mask, int pnLength)
         {
             Debug.Assert(mask.Length == 5);
-            int pnLength = (header[0] & 0x03) + 1;
 
             if (HeaderHelpers.IsLongHeader(header[0]))
             {
@@ -63,13 +65,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             }
         }
 
-        public bool DecryptPacket(Span<byte> buffer, ulong largestAckedPn, int pnOffset, int payloadLength)
+        public bool DecryptPacket(Span<byte> buffer, int pnOffset, int payloadLength, ulong largestAckedPn)
         {
             // remove header protection
             Span<byte> protectionMask = stackalloc byte[5];
             _algorithm.CreateProtectionMask(buffer.Slice(pnOffset + 4, _algorithm.SampleLength), protectionMask);
+
             // pass header span as if packet number had the maximum 4 bytes
-            int pnLength = UnprotectHeader(buffer.Slice(0, pnOffset + 4), protectionMask, pnOffset);
+            int pnLength = UnprotectHeader(buffer.Slice(0, pnOffset + 4), protectionMask);
 
             // now we can get correct span size after establishing the packet number length
             var header = buffer.Slice(0, pnOffset + pnLength);
@@ -86,13 +89,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             Span<byte> nonce = stackalloc byte[IV.Length];
             MakeNonce(IV, packetNumber, nonce);
 
-            var ciphertext = buffer.Slice(header.Length, payloadLength);
+            var ciphertext = buffer.Slice(header.Length, payloadLength - pnLength - _algorithm.TagLength);
             var tag = buffer.Slice(header.Length + ciphertext.Length, _algorithm.TagLength);
 
             return _algorithm.Decrypt(nonce, ciphertext, tag, header);
         }
 
-        public static int UnprotectHeader(Span<byte> header, Span<byte> mask, int pnOffset)
+        public static int UnprotectHeader(Span<byte> header, Span<byte> mask)
         {
             Debug.Assert(mask.Length == 5);
 
@@ -105,13 +108,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
                 header[0] ^= (byte)(mask[0] & 0x1f);
             }
 
+            // we can get pnLength only after unprotecting the first byte
             int pnLength = HeaderHelpers.GetPacketNumberLength(header[0]);
+
             int ii = 1;
             // header span is passed as if the packet number had full 4 bytes, so we need to
             // need to leave out a couple of bytes at the end
-            for (int i = pnOffset; i < pnOffset + pnLength; i++)
+            for (int i = 0; i < pnLength; i++)
             {
-                header[i] ^= mask[ii++ % mask.Length];
+                header[header.Length - 4 + i] ^= mask[ii++ % mask.Length];
             }
 
             return pnLength;

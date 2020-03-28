@@ -1,7 +1,24 @@
+using System.Diagnostics;
+
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal class ConnectionId : IEquatable<ConnectionId>
     {
+        // TODO-RZ: remove seed
+        private static Random _random = new Random(41);
+
+        public static ConnectionId Random(int length)
+        {
+            Debug.Assert((uint) length <= 20, "Maximum connection id length is 20");
+            var bytes = new byte[length];
+            lock (_random)
+            {
+                _random.NextBytes(bytes);
+            }
+
+            return new ConnectionId(bytes);
+        }
+
         public ConnectionId(byte[] data)
         {
             Data = data;
