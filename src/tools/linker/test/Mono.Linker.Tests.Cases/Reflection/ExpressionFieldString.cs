@@ -64,10 +64,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[UnrecognizedReflectionAccessPattern (
 			typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 		[Kept]
-		static void Branch_MethodParameterValueNode (Type T, string S)
+		static void Branch_MethodParameterValueNode (Type T, string s)
 		{
 			var expr = Expression.Field (null, T, "TestName1");
-			expr = Expression.Field (null, typeof (ExpressionFieldString), S);
+			expr = Expression.Field (null, typeof (ExpressionFieldString), s);
 		}
 
 		[UnrecognizedReflectionAccessPattern (
