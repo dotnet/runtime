@@ -8,7 +8,7 @@ parameters:
   isOfficialBuild: false
   isOfficialAllConfigurations: false
   liveRuntimeBuildConfig: ''
-  runtimeFlavor: 'coreclr'
+  runtimeFlavor: ''
   timeoutInMinutes: 150
   condition: true
   container: ''
@@ -95,7 +95,7 @@ jobs:
         - _runtimeArtifactsPathArg: ''
 
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
+          - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/$(runtimeFlavorName)'
           # Use corelib dependencies for coreclr
           - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
             - _runtimeArtifactName: 'CoreLib_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
