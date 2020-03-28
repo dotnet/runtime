@@ -211,7 +211,7 @@ namespace Internal.JitInterface
 
             try
             {
-                if (!ShouldSkipCompilation(MethodBeingCompiled, _compilation.AggressiveOptimizationBehavior))
+                if (!ShouldSkipCompilation(MethodBeingCompiled))
                 {
                     CompileMethodInternal(methodCodeNodeNeedingCode);
                     codeGotPublished = true;
@@ -1492,6 +1492,135 @@ namespace Internal.JitInterface
             MethodDesc method = HandleToObject(ftn);
             return getMethodAttribsInternal(method);
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
+        }
+
+        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+            classMustBeLoadedBeforeCodeIsRun(type);
+        }
+
+        private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
+        {
+            ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
+            ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+        }
+
+        private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
+        {
+            MethodDesc methodToCall;
+            MethodDesc targetMethod;
+            TypeDesc constrainedType;
+            MethodDesc originalMethod;
+            TypeDesc exactType;
+            MethodDesc callerMethod;
+            EcmaModule callerModule;
+            bool useInstantiatingStub;
+            ceeInfoGetCallInfo(
+                ref pResolvedToken, 
+                pConstrainedResolvedToken, 
+                callerHandle, 
+                flags, 
+                pResult, 
+                out methodToCall,
+                out targetMethod, 
+                out constrainedType, 
+                out originalMethod, 
+                out exactType,
+                out callerMethod,
+                out callerModule,
+                out useInstantiatingStub);
+
+            var targetDetails = _compilation.TypeSystemContext.Target;
+            if (targetDetails.Architecture == TargetArchitecture.X86
+                && targetDetails.OperatingSystem == TargetOS.Windows
+                && targetMethod.IsNativeCallable)
+            {
+                throw new RequiresRuntimeJitException("ReadyToRun: References to methods with NativeCallableAttribute not implemented");
+            }
+
+            if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
+            {
+                // READYTORUN: FUTURE: Optionally create boxing stub at runtime
+                // We couldn't resolve the constrained call into a valuetype instance method and we're asking the JIT
+                // to box and do a virtual dispatch. If we were to allow the boxing to happen now, it could break future code
+                // when the user adds a method to the valuetype that makes it possible to avoid boxing (if there is state
+                // mutation in the method).
+
+                // We allow this at least for primitives and enums because we control them
+                // and we know there's no state mutation.
+                if (getTypeForPrimitiveValueClass(pConstrainedResolvedToken->hClass) == CorInfoType.CORINFO_TYPE_UNDEF)
+                    throw new RequiresRuntimeJitException(pResult->thisTransform.ToString());
+            }
+
+            // OK, if the EE said we're not doing a stub dispatch then just return the kind to
+            // the caller.  No other kinds of virtual calls have extra information attached.
+            switch (pResult->kind)
+            {
+                case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB:
+                    {
+                        if (pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup)
+                        {
+                            return;
+                        }
+
+                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                            _compilation.SymbolNodeFactory.InterfaceDispatchCell(
+                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null),
+                                isUnboxingStub: false,
+                                _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()));
+                        }
+                    break;
+
+
+                case CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER:
+                    Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
+
+                    // There is no easy way to detect method referenced via generic lookups in generated code.
+                    // Report this method reference unconditionally.
+                    // TODO: m_pImage->m_pPreloader->MethodReferencedByCompiledCode(pResult->hMethod);
+                    return;
+
+                case CORINFO_CALL_KIND.CORINFO_CALL:
+                    {
+                        // Constrained token is not interesting with this transforms
+                        if (pResult->thisTransform != CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM)
+                            constrainedType = null;
+
+                        MethodDesc nonUnboxingMethod = methodToCall;
+                        bool isUnboxingStub = methodToCall.IsUnboxingThunk();
+                        if (isUnboxingStub)
+                        {
+                            nonUnboxingMethod = methodToCall.GetUnboxedMethod();
+                        }
+                        if (nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
+                        {
+                            nonUnboxingMethod = rawPinvoke.Target;
+                        }
+
+                        // READYTORUN: FUTURE: Direct calls if possible
+                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                            _compilation.NodeFactory.MethodEntrypoint(
+                                new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType),
+                                isUnboxingStub,
+                                isInstantiatingStub: useInstantiatingStub,
+                                isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
+                    }
+                    break;
+
+                case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE:
+                    // Only calls within the CoreLib version bubble support fragile NI codegen with vtable based calls, for better performance (because 
+                    // CoreLib and the runtime will always be updated together anyways - this is a special case)
+                    break;
+
+                case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN:
+                    if (!pResult->exactContextNeedsRuntimeLookup)
+                    {
+                        bool atypicalCallsite = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ATYPICAL_CALLSITE) != 0;
+                        pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
+                            _compilation.NodeFactory.DynamicHelperCell(
+                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null),
+                                useInstantiatingStub));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
                     }
@@ -1530,6 +1659,8 @@ namespace Internal.JitInterface
             }
         }
 
+        private void ComputeRuntimeLookupForSharedGenericToken(
+            DictionaryEntryKind entryKind,
             ref CORINFO_RESOLVED_TOKEN pResolvedToken,
             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
             MethodDesc templateMethod,
