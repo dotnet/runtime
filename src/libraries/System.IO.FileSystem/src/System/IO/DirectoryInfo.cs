@@ -50,9 +50,9 @@ namespace System.IO
             _isNormalized = isNormalized;
         }
 
-        private void DeleteAndInvalidate(bool recurisve)
+        private void DeleteAndInvalidate(bool recursive)
         {
-            FileSystem.RemoveDirectory(FullPath, recurisve);
+            FileSystem.RemoveDirectory(FullPath, recursive);
             Invalidate();
         }
 
