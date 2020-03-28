@@ -9971,7 +9971,6 @@ add_intrinsic (LLVMModuleRef module, int id)
 	case INTRINS_BZHI_I32:
 	case INTRINS_PEXT_I32:
 	case INTRINS_PDEP_I32:
-	case INTRINS_BITREVERSE_I32:
 		intrins = add_intrins1 (module, id, LLVMInt32Type ());
 		break;
 	case INTRINS_CTPOP_I64:
@@ -9981,7 +9980,6 @@ add_intrinsic (LLVMModuleRef module, int id)
 	case INTRINS_PDEP_I64:
 	case INTRINS_CTLZ_I64:
 	case INTRINS_CTTZ_I64:
-	case INTRINS_BITREVERSE_I64:
 		intrins = add_intrins1 (module, id, LLVMInt64Type ());
 		break;
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
@@ -10006,6 +10004,14 @@ add_intrinsic (LLVMModuleRef module, int id)
 		break;
 	case INTRINS_WASM_ANYTRUE_V2:
 		intrins = add_intrins1 (module, id, sse_i8_t);
+		break;
+#endif
+#ifdef TARGET_ARM64
+	case INTRINS_BITREVERSE_I32:
+		intrins = add_intrins1 (module, id, LLVMInt32Type ());
+		break;
+	case INTRINS_BITREVERSE_I64:
+		intrins = add_intrins1 (module, id, LLVMInt64Type ());
 		break;
 #endif
 	default:
