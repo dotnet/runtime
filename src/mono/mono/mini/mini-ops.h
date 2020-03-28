@@ -1514,7 +1514,7 @@ MINI_OP(OP_XOP_I4_I8, "xop_i4_i8", IREG, LREG, NONE)
 MINI_OP(OP_XOP_I8_I8, "xop_i8_i8", LREG, LREG, NONE)
 MINI_OP(OP_XOP_I4_I4, "xop_i4_i4", IREG, IREG, NONE)
 MINI_OP(OP_XOP_I4_I4_I4, "xop_i4_i4_i4", IREG, IREG, IREG)
-MINI_OP(OP_XOP_I4_I4_I8, "xop_i4_i4_i8", IREG, IREG, NONE)
+MINI_OP(OP_XOP_I4_I4_I8, "xop_i4_i4_i8", IREG, IREG, LREG)
 
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
 /* Extract element of vector */
