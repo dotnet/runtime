@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
 
             if (D is object && Q.Y is null && Q.X is null)
                 hasErrors = false;
-            if (Q.Y is object && Q.X is object)
+            if (Q.Y is object && Q.X is object && Q.Y.Length == Q.X.Length)
                 hasErrors = false;
 
             if (!hasErrors)

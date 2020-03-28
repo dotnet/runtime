@@ -775,24 +775,6 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
         }
 
         [Fact]
-        public void PrivateKeyOnlyReconstructsPublicKey()
-        {
-            using T key = CreateKey();
-            ECParameters parameters = EccTestData.GetNistP521Key2();
-            ImportParameters(key, parameters);
-            byte[] pubKeyInfo = key.ExportSubjectPublicKeyInfo();
-            byte[] privateKeyInfo = key.ExportPkcs8PrivateKey();
-
-            parameters.Q = default; // clear out public parameters
-            ImportParameters(key, parameters);
-            byte[] pubKeyDerived = key.ExportSubjectPublicKeyInfo();
-            byte[] privateKeyDerived = key.ExportPkcs8PrivateKey();
-
-            Assert.Equal(pubKeyInfo, pubKeyDerived);
-            Assert.Equal(privateKeyInfo, privateKeyDerived);
-        }
-
-        [Fact]
         public void NoPrivKeyFromPublicOnly()
         {
             using (T key = CreateKey())
