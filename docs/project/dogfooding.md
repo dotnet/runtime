@@ -68,7 +68,6 @@ To install additional .NET Core runtimes or SDKs:
 ```
 
 4. Our nightly builds are uploaded to dotnet-blob feeds, not NuGet - so ensure the .NET Core blob feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these lines:
-
 ```xml
 <packageSources>
     <add key="dotnet5" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet5/nuget/v3/index.json" />
