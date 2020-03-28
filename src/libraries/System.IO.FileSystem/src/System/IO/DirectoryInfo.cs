@@ -50,12 +50,6 @@ namespace System.IO
             _isNormalized = isNormalized;
         }
 
-        private void DeleteAndInvalidate(bool recursive)
-        {
-            FileSystem.RemoveDirectory(FullPath, recursive);
-            Invalidate();
-        }
-
         public DirectoryInfo? Parent
         {
             get
@@ -241,8 +235,12 @@ namespace System.IO
             Invalidate();
         }
 
-        public override void Delete() => DeleteAndInvalidate(false);
+        public override void Delete() => Delete(false);
 
-        public void Delete(bool recursive) => DeleteAndInvalidate(recursive);
+        public void Delete(bool recursive)
+        {
+            FileSystem.RemoveDirectory(FullPath, recursive);
+            Invalidate();
+        }
     }
 }

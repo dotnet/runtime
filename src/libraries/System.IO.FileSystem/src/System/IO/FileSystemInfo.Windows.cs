@@ -141,7 +141,6 @@ namespace System.IO
             }
         }
 
-
         private void EnsureDataInitialized()
         {
             if (_dataInitialized == -1)
