@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
@@ -98,6 +99,7 @@ namespace System.Diagnostics.Tracing
         // know specifics about the events and track GC movements to associate events. The hash code is a stable value and
         // easier to use for association, though there may be collisions.
         [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public void ThreadPoolEnqueueWorkObject(object workID) => ThreadPoolEnqueueWork(workID.GetHashCode());
 
         [Event(31, Level = EventLevel.Verbose, Keywords = Keywords.ThreadPool | Keywords.ThreadTransfer)]
@@ -111,6 +113,7 @@ namespace System.Diagnostics.Tracing
         // know specifics about the events and track GC movements to associate events. The hash code is a stable value and
         // easier to use for association, though there may be collisions.
         [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public void ThreadPoolDequeueWorkObject(object workID) => ThreadPoolDequeueWork(workID.GetHashCode());
 
         // id -   represents a correlation ID that allows correlation of two activities, one stamped by

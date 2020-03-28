@@ -393,7 +393,7 @@ namespace System.Threading
 
         public ThreadPoolWorkQueue()
         {
-            loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
+            RefreshLoggingEnabled();
         }
 
         public ThreadPoolWorkQueueThreadLocals GetOrCreateThreadLocals() =>
@@ -405,6 +405,27 @@ namespace System.Threading
             Debug.Assert(ThreadPoolWorkQueueThreadLocals.threadLocals == null);
 
             return ThreadPoolWorkQueueThreadLocals.threadLocals = new ThreadPoolWorkQueueThreadLocals(this);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RefreshLoggingEnabled()
+        {
+            if (!FrameworkEventSource.Log.IsEnabled())
+            {
+                if (loggingEnabled)
+                {
+                    loggingEnabled = false;
+                }
+                return;
+            }
+
+            RefreshLoggingEnabledFull();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void RefreshLoggingEnabledFull()
+        {
+            loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
         }
 
         internal void EnsureThreadRequested()
@@ -462,6 +483,7 @@ namespace System.Threading
             EnsureThreadRequested();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public IThreadPoolWorkItem? TryDequeueTimeSensitiveWorkItem()
         {
             Debug.Assert(ThreadPool.SupportsTimeSensitiveWorkItems);
@@ -584,7 +606,7 @@ namespace System.Threading
             outerWorkQueue.MarkThreadRequestSatisfied();
 
             // Has the desire for logging changed since the last time we entered?
-            outerWorkQueue.loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
+            outerWorkQueue.RefreshLoggingEnabled();
 
             //
             // Assume that we're going to need another thread if this one returns to the VM.  We'll set this to
@@ -712,7 +734,7 @@ namespace System.Threading
                     startTickCount = currentTickCount;
 
                     // Periodically refresh whether logging is enabled
-                    workQueue.loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
+                    workQueue.RefreshLoggingEnabled();
 
                     // Consistent with CoreCLR currently, only one time-sensitive work item is run periodically between quantums
                     // of time spent running work items in the normal thread pool queues, until the normal queues are depleted.
