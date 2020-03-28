@@ -676,10 +676,18 @@ namespace System.Net.Security
                             // To handle this we call DecryptData() under lock and we create TCS waiter.
                             // EncryptData() checks that under same lock and if it exist it will not call low-level crypto.
                             // Instead it will wait synchronously or asynchronously and it will try again after the wait.
-                            // The result will be set when ReplyOnReAuthenticationAsync() is finished e.g. lsass business is over
-                            // or if we bail to continue. If either one happen before EncryptData(), _handshakeWaiter will be set to null
+                            // The result will be set when ReplyOnReAuthenticationAsync() is finished e.g. lsass business is over.
+                            // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
                             // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
-                            _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+
+                            if (_sslAuthenticationOptions!.AllowRenegotiation || SslProtocol == SslProtocols.Tls13)
+                            {
+                                // create TCS only if we plan to proceed. If not, we will throw in block bellow outside of the lock.
+                                // Tls1.3 does not have renegotiation. However on Windows this error code is used
+                                // for session management e.g. anything lsass needs to see.
+                                _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                            }
                         }
                     }
 
@@ -703,13 +711,9 @@ namespace System.Net.Security
 
                         if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                         {
-                            // Tls1.3 does not have renegotiation. However on Windows this error code is used
-                            // for session management e.g. anything lsass needs to see.
-                            if (!_sslAuthenticationOptions!.AllowRenegotiation && SslProtocol != SslProtocols.Tls13)
+                            // We determine above that we will not process it.
+                            if (_handshakeWaiter == null)
                             {
-                                _handshakeWaiter!.SetResult(false);
-                                _handshakeWaiter = null;
-
                                 if (NetEventSource.IsEnabled) NetEventSource.Fail(this, "Renegotiation was requested but it is disallowed");
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
