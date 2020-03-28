@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Asn1
     internal partial struct ECDomainParameters
     {
         internal System.Security.Cryptography.Asn1.SpecifiedECDomain? Specified;
-        internal Oid Named;
+        internal Oid? Named;
 
 #if DEBUG
         static ECDomainParameters()

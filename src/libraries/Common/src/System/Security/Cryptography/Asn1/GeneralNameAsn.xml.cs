@@ -15,14 +15,14 @@ namespace System.Security.Cryptography.Asn1
     internal partial struct GeneralNameAsn
     {
         internal System.Security.Cryptography.Asn1.OtherNameAsn? OtherName;
-        internal string Rfc822Name;
-        internal string DnsName;
+        internal string? Rfc822Name;
+        internal string? DnsName;
         internal ReadOnlyMemory<byte>? X400Address;
         internal ReadOnlyMemory<byte>? DirectoryName;
         internal System.Security.Cryptography.Asn1.EdiPartyNameAsn? EdiPartyName;
-        internal string Uri;
+        internal string? Uri;
         internal ReadOnlyMemory<byte>? IPAddress;
-        internal string RegisteredId;
+        internal string? RegisteredId;
 
 #if DEBUG
         static GeneralNameAsn()

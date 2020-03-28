@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Collections.Generic;
@@ -17,8 +18,8 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal int Version;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn[] DigestAlgorithms;
         internal System.Security.Cryptography.Pkcs.Asn1.EncapsulatedContentInfoAsn EncapContentInfo;
-        internal System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn[] CertificateSet;
-        internal ReadOnlyMemory<byte>[] Crls;
+        internal System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn[]? CertificateSet;
+        internal ReadOnlyMemory<byte>[]? Crls;
         internal System.Security.Cryptography.Pkcs.Asn1.SignerInfoAsn[] SignerInfos;
 
         internal void Encode(AsnWriter writer)

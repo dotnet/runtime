@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     internal partial struct PolicyInformation
     {
         internal string PolicyIdentifier;
-        internal System.Security.Cryptography.Pkcs.Asn1.PolicyQualifierInfo[] PolicyQualifiers;
+        internal System.Security.Cryptography.Pkcs.Asn1.PolicyQualifierInfo[]? PolicyQualifiers;
 
         internal void Encode(AsnWriter writer)
         {

@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Pkcs
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct SignedAttributesSet
     {
-        internal System.Security.Cryptography.Asn1.AttributeAsn[] SignedAttributes;
+        internal System.Security.Cryptography.Asn1.AttributeAsn[]? SignedAttributes;
 
 #if DEBUG
         static SignedAttributesSet()

@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.Pkcs
                     return coll;
                 }
 
-                CertificateChoiceAsn[] certChoices = _signedData.CertificateSet;
+                CertificateChoiceAsn[]? certChoices = _signedData.CertificateSet;
 
                 if (certChoices == null)
                 {

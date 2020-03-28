@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
     {
         internal string BagId;
         internal ReadOnlyMemory<byte> BagValue;
-        internal System.Security.Cryptography.Asn1.AttributeAsn[] BagAttributes;
+        internal System.Security.Cryptography.Asn1.AttributeAsn[]? BagAttributes;
 
         internal void Encode(AsnWriter writer)
         {
