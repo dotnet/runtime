@@ -37,6 +37,7 @@ jobs:
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       isOfficialAllConfigurations: ${{ parameters.isOfficialAllConfigurations }}
       liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
