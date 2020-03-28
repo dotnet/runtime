@@ -17,14 +17,15 @@ namespace System.Security.Cryptography
         public int ImportParameters(ECParameters parameters)
         {
             SafeEcKeyHandle key;
+            bool hasPublicParameters = parameters.Q.X is object && parameters.Q.Y is object;
 
             parameters.Validate();
 
-            if (parameters.Curve.IsPrime)
+            if (parameters.Curve.IsPrime && hasPublicParameters)
             {
                 key = ImportPrimeCurveParameters(parameters);
             }
-            else if (parameters.Curve.IsCharacteristic2)
+            else if (parameters.Curve.IsCharacteristic2 && hasPublicParameters)
             {
                 key = ImportCharacteristic2CurveParameters(parameters);
             }
