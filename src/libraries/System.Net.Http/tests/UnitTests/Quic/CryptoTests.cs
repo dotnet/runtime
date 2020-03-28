@@ -5,30 +5,12 @@ namespace System.Net.Quic.Tests
 {
     public class CryptoTests
     {
-        [Theory]
-        [InlineData("client in", 32, ReferenceData.ClientInLabelHex)]
-        [InlineData("server in", 32, ReferenceData.ServerInLabelHex)]
-        [InlineData("quic key", 16, ReferenceData.QuicKeyLabelHex)]
-        [InlineData("quic iv", 12, ReferenceData.QuicIvLabelHex)]
-        [InlineData("quic hp", 16, ReferenceData.QuicHpLabelHex)]
-        public void TestLabelGeneration(string label, ushort len, string expectedHex)
-        {
-            var actual = KeyDerivation.CreateHkdfLabel(label, len);
-            string actualHex = HexHelpers.ToHexString(actual);
-
-            Assert.Equal(expectedHex, actualHex);
-        }
-
         private static CryptoSeal DeriveClientCryptoSeal()
         {
-            var initial =
-                KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(ReferenceData.InitialSecretHex));
-            var key = KeyDerivation.DeriveKey(initial);
-            var iv = KeyDerivation.DeriveIv(initial);
-            var hp = KeyDerivation.DeriveHp(initial);
+            var secret =
+                KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(ReferenceData.DcidHex));
 
-            var seal = new CryptoSeal(iv, key, hp, CipherAlgorithm.AEAD_AES_128_GCM);
-            return seal;
+            return new CryptoSeal(CipherAlgorithm.AEAD_AES_128_GCM, secret);
         }
 
         [Fact]
@@ -103,7 +85,7 @@ namespace System.Net.Quic.Tests
         public void TestInitialClientKeyingMaterial()
         {
             var initial =
-                KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(ReferenceData.InitialSecretHex));
+                KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(ReferenceData.DcidHex));
 
             Assert.Equal(ReferenceData.ClientInitialHex, HexHelpers.ToHexString(initial));
 
@@ -118,19 +100,10 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public void TestInitialSecret()
-        {
-            var actual = KeyDerivation.DeriveInitialSecret(HexHelpers.FromHexString(ReferenceData.DcidHex));
-            string actualHex = HexHelpers.ToHexString(actual);
-
-            Assert.Equal(ReferenceData.InitialSecretHex, actualHex);
-        }
-
-        [Fact]
         public void TestInitialServerKeyingMaterial()
         {
             var initial =
-                KeyDerivation.DeriveServerInitialSecret(HexHelpers.FromHexString(ReferenceData.InitialSecretHex));
+                KeyDerivation.DeriveServerInitialSecret(HexHelpers.FromHexString(ReferenceData.DcidHex));
 
             Assert.Equal(ReferenceData.ServerInitialHex, HexHelpers.ToHexString(initial));
 

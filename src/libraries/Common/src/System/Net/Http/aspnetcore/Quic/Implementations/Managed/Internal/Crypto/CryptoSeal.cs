@@ -11,12 +11,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
         private byte[] Key { get; }
         private byte[] HeaderKey { get; }
 
-        public CryptoSeal(byte[] iv, byte[] key, byte[] headerKey, CipherAlgorithm alg)
+        public CryptoSeal(CipherAlgorithm alg, ReadOnlySpan<byte> secret)
         {
-            _algorithm = CryptoSealAlgorithm.Create(alg, key, headerKey);
-            IV = iv;
-            Key = key;
-            HeaderKey = headerKey;
+            IV = KeyDerivation.DeriveIv(secret);
+            Key = KeyDerivation.DeriveKey(secret);
+            HeaderKey = KeyDerivation.DeriveHp(secret);
+            _algorithm = CryptoSealAlgorithm.Create(alg, Key, HeaderKey);
         }
 
         public void EncryptPacket(Span<byte> buffer, int payloadOffset, int payloadLength, ulong packetNumber)
