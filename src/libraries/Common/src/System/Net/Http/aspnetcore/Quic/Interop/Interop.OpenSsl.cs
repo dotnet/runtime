@@ -9,6 +9,12 @@ internal static partial class Interop
     // TODO-RZ: remove this and use System.Security.Cryptography.Native
     internal static unsafe class OpenSslQuic
     {
+        private static IntPtr __globalSslCtx = SslCtxNew(SslMethod.Tls);
+        internal static IntPtr SslCreate()
+        {
+            return SslNew(__globalSslCtx);
+        }
+
         [DllImport(Libraries.Crypto, EntryPoint = "CRYPTO_get_ex_new_index")]
         internal static extern int CryptoGetExNewIndex(int classIndex, long argl, IntPtr argp, IntPtr newFunc,
             IntPtr dupFunc, IntPtr freeFunc);
@@ -70,7 +76,7 @@ internal static partial class Interop
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_provide_quic_data")]
         internal static extern int SslProvideQuicData(IntPtr ssl, SslEncryptionLevel level, byte* data, IntPtr len);
 
-        internal static int SslProvideQuicData(IntPtr ssl, SslEncryptionLevel level, Span<byte> data)
+        internal static int SslProvideQuicData(IntPtr ssl, SslEncryptionLevel level, ReadOnlySpan<byte> data)
         {
             fixed (byte* pData = data)
             {
@@ -91,6 +97,15 @@ internal static partial class Interop
             Marshal.FreeHGlobal(addr);
             return res;
         }
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_quic_transport_params")]
+        internal static extern int SslSetQuicTransportParams(IntPtr ssl, byte* param, IntPtr length);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_peer_quic_transport_params")]
+        internal static extern int SslGetPeerQuicTransportParams(IntPtr ssl, out byte* param, out IntPtr length);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_quic_max_handshake_flight_len")]
+        internal static extern int SslQuicMaxHandshakeFlightLen(IntPtr ssl, SslEncryptionLevel level);
 
         static OpenSslQuic()
         {
