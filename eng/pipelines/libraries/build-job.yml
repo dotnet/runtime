@@ -50,7 +50,11 @@ jobs:
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         dependsOn:
         - ${{ if ne(parameters.osGroup, 'WebAssembly') }}:
-          - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+          # Use corelib dependencies for coreclr
+          - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
+            - ${{ format('coreclr_corelib_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+          - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+            - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, 'linux', parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
 
