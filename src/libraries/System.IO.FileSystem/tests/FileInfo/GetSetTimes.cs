@@ -195,7 +195,8 @@ namespace System.IO.Tests
             DateTime afterTime = DateTime.UtcNow.AddSeconds(1);
 
             info.Delete();
-            Assert.True(info.LastAccessTimeUtc > afterTime);
+            Assert.NotInRange(info.LastAccessTimeUtc, beforeTime, afterTime);
+            Assert.Equal(info.LastAccessTimeUtc, DateTime.FromFileTimeUtc(0));
         }
 
 

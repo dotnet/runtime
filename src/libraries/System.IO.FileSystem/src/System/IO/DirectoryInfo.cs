@@ -235,7 +235,7 @@ namespace System.IO
             Invalidate();
         }
 
-        public override void Delete() => Delete(false);
+        public override void Delete() => Delete(recursive: false);
 
         public void Delete(bool recursive)
         {
