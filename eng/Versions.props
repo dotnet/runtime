@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <!-- The .NET Core product branding version -->
+    <!-- The .NET product branding version -->
     <ProductVersion>5.0.0</ProductVersion>
     <!-- File version numbers -->
     <MajorVersion>5</MajorVersion>

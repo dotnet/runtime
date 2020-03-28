@@ -454,8 +454,7 @@ namespace Microsoft.XmlSerializer.Generator
         private void WriteHeader()
         {
             // do not localize Copyright header
-            Console.WriteLine(string.Format(CultureInfo.CurrentCulture, "[Microsoft (R) .NET Core Xml Serialization Generation Utility, Version {0}]", ThisAssembly.InformationalVersion));
-            Console.WriteLine("Copyright (C) Microsoft Corporation. All rights reserved.");
+            Console.WriteLine(string.Format(CultureInfo.CurrentCulture, ".NET Xml Serialization Generation Utility, Version {0}]", ThisAssembly.InformationalVersion));
         }
 
         private void WriteHelp()

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 // Definitions of structures from OpenSSL 1.0.2, modified as relevant to
-// building .NET Core.
+// building .NET.
 
 // The CRYPTO_EX_DATA struct is smaller in 1.1, which changes the packing of
 // dsa_st

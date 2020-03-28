@@ -22,7 +22,7 @@ Tiered Compilation allows the .NET runtime to substitute different assembly code
 
 Tiered compilation is enabled by default from .NET Core 2.2 preview 2 and in 3.0 daily builds.
 
-- Download the .NET Core SDK from the [download archives](https://www.microsoft.com/net/download/archives)
+- Download the .NET SDK from the [download archives](https://www.microsoft.com/net/download/archives)
   - For the latest pre-release installers, download a [daily build](https://github.com/dotnet/core/blob/master/daily-builds.md)
 - For .NET Core 2.1 and 2.2 preview 1, tiered compilation may be enabled in any of the following ways ([instructions](https://github.com/aspnet/JitBench/blob/tiered_compilation_demo/README.md#16-run-the-app-with-tiered-compilation-enabled)):
   - In `<app>.csproj` before the build
@@ -30,7 +30,7 @@ Tiered compilation is enabled by default from .NET Core 2.2 preview 2 and in 3.0
   - With an environment variable before running the app (in a console, or at user or system level)
 - Ensure that the `<app>.csproj` is targeting the correct `TargetFramework` and `RuntimeFrameworkVersion`
   - `TargetFramework` should be `netcoreapp3.0` or `netcoreapp2.2`, etc.
-  - `RuntimeFrameworkVersion` should be a .NET Core runtime version corresponding to the above
+  - `RuntimeFrameworkVersion` should be a .NET runtime version corresponding to the above
     - `dotnet --info` lists the available runtimes versions, use the version for Microsoft.NETCore.App
     - For .NET Core 2.2 preview 2, it is `2.2.0-preview2-26905-02`
 - Run the app, and see [the demo](https://github.com/aspnet/JitBench/blob/tiered_compilation_demo/README.md#part-2---exploring-the-application-behavior) about how to see tiered compilation in action

@@ -10,7 +10,7 @@ To build the tests and run them you can call the libraries build script.
 libraries -buildtests
 ```
 
-- The following builds and runs all tests for .NET Core in release configuration:
+- The following builds and runs all tests in release configuration:
 ```
 libraries -test -c Release
 ```

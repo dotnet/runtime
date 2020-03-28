@@ -121,12 +121,12 @@
   },
   {
     "Name": "Microsoft.Extensions.Hosting",
-    "Description": ".NET Core hosting and startup infrastructures for applications.",
+    "Description": "Hosting and startup infrastructures for applications.",
     "CommonTypes": []
   },
   {
     "Name": "Microsoft.Extensions.Hosting.Abstractions",
-    "Description": ".NET Core hosting and startup abstractions for applications.",
+    "Description": "Hosting and startup abstractions for applications.",
     "CommonTypes": []
   },
   {
@@ -275,7 +275,7 @@
   },
   {
     "Name": "Microsoft.NETCore.Runtime",
-    "Description": "The .NET Core runtime.",
+    "Description": "The .NET runtime.",
     "CommonTypes": []
   },
   {
@@ -343,7 +343,7 @@
   },
   {
     "Name": "Microsoft.XmlSerializer.Generator",
-    "Description": "Like the Xml Serializer Generator (sgen.exe) on desktop, Microsoft.XmlSerializer.Generator NuGet package is the solution for .NET Core and .NET Standard Libraries. It creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.",
+    "Description": "Creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.",
     "CommonTypes": []
   },
   {
@@ -894,7 +894,7 @@
   },
   {
     "Name": "System.Drawing.Primitives",
-    "Description": "Provides basic drawing primitive structures, that exposes the corresponding System.Drawing.dll types in .NET Core.",
+    "Description": "Provides basic drawing primitive structures.",
     "CommonTypes": [
       "System.Drawing.Color",
       "System.Drawing.Point",
