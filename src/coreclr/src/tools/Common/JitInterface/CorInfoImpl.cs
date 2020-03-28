@@ -903,6 +903,10 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
         private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, ref bool pfIsOpenDelegate)
         { throw new NotImplementedException("isCompatibleDelegate"); }
+        private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
+        { throw new NotImplementedException("setPatchpointInfo"); }
+        private PatchpointInfo* getOSRInfo(ref uint ilOffset)
+        { throw new NotImplementedException("getOSRInfo"); }
 
         private void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_STRUCT_* method)
         {
