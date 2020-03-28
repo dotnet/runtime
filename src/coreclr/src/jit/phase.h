@@ -10,6 +10,27 @@
 //
 class Phase
 {
+    // Observations made before a phase runs that should still
+    // be true afterwards,if the phase status is MODIFIED_NOTHING.
+    class Observations
+    {
+    public:
+        Observations(Compiler* compiler);
+        void Check(PhaseStatus status);
+
+    private:
+#ifdef DEBUG
+        Compiler* m_compiler;
+        unsigned  m_fgBBcount;
+        unsigned  m_fgBBNumMax;
+        unsigned  m_compHndBBtabCount;
+        unsigned  m_lvaCount;
+        unsigned  m_compGenTreeID;
+        unsigned  m_compStatementID;
+        unsigned  m_compBasicBlockID;
+#endif // DEBUG
+    };
+
 public:
     virtual void Run();
 

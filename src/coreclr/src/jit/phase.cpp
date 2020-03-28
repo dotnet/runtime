@@ -10,13 +10,58 @@
 #include "phase.h"
 
 //------------------------------------------------------------------------
+// Observations ctor: snapshot key compiler variables before running a phase
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+Phase::Observations::Observations(Compiler* compiler)
+{
+#ifdef DEBUG
+    m_compiler          = compiler->impInlineRoot();
+    m_fgBBcount         = m_compiler->fgBBcount;
+    m_fgBBNumMax        = m_compiler->fgBBNumMax;
+    m_compHndBBtabCount = m_compiler->compHndBBtabCount;
+    m_lvaCount          = m_compiler->lvaCount;
+    m_compGenTreeID     = m_compiler->compGenTreeID;
+    m_compStatementID   = m_compiler->compStatementID;
+    m_compBasicBlockID  = m_compiler->compBasicBlockID;
+#endif
+}
+
+//------------------------------------------------------------------------
+// Observations Check: verify key compiler variables are unchanged
+//    if phase claims it made no modifications
+//
+// Arguments:
+//    status - status from the just-completed phase
+//
+void Phase::Observations::Check(PhaseStatus status)
+{
+#ifdef DEBUG
+    if (status == PhaseStatus::MODIFIED_NOTHING)
+    {
+        assert(m_fgBBcount == m_compiler->fgBBcount);
+        assert(m_fgBBNumMax == m_compiler->fgBBNumMax);
+        assert(m_compHndBBtabCount == m_compiler->compHndBBtabCount);
+        assert(m_lvaCount == m_compiler->lvaCount);
+        assert(m_compGenTreeID == m_compiler->compGenTreeID);
+        assert(m_compStatementID == m_compiler->compStatementID);
+        assert(m_compBasicBlockID == m_compiler->compBasicBlockID);
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
 // Run: execute a phase and any before and after actions
 //
 void Phase::Run()
 {
+    Observations observations(comp);
     PrePhase();
     PhaseStatus status = DoPhase();
     PostPhase(status);
+    observations.Check(status);
 }
 
 //------------------------------------------------------------------------
