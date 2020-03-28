@@ -8,7 +8,7 @@ parameters:
   isOfficialBuild: false
   isOfficialAllConfigurations: false
   liveRuntimeBuildConfig: ''
-  runtimeFlavor: ''
+  runtimeFlavor: 'coreclr'
   timeoutInMinutes: 150
   condition: true
   container: ''
@@ -94,8 +94,8 @@ jobs:
         - _runtimeArtifactsPathArg: ''
 
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/$(runtimeFlavorName)'
-          # Download corelib dependencies for coreclr libraries, if not test
+          - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
+          # Download corelib dependencies for coreclr libraries and not test
           - ${{ if and(ne(parameters.runtimeFlavor, 'mono'), eq(parameters.testScope, '')) }}:
             - _runtimeArtifactName: 'CoreLib_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
           # Download full product dependencies for mono or test
