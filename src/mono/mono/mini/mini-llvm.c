@@ -7843,7 +7843,18 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SSE_SQRTSS:
 		case OP_SSE2_SQRTSD: {
 #if LLVM_API_VERSION < 700
-			values [ins->dreg] = call_intrins (builder, simd_ins_to_intrins (ins->opcode), &lhs, dname);
+			LLVMValueRef result = call_intrins (ctx, simd_ins_to_intrins (ins->opcode), &rhs, dname);
+			const int maskf32[] = { 0, 5, 6, 7 };
+			const int maskf64[] = { 0, 1 };
+			const int *mask = NULL;
+			int mask_len = 0;
+			switch (ins->opcode) {
+			case OP_SSE_SQRTSS: mask = maskf32; mask_len = 4; break;
+			case OP_SSE2_SQRTSD: mask = maskf64; mask_len = 2; break;
+			default: g_assert_not_reached (); break;
+			}
+			LLVMValueRef shufmask = create_const_vector_i32 (mask, mask_len);
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, result, lhs, shufmask, "");
 #else
 			LLVMValueRef upper = values [ins->sreg1];
 			LLVMValueRef lower = values [ins->sreg2];
@@ -7861,10 +7872,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case OP_SSE_RSQRTSS: id = INTRINS_SSE_RSQRT_SS; break;
 			default: g_assert_not_reached (); break;
 			};
-			LLVMValueRef rsqrt = call_intrins (ctx, id, &rhs, dname);
-			int mask[4] = { 0, 5, 6, 7 };
+			LLVMValueRef result = call_intrins (ctx, id, &rhs, dname);
+			const int mask[] = { 0, 5, 6, 7 };
 			LLVMValueRef shufmask = create_const_vector_i32 (mask, 4);
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, rsqrt, lhs, shufmask, "");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, result, lhs, shufmask, "");
 			break;
 		}
 		case OP_XOP: {
