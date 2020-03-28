@@ -6,6 +6,23 @@ This document provides the steps necessary to consume a nightly build of
 Please note that these steps are likely to change as we're simplifying
 this experience. Make sure to consult this document often.
 
+## Obtaining nightly builds of NuGet packages
+
+If you are only looking to get fixes for an individual NuGet package, and don't need a preview version of the entire runtime, you can add the following package feed to `NuGet.config`:
+
+**MSFT TODO:** Someone at Microsoft should confirm if any other feeds might be needed here
+
+```xml
+<packageSources>
+    <add key="dotnet-core" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet5/nuget/v3/index.json" />
+    ...
+</packageSources>    
+```
+
+(Documentation for configuring feeds is [here](https://docs.microsoft.com/en-us/nuget/consume-packages/configuring-nuget-behavior).)
+
+To use nightly builds of the entire runtime, follow the steps given in the rest of this document instead.
+
 ## Install prerequisites
 
 1. Acquire the latest nightly .NET Core SDK by downloading the zip or tarball listed in https://github.com/dotnet/core-sdk#installers-and-binaries (for example, https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-win-x64.zip ) into a new folder, for instance `C:\dotnet`.
@@ -44,7 +61,9 @@ To install additional .NET Core runtimes or SDKs:
   https://aka.ms/dotnet-download
 ```
 
-4. Our nightly builds are uploaded to dotnet-blob feeds, not NuGet - so ensure the .NET Core blob feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these line:
+4. Our nightly builds are uploaded to dotnet-blob feeds, not NuGet - so ensure the .NET Core blob feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these lines:
+
+**MSFT TODO:** Someone at Microsoft should update these to make sure they are not outdated
 ```xml
 <packageSources>
     <add key="dotnet-core" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
