@@ -740,9 +740,9 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 			ins->type = STACK_I4;
 			return ins;
 		case SN_ComputeCrc32:
-			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_AARCH64_CRC32X : OP_AARCH64_CRC32, 0, arg1_type, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_ARM64_CRC32X : OP_ARM64_CRC32, 0, arg1_type, fsig, args);
 		case SN_ComputeCrc32C:
-			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_AARCH64_CRC32CX : OP_AARCH64_CRC32C, 0, arg1_type, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_ARM64_CRC32CX : OP_ARM64_CRC32C, 0, arg1_type, fsig, args);
 		default:
 			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
 		}

@@ -8595,18 +8595,18 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, ins->opcode == OP_RBIT32 ? INTRINS_BITREVERSE_I32 : INTRINS_BITREVERSE_I64, &lhs, "");
 			break;
 
-		case OP_AARCH64_CRC32X:
-		case OP_AARCH64_CRC32CX: {
+		case OP_ARM64_CRC32X:
+		case OP_ARM64_CRC32CX: {
 			LLVMValueRef args [] = { lhs, rhs };
-			gboolean is_c = ins->opcode == OP_AARCH64_CRC32CX;
+			gboolean is_c = ins->opcode == OP_ARM64_CRC32CX;
 			values [ins->dreg] = call_intrins (ctx, is_c ? INTRINS_AARCH64_CRC32CX : INTRINS_AARCH64_CRC32X, args, "");
 			break;
 		}
-		case OP_AARCH64_CRC32:
-		case OP_AARCH64_CRC32C: {
+		case OP_ARM64_CRC32:
+		case OP_ARM64_CRC32C: {
 			// we need to zext the second arg
 			LLVMValueRef args [] = { lhs, LLVMBuildZExt (ctx->builder, rhs, LLVMInt32Type (), "") };
-			gboolean is_c = ins->opcode == OP_AARCH64_CRC32C;
+			gboolean is_c = ins->opcode == OP_ARM64_CRC32C;
 			int id = 0;
 			switch (ins->inst_c1) {
 			case MONO_TYPE_U1: id = is_c ? INTRINS_AARCH64_CRC32CB : INTRINS_AARCH64_CRC32B; break;
