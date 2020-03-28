@@ -12,11 +12,9 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal sealed class LargeObjectWithParameterizedConstructorConverter<T> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
     {
-        private JsonClassInfo.ParameterizedConstructorDelegate<T>? _createObject;
-
-        internal override void CreateConstructorDelegate(JsonSerializerOptions options)
+        internal override void CreateConstructorDelegate(JsonClassInfo classInfo, JsonSerializerOptions options)
         {
-            _createObject = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo)!;
+            classInfo.CreateObjectWithParameterizedCtor = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo)!;
         }
 
         protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
@@ -35,13 +33,15 @@ namespace System.Text.Json.Serialization.Converters
         {
             object[] arguments = (object[])frame.CtorArgumentState!.Arguments!;
 
-            if (_createObject == null)
+            var createObject = (JsonClassInfo.ParameterizedConstructorDelegate<T>)frame.JsonClassInfo.CreateObjectWithParameterizedCtor!;
+
+            if (createObject == null)
             {
                 // This means this constructor has more than 64 parameters.
                 ThrowHelper.ThrowNotSupportedException_ConstructorMaxOf64Parameters(ConstructorInfo, TypeToConvert);
             }
 
-            object obj = _createObject(arguments)!;
+            object obj = createObject(arguments)!;
 
             ArrayPool<object>.Shared.Return(arguments, clearArray: true);
             return obj;

@@ -12,17 +12,17 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal sealed class SmallObjectWithParameterizedConstructorConverter<T, TArg0, TArg1, TArg2, TArg3> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
     {
-        private JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>? _createObject;
-
-        internal override void CreateConstructorDelegate(JsonSerializerOptions options)
+        internal override void CreateConstructorDelegate(JsonClassInfo classInfo, JsonSerializerOptions options)
         {
-            _createObject = options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo)!;
+            classInfo.CreateObjectWithParameterizedCtor = options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo)!;
         }
 
         protected override object CreateObject(ref ReadStackFrame frame)
         {
+            var createObject = (JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>)
+                frame.JsonClassInfo.CreateObjectWithParameterizedCtor!;
             var arguments = (Arguments<TArg0, TArg1, TArg2, TArg3>)frame.CtorArgumentState!.Arguments!;
-            return _createObject!(arguments.Arg0, arguments.Arg1, arguments.Arg2, arguments.Arg3)!;
+            return createObject!(arguments.Arg0, arguments.Arg1, arguments.Arg2, arguments.Arg3)!;
         }
 
         protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)

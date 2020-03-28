@@ -80,6 +80,6 @@ namespace System.Text.Json.Serialization
 
         internal ConstructorInfo ConstructorInfo { get; set; } = null!;
 
-        internal virtual void CreateConstructorDelegate(JsonSerializerOptions options) { }
+        internal virtual void CreateConstructorDelegate(JsonClassInfo classInfo, JsonSerializerOptions options) { }
     }
 }
