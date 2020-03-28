@@ -20,8 +20,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         internal byte ReservedBits => HeaderHelpers.GetShortHeaderReservedBits(firstByte);
 
         /// <summary>
-        ///     Number of least significant bytes of the packet number transferred in this packet. The transfered value is
-        ///     accessible in <see cref="TruncatedPacketNumber" />.
+        ///     Number of least significant bytes of the packet number transferred in this packet.
         /// </summary>
         internal int PacketNumberLength => HeaderHelpers.GetPacketNumberLength(firstByte);
 
@@ -33,21 +32,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 
         /// <summary>
         ///     The length of the rest of the packet, including packet number.
-        ///     TODO-RZ: there does not seem to be any point of sending length? maybe they forgot to remove it
         /// </summary>
         internal readonly ulong Length;
 
-        /// <summary>
-        ///     Lower part of the packet number. Number of significant bytes is encoded in <see cref="PacketNumberLength" />.
-        /// </summary>
-        internal readonly uint TruncatedPacketNumber;
-
-        internal SharedPacketData(byte firstByte, ReadOnlySpan<byte> token, ulong length, uint truncatedPacketNumber)
+        internal SharedPacketData(byte firstByte, ReadOnlySpan<byte> token, ulong length)
         {
             this.firstByte = firstByte;
             Token = token;
             Length = length;
-            TruncatedPacketNumber = truncatedPacketNumber;
         }
 
         internal static bool Read(QuicReader reader, byte firstHeaderByte, out SharedPacketData data)
@@ -57,14 +49,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 
             ReadOnlySpan<byte> token = ReadOnlySpan<byte>.Empty;
             if (type == PacketType.Initial && !reader.TryReadLengthPrefixedSpan(out token) ||
-                !reader.TryReadVarInt(out ulong length) ||
-                !reader.TryReadTruncatedPacketNumber(pnLength, out uint truncatedPn))
+                !reader.TryReadVarInt(out ulong length))
             {
                 data = default;
                 return false;
             }
 
-            data = new SharedPacketData(firstHeaderByte, token, length, truncatedPn);
+            data = new SharedPacketData(firstHeaderByte, token, length);
             return true;
         }
 
@@ -75,7 +66,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 
             writer.WriteLengthPrefixedSpan(data.Token);
             writer.WriteVarInt(data.Length);
-            writer.WriteTruncatedPacketNumber(data.PacketNumberLength, data.TruncatedPacketNumber);
         }
     }
 }

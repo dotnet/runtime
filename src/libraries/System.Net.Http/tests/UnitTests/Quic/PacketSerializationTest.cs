@@ -43,9 +43,11 @@ namespace System.Net.Quic.Tests
             // length includes packet number and integrity tag
             Assert.Equal(ReferenceData.ClientInitialPayloadLength,
                 (int)data.Length - CryptoSealAesGcm.IntegrityTagLength - data.PacketNumberLength);
-            Assert.Equal(2ul, data.TruncatedPacketNumber);
 
-            Assert.Equal(0, reader.BytesLeft);
+            // packet number left unread
+            Assert.Equal(header.PacketNumberLength, reader.BytesLeft);
+            Assert.True(reader.TryReadTruncatedPacketNumber(header.PacketNumberLength, out uint pn));
+            Assert.Equal(2u, pn);
         }
 
         [Fact]
@@ -99,7 +101,7 @@ namespace System.Net.Quic.Tests
             var token = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
             byte firstByte = HeaderHelpers.ComposeLongHeaderByte(PacketType.Initial, pnLength);
 
-            var expected = new SharedPacketData(firstByte, token, 1234, 5);
+            var expected = new SharedPacketData(firstByte, token, 1234);
 
             SharedPacketData.Write(writer, expected);
             reader.Reset(buffer, writer.BytesWritten);
@@ -109,7 +111,6 @@ namespace System.Net.Quic.Tests
             Assert.Equal(expected.PacketNumberLength, actual.PacketNumberLength);
             Assert.Equal(expected.ReservedBits, actual.ReservedBits);
             Assert.Equal(0, actual.ReservedBits);
-            Assert.Equal(expected.TruncatedPacketNumber, actual.TruncatedPacketNumber);
             Assert.True(actual.Token.SequenceEqual(token));
 
             Assert.Equal(0, reader.BytesLeft);
@@ -122,7 +123,7 @@ namespace System.Net.Quic.Tests
             var idCollection = new ConnectionIdCollection();
             idCollection.Add(dcid);
 
-            var expected = new ShortPacketHeader(true, false, 2, 532, new ConnectionId(dcid));
+            var expected = new ShortPacketHeader(true, false, 2, new ConnectionId(dcid));
 
             ShortPacketHeader.Write(writer, expected);
             reader.Reset(buffer, writer.BytesWritten);
@@ -133,7 +134,6 @@ namespace System.Net.Quic.Tests
             Assert.True(actual.SpinBit);
             Assert.False(actual.KeyPhaseBit);
             Assert.Equal(2, actual.PacketNumberLength);
-            Assert.Equal(532ul, actual.TruncatedPacketNumber);
             Assert.Equal(dcid, actual.DestinationConnectionId.Data);
 
             Assert.Equal(0, reader.BytesLeft);
