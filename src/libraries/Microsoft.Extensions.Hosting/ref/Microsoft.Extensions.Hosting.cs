@@ -1,13 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the https://aka.ms/api-review process.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Extensions.Hosting
 {
     public partial class ConsoleLifetimeOptions
     {
         public ConsoleLifetimeOptions() { }
-        public bool SuppressStatusMessages { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public bool SuppressStatusMessages { get { throw null; } set { } }
     }
     public static partial class Host
     {
@@ -17,7 +20,7 @@ namespace Microsoft.Extensions.Hosting
     public partial class HostBuilder : Microsoft.Extensions.Hosting.IHostBuilder
     {
         public HostBuilder() { }
-        public System.Collections.Generic.IDictionary<object, object> Properties { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Collections.Generic.IDictionary<object, object> Properties { get { throw null; } }
         public Microsoft.Extensions.Hosting.IHost Build() { throw null; }
         public Microsoft.Extensions.Hosting.IHostBuilder ConfigureAppConfiguration(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.Configuration.IConfigurationBuilder> configureDelegate) { throw null; }
         public Microsoft.Extensions.Hosting.IHostBuilder ConfigureContainer<TContainerBuilder>(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, TContainerBuilder> configureDelegate) { throw null; }
@@ -45,7 +48,7 @@ namespace Microsoft.Extensions.Hosting
     public partial class HostOptions
     {
         public HostOptions() { }
-        public System.TimeSpan ShutdownTimeout { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.TimeSpan ShutdownTimeout { get { throw null; } set { } }
     }
 }
 namespace Microsoft.Extensions.Hosting.Internal
@@ -71,9 +74,9 @@ namespace Microsoft.Extensions.Hosting.Internal
     public partial class HostingEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment, Microsoft.Extensions.Hosting.IHostingEnvironment
     {
         public HostingEnvironment() { }
-        public string ApplicationName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public string ContentRootPath { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
-        public string EnvironmentName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public string ApplicationName { get { throw null; } set { } }
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get { throw null; } set { } }
+        public string ContentRootPath { get { throw null; } set { } }
+        public string EnvironmentName { get { throw null; } set { } }
     }
 }

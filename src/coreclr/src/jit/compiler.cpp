@@ -2352,7 +2352,7 @@ void Compiler::compSetProcessor()
 #endif
 
     instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
-    opts.setSupportedISAs(jitFlags.GetInstructionSetFlags());
+    opts.setSupportedISAs(instructionSetFlags);
 
 #ifdef TARGET_XARCH
     if (!compIsForInlining())
@@ -2366,6 +2366,13 @@ void Compiler::compSetProcessor()
         }
     }
 #endif // TARGET_XARCH
+}
+
+void Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const
+{
+    const char* isaString = InstructionSetToString(isa);
+    JITDUMP("Notify VM instruction set (%s) %s be supported.\n", isaString, supported ? "must" : "must not");
+    info.compCompHnd->notifyInstructionSetUsage(isa, supported);
 }
 
 #ifdef PROFILING_SUPPORTED

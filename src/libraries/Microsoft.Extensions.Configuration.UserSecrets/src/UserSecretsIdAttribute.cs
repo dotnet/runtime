@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
         {
             if (string.IsNullOrEmpty(userSecretId))
             {
-                throw new ArgumentException(Resources.Common_StringNullOrEmpty, nameof(userSecretId));
+                throw new ArgumentException(SR.Common_StringNullOrEmpty, nameof(userSecretId));
             }
 
             UserSecretsId = userSecretId;

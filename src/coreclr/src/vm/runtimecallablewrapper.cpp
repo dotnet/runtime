@@ -52,6 +52,7 @@ SLIST_HEADER RCW::s_RCWStandbyList;
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+#include "interoplibinterface.h"
 
 #ifndef CROSSGEN_COMPILE
 
@@ -246,6 +247,8 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     ComCallWrapper *ccw = GetCCWFromIUnknown(pUnk);
     if (ccw != NULL)
         ccw->MarkComActivated();
+
+    ComWrappersNative::MarkWrapperAsComActivated(pUnk);
 
     pUnk.SuppressRelease();
     RETURN pUnk;

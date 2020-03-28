@@ -51,6 +51,11 @@
     <AllTargetFrameworks>net45;net451;net46;net461;net462;net47;net471;net472;netstandard1.0;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.4;netstandard1.5;netstandard1.6;netstandard2.0;netstandard2.0;netcoreapp2.0;netcoreapp2.1;netcoreapp3.0;$(netcoreappCurrent);</AllTargetFrameworks>
   </PropertyGroup>
     
+  <ItemGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
+    <!-- Microsoft.Extensions are not yet using the doc-file package -->
+    <BinPlaceItem Include="$(DocumentationFile)" />
+  </ItemGroup>
+
   <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == ''">
     <!-- binplace to directories for the target vertical -->
     <BinPlaceTargetFrameworks Include="$(BuildTargetFramework)-$(TargetOS)" Condition="'$(BinPlaceForTargetVertical)' == 'true'">

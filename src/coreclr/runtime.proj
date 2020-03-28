@@ -11,7 +11,6 @@
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
       <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and '$(Configuration)' == 'Release'" Include="-enforcepgo" />
-      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows)) and '$(Configuration)' == 'Release'" Include="-stripsymbols" />
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />
       <_CoreClrBuildArg Condition="'$(OfficialBuildId)' != ''" Include="/p:OfficialBuildId=$(OfficialBuildId)" />
     </ItemGroup>

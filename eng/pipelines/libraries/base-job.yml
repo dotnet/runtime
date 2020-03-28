@@ -41,7 +41,6 @@ jobs:
 
         - _msbuildCommonParameters: ''
         # rename this variable, due to collision with build-native.proj
-        - _stripSymbolsArgYaml: ''
         - _runtimeOSArg: ''
         - _finalFrameworkArg: ''
         - _buildScript: $(_buildScriptFileName)$(scriptExt)
@@ -116,10 +115,8 @@ jobs:
         # Non-Windows variables
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
-          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - _stripSymbolsArgYaml: -stripSymbols
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArgYaml) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
       dependsOn:

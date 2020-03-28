@@ -596,7 +596,7 @@ netcore_resolve_with_dll_import_resolver_nofail (MonoAssemblyLoadContext *alc, M
 
 	result = netcore_resolve_with_dll_import_resolver (alc, assembly, scope, flags, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Error while invoking ALC DllImportResolver(\"%s\") delegate: '%s'", scope, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Error while invoking ALC DllImportResolver(\"%s\") delegate: '%s'", scope, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 
@@ -652,7 +652,7 @@ netcore_resolve_with_load_nofail (MonoAssemblyLoadContext *alc, const char *scop
 
 	result = netcore_resolve_with_load (alc, scope, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Error while invoking ALC LoadUnmanagedDll(\"%s\") method: '%s'", scope, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Error while invoking ALC LoadUnmanagedDll(\"%s\") method: '%s'", scope, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 
@@ -712,7 +712,7 @@ netcore_resolve_with_resolving_event_nofail (MonoAssemblyLoadContext *alc, MonoA
 
 	result = netcore_resolve_with_resolving_event (alc, assembly, scope, error);
 	if (!is_ok (error))
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Error while invoking ALC ResolvingUnmangedDll(\"%s\") event: '%s'", scope, mono_error_get_message (error));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Error while invoking ALC ResolvingUnmangedDll(\"%s\") event: '%s'", scope, mono_error_get_message (error));
 
 	mono_error_cleanup (error);
 
@@ -1296,6 +1296,7 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT,
 				"Searching for '%s'.", import);
 
+#if !defined(ENABLE_NETCORE) || defined(HOST_WIN32) // For netcore, name mangling is Windows-exclusive
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE)
 		error_msg = mono_dl_symbol (module, import, &addr);
 	else {
@@ -1380,6 +1381,9 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 			}
 		}
 	}
+#else
+	error_msg = mono_dl_symbol (module, import, &addr);
+#endif
 
 	*error_msg_out = error_msg;
 	return addr;
