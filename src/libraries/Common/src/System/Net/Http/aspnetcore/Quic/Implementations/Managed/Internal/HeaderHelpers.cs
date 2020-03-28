@@ -27,9 +27,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             return (firstByte & FormBitMask) != 0;
         }
 
+        internal static PacketType GetLongPacketType(byte firstByte)
+        {
+            Debug.Assert(IsLongHeader(firstByte));
+            return (PacketType) ((firstByte & TypeBitsMask) >> 4);
+        }
+
         internal static PacketType GetPacketType(byte firstByte)
         {
-            return (PacketType) ((firstByte & TypeBitsMask) >> 4);
+            return IsLongHeader(firstByte)
+                ? GetLongPacketType(firstByte)
+                : PacketType.OneRtt; // short packets are only used for 1-RTT
         }
 
         internal static int GetPacketNumberLength(byte firstByte)

@@ -53,7 +53,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         internal static bool Read(QuicReader reader, byte firstHeaderByte, out SharedPacketData data)
         {
             int pnLength = HeaderHelpers.GetPacketNumberLength(firstHeaderByte);
-            var type = HeaderHelpers.GetPacketType(firstHeaderByte);
+            var type = HeaderHelpers.GetLongPacketType(firstHeaderByte);
 
             ReadOnlySpan<byte> token = ReadOnlySpan<byte>.Empty;
             if (type == PacketType.Initial && !reader.TryReadLengthPrefixedSpan(out token) ||
@@ -70,7 +70,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 
         internal static void Write(QuicWriter writer, in SharedPacketData data)
         {
-            Debug.Assert(HeaderHelpers.GetPacketType(data.firstByte) == PacketType.Initial ||
+            Debug.Assert(HeaderHelpers.GetLongPacketType(data.firstByte) == PacketType.Initial ||
                          data.Token.IsEmpty, "Trying to include Token in non-initial packet.");
 
             writer.WriteLengthPrefixedSpan(data.Token);

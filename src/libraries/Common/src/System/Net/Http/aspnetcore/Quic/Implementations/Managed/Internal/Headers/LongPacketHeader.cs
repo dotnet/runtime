@@ -24,7 +24,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
         /// </summary>
         internal PacketType PacketType => Version == QuicVersion.Negotiation
             ? PacketType.VersionNegotiation
-            : HeaderHelpers.GetPacketType(FirstByte);
+            : HeaderHelpers.GetLongPacketType(FirstByte);
 
         /// <summary>
         ///     How many lower bytes are encoded in this packet. Contains valid valid value only when <see cref="PacketType" /> is
