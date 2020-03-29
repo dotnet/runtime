@@ -621,6 +621,7 @@ namespace System.Threading
                 // Use operate on workQueue local to try block so it can be enregistered
                 ThreadPoolWorkQueue workQueue = outerWorkQueue;
                 ThreadPoolWorkQueueThreadLocals tl = workQueue.GetOrCreateThreadLocals();
+                object? threadLocalCompletionCountObject = tl.threadLocalCompletionCountObject;
                 Thread currentThread = tl.currentThread;
 
                 // Start on clean ExecutionContext and SynchronizationContext
@@ -708,7 +709,7 @@ namespace System.Threading
                     // Notify the VM that we executed this workitem.  This is also our opportunity to ask whether Hill Climbing wants
                     // us to return the thread to the pool or not.
                     //
-                    if (!ThreadPool.NotifyWorkItemComplete())
+                    if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject))
                         return false;
 
                     // Check if the dispatch quantum has expired
@@ -816,6 +817,7 @@ namespace System.Threading
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
         public readonly Thread currentThread;
+        public readonly object? threadLocalCompletionCountObject;
         public FastRandom random = new FastRandom(Environment.CurrentManagedThreadId); // mutable struct, do not copy or make readonly
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
@@ -824,6 +826,7 @@ namespace System.Threading
             workStealingQueue = new ThreadPoolWorkQueue.WorkStealingQueue();
             ThreadPoolWorkQueue.WorkStealingQueueList.Add(workStealingQueue);
             currentThread = Thread.CurrentThread;
+            threadLocalCompletionCountObject = ThreadPool.GetOrCreateThreadLocalCompletionCountObject();
         }
 
         ~ThreadPoolWorkQueueThreadLocals()

@@ -527,7 +527,7 @@ namespace System.Threading
         // we will record that in a readonly static so that it could become a JIT constant and bypass caching entirely.
         private static readonly bool s_isProcessorNumberReallyFast = ProcessorIdCache.ProcessorNumberSpeedCheck();
 
-#pragma warning disable CA1822 // Mark members as static
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread()
         {
             Debug.Assert(this == CurrentThread);
@@ -545,6 +545,5 @@ namespace System.Threading
                 ResetThreadPoolThreadSlow();
             }
         }
-#pragma warning restore CA1822
     } // End of class Thread
 }

@@ -422,11 +422,12 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetAvailableThreadsNative(out int workerThreads, out int completionPortThreads);
 
-        internal static bool NotifyWorkItemComplete()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject)
         {
             if (UsePortableThreadPool)
             {
-                return PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();
+                return PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject);
             }
 
             return NotifyWorkItemCompleteNative();
@@ -462,6 +463,9 @@ namespace System.Threading
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void NotifyWorkItemProgressNative();
+
+        internal static object? GetOrCreateThreadLocalCompletionCountObject() =>
+            UsePortableThreadPool ? PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject() : null;
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool GetEnableWorkerTracking();

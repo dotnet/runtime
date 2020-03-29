@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -114,15 +115,14 @@ namespace System.Threading
         /// <returns>True if the runtime still needs to perform gate activities, false otherwise</returns>
         internal static bool PerformRuntimeSpecificGateActivities(int cpuUtilization) => false;
 
-        internal static void NotifyWorkItemProgress()
-        {
-            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
-        }
+        internal static void NotifyWorkItemProgress() => PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
 
-        internal static bool NotifyWorkItemComplete()
-        {
-            return PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject) =>
+            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject);
+
+        internal static object GetOrCreateThreadLocalCompletionCountObject() =>
+            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
 
         private static void RegisterWaitForSingleObjectCore(WaitHandle? waitObject, RegisteredWaitHandle registeredWaitHandle) =>
             PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);

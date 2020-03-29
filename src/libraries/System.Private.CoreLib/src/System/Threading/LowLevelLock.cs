@@ -7,8 +7,10 @@ using System.Diagnostics;
 namespace System.Threading
 {
     /// <summary>
-    /// A lightweight non-recursive mutex.
-    /// Waits on this lock are uninterruptible.
+    /// A lightweight non-recursive mutex. Waits on this lock are uninterruptible (from Thread.Interrupt(), which is supported
+    /// in some runtimes). That is the main reason this lock type would be used over interruptible locks, such as in a
+    /// low-level-infrastructure component that was historically not susceptible to a pending interrupt, and for compatibility
+    /// reasons, to ensure that it still would not be susceptible after porting that component to managed code.
     /// </summary>
     internal sealed class LowLevelLock : IDisposable
     {

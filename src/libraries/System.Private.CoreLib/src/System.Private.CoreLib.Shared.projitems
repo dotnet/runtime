@@ -1951,8 +1951,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelSpinWaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true' or '$(FeatureThreadInt64PersistentCounter)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInt64PersistentCounter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">

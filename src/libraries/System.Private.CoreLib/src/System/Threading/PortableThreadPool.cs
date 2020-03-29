@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -26,6 +27,9 @@ namespace System.Threading
 
         private static readonly short s_forcedMinWorkerThreads = AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
         private static readonly short s_forcedMaxWorkerThreads = AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MaxThreads", 0, false);
+
+        [ThreadStatic]
+        private static object? t_completionCountObject;
 
 #pragma warning disable IDE1006 // Naming Styles
         // The singleton must be initialized after the static variables above, as the constructor may be dependent on them
@@ -188,9 +192,22 @@ namespace System.Threading
         public int ThreadCount => _separated.counts.VolatileRead().NumExistingThreads;
         public long CompletedWorkItemCount => _completionCounter.Count;
 
-        internal void NotifyWorkItemProgress()
+        public object GetOrCreateThreadLocalCompletionCountObject() =>
+            t_completionCountObject ?? CreateThreadLocalCompletionCountObject();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private object CreateThreadLocalCompletionCountObject()
         {
-            _completionCounter.Increment();
+            Debug.Assert(t_completionCountObject == null);
+
+            object threadLocalCompletionCountObject = _completionCounter.CreateThreadLocalCountObject();
+            t_completionCountObject = threadLocalCompletionCountObject;
+            return threadLocalCompletionCountObject;
+        }
+
+        private void NotifyWorkItemProgress(object threadLocalCompletionCountObject)
+        {
+            ThreadInt64PersistentCounter.Increment(threadLocalCompletionCountObject);
             Volatile.Write(ref _separated.lastDequeueTime, Environment.TickCount);
 
             if (ShouldAdjustMaxWorkersActive() && _hillClimbingThreadAdjustmentLock.TryAcquire())
@@ -206,9 +223,13 @@ namespace System.Threading
             }
         }
 
-        internal bool NotifyWorkItemComplete()
+        internal void NotifyWorkItemProgress() => NotifyWorkItemProgress(GetOrCreateThreadLocalCompletionCountObject());
+
+        internal bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject)
         {
-            NotifyWorkItemProgress();
+            Debug.Assert(threadLocalCompletionCountObject != null);
+
+            NotifyWorkItemProgress(threadLocalCompletionCountObject!);
             return !WorkerThread.ShouldStopProcessingWorkNow();
         }
 
