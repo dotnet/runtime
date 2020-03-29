@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <DefineConstants>$(DefineConstants);$([System.String]::Copy('$(BuildArch)').ToUpper())</DefineConstants>
+    <DefineConstants>$(DefineConstants);$([System.String]::Copy('$(TargetArchitecture)').ToUpper())</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateRunScript>false</GenerateRunScript>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
