@@ -49,7 +49,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void TimesStillSetAfterDelete()
+        public void TimesSetToDefaultAfterDelete()
         {
             T item = GetExistingItem();
 
@@ -68,7 +68,7 @@ namespace System.IO.Tests
             Assert.All(times, time =>
             {
                 // We check for the time update from refresh
-                Assert.True(time.Value < DateTime.UtcNow);
+                Assert.Equal(time.Value, DateTime.FromFileTimeUtc(0));
             });
         }
     }
