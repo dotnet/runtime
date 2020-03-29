@@ -7,8 +7,8 @@
   </PropertyGroup>
   <ItemGroup>
     <_libDocs Include="$(ASPNETCoreAppPackageRefPath)\*.xml" />
-    <File Include="$(ASPNETCoreAppPackageRefPath)\*.*" Exclude="@(_libDocs)" TargetPath="lib\$(NetCoreAppCurrent)" />
-    <File Include="$(ASPNETCoreAppPackageRuntimePath)\*.*;@(_libDocs)" TargetPath="ref\$(NetCoreAppCurrent)" />
+    <File Include="$(ASPNETCoreAppPackageRefPath)\*.*" Exclude="@(_libDocs)" TargetPath="ref\$(NetCoreAppCurrent)" />
+    <File Include="$(ASPNETCoreAppPackageRuntimePath)\*.*;@(_libDocs)" TargetPath="lib\$(NetCoreAppCurrent)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
