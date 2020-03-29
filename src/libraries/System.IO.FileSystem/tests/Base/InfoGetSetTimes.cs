@@ -49,7 +49,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void TimesSetToDefaultAfterDelete()
+        public void TimesResetAfterDelete()
         {
             T item = GetExistingItem();
 
@@ -65,10 +65,11 @@ namespace System.IO.Tests
 
             // Deleting shouldn't change any info state
             item.Delete();
+            
             Assert.All(times, time =>
             {
                 // We check for the time update from refresh
-                Assert.Equal(time.Value, DateTime.FromFileTimeUtc(0));
+                Assert.NotEqual(time.Key.Getter.Invoke(item), time.Value);
             });
         }
     }
