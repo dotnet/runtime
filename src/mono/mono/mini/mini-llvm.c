@@ -8563,6 +8563,39 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_LZCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64), args, 2, "");
 			break;
 		}
+		case OP_XOP_I4_I4:
+		case OP_XOP_I8_I8: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_ARM64_RBIT32: id = INTRINS_BITREVERSE_I32; break;
+			case SIMD_OP_ARM64_RBIT64: id = INTRINS_BITREVERSE_I64; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
+			break;
+		}
+		case OP_XOP_I4_I4_I4:
+		case OP_XOP_I4_I4_I8: {
+			IntrinsicId id = (IntrinsicId)0;
+			gboolean zext_last = FALSE;
+			switch (ins->inst_c0) {
+			case SIMD_OP_ARM64_CRC32B: id = INTRINS_AARCH64_CRC32B; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32H: id = INTRINS_AARCH64_CRC32H; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32W: id = INTRINS_AARCH64_CRC32W; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32X: id = INTRINS_AARCH64_CRC32X; break;
+			case SIMD_OP_ARM64_CRC32CB: id = INTRINS_AARCH64_CRC32CB; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32CH: id = INTRINS_AARCH64_CRC32CH; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32CW: id = INTRINS_AARCH64_CRC32CW; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32CX: id = INTRINS_AARCH64_CRC32CX; break;
+			default: g_assert_not_reached (); break;
+			}
+			LLVMValueRef arg1 = rhs;
+			if (zext_last)
+				arg1 = LLVMBuildZExt (ctx->builder, arg1, LLVMInt32Type (), "");
+			LLVMValueRef args [] = { lhs, arg1 };
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
 #endif
 
 #if defined(ENABLE_NETCORE) && defined(TARGET_ARM64)
@@ -8587,34 +8620,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [0] = add;
 			args [1] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_LSCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64), args, 2, "");
-			break;
-		}
-
-		case OP_RBIT32:
-		case OP_RBIT64:
-			values [ins->dreg] = call_intrins (ctx, ins->opcode == OP_RBIT32 ? INTRINS_BITREVERSE_I32 : INTRINS_BITREVERSE_I64, &lhs, "");
-			break;
-
-		case OP_ARM64_CRC32X:
-		case OP_ARM64_CRC32CX: {
-			LLVMValueRef args [] = { lhs, rhs };
-			gboolean is_c = ins->opcode == OP_ARM64_CRC32CX;
-			values [ins->dreg] = call_intrins (ctx, is_c ? INTRINS_AARCH64_CRC32CX : INTRINS_AARCH64_CRC32X, args, "");
-			break;
-		}
-		case OP_ARM64_CRC32:
-		case OP_ARM64_CRC32C: {
-			// we need to zext the second arg
-			LLVMValueRef args [] = { lhs, LLVMBuildZExt (ctx->builder, rhs, LLVMInt32Type (), "") };
-			gboolean is_c = ins->opcode == OP_ARM64_CRC32C;
-			int id = 0;
-			switch (ins->inst_c1) {
-			case MONO_TYPE_U1: id = is_c ? INTRINS_AARCH64_CRC32CB : INTRINS_AARCH64_CRC32B; break;
-			case MONO_TYPE_U2: id = is_c ? INTRINS_AARCH64_CRC32CH : INTRINS_AARCH64_CRC32H; break;
-			case MONO_TYPE_U4: id = is_c ? INTRINS_AARCH64_CRC32CW : INTRINS_AARCH64_CRC32W; break;
-			default: g_assert_not_reached ();
-			}
-			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 #endif

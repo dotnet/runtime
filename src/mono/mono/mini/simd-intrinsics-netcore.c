@@ -720,7 +720,10 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		case SN_LeadingSignCount:
 			return emit_simd_ins_for_sig (cfg, klass, arg0_i32 ? OP_LSCNT32 : OP_LSCNT64, 0, arg0_type, fsig, args);
 		case SN_ReverseElementBits:
-			return emit_simd_ins_for_sig (cfg, klass, arg0_i32 ? OP_RBIT32 : OP_RBIT64, 0, arg0_type, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass,
+				(is_64bit ? OP_XOP_I8_I8 : OP_XOP_I4_I4),
+				(is_64bit ? SIMD_OP_ARM64_RBIT64 : SIMD_OP_ARM64_RBIT32),
+				arg0_type, fsig, args);
 		default:
 			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
 		}
@@ -731,7 +734,6 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 		if (!info)
 			return NULL;
 		
-		MonoTypeEnum arg1_type = fsig->param_count > 1 ? get_underlying_type (fsig->params [1]) : MONO_TYPE_VOID;
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_CRC) != 0;
 
 		switch (info->id) {
@@ -740,9 +742,18 @@ emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatur
 			ins->type = STACK_I4;
 			return ins;
 		case SN_ComputeCrc32:
-			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_ARM64_CRC32X : OP_ARM64_CRC32, 0, arg1_type, fsig, args);
-		case SN_ComputeCrc32C:
-			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_ARM64_CRC32CX : OP_ARM64_CRC32C, 0, arg1_type, fsig, args);
+		case SN_ComputeCrc32C: {
+			SimdOp op = (SimdOp)0;
+			gboolean is_c = info->id == SN_ComputeCrc32C;
+			switch (get_underlying_type (fsig->params [1])) {
+			case MONO_TYPE_U1: op = is_c ? SIMD_OP_ARM64_CRC32CB : SIMD_OP_ARM64_CRC32B; break;
+			case MONO_TYPE_U2: op = is_c ? SIMD_OP_ARM64_CRC32CH : SIMD_OP_ARM64_CRC32H; break;
+			case MONO_TYPE_U4: op = is_c ? SIMD_OP_ARM64_CRC32CW : SIMD_OP_ARM64_CRC32W; break;
+			case MONO_TYPE_U8: op = is_c ? SIMD_OP_ARM64_CRC32CX : SIMD_OP_ARM64_CRC32X; break;
+			default: g_assert_not_reached (); break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_XOP_I4_I4_I8 : OP_XOP_I4_I4_I4, op, arg0_type, fsig, args);
+		}
 		default:
 			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
 		}
