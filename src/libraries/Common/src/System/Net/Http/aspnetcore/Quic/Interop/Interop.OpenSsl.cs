@@ -74,9 +74,9 @@ internal static partial class Interop
         internal static extern int SslGetError(IntPtr ssl, int code);
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_provide_quic_data")]
-        internal static extern int SslProvideQuicData(IntPtr ssl, SslEncryptionLevel level, byte* data, IntPtr len);
+        internal static extern int SslProvideQuicData(IntPtr ssl, OpenSslEncryptionLevel level, byte* data, IntPtr len);
 
-        internal static int SslProvideQuicData(IntPtr ssl, SslEncryptionLevel level, ReadOnlySpan<byte> data)
+        internal static int SslProvideQuicData(IntPtr ssl, OpenSslEncryptionLevel level, ReadOnlySpan<byte> data)
         {
             fixed (byte* pData = data)
             {
@@ -105,7 +105,7 @@ internal static partial class Interop
         internal static extern int SslGetPeerQuicTransportParams(IntPtr ssl, out byte* param, out IntPtr length);
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_quic_max_handshake_flight_len")]
-        internal static extern int SslQuicMaxHandshakeFlightLen(IntPtr ssl, SslEncryptionLevel level);
+        internal static extern int SslQuicMaxHandshakeFlightLen(IntPtr ssl, OpenSslEncryptionLevel level);
 
         static OpenSslQuic()
         {

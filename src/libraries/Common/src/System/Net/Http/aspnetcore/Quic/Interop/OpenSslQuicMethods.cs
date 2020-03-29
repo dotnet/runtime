@@ -14,16 +14,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal unsafe delegate int SetEncryptionSecretsFunc(IntPtr ssl, SslEncryptionLevel level, byte* readSecret,
+        internal unsafe delegate int SetEncryptionSecretsFunc(IntPtr ssl, OpenSslEncryptionLevel level, byte* readSecret,
             byte* writeSecret, UIntPtr secretLen);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal unsafe delegate int AddHandshakeDataFunc(IntPtr ssl, SslEncryptionLevel level, byte* data, UIntPtr len);
+        internal unsafe delegate int AddHandshakeDataFunc(IntPtr ssl, OpenSslEncryptionLevel level, byte* data, UIntPtr len);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate int FlushFlightFunc(IntPtr ssl);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate int SendAlertFunc(IntPtr ssl, SslEncryptionLevel level, byte alert);
+        internal delegate int SendAlertFunc(IntPtr ssl, OpenSslEncryptionLevel level, byte alert);
     }
 }

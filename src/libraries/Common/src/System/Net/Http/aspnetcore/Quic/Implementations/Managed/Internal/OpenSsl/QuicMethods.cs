@@ -33,6 +33,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
             // Interop.OpenSslQuic.SslSetQuicMethod(ssl, ref Unsafe.AsRef<OpenSslQuicMethods.NativeCallbacks>(null));
         }
 
+        private static EncryptionLevel ToManagedEncryptionLevel(OpenSslEncryptionLevel level)
+        {
+            return level switch
+            {
+                OpenSslEncryptionLevel.Initial => EncryptionLevel.Initial,
+                OpenSslEncryptionLevel.EarlyData => EncryptionLevel.EarlyData,
+                OpenSslEncryptionLevel.Handshake => EncryptionLevel.Handshake,
+                OpenSslEncryptionLevel.Application => EncryptionLevel.Application,
+                _ => throw new ArgumentOutOfRangeException(nameof(level), level, null)
+            };
+        }
+
         private static ManagedQuicConnection GetCallbackInterface(IntPtr ssl)
         {
             var addr = Interop.OpenSslQuic.SslGetExData(ssl, _managedInterfaceIndex);
@@ -41,7 +53,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
             return callback;
         }
 
-        private static unsafe int SetEncryptionSecretsImpl(IntPtr ssl, SslEncryptionLevel level, byte* readSecret,
+        private static unsafe int SetEncryptionSecretsImpl(IntPtr ssl, OpenSslEncryptionLevel level, byte* readSecret,
             byte* writeSecret, UIntPtr secretLen)
         {
             var callback = GetCallbackInterface(ssl);
@@ -49,16 +61,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
             var readS = new ReadOnlySpan<byte>(readSecret, (int) secretLen.ToUInt32());
             var writeS = new ReadOnlySpan<byte>(writeSecret, (int) secretLen.ToUInt32());
 
-            return callback.HandleSetEncryptionSecrets(level, readS, writeS);
+            return callback.HandleSetEncryptionSecrets(ToManagedEncryptionLevel(level), readS, writeS);
         }
 
-        private static unsafe int AddHandshakeDataImpl(IntPtr ssl, SslEncryptionLevel level, byte* data, UIntPtr len)
+        private static unsafe int AddHandshakeDataImpl(IntPtr ssl, OpenSslEncryptionLevel level, byte* data, UIntPtr len)
         {
             var callback = GetCallbackInterface(ssl);
 
             var span = new ReadOnlySpan<byte>(data, (int) len.ToUInt32());
 
-            return callback.HandleAddHandshakeData(level, span);
+            return callback.HandleAddHandshakeData(ToManagedEncryptionLevel(level), span);
         }
 
         private static int FlushFlightImpl(IntPtr ssl)
@@ -68,11 +80,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
             return callback.HandleFlush();
         }
 
-        private static int SendAlertImpl(IntPtr ssl, SslEncryptionLevel level, byte alert)
+        private static int SendAlertImpl(IntPtr ssl, OpenSslEncryptionLevel level, byte alert)
         {
             var callback = GetCallbackInterface(ssl);
 
-            return callback.HandleSendAlert(level, (TlsAlert) alert);
+            return callback.HandleSendAlert(ToManagedEncryptionLevel(level), (TlsAlert) alert);
         }
     }
 }

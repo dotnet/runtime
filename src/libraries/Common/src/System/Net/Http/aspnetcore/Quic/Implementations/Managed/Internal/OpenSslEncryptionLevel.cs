@@ -1,6 +1,6 @@
 ﻿namespace System.Net.Quic.Implementations.Managed.Internal
 {
-    internal enum SslEncryptionLevel
+    internal enum OpenSslEncryptionLevel
     {
         Initial = 0,
         EarlyData,

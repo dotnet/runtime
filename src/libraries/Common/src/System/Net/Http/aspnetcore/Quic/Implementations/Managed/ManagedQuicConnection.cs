@@ -15,8 +15,24 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed
 {
+    internal enum EncryptionLevel
+    {
+        Initial,
+        Handshake,
+        EarlyData,
+        Application,
+        None,
+    }
+
     internal class ManagedQuicConnection : QuicConnectionProvider
     {
+        internal enum ProcessPacketResult
+        {
+            Ok,
+            DecryptionFail,
+            ParsingFail,
+        }
+
         private readonly QuicClientConnectionOptions? _clientOpts;
         private readonly QuicListenerOptions? _serverOpts;
 
@@ -32,6 +48,8 @@ namespace System.Net.Quic.Implementations.Managed
 
         private QuicVersion version = QuicVersion.Draft27;
 
+        private ConnectionIdCollection _connectionIdCollection = new ConnectionIdCollection();
+
         private ConnectionId? _scid;
 
         private ConnectionId? _dcid;
@@ -46,11 +64,24 @@ namespace System.Net.Quic.Implementations.Managed
 
         private string? privateKey;
 
-        public List<(SslEncryptionLevel, byte[])> ToSend { get; } = new List<(SslEncryptionLevel, byte[])>();
+        public List<(OpenSslEncryptionLevel, byte[])> ToSend { get; } = new List<(OpenSslEncryptionLevel, byte[])>();
 
-        public int OnDataReceived(SslEncryptionLevel level, ReadOnlySpan<byte> data)
+        public int OnDataReceived(OpenSslEncryptionLevel level, ReadOnlySpan<byte> data)
         {
             return Interop.OpenSslQuic.SslProvideQuicData(_ssl, level, data);
+        }
+
+        private static OpenSslEncryptionLevel GetOsslEncryptionLevel(EncryptionLevel level)
+        {
+            var osslLevel = level switch
+            {
+                EncryptionLevel.Initial => OpenSslEncryptionLevel.Initial,
+                EncryptionLevel.Handshake => OpenSslEncryptionLevel.Handshake,
+                EncryptionLevel.EarlyData => OpenSslEncryptionLevel.EarlyData,
+                EncryptionLevel.Application => OpenSslEncryptionLevel.Application,
+                _ => throw new ArgumentOutOfRangeException(nameof(level), level, null)
+            };
+            return osslLevel;
         }
 
         public ConnectionId? SourceConnectionId => _scid;
@@ -92,8 +123,10 @@ namespace System.Net.Quic.Implementations.Managed
         {
             QuicMethods.InitCallbacks(_gcHandle, _ssl);
 
-            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMinProtoVersion, (long)OpenSslTlsVersion.Tls13, IntPtr.Zero);
-            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMaxProtoVersion, (long)OpenSslTlsVersion.Tls13, IntPtr.Zero);
+            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMinProtoVersion, (long)OpenSslTlsVersion.Tls13,
+                IntPtr.Zero);
+            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMaxProtoVersion, (long)OpenSslTlsVersion.Tls13,
+                IntPtr.Zero);
 
             if (cert != null)
                 Interop.OpenSslQuic.SslUseCertificateFile(_ssl, cert, SslFiletype.Pem);
@@ -113,6 +146,7 @@ namespace System.Net.Quic.Implementations.Managed
                 // init random connection ids for the client
                 _scid = ConnectionId.Random(20);
                 _dcid = ConnectionId.Random(20);
+                _connectionIdCollection.Add(_dcid.Data);
 
                 // derive encryption secrets straight away.
                 DeriveInitialProtectionKeys(_dcid.Data);
@@ -136,86 +170,48 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (_isServer)
             {
-                HandleSetEncryptionSecrets(SslEncryptionLevel.Initial, client, server);
+                HandleSetEncryptionSecrets(EncryptionLevel.Initial, client, server);
             }
             else
             {
-                HandleSetEncryptionSecrets(SslEncryptionLevel.Initial, server, client);
+                HandleSetEncryptionSecrets(EncryptionLevel.Initial, server, client);
             }
         }
 
         internal void ReceiveData(byte[] buffer, int count, IPEndPoint sender)
         {
-            var reader = new QuicReader(new ArraySegment<byte>(buffer, 0, count));
+            var segment = new ArraySegment<byte>(buffer, 0, count);
+            var reader = new QuicReader(segment);
 
             while (reader.BytesLeft > 0)
             {
                 ReceiveOne(reader);
-                reader.Reset(new ArraySegment<byte>(buffer, reader.BytesRead, count - reader.BytesRead));
+
+                // Receive will adjust the buffer length once it is known
+                segment = segment.Slice(reader.Buffer.Count);
+                reader.Reset(segment);
             }
         }
 
-        private void ReceiveOne(QuicReader reader)
+        private ProcessPacketResult Receive1Rtt(QuicReader reader, in ShortPacketHeader header)
         {
-            byte first = reader.PeekUInt8();
+            throw new NotImplementedException();
+        }
 
-            // TODO-RZ: check fixed bit, drop too small packets etc.
+        private ProcessPacketResult ReceiveRetry(QuicReader reader, in LongPacketHeader header)
+        {
+            throw new NotImplementedException();
+        }
 
-            // TODO-RZ: not all packet types can be guessed from the first byte
-            var type = HeaderHelpers.GetPacketType(first);
+        private ProcessPacketResult ReceiveVeersionNegotiation(QuicReader reader, in LongPacketHeader header)
+        {
+            throw new NotImplementedException();
+        }
 
-            switch (type)
-            {
-                case PacketType.Initial:
-                    break;
-                case PacketType.ZeroRtt:
-                case PacketType.Handshake:
-                case PacketType.Retry:
-                case PacketType.OneRtt:
-                case PacketType.VersionNegotiation:
-                    throw new NotImplementedException("Packet type not implemented");
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-            int startOffset = reader.BytesRead;
-            var epoch = GetEpoch(GetEncryptionLevel(type));
-
-            // parse long header to get connection IDs
-            if (!LongPacketHeader.Read(reader, out var header))
-                //TODO-RZ check connection id lengths
-                throw new InvalidOperationException("TODO: handle failure");
-
-            if (!SharedPacketData.Read(reader, first, out var headerData))
-                throw new InvalidOperationException("TODO: handle failure");
-
-            // our source connection Id is clients destination Id
-            _scid = new ConnectionId(header.DestinationConnectionId.ToArray());
-            _dcid = new ConnectionId(header.SourceConnectionId.ToArray());
-
-            DeriveInitialProtectionKeys(_scid.Data);
-
-            int pnOffset = reader.BytesRead;
-            int payloadLength = (int) headerData.Length;
-
-            var seal = epoch.RecvCryptoSeal!;
-
-            if (!seal.DecryptPacket(reader.Buffer.AsSpan(startOffset), pnOffset, payloadLength, epoch.LargestTransportedPacketNumber))
-            {
-                // decryption failed, drop the packet.
-                reader.Advance(payloadLength);
-                return;
-            }
-
-            // TODO-RZ: read in a better way
-            reader.TryReadTruncatedPacketNumber(HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]),
-                out uint truncatedPn);
-
-            var tagStart = pnOffset + payloadLength - seal.TagLength;
-
-            // process the payload
+        private ProcessPacketResult ProcessFrames(QuicReader reader)
+        {
             // TODO-RZ: check permitted frames by the packet type
-            while (reader.BytesRead < tagStart)
+            while (reader.BytesLeft > 0)
             {
                 switch (reader.PeekFrameType())
                 {
@@ -228,7 +224,7 @@ namespace System.Net.Quic.Implementations.Managed
                         if (!CryptoFrame.Read(reader, out var crypto))
                             throw new InvalidOperationException("TODO: frame encoding error");
                         // TODO-RZ: Utilize the offset
-                        OnDataReceived(SslEncryptionLevel.Initial, crypto.CryptoData);
+                        OnDataReceived(OpenSslEncryptionLevel.Initial, crypto.CryptoData);
 
                         break;
                     }
@@ -261,11 +257,135 @@ namespace System.Net.Quic.Implementations.Managed
                 }
             }
 
-            reader.Advance(seal.TagLength);
+            return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult ReceiveCommon(QuicReader reader, in LongPacketHeader header,
+            in SharedPacketData headerData)
+        {
+            int pnOffset = reader.BytesRead;
+
+            // first, strip packet protection.
+            var encryptionLevel = GetEncryptionLevel(header.PacketType);
+            var epoch = GetEpoch(encryptionLevel);
+
+            int payloadLength = (int)headerData.Length;
+
+            // TODO-RZ: handle repeated receipt of first initial?
+            if (_isServer && encryptionLevel == EncryptionLevel.Initial)
+            {
+                // initialize protection keys
+
+                // clients destination connection Id is ours source connection Id
+                _scid = new ConnectionId(header.DestinationConnectionId.ToArray());
+                _dcid = new ConnectionId(header.SourceConnectionId.ToArray());
+                _connectionIdCollection.Add(_dcid.Data);
+
+                DeriveInitialProtectionKeys(_scid.Data);
+            }
+
+            if (epoch.RecvCryptoSeal == null)
+            {
+                // Decryption keys are not available yet, drop the packet for now
+                // TODO-RZ: consider buffering the packet
+                return ProcessPacketResult.DecryptionFail;
+            }
+
+            var seal = epoch.RecvCryptoSeal!;
+
+            if (!seal.DecryptPacket(reader.Buffer, pnOffset, payloadLength,
+                epoch.LargestTransportedPacketNumber))
+            {
+                // decryption failed, drop the packet.
+                reader.Advance(payloadLength);
+                return ProcessPacketResult.DecryptionFail;
+            }
+
+            // TODO-RZ: read in a better way
+            var pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]);
+            reader.TryReadTruncatedPacketNumber(pnLength, out uint truncatedPn);
+
+            epoch.ReceivedPacketNumbers.Add(QuicEncoding.DecodePacketNumber(epoch.LargestTransportedPacketNumber, truncatedPn, pnLength));
+
+            return ProcessFramesWithoutTag(reader, seal.TagLength);
+        }
+
+        private ProcessPacketResult ProcessFramesWithoutTag(QuicReader reader, int tagLength)
+        {
+            // HACK: we do not want to try processing the tag as if it were frames.
+            var originalSegment = reader.Buffer;
+            reader.Reset(reader.Buffer.Slice(reader.BytesRead, reader.BytesLeft - tagLength));
+            var retval = ProcessFrames(reader);
+            reader.Reset(originalSegment);
+            return retval;
+        }
+
+        private ProcessPacketResult ReceiveLongHeaderPackets(QuicReader reader, in LongPacketHeader header)
+        {
+            //TODO-RZ check header contents based on the type (connection id length)
+
+            var type = header.PacketType;
+            var epoch = GetEpoch(GetEncryptionLevel(type));
+
+            switch (type)
+            {
+                case PacketType.Initial:
+                case PacketType.Handshake:
+                case PacketType.ZeroRtt:
+                    if (!SharedPacketData.Read(reader, header.FirstByte, out var headerData))
+                    {
+                        return ProcessPacketResult.ParsingFail;
+                    }
+
+                    // total length of the packet is known
+                    // TODO-RZ: check bounds
+                    reader.Reset(reader.Buffer.Slice(0, reader.BytesRead + (int)headerData.Length), reader.BytesRead);
+
+                    return ReceiveCommon(reader, header, headerData);
+                case PacketType.Retry:
+                    return ReceiveRetry(reader, header);
+                case PacketType.VersionNegotiation:
+                    return ReceiveVeersionNegotiation(reader, header);
+                case PacketType.OneRtt:
+                    // this type is handled elsewhere
+                    throw new InvalidOperationException("Unreachable");
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private ProcessPacketResult ReceiveOne(QuicReader reader)
+        {
+            byte first = reader.PeekUInt8();
+            // TODO-RZ: check fixed bit, drop too small packets etc.
+
+            if (HeaderHelpers.IsLongHeader(first))
+            {
+                // TODO-RZ: check encryption keys availability
+                if (!LongPacketHeader.Read(reader, out var header))
+                {
+                    return ProcessPacketResult.ParsingFail;
+                }
+
+                return ReceiveLongHeaderPackets(reader, header);
+            }
+
+            else
+            {
+                if (!ShortPacketHeader.Read(reader, _connectionIdCollection, out var header))
+                {
+                    return ProcessPacketResult.ParsingFail;
+                }
+
+                return Receive1Rtt(reader, header);
+            }
         }
 
         internal int SendData(byte[] targetBuffer, out IPEndPoint? receiver)
         {
+            // TODO-RZ: proceess lost packets
+
+            // TODO-RZ: get current write level from SSL
             // TODO-RZ: move this to epoch's crypto stream
             if (ToSend.Count <= 0)
             {
@@ -276,22 +396,16 @@ namespace System.Net.Quic.Implementations.Managed
             var (level, cryptoData) = ToSend[0];
             ToSend.RemoveAt(0);
 
-            PacketType packetType;
-
-            switch (level)
+            var packetType = level switch
             {
-                case SslEncryptionLevel.Initial:
-                    packetType = PacketType.Initial;
-                    break;
-                case SslEncryptionLevel.EarlyData:
-                case SslEncryptionLevel.Handshake:
-                case SslEncryptionLevel.Application:
-                    throw new NotImplementedException();
-                default:
-                    throw new InvalidOperationException();
-            }
+                OpenSslEncryptionLevel.Initial => PacketType.Initial,
+                OpenSslEncryptionLevel.EarlyData => throw new NotImplementedException(),
+                OpenSslEncryptionLevel.Handshake => throw new NotImplementedException(),
+                OpenSslEncryptionLevel.Application => throw new NotImplementedException(),
+                _ => throw new InvalidOperationException()
+            };
 
-            var epoch = GetEpoch(level);
+            var epoch = GetEpoch(GetEncryptionLevel(packetType));
             var seal = epoch.SendCryptoSeal!;
 
             var writer = new QuicWriter(targetBuffer);
@@ -328,7 +442,7 @@ namespace System.Net.Quic.Implementations.Managed
             // fill in the payload length retrospectively
             int payloadLength = writer.BytesWritten - pnOffset + seal.TagLength;
             // TODO-RZ: this is ugly
-            BinaryPrimitives.WriteUInt16BigEndian(payloadLengthSpan, (ushort) (payloadLength | 0x4000));
+            BinaryPrimitives.WriteUInt16BigEndian(payloadLengthSpan, (ushort)(payloadLength | 0x4000));
 
             // encryption adds tag after the packet data
             // TODO-RZ not all packets are encrypted, also make sure the padding was at least TagLength
@@ -344,7 +458,7 @@ namespace System.Net.Quic.Implementations.Managed
             var status = Interop.OpenSslQuic.SslDoHandshake(_ssl);
             if (status < 0)
             {
-                return (SslError) Interop.OpenSslQuic.SslGetError(_ssl, status);
+                return (SslError)Interop.OpenSslQuic.SslGetError(_ssl, status);
             }
 
             return SslError.None;
@@ -370,26 +484,28 @@ namespace System.Net.Quic.Implementations.Managed
             return remoteTransportParams!;
         }
 
-        private SslEncryptionLevel GetEncryptionLevel(PacketType packetType)
+        private EncryptionLevel GetEncryptionLevel(PacketType packetType)
         {
             return packetType switch
             {
-                PacketType.Initial => SslEncryptionLevel.Initial,
-                PacketType.Handshake => SslEncryptionLevel.Handshake,
-                PacketType.ZeroRtt => SslEncryptionLevel.EarlyData,
-                PacketType.OneRtt => SslEncryptionLevel.Application,
+                PacketType.Initial => EncryptionLevel.Initial,
+                PacketType.Handshake => EncryptionLevel.Handshake,
+                PacketType.ZeroRtt => EncryptionLevel.EarlyData,
+                PacketType.OneRtt => EncryptionLevel.Application,
+                PacketType.Retry => EncryptionLevel.None,
+                PacketType.VersionNegotiation => EncryptionLevel.None,
                 _ => throw new ArgumentOutOfRangeException(nameof(packetType), packetType, null)
             };
         }
 
-        private EpochData GetEpoch(SslEncryptionLevel encryptionLevel)
+        private EpochData GetEpoch(EncryptionLevel encryptionLevel)
         {
             return encryptionLevel switch
             {
-                SslEncryptionLevel.Initial => _epochs[0],
-                SslEncryptionLevel.Handshake => _epochs[1],
-                SslEncryptionLevel.EarlyData => _epochs[2],
-                SslEncryptionLevel.Application => _epochs[2],
+                EncryptionLevel.Initial => _epochs[0],
+                EncryptionLevel.Handshake => _epochs[1],
+                EncryptionLevel.EarlyData => _epochs[2],
+                EncryptionLevel.Application => _epochs[2],
                 _ => throw new ArgumentOutOfRangeException(nameof(encryptionLevel), encryptionLevel, null)
             };
         }
@@ -402,7 +518,8 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override IPEndPoint RemoteEndPoint => _clientOpts!.RemoteEndPoint!;
 
-        internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
 
         internal override QuicStreamProvider OpenUnidirectionalStream() => throw new NotImplementedException();
 
@@ -412,11 +529,13 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override long GetRemoteAvailableBidirectionalStreamCount() => throw new NotImplementedException();
 
-        internal override ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        internal override ValueTask<QuicStreamProvider>
+            AcceptStreamAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         internal override SslApplicationProtocol NegotiatedApplicationProtocol { get; }
 
-        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
 
         #endregion
 
@@ -428,7 +547,8 @@ namespace System.Net.Quic.Implementations.Managed
             Interop.OpenSslQuic.SslFree(_ssl);
         }
 
-        internal int HandleSetEncryptionSecrets(SslEncryptionLevel level, ReadOnlySpan<byte> readSecret, ReadOnlySpan<byte> writeSecret)
+        internal int HandleSetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
+            ReadOnlySpan<byte> writeSecret)
         {
             Console.WriteLine($"SetEncryptionSecrets({level})");
 
@@ -441,10 +561,10 @@ namespace System.Net.Quic.Implementations.Managed
             return 1;
         }
 
-        internal int HandleAddHandshakeData(SslEncryptionLevel level, ReadOnlySpan<byte> data)
+        internal int HandleAddHandshakeData(EncryptionLevel level, ReadOnlySpan<byte> data)
         {
             Console.WriteLine($"AddHandshakeData({level})");
-            ToSend.Add((level, data.ToArray()));
+            ToSend.Add((GetOsslEncryptionLevel(level), data.ToArray()));
 
             return 1;
         }
@@ -456,9 +576,9 @@ namespace System.Net.Quic.Implementations.Managed
             return 1;
         }
 
-        internal int HandleSendAlert(SslEncryptionLevel level, TlsAlert alert)
+        internal int HandleSendAlert(EncryptionLevel level, TlsAlert alert)
         {
-            Console.WriteLine($"SendAlert({level}): {(byte) alert} (0x{(byte) alert:x2}) - {alert}");
+            Console.WriteLine($"SendAlert({level}): {(byte)alert} (0x{(byte)alert:x2}) - {alert}");
 
             return 1;
         }

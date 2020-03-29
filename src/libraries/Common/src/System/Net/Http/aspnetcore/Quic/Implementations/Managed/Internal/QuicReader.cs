@@ -112,9 +112,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _consumed += bytes;
         }
 
-        internal void Reset(ArraySegment<byte> buffer)
+        internal void Reset(ArraySegment<byte> buffer, int consumed = 0)
         {
             _buffer = buffer;
+            _consumed = consumed;
         }
 
         internal void Reset(byte[] buffer, int start, int count)
