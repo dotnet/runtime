@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 #endif
         bool IsCurveValid(Oid oid);
         bool ExplicitCurvesSupported { get; }
+        bool LimitedPrivateKeySupported { get; }
     }
 
     public static partial class ECDsaFactory
