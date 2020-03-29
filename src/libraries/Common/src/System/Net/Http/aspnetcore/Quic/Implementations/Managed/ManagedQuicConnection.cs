@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,8 +17,8 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal class ManagedQuicConnection : QuicConnectionProvider
     {
-        private readonly QuicClientConnectionOptions _clientOpts;
-        private readonly QuicListenerOptions _serverOpts;
+        private readonly QuicClientConnectionOptions? _clientOpts;
+        private readonly QuicListenerOptions? _serverOpts;
 
         private readonly IntPtr _ssl;
         private GCHandle _gcHandle;
@@ -40,9 +42,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         // TODO-RZ: remove these
 
-        private string cert;
+        private string? cert;
 
-        private string privateKey;
+        private string? privateKey;
 
         public List<(SslEncryptionLevel, byte[])> ToSend { get; } = new List<(SslEncryptionLevel, byte[])>();
 
@@ -144,10 +146,13 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal void ReceiveData(byte[] buffer, int count, IPEndPoint sender)
         {
-            var reader = new QuicReader(buffer, count);
+            var reader = new QuicReader(new ArraySegment<byte>(buffer, 0, count));
 
             while (reader.BytesLeft > 0)
+            {
                 ReceiveOne(reader);
+                reader.Reset(new ArraySegment<byte>(buffer, reader.BytesRead, count - reader.BytesRead));
+            }
         }
 
         private void ReceiveOne(QuicReader reader)
@@ -193,7 +198,9 @@ namespace System.Net.Quic.Implementations.Managed
             int pnOffset = reader.BytesRead;
             int payloadLength = (int) headerData.Length;
 
-            if (!epoch.RecvCryptoSeal.DecryptPacket(reader.Buffer.AsSpan(startOffset), pnOffset, payloadLength, epoch.LargestTransportedPacketNumber))
+            var seal = epoch.RecvCryptoSeal!;
+
+            if (!seal.DecryptPacket(reader.Buffer.AsSpan(startOffset), pnOffset, payloadLength, epoch.LargestTransportedPacketNumber))
             {
                 // decryption failed, drop the packet.
                 reader.Advance(payloadLength);
@@ -204,7 +211,7 @@ namespace System.Net.Quic.Implementations.Managed
             reader.TryReadTruncatedPacketNumber(HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]),
                 out uint truncatedPn);
 
-            var tagStart = pnOffset + payloadLength - epoch.RecvCryptoSeal.TagLength;
+            var tagStart = pnOffset + payloadLength - seal.TagLength;
 
             // process the payload
             // TODO-RZ: check permitted frames by the packet type
@@ -254,10 +261,10 @@ namespace System.Net.Quic.Implementations.Managed
                 }
             }
 
-            reader.Advance(epoch.RecvCryptoSeal.TagLength);
+            reader.Advance(seal.TagLength);
         }
 
-        internal int SendData(byte[] targetBuffer, out IPEndPoint receiver)
+        internal int SendData(byte[] targetBuffer, out IPEndPoint? receiver)
         {
             // TODO-RZ: move this to epoch's crypto stream
             if (ToSend.Count <= 0)
@@ -285,6 +292,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             var epoch = GetEpoch(level);
+            var seal = epoch.SendCryptoSeal!;
 
             var writer = new QuicWriter(targetBuffer);
 
@@ -296,8 +304,8 @@ namespace System.Net.Quic.Implementations.Managed
                 packetType,
                 pnLength,
                 version,
-                _dcid.Data,
-                _scid.Data));
+                _dcid!.Data,
+                _scid!.Data));
 
             // HACK: reserve 2 bytes for payload length and overwrite it later
             SharedPacketData.Write(writer, new SharedPacketData(
@@ -314,20 +322,20 @@ namespace System.Net.Quic.Implementations.Managed
             CryptoFrame.Write(writer, new CryptoFrame(0, cryptoData));
 
             // rest of the buffer will be padding = 0x00 bytes
-            int paddingLength = QuicConstants.MinimumClientInitialDatagramSize - epoch.SendCryptoSeal.TagLength - writer.BytesWritten;
+            int paddingLength = QuicConstants.MinimumClientInitialDatagramSize - seal.TagLength - writer.BytesWritten;
             writer.GetWritableSpan(paddingLength).Clear();
 
             // fill in the payload length retrospectively
-            int payloadLength = writer.BytesWritten - pnOffset + epoch.SendCryptoSeal.TagLength;
+            int payloadLength = writer.BytesWritten - pnOffset + seal.TagLength;
             // TODO-RZ: this is ugly
             BinaryPrimitives.WriteUInt16BigEndian(payloadLengthSpan, (ushort) (payloadLength | 0x4000));
 
             // encryption adds tag after the packet data
             // TODO-RZ not all packets are encrypted, also make sure the padding was at least TagLength
-            epoch.SendCryptoSeal.EncryptPacket(targetBuffer, pnOffset, payloadLength, truncatedPn);
-            writer.GetWritableSpan(epoch.SendCryptoSeal.TagLength);
+            seal.EncryptPacket(targetBuffer, pnOffset, payloadLength, truncatedPn);
+            writer.GetWritableSpan(seal.TagLength);
 
-            receiver = _clientOpts.RemoteEndPoint;
+            receiver = _clientOpts!.RemoteEndPoint!;
             return writer.BytesWritten;
         }
 
@@ -352,14 +360,14 @@ namespace System.Net.Quic.Implementations.Managed
                 Interop.OpenSslQuic.SslGetPeerQuicTransportParams(_ssl, out data, out length);
 
                 new Span<byte>(data, length.ToInt32()).CopyTo(buffer);
-                var reader = new QuicReader(buffer, length.ToInt32());
+                var reader = new QuicReader(new ArraySegment<byte>(buffer, 0, length.ToInt32()));
                 if (!TransportParameters.Read(reader, _isServer, out remoteTransportParams))
                 {
                     throw new InvalidOperationException("Failed to get peers transport params");
                 }
             }
 
-            return remoteTransportParams;
+            return remoteTransportParams!;
         }
 
         private SslEncryptionLevel GetEncryptionLevel(PacketType packetType)
@@ -390,9 +398,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override bool Connected { get; }
 
-        internal override IPEndPoint LocalEndPoint => _clientOpts.LocalEndPoint!;
+        internal override IPEndPoint LocalEndPoint => _clientOpts!.LocalEndPoint!;
 
-        internal override IPEndPoint RemoteEndPoint => _clientOpts.RemoteEndPoint!;
+        internal override IPEndPoint RemoteEndPoint => _clientOpts!.RemoteEndPoint!;
 
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
 

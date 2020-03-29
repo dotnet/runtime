@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
@@ -25,7 +27,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     All packet numbers received.
         /// </summary>
-        internal RangeSet ReceivedPacketNumbers { get; set; }
+        internal RangeSet ReceivedPacketNumbers { get; } = new RangeSet();
 
         /// <summary>
         ///     Flag that next time packets for sending are requested, an ack frame should be added, because an ack eliciting frame was received meanwhile.
@@ -35,11 +37,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     CryptoSeal for encryption of the outbound data.
         /// </summary>
-        internal CryptoSeal SendCryptoSeal { get; set; }
+        internal CryptoSeal? SendCryptoSeal { get; set; }
 
         /// <summary>
         ///     CryptoSeal for decryption of inbound data.
         /// </summary>
-        internal CryptoSeal RecvCryptoSeal { get; set; }
+        internal CryptoSeal? RecvCryptoSeal { get; set; }
     }
 }

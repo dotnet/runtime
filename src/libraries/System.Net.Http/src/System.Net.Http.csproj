@@ -21,6 +21,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\ConnectionId.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\ConnectionId.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\ConnectionIdCollection.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\ConnectionIdCollection.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CipherAlgorithm.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\CipherAlgorithm.cs</Link>
     </Compile>
@@ -44,6 +50,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\QuicEncoding.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Crypto\QuicEncoding.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\EpochData.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\EpochData.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Frames\AckFrame.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Frames\AckFrame.cs</Link>
@@ -99,6 +108,27 @@
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\HeaderHelpers.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\HeaderHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Headers\LongPacketHeader.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Headers\LongPacketHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Headers\RetryPacketData.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Headers\RetryPacketData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Headers\SharedPacketData.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Headers\SharedPacketData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Headers\ShortPacketHeader.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Headers\ShortPacketHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Headers\VersionNegotiationPacketData.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Headers\VersionNegotiationPacketData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\PacketType.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\PacketType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\PreferredAddress.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\PreferredAddress.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicPrimitives.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicPrimitives.cs</Link>
     </Compile>
@@ -108,17 +138,17 @@
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicReaderWriterExtensions.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicReaderWriterExtensions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicVersion.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicVersion.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicWriter.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\QuicWriter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\RangeSet.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\RangeSet.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportErrorCode.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportErrorCode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportParameter.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportParameter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Handshake.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\Handshake.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\IQuicCallback.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\IQuicCallback.cs</Link>
@@ -155,6 +185,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\SslEncryptionLevel.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\SslEncryptionLevel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportParameterName.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportParameterName.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportParameters.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\Internal\TransportParameters.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Net\Http\aspnetcore\Quic\Implementations\Managed\ManagedQuicConnection.cs">
       <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\ManagedQuicConnection.cs</Link>

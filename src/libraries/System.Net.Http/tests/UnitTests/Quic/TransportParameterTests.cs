@@ -41,7 +41,7 @@ namespace System.Net.Quic.Tests
             };
 
             TransportParameters.Write(writer, true, expected);
-            reader.Reset(buffer, writer.BytesWritten);
+            reader.Reset(buffer, 0, writer.BytesWritten);
             Assert.True(TransportParameters.Read(reader, true, out var actual));
 
             Assert.Equal(expected.PreferredAddress, actual.PreferredAddress);

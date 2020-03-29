@@ -30,7 +30,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
         internal static unsafe void DeinitCallbacks(IntPtr ssl)
         {
             // call SslSetQuicMethod(ssl, null) to stop callbacks being called
-            Interop.OpenSslQuic.SslSetQuicMethod(ssl, ref Unsafe.AsRef<OpenSslQuicMethods.NativeCallbacks>(null));
+            // Interop.OpenSslQuic.SslSetQuicMethod(ssl, ref Unsafe.AsRef<OpenSslQuicMethods.NativeCallbacks>(null));
         }
 
         private static ManagedQuicConnection GetCallbackInterface(IntPtr ssl)

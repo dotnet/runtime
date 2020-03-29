@@ -25,7 +25,7 @@ namespace System.Net.Quic.Tests
 
             // These would normally be calculated
             int pnOffset = 18;
-            int payloadLength = 1162;
+            int payloadLength = 1162 + 4 + 16;
             Assert.True(seal.DecryptPacket(packet, pnOffset, payloadLength, 0));
 
             const string headerHex = ReferenceData.ClientInitialPacketHeaderHex;
@@ -52,7 +52,7 @@ namespace System.Net.Quic.Tests
 
             // derive keying material
             CryptoSeal seal = DeriveClientCryptoSeal();
-            seal.EncryptPacket(buff, headerLen - 4 /*pnLength*/, ReferenceData.ClientInitialPayloadLength, 2);
+            seal.EncryptPacket(buff, headerLen - 4 /*pnLength*/, ReferenceData.ClientInitialPayloadLength + 4 + 16, 2);
 
             Assert.Equal(encryptedClientInitial, buff);
         }

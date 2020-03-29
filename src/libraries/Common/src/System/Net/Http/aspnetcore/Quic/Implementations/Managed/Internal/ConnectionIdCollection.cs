@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Collections.Generic;
 
 namespace System.Net.Quic.Implementations.Managed.Internal

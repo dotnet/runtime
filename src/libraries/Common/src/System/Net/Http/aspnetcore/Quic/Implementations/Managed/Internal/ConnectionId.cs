@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Diagnostics;
 
 namespace System.Net.Quic.Implementations.Managed.Internal

@@ -9,8 +9,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
     internal readonly ref struct LongPacketHeader
     {
         /// <summary>
-        ///     First byte of the header, contains compacted data from <see cref="FixedBit" />, <see cref="PacketType" /> and
-        ///     <see cref="TypeSpecificBits" />.
+        ///     First byte of the header, contains compacted data from <see cref="FixedBit" />, <see cref="PacketType" />.
         /// </summary>
         internal readonly byte FirstByte;
 

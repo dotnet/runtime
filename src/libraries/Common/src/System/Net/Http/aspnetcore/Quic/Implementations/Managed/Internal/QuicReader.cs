@@ -9,31 +9,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     internal class QuicReader
     {
         // Underlying buffer from which data are read.
-        private byte[] _buffer;
-
-        // Number of bytes from _buffer to use.
-        private int _maxOffset;
+        private ArraySegment<byte> _buffer;
 
         // number of bytes read from the buffer.
-
         private int _consumed;
 
-        internal QuicReader(byte[] buffer)
-            : this (buffer, buffer.Length)
+        internal QuicReader(ArraySegment<byte> buffer)
         {
-        }
-
-        internal QuicReader(byte[] buffer, int count)
-        {
-            _buffer = buffer; //to get rid of the warning.
-            Reset(buffer, count);
+            _buffer = buffer;
         }
 
         public int BytesRead => _consumed;
 
-        public int BytesLeft => _maxOffset - _consumed;
+        public int BytesLeft => _buffer.Count - _consumed;
 
-        public byte[] Buffer => _buffer;
+        public ArraySegment<byte> Buffer => _buffer;
 
         internal bool TryReadUInt8(out byte result)
         {
@@ -122,13 +112,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _consumed += bytes;
         }
 
-        internal void Reset(byte[] buffer, int count)
+        internal void Reset(ArraySegment<byte> buffer)
         {
-            Debug.Assert(count <= buffer.Length);
-
             _buffer = buffer;
-            _maxOffset = count;
-            _consumed = 0;
+        }
+
+        internal void Reset(byte[] buffer, int start, int count)
+        {
+            Reset(new ArraySegment<byte>(buffer, start, count));
         }
 
         internal bool TryReadSpan(int length, out ReadOnlySpan<byte> result)
