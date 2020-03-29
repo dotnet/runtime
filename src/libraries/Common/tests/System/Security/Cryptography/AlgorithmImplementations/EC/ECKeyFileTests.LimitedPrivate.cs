@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Tests
 {
     public abstract partial class ECKeyFileTests<T>
     {
-        private static bool LimitedPrivateKeySupported { get; } = !PlatformDetection.IsOSX;
+        private static bool LimitedPrivateKeySupported { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.LimitedPrivateKeySupported;
 
         [Fact]
         public void ReadWriteNistP521Pkcs8_LimitedPrivate()

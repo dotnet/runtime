@@ -37,6 +37,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
+        public bool LimitedPrivateKeySupported => false;
+
         private static bool NativeOidFriendlyNameExists(string oidFriendlyName)
         {
             if (string.IsNullOrEmpty(oidFriendlyName))
