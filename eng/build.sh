@@ -112,7 +112,7 @@ while [[ $# > 0 ]]; do
       ;;
      -arch)
       arch=$2
-      arguments="$arguments /p:ArchGroup=$2 /p:TargetArchitecture=$2"
+      arguments="$arguments /p:TargetArchitecture=$2"
       shift 2
       ;;
      -configuration|-c)
