@@ -8,23 +8,30 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     internal class QuicWriter
     {
         // underlying buffer to which data are being written.
-        private byte[] _buffer;
+        private ArraySegment<byte> _buffer;
         // number of bytes already written into the buffer.
         private int _written;
 
-        public QuicWriter(byte[] buffer)
+        public QuicWriter(ArraySegment<byte> buffer)
         {
             _buffer = buffer;
         }
 
         internal int BytesWritten => _written;
 
-        internal int BytesAvailable => _buffer.Length - BytesWritten;
+        internal int BytesAvailable => _buffer.Count - BytesWritten;
+
+        internal ArraySegment<byte> Buffer => _buffer;
+
+        internal void Reset(ArraySegment<byte> buffer, int offset = 0)
+        {
+            _buffer = buffer;
+            _written = offset;
+        }
 
         internal void Reset(byte[] buffer)
         {
-            _buffer = buffer;
-            _written = 0;
+            Reset(new ArraySegment<byte>(buffer, 0, buffer.Length));
         }
 
         internal void WriteUInt8(byte value)

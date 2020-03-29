@@ -1,9 +1,33 @@
 #nullable enable
 
+using System.Collections.Generic;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
+    internal class CryptoStream
+    {
+        private int offset;
+        private List<byte[]> data = new List<byte[]>();
+        internal void Add(ReadOnlySpan<byte> data)
+        {
+            this.data.Add(data.ToArray());
+        }
+
+        internal (byte[] data, int streamOffset) GetDataToSend()
+        {
+            var data = this.data[0];
+            this.data.RemoveAt(0);
+
+            var streamOffset = offset;
+            offset += data.Length;
+
+            return (data, streamOffset);
+        }
+
+        internal bool HasDataToSend => data.Count > 0;
+    }
+
     /// <summary>
     ///     Class for aggregating all connection data for a single epoch.
     /// </summary>
@@ -43,5 +67,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     CryptoSeal for decryption of inbound data.
         /// </summary>
         internal CryptoSeal? RecvCryptoSeal { get; set; }
+
+        /// <summary>
+        ///     Stream of outbound messages to be carried in CRYPTO frames.
+        /// </summary>
+        internal CryptoStream CryptoStream { get; set; } = new CryptoStream();
+
+        internal (uint truncatedPn, int pnLength) GetNextPacketNumber()
+        {
+            int pnLength = QuicEncoding.GetPacketNumberByteCount(LargestTransportedPacketNumber, NextPacketNumber);
+            return ((uint) NextPacketNumber++, pnLength);
+        }
     }
 }

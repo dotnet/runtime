@@ -107,6 +107,15 @@ internal static partial class Interop
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_quic_max_handshake_flight_len")]
         internal static extern int SslQuicMaxHandshakeFlightLen(IntPtr ssl, OpenSslEncryptionLevel level);
 
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_quic_read_level")]
+        internal static extern OpenSslEncryptionLevel SslQuicReadLevel(IntPtr ssl);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_quic_write_level")]
+        internal static extern OpenSslEncryptionLevel SslQuicWriteLevel(IntPtr ssl);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_in_init")]
+        internal static extern int SslIsInInit(IntPtr ssl);
+
         static OpenSslQuic()
         {
             ErrPrintErrorsCb(PrintErrors, IntPtr.Zero);

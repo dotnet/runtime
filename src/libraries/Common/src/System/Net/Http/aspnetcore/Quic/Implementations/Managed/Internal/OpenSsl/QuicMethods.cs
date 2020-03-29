@@ -33,7 +33,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
             // Interop.OpenSslQuic.SslSetQuicMethod(ssl, ref Unsafe.AsRef<OpenSslQuicMethods.NativeCallbacks>(null));
         }
 
-        private static EncryptionLevel ToManagedEncryptionLevel(OpenSslEncryptionLevel level)
+        internal static EncryptionLevel ToManagedEncryptionLevel(OpenSslEncryptionLevel level)
         {
             return level switch
             {
