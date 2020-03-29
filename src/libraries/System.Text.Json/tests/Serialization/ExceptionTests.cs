@@ -526,5 +526,23 @@ namespace System.Text.Json.Serialization.Tests
             // Root-level Types (not from a property) do not include the Path.
             Assert.DoesNotContain("Path: $", ex.Message);
         }
+
+        [Fact]
+        public static void DeserializeTypeInstance()
+        {
+            string json = JsonSerializer.Serialize(typeof(int));
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Type>(json));
+            string exAsStr = ex.ToString();
+            Assert.Contains("System.Type", exAsStr);
+            Assert.Contains("$", exAsStr);
+
+            json = $@"{{""Type"":{json}}}";
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithType>(json));
+            exAsStr = ex.ToString();
+            Assert.Contains("System.Type", exAsStr);
+            Assert.Contains("$.Type", exAsStr);
+        }
     }
 }

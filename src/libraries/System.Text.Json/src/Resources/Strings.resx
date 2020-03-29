@@ -506,4 +506,7 @@
   <data name="BufferMaximumSizeExceeded" xml:space="preserve">
     <value>Cannot allocate a buffer of size {0}.</value>
   </data>
+  <data name="DeserializeTypeInstanceNotSupported" xml:space="preserve">
+    <value>Deserialization of 'System.Type' instances is not supported and should be avoided since it can lead to security issues. A workaround is to use a custom converter.</value>
+  </data>
 </root>
