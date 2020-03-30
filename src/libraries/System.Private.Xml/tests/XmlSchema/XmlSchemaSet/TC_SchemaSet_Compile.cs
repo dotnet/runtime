@@ -218,5 +218,47 @@ namespace System.Xml.Tests
             Assert.IsType<XmlSchemaException>(exception);
             Assert.Contains("minLength", exception.Message);
         }
+
+        /// <summary>
+        /// Test for issue #30218, resource Sch_MaxLengthGtBaseMaxLength
+        /// </summary>
+        [Fact]
+        public void MaxLengthGtBaseMaxLength_Throws()
+        {
+            string schema = @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:maxLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:maxLength value='6'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+";
+
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception exception;
+
+            try
+            {
+                ss.Compile();
+                exception = null;
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+
+            Assert.NotNull(exception);
+            Assert.IsType<XmlSchemaException>(exception);
+            Assert.Contains("maxLength", exception.Message);
+        }
     }
 }

@@ -1726,7 +1726,7 @@
     <value>It is an error if the derived 'minLength' facet value is less than the parent 'minLength' facet value.</value>
   </data>
   <data name="Sch_MaxLengthGtBaseMaxLength" xml:space="preserve">
-    <value>It is an error if 'maxLength' is among the members of {facets} of {base type definition} and {value} is greater than the {value} of the parent 'maxLength'.</value>
+    <value>It is an error if the derived 'maxLength' facet value is greater than the parent 'maxLength' facet value.</value>
   </data>
   <data name="Sch_MaxMinLengthBaseLength" xml:space="preserve">
     <value>It is an error for both 'length' and either 'minLength' or 'maxLength' to be members of {facets}, unless they are specified in different derivation steps. In which case the following must be true: the {value} of 'minLength' &lt;= the {value} of 'length' &lt;= the {value} of 'maxLength'.</value>
