@@ -17,7 +17,7 @@ bool IpcStreamFactory::CreateServer(const char *const pIpcName, ErrorCallback ca
     {
         if (pIpc->Listen(callback))
         {
-            IpcStream::DiagnosticsIpc::IpcPollHandle ipcPollHandle { .pIpc = pIpc, .pStream = nullptr, .revents = 0 };
+            IpcStream::DiagnosticsIpc::IpcPollHandle ipcPollHandle = { pIpc, nullptr, 0 };
             s_rgIpcPollHandles.Push(ipcPollHandle);
             return true;
         }
@@ -38,7 +38,7 @@ bool IpcStreamFactory::CreateClient(const char *const pIpcName, ErrorCallback ca
     IpcStream::DiagnosticsIpc *pIpc = IpcStream::DiagnosticsIpc::Create(pIpcName, IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT, callback);
     if (pIpc != nullptr)
     {
-        IpcStream::DiagnosticsIpc::IpcPollHandle ipcPollHandle { .pIpc = pIpc, .pStream = nullptr, .revents = 0 };
+        IpcStream::DiagnosticsIpc::IpcPollHandle ipcPollHandle = { pIpc, nullptr, 0 };
         s_rgIpcPollHandles.Push(ipcPollHandle);
         return true;
     }
@@ -69,7 +69,7 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
 {
     IpcStream *pStream = nullptr;
     // View of s_rgIpcPollhandles
-    CQuickArrayList<IpcStream::DiagnosticsIpc::IpcPollHandle*> pIpcPollHandles;
+    CQuickArrayList<IpcStream::DiagnosticsIpc::IpcPollHandle*> rgpIpcPollHandles;
     
     // Polling timeout semantics
     // If client connection is opted in
@@ -95,7 +95,7 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
                 pollTimeoutMs = (pollTimeoutMs == pollTimeoutInfinite) ? pollTimeoutMinMs : pollTimeoutMs;
                 if (s_rgIpcPollHandles[i].pStream == nullptr)
                 {
-                    // cache is empty, reconnect
+                    // cache is empty, reconnect, e.g., there was a disconnect
                     IpcStream *pConnection = nullptr;
                     pConnection = s_rgIpcPollHandles[i].pIpc->Connect(callback);
 
@@ -111,14 +111,21 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
 
                         s_rgIpcPollHandles[i].pStream = pConnection;
                         pollTimeoutMs = pollTimeoutInfinite;
-                        pIpcPollHandles.Push(&s_rgIpcPollHandles[i]);
+                        rgpIpcPollHandles.Push(&s_rgIpcPollHandles[i]);
                     }
                     else
                     {
+                        // connection failed, increment timeout
                         pollTimeoutMs = (pollTimeoutMs >= pollTimeoutMaxMs) ?
                             pollTimeoutMaxMs :
                             pollTimeoutMs * pollTimeoutFalloffFactor;
                     }
+                }
+                else
+                {
+                    // reuse the existing connection
+                    pollTimeoutMs = pollTimeoutInfinite;
+                    rgpIpcPollHandles.Push(&s_rgIpcPollHandles[i]);
                 }
             }
             else
@@ -128,31 +135,31 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
                 {
                     // TODO: error check the server failing to listen
                 }
-                pIpcPollHandles.Push(&s_rgIpcPollHandles[i]);
+                rgpIpcPollHandles.Push(&s_rgIpcPollHandles[i]);
             }
         }
 
-        int32_t retval = IpcStream::DiagnosticsIpc::Poll(pIpcPollHandles.Ptr(), (uint32_t)pIpcPollHandles.Size(), pollTimeoutMs, callback);
+        int32_t retval = IpcStream::DiagnosticsIpc::Poll(rgpIpcPollHandles.Ptr(), (uint32_t)rgpIpcPollHandles.Size(), pollTimeoutMs, callback);
         nPollAttempts++;
         STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - Poll attempt: %d, timeout: %dms.\n", nPollAttempts, pollTimeoutMs);
 
         if (retval != 0)
         {
-            for (uint32_t i = 0; i < (uint32_t)pIpcPollHandles.Size(); i++)
+            for (uint32_t i = 0; i < (uint32_t)rgpIpcPollHandles.Size(); i++)
             {
-                switch ((IpcStream::DiagnosticsIpc::PollEvents)pIpcPollHandles[i]->revents)
+                switch ((IpcStream::DiagnosticsIpc::PollEvents)rgpIpcPollHandles[i]->revents)
                 {
                     case IpcStream::DiagnosticsIpc::PollEvents::HANGUP:
-                        delete pIpcPollHandles[i]->pStream;
-                        pIpcPollHandles[i]->pStream = nullptr; // clear the cache of the hung up connection; will trigger a reconnect poll
+                        delete rgpIpcPollHandles[i]->pStream;
+                        rgpIpcPollHandles[i]->pStream = nullptr; // clear the cache of the hung up connection; will trigger a reconnect poll
                         STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, "IpcStreamFactory::GetNextAvailableStream - Poll attempt: %d, connection hung up.\n", nPollAttempts);
                         pollTimeoutMs = pollTimeoutMinMs;
                         break;
                     case IpcStream::DiagnosticsIpc::PollEvents::SIGNALED:
                         if (pStream == nullptr) // only use first signaled stream; will get others on subsequent calls
                         {
-                            pStream = pIpcPollHandles[i]->pStream;
-                            pIpcPollHandles[i]->pStream = nullptr; // pass ownership to caller so we aren't caching the connection anymore
+                            pStream = rgpIpcPollHandles[i]->pStream;
+                            rgpIpcPollHandles[i]->pStream = nullptr; // pass ownership to caller so we aren't caching the connection anymore
                         }
                         break;
                     case IpcStream::DiagnosticsIpc::PollEvents::ERR:
@@ -164,8 +171,8 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
         }
 
         // clear the view
-        while (pIpcPollHandles.Size() > 0)
-            pIpcPollHandles.Pop();
+        while (rgpIpcPollHandles.Size() > 0)
+            rgpIpcPollHandles.Pop();
     }
 
     return pStream;

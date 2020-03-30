@@ -14,6 +14,7 @@ IpcStream::DiagnosticsIpc::DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPip
     _isListening(false)
 {
     memcpy(_pNamedPipeName, namedPipeName, sizeof(_pNamedPipeName));
+    memset(&_oOverlap, 0, sizeof(OVERLAPPED));
 }
 
 IpcStream::DiagnosticsIpc::~DiagnosticsIpc()
@@ -63,7 +64,7 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 
     const uint32_t nInBufferSize = 16 * 1024;
     const uint32_t nOutBufferSize = 16 * 1024;
-    HANDLE hPipe = ::CreateNamedPipeA(
+    _hPipe = ::CreateNamedPipeA(
         _pNamedPipeName,                                            // pipe name
         PIPE_ACCESS_DUPLEX |                                        // read/write access
         FILE_FLAG_OVERLAPPED,                                       // async listening
@@ -74,7 +75,7 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
         0,                                                          // default client time-out
         NULL);                                                      // default security attribute
 
-    if (hPipe == INVALID_HANDLE_VALUE)
+    if (_hPipe == INVALID_HANDLE_VALUE)
     {
         if (callback != nullptr)
             callback("Failed to create an instance of a named pipe.", ::GetLastError());
@@ -83,7 +84,7 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 
     _oOverlap.hEvent = CreateEvent(NULL, true, false, NULL);
 
-    BOOL fSuccess = ::ConnectNamedPipe(hPipe, _oOverlap) != 0;
+    BOOL fSuccess = ::ConnectNamedPipe(_hPipe, &_oOverlap) != 0;
     if (!fSuccess)
     {
         const DWORD errorCode = ::GetLastError();
@@ -100,7 +101,7 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
             default:
                 if (callback != nullptr)
                     callback("A client process failed to connect.", errorCode);
-                ::CloseHandle(hPipe);
+                ::CloseHandle(_hPipe);
                 ::CloseHandle(_oOverlap.hEvent);
                 return false;
         }
@@ -122,11 +123,11 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 
     HANDLE hPipe = ::CreateFileA( 
         _pNamedPipeName,                    // pipe name 
-        PIPE_ACCESS_DUPLEX,                 // pipe access
+        PIPE_ACCESS_DUPLEX,                 // read/write access
         0,                                  // no sharing 
         NULL,                               // default security attributes
         OPEN_EXISTING,                      // opens existing pipe 
-        0,                                  // default attributes 
+        FILE_FLAG_OVERLAPPED,               // Overlapped
         NULL);                              // no template file
 
     if (hPipe == INVALID_HANDLE_VALUE)
@@ -163,6 +164,7 @@ IpcStream::IpcStream(HANDLE hPipe, DiagnosticsIpc::ConnectionMode mode) :
     _hPipe(hPipe), 
     _mode(mode) 
 {
+    memset(&_oOverlap, 0, sizeof(OVERLAPPED));
     _oOverlap.hEvent = CreateEvent(NULL, true, false, NULL);
 }
 
@@ -201,7 +203,18 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
         }
         else
         {
-            pHandles[i] = rgpIpcPollHandles[i]->pStream->_hPipe;
+            // check for data by doing an asynchronous 0 byte read.
+            // This will signal if the pipe closes (hangup) or the server
+            // sends new data
+            DWORD dummyDW = 0;
+            bool fSuccess = ::ReadFile(
+                rgpIpcPollHandles[i]->pStream->_hPipe,      // handle
+                nullptr,                                    // null buffer
+                0,                                          // read 0 bytes
+                &dummyDW,                                   // dummy variable
+                &rgpIpcPollHandles[i]->pStream->_oOverlap); // overlap object to use
+            _ASSERTE(!fSuccess && ::GetLastError() == ERROR_IO_PENDING);
+            pHandles[i] = rgpIpcPollHandles[i]->pStream->_oOverlap.hEvent;
         }
     }
 
@@ -230,13 +243,14 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
 
     // determine which of the streams signaled
     DWORD index = dwWait - WAIT_OBJECT_0;
+    // error check the index
     if (index < 0 || index > (nHandles - 1))
     {
         // check if we abandoned something
         DWORD abandonedIndex = dwWait - WAIT_ABANDONED_0;
         if (abandonedIndex > 0 || abandonedIndex < (nHandles - 1))
         {
-            rgpIpcPollHandles[abandonedIndex]->revents = (uint8_t)IpcStream::PollEvents::HANGUP;
+            rgpIpcPollHandles[abandonedIndex]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::HANGUP;
             delete[] pHandles;
             return -1;
         }
@@ -249,32 +263,59 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
         }
     }
 
-    if (rgpIpcPollHandles[index]->pIpc->mode == IpcStream::DiagnosticsIpc::ConnectionMode::SERVER)
+    // Set revents depending on what signaled the stream
+    if (rgpIpcPollHandles[index]->pIpc->mode == IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT)
     {
+        // check if the connection got hung up
+        DWORD dummyDW = 0;
+        bool fSuccess = GetOverlappedResult(rgpIpcPollHandles[index]->pStream->_hPipe,
+                                            &rgpIpcPollHandles[index]->pStream->_oOverlap,
+                                            &dummyDW,
+                                            true);
+        if (!fSuccess)
+        {
+            DWORD error = ::GetLastError();
+            if (error == ERROR_PIPE_NOT_CONNECTED)
+                rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::HANGUP;
+            else
+                rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::ERR;
+        }
+        else
+        {
+            rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::SIGNALED;
+        }
+    }
+    else
+    {
+        // complete the async listen
+        DWORD dummyDW = 0;
         bool fSuccess = GetOverlappedResult(rgpIpcPollHandles[index]->pIpc->_hPipe,
                                             &rgpIpcPollHandles[index]->pIpc->_oOverlap,
-                                            NULL,
+                                            &dummyDW,
                                             true);
         if (!fSuccess)
         {
             if (callback != nullptr)
                 callback("Failed to GetOverlappedResults for NamedPipe server", ::GetLastError());
-            rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::PollEvents::ERR;
+            rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::ERR;
             delete[] pHandles;
             return -1;
         }
+
+        // create new IpcStream using handle and reset the Server object so it can listen again
         rgpIpcPollHandles[index]->pStream = new IpcStream(rgpIpcPollHandles[index]->pIpc->_hPipe, IpcStream::DiagnosticsIpc::ConnectionMode::SERVER);
         rgpIpcPollHandles[index]->pIpc->_hPipe = INVALID_HANDLE_VALUE;
         rgpIpcPollHandles[index]->pIpc->_isListening = false;
         ::CloseHandle(rgpIpcPollHandles[index]->pIpc->_oOverlap.hEvent);
-        rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::PollEvents::SIGNALED;
+        memset(&rgpIpcPollHandles[index]->pIpc->_oOverlap, 0, sizeof(OVERLAPPED)); // clear the overlapped objects state
+        rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::SIGNALED;
     }
 
     delete[] pHandles;
     return 1;
 }
 
-bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead) const
+bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead)
 {
     _ASSERTE(lpBuffer != nullptr);
 
@@ -285,7 +326,7 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
         lpBuffer,               // buffer to receive data
         nBytesToRead,           // size of buffer
         &nNumberOfBytesRead,    // number of bytes read
-        overlap) != 0;          // not overlapped I/O
+        overlap) != 0;          // overlapped I/O
 
     if (!fSuccess)
     {
@@ -304,7 +345,7 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
     return fSuccess;
 }
 
-bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten) const
+bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten)
 {
     _ASSERTE(lpBuffer != nullptr);
 
@@ -315,7 +356,7 @@ bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32
         lpBuffer,               // buffer to write from
         nBytesToWrite,          // number of bytes to write
         &nNumberOfBytesWritten, // number of bytes written
-        overlap) != 0;          // not overlapped I/O
+        overlap) != 0;          // overlapped I/O
 
     if (!fSuccess)
     {
