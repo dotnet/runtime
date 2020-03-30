@@ -4879,7 +4879,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				}
 				lhs = values [ins->sreg1];
 			}
-
 		} else {
 			lhs = NULL;
 		}
@@ -8033,7 +8032,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				default: g_assert_not_reached (); break;
 				}
 			}
-
 			LLVMTypeRef vecty = type_to_sse_type (type);
 			LLVMValueRef args [] = { convert (ctx, lhs, vecty), convert (ctx, rhs, vecty) };
 			LLVMValueRef result = call_intrins (ctx, id, args, dname);
@@ -8298,7 +8296,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMTypeRef type = type_to_sse_type (primty);
 			// use undef vector (most likely empty but may contain garbage values) for OP_CREATE_SCALAR_UNSAFE
 			// and zero one for OP_CREATE_SCALAR
-
 			LLVMValueRef vector = (ins->opcode == OP_CREATE_SCALAR) ? LLVMConstNull (type) : LLVMGetUndef (type);
 			LLVMValueRef insert_pos = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 			LLVMValueRef val = convert_full (ctx, lhs, primitive_type_to_llvm_type (primty), primitive_type_is_unsigned (primty));
@@ -9348,7 +9345,6 @@ emit_method_inner (EmitContext *ctx)
 		}
 		LLVMSetValueName (LLVMGetParam (method, pindex), name);
 		g_free (name);
-
 		if (ainfo->storage == LLVMArgVtypeByVal)
 			mono_llvm_add_param_attr (LLVMGetParam (method, pindex), LLVM_ATTR_BY_VAL);
 
