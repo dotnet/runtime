@@ -253,7 +253,7 @@ namespace System.Reflection.Emit
 
         private void EscapeName(string name)
         {
-            if (TypeNameBuilder.ContainsReservedChar(name))
+            if (ContainsReservedChar(name))
             {
                 foreach (char c in name)
                 {
