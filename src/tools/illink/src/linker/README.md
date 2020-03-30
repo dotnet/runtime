@@ -82,7 +82,7 @@ By default, the linker will create an `output` directory in the current
 directory where it will emit the linked files, to avoid erasing source
 assemblies. You can specify the output directory with the option:
 
-`-o output_directory`
+`-out PATH`
 
 If you specify the directory `.', please ensure that you won't write over
 important assemblies of yours.
@@ -95,6 +95,40 @@ and `bin`. You can specify
 Example:
 
 `illink -d ../../libs -a program.exe`
+
+
+### Using custom substitutions
+
+An option called `--substitutions` allows external customization of any
+method or field for assemblies which are linked. The syntax used for that is based on
+XML files.
+
+An example of a substitution XML file
+
+```xml
+<linker>
+  <assembly fullname="test">
+    <type fullname="UserCode.Substitutions.Playground">
+      <method signature="System.String TestMethod()" body="stub" value="abcd">
+      </method>
+      <field name="MyNumericField" value="5" initialize="true">
+      </field>	    
+    </type>
+  </assembly>
+</linker>
+```
+
+The `value` attribute is optional and only required when the method stub should not
+return the default value or no-op for `void` like methods.
+
+Addition to `stub` modification also removal of the implementation body is supported by
+using `remove` mode the method when the method is marked. This is useful when the conditional logic
+cannot be evaluated by the linker and the method will be marked but never actually reached.
+
+A similar mechanism is available for fields where a field can be initialized with a specific
+value and override the existing behaviour. The rule can also apply to static fields which
+if set to default value without explicit `initialize` setting could help to elide whole
+explicit static constructor.
 
 ### Adding custom steps to the linker.
 
@@ -139,7 +173,8 @@ Or before a specific step:
 
 `illink --custom-step -MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a program.exe`
 
-## Mono specific options
+
+## MonoLinker specific options
 
 ### The i18n Assemblies
 
@@ -163,7 +198,7 @@ Example:
 
 `illink -a assembly -l mideast,cjk`
 
-## Syntax of xml descriptor
+## Syntax of XML Descriptor
 
 Here is an example that shows all the possibilities of this format:
 
@@ -200,6 +235,96 @@ The type Gazonk will be linked, as well as its constructor taking a string as a
 parameter, and it's _blah field.
 
 You can have multiple assembly nodes.
+
+More comprehensive example is bellow which show more advanced configuration options.
+
+```xml
+<linker>
+  <!--
+  Preserve types and members in an assembly
+  -->
+  <assembly fullname="Assembly1">
+    <!--Preserve an entire type-->
+    <type fullname="Assembly1.A" preserve="all"/>
+    <!--No "preserve" attribute and no members specified means preserve all members-->
+    <type fullname="Assembly1.B"/>
+    <!--Preserve all fields on a type-->
+    <type fullname="Assembly1.C" preserve="fields"/>
+    <!--Preserve all methods on a type-->
+    <type fullname="Assembly1.D" preserve="methods"/>
+    <!--Preserve the type only-->
+    <type fullname="Assembly1.E" preserve="nothing"/>
+    <!--Preserving only specific members of a type-->
+    <type fullname="Assembly1.F">
+      <!--
+      Fields
+      -->
+      <field signature="System.Int32 field1" />
+      <!--Preserve a field by name rather than signature-->
+      <field name="field2" />
+      <!--
+      Methods
+      -->
+      <method signature="System.Void Method1()" />
+      <!--Preserve a method with parameters-->
+      <method signature="System.Void Method2(System.Int32,System.String)" />
+      <!--Preserve a method by name rather than signature-->
+      <method name="Method3" />
+      <!--
+      Properties
+      -->
+      <!--Preserve a property, it's backing field (if present), getter, and setter methods-->
+      <property signature="System.Int32 Property1" />
+      <property signature="System.Int32 Property2" accessors="all" />
+      <!--Preserve a property, it's backing field (if present), and getter method-->
+      <property signature="System.Int32 Property3" accessors="get" />
+      <!--Preserve a property, it's backing field (if present), and setter method-->
+      <property signature="System.Int32 Property4" accessors="set" />
+      <!--Preserve a property by name rather than signature-->
+      <property name="Property5" />
+      <!--
+      Events
+      -->
+      <!--Preserve an event, it's backing field (if present), add, and remove methods-->
+      <event signature="System.EventHandler Event1" />
+      <!--Preserve an event by name rather than signature-->
+      <event name="Event2" />
+    </type>
+    <!--Examples with generics-->
+    <type fullname="Assembly1.G`1">
+      <!--Preserve a field with generics in the signature-->
+      <field signature="System.Collections.Generic.List`1&lt;System.Int32&gt; field1" />
+      <field signature="System.Collections.Generic.List`1&lt;T&gt; field2" />
+      <!--Preserve a method with generics in the signature-->
+      <method signature="System.Void Method1(System.Collections.Generic.List`1&lt;System.Int32&gt;)" />
+      <!--Preserve an event with generics in the signature-->
+      <event signature="System.EventHandler`1&lt;System.EventArgs&gt; Event1" />
+    </type>
+    <!--Preserve a nested type-->
+    <type fullname="Assembly1.H/Nested" preserve="all"/>
+    <!--Preserve all fields of a type if the type is used.  If the type is not used it will be removed-->
+    <type fullname="Assembly1.I" preserve="fields" required="0"/>
+    <!--Preserve all methods of a type if the type is used.  If the type is not used it will be removed-->
+    <type fullname="Assembly1.J" preserve="methods" required="0"/>
+    <!--Preserve all types in a namespace-->
+    <type fullname="Assembly1.SomeNamespace*" />
+    <!--Preserve all types with a common prefix in their name-->
+    <type fullname="Prefix*" />
+  </assembly>
+  <!--
+  Preserve an entire assembly
+  -->
+  <assembly fullname="Assembly2" preserve="all"/>
+  <!--No "preserve" attribute and no types specified means preserve all-->
+  <assembly fullname="Assembly3"/>
+  <!--
+  Fully qualified assembly name
+  -->
+  <assembly fullname="Assembly4, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Assembly4.Foo" preserve="all"/>
+  </assembly>
+</linker>
+```
 
 # Inside the linker
 
@@ -298,10 +423,4 @@ and if it's link, it will save the modified assembly to the output directory.
 # Reporting a bug
 
 If you face a bug in the linker, please report it using GitHub issues
-
-# Mailing lists
-
-You can ask questions about the linker of the cecil Google Group:
-
-http://groups.google.com/group/mono-cecil
 
