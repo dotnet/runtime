@@ -161,7 +161,7 @@ namespace System.Text.Json
 
                         if (converter.ConstructorIsParameterized)
                         {
-                            InitializeConstructorParameters(converter.ConstructorInfo);
+                            InitializeConstructorParameters(converter.ConstructorInfo!);
                         }
                     }
                     break;

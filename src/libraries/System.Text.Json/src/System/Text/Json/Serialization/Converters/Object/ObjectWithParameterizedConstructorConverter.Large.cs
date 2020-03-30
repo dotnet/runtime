@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (success)
             {
-                ((object[])state.Current.CtorArgumentState!.Arguments!)[jsonParameterInfo.Position] = arg0!;
+                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg0!;
             }
 
             return success;
@@ -26,17 +26,17 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override object CreateObject(ref ReadStackFrame frame)
         {
-            object[] arguments = (object[])frame.CtorArgumentState!.Arguments!;
+            object[] arguments = (object[])frame.CtorArgumentState!.Arguments;
 
-            var createObject = (JsonClassInfo.ParameterizedConstructorDelegate<T>)frame.JsonClassInfo.CreateObjectWithParameterizedCtor!;
+            var createObject = (JsonClassInfo.ParameterizedConstructorDelegate<T>?)frame.JsonClassInfo.CreateObjectWithParameterizedCtor;
 
             if (createObject == null)
             {
                 // This means this constructor has more than 64 parameters.
-                ThrowHelper.ThrowNotSupportedException_ConstructorMaxOf64Parameters(ConstructorInfo, TypeToConvert);
+                ThrowHelper.ThrowNotSupportedException_ConstructorMaxOf64Parameters(ConstructorInfo!, TypeToConvert);
             }
 
-            object obj = createObject(arguments)!;
+            object obj = createObject(arguments);
 
             ArrayPool<object>.Shared.Return(arguments, clearArray: true);
             return obj;
@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (classInfo.CreateObjectWithParameterizedCtor == null)
             {
-                classInfo.CreateObjectWithParameterizedCtor = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo)!;
+                classInfo.CreateObjectWithParameterizedCtor = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo!);
             }
 
             object[] arguments = ArrayPool<object>.Shared.Rent(classInfo.ParameterCount);
