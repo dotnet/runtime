@@ -17,6 +17,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 switch (expectedValue)
                 {
+                    case null:
+                        Assert.Equal(CborReaderState.Null, reader.Peek());
+                        reader.ReadNull();
+                        break;
+                    case bool expected:
+                        Assert.Equal(CborReaderState.Boolean, reader.Peek());
+                        bool b = reader.ReadBoolean();
+                        Assert.Equal(expected, b);
+                        break;
                     case int expected:
                         VerifyPeekInteger(reader, isUnsignedInteger: expected >= 0);
                         long i = reader.ReadInt64();
@@ -32,6 +41,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         ulong u = reader.ReadUInt64();
                         Assert.Equal(expected, u);
                         break;
+                    case float expected:
+                        Assert.Equal(CborReaderState.SinglePrecisionFloat, reader.Peek());
+                        float f = reader.ReadSingle();
+                        Assert.Equal(expected, f);
+                        break;
+                    case double expected:
+                        Assert.Equal(CborReaderState.DoublePrecisionFloat, reader.Peek());
+                        double d = reader.ReadDouble();
+                        Assert.Equal(expected, d);
+                        break;
                     case string expected:
                         Assert.Equal(CborReaderState.TextString, reader.Peek());
                         string s = reader.ReadTextString();
@@ -39,8 +58,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         break;
                     case byte[] expected:
                         Assert.Equal(CborReaderState.ByteString, reader.Peek());
-                        byte[] b = reader.ReadByteString();
-                        Assert.Equal(expected.ByteArrayToHex(), b.ByteArrayToHex());
+                        byte[] bytes = reader.ReadByteString();
+                        Assert.Equal(expected.ByteArrayToHex(), bytes.ByteArrayToHex());
                         break;
                     case string[] expectedChunks:
                         Assert.Equal(CborReaderState.StartTextString, reader.Peek());
