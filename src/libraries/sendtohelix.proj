@@ -5,7 +5,7 @@
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
 
     <!-- For arm/arm64 we set a 30 min timeout temporarily until we split up slow test assemblies. -->
-    <TimeoutInSeconds Condition="'$(ArchGroup)' == 'arm64' or '$(ArchGroup)' == 'arm'">1800</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'">1800</TimeoutInSeconds>
     <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
     <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
     
@@ -21,7 +21,7 @@
     <WorkItemArchiveWildCard Condition="'$(WorkItemArchiveWildCard)' == ''">$(TestArchiveTestsRoot)**/*.zip</WorkItemArchiveWildCard>
 
     <HelixConfiguration>$(Configuration)</HelixConfiguration>
-    <HelixArchitecture>$(ArchGroup)</HelixArchitecture>
+    <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
 
     <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
     test run name will be displayed as $(BuildSettings)-$(HelixTargetQueue) -->

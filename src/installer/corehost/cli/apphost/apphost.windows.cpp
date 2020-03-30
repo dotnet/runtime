@@ -40,7 +40,7 @@ namespace
         auto eventSource = ::RegisterEventSourceW(nullptr, _X(".NET Runtime"));
         const DWORD traceErrorID = 1023; // Matches CoreCLR ERT_UnmanagedFailFast
         pal::string_t message;
-        message.append(_X("Description: A .NET Core application failed.\n"));
+        message.append(_X("Description: A .NET application failed.\n"));
         message.append(_X("Application: ")).append(executable_name).append(_X("\n"));
         message.append(_X("Path: ")).append(executable_path).append(_X("\n"));
         message.append(_X("Message: ")).append(g_buffered_errors).append(_X("\n"));
@@ -61,7 +61,7 @@ namespace
         if (pal::getenv(_X("DOTNET_DISABLE_GUI_ERRORS"), &gui_errors_disabled) && pal::xtoi(gui_errors_disabled.c_str()) == 1)
             return;
 
-        pal::string_t dialogMsg = _X("To run this application, you must install .NET Core.\n\n");
+        pal::string_t dialogMsg = _X("To run this application, you must install .NET.\n\n");
         pal::string_t url;
         const pal::string_t url_prefix = _X("  - ") DOTNET_CORE_APPLAUNCH_URL _X("?");
         if (error_code == StatusCode::CoreHostLibMissingFailure)

@@ -25,7 +25,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         EndArray,
         EndMap,
         Tag,
-        Special,
+        Null,
+        Boolean,
+        HalfPrecisionFloat,
+        SinglePrecisionFloat,
+        DoublePrecisionFloat,
+        SpecialValue,
         Finished,
         FormatError,
         EndOfData,
@@ -42,6 +47,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private ulong? _remainingDataItems = 1;
         private bool _isEvenNumberOfDataItemsRead = true; // required for indefinite-length map writes
         private Stack<(CborMajorType type, bool isEvenNumberOfDataItemsWritten, ulong? remainingDataItems)>? _nestedDataItemStack;
+        private bool _isTagContext = false; // true if reader is expecting a tagged value
 
         // stores a reusable List allocation for keeping ranges in the buffer
         private List<(int offset, int length)>? _rangeListAllocation = null;
@@ -82,6 +88,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (initialByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte)
             {
+                if (_isTagContext)
+                {
+                    // indefinite-length collection has ended without providing value for tag
+                    return CborReaderState.FormatError;
+                }
+
                 if (_remainingDataItems == null)
                 {
                     // stack guaranteed to be populated since root context cannot be indefinite-length
@@ -135,9 +147,31 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 CborMajorType.Array => CborReaderState.StartArray,
                 CborMajorType.Map => CborReaderState.StartMap,
                 CborMajorType.Tag => CborReaderState.Tag,
-                CborMajorType.Special => CborReaderState.Special,
+                CborMajorType.Special => MapSpecialValueTagToReaderState(initialByte.AdditionalInfo),
                 _ => CborReaderState.FormatError,
             };
+
+            static CborReaderState MapSpecialValueTagToReaderState (CborAdditionalInfo value)
+            {
+                // https://tools.ietf.org/html/rfc7049#section-2.3
+
+                switch (value)
+                {
+                    case CborAdditionalInfo.SpecialValueNull:
+                        return CborReaderState.Null;
+                    case CborAdditionalInfo.SpecialValueFalse:
+                    case CborAdditionalInfo.SpecialValueTrue:
+                        return CborReaderState.Boolean;
+                    case CborAdditionalInfo.Additional16BitData:
+                        return CborReaderState.HalfPrecisionFloat;
+                    case CborAdditionalInfo.Additional32BitData:
+                        return CborReaderState.SinglePrecisionFloat;
+                    case CborAdditionalInfo.Additional64BitData:
+                        return CborReaderState.DoublePrecisionFloat;
+                    default:
+                        return CborReaderState.SpecialValue;
+                }
+            }
         }
 
         private CborInitialByte PeekInitialByte()
@@ -233,15 +267,21 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("Definite-length nested CBOR data item is incomplete.");
             }
 
+            if (_isTagContext)
+            {
+                throw new FormatException("CBOR tag should be followed by a data item.");
+            }
+
             _nestedDataItemStack.Pop();
             _remainingDataItems = remainingItems;
             _isEvenNumberOfDataItemsRead = isEvenNumberOfDataItemsWritten;
         }
 
-        private void DecrementRemainingItemCount()
+        private void AdvanceDataItemCounters()
         {
             _remainingDataItems--;
             _isEvenNumberOfDataItemsRead = !_isEvenNumberOfDataItemsRead;
+            _isTagContext = false;
         }
 
         private void AdvanceBuffer(int length)

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -54,7 +53,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            int result = InternalGetHashCode(this, out var fields);
+            int result = InternalGetHashCode(this, out object[]? fields);
 
             if (fields != null)
                 for (int i = 0; i < fields.Length; ++i)

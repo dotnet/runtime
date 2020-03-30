@@ -17,6 +17,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             WriteUnsignedInteger(CborMajorType.Map, (ulong)definiteLength);
+            AdvanceDataItemCounters();
             PushDataItem(CborMajorType.Map, 2 * (uint)definiteLength);
         }
 
@@ -27,21 +28,23 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR Map types require an even number of key/value combinations");
             }
 
-            if (!_remainingDataItems.HasValue)
-            {
-                // indefinite-length map, add break byte
-                EnsureWriteCapacity(1);
-                WriteInitialByte(new CborInitialByte(CborInitialByte.IndefiniteLengthBreakByte));
-            }
+            bool isDefiniteLengthMap = _remainingDataItems.HasValue;
 
             PopDataItem(CborMajorType.Map);
+
+            if (!isDefiniteLengthMap)
+            {
+                // append break byte
+                EnsureWriteCapacity(1);
+                _buffer[_offset++] = CborInitialByte.IndefiniteLengthBreakByte;
+            }
         }
 
         public void WriteStartMapIndefiniteLength()
         {
             EnsureWriteCapacity(1);
             WriteInitialByte(new CborInitialByte(CborMajorType.Map, CborAdditionalInfo.IndefiniteLength));
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
             PushDataItem(CborMajorType.Map, expectedNestedItems: null);
         }
     }

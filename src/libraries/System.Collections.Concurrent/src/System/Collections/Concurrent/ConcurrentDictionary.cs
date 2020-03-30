@@ -636,10 +636,10 @@ namespace System.Collections.Concurrent
                 AcquireAllLocks(ref locksAcquired);
 
                 int count = 0;
-
-                for (int i = 0; i < _tables._locks.Length && count >= 0; i++)
+                int[] countPerLock = _tables._countPerLock;
+                for (int i = 0; i < countPerLock.Length && count >= 0; i++)
                 {
-                    count += _tables._countPerLock[i];
+                    count += countPerLock[i];
                 }
 
                 if (array.Length - count < index || count < 0) //"count" itself or "count + index" can overflow
@@ -670,9 +670,10 @@ namespace System.Collections.Concurrent
                 int count = 0;
                 checked
                 {
-                    for (int i = 0; i < _tables._locks.Length; i++)
+                    int[] countPerLock = _tables._countPerLock;
+                    for (int i = 0; i < countPerLock.Length; i++)
                     {
-                        count += _tables._countPerLock[i];
+                        count += countPerLock[i];
                     }
                 }
 
@@ -998,11 +999,12 @@ namespace System.Collections.Concurrent
         private int GetCountInternal()
         {
             int count = 0;
+            int[] countPerLocks = _tables._countPerLock;
 
             // Compute the count, we allow overflow
-            for (int i = 0; i < _tables._countPerLock.Length; i++)
+            for (int i = 0; i < countPerLocks.Length; i++)
             {
-                count += _tables._countPerLock[i];
+                count += countPerLocks[i];
             }
 
             return count;
@@ -1668,10 +1670,10 @@ namespace System.Collections.Concurrent
                 Tables tables = _tables;
 
                 int count = 0;
-
-                for (int i = 0; i < tables._locks.Length && count >= 0; i++)
+                int[] countPerLock = tables._countPerLock;
+                for (int i = 0; i < countPerLock.Length && count >= 0; i++)
                 {
-                    count += tables._countPerLock[i];
+                    count += countPerLock[i];
                 }
 
                 if (array.Length - count < index || count < 0) //"count" itself or "count + index" can overflow
@@ -1985,9 +1987,10 @@ namespace System.Collections.Concurrent
                 if (count < 0) throw new OutOfMemoryException();
 
                 List<TKey> keys = new List<TKey>(count);
-                for (int i = 0; i < _tables._buckets.Length; i++)
+                Node[] buckets = _tables._buckets;
+                for (int i = 0; i < buckets.Length; i++)
                 {
-                    Node current = _tables._buckets[i];
+                    Node current = buckets[i];
                     while (current != null)
                     {
                         keys.Add(current._key);
@@ -2017,9 +2020,10 @@ namespace System.Collections.Concurrent
                 if (count < 0) throw new OutOfMemoryException();
 
                 List<TValue> values = new List<TValue>(count);
-                for (int i = 0; i < _tables._buckets.Length; i++)
+                Node[] buckets = _tables._buckets;
+                for (int i = 0; i < buckets.Length; i++)
                 {
-                    Node current = _tables._buckets[i];
+                    Node current = buckets[i];
                     while (current != null)
                     {
                         values.Add(current._value);

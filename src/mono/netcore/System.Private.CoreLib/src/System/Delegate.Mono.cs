@@ -32,7 +32,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 
 namespace System
 {
@@ -436,7 +435,7 @@ namespace System
 #nullable restore
             }
 
-            var target = _target;
+            object? target = _target;
 
             if (data is null)
                 data = CreateDelegateData();

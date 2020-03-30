@@ -359,6 +359,7 @@ else()
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Shared function for generating JIT
+# optional arguments: ADDITIONAL_DESTINATION path
 function(add_jit jitName)
     if(CLR_CMAKE_TARGET_WIN32)
         add_definitions(-DFX_VER_INTERNALNAME_STR=${jitName}.dll)
@@ -385,7 +386,7 @@ function(add_jit jitName)
     )
 
     # add the install targets
-    install_clr(TARGETS ${jitName})
+    install_clr(TARGETS ${jitName} ${ARGN})
 endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})

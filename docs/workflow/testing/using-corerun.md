@@ -1,9 +1,9 @@
 
-# Using corerun To Run .NET Core Application
+# Using corerun To Run .NET Application
 
-In page [Using your .NET Core Runtime Build with dotnet cli](../using-dotnet-cli.md) gives detailed instructions on using the standard
-command line host and SDK, dotnet.exe to run a .NET application with the modified build of the
-.NET Core runtime built here.   This is the preferred mechanism for you to officially deploy
+In page [Using your .NET Runtime Build with dotnet cli](../using-dotnet-cli.md) gives detailed instructions on using the standard
+command line host and SDK, dotnet.exe to run an application with the modified build of the
+.NET Runtime built here.   This is the preferred mechanism for you to officially deploy
 your changes to other people since dotnet.exe and Nuget insure that you end up with a consistent
 set of DLLs that can work together.
 
@@ -12,7 +12,7 @@ you are in the tight code-build-debug loop these extra steps are an issue.
 
 For this situation there is an alternative host to dotnet.exe called corerun.exe that is well suited
 for this.   It does not know about Nuget at all, and has very simple rules.  It needs to find the
-.NET Core runtime (that is coreclr.dll) and additionally any class library DLLs (e.g. System.Runtime.dll  System.IO.dll ...).
+.NET runtime (that is coreclr.dll) and additionally any class library DLLs (e.g. System.Runtime.dll  System.IO.dll ...).
 
 It does this by looking at two environment variables.
 

@@ -34,12 +34,12 @@
   
   <PropertyGroup>
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm'">arm</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm64'">arm64</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(TargetOS)' == 'WebAssembly'">wasm</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(TargetOS)' == 'iOS'">x64</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(TargetOS)' == 'Android'">x64</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(HostArch)' == 'arm'">arm</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(HostArch)' == 'arm64'">arm64</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'WebAssembly'">wasm</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'iOS'">x64</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetOS)' == 'Android'">x64</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
 
     <!-- RuntimeOS is calculated based on the build system OS, however if building for WebAssembly/iOS/Android we need to let
          the build system to use webassembly/ios/android as the RuntimeOS for produced package RIDs. -->
@@ -49,7 +49,7 @@
  
     <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
-    <BuildSettings Condition="'$(BuildSettings)' == ''">$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup)</BuildSettings>
+    <BuildSettings Condition="'$(BuildSettings)' == ''">$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
   </PropertyGroup>
   
   <Choose>
@@ -143,7 +143,7 @@
   <!-- Common repo directories -->
   <PropertyGroup>
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <NativeBinDir>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'native', '$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup)'))</NativeBinDir>
+    <NativeBinDir>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'native', '$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
 
     <PkgDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'pkg'))</PkgDir>
   </PropertyGroup>
@@ -180,7 +180,7 @@
     <ToolRuntimeRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_runtimeOS)-x64</ToolRuntimeRID>
     <ToolRuntimeRID Condition="'$(ToolRuntimeID)' == ''">$(_runtimeOS)-$(HostArch)</ToolRuntimeRID>
     <!-- We build linux-musl-arm on a ubuntu container, so we can't use the toolset build for alpine runtime. We need to use portable linux RID for our toolset in order to be able to use it. -->
-    <ToolRuntimeRID Condition="'$(_runtimeOS)' == 'linux-musl' and $(ArchGroup.StartsWith('arm')) and !$(HostArch.StartsWith('arm'))">linux-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(_runtimeOS)' == 'linux-musl' and $(TargetArchitecture.StartsWith('arm')) and !$(HostArch.StartsWith('arm'))">linux-x64</ToolRuntimeRID>
 
     <!-- There are no WebAssembly tools, so use the default ones -->
     <_buildingInOSX>$([MSBuild]::IsOSPlatform('OSX'))</_buildingInOSX>
@@ -203,10 +203,9 @@
     <_portableOS Condition="'$(TargetOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
 
     <_packageRID />
-    <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(ArchGroup)</_packageRID>
+    <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</_packageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
-    <PackageRID Condition="'$(PackageRID)' == ''">$(RuntimeOS)-$(ArchGroup)</PackageRID>
-    <TargetArchitecture>$(ArchGroup)</TargetArchitecture>
+    <PackageRID Condition="'$(PackageRID)' == ''">$(RuntimeOS)-$(TargetArchitecture)</PackageRID>
   </PropertyGroup>
 
   <!-- Set some shortcuts for more terse conditions in project files -->
