@@ -414,6 +414,7 @@ public:
 
     int     GetGCconcurrent()               const {LIMITED_METHOD_CONTRACT;  return iGCconcurrent; }
     void    SetGCconcurrent(int val)              {LIMITED_METHOD_CONTRACT;  iGCconcurrent = val;  }
+    int     GetGCLargePages()               const {LIMITED_METHOD_CONTRACT;  return iGClarge; }
 #ifdef _DEBUG
     int     GetGCLatencyMode()              const {LIMITED_METHOD_CONTRACT;  return iGCLatencyMode; }
 #endif //_DEBUG
@@ -702,6 +703,7 @@ private: //----------------------------------------------------------------
     size_t iGCgen0size;
     size_t iGCSegmentSize;
     int  iGCconcurrent;
+    int iGClarge;
 #ifdef _DEBUG
     int  iGCLatencyMode;
 #endif //_DEBUG

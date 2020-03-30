@@ -112,6 +112,7 @@ HRESULT EEConfig::Init()
     iGCgen0size = 0;
     iGCSegmentSize = 0;
     iGCconcurrent = 0;
+    iGClarge = 0;
 #ifdef _DEBUG
     iGCLatencyMode = -1;
 #endif //_DEBUG
@@ -480,16 +481,16 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 #endif
 
     bool gcConcurrentWasForced = false;
-    // The CLRConfig value for UNSUPPORTED_gcConcurrent defaults to -1, and treats any
-    // positive value as 'forcing' concurrent GC to be on. Because the standard logic
-    // for mapping a DWORD CLRConfig to a boolean configuration treats -1 as true (just
-    // like any other nonzero value), we will explicitly check the DWORD later if this
-    // check returns false.
     gcConcurrentWasForced = Configuration::GetKnobBooleanValue(W("System.GC.Concurrent"), false);
 
     int gcConcurrentConfigVal = 0;
     if (!gcConcurrentWasForced)
     {
+        // The CLRConfig value for UNSUPPORTED_gcConcurrent defaults to -1, and treats any
+        // positive value as 'forcing' concurrent GC to be on. Because the standard logic
+        // for mapping a DWORD CLRConfig to a boolean configuration treats -1 as true (just
+        // like any other nonzero value), we will explicitly check the DWORD later if this
+        // check returns false.
         gcConcurrentConfigVal = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConcurrent);
         gcConcurrentWasForced = (gcConcurrentConfigVal > 0);
     }
@@ -500,6 +501,20 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     // Disable concurrent GC during ngen for the rare case a GC gets triggered, causing problems
     if (IsCompilationProcess())
         iGCconcurrent = FALSE;
+
+    bool gcLarge = Configuration::GetKnobBooleanValue(W("System.GC.LargePages"), false);
+    if (!gcLarge)
+    {
+        gcLarge = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCLargePages);
+    }
+    if (gcLarge)
+    {
+        iGClarge = TRUE;
+    }
+    else
+    {
+        iGClarge = FALSE;
+    }
 
 #if defined(STRESS_HEAP) || defined(_DEBUG)
     iGCStress           =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCStress);
