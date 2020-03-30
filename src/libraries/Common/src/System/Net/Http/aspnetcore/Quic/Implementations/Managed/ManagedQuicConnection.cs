@@ -15,15 +15,6 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed
 {
-    internal enum EncryptionLevel
-    {
-        Initial,
-        Handshake,
-        Application,
-        EarlyData,
-        None,
-    }
-
     internal class ManagedQuicConnection : QuicConnectionProvider
     {
         private readonly Tls _tls;
@@ -85,7 +76,7 @@ namespace System.Net.Quic.Implementations.Managed
         public ManagedQuicConnection(bool isServer)
         {
             _gcHandle = GCHandle.Alloc(this);
-            _tls = new Tls();
+            _tls = new Tls(_gcHandle);
 
             _isServer = isServer;
 
@@ -97,7 +88,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private void Init()
         {
-            _tls.Init(_gcHandle, cert, privateKey, _isServer, localTransportParams);
+            _tls.Init(cert, privateKey, _isServer, localTransportParams);
 
             if (_isServer)
             {
@@ -371,7 +362,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            // TODO-RZ: proceess lost packets
+            // TODO-RZ: process lost packets
 
             var level = GetWriteLevel();
 
