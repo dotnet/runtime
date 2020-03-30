@@ -203,7 +203,7 @@ namespace System.Runtime.InteropServices
 
 * Will it be possible to completely replicate the marshaling rules in the current built-in system using existing .NET APIs?
 
-    * No. There are rules and semantics that would be difficult to replicate with the current .NET API surface. Additional .NET APIs will likely need to be added in order to allow a Source Generator implementation to provide identical semantics with the built-in system.
+    * No. There are rules and semantics that would be difficult to replicate with the current .NET API surface. Additional .NET APIs will likely need to be added in order to allow a Source Generator implementation to provide identical semantics with the built-in system (e.g. Respecting the semantics of [`DllImportAttribute.SetLastError`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.setlasterror)).
 
 ## References
 
