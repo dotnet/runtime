@@ -227,32 +227,29 @@ int exe_start(const int argc, const pal::char_t* argv[])
             }
         }
     }
+    else if (requires_v2_hostfxr_interface)
+    {
+        trace::error(_X("The required library %s does not support relative app dll paths."), fxr_path.c_str());
+        rc = StatusCode::CoreHostEntryPointFailure;
+    }
     else
     {
-        if (requires_v2_hostfxr_interface)
+        trace::info(_X("Invoking fx resolver [%s] v1"), fxr_path.c_str());
+
+        // Previous corehost trace messages must be printed before calling trace::setup in hostfxr
+        trace::flush();
+
+        // For compat, use the v1 interface. This requires additional file I\O to re-parse parameters and
+        // for apphost, does not support DOTNET_ROOT or dll with different name for exe.
+        hostfxr_main_fn main_fn_v1 = reinterpret_cast<hostfxr_main_fn>(pal::get_symbol(fxr, "hostfxr_main"));
+        if (main_fn_v1 != nullptr)
         {
-            trace::error(_X("The required library %s does not support relative app dll paths."), fxr_path.c_str());
-            rc = StatusCode::CoreHostEntryPointFailure;
+            rc = main_fn_v1(argc, argv);
         }
         else
         {
-            trace::info(_X("Invoking fx resolver [%s] v1"), fxr_path.c_str());
-
-            // Previous corehost trace messages must be printed before calling trace::setup in hostfxr
-            trace::flush();
-
-            // For compat, use the v1 interface. This requires additional file I\O to re-parse parameters and
-            // for apphost, does not support DOTNET_ROOT or dll with different name for exe.
-            hostfxr_main_fn main_fn_v1 = reinterpret_cast<hostfxr_main_fn>(pal::get_symbol(fxr, "hostfxr_main"));
-            if (main_fn_v1 != nullptr)
-            {
-                rc = main_fn_v1(argc, argv);
-            }
-            else
-            {
-                trace::error(_X("The required library %s does not contain the expected entry point."), fxr_path.c_str());
-                rc = StatusCode::CoreHostEntryPointFailure;
-            }
+            trace::error(_X("The required library %s does not contain the expected entry point."), fxr_path.c_str());
+            rc = StatusCode::CoreHostEntryPointFailure;
         }
     }
 
