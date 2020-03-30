@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
         public int ImportParameters(ECParameters parameters)
         {
             SafeEcKeyHandle key;
-            bool hasPublicParameters = parameters.Q.X is object && parameters.Q.Y is object;
+            bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
 
             parameters.Validate();
 

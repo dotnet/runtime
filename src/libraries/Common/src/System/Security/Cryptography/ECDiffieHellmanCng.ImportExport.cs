@@ -19,8 +19,8 @@ namespace System.Security.Cryptography
                 ThrowIfDisposed();
 
                 ECCurve curve = parameters.Curve;
-                bool includePrivateParameters = (parameters.D != null);
-                bool hasPublicParameters = parameters.Q.X is object && parameters.Q.Y is object;
+                bool includePrivateParameters = parameters.D != null;
+                bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
 
                 if (curve.IsPrime && hasPublicParameters)
                 {
