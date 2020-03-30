@@ -555,22 +555,6 @@ LEAF_ENTRY PrecodeFixupThunk, _TEXT
     jmp     C_FUNC(ThePreStub)
 LEAF_END PrecodeFixupThunk, _TEXT
 
-NESTED_ENTRY UMThunkStubRareDisable, _TEXT, NoHandler
-    push    eax
-    push    ecx
-
-    sub     esp, 12
-    push    eax          // Push the UMEntryThunk
-    push    ecx          // Push thread
-    CHECK_STACK_ALIGNMENT
-    call    C_FUNC(UMThunkStubRareDisableWorker)
-    add     esp, 12
-
-    pop     ecx
-    pop     eax
-    ret
-NESTED_END UMThunkStubRareDisable, _TEXT
-
 //
 // Used to get the current instruction pointer value
 //

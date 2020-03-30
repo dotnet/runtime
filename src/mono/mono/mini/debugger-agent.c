@@ -298,7 +298,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 54
+#define MINOR_VERSION 56
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -3921,7 +3921,10 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 				return;
 		}
 	}
-
+	
+	if (event == EVENT_KIND_VM_START) 
+		suspend_policy = agent_config.suspend ? SUSPEND_POLICY_ALL : SUSPEND_POLICY_NONE;	
+	
 	nevents = g_slist_length (events);
 	buffer_init (&buf, 128);
 	buffer_add_byte (&buf, suspend_policy);
@@ -4032,7 +4035,6 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	}
 
 	if (event == EVENT_KIND_VM_START) {
-		suspend_policy = agent_config.suspend ? SUSPEND_POLICY_ALL : SUSPEND_POLICY_NONE;
 		if (!agent_config.defer) {
 			ERROR_DECL (error);
 			start_debugger_thread (error);
@@ -6974,6 +6976,12 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 	}
 }
 
+static void add_error_string (Buffer *buf, const char *str) 
+{
+	if (CHECK_PROTOCOL_VERSION (2, 56)) 
+		buffer_add_string (buf, str);
+}
+
 static ErrorCode
 vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -7278,7 +7286,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		ignore_case = decode_byte (p, &p, end);
 
 		if (!mono_reflection_parse_type_checked (name, &info, error)) {
-			buffer_add_string (buf, mono_error_get_message (error));
+			add_error_string (buf, mono_error_get_message (error));
 			mono_error_cleanup (error);
 			g_free (name);
 			mono_reflection_free_type_info (&info);
@@ -7789,7 +7797,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				g_free (s);
 				mono_domain_set_fast (d, TRUE);
 				char* error_msg =  g_strdup_printf ("Unexpected assembly-qualified type %s was provided", original_s);
-				buffer_add_string (buf, error_msg);
+				add_error_string (buf, error_msg);
 				g_free (error_msg);
 				g_free (original_s);
 				return ERR_INVALID_ARGUMENT;
@@ -7801,7 +7809,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				g_free (s);
 				mono_domain_set_fast (d, TRUE);
 				char* error_msg =  g_strdup_printf ("Invalid type name %s", original_s);
-				buffer_add_string (buf, error_msg);
+				add_error_string (buf, error_msg);
 				g_free (error_msg);
 				g_free (original_s);
 				return ERR_INVALID_ARGUMENT;
@@ -7867,7 +7875,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
         error_init (error);
         MonoClass* mono_class = mono_class_get_checked (ass->image, token, error);
         if (!is_ok (error)) {
-            buffer_add_string (buf, mono_error_get_message (error));
+            add_error_string (buf, mono_error_get_message (error));
             mono_error_cleanup (error);
             return ERR_INVALID_ARGUMENT;
         }
@@ -7884,7 +7892,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
         error_init (error);
         MonoMethod* mono_method = mono_get_method_checked (ass->image, token, NULL, NULL, error);
         if (!is_ok (error)) {
-            buffer_add_string (buf, mono_error_get_message (error));
+            add_error_string (buf, mono_error_get_message (error));
             mono_error_cleanup (error);
             return ERR_INVALID_ARGUMENT;
         }
@@ -8737,7 +8745,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 
 		header = mono_method_get_header_checked (method, error);
 		if (!header) {
-			buffer_add_string (buf, mono_error_get_message (error));
+			add_error_string (buf, mono_error_get_message (error));
 			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			return ERR_INVALID_ARGUMENT;
 		}
@@ -9569,7 +9577,7 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (!is_ok (error)) {
 				if (s)
 					g_free (s);
-				buffer_add_string (buf, mono_error_get_message (error));
+				add_error_string (buf, mono_error_get_message (error));
 				return ERR_INVALID_ARGUMENT;
 			}
 			buffer_add_string (buf, s);

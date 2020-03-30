@@ -22,7 +22,6 @@
 //
 
 #nullable disable
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -141,7 +140,7 @@ namespace System.Reflection
                 return null;
 
             Type globalType = GetGlobalType(_impl);
-            return (globalType != null) ? globalType.GetField(name, bindingAttr) : null;
+            return globalType?.GetField(name, bindingAttr);
         }
 
         public override

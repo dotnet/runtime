@@ -137,7 +137,7 @@ def build_argument_parser():
     framework_parser.add_argument('--result_dir', dest='result_dirname', required=True)
     framework_parser.set_defaults(func=crossgen_framework)
 
-    dotnet_sdk_parser_description = "Unpack .NET Core SDK archive file and runs crossgen on each assembly."
+    dotnet_sdk_parser_description = "Unpack .NET SDK archive file and runs crossgen on each assembly."
     dotnet_sdk_parser = subparsers.add_parser('crossgen_dotnet_sdk', description=dotnet_sdk_parser_description)
     dotnet_sdk_parser.add_argument('--crossgen', dest='crossgen_executable_filename', required=True)
     dotnet_sdk_parser.add_argument('--il_corelib', dest='il_corelib_filename', required=True)

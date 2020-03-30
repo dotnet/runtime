@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
@@ -13,9 +12,8 @@ namespace System.Threading
         /// A linked list of <see cref="WaitThread"/>s.
         /// </summary>
         private WaitThreadNode _waitThreadsHead;
-        private WaitThreadNode _waitThreadsTail;
 
-        private LowLevelLock _waitThreadLock = new LowLevelLock();
+        private readonly LowLevelLock _waitThreadLock = new LowLevelLock();
 
         /// <summary>
         /// Register a wait handle on a <see cref="WaitThread"/>.
@@ -28,7 +26,7 @@ namespace System.Threading
             {
                 if (_waitThreadsHead == null) // Lazily create the first wait thread.
                 {
-                    _waitThreadsTail = _waitThreadsHead = new WaitThreadNode
+                    _waitThreadsHead = new WaitThreadNode
                     {
                         Thread = new WaitThread()
                     };
@@ -48,7 +46,7 @@ namespace System.Threading
                 } while (current != null);
 
                 // If all wait threads are full, create a new one.
-                prev.Next = _waitThreadsTail = new WaitThreadNode
+                prev.Next = new WaitThreadNode
                 {
                     Thread = new WaitThread()
                 };

@@ -10,7 +10,7 @@ namespace System.Threading
     public partial class WaitHandle
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern int Wait_internal(IntPtr* handles, int numHandles, bool waitAll, int ms);
+        private static extern unsafe int Wait_internal(IntPtr* handles, int numHandles, bool waitAll, int ms);
 
         private static int WaitOneCore(IntPtr waitHandle, int millisecondsTimeout)
         {

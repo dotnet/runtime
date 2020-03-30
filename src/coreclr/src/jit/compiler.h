@@ -8281,6 +8281,8 @@ private:
 #endif
     }
 
+    void notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
+
     bool canUseVexEncoding() const
     {
 #ifdef TARGET_XARCH
