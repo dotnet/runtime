@@ -945,6 +945,8 @@ namespace System
         /// <summary>Ensures that the console has been initialized for use.</summary>
         private static void EnsureInitializedCore()
         {
+            Debug.Assert(!Monitor.IsEntered(Console.InternalSyncObject)); // see LazyInitializeConsoleAndFieldCore
+
             lock (Console.Out) // ensure that writing the ANSI string and setting initialized to true are done atomically
             {
                 if (!s_initialized)
