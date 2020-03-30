@@ -14,6 +14,7 @@
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We currently only test with C# projects. -->
+    <Project Include="pretest.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
     <Project Condition="'$(DirectoryToBuild)' != ''" Include="$(DirectoryToBuild)\**\*.Tests.csproj" />
     <Project Condition="'$(SkipTestRestore)' != 'true' and '$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(ProjectExclusions)" />
     <Project Condition="'$(SkipTestRestore)' == 'true' and '$(DirectoryToBuild)' == ''" Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
