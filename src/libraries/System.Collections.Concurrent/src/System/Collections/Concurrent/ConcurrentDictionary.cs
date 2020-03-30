@@ -636,9 +636,8 @@ namespace System.Collections.Concurrent
                 AcquireAllLocks(ref locksAcquired);
 
                 int count = 0;
-                int noOfLocks = _tables._locks.Length;
                 int[] countPerLock = _tables._countPerLock;
-                for (int i = 0; i < noOfLocks && count >= 0; i++)
+                for (int i = 0; i < countPerLock.Length && count >= 0; i++)
                 {
                     count += countPerLock[i];
                 }
@@ -671,9 +670,8 @@ namespace System.Collections.Concurrent
                 int count = 0;
                 checked
                 {
-                    int numOfLocks = _tables._locks.Length;
                     int[] countPerLock = _tables._countPerLock;
-                    for (int i = 0; i < numOfLocks; i++)
+                    for (int i = 0; i < countPerLock.Length; i++)
                     {
                         count += countPerLock[i];
                     }
@@ -1673,8 +1671,7 @@ namespace System.Collections.Concurrent
 
                 int count = 0;
                 int[] countPerLock = tables._countPerLock;
-                int numOfLocks = tables._locks.Length;
-                for (int i = 0; i < numOfLocks && count >= 0; i++)
+                for (int i = 0; i < countPerLock.Length && count >= 0; i++)
                 {
                     count += countPerLock[i];
                 }
