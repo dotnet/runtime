@@ -209,10 +209,7 @@ namespace Internal.Cryptography.Pal
                 {
                     BagId = Oids.Pkcs12ShroudedKeyBag,
                     BagValue = ExportPkcs8(certPal, passwordSpan),
-                    BagAttributes = new[]
-                    {
-                        attribute
-                    }
+                    BagAttributes = new[] { attribute }
                 };
 
                 // Reuse the attribute between the cert and the key.
