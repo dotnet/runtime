@@ -75,7 +75,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal (uint truncatedPn, int pnLength) GetNextPacketNumber()
         {
-            int pnLength = QuicEncoding.GetPacketNumberByteCount(LargestTransportedPacketNumber, NextPacketNumber);
+            int pnLength = QuicPrimitives.GetPacketNumberByteCount(LargestTransportedPacketNumber, NextPacketNumber);
             return ((uint) NextPacketNumber++, pnLength);
         }
     }

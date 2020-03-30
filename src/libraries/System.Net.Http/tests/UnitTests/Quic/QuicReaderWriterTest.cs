@@ -35,10 +35,10 @@ namespace System.Net.Quic.Tests
             ulong lastAcked = 0xa82f30ea;
             ulong truncated = 0x9b32;
 
-            int bytes = QuicEncoding.GetPacketNumberByteCount(lastAcked, packetNumber);
+            int bytes = QuicPrimitives.GetPacketNumberByteCount(lastAcked, packetNumber);
             Assert.Equal(2, bytes);
 
-            ulong actual = QuicEncoding.DecodePacketNumber(lastAcked, truncated, 2);
+            ulong actual = QuicPrimitives.DecodePacketNumber(lastAcked, truncated, 2);
 
             Assert.Equal(packetNumber, actual);
         }

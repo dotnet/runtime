@@ -84,7 +84,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             {
                 packetNumber = (packetNumber << 8) | buffer[pnOffset + i];
             }
-            packetNumber = QuicEncoding.DecodePacketNumber(largestAckedPn, packetNumber, pnLength);
+            packetNumber = QuicPrimitives.DecodePacketNumber(largestAckedPn, packetNumber, pnLength);
 
             Span<byte> nonce = stackalloc byte[IV.Length];
             MakeNonce(IV, packetNumber, nonce);

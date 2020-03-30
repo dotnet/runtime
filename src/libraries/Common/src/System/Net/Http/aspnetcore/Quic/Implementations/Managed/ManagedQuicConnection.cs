@@ -257,7 +257,7 @@ namespace System.Net.Quic.Implementations.Managed
             var pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]);
             reader.TryReadTruncatedPacketNumber(pnLength, out uint truncatedPn);
 
-            epoch.ReceivedPacketNumbers.Add(QuicEncoding.DecodePacketNumber(epoch.LargestTransportedPacketNumber,
+            epoch.ReceivedPacketNumbers.Add(QuicPrimitives.DecodePacketNumber(epoch.LargestTransportedPacketNumber,
                 truncatedPn, pnLength));
 
             return ProcessFramesWithoutTag(reader, header.PacketType);
