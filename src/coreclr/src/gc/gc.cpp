@@ -5354,8 +5354,7 @@ public:
     static uint16_t heap_no_to_proc_no[MAX_SUPPORTED_CPUS];
     static uint16_t heap_no_to_numa_node[MAX_SUPPORTED_CPUS];
     static uint16_t proc_no_to_numa_node[MAX_SUPPORTED_CPUS];
-    static uint16_t numa_node_to_heap_start[MAX_SUPPORTED_CPUS + 4];
-    static uint16_t numa_node_to_heap_end[MAX_SUPPORTED_CPUS + 4];
+    static uint16_t numa_node_to_heap_map[MAX_SUPPORTED_CPUS + 4];
     // Note this is the total numa nodes GC heaps are on. There might be
     // more on the machine if GC threads aren't using all of them.
     static uint16_t total_numa_nodes;
@@ -5392,10 +5391,45 @@ public:
             memset(sniff_buffer, 0, sniff_buf_size*sizeof(uint8_t));
         }
 
-        //can not enable gc numa aware, force all heaps to be in
-        //one numa node by filling the array with all 0s
-        if (!GCToOSInterface::CanEnableGCNumaAware())
-            memset(heap_no_to_numa_node, 0, sizeof (heap_no_to_numa_node));
+        bool do_numa = GCToOSInterface::CanEnableGCNumaAware();
+
+        // we want to assign heap indices such that there is a contiguous
+        // range of heap numbers for each numa node
+
+        // we do this in two passes:
+        // 1. gather processor numbers and numa node numbers for all heaps
+        // 2. assign heap numbers for each numa node
+
+        // Pass 1: gather processor numbers and numa node numbers
+        uint16_t proc_no[MAX_SUPPORTED_CPUS];
+        uint16_t node_no[MAX_SUPPORTED_CPUS];
+        uint16_t max_node_no = 0;
+        for (int i = 0; i < n_heaps; i++)
+        {
+            if (!GCToOSInterface::GetProcessorForHeap (i, &proc_no[i], &node_no[i]))
+                break;
+            if (!do_numa || node_no[i] == NUMA_NODE_UNDEFINED)
+                node_no[i] = 0;
+            max_node_no = max(max_node_no, node_no[i]);
+        }
+
+        // Pass 2: assign heap numbers by numa node
+        int cur_heap_no = 0;
+        for (uint16_t cur_node_no = 0; cur_node_no <= max_node_no; cur_node_no++)
+        {
+            for (int i = 0; i < n_heaps; i++)
+            {
+                if (node_no[i] != cur_node_no)
+                    continue;
+
+                // we found a heap on cur_node_no
+                heap_no_to_proc_no[cur_heap_no] = proc_no[i];
+                heap_no_to_numa_node[cur_heap_no] = cur_node_no;
+                proc_no_to_numa_node[proc_no[i]] = cur_node_no;
+
+                cur_heap_no++;
+            }
+        }
 
         return TRUE;
     }
@@ -5506,10 +5540,10 @@ public:
     {
         // Called right after GCHeap::Init() for each heap
         // For each NUMA node used by the heaps, the
-        // numa_node_to_heap_start[numa_node] is set to the first heap number on that node and
-        // numa_node_to_heap_end[numa_node] is set to the first heap number not on that node
+        // numa_node_to_heap_map[numa_node] is set to the first heap number on that node and
+        // numa_node_to_heap_map[numa_node + 1] is set to the first heap number not on that node
         // Set the start of the heap number range for the first NUMA node
-        numa_node_to_heap_start[heap_no_to_numa_node[0]] = 0;
+        numa_node_to_heap_map[heap_no_to_numa_node[0]] = 0;
         total_numa_nodes = 0;
         memset (heaps_on_node, 0, sizeof (heaps_on_node));
         heaps_on_node[0].node_no = heap_no_to_numa_node[0];
@@ -5523,15 +5557,15 @@ public:
                 heaps_on_node[total_numa_nodes].node_no = heap_no_to_numa_node[i];
 
                 // Set the end of the heap number range for the previous NUMA node
-                numa_node_to_heap_end[heap_no_to_numa_node[i - 1]] =
+                numa_node_to_heap_map[heap_no_to_numa_node[i - 1] + 1] =
                 // Set the start of the heap number range for the current NUMA node
-                numa_node_to_heap_start[heap_no_to_numa_node[i]] = (uint16_t)i;
+                numa_node_to_heap_map[heap_no_to_numa_node[i]] = (uint16_t)i;
             }
             (heaps_on_node[total_numa_nodes].heap_count)++;
         }
 
         // Set the end of the heap range for the last NUMA node
-        numa_node_to_heap_end[heap_no_to_numa_node[nheaps - 1]] = (uint16_t)nheaps; //mark the end with nheaps
+        numa_node_to_heap_map[heap_no_to_numa_node[nheaps - 1] + 1] = (uint16_t)nheaps; //mark the end with nheaps
         total_numa_nodes++;
     }
 
@@ -5561,8 +5595,8 @@ public:
             if (!GCToOSInterface::GetProcessorForHeap (i, &proc_no, &node_no))
                 break;
 
-            int start_heap = (int)numa_node_to_heap_start[node_no];
-            int end_heap = (int)(numa_node_to_heap_end[node_no]);
+            int start_heap = (int)numa_node_to_heap_map[node_no];
+            int end_heap = (int)(numa_node_to_heap_map[node_no + 1]);
 
             if ((end_heap - start_heap) > 0)
             {
@@ -5592,8 +5626,8 @@ public:
     static void get_heap_range_for_heap(int hn, int* start, int* end)
     {
         uint16_t numa_node = heap_no_to_numa_node[hn];
-        *start = (int)numa_node_to_heap_start[numa_node];
-        *end = (int)(numa_node_to_heap_end[numa_node]);
+        *start = (int)numa_node_to_heap_map[numa_node];
+        *end = (int)(numa_node_to_heap_map[numa_node + 1]);
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         dprintf(HEAP_BALANCE_TEMP_LOG, ("TEMPget_heap_range: %d is in numa node %d, start = %d, end = %d", hn, numa_node, *start, *end));
 #endif //HEAP_BALANCE_INSTRUMENTATION
@@ -5611,8 +5645,8 @@ public:
         bool found_node_with_heaps_p = false;
         do
         {
-            int start_heap = (int)numa_node_to_heap_start[start_index];
-            int end_heap = (int)numa_node_to_heap_end[start_index];
+            int start_heap = (int)numa_node_to_heap_map[start_index];
+            int end_heap = (int)numa_node_to_heap_map[start_index + 1];
             if (start_heap == nheaps)
             {
                 // This is the last node.
@@ -5643,8 +5677,7 @@ uint16_t heap_select::proc_no_to_heap_no[MAX_SUPPORTED_CPUS];
 uint16_t heap_select::heap_no_to_proc_no[MAX_SUPPORTED_CPUS];
 uint16_t heap_select::heap_no_to_numa_node[MAX_SUPPORTED_CPUS];
 uint16_t heap_select::proc_no_to_numa_node[MAX_SUPPORTED_CPUS];
-uint16_t heap_select::numa_node_to_heap_start[MAX_SUPPORTED_CPUS + 4];
-uint16_t heap_select::numa_node_to_heap_end[MAX_SUPPORTED_CPUS + 4];
+uint16_t heap_select::numa_node_to_heap_map[MAX_SUPPORTED_CPUS + 4];
 uint16_t  heap_select::total_numa_nodes;
 node_heap_count heap_select::heaps_on_node[MAX_SUPPORTED_NODES];
 
@@ -5994,24 +6027,6 @@ void gc_heap::destroy_thread_support ()
     {
         gc_start_event.CloseEvent();
     }
-}
-
-bool get_proc_and_numa_for_heap (int heap_number)
-{
-    uint16_t proc_no;
-    uint16_t node_no;
-
-    bool res = GCToOSInterface::GetProcessorForHeap (heap_number, &proc_no, &node_no);
-    if (res)
-    {
-        heap_select::set_proc_no_for_heap (heap_number, proc_no);
-        if (node_no != NUMA_NODE_UNDEFINED)
-        {
-            heap_select::set_numa_node_for_heap_and_proc (heap_number, proc_no, node_no);
-        }
-    }
-
-    return res;
 }
 
 void set_thread_affinity_for_heap (int heap_number, uint16_t proc_no)
@@ -10694,8 +10709,13 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
     reserved_memory = 0;
     size_t initial_heap_size = soh_segment_size + loh_segment_size + poh_segment_size;
+    uint16_t* heap_no_to_numa_node = nullptr;
 #ifdef MULTIPLE_HEAPS
     reserved_memory_limit = initial_heap_size * number_of_heaps;
+    if (!heap_select::init(number_of_heaps))
+        return E_OUTOFMEMORY;
+    if (GCToOSInterface::CanEnableGCNumaAware())
+        heap_no_to_numa_node = heap_select::heap_no_to_numa_node;
 #else //MULTIPLE_HEAPS
     reserved_memory_limit = initial_heap_size;
     int number_of_heaps = 1;
@@ -10706,25 +10726,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         check_commit_cs.Initialize();
     }
 
-    uint16_t heap_no_to_numa_node[MAX_SUPPORTED_CPUS];
-    bool do_numa = true;
-    for (int heap_no = 0; heap_no < number_of_heaps; heap_no++)
-    {
-        uint16_t proc_no;
-        uint16_t node_no;
-        bool res = GCToOSInterface::GetProcessorForHeap (heap_no, &proc_no, &node_no);
-        if (!res || node_no == NUMA_NODE_UNDEFINED)
-        {
-            heap_no_to_numa_node[heap_no] = 0;
-            do_numa = false;
-        }
-        else
-        {
-            heap_no_to_numa_node[heap_no] = node_no;
-        }
-    }
-
-    if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps, use_large_pages_p, do_numa ? heap_no_to_numa_node : nullptr))
+    if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps, use_large_pages_p, heap_no_to_numa_node))
         return E_OUTOFMEMORY;
 
 #ifdef CARD_BUNDLE
@@ -10790,9 +10792,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #endif //MH_SC_MARK
 
     if (!create_thread_support (number_of_heaps))
-        return E_OUTOFMEMORY;
-
-    if (!heap_select::init (number_of_heaps))
         return E_OUTOFMEMORY;
 
 #endif //MULTIPLE_HEAPS
@@ -11532,7 +11531,6 @@ gc_heap::init_gc_heap (int  h_number)
 #endif //MARK_ARRAY
 
 #ifdef MULTIPLE_HEAPS
-    get_proc_and_numa_for_heap (heap_number);
     if (!create_gc_thread ())
         return 0;
 
