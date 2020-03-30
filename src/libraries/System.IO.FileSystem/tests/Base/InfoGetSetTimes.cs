@@ -63,12 +63,12 @@ namespace System.IO.Tests
                 times.Add(timeFunction, timeFunction.Getter(item));
             }
 
-            // Deleting shouldn't change any info state
+            // Deleting should refresh state
             item.Delete();
-            
+
             Assert.All(times, time =>
             {
-                // We check for the time update from refresh
+                // We check that all the file times have been refreshed
                 Assert.NotEqual(time.Key.Getter.Invoke(item), time.Value);
             });
         }
