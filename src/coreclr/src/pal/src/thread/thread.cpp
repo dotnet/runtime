@@ -1643,7 +1643,7 @@ CorUnix::InternalSetThreadDescription(
 
     // Ignore requests to set the main thread name because
     // it causes the value returned by Process.ProcessName to change.
-    if (pTargetThread->GetThreadId() == getpid())
+    if ((pid_t)pTargetThread->GetThreadId() == getpid())
     {
         goto InternalSetThreadDescriptionExit;
     }
