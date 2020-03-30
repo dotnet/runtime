@@ -40,63 +40,6 @@ using namespace clr;
 Volatile<DWORD> GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 #endif // STRESS_HEAP
 
-
-ConfigSource::ConfigSource()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-    } CONTRACTL_END;
-
-    m_pNext = this;
-    m_pPrev = this;
-}// ConfigSource::ConfigSource
-
-ConfigSource::~ConfigSource()
-{
-    CONTRACTL {
-        NOTHROW;
-        FORBID_FAULT;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    for(ConfigStringHashtable::Iterator iter = m_Table.Begin(), end = m_Table.End(); iter != end; iter++)
-    {
-        ConfigStringKeyValuePair * pair = *(iter);
-        delete[] pair->key;
-        delete[] pair->value;
-        delete pair;
-    }
-}// ConfigSource::~ConfigSource
-
-ConfigStringHashtable * ConfigSource::Table()
-{
-    LIMITED_METHOD_CONTRACT;
-    return &(m_Table);
-}// ConfigSource::Table
-
-void ConfigSource::Add(ConfigSource* prev)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(prev));
-        PRECONDITION(CheckPointer(prev->m_pNext));
-    } CONTRACTL_END;
-
-    m_pPrev = prev;
-    m_pNext = prev->m_pNext;
-
-    m_pNext->m_pPrev = this;
-    prev->m_pNext = this;
-}// ConfigSource::Add
-
-
-
 /**************************************************************/
 // Poor mans narrow
 LPUTF8 NarrowWideChar(__inout_z LPWSTR str)
@@ -364,24 +307,6 @@ HRESULT EEConfig::Init()
     return S_OK;
 }
 
-#ifdef _DEBUG
-static int DumpConfigTable(ConfigStringHashtable* table, __in_z LPCSTR label, int count)
-{
-    LIMITED_METHOD_CONTRACT;
-    LOG((LF_ALWAYS, LL_ALWAYS, label, count++));
-    LOG((LF_ALWAYS, LL_ALWAYS, "*********************************\n", count++));
-    for(ConfigStringHashtable::Iterator iter = table->Begin(), end = table->End(); iter != end; iter++)
-    {
-        ConfigStringKeyValuePair * pair = *(iter);
-        LPCWSTR keyString = pair->key;
-        LPCWSTR data = pair->value;
-        LOG((LF_ALWAYS, LL_ALWAYS, "%S = %S\n", keyString, data));
-    }
-    LOG((LF_ALWAYS, LL_ALWAYS, "\n"));
-    return count;
-}
-#endif
-
 /**************************************************************/
 HRESULT EEConfig::Cleanup()
 {
@@ -400,18 +325,7 @@ HRESULT EEConfig::Cleanup()
         DWORD setting = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DumpConfiguration);
         if (setting != 0)
        {
-            ConfigList::ConfigIter iter(&m_Configuration);
-            int count = 0;
-            for(ConfigStringHashtable* table = iter.Next();table; table = iter.Next())
-            {
-                count = DumpConfigTable(table, "\nSystem Configuration Table: %d\n", count);
-            }
-            ConfigList::ConfigIter iter2(&m_Configuration);
-            count = 0;
-            for (ConfigStringHashtable* table = iter2.Previous();table; table = iter2.Previous())
-            {
-                count = DumpConfigTable(table, "\nApplication Configuration Table: %d\n", count);
-            }
+
         }
     }
 #endif
@@ -1347,59 +1261,9 @@ HRESULT EEConfig::GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch di
     } CONTRACT_END;
 
     Thread *pThread = GetThread();
-    ConfigStringKeyValuePair * pair = NULL;
 
     *pValue = NULL;
-    ConfigList::ConfigIter iter(&m_Configuration);
-
-    switch(direction) {
-    case CONFIG_SYSTEMONLY:
-    {
-        // for things that only admin should be able to set
-        ConfigStringHashtable* table = iter.Next();
-        if(table != NULL)
-        {
-            pair = table->Lookup(pKey);
-            if(pair != NULL)
-            {
-                *pValue = pair->value;
-                RETURN S_OK;
-            }
-        }
-        RETURN E_FAIL;
-    }
-    case CONFIG_SYSTEM:
-    {
-        for(ConfigStringHashtable* table = iter.Next();
-            table != NULL;
-            table = iter.Next())
-        {
-            pair = table->Lookup(pKey);
-            if(pair != NULL)
-            {
-                *pValue = pair->value;
-                RETURN S_OK;
-            }
-        }
-        RETURN E_FAIL;
-    }
-    case CONFIG_APPLICATION: {
-        for(ConfigStringHashtable* table = iter.Previous();
-            table != NULL;
-            table = iter.Previous())
-        {
-            pair = table->Lookup(pKey);
-            if(pair != NULL)
-            {
-                *pValue = pair->value;
-                RETURN S_OK;
-            }
-        }
-        RETURN E_FAIL;
-    }
-    default:
-        RETURN E_FAIL;
-    }
+    RETURN E_FAIL;
 }
 
 bool EEConfig::RequireZap(LPCUTF8 assemblyName) const
