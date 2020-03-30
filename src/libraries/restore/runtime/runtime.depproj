@@ -85,6 +85,27 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="GetCrossgen2"
+          DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild"
+          AfterTargets="AfterResolveReferences;FilterNugetPackages"
+          Condition="'$(RuntimeFlavor)' != 'Mono' and '$(Crossgen2Host)' == 'true'">
+    <ItemGroup>
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/crossgen2.dll" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/crossgen2.deps.json" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/crossgen2.runtimeconfig.json" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/Microsoft.DiaSymReader.dll" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/System.CommandLine.dll" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/ILCompiler.DependencyAnalysisFramework.dll" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/ILCompiler.ReadyToRun.dll " />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/ILCompiler.TypeSystem.ReadyToRun.dll " />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/api-ms-win-core-console-l1-2-0.dll" Condition="'$(TargetOS)' == 'Windows_NT'" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/*mscordaccore_*.*" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/*jitinterface.*" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/crossgen2/*clrjitilc.*" />
+      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="OverrideRuntimeMono"
           DependsOnTargets="ResolveMonoFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"

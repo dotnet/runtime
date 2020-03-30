@@ -68,11 +68,31 @@
              ContinueOnError="ErrorAndContinue" />
   </Target>
 
+  <Target Name="RunCrossgen2OnHost" Condition="'$(Crossgen2Host)' == 'true'">
+    <ItemGroup>
+      <FilesToCrossgen Include="$(TestHostRuntimePath)\Microsoft.*.dll" Exclude="$(TestHostRuntimePath)\Microsoft.CodeAnalysis*.dll;$(TestHostRuntimePath)\Microsoft.DiaSymReader.Native.*.dll" />
+      <FilesToCrossgen Include="$(TestHostRuntimePath)\System.*.dll" Exclude="$(TestHostRuntimePath)\System.Runtime.WindowsRuntime.dll" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(TestHostRuntimePath)\crossgen2out" />
+    <Exec Command="$(TestHostRootPath)\dotnet $(TestHostRuntimePath)\crossgen2.dll %(FilesToCrossgen.FullPath) --targetarch=x64 -O --inputbubble -r:$(TestHostRuntimePath)\System.*.dll -r:$(TestHostRuntimePath)\Microsoft.*.dll -r:$(TestHostRuntimePath)\mscorlib.dll -r:$(TestHostRuntimePath)\netstandard.dll -o:$(TestHostRuntimePath)\crossgen2out\%(FilesToCrossgen.Filename)%(FilesToCrossgen.Extension)" 
+          IgnoreStandardErrorWarningFormat="true"/>
+  </Target>
+
+  <Target Name="MoveCrossgen2ResultsToHostRuntime" DependsOnTargets="RunCrossgen2OnHost">
+    <ItemGroup>
+      <FilesToCopy Include="$(TestHostRuntimePath)\crossgen2out\*.dll" />
+    </ItemGroup>
+
+    <Move SourceFiles="@(FilesToCopy)" DestinationFolder="$(TestHostRuntimePath)" />
+    <RemoveDir Directories="$(TestHostRuntimePath)\crossgen2out" />
+  </Target>
+
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 
   <Target Name="Build"
           Condition="'$(SkipPrepareTest)' != 'true'"
-          DependsOnTargets="GenerateLaunchSettingsFiles;GenerateTestSharedFrameworkDepsFile;GenerateFileVersionProps">
+          DependsOnTargets="GenerateLaunchSettingsFiles;GenerateTestSharedFrameworkDepsFile;GenerateFileVersionProps;MoveCrossgen2ResultsToHostRuntime">
 
     <MSBuild Targets="Build"
              Projects="@(Project)"
