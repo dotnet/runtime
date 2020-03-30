@@ -82,6 +82,16 @@ jobs:
                     /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideCoreclrFromLiveDrop.binlog
             displayName: Override $(runtimeFlavorName) from live drop
 
+        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+          - script: $(_msbuildCommand) src/libraries/pretest.proj 
+                    $(_runtimeArtifactsPathArg)
+                    $(_runtimeOSArg)
+                    /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
+                    /p:ArchGroup=${{ parameters.archType }}
+                    /p:Configuration=${{ parameters.buildConfig }}
+                    /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideCoreclrFromLiveDrop_pretest.binlog
+            displayName: Override $(runtimeFlavorName) from live drop PreTest
+
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             runtimeFlavor: ${{ parameters.runtimeFlavor }}
