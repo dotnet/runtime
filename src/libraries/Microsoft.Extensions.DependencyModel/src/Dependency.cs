@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using Microsoft.DotNet.PlatformAbstractions;
+using System.Numerics.Hashing;
 
 namespace Microsoft.Extensions.DependencyModel
 {
@@ -37,12 +37,7 @@ namespace Microsoft.Extensions.DependencyModel
             return obj is Dependency && Equals((Dependency) obj);
         }
 
-        public override int GetHashCode()
-        {
-            var combiner = HashCodeCombiner.Start();
-            combiner.Add(Name);
-            combiner.Add(Version);
-            return combiner.CombinedHash;
-        }
+        public override int GetHashCode() =>
+            HashHelpers.Combine(Name.GetHashCode(), Version.GetHashCode());
     }
 }

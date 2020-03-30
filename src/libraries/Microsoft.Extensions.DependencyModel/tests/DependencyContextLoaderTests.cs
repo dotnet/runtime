@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public void LoadReturnsNullWhenNotFound()
         {
             var loader = new DependencyContextLoader();
-            Assert.Null(loader.Load(typeof(string).Assembly));
+            Assert.Null(loader.Load(typeof(Moq.Mock).Assembly));
         }
     }
 }

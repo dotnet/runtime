@@ -11,9 +11,7 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContext
     {
-#if !NETSTANDARD1_3
         private static readonly Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
-#endif
 
         public DependencyContext(TargetInfo target,
             CompilationOptions compilationOptions,
@@ -49,9 +47,7 @@ namespace Microsoft.Extensions.DependencyModel
             RuntimeGraph = runtimeGraph.ToArray();
         }
 
-#if !NETSTANDARD1_3
         public static DependencyContext Default => _defaultContext.Value;
-#endif
 
         public TargetInfo Target { get; }
 
@@ -79,7 +75,6 @@ namespace Microsoft.Extensions.DependencyModel
                 );
         }
 
-#if !NETSTANDARD1_3
         private static DependencyContext LoadDefault()
         {
             var entryAssembly = Assembly.GetEntryAssembly();
@@ -95,7 +90,6 @@ namespace Microsoft.Extensions.DependencyModel
         {
             return DependencyContextLoader.Default.Load(assembly);
         }
-#endif
 
         private class LibraryMergeEqualityComparer<T> : IEqualityComparer<T> where T : Library
         {

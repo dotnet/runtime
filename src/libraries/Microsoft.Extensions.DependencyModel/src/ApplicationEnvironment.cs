@@ -13,13 +13,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static string GetApplicationBasePath()
         {
-            string basePath =
-#if NET451
-                (string)AppDomain.CurrentDomain.GetData("APP_CONTEXT_BASE_DIRECTORY") ??
-                AppDomain.CurrentDomain.BaseDirectory;
-#else
-                AppContext.BaseDirectory;
-#endif
+            string basePath = AppContext.BaseDirectory;
             return Path.GetFullPath(basePath);
         }
     }

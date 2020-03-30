@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-#if !NETSTANDARD1_3
-
 namespace Microsoft.Extensions.DependencyModel
 {
     internal class DependencyContextPaths
@@ -35,13 +33,9 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static DependencyContextPaths GetCurrent()
         {
-#if NETSTANDARD1_6
-            var deps = AppContext.GetData(DepsFilesProperty);
-            var fxDeps = AppContext.GetData(FxDepsFileProperty);
-#else
             var deps = AppDomain.CurrentDomain.GetData(DepsFilesProperty);
             var fxDeps = AppDomain.CurrentDomain.GetData(FxDepsFileProperty);
-#endif
+
             return Create(deps as string, fxDeps as string);
         }
 
@@ -61,4 +55,3 @@ namespace Microsoft.Extensions.DependencyModel
         }
     }
 }
-#endif

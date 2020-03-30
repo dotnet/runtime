@@ -292,7 +292,7 @@ namespace Microsoft.Extensions.DependencyModel
         private bool AddRuntimeSpecificAssetGroups(string assetType, IEnumerable<RuntimeAssetGroup> assetGroups, bool wroteObjectStart, ref UnifiedJsonWriter jsonWriter)
         {
             IEnumerable<RuntimeAssetGroup> groups = assetGroups.Where(g => !string.IsNullOrEmpty(g.Runtime));
-            if (!wroteObjectStart && (groups.Count() > 0))
+            if (!wroteObjectStart && groups.Any())
             {
                 jsonWriter.WriteStartObject(DependencyContextStrings.RuntimeTargetsPropertyName, escape: false);
                 wroteObjectStart = true;

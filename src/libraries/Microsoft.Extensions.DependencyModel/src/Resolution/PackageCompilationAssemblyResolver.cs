@@ -37,12 +37,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal static string[] GetDefaultProbeDirectories(IEnvironment environment)
         {
-#if !NETSTANDARD1_3            
-#if NETSTANDARD1_6
-            var probeDirectories = AppContext.GetData("PROBING_DIRECTORIES");
-#else
             var probeDirectories = AppDomain.CurrentDomain.GetData("PROBING_DIRECTORIES");
-#endif
 
             var listOfDirectories = probeDirectories as string;
 
@@ -50,7 +45,6 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             {
                 return listOfDirectories.Split(new char[] { Path.PathSeparator }, StringSplitOptions.RemoveEmptyEntries);
             }
-#endif
 
             var packageDirectory = environment.GetEnvironmentVariable("NUGET_PACKAGES");
 

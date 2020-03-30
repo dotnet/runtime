@@ -8,8 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
-#if !NETSTANDARD1_3
-
 namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContextLoader
@@ -165,5 +163,3 @@ namespace Microsoft.Extensions.DependencyModel
         }
     }
 }
-
-#endif

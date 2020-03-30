@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-#if !NETSTANDARD1_3
-
 namespace Microsoft.Extensions.DependencyModel.Resolution
 {
     public class AppBaseCompilationAssemblyResolver : ICompilationAssemblyResolver
@@ -115,5 +113,3 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
         }
     }
 }
-
-#endif
