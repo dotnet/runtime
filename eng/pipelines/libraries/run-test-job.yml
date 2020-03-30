@@ -72,6 +72,9 @@ jobs:
             artifactName: $(librariesTestsArtifactName)
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
 
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
+          displayName: Restore
+          
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - script: $(_msbuildCommand) src/libraries/restore/runtime/runtime.depproj 
                     $(_runtimeArtifactsPathArg)
