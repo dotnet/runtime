@@ -482,6 +482,40 @@ namespace System.Diagnostics.Tests
 
         [OuterLoop]
         [Fact]
+        public async Task InjectTraceIdWhenRequestIdIsPresentButTraceFormatIsW3C()
+        {
+            Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+            using (var eventRecords = new EventObserverAndRecorder())
+            {
+                // Send a random Http request to generate some events
+                using (var client = new HttpClient())
+                using (var request = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.RemoteEchoServer))
+                {
+                    request.Headers.Add("Request-Id", "|rootId.1.");
+                    (await client.SendAsync(request)).Dispose();
+                }
+
+                Assert.Equal(2, eventRecords.Records.Count());
+
+                // Check to make sure: The first record must be a request, the next record must be a response.
+                HttpWebRequest startRequest = AssertFirstEventWasStart(eventRecords);
+
+                VerifyW3CHeaders(startRequest, expectedRequestIdHeaderValue: "|rootId.1.");
+
+                KeyValuePair<string, object> stopEvent;
+                Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
+                Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Stop", stopEvent.Key);
+                HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
+                Assert.NotNull(stopRequest);
+
+                HttpWebResponse stopResponse = ReadPublicProperty<HttpWebResponse>(stopEvent.Value, "Response");
+                Assert.NotNull(stopResponse);
+            }
+        }
+
+        [OuterLoop]
+        [Fact]
         public async Task DoNotInjectTraceParentWhenPresent()
         {
             try
@@ -998,13 +1032,13 @@ namespace System.Diagnostics.Tests
             Assert.Null(startRequest.Headers["tracestate"]);
         }
 
-        private static void VerifyW3CHeaders(HttpWebRequest startRequest)
+        private static void VerifyW3CHeaders(HttpWebRequest startRequest, string expectedRequestIdHeaderValue = null)
         {
             var traceparent = startRequest.Headers["traceparent"];
             Assert.NotNull(traceparent);
             Assert.Matches("^[0-9a-f][0-9a-f]-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f][0-9a-f]$", traceparent);
             Assert.Null(startRequest.Headers["tracestate"]);
-            Assert.Null(startRequest.Headers["Request-Id"]);
+            Assert.Equal(expectedRequestIdHeaderValue, startRequest.Headers["Request-Id"]);
         }
 
         /// <summary>

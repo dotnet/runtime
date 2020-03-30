@@ -48,7 +48,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Normally if the ParentID is defined, the format of that is used to determine the
         /// format used by the Activity.   However if ForceDefaultFormat is set to true, the
-        /// ID format will always be the DefaultIdFormat even if the ParentID is define and is
+        /// ID format will always be the DefaultIdFormat even if the ParentID is defined and is
         /// a different format.
         /// </summary>
         public static bool ForceDefaultIdFormat { get; set; }

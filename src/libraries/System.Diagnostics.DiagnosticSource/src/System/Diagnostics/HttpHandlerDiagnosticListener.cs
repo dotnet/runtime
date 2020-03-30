@@ -593,7 +593,13 @@ namespace System.Diagnostics
 
         private bool IsRequestInstrumented(HttpWebRequest request)
         {
-            return request.Headers.Get(TraceParentHeaderName) != null || request.Headers.Get(RequestIdHeaderName) != null;
+            ActivityIdFormat Format = Activity.ForceDefaultIdFormat
+                ? Activity.DefaultIdFormat
+                : (Activity.Current?.IdFormat ?? Activity.DefaultIdFormat);
+
+            return Format == ActivityIdFormat.W3C
+                ? request.Headers.Get(TraceParentHeaderName) != null
+                : request.Headers.Get(RequestIdHeaderName) != null;
         }
 
         private static void InstrumentRequest(HttpWebRequest request, Activity activity)
