@@ -1130,6 +1130,13 @@ enum class PhaseChecks
     CHECK_ALL
 };
 
+// Specify compiler data that a phase might modify
+enum class PhaseStatus : unsigned
+{
+    MODIFIED_NOTHING,
+    MODIFIED_EVERYTHING
+};
+
 // The following enum provides a simple 1:1 mapping to CLR API's
 enum API_ICorJitInfo_Names
 {
@@ -4359,31 +4366,35 @@ public:
 
     void fgInit();
 
-    void fgImport();
+    PhaseStatus fgImport();
 
-    void fgTransformIndirectCalls();
+    PhaseStatus fgTransformIndirectCalls();
 
-    void fgTransformPatchpoints();
+    PhaseStatus fgTransformPatchpoints();
 
-    void fgInline();
+    PhaseStatus fgInline();
 
-    void fgRemoveEmptyTry();
+    PhaseStatus fgRemoveEmptyTry();
 
-    void fgRemoveEmptyFinally();
+    PhaseStatus fgRemoveEmptyFinally();
 
-    void fgMergeFinallyChains();
+    PhaseStatus fgMergeFinallyChains();
 
-    void fgCloneFinally();
+    PhaseStatus fgCloneFinally();
 
     void fgCleanupContinuation(BasicBlock* continuation);
 
-    void fgUpdateFinallyTargetFlags();
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
+    PhaseStatus fgUpdateFinallyTargetFlags();
 
     void fgClearAllFinallyTargetBits();
 
     void fgAddFinallyTargetFlags();
 
-    void fgTailMergeThrows();
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
+    PhaseStatus fgTailMergeThrows();
     void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                             BasicBlock* nonCanonicalBlock,
                                             BasicBlock* canonicalBlock,

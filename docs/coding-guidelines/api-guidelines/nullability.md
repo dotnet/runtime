@@ -1,10 +1,10 @@
 # Nullability annotations
 
-C# 8 provides an opt-in feature that allows for the compiler to  track reference type nullability in order to catch potential null dereferences.  We are adopting that feature across .NET Core's libraries, working up from the bottom of the stack.  We're doing this for three primary reasons, in order of importance:
+C# 8 provides an opt-in feature that allows for the compiler to  track reference type nullability in order to catch potential null dereferences.  We are adopting that feature across .NET's libraries, working up from the bottom of the stack.  We're doing this for three primary reasons, in order of importance:
 
-- **To annotate the .NET Core surface area with appropriate nullability annotations.**  While this could be done solely in the reference assemblies, we're doing it first in the implementation to help validate the selected annotations.
+- **To annotate the .NET surface area with appropriate nullability annotations.**  While this could be done solely in the reference assemblies, we're doing it first in the implementation to help validate the selected annotations.
 - **To help validate the nullability feature itself.**  With millions of lines of C# code, we have a very large and robust codebase with which to try out the feature and find areas in which it shines and areas in which we can improve it.  The work to annotate System.Private.CoreLib in .NET Core 3.0 helped to improve the feature as shipped in C# 8, and annotating the rest of the libraries will continue to be helpful in this regard.
-- **To find null-related bugs in .NET Core itself.** We expect to find relatively few meaningful bugs, due to how relatively well-tested the codebases are and how long they've been around.
+- **To find null-related bugs in .NET Runtime itself.** We expect to find relatively few meaningful bugs, due to how relatively well-tested the codebases are and how long they've been around.
 
 ## Breaking Change Guidance
 

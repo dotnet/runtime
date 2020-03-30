@@ -37,7 +37,7 @@ namespace System.Text.Json
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
-            const int NumberOfSimpleConverters = 21;
+            const int NumberOfSimpleConverters = 22;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
 
             // Use a dictionary for simple converters.
@@ -59,6 +59,7 @@ namespace System.Text.Json
             Add(new SByteConverter());
             Add(new SingleConverter());
             Add(new StringConverter());
+            Add(new TypeConverter());
             Add(new UInt16Converter());
             Add(new UInt32Converter());
             Add(new UInt64Converter());

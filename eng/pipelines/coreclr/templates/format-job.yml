@@ -36,7 +36,7 @@ jobs:
     steps:
     - task: UseDotNet@2
       # This should match what jitutils YML uses to build.
-      displayName: 'Install .NET Core SDK'
+      displayName: 'Install .NET SDK'
       inputs:
         packageType: 'sdk'
         version: '3.x'

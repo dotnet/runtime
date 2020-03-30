@@ -64,7 +64,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             Directory.CreateDirectory(_exeSdkBaseDir);
 
             // Trace messages used to identify from which folder the SDK was picked
-            _exeSelectedMessage = $"Using .NET Core SDK dll=[{_exeSdkBaseDir}";
+            _exeSelectedMessage = $"Using .NET SDK dll=[{_exeSdkBaseDir}";
         }
 
         public void Dispose()
@@ -93,8 +93,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version")
-                .And.HaveStdErrContaining("It was not possible to find any installed .NET Core SDKs")
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
+                .And.HaveStdErrContaining("It was not possible to find any installed .NET SDKs")
                 .And.HaveStdErrContaining("aka.ms/dotnet-download")
                 .And.NotHaveStdErrContaining("Checking if resolved SDK dir");
 
@@ -113,8 +113,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET Core SDKs");
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
+                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.3");
@@ -131,8 +131,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET Core SDKs");
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
+                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.4");
@@ -238,8 +238,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version")
-                .And.HaveStdErrContaining("It was not possible to find any installed .NET Core SDKs");
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
+                .And.HaveStdErrContaining("It was not possible to find any installed .NET SDKs");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.57", "9999.3.4-dummy");
@@ -256,8 +256,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET Core SDKs");
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
+                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.300", "9999.7.304-global-dummy");
@@ -274,8 +274,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET Core SDKs");
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
+                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.304");
@@ -387,8 +387,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("It was not possible to find any installed .NET Core SDKs")
-                .And.HaveStdErrContaining("Install a .NET Core SDK from");
+                .And.HaveStdErrContaining("It was not possible to find any installed .NET SDKs")
+                .And.HaveStdErrContaining("Install a .NET SDK from");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.4");
@@ -642,8 +642,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 result
                     .Should()
                     .Fail()
-                    .And.HaveStdErrContaining($"A compatible installed .NET Core SDK for global.json version [{requested}] from [{globalJson}] was not found")
-                    .And.HaveStdErrContaining($"Install the [{requested}] .NET Core SDK or update [{globalJson}] with an installed .NET Core SDK:");
+                    .And.HaveStdErrContaining($"A compatible installed .NET SDK for global.json version [{requested}] from [{globalJson}] was not found")
+                    .And.HaveStdErrContaining($"Install the [{requested}] .NET SDK or update [{globalJson}] with an installed .NET SDK:");
             }
             else
             {
@@ -695,7 +695,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             get
             {
-                const string IgnoringSDKSettings = "Ignoring SDK settings in global.json: the latest installed .NET Core SDK (including prereleases) will be used";
+                const string IgnoringSDKSettings = "Ignoring SDK settings in global.json: the latest installed .NET SDK (including prereleases) will be used";
 
                 // Use invalid JSON
                 yield return new object[] {

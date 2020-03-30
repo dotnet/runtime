@@ -241,6 +241,27 @@ int main(const int argc, const pal::char_t *argv[])
         std::cout << tostr(test_output.str()).data() << std::endl;
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
     }
+    else if (pal::strcmp(command, _X("run_app")) == 0)
+    {
+        // args: ... <hostfxr_path> <dotnet_command_line>
+        const int min_argc = 4;
+        if (argc < min_argc)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t hostfxr_path = argv[2];
+
+        int remaining_argc = argc - min_argc + 1;
+        const pal::char_t **remaining_argv = &argv[min_argc - 1];
+
+        pal::stringstream_t test_output;
+        bool success =  host_context_test::app(host_context_test::check_properties::none, hostfxr_path, remaining_argc, remaining_argv, test_output);
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
     else if (pal::strcmp(command, _X("resolve_component_dependencies")) == 0)
     {
         // args: ... <scenario> <hostfxr_path> <app_path> <component_path>

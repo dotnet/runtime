@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">$(TargetArchitecture)</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
@@ -87,7 +87,6 @@
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
     <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'x64'">CODE_ANALYSIS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
@@ -110,13 +109,6 @@
   <PropertyGroup>
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
-  </PropertyGroup>
-
-  <!-- Msbuild variables needed to get CoreCLR features to be set properly. -->
-  <PropertyGroup>
-    <!-- These are needed to make sure we have the right set of defines -->
-    <TargetArch Condition="'$(Platform)'=='x86'">i386</TargetArch>
-    <TargetArch Condition="'$(Platform)'!='x86'">$(Platform)</TargetArch>
   </PropertyGroup>
 
   <!-- Compilation options -->
@@ -421,7 +413,7 @@
   <ItemGroup>
     <EventingGenerationScript Include="$(CoreClrProjectRoot)/src/scripts/genRuntimeEventSources.py" />
     <EventManifestFile Include="$(CoreClrProjectRoot)/src/vm/ClrEtwAll.man" />
-    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(TargetArchitecture)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
       <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.CoreCLR.cs</Link>
     </EventingSourceFile>
     <Compile Include="@(EventingSourceFile)" />

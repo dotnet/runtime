@@ -10,25 +10,18 @@
 
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
-    <BuildArch>$(__BuildArch)</BuildArch>
-    <BuildArch Condition="'$(BuildArch)' == ''">$(TargetArchitecture)</BuildArch>
-    <BuildArch Condition="'$(BuildArch)'==''">x64</BuildArch>
-    <BuildArch Condition="'$(BuildArch)' == 'amd64'">x64</BuildArch>
+    <!-- TODO: Cleanup use of __BuildArch and __BuildType in the CI scripts -->
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(__BuildArch)</TargetArchitecture>
+    <Configuration Condition="'$(Configuration)'==''">$(__BuildType)</Configuration>
 
-    <BuildType>$(__BuildType)</BuildType>
-    <BuildType Condition="'$(BuildType)'==''">Debug</BuildType>
-    <BuildType Condition="'$(BuildType)' == 'debug'">Debug</BuildType>
-    <BuildType Condition="'$(BuildType)' == 'release'">Release</BuildType>
-    <BuildType Condition="'$(BuildType)' == 'checked'">Checked</BuildType>
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+    <Configuration Condition="'$(Configuration)' == 'debug'">Debug</Configuration>
+    <Configuration Condition="'$(Configuration)' == 'release'">Release</Configuration>
+    <Configuration Condition="'$(Configuration)' == 'checked'">Checked</Configuration>
 
-    <!-- TODO: converge on one property for TargetOS and __TargetOS (and similar), and remove these extra lines. -->
-    <__TargetOS>$(TargetOS)</__TargetOS>
-    <__BuildArch>$(BuildArch)</__BuildArch>
+    <Platform Condition="'$(Platform)' == ''">$(TargetArchitecture)</Platform>
 
-    <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
-    <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
-
-    <PlatformConfigPathPart>$(TargetOS).$(BuildArch).$(BuildType)</PlatformConfigPathPart>
+    <PlatformConfigPathPart>$(TargetOS).$(TargetArchitecture).$(Configuration)</PlatformConfigPathPart>
   </PropertyGroup>
 
   <!-- Common properties -->
@@ -69,9 +62,9 @@
     <DistroRid Condition="'$(TargetsLinux)' == 'true'">$(__DistroRid)</DistroRid>
 
     <!-- Folder for cross target components -->
-    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm64'">x64</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(TargetArchitecture)' == 'arm64'">x64</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(TargetArchitecture)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(TargetArchitecture)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
   </PropertyGroup>
 
   <!-- Set the kind of PDB to Portable -->

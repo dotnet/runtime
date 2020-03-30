@@ -1616,6 +1616,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_CEQ_P;
 		} else if (!strcmp (tm, "SkipInit")) {
 			*op = MINT_POP;
+		} else if (!strcmp (tm, "InitBlockUnaligned")) {
+			*op = MINT_INITBLK;
 		}
 #endif
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
@@ -5754,6 +5756,26 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					(cmethod = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error)) &&
 					(cmethod->klass == mono_defaults.systemtype_class) &&
 					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
+				const unsigned char *next_next_ip = next_ip + 5;
+				MonoMethod *next_cmethod;
+				MonoClass *tclass = mono_class_from_mono_type_internal ((MonoType *)handle);
+				// Optimize to true/false if next instruction is `call instance bool Type::get_IsValueType()`
+				if (next_next_ip < end &&
+						(inlining || !td->is_bb_start [next_next_ip - td->il_code]) &&
+						(*next_next_ip == CEE_CALL || *next_next_ip == CEE_CALLVIRT) &&
+						(next_cmethod = interp_get_method (method, read32 (next_next_ip + 1), image, generic_context, error)) &&
+						(next_cmethod->klass == mono_defaults.systemtype_class) &&
+						!strcmp (next_cmethod->name, "get_IsValueType")) {
+					g_assert (!mono_class_is_open_constructed_type (m_class_get_byval_arg (tclass)));
+					if (m_class_is_valuetype (tclass))
+						interp_add_ins (td, MINT_LDC_I4_1);
+					else
+						interp_add_ins (td, MINT_LDC_I4_0);
+					PUSH_SIMPLE_TYPE (td, STACK_TYPE_I4);
+					td->ip = next_next_ip + 5;
+					break;
+				}
+
 				interp_add_ins (td, MINT_MONO_LDPTR);
 				gpointer systype = mono_type_get_object_checked (domain, (MonoType*)handle, error);
 				goto_if_nok (error, exit);

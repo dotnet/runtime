@@ -21,7 +21,7 @@
     },
     {
         "Name": "Microsoft.NETCore.DotNetAppHost",
-        "Description": "Provides the .NET Core app bootstrapper intended for use in the application directory",
+        "Description": "Provides the .NET app bootstrapper intended for use in the application directory",
         "CommonTypes": [ ]
     },
     {
@@ -36,17 +36,17 @@
     },
     {
         "Name": "Microsoft.NETCore.App",
-        "Description": "A set of .NET APIs that are included in the default .NET Core application model.",
+        "Description": "A set of .NET APIs that are included in the default .NET application model.",
         "CommonTypes": [ ]
     },
     {
         "Name": "Microsoft.NETCore.App.Internal",
-        "Description": "Transport package for .NET Core App runtime assets.",
+        "Description": "Transport package for .NET App runtime assets.",
         "CommonTypes": [ ]
     },
     {
         "Name": "Microsoft.NETCore.App.Ref",
-        "Description": "A set of .NET APIs that are included in the default .NET Core application model. Contains reference assemblies, documentation, and other design-time assets.",
+        "Description": "A set of .NET APIs that are included in the default .NET application model. Contains reference assemblies, documentation, and other design-time assets.",
         "CommonTypes": [ ]
     },
     {

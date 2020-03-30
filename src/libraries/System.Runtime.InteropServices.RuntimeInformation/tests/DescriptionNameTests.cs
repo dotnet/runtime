@@ -140,7 +140,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
         public void VerifyRuntimeNameOnNetCoreApp()
         {
-            Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET Core"), RuntimeInformation.FrameworkDescription);
+            Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET"), RuntimeInformation.FrameworkDescription);
             Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
         }
 

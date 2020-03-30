@@ -1287,7 +1287,8 @@ typedef struct {
 	MonoInst        *domainvar; /* a cache for the current domain */
 	MonoInst        *got_var; /* Global Offset Table variable */
 	MonoInst        **locals;
-	MonoInst	*rgctx_var; /* Runtime generic context variable (for static generic methods) */
+	/* Variable holding the mrgctx/vtable address for gshared methods */
+	MonoInst        *rgctx_var;
 	MonoInst        **args;
 	MonoType        **arg_types;
 	MonoMethod      *current_method; /* The method currently processed by method_to_ir () */
@@ -2874,10 +2875,6 @@ typedef enum {
 	SIMD_OP_SSE_CVTTSD2SI,
 	SIMD_OP_SSE_CVTSD2SI64,
 	SIMD_OP_SSE_CVTTSD2SI64,
-	SIMD_OP_SSE_CVTSI2SS,
-	SIMD_OP_SSE_CVTSI2SS64,
-	SIMD_OP_SSE_CVTSI2SD,
-	SIMD_OP_SSE_CVTSI2SD64,
 	SIMD_OP_SSE_CVTSD2SS,
 	SIMD_OP_SSE_MAXPS,
 	SIMD_OP_SSE_MAXSS,
@@ -2920,12 +2917,7 @@ typedef enum {
 	SIMD_OP_SSE_PSRAD_IMM,
 	SIMD_OP_SSE_PSRAW,
 	SIMD_OP_SSE_PSRAD,
-	SIMD_OP_SSE_PSUBSB,
-	SIMD_OP_SSE_PSUBSW,
-	SIMD_OP_SSE_PSUBUSB,
-	SIMD_OP_SSE_PSUBUSW,
 	SIMD_OP_SSE_PSADBW,
-	SIMD_OP_SSE_MASKMOVDQU,
 	SIMD_OP_SSE_ADDSUBPS,
 	SIMD_OP_SSE_ADDSUBPD,
 	SIMD_OP_SSE_HADDPS,

@@ -125,11 +125,11 @@ extern "C" std::uintptr_t __stdcall start_runtime_and_get_target_address(std::ui
     if (status != StatusCode::Success)
     {
         // If we ignore the failure to patch bootstrap thunks we will come to this same
-        // function again, causing an infinite loop of "Failed to start the .NET Core runtime" errors.
+        // function again, causing an infinite loop of "Failed to start the .NET runtime" errors.
         // As we were taken here via an entry point with arbitrary signature,
         // there's no way of returning the error code so we just throw it.
 
-        trace::error(_X("Failed to start the .NET Core runtime. Error code %d"), status);
+        trace::error(_X("Failed to start the .NET runtime. Error code %d"), status);
 
 #pragma warning (push)
 #pragma warning (disable: 4297)

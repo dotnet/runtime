@@ -4202,19 +4202,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
-    auto importPhase = [this]() {
-        fgImport();
-
-        assert(!fgComputePredsDone);
-        if (fgCheapPredsValid)
-        {
-            // Remove cheap predecessors before inlining and fat call transformation;
-            // allowing the cheap predecessor lists to be inserted causes problems
-            // with splitting existing blocks.
-            fgRemovePreds();
-        }
-    };
-    DoPhase(this, PHASE_IMPORTATION, importPhase);
+    DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
     // Transform indirect calls that require control flow expansion.
     //
@@ -4419,11 +4407,15 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     // Clone code in finallys to reduce overhead for non-exceptional paths
     //
-    auto cloneFinallyPhase = [this]() {
-        fgCloneFinally();
-        fgUpdateFinallyTargetFlags();
-    };
-    DoPhase(this, PHASE_CLONE_FINALLY, cloneFinallyPhase);
+    DoPhase(this, PHASE_CLONE_FINALLY, &Compiler::fgCloneFinally);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
+    // Update finally target flags after EH optimizations
+    //
+    DoPhase(this, PHASE_UPDATE_FINALLY_FLAGS, &Compiler::fgUpdateFinallyTargetFlags);
+
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #if DEBUG
     if (lvaEnregEHVars)

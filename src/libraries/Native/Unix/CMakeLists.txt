@@ -175,12 +175,6 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_definitions(-DTARGET_UNIX)
 endif(CLR_CMAKE_TARGET_UNIX)
 
-function(install_library_and_symbols targetName)
-    install_symbols(${targetName} .)
-    set(install_source_file $<TARGET_FILE:${targetName}>)
-    install(PROGRAMS ${install_source_file} DESTINATION .)
-endfunction()
-
 include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
