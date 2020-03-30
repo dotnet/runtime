@@ -66,7 +66,7 @@
     <BinPlaceTargetFrameworks Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
-      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(TargetOS)-$(Configuration)-$(ArchGroup)</RuntimePath>
+      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(TargetOS)-$(Configuration)-$(TargetArchitecture)</RuntimePath>
       <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' and '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app\$(Configuration)</RefPath>
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' and '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
@@ -102,7 +102,7 @@
     </BinPlaceTargetFrameworks>
     <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical target frameworks. -->
     <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or ('$(TargetFramework)' != '$(NetCoreAppCurrent)' and '$(TargetFrameworkSuffix)' == ''))" Include="$(NetCoreAppCurrent)-$(TargetOS)">
-      <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(Configuration)-$(ArchGroup)</RuntimePath>
+      <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(Configuration)-$(TargetArchitecture)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
     <BinPlaceTargetFrameworks Include="@(AdditionalBinPlaceTargetFrameworks)" />
