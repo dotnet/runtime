@@ -33,12 +33,6 @@ namespace System.Text.Json
             throw new NotSupportedException(SR.Format(SR.ConstructorMaxOf64Parameters, constructorInfo, type));
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static NotSupportedException GetNotSupportedException_SerializeTypeInstanceNotSupported()
-        {
-            return new NotSupportedException(SR.SerializeTypeInstanceNotSupported);
-        }
-
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
