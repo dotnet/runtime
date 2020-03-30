@@ -112,7 +112,6 @@ while [[ $# > 0 ]]; do
       ;;
      -arch)
       arch=$2
-      arguments="$arguments /p:TargetArchitecture=$2"
       shift 2
       ;;
      -configuration|-c)
@@ -213,5 +212,6 @@ initDistroRid $os $arch $crossBuild
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
 cmakeargs="${cmakeargs// /%20}"
+arguments="$arguments /p:TargetArchitecture=$arch"
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
 "$scriptroot/common/build.sh" $arguments
