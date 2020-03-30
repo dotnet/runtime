@@ -209,7 +209,7 @@ jobs:
       archType: x64
       platform: Android_x64
       container:
-        image: centos-7-359e48e-20200313130914
+        image: ubuntu-18.04-android-8505948-20200327151156
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -229,9 +229,9 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: Android
       archType: arm
-      platform: Android_x64
+      platform: Android_arm
       container:
-        image: centos-7-359e48e-20200313130914
+        image: ubuntu-18.04-android-8505948-20200327151156
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -251,9 +251,9 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: Android
       archType: arm64
-      platform: Android_x64
+      platform: Android_arm64
       container:
-        image: centos-7-359e48e-20200313130914
+        image: ubuntu-18.04-android-8505948-20200327151156
         registry: mcr
       jobParameters:
         runtimeFlavor: mono

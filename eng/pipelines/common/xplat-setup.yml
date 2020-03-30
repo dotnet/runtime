@@ -57,8 +57,7 @@ jobs:
 
       - ${{ if eq(parameters.osGroup, 'Android') }}:
         - name: ANDROID_NDK_HOME
-          # default here is value used by Android Studio
-          value: ~/Android/Sdk/ndk
+          value: /usr/local/ndk
 
       - name: runtimeFlavorName
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
