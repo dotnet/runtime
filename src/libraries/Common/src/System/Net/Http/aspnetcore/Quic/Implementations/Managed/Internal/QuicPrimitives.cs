@@ -82,10 +82,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal static int GetVarIntLengthLogarithm(ulong value)
         {
-            if (value <= 63) return 0;
-            if (value <= 16_383) return 1;
-            if (value <= 1_073_741_823) return 2;
-            if (value <= 4_611_686_018_427_387_903) return 3;
+            if (value < 1ul <<  6) return 0;
+            if (value < 1ul << 14) return 1;
+            if (value < 1ul << 30) return 2;
+            if (value < 1ul << 62) return 3;
 
             throw new ArgumentOutOfRangeException(nameof(value));
         }
@@ -97,10 +97,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private static int GetMinimumEncodingLength(ulong value)
         {
-            if (value < Byte.MaxValue) return 1;
-            if (value < UInt16.MaxValue) return 2;
-            if (value < 1 << 24) return 3;
-            if (value < UInt32.MaxValue) return 4;
+            if (value < 1ul << 8) return 1;
+            if (value < 1ul << 16) return 2;
+            if (value < 1ul << 24) return 3;
+            if (value < 1ul << 32) return 4;
 
             throw new ArgumentOutOfRangeException("Invalid packet number");
         }

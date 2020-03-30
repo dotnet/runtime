@@ -354,18 +354,9 @@ namespace System.Net.Quic.Implementations.Managed
             return desiredLevel;
         }
 
-        internal void SendOne(QuicWriter writer, IPEndPoint? receiver)
+        internal void SendOne(QuicWriter writer, IPEndPoint? receiver, EncryptionLevel level)
         {
-            if (_isServer && GetEpoch(EncryptionLevel.Initial).RecvCryptoSeal == null)
-            {
-                // if initial secrets have not been derived yet, we have nothing to send
-                return;
-            }
-
             // TODO-RZ: process lost packets
-
-            var level = GetWriteLevel();
-
             var packetType = level switch
             {
                 EncryptionLevel.Initial => PacketType.Initial,
@@ -375,19 +366,63 @@ namespace System.Net.Quic.Implementations.Managed
                 _ => throw new InvalidOperationException()
             };
 
-            var epoch = GetEpoch(GetEncryptionLevel(packetType));
+            var epoch = GetEpoch(level);
             var seal = epoch.SendCryptoSeal!;
 
             (uint truncatedPn, int pnLength) = epoch.GetNextPacketNumber();
 
-            // cap maximum packet size length to 2 bytes
             int maxPacketLength = (int)(Connected
-                ? Math.Min(16383, GetPeerTransportParameters()!.MaxPacketSize)
+                // Limit maximum size so that it can be always encoded using 2B varint
+                ? Math.Min((1 << 14) - 1, GetPeerTransportParameters()!.MaxPacketSize)
+                // use minimum size for packets during handshake
                 : QuicConstants.MinimumClientInitialDatagramSize);
 
             // TODO-RZ: respect control flow limits
 
-            // Write header
+            WritePacketHeader(writer, packetType, pnLength);
+
+            int pnOffset = writer.BytesWritten;
+            writer.WriteTruncatedPacketNumber(pnLength, truncatedPn);
+
+            var payloadLengthSpan = writer.Buffer.AsSpan(writer.BytesWritten - 2 - pnLength, 2);
+
+            int written = writer.BytesWritten;
+
+            WriteFrames(writer, packetType, level, maxPacketLength);
+
+            if (writer.BytesWritten == written)
+            {
+                // no data to send
+                // TODO-RZ: we might be able to detect this sooner
+                writer.Reset(writer.Buffer, 0);
+                return;
+            }
+
+            if (packetType == PacketType.Initial)
+            {
+                // Pad initial packets to the minimum size
+                int paddingLength = QuicConstants.MinimumClientInitialDatagramSize - seal.TagLength - writer.BytesWritten;
+                if (paddingLength > 0)
+                    // zero bytes are equivalent to PADDING frames
+                    writer.GetWritableSpan(paddingLength).Clear();
+            }
+
+            // reserve space for AEAD integrity tag
+            writer.GetWritableSpan(seal.TagLength);
+            int payloadLength = writer.BytesWritten - pnOffset;
+
+            // fill in the payload length retrospectively
+            if (packetType != PacketType.OneRtt)
+            {
+                // TODO-RZ: this is ugly
+                BinaryPrimitives.WriteUInt16BigEndian(payloadLengthSpan, (ushort)(payloadLength | 0x4000));
+            }
+
+            seal.EncryptPacket(writer.Buffer, pnOffset, payloadLength, truncatedPn);
+        }
+
+        private void WritePacketHeader(QuicWriter writer, PacketType packetType, int pnLength)
+        {
             if (packetType == PacketType.OneRtt)
             {
                 // short header
@@ -410,68 +445,50 @@ namespace System.Net.Quic.Implementations.Managed
                     ReadOnlySpan<byte>.Empty,
                     1000 /*arbitrary number with 2-byte encoding*/));
             }
-
-            int pnOffset = writer.BytesWritten;
-            writer.WriteTruncatedPacketNumber(pnLength, truncatedPn);
-
-            var payloadLengthSpan = writer.Buffer.AsSpan(writer.BytesWritten - 2 - pnLength, 2);
-
-            var written = writer.BytesWritten;
-            WriteFrames(writer, packetType, level);
-            if (writer.BytesWritten == written)
-            {
-                // no data to send
-                // TODO-RZ: Can we find out sooner?
-                writer.Reset(writer.Buffer, 0);
-                return;
-            }
-
-            // rest of the buffer will be padding = 0x00 bytes
-            if (packetType == PacketType.Initial)
-            {
-                int paddingLength = QuicConstants.MinimumClientInitialDatagramSize - seal.TagLength - writer.BytesWritten;
-                if (paddingLength > 0)
-                    writer.GetWritableSpan(paddingLength).Clear();
-            }
-
-            // reserve space for AEAD integrity tag
-            writer.GetWritableSpan(seal.TagLength);
-            int payloadLength = writer.BytesWritten - pnOffset;
-
-            // fill in the payload length retrospectively
-            if (packetType != PacketType.OneRtt)
-            {
-                // TODO-RZ: this is ugly
-                BinaryPrimitives.WriteUInt16BigEndian(payloadLengthSpan, (ushort)(payloadLength | 0x4000));
-            }
-
-            // encryption adds tag after the packet data
-            // TODO-RZ not all packets are encrypted, also make sure the padding was at least TagLength
-            seal.EncryptPacket(writer.Buffer, pnOffset, payloadLength, truncatedPn);
         }
 
         internal int SendData(byte[] targetBuffer, out IPEndPoint? receiver)
         {
+            receiver = default;
+
+            if (_isServer && GetEpoch(EncryptionLevel.Initial).RecvCryptoSeal == null)
+            {
+                // if initial secrets have not been derived yet, we have nothing to send
+                return 0;
+            }
+
             var writer = new QuicWriter(targetBuffer);
 
             int written = 0;
             while (true)
             {
+                var level = GetWriteLevel();
+
                 // TODO-RZ get client address
-                SendOne(writer, null);
+                SendOne(writer, null, level);
                 if (writer.BytesWritten == 0)
                     break;
+
                 written += writer.BytesWritten;
+
+                // 0-RTT packets do not have Length, so the may not be coalesced
+                if (level == EncryptionLevel.Application)
+                    break;
+
+                var nextLevel = GetWriteLevel();
+
+                // only coalesce packets in ascending encryption level
+                if (nextLevel <= level)
+                    break;
 
                 writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
             }
 
-            receiver = default;
             return written;
         }
 
         // TODO-RZ: calculate crypto data offset
-        private void WriteFrames(QuicWriter writer, PacketType packetType, EncryptionLevel level)
+        private void WriteFrames(QuicWriter writer, PacketType packetType, EncryptionLevel level, int maxPacketLength)
         {
             var epoch = GetEpoch(level);
 
