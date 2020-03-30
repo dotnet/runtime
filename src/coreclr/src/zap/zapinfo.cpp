@@ -1921,6 +1921,11 @@ PVOID ZapInfo::embedDirectCall(CORINFO_METHOD_HANDLE ftn,
     return pEntryPointOrThunkToEmbed;
 }
 
+void ZapInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled)
+{
+    m_pEEJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
+}
+
 void ZapInfo::getFunctionEntryPoint(
                                 CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
                                 CORINFO_CONST_LOOKUP *  pResult,             /* OUT */

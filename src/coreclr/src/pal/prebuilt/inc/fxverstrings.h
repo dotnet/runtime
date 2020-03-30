@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #ifndef VER_PRODUCTNAME_STR
-        #define VER_PRODUCTNAME_STR      L"Microsoft\256 .NET Core"
+        #define VER_PRODUCTNAME_STR      L"Microsoft\256 .NET"
 #endif
 
 #ifndef VER_LEGALCOPYRIGHT_STR

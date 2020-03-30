@@ -1458,18 +1458,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         (CORINFO_RUNTIME_LOOKUP_KIND)value.stubLookup.lookupKind.runtimeLookupKind;
     if (pResult->stubLookup.lookupKind.needsRuntimeLookup)
     {
-        pResult->stubLookup.runtimeLookup.signature =
-            (LPVOID)value.stubLookup.runtimeLookup.signature; // needs to be a more flexible copy based on
-                                                              // valuevalue.stubLookup.runtimeLookup.signature;
-        pResult->stubLookup.runtimeLookup.helper              = (CorInfoHelpFunc)value.stubLookup.runtimeLookup.helper;
-        pResult->stubLookup.runtimeLookup.indirections        = (WORD)value.stubLookup.runtimeLookup.indirections;
-        pResult->stubLookup.runtimeLookup.testForNull         = value.stubLookup.runtimeLookup.testForNull != 0;
-        pResult->stubLookup.runtimeLookup.testForFixup        = value.stubLookup.runtimeLookup.testForFixup != 0;
-        pResult->stubLookup.runtimeLookup.indirectFirstOffset = value.stubLookup.runtimeLookup.indirectFirstOffset != 0;
-        pResult->stubLookup.runtimeLookup.indirectSecondOffset =
-            value.stubLookup.runtimeLookup.indirectSecondOffset != 0;
-        for (int i                                       = 0; i < CORINFO_MAXINDIRECTIONS; i++)
-            pResult->stubLookup.runtimeLookup.offsets[i] = (SIZE_T)value.stubLookup.runtimeLookup.offsets[i];
+        pResult->stubLookup.runtimeLookup = SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(value.stubLookup.runtimeLookup);
     }
     else
     {

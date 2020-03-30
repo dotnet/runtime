@@ -231,6 +231,7 @@ public:
         DWORD     indirections;
         DWORD     testForNull;
         DWORD     testForFixup;
+        WORD      sizeOffset;
         DWORDLONG offsets[CORINFO_MAXINDIRECTIONS];
         DWORD     indirectFirstOffset;
         DWORD     indirectSecondOffset;

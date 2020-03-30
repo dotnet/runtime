@@ -502,12 +502,8 @@ namespace System.Data.OleDb
             for (int i = 0, offset = 0; i < columnCount; ++i, offset += ODB.SizeOf_tagDBCOLUMNINFO)
             {
                 Marshal.PtrToStructure(ADP.IntPtrOffset(columnInfos, offset), dbColumnInfo);
-#if WIN32
-                if (0 >= (int) dbColumnInfo.iOrdinal) {
-#else
-                if (0 >= (long)dbColumnInfo.iOrdinal)
+                if ((ODB.IsRunningOnX86 && 0 >= (int)dbColumnInfo.iOrdinal) || (!ODB.IsRunningOnX86 && 0 >= (long)dbColumnInfo.iOrdinal))
                 {
-#endif
                     continue;
                 }
                 if (OleDbDataReader.DoColumnDropFilter(dbColumnInfo.dwFlags))
@@ -536,12 +532,15 @@ namespace System.Data.OleDb
                 info.columnName = dbColumnInfo.pwszName;
                 info.type = dbType;
                 info.ordinal = dbColumnInfo.iOrdinal;
-#if WIN32
+                if (ODB.IsRunningOnX86)
+                {
                     info.size = (int)dbColumnInfo.ulColumnSize;
-#else
-                long maxsize = (long)dbColumnInfo.ulColumnSize;
-                info.size = (((maxsize < 0) || (int.MaxValue < maxsize)) ? int.MaxValue : (int)maxsize);
-#endif
+                }
+                else
+                {
+                    long maxsize = (long)dbColumnInfo.ulColumnSize;
+                    info.size = (((maxsize < 0) || (int.MaxValue < maxsize)) ? int.MaxValue : (int)maxsize);
+                }
                 info.flags = dbColumnInfo.dwFlags;
                 info.precision = dbColumnInfo.bPrecision;
                 info.scale = dbColumnInfo.bScale;
@@ -1204,21 +1203,30 @@ namespace System.Data.OleDb
 
         private static IntPtr AddRecordsAffected(IntPtr recordsAffected, IntPtr affected)
         {
-#if WIN32
-            if (0 <= (int)affected) {
-                if (0 <= (int)recordsAffected) {
-                    return (IntPtr)((int)recordsAffected + (int)affected);
-#else
-            if (0 <= (long)affected)
+            if (ODB.IsRunningOnX86)
             {
-                if (0 <= (long)recordsAffected)
+                if (0 <= (int)affected)
                 {
-                    return (IntPtr)((long)recordsAffected + (long)affected);
-#endif
+                    if (0 <= (int)recordsAffected)
+                    {
+                        return (IntPtr)((int)recordsAffected + (int)affected);
+                    }
+                    return affected;
                 }
-                return affected;
+                return recordsAffected;
             }
-            return recordsAffected;
+            else
+            {
+                if (0 <= (long)affected)
+                {
+                    if (0 <= (long)recordsAffected)
+                    {
+                        return (IntPtr)((long)recordsAffected + (long)affected);
+                    }
+                    return affected;
+                }
+                return recordsAffected;
+            }
         }
 
         public override int VisibleFieldCount
@@ -1833,7 +1841,7 @@ namespace System.Data.OleDb
         private object GetPropertyOnRowset(Guid propertySet, int propertyID)
         {
             OleDbHResult hr;
-            tagDBPROP[] dbprops;
+            ItagDBPROP[] dbprops;
             UnsafeNativeMethods.IRowsetInfo irowsetinfo = IRowsetInfo();
 
             using (PropertyIDSet propidset = new PropertyIDSet(propertySet, propertyID))
@@ -2494,12 +2502,8 @@ namespace System.Data.OleDb
                     info.isHidden = true;
                     visibleCount--;
                 }
-#if WIN32
-                else if (0 >= (int)info.ordinal) {
-#else
-                else if (0 >= (long)info.ordinal)
+                else if ((ODB.IsRunningOnX86 && 0 >= (int)info.ordinal) || (!ODB.IsRunningOnX86 && 0 >= (long)info.ordinal))
                 {
-#endif
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
                     {
@@ -2612,13 +2616,15 @@ namespace System.Data.OleDb
         {
             if (isHidden == (obj as MetaData).isHidden)
             {
-#if WIN32
-                return ((int)ordinal - (int)(obj as MetaData).ordinal);
-#else
-                long v = ((long)ordinal - (long)(obj as MetaData).ordinal);
-                return ((0 < v) ? 1 : ((v < 0) ? -1 : 0));
-#endif
-
+                if (ODB.IsRunningOnX86)
+                {
+                    return ((int)ordinal - (int)(obj as MetaData).ordinal);
+                }
+                else
+                {
+                    long v = ((long)ordinal - (long)(obj as MetaData).ordinal);
+                    return ((0 < v) ? 1 : ((v < 0) ? -1 : 0));
+                }
             }
             return (isHidden) ? 1 : -1; // ensure that all hidden columns come after non-hidden columns
         }

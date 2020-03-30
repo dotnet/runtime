@@ -5059,7 +5059,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			case STACK_TYPE_I8:
 #if SIZEOF_VOID_P == 4
-				interp_add_ins (td, MINT_CONV_OVF_I4_UN_I8);
+				interp_add_ins (td, MINT_CONV_OVF_I4_U8);
 #endif
 				break;
 			case STACK_TYPE_I4:
@@ -6783,6 +6783,14 @@ interp_local_deadce (TransformData *td, int *local_ref_count)
 		result.field_dst = (cast_type)sp->val.field_src; \
 		break;
 
+#define INTERP_FOLD_CONV_FULL(opcode,stack_type_dst,field_dst,stack_type_src,field_src,cast_type,cond) \
+	case opcode: \
+		g_assert (sp->val.type == stack_type_src); \
+		if (!(cond)) goto cfold_failed; \
+		result.type = stack_type_dst; \
+		result.field_dst = (cast_type)sp->val.field_src; \
+		break;
+
 static InterpInst*
 interp_fold_unop (TransformData *td, StackContentInfo *sp, InterpInst *ins)
 {
@@ -6834,6 +6842,30 @@ interp_fold_unop (TransformData *td, StackContentInfo *sp, InterpInst *ins)
 
 			INTERP_FOLD_CONV (MINT_CONV_I8_I4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, gint32);
 			INTERP_FOLD_CONV (MINT_CONV_I8_U4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, guint32);
+
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint8, sp [0].val.i >= G_MININT8 && sp [0].val.i <= G_MAXINT8);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint8, sp [0].val.l >= G_MININT8 && sp [0].val.l <= G_MAXINT8);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_U4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint8, sp [0].val.i >= 0 && sp [0].val.i <= G_MAXINT8);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I1_U8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint8, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXINT8);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U1_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint8, sp [0].val.i >= 0 && sp [0].val.i <= G_MAXUINT8);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U1_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint8, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXUINT8);
+
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint16, sp [0].val.i >= G_MININT16 && sp [0].val.i <= G_MAXINT16);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, i, gint16, sp [0].val.l >= G_MININT16 && sp [0].val.l <= G_MAXINT16);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_U4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint16, sp [0].val.i >= 0 && sp [0].val.i <= G_MAXINT16);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I2_U8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint16, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXINT16);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U2_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint16, sp [0].val.i >= 0 && sp [0].val.i <= G_MAXUINT16);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U2_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint16, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXUINT16);
+
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_U4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, gint32, sp [0].val.i >= 0);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint32, sp [0].val.l >= G_MININT32 && sp [0].val.l <= G_MAXINT32);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I4_U8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, gint32, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXINT32);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U4_I4, STACK_VALUE_I4, i, STACK_VALUE_I4, i, guint32, sp [0].val.i >= 0);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U4_I8, STACK_VALUE_I4, i, STACK_VALUE_I8, l, guint32, sp [0].val.l >= 0 && sp [0].val.l <= G_MAXINT32);
+
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_I8_U8, STACK_VALUE_I8, l, STACK_VALUE_I8, l, gint64, sp [0].val.l >= 0);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U8_I4, STACK_VALUE_I8, l, STACK_VALUE_I4, i, guint64, sp [0].val.i >= 0);
+			INTERP_FOLD_CONV_FULL (MINT_CONV_OVF_U8_I8, STACK_VALUE_I8, l, STACK_VALUE_I8, l, guint64, sp [0].val.l >= 0);
 
 			default:
 				goto cfold_failed;

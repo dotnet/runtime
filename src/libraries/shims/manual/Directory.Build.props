@@ -14,7 +14,7 @@
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(OutDirName)'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)</IntermediateOutputPath>
     <!-- Use runtime assemblies for the TargetFramework, using TargetOS -->
-    <ShimRefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup)/</ShimRefPath>
+    <ShimRefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)/</ShimRefPath>
     <CoreCLRTargetOS>$(TargetOS)</CoreCLRTargetOS>
     <MonoTargetOS>$(TargetOS)</MonoTargetOS>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>

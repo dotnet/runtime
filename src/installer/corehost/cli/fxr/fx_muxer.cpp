@@ -1009,11 +1009,11 @@ int fx_muxer_t::handle_cli(
             return StatusCode::Success;
         }
 
-        trace::error(_X("Could not execute because the application was not found or a compatible .NET Core SDK is not installed."));
+        trace::error(_X("Could not execute because the application was not found or a compatible .NET SDK is not installed."));
         trace::error(_X("Possible reasons for this include:"));
-        trace::error(_X("  * You intended to execute a .NET Core program:"));
+        trace::error(_X("  * You intended to execute a .NET program:"));
         trace::error(_X("      The application '%s' does not exist."), app_candidate.c_str());
-        trace::error(_X("  * You intended to execute a .NET Core SDK command:"));
+        trace::error(_X("  * You intended to execute a .NET SDK command:"));
         resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
         return StatusCode::LibHostSdkFindFailure;
@@ -1023,7 +1023,7 @@ int fx_muxer_t::handle_cli(
 
     if (!pal::file_exists(sdk_dotnet))
     {
-        trace::error(_X("Found .NET Core SDK, but did not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
+        trace::error(_X("Found .NET SDK, but did not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
         return StatusCode::LibHostSdkFindFailure;
     }
 
@@ -1035,7 +1035,7 @@ int fx_muxer_t::handle_cli(
     new_argv.push_back(sdk_dotnet.c_str());
     new_argv.insert(new_argv.end(), argv + 1, argv + argc);
 
-    trace::verbose(_X("Using .NET Core SDK dll=[%s]"), sdk_dotnet.c_str());
+    trace::verbose(_X("Using .NET SDK dll=[%s]"), sdk_dotnet.c_str());
 
     int new_argoff;
     pal::string_t sdk_app_candidate;

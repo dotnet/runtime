@@ -120,7 +120,7 @@ Example building for armel
 src/Native/build-native.sh armel
 --> Output goes to artifacts/bin/runtime/netcoreapp5.0-Linux-Debug-armel
 
-build /p:ArchGroup=x64 /p:BuildNative=false
+build /p:TargetArchitecture=x64 /p:BuildNative=false
 --> Output goes to artifacts/bin/runtime/netcoreapp5.0-Linux-Debug-x64
 ```
 
