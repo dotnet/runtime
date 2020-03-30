@@ -307,7 +307,7 @@ IpcStream::~IpcStream()
     }
 }
 
-bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead) const
+bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead)
 {
     _ASSERTE(lpBuffer != nullptr);
 
@@ -323,7 +323,7 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
     return fSuccess;
 }
 
-bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten) const
+bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten)
 {
     _ASSERTE(lpBuffer != nullptr);
 
