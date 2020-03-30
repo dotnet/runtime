@@ -8,7 +8,6 @@
   <PropertyGroup>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform>$(TargetArchitecture)</Platform>
-    <TargetArchitecture>$(TargetArchitecture)</TargetArchitecture>
 
     <PlatformConfigPathPart>$(TargetOS).$(Platform).$(Configuration)</PlatformConfigPathPart>
   </PropertyGroup>

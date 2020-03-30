@@ -240,7 +240,6 @@
 
   <PropertyGroup>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
-    <TargetArchitecture>$(TargetArchitecture)</TargetArchitecture>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
   </PropertyGroup>
 
