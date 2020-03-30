@@ -581,7 +581,7 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
 
 #define EMPTY_STRING_TO_NULL(s) {if(s && s[0] == 0) {s=NULL;};}
 
-HRESULT CorHost2::_CreateAppDomain(
+HRESULT CorHost2::CreateAppDomainWithManager(
     LPCWSTR wszFriendlyName,
     DWORD  dwFlags,
     LPCWSTR wszAppDomainManagerAssemblyName,
@@ -746,7 +746,7 @@ HRESULT CorHost2::_CreateAppDomain(
     return hr;
 }
 
-HRESULT CorHost2::_CreateDelegate(
+HRESULT CorHost2::CreateDelegate(
     DWORD appDomainID,
     LPCWSTR wszAssemblyName,
     LPCWSTR wszClassName,
@@ -819,11 +819,25 @@ HRESULT CorHost2::_CreateDelegate(
             }
         }
 
-        if (pMD==NULL || !pMD->IsStatic() || pMD->ContainsGenericVariables())
+        if (pMD==NULL || !pMD->IsStatic() || pMD->HasClassOrMethodInstantiation())
             ThrowHR(COR_E_MISSINGMETHOD);
 
-        UMEntryThunk *pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
-        *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
+        if (pMD->HasNativeCallableAttribute())
+        {
+            if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
+                ThrowHR(COR_E_INVALIDPROGRAM);
+
+#ifdef TARGET_X86
+            *fnPtr = (INT_PTR)COMDelegate::ConvertToCallback(pMD);
+#else
+            *fnPtr = pMD->GetMultiCallableAddrOfCode();
+#endif
+        }
+        else
+        {
+            UMEntryThunk* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
+            *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
+        }
     }
 
     END_EXTERNAL_ENTRYPOINT;
@@ -831,41 +845,6 @@ HRESULT CorHost2::_CreateDelegate(
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
-}
-
-HRESULT CorHost2::CreateAppDomainWithManager(
-    LPCWSTR wszFriendlyName,
-    DWORD  dwFlags,
-    LPCWSTR wszAppDomainManagerAssemblyName,
-    LPCWSTR wszAppDomainManagerTypeName,
-    int nProperties,
-    LPCWSTR* pPropertyNames,
-    LPCWSTR* pPropertyValues,
-    DWORD* pAppDomainID)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return _CreateAppDomain(
-        wszFriendlyName,
-        dwFlags,
-        wszAppDomainManagerAssemblyName,
-        wszAppDomainManagerTypeName,
-        nProperties,
-        pPropertyNames,
-        pPropertyValues,
-        pAppDomainID);
-}
-
-HRESULT CorHost2::CreateDelegate(
-    DWORD appDomainID,
-    LPCWSTR wszAssemblyName,
-    LPCWSTR wszClassName,
-    LPCWSTR wszMethodName,
-    INT_PTR* fnPtr)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return _CreateDelegate(appDomainID, wszAssemblyName, wszClassName, wszMethodName, fnPtr);
 }
 
 HRESULT CorHost2::Authenticate(ULONGLONG authKey)

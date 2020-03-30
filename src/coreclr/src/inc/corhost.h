@@ -192,24 +192,6 @@ private:
     BOOL m_fStarted;
     BOOL m_fAppDomainCreated; // this flag is used when an appdomain can only create a single appdomain
 
-    // Helpers for both ICLRRuntimeHost2
-    HRESULT _CreateAppDomain(
-        LPCWSTR wszFriendlyName,
-        DWORD  dwFlags,
-        LPCWSTR wszAppDomainManagerAssemblyName,
-        LPCWSTR wszAppDomainManagerTypeName,
-        int nProperties,
-        LPCWSTR* pPropertyNames,
-        LPCWSTR* pPropertyValues,
-        DWORD* pAppDomainID);
-
-    HRESULT _CreateDelegate(
-        DWORD appDomainID,
-        LPCWSTR wszAssemblyName,
-        LPCWSTR wszClassName,
-        LPCWSTR wszMethodName,
-        INT_PTR* fnPtr);
-
     // entrypoint helper to be wrapped in a filter to process unhandled exceptions
     VOID ExecuteMainInner(Assembly* pRootAssembly);
 

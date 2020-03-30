@@ -221,10 +221,13 @@ namespace Internal.Runtime.InteropServices
         /// <summary>
         /// Internal entry point for unmanaged COM activation API from native code
         /// </summary>
-        /// <param name="cxtInt">Reference to a <see cref="ComActivationContextInternal"/> instance</param>
+        /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [CLSCompliant(false)]
-        public static unsafe int GetClassFactoryForTypeInternal(ref ComActivationContextInternal cxtInt)
+        [NativeCallable]
+        public static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
+            ref ComActivationContextInternal cxtInt = ref *pCxtInt;
+
             if (IsLoggingEnabled())
             {
                 Log(
@@ -255,10 +258,13 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         /// <summary>
         /// Internal entry point for registering a managed COM server API from native code
         /// </summary>
-        /// <param name="cxtInt">Reference to a <see cref="ComActivationContextInternal"/> instance</param>
+        /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [CLSCompliant(false)]
-        public static unsafe int RegisterClassForTypeInternal(ref ComActivationContextInternal cxtInt)
+        [NativeCallable]
+        public static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
+            ref ComActivationContextInternal cxtInt = ref *pCxtInt;
+
             if (IsLoggingEnabled())
             {
                 Log(
@@ -294,8 +300,11 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
         /// Internal entry point for unregistering a managed COM server API from native code
         /// </summary>
         [CLSCompliant(false)]
-        public static unsafe int UnregisterClassForTypeInternal(ref ComActivationContextInternal cxtInt)
+        [NativeCallable]
+        public static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
+            ref ComActivationContextInternal cxtInt = ref *pCxtInt;
+
             if (IsLoggingEnabled())
             {
                 Log(
