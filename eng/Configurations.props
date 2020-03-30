@@ -12,12 +12,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">OSX</__TargetOS>
-    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</__TargetOS>
-    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</__TargetOS>
-    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</__TargetOS>
-    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">Windows_NT</__TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == ''">$(__TargetOS)</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">OSX</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">Windows_NT</TargetOS>
     <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
     <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
     <LibrariesTargetOS Condition="'$(LibrariesTargetOS)' == ''">$(TargetOS)</LibrariesTargetOS>

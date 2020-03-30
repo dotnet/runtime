@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">$(TargetArchitecture)</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
@@ -413,7 +413,7 @@
   <ItemGroup>
     <EventingGenerationScript Include="$(CoreClrProjectRoot)/src/scripts/genRuntimeEventSources.py" />
     <EventManifestFile Include="$(CoreClrProjectRoot)/src/vm/ClrEtwAll.man" />
-    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(TargetArchitecture)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
       <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.CoreCLR.cs</Link>
     </EventingSourceFile>
     <Compile Include="@(EventingSourceFile)" />
