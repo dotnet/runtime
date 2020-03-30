@@ -1,4 +1,4 @@
-<Project>
+<Project DefaultTargets="Build">
   <Import Project="Directory.Build.props" />
   <Import Project="Directory.Build.targets" />
   <PropertyGroup>
