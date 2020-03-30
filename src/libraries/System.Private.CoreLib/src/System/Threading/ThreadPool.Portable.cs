@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
@@ -104,7 +103,7 @@ namespace System.Threading
         /// </summary>
         private int _numRequestedCallbacks;
 
-        private LowLevelLock _callbackLock = new LowLevelLock();
+        private readonly LowLevelLock _callbackLock = new LowLevelLock();
 
         /// <summary>
         /// Notes if we need to signal the user's unregister event after all callbacks complete.

@@ -1661,9 +1661,7 @@ namespace Internal.JitInterface
             pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, methodToCall);
 
             var targetDetails = _compilation.TypeSystemContext.Target;
-            if (targetDetails.Architecture == TargetArchitecture.X86
-                && targetDetails.OperatingSystem == TargetOS.Windows
-                && targetMethod.IsNativeCallable)
+            if (targetDetails.Architecture == TargetArchitecture.X86 && targetMethod.IsNativeCallable)
             {
                 throw new RequiresRuntimeJitException("ReadyToRun: References to methods with NativeCallableAttribute not implemented");
             }
@@ -2176,24 +2174,6 @@ namespace Internal.JitInterface
         {
             *pCookieVal = IntPtr.Zero;
             *ppCookieVal = (IntPtr *)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.GSCookie));
-        }
-
-        /// <summary>
-        /// Record patchpoint info for the method
-        /// </summary>
-        private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
-        {
-            // No patchpoint info when prejitting
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Retrieve OSR info for the method
-        /// </summary>
-        private PatchpointInfo* getOSRInfo(ref uint ilOffset)
-        {
-            // No patchpoint info when prejitting
-            throw new NotImplementedException();
         }
 
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)

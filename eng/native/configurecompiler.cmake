@@ -413,7 +413,6 @@ if (MSVC)
 
   # The following options are set by the razzle build
   add_compile_options(/TP) # compile all files as C++
-  add_compile_options(/d2Zi+) # make optimized builds debugging easier
   add_compile_options(/nologo) # Suppress Startup Banner
   add_compile_options(/W3) # set warning level to 3
   add_compile_options(/WX) # treat warnings as errors
@@ -422,7 +421,6 @@ if (MSVC)
   add_compile_options(/U_MT) # undefine the predefined _MT macro
   add_compile_options(/GF) # enable read-only string pooling
   add_compile_options(/Gm-) # disable minimal rebuild
-  add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
   add_compile_options(/Zp8) # pack structs on 8-byte boundary
   add_compile_options(/Gy) # separate functions for linker
   add_compile_options(/Zc:wchar_t-) # C++ language conformance: wchar_t is NOT the native type, but a typedef

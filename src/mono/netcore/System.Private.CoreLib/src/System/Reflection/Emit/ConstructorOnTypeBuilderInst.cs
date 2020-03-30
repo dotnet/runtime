@@ -29,9 +29,7 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
 using System.Globalization;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -125,9 +123,8 @@ namespace System.Reflection.Emit
         internal override ParameterInfo[] GetParametersInternal()
         {
             ParameterInfo[] res;
-            if (cb is ConstructorBuilder)
+            if (cb is ConstructorBuilder cbuilder)
             {
-                ConstructorBuilder cbuilder = (ConstructorBuilder)cb;
                 res = new ParameterInfo[cbuilder.parameters.Length];
                 for (int i = 0; i < cbuilder.parameters.Length; i++)
                 {
@@ -169,7 +166,7 @@ namespace System.Reflection.Emit
         // Called from the runtime to return the corresponding finished ConstructorInfo object
         internal ConstructorInfo RuntimeResolve()
         {
-            var type = instantiation.InternalResolve();
+            Type type = instantiation.InternalResolve();
             return type.GetConstructor(cb);
         }
 

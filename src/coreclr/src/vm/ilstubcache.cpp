@@ -279,6 +279,9 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         if (SF_IsReverseStub(dwStubFlags))
         {
             pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdReverseStub;
+#if !defined(TARGET_X86)
+            pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdNativeCallableStub;
+#endif
             pMD->GetILStubResolver()->SetStubType(ILStubResolver::NativeToCLRInteropStub);
         }
         else

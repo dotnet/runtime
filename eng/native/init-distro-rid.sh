@@ -67,6 +67,9 @@ initNonPortableDistroRid()
             __freebsd_major_version=$($rootfsDir/bin/freebsd-version | { read v; echo "${v%%.*}"; })
             nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
         fi
+    elif getprop ro.product.system.model 2>&1 | grep -qi android; then
+        __android_sdk_version=$(getprop ro.build.version.sdk)
+        nonPortableBuildID="android.$__android_sdk_version-${buildArch}"
     fi
 
     if [ -n "${nonPortableBuildID}" ]; then

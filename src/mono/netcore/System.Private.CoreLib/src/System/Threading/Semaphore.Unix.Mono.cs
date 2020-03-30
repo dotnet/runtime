@@ -94,10 +94,10 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern IntPtr CreateSemaphore_icall(int initialCount, int maximumCount, char* name, int nameLength, out MonoIOError errorCode);
+        private static extern unsafe IntPtr CreateSemaphore_icall(int initialCount, int maximumCount, char* name, int nameLength, out MonoIOError errorCode);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern IntPtr OpenSemaphore_icall(char* name, int nameLength, int rights, out MonoIOError errorCode);
+        private static extern unsafe IntPtr OpenSemaphore_icall(char* name, int nameLength, int rights, out MonoIOError errorCode);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool ReleaseSemaphore_internal(IntPtr handle, int releaseCount, out int previousCount);

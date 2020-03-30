@@ -2452,10 +2452,6 @@ mono_image_close_except_pools (MonoImage *image)
 
 	mono_wrapper_caches_free (&image->wrapper_caches);
 
-	for (i = 0; i < image->gshared_types_len; ++i)
-		free_hash (image->gshared_types [i]);
-	g_free (image->gshared_types);
-
 	/* The ownership of signatures is not well defined */
 	g_hash_table_destroy (image->memberref_signatures);
 	g_hash_table_destroy (image->method_signatures);

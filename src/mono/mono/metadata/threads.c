@@ -2314,6 +2314,22 @@ ves_icall_System_Threading_WaitHandle_Wait_internal (gpointer *handles, gint32 n
 
 	MonoW32HandleWaitRet ret;
 
+#ifdef DISABLE_THREADS
+	if (numhandles == 1 && timeout == MONO_INFINITE_WAIT) {
+		gboolean signalled = FALSE;
+		for (int i = 0; i < numhandles; ++i) {
+			if (mono_w32handle_handle_is_owned (handles [i]) || mono_w32handle_handle_is_signalled (handles [i])) {
+				signalled = TRUE;
+				break;
+			}
+		}
+		if (!signalled) {
+			mono_error_set_synchronization_lock (error, "Cannot wait on events on this runtime.");
+			return 0;
+		}
+	}
+#endif
+
 	HANDLE_LOOP_PREPARE;
 
 	for (;;) {

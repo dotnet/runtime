@@ -29,7 +29,7 @@ namespace System
         {
             if (trackResurrection)
             {
-                trackResurrection = true;
+                this.trackResurrection = true;
                 handle = GCHandle.Alloc(target, GCHandleType.WeakTrackResurrection);
             }
             else

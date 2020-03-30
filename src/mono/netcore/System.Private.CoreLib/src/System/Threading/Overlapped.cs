@@ -11,8 +11,8 @@ namespace System.Threading
 
     internal unsafe class _IOCompletionCallback
     {
-        private IOCompletionCallback _ioCompletionCallback;
-        private ExecutionContext _executionContext;
+        private readonly IOCompletionCallback _ioCompletionCallback;
+        private readonly ExecutionContext _executionContext;
         private uint _errorCode; // Error code
         private uint _numBytes; // No. of bytes transferred
         private NativeOverlapped* _pNativeOverlapped;
@@ -65,7 +65,7 @@ namespace System.Threading
 
     #region class OverlappedData
 
-    internal unsafe sealed class OverlappedData
+    internal sealed unsafe class OverlappedData
     {
         internal IAsyncResult _asyncResult;
         internal object _callback; // IOCompletionCallback or _IOCompletionCallback

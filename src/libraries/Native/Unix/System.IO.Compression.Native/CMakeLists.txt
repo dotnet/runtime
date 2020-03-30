@@ -56,7 +56,7 @@ if (GEN_SHARED_LIB)
     target_link_libraries(System.IO.Compression.Native
         ${ZLIB_LIBRARIES}
     )
-    install_library_and_symbols (System.IO.Compression.Native)
+    install_with_stripped_symbols (System.IO.Compression.Native PROGRAMS .)
 endif ()
 
 add_library(System.IO.Compression.Native-Static

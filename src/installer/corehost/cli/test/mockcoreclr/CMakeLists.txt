@@ -17,5 +17,4 @@ endif()
 
 include(../testlib.cmake)
 
-install(TARGETS mockcoreclr DESTINATION corehost_test)
-install_symbols(mockcoreclr corehost_test)
+install_with_stripped_symbols(mockcoreclr TARGETS corehost_test)

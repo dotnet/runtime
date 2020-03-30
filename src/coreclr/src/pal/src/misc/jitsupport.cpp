@@ -32,6 +32,7 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 // From a single binary distribution perspective, compiling with latest kernel asm/hwcap.h should
 // include all published flags.  Given flags are merged to kernel and published before silicon is
 // available, using the latest kernel for release should be sufficient.
+    CPUCompileFlags.Set(InstructionSet_ArmBase);
 #ifdef HWCAP_AES
     if (hwCap & HWCAP_AES)
         CPUCompileFlags.Set(InstructionSet_Aes);

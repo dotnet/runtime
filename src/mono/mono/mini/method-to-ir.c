@@ -1367,8 +1367,19 @@ mono_create_rgctx_var (MonoCompile *cfg)
 	if (!cfg->rgctx_var) {
 		cfg->rgctx_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		/* force the var to be stack allocated */
-		cfg->rgctx_var->flags |= MONO_INST_VOLATILE;
+		if (!cfg->llvm_only)
+			cfg->rgctx_var->flags |= MONO_INST_VOLATILE;
 	}
+}
+
+static MonoInst *
+mono_get_mrgctx_var (MonoCompile *cfg)
+{
+	g_assert (cfg->gshared);
+
+	mono_create_rgctx_var (cfg);
+
+	return cfg->rgctx_var;
 }
 
 static MonoInst *
@@ -1376,6 +1387,7 @@ mono_get_vtable_var (MonoCompile *cfg)
 {
 	g_assert (cfg->gshared);
 
+	/* The mrgctx and the vtable are stored in the same var */
 	mono_create_rgctx_var (cfg);
 
 	return cfg->rgctx_var;
@@ -2467,17 +2479,27 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 			g_assert (method->is_inflated && mono_method_get_context (method)->method_inst);
 		}
 
-		mrgctx_loc = mono_get_vtable_var (cfg);
-		EMIT_NEW_TEMPLOAD (cfg, mrgctx_var, mrgctx_loc->inst_c0);
-
+		if (cfg->llvm_only) {
+			mrgctx_var = mono_get_mrgctx_var (cfg);
+		} else {
+			/* Volatile */
+			mrgctx_loc = mono_get_mrgctx_var (cfg);
+			g_assert (mrgctx_loc->flags & MONO_INST_VOLATILE);
+			EMIT_NEW_TEMPLOAD (cfg, mrgctx_var, mrgctx_loc->inst_c0);
+		}
 		return mrgctx_var;
 	} else if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass)) {
 		MonoInst *vtable_loc, *vtable_var;
 
 		g_assert (!this_ins);
 
-		vtable_loc = mono_get_vtable_var (cfg);
-		EMIT_NEW_TEMPLOAD (cfg, vtable_var, vtable_loc->inst_c0);
+		if (cfg->llvm_only) {
+			vtable_var = mono_get_vtable_var (cfg);
+		} else {
+			vtable_loc = mono_get_vtable_var (cfg);
+			g_assert (vtable_loc->flags & MONO_INST_VOLATILE);
+			EMIT_NEW_TEMPLOAD (cfg, vtable_var, vtable_loc->inst_c0);
+		}
 
 		if (method->is_inflated && mono_method_get_context (method)->method_inst) {
 			MonoInst *mrgctx_var = vtable_var;

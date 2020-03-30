@@ -100,7 +100,7 @@ namespace System.Threading
         {
             get
             {
-                var state = GetState(this);
+                ThreadState state = GetState(this);
                 return (state & (ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0;
             }
         }
@@ -109,7 +109,7 @@ namespace System.Threading
         {
             get
             {
-                var state = ValidateThreadState();
+                ThreadState state = ValidateThreadState();
                 return (state & ThreadState.Background) != 0;
             }
             set
@@ -280,7 +280,7 @@ namespace System.Threading
             else
             {
                 var pdel = (ParameterizedThreadStart)m_start;
-                var arg = m_start_arg;
+                object? arg = m_start_arg;
                 m_start = null;
                 m_start_arg = null;
                 pdel(arg);
@@ -302,7 +302,7 @@ namespace System.Threading
 
         private ThreadState ValidateThreadState()
         {
-            var state = GetState(this);
+            ThreadState state = GetState(this);
             if ((state & ThreadState.Stopped) != 0)
                 throw new ThreadStateException("Thread is dead; state can not be accessed.");
             return state;
@@ -341,7 +341,7 @@ namespace System.Threading
         private static extern string GetName(Thread thread);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern void SetName_icall(Thread thread, char* name, int nameLength);
+        private static extern unsafe void SetName_icall(Thread thread, char* name, int nameLength);
 
         private static unsafe void SetName(Thread thread, string name)
         {
