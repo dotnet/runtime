@@ -88,7 +88,7 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern IntPtr CreateEventInternal(bool manual, bool initialState, char* name, int name_length, out int errorCode);
+        private static extern unsafe IntPtr CreateEventInternal(bool manual, bool initialState, char* name, int name_length, out int errorCode);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool ResetEventInternal(IntPtr handle);

@@ -32,10 +32,6 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -238,9 +234,7 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < arguments.Length; i++)
             {
-                AddArgument(arguments[i],
-                         requiredCustomModifiers != null ? requiredCustomModifiers[i] : null,
-                         optionalCustomModifiers != null ? optionalCustomModifiers[i] : null);
+                AddArgument(arguments[i], requiredCustomModifiers?[i], optionalCustomModifiers?[i]);
             }
         }
 
@@ -378,15 +372,12 @@ namespace System.Reflection.Emit
         {
             TypeBuilder.ResolveUserTypes(arguments);
 
-            switch (type)
+            return type switch
             {
-                case SignatureHelperType.HELPER_LOCAL:
-                    return get_signature_local();
-                case SignatureHelperType.HELPER_FIELD:
-                    return get_signature_field();
-                default:
-                    throw new NotImplementedException();
-            }
+                SignatureHelperType.HELPER_LOCAL => get_signature_local(),
+                SignatureHelperType.HELPER_FIELD => get_signature_field(),
+                _ => throw new NotImplementedException(),
+            };
         }
 
         public override string ToString()

@@ -15,8 +15,8 @@ namespace System.Threading
     {
         private CacheLineSeparatedCounts _separated;
 
-        private int _maximumSignalCount;
-        private int _spinCount;
+        private readonly int _maximumSignalCount;
+        private readonly int _spinCount;
 
         private const int SpinSleep0Threshold = 10;
 
@@ -287,9 +287,9 @@ namespace System.Threading
         [StructLayout(LayoutKind.Sequential)]
         private struct CacheLineSeparatedCounts
         {
-            private Internal.PaddingFor32 _pad1;
+            private readonly Internal.PaddingFor32 _pad1;
             public Counts _counts;
-            private Internal.PaddingFor32 _pad2;
+            private readonly Internal.PaddingFor32 _pad2;
         }
     }
 }

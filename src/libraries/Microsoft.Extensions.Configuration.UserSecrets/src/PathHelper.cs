@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
         {
             if (string.IsNullOrEmpty(userSecretsId))
             {
-                throw new ArgumentException(Resources.Common_StringNullOrEmpty, nameof(userSecretsId));
+                throw new ArgumentException(SR.Common_StringNullOrEmpty, nameof(userSecretsId));
             }
 
             var badCharIndex = userSecretsId.IndexOfAny(Path.GetInvalidFileNameChars());
@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
             {
                 throw new InvalidOperationException(
                     string.Format(
-                        Resources.Error_Invalid_Character_In_UserSecrets_Id,
+                        SR.Error_Invalid_Character_In_UserSecrets_Id,
                         userSecretsId[badCharIndex],
                         badCharIndex));
             }

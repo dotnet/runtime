@@ -11,9 +11,6 @@ namespace System.Security.Cryptography.Dsa.Tests
 {
     public abstract class DSASignatureFormatTests : DsaFamilySignatureFormatTests
     {
-        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
-
-        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool SupportsSha2 => DSAFactory.SupportsFips186_3;
         protected override string HashParameterName => "rgbHash";
         protected override string SignatureParameterName => "rgbSignature";
@@ -50,7 +47,7 @@ namespace System.Security.Cryptography.Dsa.Tests
                 dsaParameters.Q.Length * 8);
         }
 
-        private static IEnumerable<KeyDescription> LocalGenerateTestKeys()
+        protected static IEnumerable<KeyDescription> LocalGenerateTestKeys()
         {
             if (DSAFactory.SupportsKeyGeneration)
             {
@@ -73,6 +70,9 @@ namespace System.Security.Cryptography.Dsa.Tests
 
     public sealed class DsaArraySignatureFormatTests : DSASignatureFormatTests
     {
+        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
+
+        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool IsArrayBased => true;
 
         protected override byte[] SignHash(
@@ -114,6 +114,9 @@ namespace System.Security.Cryptography.Dsa.Tests
 
     public sealed class DsaArrayOffsetSignatureFormatTests : DSASignatureFormatTests
     {
+        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
+
+        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool IsArrayBased => true;
 
         protected override byte[] SignHash(
@@ -232,6 +235,9 @@ namespace System.Security.Cryptography.Dsa.Tests
 
     public sealed class DsaSpanSignatureFormatTests : DSASignatureFormatTests
     {
+        private static readonly KeyDescription[] s_keys = LocalGenerateTestKeys().ToArray();
+
+        protected override KeyDescription[] GenerateTestKeys() => s_keys;
         protected override bool IsArrayBased => false;
 
         protected override byte[] SignHash(

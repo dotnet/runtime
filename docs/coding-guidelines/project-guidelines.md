@@ -6,7 +6,7 @@ once before you can iterate and work on a given library project.
 
 - Setup tools (currently done in restore in build.cmd/sh)
 - Restore external dependencies
- - CoreCLR - Copy to `bin\runtime\$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup)`
+ - CoreCLR - Copy to `bin\runtime\$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)`
  - Netstandard Library - Copy to `bin\ref\netstandard2.0`
  - NetFx targeting pack - Copy to `bin\ref\net472`
 - Build targeting pack
@@ -31,7 +31,7 @@ The following are the properties associated with each build pivot
 - `$(BuildTargetFramework) -> netstandard2.1 | netcoreapp5.0 | net472`
 - `$(TargetOS) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(Configuration) -> Release | [defaults to Debug when empty]`
-- `$(ArchGroup) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
+- `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
 - `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/runtime/tree/master/src/libraries/pkg/Microsoft.NETCore.Platforms) for more info.
 
 For more information on various targets see also [.NET Standard](https://github.com/dotnet/standard/blob/master/docs/versions.md)
@@ -45,7 +45,7 @@ Each project will define a set of supported TargetFrameworks
 <PropertyGroup>
 ```
 
-- `$(BuildSettings) -> $(BuildTargetFramework)[-$(TargetOS)][-$(Configuration)][-$(ArchGroup)]`
+- `$(BuildSettings) -> $(BuildTargetFramework)[-$(TargetOS)][-$(Configuration)][-$(TargetArchitecture)]`
  - Note this property should be file path safe and thus can be used in file names or directories that need to a unique path for a project configuration.
  - The only required Build Settings value is the `$(BuildTargetFramework)` the others are optional.
 
@@ -79,9 +79,9 @@ When we have a project that has a `netstandard2.0` target framework that means t
 
 ## Options for building
 
-A full or individual project build is centered around BuildTargetFramework, TargetOS, Configuration and ArchGroup.
+A full or individual project build is centered around BuildTargetFramework, TargetOS, Configuration and TargetArchitecture.
 
-1. `$(BuildTargetFramework), $(TargetOS), $(Configuration), $(ArchGroup)` can individually be passed in to change the default values.
+1. `$(BuildTargetFramework), $(TargetOS), $(Configuration), $(TargetArchitecture)` can individually be passed in to change the default values.
 2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `netcoreapp5.0-[TargetOS Running On]-Debug-x64`.
 3. While Building an individual project from the VS, we build the project for all latest netcoreapp target frameworks.
 
@@ -130,7 +130,7 @@ The output for the src product build will be a flat runtime folder into the foll
 `bin\runtime\$(BuildSettings)`
 
 Note: The `BuildSettings` is a global property and not the project setting because we need all projects to output to the same runtime directory no matter which compatible target framework we select and build the project with. 
-```<BuildSettings>$(BuildTargetFramework)-$(TargetOS)-(Configuration)-(ArchGroup)</BuildSettings>``` 
+```<BuildSettings>$(BuildTargetFramework)-$(TargetOS)-(Configuration)-(TargetArchitecture)</BuildSettings>``` 
 
 ## pkg
 In the pkg directory for the library there should be only **one** `.pkgproj` for the primary package for the library. If the library has platform-specific implementations those should be split into platform specific projects in a subfolder for each platform. (see [Package projects](./package-projects.md))

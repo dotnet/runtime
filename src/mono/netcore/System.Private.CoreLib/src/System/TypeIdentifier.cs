@@ -90,7 +90,7 @@ namespace System
 
         private class Display : ATypeName
         {
-            private string displayName;
+            private readonly string displayName;
 
             internal Display(string displayName)
             {
@@ -134,7 +134,7 @@ namespace System
 
         private class Display : TypeNames.ATypeName, ITypeIdentifier
         {
-            private string displayName;
+            private readonly string displayName;
             private string internal_name; //cached
 
             internal Display(string displayName)
@@ -171,7 +171,7 @@ namespace System
 
         private class Internal : TypeNames.ATypeName, ITypeIdentifier
         {
-            private string internalName;
+            private readonly string internalName;
             private string display_name; //cached
 
             internal Internal(string internalName)
@@ -213,7 +213,7 @@ namespace System
 
         private class NoEscape : TypeNames.ATypeName, ITypeIdentifier
         {
-            private string simpleName;
+            private readonly string simpleName;
             internal NoEscape(string simpleName)
             {
                 this.simpleName = simpleName;

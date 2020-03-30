@@ -32,11 +32,7 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
@@ -163,7 +159,7 @@ namespace System.Reflection.Emit
             RejectIfCreated();
 
             /*if (defaultValue.GetType() != type)
-                throw new ArgumentException ("Constant doesn't match field type");*/
+                throw new ArgumentException("Constant doesn't match field type");*/
             def_value = defaultValue;
         }
 

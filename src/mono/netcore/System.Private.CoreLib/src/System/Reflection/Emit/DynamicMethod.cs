@@ -34,10 +34,7 @@
 #nullable disable
 #if MONO_FEATURE_SRE
 
-using System;
 using System.Text;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -91,7 +88,7 @@ namespace System.Reflection.Emit
         {
         }
 
-        public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, Type owner, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, owner, owner != null ? owner.Module : null, skipVisibility, false, true)
+        public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, Type owner, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, owner, owner?.Module, skipVisibility, false, true)
         {
         }
 
@@ -167,9 +164,8 @@ namespace System.Reflection.Emit
                         {
                             for (int i = 0; i < refs.Length; ++i)
                             {
-                                if (refs[i] is DynamicMethod)
+                                if (refs[i] is DynamicMethod m)
                                 {
-                                    DynamicMethod m = (DynamicMethod)refs[i];
                                     if (!m.creating)
                                         m.CreateDynMethod();
                                 }

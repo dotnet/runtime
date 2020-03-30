@@ -49,25 +49,25 @@
     <!-- Generate Version files -->
     <ItemGroup>
       <HostFiles Include="dotnet">
-       <FileDescription>.NET Core Host</FileDescription>
+       <FileDescription>.NET Host</FileDescription>
       </HostFiles>
       <HostFiles Include="hostfxr">
-        <FileDescription>.NET Core Host Resolver - $(HostResolverVersion)</FileDescription>
+        <FileDescription>.NET Host Resolver - $(HostResolverVersion)</FileDescription>
       </HostFiles>
       <HostFiles Include="hostpolicy">
-        <FileDescription>.NET Core Host Policy - $(HostPolicyVersion)</FileDescription>
+        <FileDescription>.NET Host Policy - $(HostPolicyVersion)</FileDescription>
       </HostFiles>
       <HostFiles Include="comhost">
-        <FileDescription>.NET Core COM Host</FileDescription>
+        <FileDescription>.NET COM Host</FileDescription>
       </HostFiles>
       <HostFiles Include="ijwhost">
-        <FileDescription>.NET Core IJW Host</FileDescription>
+        <FileDescription>.NET IJW Host</FileDescription>
       </HostFiles>
       <HostFiles Include="winrthost">
-        <FileDescription>.NET Core WinRT Host</FileDescription>
+        <FileDescription>.NET WinRT Host</FileDescription>
       </HostFiles>
       <HostFiles Include="nethost">
-        <FileDescription>.NET Core Component Host</FileDescription>
+        <FileDescription>.NET Component Host</FileDescription>
       </HostFiles>
     </ItemGroup>
 
