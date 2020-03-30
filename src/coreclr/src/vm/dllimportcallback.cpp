@@ -857,7 +857,7 @@ extern "C" VOID STDCALL ReversePInvokeBadTransition()
     // Fail
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
                                              COR_E_EXECUTIONENGINE,
-                                             W("Invalid Program: attempted to call a NativeCallable method from runtime-typesafe code.")
+                                             W("Invalid Program: attempted to call a NativeCallable method from managed code.")
                                             );
 }
 
