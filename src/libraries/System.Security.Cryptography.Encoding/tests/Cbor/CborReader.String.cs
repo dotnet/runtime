@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] result = new byte[length];
             _buffer.Slice(1 + additionalBytes, length).CopyTo(result);
             AdvanceBuffer(1 + additionalBytes + length);
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
             return result;
         }
 
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             _buffer.Span.Slice(1 + additionalBytes, length).CopyTo(destination);
             AdvanceBuffer(1 + additionalBytes + length);
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
 
             bytesWritten = length;
             return true;
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             ReadOnlySpan<byte> encodedString = _buffer.Span.Slice(1 + additionalBytes, length);
             string result = s_utf8Encoding.GetString(encodedString);
             AdvanceBuffer(1 + additionalBytes + length);
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
             return result;
         }
 
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             s_utf8Encoding.GetChars(encodedSlice, destination);
             AdvanceBuffer(1 + additionalBytes + byteLength);
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
             charsWritten = charLength;
             return true;
         }
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
             }
 
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
             AdvanceBuffer(1);
 
             PushDataItem(CborMajorType.TextString, expectedNestedItems: null);
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("CBOR text string is not of indefinite length.");
             }
 
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
             AdvanceBuffer(1);
 
             PushDataItem(CborMajorType.ByteString, expectedNestedItems: null);
@@ -167,7 +167,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             bytesWritten = concatenatedBufferSize;
             AdvanceBuffer(encodingLength);
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
             ReturnRangeList(ranges);
             return true;
         }
@@ -197,7 +197,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             charsWritten = concatenatedStringSize;
             AdvanceBuffer(encodingLength);
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
             ReturnRangeList(ranges);
             return true;
         }
@@ -218,7 +218,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Debug.Assert(target.IsEmpty);
             AdvanceBuffer(encodingLength);
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
             ReturnRangeList(ranges);
             return output;
         }
@@ -237,7 +237,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             string output = string.Create(concatenatedStringSize, (ranges, _buffer), BuildString);
 
             AdvanceBuffer(encodingLength);
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
             ReturnRangeList(ranges);
             return output;
 

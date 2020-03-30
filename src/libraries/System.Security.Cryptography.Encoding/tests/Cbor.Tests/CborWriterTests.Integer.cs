@@ -129,6 +129,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Equal("Buffer contains incomplete CBOR document.", exn.Message);
         }
+
+        [Fact]
+        public static void WriteTag_NoValueInNestedContext_ShouldThrowInvalidOperationException()
+        {
+            using var writer = new CborWriter();
+
+            writer.WriteStartArrayIndefiniteLength();
+            writer.WriteTag(CborTag.Uri);
+            Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
+        }
     }
 
     internal static class AssertHelper

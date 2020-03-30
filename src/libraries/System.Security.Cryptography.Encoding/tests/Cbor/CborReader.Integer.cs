@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 case CborMajorType.UnsignedInteger:
                     ulong value = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
                     AdvanceBuffer(1 + additionalBytes);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return value;
 
                 case CborMajorType.NegativeInteger:
@@ -42,13 +42,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 case CborMajorType.UnsignedInteger:
                     value = checked((long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
                     AdvanceBuffer(1 + additionalBytes);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return value;
 
                 case CborMajorType.NegativeInteger:
                     value = checked(-1 - (long)ReadUnsignedInteger(_buffer.Span, header, out additionalBytes));
                     AdvanceBuffer(1 + additionalBytes);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return value;
 
                 default:
@@ -61,6 +61,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Tag);
             ulong tag = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
             AdvanceBuffer(1 + additionalBytes);
+            // NB tag reads do not advance data item counters
+            _isTagContext = true;
             return (CborTag)tag;
         }
 
@@ -71,7 +73,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.NegativeInteger);
             ulong value = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
             AdvanceBuffer(1 + additionalBytes);
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
             return value;
         }
 

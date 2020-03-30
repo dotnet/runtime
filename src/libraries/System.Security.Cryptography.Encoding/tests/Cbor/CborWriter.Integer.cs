@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public void WriteUInt64(ulong value)
         {
             WriteUnsignedInteger(CborMajorType.UnsignedInteger, value);
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
         }
 
         // Implements major type 0,1 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
@@ -28,12 +28,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 WriteUnsignedInteger(CborMajorType.UnsignedInteger, (ulong)value);
             }
 
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
         }
 
         public void WriteTag(CborTag tag)
         {
             WriteUnsignedInteger(CborMajorType.Tag, (ulong)tag);
+            // NB tag writes do not advance date item counters
+            _isTagContext = true;
         }
 
         // Unsigned integer encoding https://tools.ietf.org/html/rfc7049#section-2.1

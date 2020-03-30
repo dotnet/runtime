@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             WriteInitialByte(new CborInitialByte(CborMajorType.Special, CborAdditionalInfo.Additional32BitData));
             BinaryPrimitives.WriteSingleBigEndian(_buffer.AsSpan(_offset), value);
             _offset += 4;
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
         }
 
         public void WriteDouble(double value)
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             WriteInitialByte(new CborInitialByte(CborMajorType.Special, CborAdditionalInfo.Additional64BitData));
             BinaryPrimitives.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
             _offset += 8;
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
         }
 
         public void WriteBoolean(bool value)
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 _buffer[_offset++] = (byte)value;
             }
 
-            DecrementRemainingItemCount();
+            AdvanceDataItemCounters();
         }
     }
 }

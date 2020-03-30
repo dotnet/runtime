@@ -47,6 +47,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private ulong? _remainingDataItems = 1;
         private bool _isEvenNumberOfDataItemsRead = true; // required for indefinite-length map writes
         private Stack<(CborMajorType type, bool isEvenNumberOfDataItemsWritten, ulong? remainingDataItems)>? _nestedDataItemStack;
+        private bool _isTagContext = false; // true if reader is expecting a tagged value
 
         // stores a reusable List allocation for keeping ranges in the buffer
         private List<(int offset, int length)>? _rangeListAllocation = null;
@@ -87,6 +88,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (initialByte.InitialByte == CborInitialByte.IndefiniteLengthBreakByte)
             {
+                if (_isTagContext)
+                {
+                    // indefinite-length collection has ended without providing value for tag
+                    return CborReaderState.FormatError;
+                }
+
                 if (_remainingDataItems == null)
                 {
                     // stack guaranteed to be populated since root context cannot be indefinite-length
@@ -260,15 +267,21 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("Definite-length nested CBOR data item is incomplete.");
             }
 
+            if (_isTagContext)
+            {
+                throw new FormatException("CBOR tag should be followed by a data item.");
+            }
+
             _nestedDataItemStack.Pop();
             _remainingDataItems = remainingItems;
             _isEvenNumberOfDataItemsRead = isEvenNumberOfDataItemsWritten;
         }
 
-        private void DecrementRemainingItemCount()
+        private void AdvanceDataItemCounters()
         {
             _remainingDataItems--;
             _isEvenNumberOfDataItemsRead = !_isEvenNumberOfDataItemsRead;
+            _isTagContext = false;
         }
 
         private void AdvanceBuffer(int length)

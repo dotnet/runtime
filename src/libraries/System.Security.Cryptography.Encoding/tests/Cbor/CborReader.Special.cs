@@ -20,14 +20,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     EnsureBuffer(buffer, 3);
                     result = (float)ReadHalfBigEndian(buffer.Slice(1));
                     AdvanceBuffer(3);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
                     EnsureBuffer(buffer, 5);
                     result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(5);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
@@ -51,21 +51,21 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     EnsureBuffer(buffer, 3);
                     result = ReadHalfBigEndian(buffer.Slice(1));
                     AdvanceBuffer(3);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional32BitData:
                     EnsureBuffer(buffer, 5);
                     result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(5);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
                     EnsureBuffer(buffer, 9);
                     result = BinaryPrimitives.ReadDoubleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(9);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return result;
 
                 default:
@@ -81,11 +81,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 case CborAdditionalInfo.SpecialValueFalse:
                     AdvanceBuffer(1);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return false;
                 case CborAdditionalInfo.SpecialValueTrue:
                     AdvanceBuffer(1);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return true;
                 default:
                     throw new InvalidOperationException("CBOR data item does not encode a boolean value.");
@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 case CborAdditionalInfo.SpecialValueNull:
                     AdvanceBuffer(1);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return;
                 default:
                     throw new InvalidOperationException("CBOR data item does not encode a null value.");
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 case CborAdditionalInfo info when (byte)info < 24:
                     AdvanceBuffer(1);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return (CborSpecialValue)header.AdditionalInfo;
                 case CborAdditionalInfo.Additional8BitData:
                     EnsureBuffer(2);
@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     }
 
                     AdvanceBuffer(2);
-                    DecrementRemainingItemCount();
+                    AdvanceDataItemCounters();
                     return (CborSpecialValue)value;
                 default:
                     throw new InvalidOperationException("CBOR data item does not encode a special value.");

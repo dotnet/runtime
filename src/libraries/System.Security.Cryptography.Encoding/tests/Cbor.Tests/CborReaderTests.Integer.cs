@@ -243,6 +243,50 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal("Data item major type mismatch.", exn.Message);
         }
 
+        [Fact]
+        public static void ReadTag_NestedTagWithMissingPayload_ShouldThrowFormatException()
+        {
+            byte[] data = "9fc2ff".HexToByteArray();
+            var reader = new CborReader(data);
+
+            reader.ReadStartArray();
+            reader.ReadTag();
+            Assert.Equal(CborReaderState.FormatError, reader.Peek());
+            Assert.Throws<FormatException>(() => reader.ReadEndArray());
+        }
+
+        [Theory]
+        [InlineData("8201c202")] // definite length array
+        [InlineData("9f01c202ff")] // equivalent indefinite-length array
+        public static void ReadTag_CallingEndReadArrayPrematurely_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            // encoding is valid CBOR, so should not throw FormatException
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            reader.ReadStartArray();
+            reader.ReadInt64();
+            reader.ReadTag();
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
+        }
+
+        [Theory]
+        [InlineData("a102c202")] // definite length map
+        [InlineData("bf02c202ff")] // equivalent indefinite-length map
+        public static void ReadTag_CallingEndReadMapPrematurely_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            // encoding is valid CBOR, so should not throw FormatException
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            reader.ReadStartMap();
+            reader.ReadInt64();
+            reader.ReadTag();
+            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
+        }
+
         [Theory]
         [InlineData("40")] // empty byte string
         [InlineData("60")] // empty text string
