@@ -16,7 +16,7 @@ namespace System
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
-            var attrs = CustomAttribute.GetCustomAttributes(element, attributeType, inherit);
+            object[] attrs = CustomAttribute.GetCustomAttributes(element, attributeType, inherit);
             if (attrs == null || attrs.Length == 0)
                 return null;
             if (attrs.Length != 1)

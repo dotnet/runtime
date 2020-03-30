@@ -74,7 +74,7 @@ REM __PassThroughArgs is a set of things that will be passed through to nested c
 REM when using "all".
 set __PassThroughArgs=
 
-REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:__BuildArch=x64)
+REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:TargetArchitecture=x64)
 set "__args= %*"
 set processedArgs=
 set __UnprocessedBuildArgs=
@@ -263,7 +263,7 @@ if %__BuildTypeDebug%==1    set __BuildType=Debug
 if %__BuildTypeChecked%==1  set __BuildType=Checked
 if %__BuildTypeRelease%==1  set __BuildType=Release
 
-set __CommonMSBuildArgs=/p:__TargetOS=%__TargetOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch% !__SkipRestoreArg! !__OfficialBuildIdArg!
+set __CommonMSBuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch% !__SkipRestoreArg! !__OfficialBuildIdArg!
 
 if %__EnforcePgo%==1 (
     if %__BuildArchArm%==1 (
@@ -664,7 +664,7 @@ if %__BuildCoreLib% EQU 1 (
 
     if "%__BuildManagedTools%" == "1" (
         echo %__MsgPrefix%Publishing crossgen2...
-        call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /nologo /p:BuildArch=%__BuildArch%
+        call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /nologo /p:TargetArchitecture=%__BuildArch%
 
         if not !errorlevel! == 0 (
             echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to build crossgen2.

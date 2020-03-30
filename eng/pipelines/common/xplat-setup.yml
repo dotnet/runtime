@@ -12,6 +12,15 @@ jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
     variables:
+      # Disable component governance in our CI builds. These builds are not shipping nor
+      # are they a service. Also the component governance jobs issue lots of inconsequential
+      # warnings and errors into our build timelines that make it hard to track down 
+      # real errors in the build
+      - name: skipComponentGovernanceDetection
+        value: true
+      - name: runCodesignValidationInjection
+        value: false
+
       # Workaround for azure devops flakiness when dowloading artifacts
       # https://github.com/dotnet/runtime/issues/32805
       - name: System.DisableZipDownload

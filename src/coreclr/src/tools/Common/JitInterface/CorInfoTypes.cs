@@ -782,12 +782,6 @@ namespace Internal.JitInterface
         CORJIT_FUNC_FILTER         // a funclet associated with an EH filter
     }
 
-    public unsafe struct CORINFO_OSR_INFO
-    {
-        public uint ILOffset;
-        public void* PatchpointInfo;
-    }
-
     public unsafe struct CORINFO_METHOD_INFO
     {
         public CORINFO_METHOD_STRUCT_* ftn;
@@ -800,7 +794,6 @@ namespace Internal.JitInterface
         public CorInfoRegionKind regionKind;
         public CORINFO_SIG_INFO args;
         public CORINFO_SIG_INFO locals;
-        public CORINFO_OSR_INFO osrInfo;
     }
     //
     // what type of code region we are in

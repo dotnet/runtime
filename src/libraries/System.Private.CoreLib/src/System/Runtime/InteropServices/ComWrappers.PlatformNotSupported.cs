@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 
 namespace System.Runtime.InteropServices
@@ -47,7 +46,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
-        protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
+        protected abstract unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {

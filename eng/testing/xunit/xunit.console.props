@@ -1,6 +1,8 @@
 <Project>
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <TestResultsName>testResults.xml</TestResultsName>
+    <TestRunnerConfigPath>$(MSBuildThisFileDirectory)xunit.console.json</TestRunnerConfigPath>
   </PropertyGroup>
 
   <ItemGroup>

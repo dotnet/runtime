@@ -318,7 +318,7 @@
       </SharedFrameworkTokenValue>
 
       <!--
-        In every runtime deps Deb package, include alternatives known to work with .NET Core.
+        In every runtime deps Deb package, include alternatives known to work with .NET.
         Specifying these as "or" dependencies lets us create one package that works on many distros.
       -->
       <SharedFrameworkTokenValue

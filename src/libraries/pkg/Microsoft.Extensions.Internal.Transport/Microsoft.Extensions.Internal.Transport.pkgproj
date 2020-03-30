@@ -6,8 +6,9 @@
     <HarvestStablePackage>false</HarvestStablePackage>
   </PropertyGroup>
   <ItemGroup>
-    <File Include="$(ASPNETCoreAppPackageRefPath)\*.*" TargetPath="lib\$(NetCoreAppCurrent)" />
-    <File Include="$(ASPNETCoreAppPackageRuntimePath)\*.*" TargetPath="ref\$(NetCoreAppCurrent)" />
+    <_libDocs Include="$(ASPNETCoreAppPackageRefPath)\*.xml" />
+    <File Include="$(ASPNETCoreAppPackageRefPath)\*.*" Exclude="@(_libDocs)" TargetPath="lib\$(NetCoreAppCurrent)" />
+    <File Include="$(ASPNETCoreAppPackageRuntimePath)\*.*;@(_libDocs)" TargetPath="ref\$(NetCoreAppCurrent)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

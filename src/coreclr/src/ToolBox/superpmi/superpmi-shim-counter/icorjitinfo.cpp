@@ -1663,3 +1663,9 @@ DWORD interceptor_ICJI::getExpectedTargetArchitecture()
     mcs->AddCall("getExpectedTargetArchitecture");
     return original_ICorJitInfo->getExpectedTargetArchitecture();
 }
+
+void interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+{
+    mcs->AddCall("notifyInstructionSetUsage");
+    original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
+}

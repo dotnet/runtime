@@ -92,7 +92,6 @@
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
     <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'x64'">CODE_ANALYSIS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>

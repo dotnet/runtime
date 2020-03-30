@@ -29,9 +29,7 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
 using System.Globalization;
-using System.Reflection;
 using System.Text;
 using System.Runtime.InteropServices;
 
@@ -104,8 +102,8 @@ namespace System.Reflection.Emit
         // Called from the runtime to return the corresponding finished MethodInfo object
         internal MethodInfo RuntimeResolve()
         {
-            var type = instantiation.InternalResolve();
-            var m = type.GetMethod(base_method);
+            Type type = instantiation.InternalResolve();
+            MethodInfo m = type.GetMethod(base_method);
             if (method_arguments != null)
             {
                 var args = new Type[method_arguments.Length];

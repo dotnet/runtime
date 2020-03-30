@@ -73,8 +73,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             Directory.CreateDirectory(_regSdkBaseDir);
 
             // Trace messages used to identify from which folder the SDK was picked
-            _exeSelectedMessage = $"Using .NET Core SDK dll=[{_exeSdkBaseDir}";
-            _regSelectedMessage = $"Using .NET Core SDK dll=[{_regSdkBaseDir}";
+            _exeSelectedMessage = $"Using .NET SDK dll=[{_exeSdkBaseDir}";
+            _regSelectedMessage = $"Using .NET SDK dll=[{_regSdkBaseDir}";
 
             _testOnlyProductBehaviorMarker = TestOnlyProductBehavior.Enable(DotNet.GreatestVersionHostFxrFilePath);
         }
@@ -117,7 +117,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version");
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.4.1", "9999.3.4-dummy");
@@ -138,7 +138,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version");
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.3.3");
@@ -159,7 +159,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version");
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.4");
@@ -292,7 +292,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version");
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.3.57", "9999.3.4-dummy");
@@ -313,7 +313,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version");
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.300", "9999.7.304-global-dummy");
@@ -334,7 +334,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET Core SDK for global.json version");
+                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version");
 
             // Add SDK versions
             AddAvailableSdkVersions(_regSdkBaseDir, "9999.3.304");

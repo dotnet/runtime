@@ -118,6 +118,28 @@ namespace System.Text.Json
             }
         }
 
+        private void DetermineIgnoreCondition()
+        {
+            JsonIgnoreAttribute? ignoreAttribute;
+            if (PropertyInfo != null && (ignoreAttribute = GetAttribute<JsonIgnoreAttribute>(PropertyInfo)) != null)
+            {
+                JsonIgnoreCondition condition = ignoreAttribute.Condition;
+
+                // We should have created a placeholder property for this upstream and shouldn't be down this code-path.
+                Debug.Assert(condition != JsonIgnoreCondition.Always);
+
+                if (condition != JsonIgnoreCondition.Never)
+                {
+                    Debug.Assert(condition == JsonIgnoreCondition.WhenNull);
+                    IgnoreNullValues = true;
+                }
+            }
+            else
+            {
+                IgnoreNullValues = Options.IgnoreNullValues;
+            }
+        }
+
         // The escaped name passed to the writer.
         // Use a field here (not a property) to avoid value semantics.
         public JsonEncodedText? EscapedName;
@@ -134,7 +156,7 @@ namespace System.Text.Json
         {
             DetermineSerializationCapabilities();
             DeterminePropertyName();
-            IgnoreNullValues = Options.IgnoreNullValues;
+            DetermineIgnoreCondition();
         }
 
         public abstract object? GetValueAsObject(object obj);

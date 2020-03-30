@@ -32,13 +32,8 @@
 
 #nullable disable
 #if MONO_FEATURE_SRE
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Diagnostics.SymbolStore;
 
 namespace System.Reflection.Emit
 {
@@ -355,12 +350,12 @@ namespace System.Reflection.Emit
             TypeBuilder.ResolveUserTypes(parameters);
             if (paramModReq != null)
             {
-                foreach (var types in paramModReq)
+                foreach (Type[] types in paramModReq)
                     TypeBuilder.ResolveUserTypes(types);
             }
             if (paramModOpt != null)
             {
-                foreach (var types in paramModOpt)
+                foreach (Type[] types in paramModOpt)
                     TypeBuilder.ResolveUserTypes(types);
             }
         }

@@ -23,7 +23,7 @@ namespace System.ServiceModel.Syndication.Tests
             try
             {
                 // *** SETUP *** \\
-                var sf = new SyndicationFeed("First feed on .net core ever!!", "This is the first feed on .net core ever!", new Uri("https://github.com/dotnet/wcf"));
+                var sf = new SyndicationFeed("First feed on .NET ever!!", "This is the first feed on .NET ever!", new Uri("https://github.com/dotnet/wcf"));
                 Assert.True(sf != null);
 
                 using (XmlWriter xmlw = XmlWriter.Create(filePath))
@@ -193,7 +193,7 @@ namespace System.ServiceModel.Syndication.Tests
                 feed.Authors.Add(author);
 
                 //Create item
-                SyndicationItem item1 = new SyndicationItem("SyndicationFeed released for .net Core", "A lot of text describing the release of .net core feature", new Uri("http://Contoso.com/news/path"));
+                SyndicationItem item1 = new SyndicationItem("SyndicationFeed released for .NET", "A lot of text describing the release of .NET feature", new Uri("http://Contoso.com/news/path"));
 
                 //Add item to feed
                 List<SyndicationItem> feedList = new List<SyndicationItem> { item1 };
@@ -329,7 +329,7 @@ namespace System.ServiceModel.Syndication.Tests
             string serializeFilePath = Path.GetTempFileName();
             bool toDeletedFile = true;
 
-            SyndicationItem item = new SyndicationItem("SyndicationFeed released for .net Core", "A lot of text describing the release of .net core feature", new Uri("http://contoso.com/news/path"));
+            SyndicationItem item = new SyndicationItem("SyndicationFeed released for .NET", "A lot of text describing the release of .NET feature", new Uri("http://contoso.com/news/path"));
             item.Id = "uuid:43481a10-d881-40d1-adf2-99b438c57e21;id=1";
             item.LastUpdatedTime = new DateTimeOffset(Convert.ToDateTime("2017-10-11T11:25:55Z")).UtcDateTime;
 

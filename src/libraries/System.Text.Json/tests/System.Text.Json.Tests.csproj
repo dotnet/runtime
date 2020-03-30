@@ -130,20 +130,6 @@
     <Compile Include="Utf8JsonWriterTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="JsonArrayTests.cs" />
-    <Compile Include="JsonBooleanTests.cs" />
-    <Compile Include="JsonElementWithNodeParentTests.cs" />
-    <Compile Include="JsonNodeTestData.cs" />
-    <Compile Include="JsonNode.AsJsonElementTests.cs" />
-    <Compile Include="JsonNode.CloneTests.cs" />
-    <Compile Include="JsonNode.TraversalTests.cs" />
-    <Compile Include="JsonNodeOptionsTests.cs" />
-    <Compile Include="JsonNullTests.cs" />
-    <Compile Include="JsonNumberTests.cs" />
-    <Compile Include="JsonObjectTests.cs" />
-    <Compile Include="JsonStringTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">

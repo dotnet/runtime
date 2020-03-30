@@ -8,7 +8,7 @@
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
     <NativeVersionFile Condition="'$(TargetOS)' != 'Windows_NT'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
-    <_BuildNativeArgs>$(ArchGroup) $(Configuration) outconfig $(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup) -os $(TargetOS)</_BuildNativeArgs>
+    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(TargetOS)</_BuildNativeArgs>
   </PropertyGroup>
 
   <Target Name="BuildNativeUnix"

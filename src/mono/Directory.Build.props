@@ -6,9 +6,8 @@
   
   <!-- Set default Platform -->
   <PropertyGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
-    <Platform>$(ArchGroup)</Platform>
-    <TargetArchitecture>$(ArchGroup)</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
+    <Platform>$(TargetArchitecture)</Platform>
 
     <PlatformConfigPathPart>$(TargetOS).$(Platform).$(Configuration)</PlatformConfigPathPart>
   </PropertyGroup>

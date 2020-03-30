@@ -22,7 +22,8 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             string osd = RuntimeInformation.OSDescription.Trim();
             string osv = Environment.OSVersion.ToString();
             string osa = RuntimeInformation.OSArchitecture.ToString();
-            Console.WriteLine($"### OS: Distro={dvs} Description={osd} Version={osv} Arch={osa}");
+            string rid = RuntimeInformation.RuntimeIdentifier;
+            Console.WriteLine($"### OS: Distro={dvs} Description={osd} Version={osv} Arch={osa} Rid={rid}");
 
             string lcr = PlatformDetection.LibcRelease;
             string lcv = PlatformDetection.LibcVersion;
@@ -139,7 +140,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
         public void VerifyRuntimeNameOnNetCoreApp()
         {
-            Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET Core"), RuntimeInformation.FrameworkDescription);
+            Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET"), RuntimeInformation.FrameworkDescription);
             Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
         }
 
