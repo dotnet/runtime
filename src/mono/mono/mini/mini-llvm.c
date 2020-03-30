@@ -3447,7 +3447,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 #ifdef TARGET_WASM
 		// For GC stack scanning to work, have to spill all reference variables to the stack
 		// Some ref variables have type intptr
-		if (ctx->has_safepoints && (MONO_TYPE_IS_REFERENCE (var->inst_vtype) || var->inst_vtype->type == MONO_TYPE_I))
+		if (ctx->has_safepoints && (MONO_TYPE_IS_REFERENCE (var->inst_vtype) || var->inst_vtype->type == MONO_TYPE_I) && var != ctx->cfg->rgctx_var)
 			var->flags |= MONO_INST_INDIRECT;
 #endif
 
@@ -3608,7 +3608,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		if (!mini_type_is_vtype (sig->params [i]))
 			emit_volatile_store (ctx, cfg->args [i + sig->hasthis]->dreg);
 
-	if (sig->hasthis && !cfg->rgctx_var && cfg->gshared) {
+	if (sig->hasthis && !cfg->rgctx_var && cfg->gshared && !cfg->llvm_only) {
 		LLVMValueRef this_alloc;
 
 		/*
@@ -3625,17 +3625,23 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	}
 
 	if (cfg->rgctx_var) {
-		LLVMValueRef rgctx_alloc, store;
+		if (!(cfg->rgctx_var->flags & MONO_INST_VOLATILE)) {
+			/* FIXME: This could be volatile even in llvmonly mode if used inside a clause etc. */
+			g_assert (!ctx->addresses [cfg->rgctx_var->dreg]);
+			ctx->values [cfg->rgctx_var->dreg] = ctx->rgctx_arg;
+		} else {
+			LLVMValueRef rgctx_alloc, store;
 
-		/*
-		 * We handle the rgctx arg similarly to the this pointer.
-		 */
-		g_assert (ctx->addresses [cfg->rgctx_var->dreg]);
-		rgctx_alloc = ctx->addresses [cfg->rgctx_var->dreg];
-		/* This volatile store will keep the alloca alive */
-		store = mono_llvm_build_store (builder, convert (ctx, ctx->rgctx_arg, IntPtrType ()), rgctx_alloc, TRUE, LLVM_BARRIER_NONE);
+			/*
+			 * We handle the rgctx arg similarly to the this pointer.
+			 */
+			g_assert (ctx->addresses [cfg->rgctx_var->dreg]);
+			rgctx_alloc = ctx->addresses [cfg->rgctx_var->dreg];
+			/* This volatile store will keep the alloca alive */
+			store = mono_llvm_build_store (builder, convert (ctx, ctx->rgctx_arg, IntPtrType ()), rgctx_alloc, TRUE, LLVM_BARRIER_NONE);
 
-		set_metadata_flag (rgctx_alloc, "mono.this");
+			set_metadata_flag (rgctx_alloc, "mono.this");
+		}
 	}
 
 	/* Initialize the method if needed */
@@ -4330,9 +4336,13 @@ mono_llvm_emit_match_exception_call (EmitContext *ctx, LLVMBuilderRef builder, g
 	args [1] = LLVMConstInt (LLVMInt32Type (), region_start, 0);
 	args [2] = LLVMConstInt (LLVMInt32Type (), region_end, 0);
 	if (ctx->cfg->rgctx_var) {
-		LLVMValueRef rgctx_alloc = ctx->addresses [ctx->cfg->rgctx_var->dreg];
-		g_assert (rgctx_alloc);
-		args [3] = LLVMBuildLoad (builder, convert (ctx, rgctx_alloc, LLVMPointerType (IntPtrType (), 0)), "");
+		if (ctx->cfg->llvm_only) {
+			args [3] = convert (ctx, ctx->rgctx_arg, IntPtrType ());
+		} else {
+			LLVMValueRef rgctx_alloc = ctx->addresses [ctx->cfg->rgctx_var->dreg];
+			g_assert (rgctx_alloc);
+			args [3] = LLVMBuildLoad (builder, convert (ctx, rgctx_alloc, LLVMPointerType (IntPtrType (), 0)), "");
+		}
 	} else {
 		args [3] = LLVMConstInt (IntPtrType (), 0, 0);
 	}

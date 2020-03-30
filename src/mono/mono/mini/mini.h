@@ -1287,7 +1287,8 @@ typedef struct {
 	MonoInst        *domainvar; /* a cache for the current domain */
 	MonoInst        *got_var; /* Global Offset Table variable */
 	MonoInst        **locals;
-	MonoInst	*rgctx_var; /* Runtime generic context variable (for static generic methods) */
+	/* Variable holding the mrgctx/vtable address for gshared methods */
+	MonoInst        *rgctx_var;
 	MonoInst        **args;
 	MonoType        **arg_types;
 	MonoMethod      *current_method; /* The method currently processed by method_to_ir () */
