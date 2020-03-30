@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public void WriteTag(CborTag tag)
         {
             WriteUnsignedInteger(CborMajorType.Tag, (ulong)tag);
-            // NB tag writes do not advance date item counters
+            // NB tag writes do not advance data item counters
             _isTagContext = true;
         }
 
