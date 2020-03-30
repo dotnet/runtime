@@ -3,7 +3,6 @@
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.props" Condition="'$(Coverage)' == 'true'" />
 
   <PropertyGroup>
-    <BuildInParallel>true</BuildInParallel>
     <TestInParallel Condition="'$(Coverage)' != 'true'">true</TestInParallel>
     <!-- For tests we want to continue running if a test run failed. -->
     <TestContinueOnError>ErrorAndContinue</TestContinueOnError>

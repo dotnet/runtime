@@ -142,15 +142,16 @@ foreach ($argument in $PSBoundParameters.Keys)
 {
   switch($argument)
   {
-    "runtimeConfiguration" { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
-    "framework"            { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
-    "os"                   { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
-    "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
-    "properties"           { $arguments += " " + $properties }
+    "runtimeConfiguration"   { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
+    "librariesConfiguration" { $arguments += " /p:LibrariesConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
+    "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
+    "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
+    "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
+    "properties"             { $arguments += " " + $properties }
     # configuration and arch can be specified multiple times, so they should be no-ops here
-    "configuration"        {}
-    "arch"                 {}
-    default                { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
+    "configuration"          {}
+    "arch"                   {}
+    default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
 

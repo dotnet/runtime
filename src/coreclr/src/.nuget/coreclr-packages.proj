@@ -35,7 +35,7 @@
     <ItemGroup>
       <!-- Pass the FileVersion calculated by _InitializeAssemblyVersion to referenced projects -->
       <ProjectReference Update="@(ProjectReference)"
-                        AdditionalProperties="%(AdditionalProperties);FileVersion=$(FileVersion)" />
+                        AdditionalProperties="%(ProjectReference.AdditionalProperties);FileVersion=$(FileVersion)" />
     </ItemGroup>
   </Target>
 </Project>

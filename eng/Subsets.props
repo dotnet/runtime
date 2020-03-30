@@ -185,7 +185,9 @@
 
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-depproj-'))">
-    <LibrariesProject Include="$(LibrariesProjectRoot)restore\depproj.proj" Build="false" />
+    <LibrariesRestoreProject Include="$(LibrariesProjectRoot)restore\depproj.proj">
+      <AdditionalProperties Condition="'$(LibrariesConfiguration)' != ''">Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+    </LibrariesRestoreProject>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-native-'))">
