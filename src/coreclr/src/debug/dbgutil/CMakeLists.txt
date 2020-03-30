@@ -8,10 +8,6 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DPAL_STDCPP_COMPAT)
 
-if(CLR_CMAKE_TARGET_ALPINE_LINUX)
-    add_definitions(-DTARGET_ALPINE_LINUX)
-endif(CLR_CMAKE_TARGET_ALPINE_LINUX)
-
 set(DBGUTIL_SOURCES
     dbgutil.cpp
 )

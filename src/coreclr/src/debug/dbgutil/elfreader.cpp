@@ -103,9 +103,7 @@ ElfReader::ElfReader() :
 
 ElfReader::~ElfReader()
 {
-    if (m_buckets != nullptr) {
-        free(m_buckets);
-    }
+    FreeGnuHashTable();
 }
 
 //
@@ -118,20 +116,14 @@ ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
     TRACE("PopulateForSymbolLookup: base %" PRIA PRIx64 "\n", baseAddress);
     Elf_Dyn* dynamicAddr = nullptr;
     uint64_t loadbias = 0;
+    size_t loadsize = 0;
 
     // Enumerate program headers searching for the PT_DYNAMIC header, etc.
     if (!EnumerateProgramHeaders(
         baseAddress,
-#ifdef TARGET_ALPINE_LINUX
-        // On Alpine, the below dynamic entries for hash, string table, etc. are
-        // RVAs instead of absolute address like on all other Linux distros. Get
-        // the "loadbias" (basically the base address of the module) and add to
-        // these RVAs.
         &loadbias,
-#else
-        nullptr,
-#endif
-        &dynamicAddr))
+        &dynamicAddr,
+        &loadsize))
     {
         return false;
     }
@@ -153,16 +145,16 @@ ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
             break;
         }
         else if (dyn.d_tag == DT_GNU_HASH) {
-            m_gnuHashTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
+            m_gnuHashTableAddr = (void*)(dyn.d_un.d_ptr);
         }
         else if (dyn.d_tag == DT_STRTAB) {
-            m_stringTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
+            m_stringTableAddr = (void*)(dyn.d_un.d_ptr);
         }
         else if (dyn.d_tag == DT_STRSZ) {
             m_stringTableSize = (int)dyn.d_un.d_ptr;
         }
         else if (dyn.d_tag == DT_SYMTAB) {
-            m_symbolTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
+            m_symbolTableAddr = (void*)(dyn.d_un.d_ptr);
         }
         dynamicAddr++;
     }
@@ -170,6 +162,50 @@ ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
     if (m_gnuHashTableAddr == nullptr || m_stringTableAddr == nullptr || m_symbolTableAddr == nullptr) {
         TRACE("ERROR: hash, string or symbol table address not found\n");
         return false;
+    }
+
+    uint64_t minAddr = std::min(std::min((uint64_t)m_gnuHashTableAddr,
+                                         (uint64_t)m_stringTableAddr),
+                                         (uint64_t)m_symbolTableAddr);
+    uint64_t maxAddr = std::max(std::max((uint64_t)m_gnuHashTableAddr + sizeof(GnuHashTable) + sizeof(int32_t),
+                                         (uint64_t)m_stringTableAddr + m_stringTableSize),
+                                         (uint64_t)m_symbolTableAddr);
+
+    bool addLoadBias = false;
+
+    if (minAddr < baseAddress)
+    {
+        // All the dynamic table pointers must point inside the load region of the module
+        // Therefore if any are less than the baseAddress we must add the loadbias.
+        addLoadBias = true;
+    }
+    else if (maxAddr > loadsize)
+    {
+        // All the dynamic table pointers must point inside the load region of the module
+        // Since the maxAddr is greater than the loadsize we can conclusively
+        // determine that we do not need to add the loadbias
+        // This is because maxAddr + baseAddr would be outside the module (greater than loadsize + baseAddress).
+        addLoadBias = false;
+    }
+    else
+    {
+        // We cannot conclusively determine whether we need to add the load bias
+        // Rather than making a compile time decision based on OS, we try to find a required symbol.
+        // Try to find "g_dacTable" in the hash table w/o adding the loadbias
+        uint64_t symbolOffset;
+        if (!InitializeGnuHashTable() || !TryLookupSymbol("g_dacTable", &symbolOffset)) {
+            // Since we cannot find the expected symbol assume we need to add the loadbias
+            addLoadBias = true;
+        }
+        // Free the GnuHashTable so we can initialize again below.
+        FreeGnuHashTable();
+    }
+
+    if (addLoadBias)
+    {
+        m_gnuHashTableAddr = (void*)((uint64_t)m_gnuHashTableAddr + loadbias);
+        m_stringTableAddr = (void*)((uint64_t)m_stringTableAddr + loadbias);
+        m_symbolTableAddr = (void*)((uint64_t)m_symbolTableAddr + loadbias);
     }
 
     // Initialize the hash table
@@ -248,6 +284,15 @@ ElfReader::InitializeGnuHashTable()
     }
     m_chainsAddress = (char*)bucketsAddress + (m_hashTable.BucketCount * sizeof(int32_t));
     return true;
+}
+
+void
+ElfReader::FreeGnuHashTable()
+{
+    if (m_buckets != nullptr) {
+        free(m_buckets);
+        m_buckets = nullptr;
+    }
 }
 
 bool
@@ -424,7 +469,7 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
 #endif // HOST_UNIX
 
 bool
-ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr)
+ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr, size_t *ploadsize)
 {
     Elf_Ehdr ehdr;
     if (!ReadMemory((void*)baseAddress, &ehdr, sizeof(ehdr))) {
@@ -460,9 +505,10 @@ ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, El
 // Enumerate and find the dynamic program header entry
 //
 bool
-ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr)
+ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr, size_t *ploadsize)
 {
     uint64_t loadbias = baseAddress;
+    size_t loadsize = 0;
 
     // Calculate the load bias from the PT_LOAD program headers
     for (int i = 0; i < phnum; i++)
@@ -501,10 +547,18 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
                 *pdynamicAddr = reinterpret_cast<Elf_Dyn*>(loadbias + ph.p_vaddr);
             }
             break;
+        case PT_LOAD:
+            // Calculate the load size from the PT_LOAD program headers
+            loadsize = std::max(loadsize, ph.p_vaddr + ph.p_memsz);
+            break;
         }
 
         // Give any derived classes a chance at the program header
         VisitProgramHeader(loadbias, baseAddress, &ph);
+    }
+
+    if (ploadsize != nullptr) {
+        *ploadsize = loadsize;
     }
 
     return true;

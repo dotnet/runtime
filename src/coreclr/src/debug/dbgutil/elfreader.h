@@ -50,11 +50,12 @@ public:
 #endif
     bool PopulateForSymbolLookup(uint64_t baseAddress);
     bool TryLookupSymbol(std::string symbolName, uint64_t* symbolOffset);
-    bool EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias = nullptr, ElfW(Dyn)** pdynamicAddr = nullptr);
+    bool EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias = nullptr, ElfW(Dyn)** pdynamicAddr = nullptr, size_t *ploadsize = nullptr);
 
 private:
     bool GetSymbol(int32_t index, ElfW(Sym)* symbol);
     bool InitializeGnuHashTable();
+    void FreeGnuHashTable();
     bool GetPossibleSymbolIndex(const std::string& symbolName, std::vector<int32_t>& symbolIndexes);
     uint32_t Hash(const std::string& symbolName);
     bool GetChain(int index, int32_t* chain);
@@ -62,7 +63,7 @@ private:
 #ifdef HOST_UNIX
     bool EnumerateLinkMapEntries(ElfW(Dyn)* dynamicAddr);
 #endif
-    bool EnumerateProgramHeaders(ElfW(Phdr)* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, ElfW(Dyn)** pdynamicAddr);
+    bool EnumerateProgramHeaders(ElfW(Phdr)* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, ElfW(Dyn)** pdynamicAddr, size_t *ploadsize = nullptr);
     virtual void VisitModule(uint64_t baseAddress, std::string& moduleName) { };
     virtual void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr) { };
     virtual bool ReadMemory(void* address, void* buffer, size_t size) = 0;
