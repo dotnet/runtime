@@ -259,7 +259,7 @@ namespace System.Reflection.Emit
                 {
                     if (c == '\0')
                         break;
-                    if (TypeNameBuilder.IsTypeNameReservedChar(c))
+                    if (IsTypeNameReservedChar(c))
                         str.Append('\\');
                     str.Append(c);
                 }
