@@ -79,7 +79,5 @@ namespace System.Text.Json.Serialization
         internal virtual bool ConstructorIsParameterized => false;
 
         internal ConstructorInfo ConstructorInfo { get; set; } = null!;
-
-        internal virtual void CreateConstructorDelegate(JsonClassInfo classInfo, JsonSerializerOptions options) { }
     }
 }

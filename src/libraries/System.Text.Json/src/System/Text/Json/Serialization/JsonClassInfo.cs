@@ -161,13 +161,6 @@ namespace System.Text.Json
 
                         if (converter.ConstructorIsParameterized)
                         {
-                            // Create and cache the constructor delegate for this type.
-                            // We depend on the first converter created for this type to perform the initialization.
-                            // Subsequent instances of the converter will not perform this initialization since we will
-                            // not go down this code path (as the type will already be in the JsonClassInfo cache).
-                            // The converter is used because it has generic type support.
-                            converter.CreateConstructorDelegate(this, options);
-
                             InitializeConstructorParameters(converter.ConstructorInfo);
                         }
                     }

@@ -12,11 +12,6 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal sealed class SmallObjectWithParameterizedConstructorConverter<T, TArg0, TArg1, TArg2, TArg3> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
     {
-        internal override void CreateConstructorDelegate(JsonClassInfo classInfo, JsonSerializerOptions options)
-        {
-            classInfo.CreateObjectWithParameterizedCtor = options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo)!;
-        }
-
         protected override object CreateObject(ref ReadStackFrame frame)
         {
             var createObject = (JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>)
@@ -72,9 +67,17 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
+            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+
+            if (classInfo.CreateObjectWithParameterizedCtor == null)
+            {
+                classInfo.CreateObjectWithParameterizedCtor =
+                    options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo)!;
+            }
+
             var arguments = new Arguments<TArg0, TArg1, TArg2, TArg3>();
 
-            foreach (JsonParameterInfo parameterInfo in state.Current.JsonClassInfo.ParameterCache!.Values)
+            foreach (JsonParameterInfo parameterInfo in classInfo.ParameterCache!.Values)
             {
                 if (parameterInfo.ShouldDeserialize)
                 {

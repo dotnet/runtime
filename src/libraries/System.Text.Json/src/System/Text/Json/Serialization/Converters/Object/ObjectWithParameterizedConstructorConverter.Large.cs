@@ -12,11 +12,6 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal sealed class LargeObjectWithParameterizedConstructorConverter<T> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
     {
-        internal override void CreateConstructorDelegate(JsonClassInfo classInfo, JsonSerializerOptions options)
-        {
-            classInfo.CreateObjectWithParameterizedCtor = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo)!;
-        }
-
         protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
             bool success = jsonParameterInfo.ReadJson(ref state, ref reader, out object? arg0);
@@ -49,8 +44,15 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
-            object[] arguments = ArrayPool<object>.Shared.Rent(state.Current.JsonClassInfo.ParameterCount);
-            foreach (JsonParameterInfo jsonParameterInfo in state.Current.JsonClassInfo.ParameterCache!.Values)
+            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+
+            if (classInfo.CreateObjectWithParameterizedCtor == null)
+            {
+                classInfo.CreateObjectWithParameterizedCtor = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo)!;
+            }
+
+            object[] arguments = ArrayPool<object>.Shared.Rent(classInfo.ParameterCount);
+            foreach (JsonParameterInfo jsonParameterInfo in classInfo.ParameterCache!.Values)
             {
                 if (jsonParameterInfo.ShouldDeserialize)
                 {
