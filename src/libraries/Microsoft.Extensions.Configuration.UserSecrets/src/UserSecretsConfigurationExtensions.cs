@@ -137,7 +137,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (!optional)
             {
-                throw new InvalidOperationException(Resources.FormatError_Missing_UserSecretsIdAttribute(assembly.GetName().Name));
+                throw new InvalidOperationException(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, assembly.GetName().Name));
             }
 
             return configuration;

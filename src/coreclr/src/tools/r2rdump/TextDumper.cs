@@ -411,7 +411,7 @@ namespace R2RDump
                     if (!_r2r.Composite)
                     {
                         MetadataReader globalReader = _r2r.GetGlobalMetadataReader();
-                        assemblyRefCount = globalReader.GetTableRowCount(TableIndex.AssemblyRef);
+                        assemblyRefCount = globalReader.GetTableRowCount(TableIndex.AssemblyRef) + 1;
                         _writer.WriteLine($"MSIL AssemblyRef's ({assemblyRefCount} entries):");
                         for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
                         {
@@ -425,7 +425,7 @@ namespace R2RDump
                     int manifestAsmIndex = 0;
                     foreach (string manifestReferenceAssembly in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
                     {
-                        _writer.WriteLine($"[ID 0x{manifestAsmIndex + assemblyRefCount + 2:X2}]: {manifestReferenceAssembly}");
+                        _writer.WriteLine($"[ID 0x{manifestAsmIndex + assemblyRefCount + 1:X2}]: {manifestReferenceAssembly}");
                         manifestAsmIndex++;
                     }
                     break;
@@ -451,7 +451,7 @@ namespace R2RDump
                 case ReadyToRunSectionType.OwnerCompositeExecutable:
                     int oceOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     Decoder decoder = Encoding.UTF8.GetDecoder();
-                    int charLength = decoder.GetCharCount(_r2r.Image, oceOffset, section.Size);
+                    int charLength = decoder.GetCharCount(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
                     char[] charArray = new char[charLength];
                     decoder.GetChars(_r2r.Image, oceOffset, section.Size, charArray, 0, flush: true);
                     string ownerCompositeExecutable = new string(charArray);

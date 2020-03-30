@@ -18,8 +18,9 @@ namespace System
         // do it in a way that failures don't cascade.
         //
 
-        public static bool IsNetCore => RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
+        public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
 
@@ -32,6 +33,7 @@ namespace System
         public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess);
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
+        public static bool IsNotWindows => !IsWindows;
 
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
@@ -200,6 +202,14 @@ namespace System
             }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
+        }
+
+        private static bool GetIsRunningOnMonoInterpreter()
+        {
+            // This is a temporary solution because mono does not support interpreter detection
+            // within the runtime.
+            var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
+            return (val != null && val.Contains("--interpreter"));
         }
     }
 }

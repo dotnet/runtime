@@ -53,7 +53,7 @@ namespace System.Threading.Tasks
             {
                 if (_ct.CanBeCanceled && !_completing)
                 { // benign race on m_completing... it's ok if it's not up-to-date.
-                    var ctr = _ct.Register(ai => ((IAsyncInfo)ai).Cancel(), asyncInfo); // delegate cached by compiler
+                    var ctr = _ct.Register(ai => ((IAsyncInfo)ai!).Cancel(), asyncInfo); // delegate cached by compiler
 
                     // The operation may already be completing by this time, in which case
                     // we might need to dispose of our new cancellation registration here.
@@ -114,7 +114,7 @@ namespace System.Threading.Tasks
         /// <param name="asyncInfo">The asynchronous operation.</param>
         /// <param name="getResultsFunction">A function used to retrieve the TResult from the async operation; may be null.</param>
         /// <param name="asyncStatus">The status of the asynchronous operation.</param>
-        private void Complete(IAsyncInfo asyncInfo, Func<IAsyncInfo, TResult> getResultsFunction, AsyncStatus asyncStatus)
+        private void Complete(IAsyncInfo asyncInfo, Func<IAsyncInfo, TResult>? getResultsFunction, AsyncStatus asyncStatus)
         {
             if (asyncInfo == null)
                 throw new ArgumentNullException(nameof(asyncInfo));
@@ -160,7 +160,7 @@ namespace System.Threading.Tasks
 
                     // Retrieve the completion data from the IAsyncInfo.
                     TResult result = default(TResult);
-                    Exception error = null;
+                    Exception? error = null;
                     if (asyncStatus == AsyncStatus.Error)
                     {
                         error = asyncInfo.ErrorCode;
@@ -199,7 +199,7 @@ namespace System.Threading.Tasks
                         case AsyncStatus.Completed:
                             if (AsyncCausalitySupport.LoggingOn)
                                 AsyncCausalitySupport.TraceOperationCompletedSuccess(this.Task);
-                            success = base.TrySetResult(result);
+                            success = base.TrySetResult(result!);
                             break;
 
                         case AsyncStatus.Error:

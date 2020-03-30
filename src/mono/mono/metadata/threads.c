@@ -1356,8 +1356,12 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	mono_threads_lock ();
 	if (shutting_down && !(flags & MONO_THREAD_CREATE_FLAGS_FORCE_CREATE)) {
 		mono_threads_unlock ();
-		mono_error_set_execution_engine (error, "Couldn't create thread. Runtime is shutting down.");
-		return FALSE;
+		/* We're already shutting down, don't create the new
+		 * thread. Instead detach and exit from the current thread.
+		 * Don't expect mono_threads_set_shutting_down to return.
+		 */
+		mono_threads_set_shutting_down ();
+		g_assert_not_reached ();
 	}
 	if (threads_starting_up == NULL) {
 		threads_starting_up = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_THREADING, NULL, "Thread Starting Table");
@@ -6518,6 +6522,9 @@ summarizer_state_term (SummarizerGlobalState *state, gchar **out, gchar *mem, si
 		// with early exit there
 		mono_get_eh_callbacks ()->mono_summarize_managed_stack (threads [i]);
 	}
+
+	/* The value of the breadcrumb should match the "StackHash" value written by `mono_merp_write_fingerprint_payload` */
+	mono_create_crash_hash_breadcrumb (controlling);
 
 	MonoStateWriter writer;
 	memset (&writer, 0, sizeof (writer));

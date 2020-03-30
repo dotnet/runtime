@@ -140,6 +140,7 @@ namespace System.Text.Json
             out JsonElement value)
         {
             ReadOnlySpan<byte> documentSpan = _utf8Json.Span;
+            Span<byte> utf8UnescapedStack = stackalloc byte[JsonConstants.StackallocThreshold];
 
             // Move to the row before the EndObject
             int index = endIndex - DbRow.Size;
@@ -184,8 +185,8 @@ namespace System.Text.Json
 
                             try
                             {
-                                Span<byte> utf8Unescaped = remaining <= JsonConstants.StackallocThreshold ?
-                                    stackalloc byte[remaining] :
+                                Span<byte> utf8Unescaped = remaining <= utf8UnescapedStack.Length ?
+                                    utf8UnescapedStack :
                                     (rented = ArrayPool<byte>.Shared.Rent(remaining));
 
                                 // Only unescape the part we haven't processed.

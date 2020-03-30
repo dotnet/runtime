@@ -309,7 +309,7 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 
 	switch (entry->type) {
 		case SGEN_LOG_NURSERY:
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MINOR%s: (%s) time %.2fms, %s promoted %luK major size: %luK in use: %luK los size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MINOR%s: (%s) time %.2fms, %s promoted %luK major size: %luK in use: %luK los size: %luK in use: %luK",
 				entry->is_overflow ? "_OVERFLOW" : "",
 				entry->reason ? entry->reason : "",
 				entry->time / 10000.0f,
@@ -321,7 +321,7 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 				(unsigned long)entry->los_size_in_use / 1024);
 			break;
 		case SGEN_LOG_MAJOR_SERIAL:
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR%s: (%s) time %.2fms, %s los size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR%s: (%s) time %.2fms, %s los size: %luK in use: %luK",
 				entry->is_overflow ? "_OVERFLOW" : "",
 				entry->reason ? entry->reason : "",
 				(int)entry->time / 10000.0f,
@@ -330,10 +330,10 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 				(unsigned long)entry->los_size_in_use / 1024);
 			break;
 		case SGEN_LOG_MAJOR_CONC_START:
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_CONCURRENT_START: (%s)", entry->reason ? entry->reason : "");
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR_CONCURRENT_START: (%s)", entry->reason ? entry->reason : "");
 			break;
 		case SGEN_LOG_MAJOR_CONC_FINISH:
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_CONCURRENT_FINISH: (%s) time %.2fms, %s los size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR_CONCURRENT_FINISH: (%s) time %.2fms, %s los size: %luK in use: %luK",
 				entry->reason ? entry->reason : "",
 				entry->time / 10000.0f,
 				full_timing_buff,
@@ -341,7 +341,7 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 				(unsigned long)entry->los_size_in_use / 1024);
 			break;
 		case SGEN_LOG_MAJOR_SWEEP_FINISH:
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major size: %luK in use: %luK",
 				(unsigned long)entry->major_size / 1024,
 				(unsigned long)entry->major_size_in_use / 1024);
 			break;

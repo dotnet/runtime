@@ -1,11 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetCoreTargetFramework);net472</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net472</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Primitives" />
+    <Compile Include="ChangeTokenTest.cs" />
+    <Compile Include="CompositeChangeTokenTest.cs" />
+    <Compile Include="InplaceStringBuilderTest.cs" />
+    <Compile Include="StringSegmentTest.cs" />
+    <Compile Include="StringTokenizerTest.cs" />
+    <Compile Include="StringValuesTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
   </ItemGroup>
 
 </Project>

@@ -20,8 +20,8 @@ namespace System.Text.Json
         /// The original JsonPropertyInfo that is not changed. It contains all properties.
         /// </summary>
         /// <remarks>
-        /// For objects, it is either the policy property for the class or the current property.
-        /// For collections, it is either the policy property for the class or the policy property for the current element.
+        /// For objects, it is either the actual (real) JsonPropertyInfo or the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class.
+        /// For collections, it is the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class and current element.
         /// </remarks>
         public JsonPropertyInfo? DeclaredJsonPropertyInfo;
 
@@ -64,8 +64,8 @@ namespace System.Text.Json
         /// The run-time JsonPropertyInfo that contains the ClassInfo and ConverterBase for polymorphic scenarios.
         /// </summary>
         /// <remarks>
-        /// For objects, it is either the policy property for the class or the policy property for the current property.
-        /// For collections, it is either the policy property for the class or the policy property for the current element.
+        /// For objects, it is the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class and current property.
+        /// For collections, it is the <see cref="JsonClassInfo.PropertyInfoForClassInfo"/> for the class and current element.
         /// </remarks>
         public JsonPropertyInfo? PolymorphicJsonPropertyInfo;
 
@@ -104,7 +104,7 @@ namespace System.Text.Json
             // Set for exception handling calculation of JsonPath.
             JsonPropertyNameAsString = propertyName;
 
-            PolymorphicJsonPropertyInfo = newClassInfo.PolicyProperty!;
+            PolymorphicJsonPropertyInfo = newClassInfo.PropertyInfoForClassInfo;
             return PolymorphicJsonPropertyInfo.ConverterBase;
         }
 

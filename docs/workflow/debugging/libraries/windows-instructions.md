@@ -1,7 +1,7 @@
 Debugging CoreFX on Windows
 ==========================
 
-You can Debug .NET Core via Visual Studio or WinDBG.
+You can Debug .NET via Visual Studio or WinDBG.
 
 For Visual Studio debugging, follow the instructions at [Debugging tests in Visual Studio](../../testing/libraries/testing-vs.md) to run and debug tests.
 For bugs that cannot be reproduced within Visual Studio (certain low-probability race conditions, SafeHandle life-time problems, etc) you will need to use WinDBG.
@@ -173,4 +173,4 @@ Helper scripts are available at https://github.com/dotnet/runtime/tree/master/sr
 * `*System.Threading.Tasks.Dataflow.DataflowEventSource {16F53577-E41D-43D4-B47E-C17025BF4025}`: Provides an event source for tracing Dataflow information.
 
 ## Notes 
-* You can find the test invocation command-line by looking at the logs generated after the `dotnet msbuild /t:rebuildandtest` within the test folder.
+* You can find the test invocation command-line by looking at the logs generated after the `dotnet build /t:test` within the test folder.

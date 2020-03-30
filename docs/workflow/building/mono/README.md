@@ -19,7 +19,7 @@ Once you've built the whole runtime and assuming you want to work with just mono
 ```
 or on Windows,
 ```bat
-build.cmd --subsetCategory mono
+build.cmd -subsetCategory mono
 ```
 When the build completes, product binaries will be dropped in the `artifacts\bin\mono\<OS>.<arch>.<flavor>` folder.
 
@@ -45,7 +45,7 @@ To generate nuget packages:
 ```
 or on Windows,
 ```bat
-build.cmd --subsetCategory mono -pack (with optional release configuration)
+build.cmd -subsetCategory mono -pack (with optional release configuration)
 ```
 
 The following packages will be created under `artifacts\packages\<configuration>\Shipping`:

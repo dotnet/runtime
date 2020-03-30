@@ -53,6 +53,14 @@ extern "C" void GenericComPlusCallStub(void);
 extern "C" void GenericComCallStub(void);
 #endif // FEATURE_COMINTEROP
 
+// The GC mode for the thread that initially called ThePreStub().
+enum class CallerGCMode
+{
+    Unknown,
+    Coop,
+    Preemptive    // (e.g. NativeCallableAttribute)
+};
+
 // Non-CPU-specific helper functions called by the CPU-dependent code
 extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, MethodDesc * pMD);
 

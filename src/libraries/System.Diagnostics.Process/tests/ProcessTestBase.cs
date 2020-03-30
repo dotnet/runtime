@@ -33,6 +33,7 @@ namespace System.Diagnostics.Tests
                 {
                     p.Kill();
                     Assert.True(p.WaitForExit(WaitInMS));
+                    p.WaitForExit(); // wait for event handlers to complete
                 }
                 catch (InvalidOperationException) { } // in case it was never started
             }
@@ -104,6 +105,7 @@ namespace System.Diagnostics.Tests
             Thread.Sleep(200);
             p.Kill();
             Assert.True(p.WaitForExit(WaitInMS));
+            p.WaitForExit(); // wait for event handlers to complete
         }
 
         /// <summary>

@@ -367,7 +367,6 @@ namespace System
                 {
                     bool lockTaken = false;
 
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         Monitor.Enter(this, ref lockTaken);
@@ -1576,7 +1575,6 @@ namespace System
                     Interlocked.CompareExchange(ref s_methodInstantiationsLock!, new object(), null);
 
                 bool lockTaken = false;
-                RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
                     Monitor.Enter(s_methodInstantiationsLock, ref lockTaken);
@@ -2371,10 +2369,11 @@ namespace System
         {
             if (m_cache == IntPtr.Zero)
             {
-                IntPtr newgcHandle = new RuntimeTypeHandle(this).GetGCHandle(GCHandleType.WeakTrackResurrection);
+                RuntimeTypeHandle th = new RuntimeTypeHandle(this);
+                IntPtr newgcHandle = th.GetGCHandle(GCHandleType.WeakTrackResurrection);
                 IntPtr gcHandle = Interlocked.CompareExchange(ref m_cache, newgcHandle, IntPtr.Zero);
                 if (gcHandle != IntPtr.Zero)
-                    GCHandle.InternalFree(newgcHandle);
+                    th.FreeGCHandle(newgcHandle);
             }
 
             RuntimeTypeCache cache = (RuntimeTypeCache)GCHandle.InternalGet(m_cache);
@@ -3473,7 +3472,19 @@ namespace System
                 // pass LCID_ENGLISH_US if no explicit culture is specified to match the behavior of VB
                 int lcid = (culture == null ? 0x0409 : culture.LCID);
 
-                return InvokeDispMethod(name, bindingFlags, target, providedArgs, isByRef, lcid, namedParams);
+                // If a request to not wrap exceptions was made, we will unwrap
+                // the TargetInvocationException since that is what will be thrown.
+                bool unwrapExceptions = (bindingFlags & BindingFlags.DoNotWrapExceptions) != 0;
+                try
+                {
+                    return InvokeDispMethod(name, bindingFlags, target, providedArgs, isByRef, lcid, namedParams);
+                }
+                catch (TargetInvocationException e) when (unwrapExceptions)
+                {
+                    // For target invocation exceptions, we need to unwrap the inner exception and
+                    // re-throw it.
+                    throw e.InnerException!;
+                }
             }
 #endif // FEATURE_COMINTEROP
 

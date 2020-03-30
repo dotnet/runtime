@@ -1,14 +1,4 @@
 <Project>
-
-  <PropertyGroup>
-    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(OSGroup)</CoreCLROSGroup>
-    <MonoOSGroup Condition="'$(MonoOSGroup)' == ''">$(OSGroup)</MonoOSGroup>
-    <LibrariesOSGroup Condition="'$(LibrariesOSGroup)' == ''">$(OSGroup)</LibrariesOSGroup>
-    <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
-
-    <LibrariesOSGroupConfigurationArchitecture Condition="'$(LibrariesOSGroupConfigurationArchitecture)' == ''">$(LibrariesOSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)</LibrariesOSGroupConfigurationArchitecture>
-  </PropertyGroup>
-
   <!-- Accept override paths for live artifacts. -->
   <PropertyGroup>
     <CoreCLRArtifactsPath Condition="'$(CoreCLROverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)'))</CoreCLRArtifactsPath>
@@ -19,6 +9,7 @@
     <!-- Honor the RuntimeArtifactsPath property. -->
     <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == '' and '$(RuntimeArtifactsPath)' != ''">$([MSBuild]::NormalizeDirectory('$(RuntimeArtifactsPath)'))</CoreCLRArtifactsPath>
     <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == '' and '$(RuntimeArtifactsPath)' != ''">$([MSBuild]::NormalizeDirectory('$(RuntimeArtifactsPath)'))</MonoArtifactsPath>
+    <LibrariesTargetOSConfigurationArchitecture Condition="'$(LibrariesTargetOSConfigurationArchitecture)' == ''">$(LibrariesTargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</LibrariesTargetOSConfigurationArchitecture>
   </PropertyGroup>
 
   <!--
@@ -52,13 +43,13 @@
       Use '*', calculating these in a static context based on RID is hard. Note that putting '*'
       through a dir/path normalization function makes it not work, so avoid that.
     -->
-    <LibrariesOSGroupConfigurationArchitecture>*</LibrariesOSGroupConfigurationArchitecture>
+    <LibrariesTargetOSConfigurationArchitecture>*</LibrariesTargetOSConfigurationArchitecture>
   </PropertyGroup>
 
   <!-- Set up default live asset paths if no overrides provided. -->
   <PropertyGroup>
-    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(CoreCLROSGroup).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
-    <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'mono', '$(MonoOSGroup).$(TargetArchitecture).$(MonoConfiguration)'))</MonoArtifactsPath>
+    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(CoreCLRTargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
+    <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'mono', '$(MonoTargetOS).$(TargetArchitecture).$(MonoConfiguration)'))</MonoArtifactsPath>
     <LibrariesArtifactsPath Condition="'$(LibrariesArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesArtifactsPath>
     <LibrariesAllConfigurationsArtifactsPath Condition="'$(LibrariesAllConfigurationsArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesAllConfigurationsArtifactsPath>
   </PropertyGroup>
@@ -78,9 +69,9 @@
 
     <LibrariesSharedFrameworkRefArtifactsPath Condition="'$(LibrariesSharedFrameworkRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'ref', 'microsoft.netcore.app', '$(LibrariesConfiguration)'))</LibrariesSharedFrameworkRefArtifactsPath>
     <LibrariesAllRefArtifactsPath Condition="'$(LibrariesAllRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'ref', '$(NetCoreAppCurrent)'))</LibrariesAllRefArtifactsPath>
-    <LibrariesSharedFrameworkBinArtifactsPath Condition="'$(LibrariesSharedFrameworkBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'pkg', '$(NetCoreAppCurrent)', 'runtime'))$(LibrariesOSGroupConfigurationArchitecture)\</LibrariesSharedFrameworkBinArtifactsPath>
-    <LibrariesAllBinArtifactsPath Condition="'$(LibrariesAllBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'runtime'))$(NetCoreAppCurrent)-$(LibrariesOSGroupConfigurationArchitecture)\</LibrariesAllBinArtifactsPath>
-    <LibrariesNativeArtifactsPath Condition="'$(LibrariesNativeArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'native'))$(NetCoreAppCurrent)-$(LibrariesOSGroupConfigurationArchitecture)\</LibrariesNativeArtifactsPath>
+    <LibrariesSharedFrameworkBinArtifactsPath Condition="'$(LibrariesSharedFrameworkBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'pkg', '$(NetCoreAppCurrent)', 'runtime'))$(LibrariesTargetOSConfigurationArchitecture)\</LibrariesSharedFrameworkBinArtifactsPath>
+    <LibrariesAllBinArtifactsPath Condition="'$(LibrariesAllBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'runtime'))$(NetCoreAppCurrent)-$(LibrariesTargetOSConfigurationArchitecture)\</LibrariesAllBinArtifactsPath>
+    <LibrariesNativeArtifactsPath Condition="'$(LibrariesNativeArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'native'))$(NetCoreAppCurrent)-$(LibrariesTargetOSConfigurationArchitecture)\</LibrariesNativeArtifactsPath>
 
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' != 'arm64'">x64</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>
@@ -155,7 +146,7 @@
     these errors: it isn't a local dev scenario.
   -->
   <Target Name="EnsureLocalOSGroupConfigurationArchitectureSpecificArtifactsExist"
-          Condition="'$(LibrariesOSGroupConfigurationArchitecture)' != '*'">
+          Condition="'$(LibrariesTargetOSConfigurationArchitecture)' != '*'">
     <Error Condition="!Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesSharedFrameworkBinArtifactsPath)" />
     <Error Condition="!Exists('$(LibrariesAllBinArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesAllBinArtifactsPath)" />
     <Error Condition="!Exists('$(LibrariesNativeArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesNativeArtifactsPath)" />

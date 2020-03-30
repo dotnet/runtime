@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System;
 using System.Diagnostics;
@@ -249,7 +250,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var appExe = fixture.TestProject.AppExe;
             File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
             AppHostExtensions.BindAppHost(appExe);
- 
+
             // Get the framework location that was built
             string builtDotnet = fixture.BuiltDotnet.BinPath;
 
@@ -351,6 +352,113 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        public void MissingRuntimeConfig_Fails(bool useAppHost)
+        {
+            Command command;
+            if (useAppHost)
+            {
+                command = Command.Create(sharedTestState.MockApp.AppExe)
+                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath);
+            }
+            else
+            {
+                command = sharedTestState.BuiltDotNet.Exec(sharedTestState.MockApp.AppDll);
+            }
+
+            string hostPolicyName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy");
+            command.EnableTracingAndCaptureOutputs()
+                .MultilevelLookup(false)
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining($"The library '{hostPolicyName}' required to execute the application was not found")
+                .And.HaveStdErrContaining("Failed to run as a self-contained app")
+                .And.HaveStdErrContaining($"'{sharedTestState.MockApp.RuntimeConfigJson}' was not found");
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void MissingFrameworkInRuntimeConfig_Fails(bool useAppHost)
+        {
+            TestApp app = sharedTestState.MockApp.Copy();
+            RuntimeConfig.FromFile(app.RuntimeConfigJson).Save();
+
+            Command command;
+            if (useAppHost)
+            {
+                command = Command.Create(app.AppExe)
+                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath);
+            }
+            else
+            {
+                command = sharedTestState.BuiltDotNet.Exec(app.AppDll);
+            }
+
+            string hostPolicyName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy");
+            command.EnableTracingAndCaptureOutputs()
+                .MultilevelLookup(false)
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining($"The library '{hostPolicyName}' required to execute the application was not found")
+                .And.HaveStdErrContaining("Failed to run as a self-contained app")
+                .And.HaveStdErrContaining($"'{app.RuntimeConfigJson}' did not specify a framework");
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AppHost_CLI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog(bool missingHostfxr)
+        {
+            var fixture = sharedTestState.PortableAppFixture_Built
+                .Copy();
+
+            string appExe = fixture.TestProject.AppExe;
+            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            AppHostExtensions.BindAppHost(appExe);
+
+            string invalidDotNet = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "cliErrors"));
+            using (new TestArtifact(invalidDotNet))
+            {
+                Directory.CreateDirectory(invalidDotNet);
+
+                string expectedErrorCode;
+                string expectedUrlQuery;
+                string expectedUrlParameter = null;
+                if (missingHostfxr)
+                {
+                    expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
+                    expectedUrlQuery = "missing_runtime=true&";
+                    expectedUrlParameter = $"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
+                }
+                else
+                {
+                    invalidDotNet = new DotNetBuilder(invalidDotNet, sharedTestState.RepoDirectories.BuiltDotnet, "missingFramework")
+                        .Build()
+                        .BinPath;
+                    expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
+                    expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
+                }
+
+                Command command = Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(invalidDotNet)
+                    .MultilevelLookup(false)
+                    .Start();
+
+                var result = command.WaitForExit(true)
+                    .Should().Fail();
+
+                result.And.HaveStdErrContaining($"- https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}");
+                if (expectedUrlParameter != null)
+                {
+                    result.And.HaveStdErrContaining(expectedUrlParameter);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         public void AppHost_GUI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog(bool missingHostfxr)
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -374,10 +482,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 string expectedErrorCode;
                 string expectedUrlQuery;
+                string expectedUrlParameter = null;
                 if (missingHostfxr)
                 {
                     expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
-                    expectedUrlQuery = "missing_runtime=true";
+                    expectedUrlQuery = "missing_runtime=true&";
+                    expectedUrlParameter = $"&apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                 }
                 else
                 {
@@ -397,11 +507,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 WaitForPopupFromProcess(command.Process);
                 command.Process.Kill();
 
-                command.WaitForExit(true)
-                    .Should().Fail()
-                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
+                var result = command.WaitForExit(true)
+                    .Should().Fail();
+
+                result.And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
-                    .And.HaveStdErrContaining($"apphost_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+                    .And.HaveStdErrContaining("&gui=true");
+
+                if (expectedUrlParameter != null)
+                {
+                    result.And.HaveStdErrContaining(expectedUrlParameter);
+                }
             }
         }
 
@@ -444,7 +560,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 command.WaitForExit(true)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
-                    .And.HaveStdErrContaining("To run this application, you need to install a newer version of .NET Core");
+                    .And.HaveStdErrContaining("To run this application, you need to install a newer version of .NET");
             }
         }
 
@@ -459,7 +575,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             var fixture = sharedTestState.PortableAppFixture_Built
                 .Copy();
-            
+
             string appExe = fixture.TestProject.AppExe;
             File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
             AppHostExtensions.BindAppHost(appExe);
@@ -579,13 +695,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             public TestProjectFixture PortableAppFixture_Built { get; }
             public TestProjectFixture PortableAppFixture_Published { get; }
+
             public RepoDirectoriesProvider RepoDirectories { get; }
             public string BuiltAppHost { get; }
+            public DotNetCli BuiltDotNet { get; }
+
+            public TestApp MockApp { get; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
                 BuiltAppHost = Path.Combine(RepoDirectories.HostArtifacts, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost"));
+                BuiltDotNet = new DotNetCli(RepoDirectories.BuiltDotnet);
 
                 PortableAppFixture_Built = new TestProjectFixture("PortableApp", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
@@ -594,12 +715,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 PortableAppFixture_Published = new TestProjectFixture("PortableApp", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .PublishProject();
+
+                MockApp = new TestApp(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "portableAppActivation")), "App");
+                Directory.CreateDirectory(MockApp.Location);
+                File.WriteAllText(MockApp.AppDll, string.Empty);
+                File.Copy(BuiltAppHost, MockApp.AppExe);
+                AppHostExtensions.BindAppHost(MockApp.AppExe);
             }
 
             public void Dispose()
             {
                 PortableAppFixture_Built.Dispose();
                 PortableAppFixture_Published.Dispose();
+                MockApp.Dispose();
             }
         }
     }

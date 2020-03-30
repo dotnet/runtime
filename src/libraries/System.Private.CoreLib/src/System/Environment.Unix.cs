@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -96,7 +94,7 @@ namespace System
             {
                 case SpecialFolder.CommonApplicationData: return "/usr/share";
                 case SpecialFolder.CommonTemplates: return "/usr/share/templates";
-#if TARGET_OSX
+#if TARGET_OSX || TARGET_IOS
                 case SpecialFolder.ProgramFiles: return "/Applications";
                 case SpecialFolder.System: return "/System";
 #endif
@@ -152,7 +150,7 @@ namespace System
                 case SpecialFolder.MyVideos:
                     return ReadXdgDirectory(home, "XDG_VIDEOS_DIR", "Videos");
 
-#if TARGET_OSX
+#if TARGET_OSX || TARGET_IOS
                 case SpecialFolder.MyMusic:
                     return Path.Combine(home, "Music");
                 case SpecialFolder.MyPictures:
@@ -454,8 +452,8 @@ namespace System
                 {
                     using (currentProcess)
                     {
-                        object? result = processType!.GetMethod("get_WorkingSet64")?.Invoke(currentProcess, BindingFlags.DoNotWrapExceptions, null, null, null);
-                        if (result is long) return (long)result;
+                        if (processType!.GetMethod("get_WorkingSet64")?.Invoke(currentProcess, BindingFlags.DoNotWrapExceptions, null, null, null) is long result)
+                            return result;
                     }
                 }
 

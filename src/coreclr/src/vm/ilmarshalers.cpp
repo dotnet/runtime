@@ -4515,7 +4515,7 @@ void MngdNativeArrayMarshaler::DoClearNativeContents(MngdNativeArrayMarshaler* p
 
         if (pMarshaler != NULL && pMarshaler->ClearOleArray != NULL)
         {
-            pMarshaler->ClearOleArray((BASEARRAYREF*)pManagedHome, *pNativeHome, cElements, pThis->m_pElementMT, pThis->m_pManagedMarshaler);
+            pMarshaler->ClearOleArray(*pNativeHome, cElements, pThis->m_pElementMT, pThis->m_pManagedMarshaler);
         }
     }
 }
@@ -4733,15 +4733,13 @@ FCIMPL3(void, MngdFixedArrayMarshaler::ClearNativeContents, MngdFixedArrayMarsha
 {
     FCALL_CONTRACT;
 
-    BASEARRAYREF arrayRef = (BASEARRAYREF)*pManagedHome;
-
-    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
+    HELPER_METHOD_FRAME_BEGIN_0();
 
     const OleVariant::Marshaler* pMarshaler = OleVariant::GetMarshalerForVarType(pThis->m_vt, FALSE);
 
     if (pMarshaler != NULL && pMarshaler->ClearOleArray != NULL)
     {
-        pMarshaler->ClearOleArray(&arrayRef, pNativeHome, pThis->m_cElements, pThis->m_pElementMT, pThis->m_pManagedElementMarshaler);
+        pMarshaler->ClearOleArray(pNativeHome, pThis->m_cElements, pThis->m_pElementMT, pThis->m_pManagedElementMarshaler);
     }
 
     HELPER_METHOD_FRAME_END();

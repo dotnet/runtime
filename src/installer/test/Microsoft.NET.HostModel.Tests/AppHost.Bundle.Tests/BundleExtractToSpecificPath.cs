@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-using System.Threading;
-using Xunit;
+using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
-using BundleTests.Helpers;
+using Microsoft.NET.HostModel.Bundle;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
@@ -33,8 +34,8 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
-            var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
-            string singleFile = bundler.GenerateBundle(publishPath);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
+            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
 
             // Compute bundled files
             var bundledFiles = bundler.BundleManifest.Files.Select(file => file.RelativePath).ToList();
@@ -75,8 +76,8 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
-            var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
-            string singleFile = bundler.GenerateBundle(publishPath);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
+            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractDir(fixture);
@@ -128,8 +129,8 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
-            var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
-            string singleFile = bundler.GenerateBundle(publishPath);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
+            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
 
             // Compute bundled files
             List<string> bundledFiles = bundler.BundleManifest.Files.Select(file => file.RelativePath).ToList();

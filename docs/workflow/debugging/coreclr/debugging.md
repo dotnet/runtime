@@ -70,7 +70,7 @@ Using Visual Studio Code
 ========================
 
 - Install [Visual Studio Code](https://code.visualstudio.com/)
-- Install the [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp)
+- Install the [C# Extension](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp)
 - Open the folder containing the source you want to debug in VS Code
 - Open the debug window: `ctrl-shift-D` or click on the button on the left
 - Click the gear button at the top to create a launch configuration, select `.NET Core` from the selection dropdown

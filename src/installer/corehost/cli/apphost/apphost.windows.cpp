@@ -12,7 +12,7 @@ namespace
 {
     pal::string_t g_buffered_errors;
 
-    void buffering_trace_writer(const pal::char_t* message)
+    void __cdecl buffering_trace_writer(const pal::char_t* message)
     {
         // Add to buffer for later use.
         g_buffered_errors.append(message).append(_X("\n"));
@@ -40,7 +40,7 @@ namespace
         auto eventSource = ::RegisterEventSourceW(nullptr, _X(".NET Runtime"));
         const DWORD traceErrorID = 1023; // Matches CoreCLR ERT_UnmanagedFailFast
         pal::string_t message;
-        message.append(_X("Description: A .NET Core application failed.\n"));
+        message.append(_X("Description: A .NET application failed.\n"));
         message.append(_X("Application: ")).append(executable_name).append(_X("\n"));
         message.append(_X("Path: ")).append(executable_path).append(_X("\n"));
         message.append(_X("Message: ")).append(g_buffered_errors).append(_X("\n"));
@@ -61,11 +61,21 @@ namespace
         if (pal::getenv(_X("DOTNET_DISABLE_GUI_ERRORS"), &gui_errors_disabled) && pal::xtoi(gui_errors_disabled.c_str()) == 1)
             return;
 
-        pal::string_t dialogMsg = _X("To run this application, you must install .NET Core.\n\n");
+        pal::string_t dialogMsg = _X("To run this application, you must install .NET.\n\n");
         pal::string_t url;
+        const pal::string_t url_prefix = _X("  - ") DOTNET_CORE_APPLAUNCH_URL _X("?");
         if (error_code == StatusCode::CoreHostLibMissingFailure)
         {
-            url = get_download_url();
+            pal::string_t line;
+            pal::stringstream_t ss(g_buffered_errors);
+            while (std::getline(ss, line, _X('\n'))) {
+                if (starts_with(line, url_prefix, true))
+                {
+                    size_t offset = url_prefix.length() - pal::strlen(DOTNET_CORE_APPLAUNCH_URL) - 1;
+                    url = line.substr(offset, line.length() - offset);
+                    break;
+                }
+            }
         }
         else if (error_code == StatusCode::FrameworkMissingFailure)
         {
@@ -77,7 +87,6 @@ namespace
                 const pal::string_t prefix = _X("The framework '");
                 const pal::string_t suffix = _X("' was not found.");
                 const pal::string_t custom_prefix = _X("  _ ");
-                const pal::string_t url_prefix = _X("  - ") DOTNET_CORE_APPLAUNCH_URL _X("?");
                 if (starts_with(line, prefix, true) && ends_with(line, suffix, true))
                 {
                     dialogMsg.append(line);
@@ -101,12 +110,8 @@ namespace
         dialogMsg.append(_X("Would you like to download it now?"));
 
         assert(url.length() > 0);
-        if (is_gui_application())
-        {
-            url.append(_X("&gui=true"));
-        }
-        url.append(_X("&apphost_version="));
-        url.append(_STRINGIFY(COMMON_HOST_PKG_VER));
+        assert(is_gui_application());
+        url.append(_X("&gui=true"));
 
         trace::verbose(_X("Showing error dialog for application: '%s' - error code: 0x%x - url: '%s'"), executable_name, error_code, url.c_str());
         if (::MessageBoxW(nullptr, dialogMsg.c_str(), executable_name, MB_ICONERROR | MB_YESNO) == IDYES)

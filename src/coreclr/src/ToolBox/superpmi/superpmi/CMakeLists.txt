@@ -29,6 +29,7 @@ set(SUPERPMI_SOURCES
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp
     ../superpmi-shared/errorhandling.cpp
+    ../superpmi-shared/hash.cpp
     ../superpmi-shared/logging.cpp
     ../superpmi-shared/mclist.cpp
     ../superpmi-shared/methodcontext.cpp
@@ -49,7 +50,7 @@ target_precompile_header(TARGET superpmi HEADER standardpch.h)
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi
         utilcodestaticnohost
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )

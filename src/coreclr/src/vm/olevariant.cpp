@@ -1835,7 +1835,7 @@ void OleVariant::MarshalIUnknownArrayComToOle(BASEARRAYREF *pComArray, void *ole
     MarshalInterfaceArrayComToOleHelper(pComArray, oleArray, pElementMT, FALSE, cElements);
 }
 
-void OleVariant::ClearInterfaceArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearInterfaceArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2009,7 +2009,7 @@ void OleVariant::MarshalBSTRArrayComToOle(BASEARRAYREF *pComArray, void *oleArra
     GCPROTECT_END();
 }
 
-void OleVariant::ClearBSTRArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearBSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2112,7 +2112,7 @@ void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray,
     }
 }
 
-void OleVariant::ClearNonBlittableRecordArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2124,20 +2124,15 @@ void OleVariant::ClearNonBlittableRecordArray(BASEARRAYREF* pComArray, void *ole
     }
     CONTRACTL_END;
 
-    ASSERT_PROTECTED(pComArray);
-
     SIZE_T elemSize     = pInterfaceMT->GetNativeSize();
+    SIZE_T componentSize = TypeHandle(pInterfaceMT).MakeSZArray().GetMethodTable()->GetComponentSize();
     BYTE *pOle = (BYTE *) oleArray;
     BYTE *pOleEnd = pOle + elemSize * cElements;
-    SIZE_T srcofs = *pComArray != NULL ? ArrayBase::GetDataPtrOffset((*pComArray)->GetMethodTable()) : 0;
     while (pOle < pOleEnd)
     {
-        BYTE* managedData = (BYTE*)(*(LPVOID*)pComArray) + srcofs;
-
-        MarshalStructViaILStubCode(pManagedMarshalerCode, managedData, pOle, StructMarshalStubs::MarshalOperation::Cleanup);
+        MarshalStructViaILStubCode(pManagedMarshalerCode, nullptr, pOle, StructMarshalStubs::MarshalOperation::Cleanup);
 
         pOle += elemSize;
-        srcofs += (*pComArray)->GetComponentSize();
     }
 }
 
@@ -2255,7 +2250,7 @@ void OleVariant::MarshalLPWSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleA
     }
 }
 
-void OleVariant::ClearLPWSTRArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2392,7 +2387,7 @@ void OleVariant::MarshalLPSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleAr
     }
 }
 
-void OleVariant::ClearLPSTRArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2736,7 +2731,7 @@ void OleVariant::MarshalRecordArrayComToOle(BASEARRAYREF *pComArray, void *oleAr
 }
 
 
-void OleVariant::ClearRecordArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pElementMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearRecordArray(void *oleArray, SIZE_T cElements, MethodTable *pElementMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {
@@ -2751,7 +2746,7 @@ void OleVariant::ClearRecordArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_
     if (!pElementMT->IsBlittable())
     {
         _ASSERTE(pElementMT->HasLayout());
-        ClearNonBlittableRecordArray(pComArray, oleArray, cElements, pElementMT, pManagedMarshalerCode);
+        ClearNonBlittableRecordArray(oleArray, cElements, pElementMT, pManagedMarshalerCode);
     }
 }
 
@@ -4072,7 +4067,7 @@ void OleVariant::MarshalVariantArrayComToOle(BASEARRAYREF *pComArray, void *oleA
     GCPROTECT_END();
 }
 
-void OleVariant::ClearVariantArray(BASEARRAYREF* pComArray, void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
+void OleVariant::ClearVariantArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
 {
     CONTRACTL
     {

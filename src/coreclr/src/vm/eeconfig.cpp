@@ -219,8 +219,6 @@ HRESULT EEConfig::Init()
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
     fDebuggable = false;
-    fStressOn = false;
-    apiThreadStressCount = 0;
     pPrestubHalt = 0;
     pPrestubGC = 0;
     pszBreakOnClassLoad = 0;
@@ -339,6 +337,11 @@ HRESULT EEConfig::Init()
     tieredCompilation_CallCountThreshold = 1;
     tieredCompilation_CallCountingDelayMs = 0;
     tieredCompilation_DeleteCallCountingStubsAfter = 0;
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    dwOSR_HitLimit = 10;
+    dwOSR_CounterBump = 5000;
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -1005,8 +1008,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 #ifdef _DEBUG
     fDebuggable         = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_JitDebuggable,      fDebuggable)         != 0);
-    fStressOn           = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_StressOn,           fStressOn)           != 0);
-    apiThreadStressCount = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_APIThreadStress,     apiThreadStressCount);
 
     LPWSTR wszPreStubStuff = NULL;
 
@@ -1267,6 +1268,16 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
     }
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    dwOSR_HitLimit = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_HitLimit);
+    dwOSR_CounterBump = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_CounterBump);
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT) && defined(_DEBUG)
+    dwOSR_LowId = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_LowId);
+    dwOSR_HighId = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_HighId);
 #endif
 
 #ifndef CROSSGEN_COMPILE

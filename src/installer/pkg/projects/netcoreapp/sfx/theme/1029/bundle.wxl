@@ -58,16 +58,16 @@ Jste připraveni? Dejme se tedy do toho!</String>
   <String Id="FilesInUseDontCloseRadioButton">A&amp;plikace nezavírejte. Bude potřeba provést restart.</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Zrušit</String>
-  <String Id="WelcomeHeaderMessage">Modul runtime .NET Core</String>
-  <String Id="WelcomeDescription">.NET Core je vývojová platforma, pomocí které lze vytvářet aplikace příkazového řádku, mikroslužby a moderní weby. Je opensourcová, víceplatformová a podporována společností Microsoft. Věříme, že s ní budete spokojeni.</String>
-  <String Id="LearnMoreTitle">Další informace o .NET Core</String>
+  <String Id="WelcomeHeaderMessage">Modul runtime .NET</String>
+  <String Id="WelcomeDescription">.NET je vývojová platforma, pomocí které lze vytvářet aplikace příkazového řádku, mikroslužby a moderní weby. Je opensourcová, víceplatformová a podporována společností Microsoft. Věříme, že s ní budete spokojeni.</String>
+  <String Id="LearnMoreTitle">Další informace o .NET</String>
   <String Id="SuccessInstallLocation">Do [DOTNETHOME] se nainstalovaly následující položky.</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
   <String Id="ResourcesHeader">Prostředky</String>
   <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;Dokumentace&lt;/A&gt;</String>
   <String Id="RelaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;Zpráva k vydání verze&lt;/A&gt;</String>
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Kurzy&lt;/A&gt;</String>
-  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Telemetrie pro platformu .NET Core&lt;/A&gt;</String>
+  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Telemetrie pro platformu .NET&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Prohlášení o zásadách ochrany osobních údajů&lt;/A&gt;</String>
   <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;Smlouva EULA ke knihovně .NET&lt;/A&gt;</String>
   

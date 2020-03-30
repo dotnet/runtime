@@ -438,7 +438,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"),
 ///
 /// Loader
 ///
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_APIThreadStress, W("APIThreadStress"), "Used to test Loader for race conditions")
 RETAIL_CONFIG_STRING_INFO(INTERNAL_WinMDPath, W("WinMDPath"), "Path for Windows WinMD files")
 
 ///
@@ -574,7 +573,6 @@ CONFIG_DWORD_INFO_EX(INTERNAL_StressCOMCall, W("StressCOMCall"), 0, "", CLRConfi
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_StressLog, W("StressLog"), "Turns on the stress log.")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_ForceEnc, W("ForceEnc"), "Forces Edit and Continue to be on for all eligible modules.")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_StressLogSize, W("StressLogSize"), "Stress log size in bytes per thread.")
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_StressOn, W("StressOn"), "Enables the STRESS_ASSERT macro that stops runtime quickly (to prevent the clr state from changing significantly before breaking)")
 CONFIG_DWORD_INFO_EX(INTERNAL_stressSynchronized, W("stressSynchronized"), 0, "Unknown if or where this is used; unless a test is specifically depending on this, it can be removed.", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_StressThreadCount, W("StressThreadCount"), "")
 
@@ -644,6 +642,16 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DeleteCallCountingStubsAfter, W("TC_DeleteC
 #else
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DeleteCallCountingStubsAfter, W("TC_DeleteCallCountingStubsAfter"), 4096, "Deletes call counting stubs after this many have completed. Zero to disable deleting.")
 #endif
+#endif
+
+///
+/// On-Stack Replacement
+///
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_OSR_CounterBump, W("OSR_CounterBump"), 1000, "Counter reload value when a patchpoint is hit")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_OSR_HitLimit, W("OSR_HitLimit"), 10, "Number of times a patchpoint must call back to trigger an OSR transition")
+CONFIG_DWORD_INFO(INTERNAL_OSR_LowId, W("OSR_LowId"), (DWORD)-1, "Low end of enabled patchpoint range (inclusive)");
+CONFIG_DWORD_INFO(INTERNAL_OSR_HighId, W("OSR_HighId"), 10000000, "High end of enabled patchpoint range (inclusive)");
 #endif
 
 ///

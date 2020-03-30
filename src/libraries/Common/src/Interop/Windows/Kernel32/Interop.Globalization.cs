@@ -9,6 +9,15 @@ internal static partial class Interop
 {
     internal static unsafe partial class Kernel32
     {
+        // Under debug mode only, we'll want to check the error codes
+        // of some of the p/invokes we make.
+
+#if DEBUG
+        private const bool SetLastErrorForDebug = true;
+#else
+        private const bool SetLastErrorForDebug = false;
+#endif
+
         internal const uint LOCALE_ALLOW_NEUTRAL_NAMES  = 0x08000000; // Flag to allow returning neutral names/lcids for name conversion
         internal const uint LOCALE_ILANGUAGE            = 0x00000001;
         internal const uint LOCALE_SUPPLEMENTAL         = 0x00000002;
@@ -31,6 +40,10 @@ internal static partial class Interop
 
         internal const uint TIME_NOSECONDS = 0x00000002;
 
+        internal const int GEOCLASS_NATION       = 16;
+        internal const int GEO_ISO2              =  4;
+        internal const int GEOID_NOT_AVAILABLE   = -1;
+
         internal const string LOCALE_NAME_USER_DEFAULT = null;
         internal const string LOCALE_NAME_SYSTEM_DEFAULT = "!x-sys-default-locale";
 
@@ -52,7 +65,7 @@ internal static partial class Interop
                     void* lpReserved,
                     IntPtr sortHandle);
 
-        [DllImport("kernel32.dll", EntryPoint = "FindNLSStringEx")]
+        [DllImport("kernel32.dll", EntryPoint = "FindNLSStringEx", SetLastError = SetLastErrorForDebug)]
         internal static extern int FindNLSStringEx(
                     char* lpLocaleName,
                     uint dwFindNLSStringFlags,
@@ -85,14 +98,14 @@ internal static partial class Interop
                     int cchCount2,
                     bool bIgnoreCase);
 
-        [DllImport("kernel32.dll", EntryPoint = "FindStringOrdinal")]
+        [DllImport("kernel32.dll", EntryPoint = "FindStringOrdinal", SetLastError = SetLastErrorForDebug)]
         internal static extern int FindStringOrdinal(
                     uint dwFindStringOrdinalFlags,
                     char* lpStringSource,
                     int cchSource,
                     char* lpStringValue,
                     int cchValue,
-                    int bIgnoreCase);
+                    BOOL bIgnoreCase);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern bool IsNLSDefinedString(
@@ -123,6 +136,12 @@ internal static partial class Interop
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern int GetCalendarInfoEx(string? lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, IntPtr lpValue);
+
+        [DllImport("kernel32.dll")]
+        internal static extern int GetUserGeoID(int geoClass);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        internal static extern int GetGeoInfo(int location, int geoType, char* lpGeoData, int cchData, int LangId);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern bool EnumCalendarInfoExEx(EnumCalendarInfoProcExEx pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string? lpReserved, uint CalType, void* lParam);

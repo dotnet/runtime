@@ -3,7 +3,7 @@
 # initNonPortableDistroRid
 #
 # Input:
-#   buildOs: (str)
+#   targetOs: (str)
 #   buildArch: (str)
 #   isPortable: (int)
 #   rootfsDir: (str)
@@ -36,12 +36,13 @@ initNonPortableDistroRid()
     # Make sure out parameter is cleared.
     __DistroRid=
 
-    local buildOs="$1"
+    local targetOs="$1"
     local buildArch="$2"
     local isPortable="$3"
     local rootfsDir="$4"
+    local nonPortableBuildID=""
 
-    if [ "$buildOs" = "Linux" ]; then
+    if [ "$targetOs" = "Linux" ]; then
         if [ -e "${rootfsDir}/etc/os-release" ]; then
             source "${rootfsDir}/etc/os-release"
 
@@ -68,9 +69,12 @@ initNonPortableDistroRid()
         fi
     fi
 
-    if [ "$buildOs" = "FreeBSD" ]; then
+    if [ "$targetOs" = "FreeBSD" ]; then
         __freebsd_major_version=$(freebsd-version | { read v; echo "${v%%.*}"; })
         nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
+    elif getprop ro.product.system.model 2>&1 | grep -qi android; then
+        __android_sdk_version=$(getprop ro.build.version.sdk)
+        nonPortableBuildID="android.$__android_sdk_version-${buildArch}"
     fi
 
     if [ -n "${nonPortableBuildID}" ]; then
@@ -112,10 +116,13 @@ initDistroRidGlobal()
     # deprecated. Now only __DistroRid is supported. It will be used for both
     # portable and non-portable rids and will be used in build-packages.sh
 
-    local buildOs="$1"
+    local targetOs="$1"
     local buildArch="$2"
     local isPortable="$3"
-    local rootfsDir="$4"
+    local rootfsDir=""
+    if [ "$#" -ge 4 ]; then
+        rootfsDir="$4"
+    fi
 
     if [ -n "${rootfsDir}" ]; then
         # We may have a cross build. Check for the existance of the rootfsDir
@@ -132,7 +139,12 @@ initDistroRidGlobal()
         isPortable=0
     fi
 
-    initNonPortableDistroRid "${buildOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
+    initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
+
+    if [ "$buildArch" = "wasm" ]; then
+        __DistroRid=WebAssembly-wasm
+        export __DistroRid
+    fi
 
     if [ -z "${__DistroRid}" ]; then
         # The non-portable build rid was not set. Set the portable rid.
@@ -148,11 +160,15 @@ initDistroRidGlobal()
         fi
 
         if [ -z "${distroRid}" ]; then
-            if [ "$buildOs" = "Linux" ]; then
+            if [ "$targetOs" = "Linux" ]; then
                 distroRid="linux-$buildArch"
-            elif [ "$buildOs" = "OSX" ]; then
+            elif [ "$targetOs" = "OSX" ]; then
                 distroRid="osx-$buildArch"
-            elif [ "$buildOs" = "FreeBSD" ]; then
+            elif [ "$targetOs" = "iOS" ]; then
+                distroRid="ios-$buildArch"
+            elif [ "$targetOs" = "Android" ]; then
+                distroRid="android-$buildArch"
+            elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"
             fi
         fi

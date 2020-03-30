@@ -206,6 +206,13 @@ namespace System.Buffers.Tests
         }
 
         [Fact]
+        public void GetMemory_ExceedMaximumBufferSize_WithSmallStartingSize()
+        {
+            var output = new ArrayBufferWriter<T>(256);
+            Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
+        }
+
+        [Fact]
         public void GetMemory_InitSizeCtor()
         {
             var output = new ArrayBufferWriter<T>(100);

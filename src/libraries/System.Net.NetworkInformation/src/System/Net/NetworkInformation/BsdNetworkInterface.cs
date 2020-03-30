@@ -39,7 +39,7 @@ namespace System.Net.NetworkInformation
         public static unsafe NetworkInterface[] GetBsdNetworkInterfaces()
         {
             Dictionary<string, BsdNetworkInterface> interfacesByName = new Dictionary<string, BsdNetworkInterface>();
-            List<Exception> exceptions = null;
+            List<Exception>? exceptions = null;
             const int MaxTries = 3;
             for (int attempt = 0; attempt < MaxTries; attempt++)
             {
@@ -128,7 +128,7 @@ namespace System.Net.NetworkInformation
         /// <returns>The cached or new BsdNetworkInterface with the given name.</returns>
         private static BsdNetworkInterface GetOrCreate(Dictionary<string, BsdNetworkInterface> interfaces, string name, int index)
         {
-            BsdNetworkInterface oni;
+            BsdNetworkInterface? oni;
             if (!interfaces.TryGetValue(name, out oni))
             {
                 oni = new BsdNetworkInterface(name, index);

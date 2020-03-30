@@ -36,6 +36,13 @@
 #endif
 #include "mono/utils/mono-tls-inline.h"
 
+#ifdef MONO_ARCH_CODE_EXEC_ONLY
+#include "aot-runtime.h"
+guint8* mono_aot_arch_get_plt_entry_exec_only (gpointer amodule_info, host_mgreg_t *regs, guint8 *code, guint8 *plt);
+guint32 mono_arch_get_plt_info_offset_exec_only (gpointer amodule_info, guint8 *plt_entry, host_mgreg_t *regs, guint8 *code, MonoAotResolvePltInfoOffset resolver, gpointer amodule);
+void mono_arch_patch_plt_entry_exec_only (gpointer amodule_info, guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr);
+#endif
+
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 
 #ifndef DISABLE_JIT
@@ -207,26 +214,7 @@ mono_arch_create_llvm_native_thunk (MonoDomain *domain, guint8 *addr)
 	MONO_PROFILER_RAISE (jit_code_buffer, (thunk_start, thunk_code - thunk_start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL));
 	return addr;
 }
-#endif /* !DISABLE_JIT */
 
-void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr)
-{
-	gint32 disp;
-	gpointer *plt_jump_table_entry;
-
-	/* A PLT entry: jmp *<DISP>(%rip) */
-	g_assert (code [0] == 0xff);
-	g_assert (code [1] == 0x25);
-
-	disp = *(gint32*)(code + 2);
-
-	plt_jump_table_entry = (gpointer*)(code + 6 + disp);
-
-	mono_atomic_xchg_ptr (plt_jump_table_entry, addr);
-}
-
-#ifndef DISABLE_JIT
 static void
 stack_unaligned (MonoTrampolineType tramp_type)
 {
@@ -360,7 +348,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 			g_assert (r11_save_code == after_r11_save_code);
 
 			/* Copy from the save slot into the register array slot */
-			amd64_mov_reg_membase (code, i, AMD64_RSP, r11_save_offset + orig_rsp_to_rbp_offset, sizeof (target_mgreg_t));
+			amd64_mov_reg_membase (code, i, AMD64_RSP, r11_save_offset + orig_rsp_to_rbp_offset + framesize, sizeof (target_mgreg_t));
 			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * sizeof (target_mgreg_t)), i, sizeof (target_mgreg_t));
 		}
 		/* cfa = rbp + cfa_offset */
@@ -552,7 +540,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Restore argument registers, r10 (imt method/rgxtx)
 	   and rax (needed for direct calls to C vararg functions). */
 	for (i = 0; i < AMD64_NREG; ++i)
-		if (AMD64_IS_ARGUMENT_REG (i) || i == AMD64_R10 || i == AMD64_RAX)
+		if (AMD64_IS_ARGUMENT_REG (i) || i == AMD64_R10 || i == AMD64_RAX || i == AMD64_R11)
 			amd64_mov_reg_membase (code, i, AMD64_RBP, saved_regs_offset + (i * sizeof (target_mgreg_t)), sizeof (target_mgreg_t));
 	for (i = 0; i < AMD64_XMM_NREG; ++i)
 		if (AMD64_IS_ARGUMENT_XREG (i))
@@ -818,6 +806,70 @@ mono_arch_get_call_target (guint8 *code)
 	}
 }
 
+#ifdef MONO_ARCH_CODE_EXEC_ONLY
+/* Keep in sync with aot-compiler.c, arch_emit_plt_entry. */
+#define PLT_ENTRY_OFFSET_REG AMD64_RAX
+
+/* If PLT_ENTRY_OFFSET_REG is R8 - R15, increase mov instruction size by 1 due to use of REX. */
+#define PLT_MOV_REG_IMM8_SIZE (1 + sizeof (guint8))
+#define PLT_MOV_REG_IMM16_SIZE (2 + sizeof (guint16))
+#define PLT_MOV_REG_IMM32_SIZE (1 + sizeof (guint32))
+#define PLT_JMP_INST_SIZE 6
+
+static guchar
+aot_arch_get_plt_entry_size (MonoAotFileInfo *info, host_mgreg_t *regs, guint8 *code, guint8 *plt)
+{
+	if (info->plt_size <= 0xFF)
+		return PLT_MOV_REG_IMM8_SIZE + PLT_JMP_INST_SIZE;
+	else if (info->plt_size <= 0xFFFF)
+		return PLT_MOV_REG_IMM16_SIZE + PLT_JMP_INST_SIZE;
+	else
+		return PLT_MOV_REG_IMM32_SIZE + PLT_JMP_INST_SIZE;
+}
+
+static guint32
+aot_arch_get_plt_entry_index (MonoAotFileInfo *info, host_mgreg_t *regs, guint8 *code, guint8 *plt)
+{
+	if (info->plt_size <= 0xFF)
+		return regs[PLT_ENTRY_OFFSET_REG] & 0xFF;
+	else if (info->plt_size <= 0xFFFF)
+		return regs[PLT_ENTRY_OFFSET_REG] & 0xFFFF;
+	else
+		return regs[PLT_ENTRY_OFFSET_REG] & 0xFFFFFFFF;
+}
+
+guint8*
+mono_aot_arch_get_plt_entry_exec_only (gpointer amodule_info, host_mgreg_t *regs, guint8 *code, guint8 *plt)
+{
+	guint32 plt_entry_index = aot_arch_get_plt_entry_index ((MonoAotFileInfo *)amodule_info, regs, code, plt);
+	guchar plt_entry_size = aot_arch_get_plt_entry_size ((MonoAotFileInfo *)amodule_info, regs, code, plt);
+
+	/* First PLT slot is never emitted into table, take that into account */
+	/* when calculating corresponding PLT entry. */
+	plt_entry_index--;
+	return plt + ((gsize)plt_entry_index * (gsize)plt_entry_size);
+}
+
+guint32
+mono_arch_get_plt_info_offset_exec_only (gpointer amodule_info, guint8 *plt_entry, host_mgreg_t *regs, guint8 *code, MonoAotResolvePltInfoOffset resolver, gpointer amodule)
+{
+	guint32 plt_entry_index = aot_arch_get_plt_entry_index ((MonoAotFileInfo *)amodule_info, regs, code, NULL);
+
+	/* First PLT slot is never emitted into table, take that into account */
+	/* when calculating offset. */
+	plt_entry_index--;
+	return resolver (amodule, plt_entry_index);
+}
+
+void
+mono_arch_patch_plt_entry_exec_only (gpointer amodule_info, guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr)
+{
+	/* Same calculation of GOT offset as done in aot-compiler.c, emit_plt and used as jmp DISP. */
+	guint32 plt_entry_index = aot_arch_get_plt_entry_index ((MonoAotFileInfo *)amodule_info, regs, code, NULL);
+	gpointer *plt_jump_table_entry = ((gpointer *)(got + ((MonoAotFileInfo *)amodule_info)->plt_got_offset_base) + plt_entry_index);
+	mono_atomic_xchg_ptr (plt_jump_table_entry, addr);
+}
+#else
 /*
  * mono_arch_get_plt_info_offset:
  *
@@ -828,6 +880,24 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, host_mgreg_t *regs, guint8 *co
 {
 	return *(guint32*)(plt_entry + 6);
 }
+
+void
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr)
+{
+	gint32 disp;
+	gpointer *plt_jump_table_entry;
+
+	/* A PLT entry: jmp *<DISP>(%rip) */
+	g_assert (code [0] == 0xff);
+	g_assert (code [1] == 0x25);
+
+	disp = *(gint32*)(code + 2);
+
+	plt_jump_table_entry = (gpointer*)(code + 6 + disp);
+
+	mono_atomic_xchg_ptr (plt_jump_table_entry, addr);
+}
+#endif
 
 #ifndef DISABLE_JIT
 /*

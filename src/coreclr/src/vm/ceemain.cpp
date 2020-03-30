@@ -149,7 +149,6 @@
 #include "binder.h"
 #include "olevariant.h"
 #include "comcallablewrapper.h"
-#include "apithreadstress.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
 #include "shimload.h"
@@ -186,7 +185,7 @@
 #include "runtimecallablewrapper.h"
 #include "notifyexternals.h"
 #include "mngstdinterfaces.h"
-#include "rcwwalker.h"
+#include "interoplibinterface.h"
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -227,7 +226,7 @@ static int GetThreadUICultureId(__out LocaleIDValue* pLocale);  // TODO: This sh
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
 #endif // !CROSSGEN_COMPILE
 
-HRESULT EEStartup(COINITIEE fFlags);
+HRESULT EEStartup();
 
 
 #ifndef CROSSGEN_COMPILE
@@ -251,12 +250,6 @@ HRESULT g_EEStartupStatus = S_OK;
 // checking this flag.
 Volatile<BOOL> g_fEEStarted = FALSE;
 
-// Flag indicating if the EE was started up by COM.
-extern BOOL g_fEEComActivatedStartup;
-
-// flag indicating that EE was not started up by IJW, Hosted, COM or my managed exe.
-extern BOOL g_fEEOtherStartup;
-
 // The OS thread ID of the thread currently performing EE startup, or 0 if there is no such thread.
 DWORD   g_dwStartupThreadId = 0;
 
@@ -265,22 +258,12 @@ static CLREvent * g_pEEShutDownEvent;
 
 static DangerousNonHostedSpinLock g_EEStartupLock;
 
-HRESULT InitializeEE(COINITIEE flags)
-{
-    WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_EVENT_TRACE
-    if(!g_fEEComActivatedStartup)
-        g_fEEOtherStartup = TRUE;
-#endif // FEATURE_EVENT_TRACE
-    return EnsureEEStarted(flags);
-}
-
 // ---------------------------------------------------------------------------
 // %%Function: EnsureEEStarted()
 //
 // Description: Ensure the CLR is started.
 // ---------------------------------------------------------------------------
-HRESULT EnsureEEStarted(COINITIEE flags)
+HRESULT EnsureEEStarted()
 {
     CONTRACTL
     {
@@ -334,7 +317,7 @@ HRESULT EnsureEEStarted(COINITIEE flags)
             {
                 g_dwStartupThreadId = GetCurrentThreadId();
 
-                EEStartup(flags);
+                EEStartup();
                 bStarted=g_fEEStarted;
                 hr = g_EEStartupStatus;
 
@@ -575,10 +558,6 @@ BOOL IsGarbageCollectorFullyInitialized()
 // ---------------------------------------------------------------------------
 // %%Function: EEStartupHelper
 //
-// Parameters:
-//  fFlags                  - Initialization flags for the engine.  See the
-//                              EEStartupFlags enumerator for valid values.
-//
 // Returns:
 //  S_OK                    - On success
 //
@@ -628,7 +607,7 @@ void EESocketCleanupHelper()
 #endif // TARGET_UNIX
 #endif // CROSSGEN_COMPILE
 
-void EEStartupHelper(COINITIEE fFlags)
+void EEStartupHelper()
 {
     CONTRACTL
     {
@@ -681,6 +660,7 @@ void EEStartupHelper(COINITIEE fFlags)
         CodeVersionManager::StaticInitialize();
         TieredCompilationManager::StaticInitialize();
         CallCountingManager::StaticInitialize();
+        OnStackReplacementManager::StaticInitialize();
 
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
@@ -816,7 +796,7 @@ void EEStartupHelper(COINITIEE fFlags)
 #ifndef TARGET_UNIX
         {
             // Record mscorwks geometry
-            PEDecoder pe(g_pMSCorEE);
+            PEDecoder pe(g_hThisInst);
 
             g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
             g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
@@ -840,9 +820,7 @@ void EEStartupHelper(COINITIEE fFlags)
 #ifndef CROSSGEN_COMPILE
 
         InitializeGarbageCollector();
-
-        // Initialize remoting
-
+        
         if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
         {
             IfFailGo(E_OUTOFMEMORY);
@@ -947,6 +925,13 @@ void EEStartupHelper(COINITIEE fFlags)
         hr = g_pGCHeap->Initialize();
         IfFailGo(hr);
 
+#ifdef FEATURE_EVENT_TRACE
+        // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
+        // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
+        // EventPipe initialization, so this is done after the GC has been fully initialized.
+        EventPipe::FinishInitialize();
+#endif
+
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
         FinalizerThread::FinalizerThreadCreate();
@@ -962,6 +947,10 @@ void EEStartupHelper(COINITIEE fFlags)
         LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain 0x%x\n",
              SystemDomain::System()->DefaultDomain()));
         SystemDomain::System()->PublishAppDomainAndInformDebugger(SystemDomain::System()->DefaultDomain());
+#endif
+
+#ifdef HAVE_GCCOVER
+        MethodDesc::Init();
 #endif
 
 #endif // CROSSGEN_COMPILE
@@ -983,9 +972,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
-#ifdef _DEBUG
-        APIThreadStress::SetThreadStressCount(g_pConfig->GetAPIThreadStressCount());
-#endif
 #ifdef FEATURE_STACK_SAMPLING
         StackSampler::Init();
 #endif
@@ -1043,10 +1029,6 @@ void EEStartupHelper(COINITIEE fFlags)
         g_Mscorlib.CheckExtended();
 
 #endif // _DEBUG
-
-#ifdef HAVE_GCCOVER
-        MethodDesc::Init();
-#endif
 
 #endif // !CROSSGEN_COMPILE
 
@@ -1125,14 +1107,14 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 // see code:EEStartup#TableOfContents for more on the runtime in general.
 // see code:#EEShutdown for a analagous routine run during shutdown.
 //
-HRESULT EEStartup(COINITIEE fFlags)
+HRESULT EEStartup()
 {
     // Cannot use normal contracts here because of the PAL_TRY.
     STATIC_CONTRACT_NOTHROW;
 
     _ASSERTE(!g_fEEStarted && !g_fEEInit && SUCCEEDED (g_EEStartupStatus));
 
-    PAL_TRY(COINITIEE *, pfFlags, &fFlags)
+    PAL_TRY(PVOID, p, NULL)
     {
 #ifndef CROSSGEN_COMPILE
         InitializeClrNotifications();
@@ -1142,7 +1124,7 @@ HRESULT EEStartup(COINITIEE fFlags)
 #endif
 #endif // CROSSGEN_COMPILE
 
-        EEStartupHelper(*pfFlags);
+        EEStartupHelper();
     }
     PAL_EXCEPT_FILTER (FilterStartupException)
     {
@@ -1306,11 +1288,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         _ASSERTE(fIsDllUnloading);
         return;
     }
-
-#ifdef _DEBUG
-    // stop API thread stress
-    APIThreadStress::SetThreadStressCount(0);
-#endif
 
     STRESS_LOG1(LF_STARTUP, LL_INFO10, "EEShutDown entered unloading = %d", fIsDllUnloading);
 
@@ -1876,12 +1853,10 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
         HINSTANCE hInst;
         DWORD dwReason;
         LPVOID lpReserved;
-        void **pTlsData;
     } param;
     param.hInst = hInst;
     param.dwReason = dwReason;
     param.lpReserved = lpReserved;
-    param.pTlsData = NULL;
 
     // Can't use PAL_TRY/EX_TRY here as they access the ClrDebugState which gets blown away as part of the
     // PROCESS_DETACH path. Must use special PAL_TRY_FOR_DLLMAIN, passing the reason were in the DllMain.
@@ -1895,10 +1870,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 // We cache the SystemInfo for anyone to use throughout the
                 // life of the DLL.
                 GetSystemInfo(&g_SystemInfo);
-
-                // Remember module instance
-                g_pMSCorEE = pParam->hInst;
-
 
                 // Set callbacks so that LoadStringRC knows which language our
                 // threads are in so that it can return the proper localized string.
@@ -1943,17 +1914,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 // Don't destroy threads here if we're in shutdown (shutdown will
                 // clean up for us instead).
 
-                // Store the TLS data; we'll need it later and we might NULL the slot in DetachThread.
-                // This would be problematic because we can't depend on the FLS still existing.
-                pParam->pTlsData = CExecutionEngine::CheckThreadStateNoCreate(0
-#ifdef _DEBUG
-                 // When we get here, OS has destroyed FLS, so FlsGetValue returns NULL now.
-                 // We have validation code in CExecutionEngine::CheckThreadStateNoCreate to ensure that
-                 // our TLS and FLS data are consistent, but since FLS has been destroyed, we need
-                 // to silent the check there.  The extra arg for check build is for this purpose.
-                                                                                         , TRUE
-#endif
-                                                                                         );
                 Thread* thread = GetThread();
                 if (thread)
                 {
@@ -1987,7 +1947,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
     if (dwReason == DLL_THREAD_DETACH || dwReason == DLL_PROCESS_DETACH)
     {
-        CExecutionEngine::ThreadDetaching(param.pTlsData);
+        ThreadDetaching();
     }
     return TRUE;
 }

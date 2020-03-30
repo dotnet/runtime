@@ -56,7 +56,7 @@ target_link_libraries(crossgen
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(crossgen
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )
@@ -82,4 +82,4 @@ add_subdirectory(../../vm/crossgen ../../vm/crossgen)
 
 # add the install targets
 install_clr(TARGETS crossgen)
-install_clr(TARGETS crossgen DESTINATION sharedFramework SKIP_STRIP)
+install_clr(TARGETS crossgen DESTINATION sharedFramework)

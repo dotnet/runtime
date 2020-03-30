@@ -290,6 +290,17 @@ public:
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
 #endif
 
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    // OSR Config
+    DWORD         OSR_CounterBump() const { LIMITED_METHOD_CONTRACT; return dwOSR_CounterBump; }
+    DWORD         OSR_HitLimit() const { LIMITED_METHOD_CONTRACT; return dwOSR_HitLimit; }
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT) && defined(_DEBUG)
+    DWORD         OSR_LowId() const { LIMITED_METHOD_CONTRACT; return dwOSR_LowId; }
+    DWORD         OSR_HighId() const { LIMITED_METHOD_CONTRACT; return dwOSR_HighId; }
+#endif
+
 #ifndef CROSSGEN_COMPILE
     bool          BackpatchEntryPointSlots() const { LIMITED_METHOD_CONTRACT; return backpatchEntryPointSlots; }
 #endif
@@ -334,8 +345,6 @@ public:
 
 #ifdef _DEBUG
     bool GenDebuggableCode(void)                    const {LIMITED_METHOD_CONTRACT;  return fDebuggable; }
-    bool IsStressOn(void)                           const {LIMITED_METHOD_CONTRACT;  return fStressOn; }
-    int GetAPIThreadStressCount(void)               const {LIMITED_METHOD_CONTRACT;  return apiThreadStressCount; }
 
     bool ShouldExposeExceptionsInCOMToConsole()     const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 1) != 0; }
     bool ShouldExposeExceptionsInCOMToMsgBox()      const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 2) != 0; }
@@ -820,8 +829,6 @@ private: //----------------------------------------------------------------
     static bool IsInMethList(MethodNamesList* list, MethodDesc* pMD);
 
     bool fDebuggable;
-    bool fStressOn;
-    int apiThreadStressCount;
 
     MethodNamesList* pPrestubHalt;      // list of methods on which to break when hit prestub
     MethodNamesList* pPrestubGC;        // list of methods on which to cause a GC when hit prestub
@@ -1027,6 +1034,16 @@ private: //----------------------------------------------------------------
     DWORD tieredCompilation_DeleteCallCountingStubsAfter;
 #endif
 
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    DWORD dwOSR_HitLimit;
+    DWORD dwOSR_CounterBump;
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT) && defined(_DEBUG)
+    DWORD dwOSR_LowId;
+    DWORD dwOSR_HighId;
+#endif
+
 #ifndef CROSSGEN_COMPILE
     bool backpatchEntryPointSlots;
 #endif
@@ -1124,10 +1141,6 @@ public:
         }                                                               \
     } while(0)
 
-    // STRESS_ASSERT is meant to be temperary additions to the code base that stop the
-    // runtime quickly when running stress
-#define STRESS_ASSERT(cond)   do { if (!(cond) && g_pConfig->IsStressOn())  DebugBreak();    } while(0)
-
 #define FILE_FORMAT_CHECK_MSG(_condition, _message)                     \
     do {                                                                \
         if (g_pConfig != NULL && g_pConfig->fAssertOnBadImageFormat())  \
@@ -1140,7 +1153,6 @@ public:
 
 #else
 
-#define STRESS_ASSERT(cond)
 #define BAD_FORMAT_NOTHROW_ASSERT(str)
 
 #define FILE_FORMAT_CHECK_MSG(_condition, _message)

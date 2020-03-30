@@ -102,12 +102,12 @@ if(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 add_definitions(-DBUILD_AS_STANDALONE)
-if(CLR_CMAKE_HOST_DARWIN)
+if(CLR_CMAKE_HOST_OSX)
   # The implementation of GCToOSInterface on MacOS makes use of non-POSIX
   # pthreads APIs, which by default are not included in the pthreads header
   # unless we define this macro.
   add_definitions(-D_DARWIN_C_SOURCE)
-endif(CLR_CMAKE_HOST_DARWIN)
+endif(CLR_CMAKE_HOST_OSX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)

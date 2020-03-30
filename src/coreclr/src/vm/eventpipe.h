@@ -46,6 +46,10 @@ public:
 
     // Initialize the event pipe.
     static void Initialize();
+    static void FinishInitialize();
+
+    // Initialize environment variable based session
+    static void EnableViaEnvironmentVariables();
 
     // Shutdown the event pipe.
     static void Shutdown();
@@ -59,7 +63,8 @@ public:
         EventPipeSessionType sessionType,
         EventPipeSerializationFormat format,
         const bool rundownRequested,
-        IpcStream *const pStream);
+        IpcStream *const pStream,
+        const bool enableSampleProfiler = true);
 
     // Disable tracing via the event pipe.
     static void Disable(EventPipeSessionID id);
@@ -175,7 +180,8 @@ private:
     // Enable the specified EventPipe session.
     static bool EnableInternal(
         EventPipeSession *const pSession,
-        EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue);
+        EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue,
+        const bool enableSampleProfiler = true);
 
     // Callback function for the stack walker.  For each frame walked, this callback is invoked.
     static StackWalkAction StackWalkCallback(CrawlFrame *pCf, StackContents *pData);
@@ -223,6 +229,7 @@ private:
     static unsigned int * s_pProcGroupOffsets;
 #endif
     static Volatile<uint32_t> s_numberOfSessions;
+    static bool s_enableSampleProfilerAtStartup;
 };
 
 static_assert(EventPipe::MaxNumberOfSessions == 64, "Maximum number of EventPipe sessions is not 64.");

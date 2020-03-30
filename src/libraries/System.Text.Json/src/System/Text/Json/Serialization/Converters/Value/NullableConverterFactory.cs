@@ -20,11 +20,8 @@ namespace System.Text.Json.Serialization
 
             Type valueTypeToConvert = typeToConvert.GetGenericArguments()[0];
 
-            JsonConverter? valueConverter = options.GetConverter(valueTypeToConvert);
-            if (valueConverter == null)
-            {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(valueTypeToConvert);
-            }
+            JsonConverter valueConverter = options.GetConverter(valueTypeToConvert);
+            Debug.Assert(valueConverter != null);
 
             return CreateValueConverter(valueTypeToConvert, valueConverter);
         }

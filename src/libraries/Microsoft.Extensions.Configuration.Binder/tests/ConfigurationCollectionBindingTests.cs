@@ -810,7 +810,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(options));
             Assert.Equal(
-                Resources.FormatError_UnsupportedMultidimensionalArray(typeof(string[,])),
+                SR.Format(SR.Error_UnsupportedMultidimensionalArray, typeof(string[,])),
                 exception.Message);
         }
 

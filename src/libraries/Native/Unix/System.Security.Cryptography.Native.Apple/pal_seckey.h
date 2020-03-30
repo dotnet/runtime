@@ -17,6 +17,7 @@ static const int32_t kErrorSeeError = -2;
 static const int32_t kErrorUnknownAlgorithm = -3;
 static const int32_t kErrorUnknownState = -4;
 
+#ifndef TARGET_IOS
 /*
 Export a key object.
 
@@ -48,6 +49,7 @@ state machine errors.
 */
 PALEXPORT int32_t AppleCryptoNative_SecKeyImportEphemeral(
     uint8_t* pbKeyBlob, int32_t cbKeyBlob, int32_t isPrivateKey, SecKeyRef* ppKeyOut, int32_t* pOSStatus);
+#endif
 
 /*
 For RSA and DSA this function returns the number of bytes in "the key", which corresponds to
@@ -59,9 +61,11 @@ For ECC the value should not be used.
 */
 PALEXPORT uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef publicKey);
 
+#ifndef TARGET_IOS
 /*
 Export a key and re-import it to the NULL keychain.
 
 Only internal callers are expected.
 */
 OSStatus ExportImportKey(SecKeyRef* key, SecExternalItemType type);
+#endif

@@ -288,6 +288,21 @@ void MyICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
     jitInstance->mc->repGetGSCookie(pCookieVal, ppCookieVal);
 }
 
+// Provide patchpoint info for the method currently being jitted.
+void MyICJI::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    jitInstance->mc->cr->AddCall("setPatchpointInfo");
+    jitInstance->mc->cr->recSetPatchpointInfo(patchpointInfo);
+    freeArray(patchpointInfo); // See note in recSetPatchpointInfo... we own destroying this array
+}
+
+// Get OSR info for the method currently being jitted
+PatchpointInfo* MyICJI::getOSRInfo(unsigned* ilOffset)
+{
+    jitInstance->mc->cr->AddCall("getOSRInfo");
+    return jitInstance->mc->repGetOSRInfo(ilOffset);
+}
+
 /**********************************************************************************/
 //
 // ICorModuleInfo
@@ -1536,6 +1551,11 @@ bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, b
 {
     jitInstance->mc->cr->AddCall("convertPInvokeCalliToCall");
     return jitInstance->mc->repConvertPInvokeCalliToCall(pResolvedToken, fMustConvert);
+}
+
+void MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+{
+    jitInstance->mc->cr->AddCall("notifyInstructionSetUsage");
 }
 
 // Stuff directly on ICorJitInfo

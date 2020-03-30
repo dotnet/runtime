@@ -1497,6 +1497,16 @@ bool WrapICorJitInfo::convertPInvokeCalliToCall(
     return temp;
 }
 
+void WrapICorJitInfo::notifyInstructionSetUsage(
+                    CORINFO_InstructionSet instructionSet,
+                    bool supported
+                    )
+{
+    API_ENTER(notifyInstructionSetUsage);
+    wrapHnd->notifyInstructionSetUsage(instructionSetName, supported);
+    API_LEAVE(notifyInstructionSetUsage);
+}
+
 /*********************************************************************************/
 //
 // ICorJitInfo

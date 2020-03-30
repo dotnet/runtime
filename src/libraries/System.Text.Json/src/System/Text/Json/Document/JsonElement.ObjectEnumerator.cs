@@ -19,25 +19,14 @@ namespace System.Text.Json
             private readonly JsonElement _target;
             private int _curIdx;
             private readonly int _endIdxOrVersion;
-            private JsonObjectProperty? _current;
 
             internal ObjectEnumerator(JsonElement target)
             {
                 _target = target;
                 _curIdx = -1;
-                _current = null;
-                Debug.Assert(target._parent != null);
 
-                if (target._parent is JsonDocument document)
-                {
-                    Debug.Assert(target.TokenType == JsonTokenType.StartObject);
-                    _endIdxOrVersion = document.GetEndIndex(_target._idx, includeEndElement: false);
-                }
-                else
-                {
-                    var jsonObject = (JsonObject)target._parent;
-                   _endIdxOrVersion = jsonObject._version;
-                }
+                Debug.Assert(target.TokenType == JsonTokenType.StartObject);
+                _endIdxOrVersion = target._parent.GetEndIndex(_target._idx, includeEndElement: false);
             }
 
             /// <inheritdoc />
@@ -45,23 +34,12 @@ namespace System.Text.Json
             {
                 get
                 {
-                    if (_target._parent is JsonNode)
-                    {
-                        if (_current == null)
-                        {
-                            return default;
-                        }
-
-                        return new JsonProperty(_current.Value.AsJsonElement(), _current.Name);
-                    }
-
                     if (_curIdx < 0)
                     {
                         return default;
                     }
 
-                    var document = (JsonDocument)_target._parent;
-                    return new JsonProperty(new JsonElement(document, _curIdx));
+                    return new JsonProperty(new JsonElement(_target._parent, _curIdx));
                 }
             }
 
@@ -95,14 +73,12 @@ namespace System.Text.Json
             public void Dispose()
             {
                 _curIdx = _endIdxOrVersion;
-                _current = null;
             }
 
             /// <inheritdoc />
             public void Reset()
             {
                 _curIdx = -1;
-                _current = null;
             }
 
             /// <inheritdoc />
@@ -111,28 +87,6 @@ namespace System.Text.Json
             /// <inheritdoc />
             public bool MoveNext()
             {
-                if (_target._parent is JsonObject jsonObject)
-                {
-                    if (jsonObject._version != _endIdxOrVersion)
-                    {
-                        throw new InvalidOperationException(SR.ArrayModifiedDuringIteration);
-                    }
-
-                    if (_current == null)
-                    {
-                        _current = jsonObject._first;
-                        return true;
-                    }
-
-                    if (_current.Next != null)
-                    {
-                        _current = _current.Next;
-                        return true;
-                    }
-
-                    return false;
-                }
-
                 if (_curIdx >= _endIdxOrVersion)
                 {
                     return false;
@@ -144,9 +98,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    Debug.Assert(_target._parent != null);
-                    var document = (JsonDocument)_target._parent;
-                    _curIdx = document.GetEndIndex(_curIdx, includeEndElement: true);
+                    _curIdx = _target._parent.GetEndIndex(_curIdx, includeEndElement: true);
                 }
 
                 // _curIdx is now pointing at a property name, move one more to get the value

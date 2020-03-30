@@ -14,7 +14,7 @@ Below table shows the combined area owners on this repository:
 | area-HostModel | @vitek-karas @swaroop-sridhar | |
 | area-ILTools-coreclr | @BruceForstall @dotnet/jit-contrib | |
 | area-Infrastructure-coreclr | @jeffschwMSFT @jashook @trylek | |
-| area-Infrastructure-installer | @dleeapho @dagood | |
+| area-Infrastructure-installer | @dleeapho @NikolaMilosavljevic | |
 | area-Infrastructure-libraries | @ViktorHofer @ericstj @safern @Anipik | Covers:<ul><li>Packaging</li><li>Build and test infra for libraries in dotnet/runtime repo</li><li>VS integration</li></ul><br/> |
 | area-Infrastructure | @ViktorHofer @jeffschwMSFT @dleeapho | |
 | area-Interop-coreclr | @jeffschwMSFT @AaronRobinsonMSFT | |
@@ -22,7 +22,7 @@ Below table shows the combined area owners on this repository:
 | area-PAL-coreclr | @janvorli | |
 | area-R2RDump-coreclr | @nattress | |
 | area-ReadyToRun-coreclr | @nattress | |
-| area-Setup | @dagood @dleeapho | Distro-specific (Linux, Mac and Windows) setup packages and msi files  |
+| area-Setup | @NikolaMilosavljevic @dleeapho | Distro-specific (Linux, Mac and Windows) setup packages and msi files  |
 | area-Single-File | @swaroop-sridhar | |
 | area-SDK | @janvorli | General development issues and overlap with the SDK and CLI |
 | area-Serialization | @StephenMolloy @HongGit | Packages:<ul><li>System.Runtime.Serialization.Xml</li><li>System.Runtime.Serialization.Json</li><li>System.Private.DataContractSerialization</li><li>System.Xml.XmlSerializer</li></ul> Excluded:<ul><li>System.Runtime.Serialization.Formatters</li></ul> |
@@ -32,7 +32,7 @@ Below table shows the combined area owners on this repository:
 | area-Tracing-coreclr | @sywhang @josalem | |
 | area-TypeSystem-coreclr | @davidwrighton @MichalStrehovsky @fadimounir | |
 | area-UWP | @nattress | UWP-specific issues including Microsoft.NETCore.UniversalWindowsPlatform and Microsoft.Net.UWPCoreRuntimeSdk |
-| area-VM-coreclr | @jeffschw | |
+| area-VM-coreclr | @jeffschwMSFT | |
 | area-AssemblyLoader-mono | @CoffeeFlux | |
 | area-Codegen-meta-mono | @vargaz | |
 | area-Codegen-JIT-mono | @SamMonoRT | |
@@ -82,13 +82,13 @@ Below table shows the combined area owners on this repository:
 | area-System.Numerics.Tensors | @pgovind @eiriktsarpalis | |
 | area-System.Reflection | @steveharter @GrabYourPitchforks | |
 | area-System.Reflection.Emit | @steveharter @GrabYourPitchforks | |
-| area-System.Reflection.Metadata | @tmat @nguerrera | |
+| area-System.Reflection.Metadata | @tmat | |
 | area-System.Resources | @buyaa-n @tarekgh @krwq | |
 | area-System.Runtime | @bartonjs @joperezr | Included:<ul><li>System.Runtime.Serialization.Formatters</li><li>System.Runtime.InteropServices.RuntimeInfo</li><li>System.Array</li></ul>Excluded:<ul><li>Path -> System.IO</li><li>StopWatch -> System.Diagnostics</li><li>Uri -> System.Net</li><li>WebUtility -> System.Net</li></ul> |
 | area-System.Runtime.Caching | @StephenMolloy @HongGit | |
 | area-System.Runtime.CompilerServices | @Anipik @steveharter | |
 | area-System.Runtime.InteropServices | @AaronRobinsonMSFT @jkoritzinsky | Excluded:<ul><li>System.Runtime.InteropServices.RuntimeInfo</li></ul> |
-| area-System.Runtime.Intrinsics | @tannergooding @CarolEidt @RussKeldorph | |
+| area-System.Runtime.Intrinsics | @tannergooding @CarolEidt @echesakovMSFT | |
 | area-System.Security | @bartonjs @GrabYourPitchforks @krwq | |
 | area-System.ServiceModel | @StephenBonikowsky @HongGit @mconnew | Repo: https://github.com/dotnet/WCF<br>Packages:<ul><li>System.ServiceModel.Primitives</li><li>System.ServiceModel.Http</li><li>System.ServiceModel.NetTcp</li><li>System.ServiceModel.Duplex</li><li>System.ServiceModel.Security</li></ul> |
 | area-System.ServiceModel.Syndication | @StephenMolloy @HongGit | |

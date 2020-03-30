@@ -329,15 +329,15 @@ namespace System.Text.Json
             }
         }
 
-        internal JsonClassInfo GetOrAddClass(Type classType)
+        internal JsonClassInfo GetOrAddClass(Type type)
         {
             _haveTypesBeenCreated = true;
 
             // todo: for performance and reduced instances, consider using the converters and JsonClassInfo from s_defaultOptions by cloning (or reference directly if no changes).
             // https://github.com/dotnet/runtime/issues/32357
-            if (!_classes.TryGetValue(classType, out JsonClassInfo? result))
+            if (!_classes.TryGetValue(type, out JsonClassInfo? result))
             {
-                result = _classes.GetOrAdd(classType, new JsonClassInfo(classType, this));
+                result = _classes.GetOrAdd(type, new JsonClassInfo(type, this));
             }
 
             return result;

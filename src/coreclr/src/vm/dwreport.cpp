@@ -143,7 +143,7 @@ BOOL RegisterOutOfProcessWatsonCallbacks()
         if (SUCCEEDED(::GetCORSystemDirectoryInternaL(wszDACPath)))
         {
             wszDACPath.Append(wszDACName);
-            hr = (*pFnWerRegisterRuntimeExceptionModule)(wszDACPath, (PDWORD)g_pMSCorEE);
+            hr = (*pFnWerRegisterRuntimeExceptionModule)(wszDACPath, (PDWORD)g_hThisInst);
         }
         else {
             hr = E_FAIL;

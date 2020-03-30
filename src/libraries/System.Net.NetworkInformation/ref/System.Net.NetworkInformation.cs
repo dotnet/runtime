@@ -129,7 +129,7 @@ namespace System.Net.NetworkInformation
         public abstract string HostName { get; }
         public abstract bool IsWinsProxy { get; }
         public abstract System.Net.NetworkInformation.NetBiosNodeType NodeType { get; }
-        public virtual System.IAsyncResult BeginGetUnicastAddresses(System.AsyncCallback callback, object state) { throw null; }
+        public virtual System.IAsyncResult BeginGetUnicastAddresses(System.AsyncCallback? callback, object? state) { throw null; }
         public virtual System.Net.NetworkInformation.UnicastIPAddressInformationCollection EndGetUnicastAddresses(System.IAsyncResult asyncResult) { throw null; }
         public abstract System.Net.NetworkInformation.TcpConnectionInformation[] GetActiveTcpConnections();
         public abstract System.Net.IPEndPoint[] GetActiveTcpListeners();
@@ -270,8 +270,8 @@ namespace System.Net.NetworkInformation
         Mixed = 4,
         Hybrid = 8,
     }
-    public delegate void NetworkAddressChangedEventHandler(object sender, System.EventArgs e);
-    public delegate void NetworkAvailabilityChangedEventHandler(object sender, System.Net.NetworkInformation.NetworkAvailabilityEventArgs e);
+    public delegate void NetworkAddressChangedEventHandler(object? sender, System.EventArgs e);
+    public delegate void NetworkAvailabilityChangedEventHandler(object? sender, System.Net.NetworkInformation.NetworkAvailabilityEventArgs e);
     public partial class NetworkAvailabilityEventArgs : System.EventArgs
     {
         internal NetworkAvailabilityEventArgs() { }
@@ -282,8 +282,8 @@ namespace System.Net.NetworkInformation
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public NetworkChange() { }
-        public static event System.Net.NetworkInformation.NetworkAddressChangedEventHandler NetworkAddressChanged { add { } remove { } }
-        public static event System.Net.NetworkInformation.NetworkAvailabilityChangedEventHandler NetworkAvailabilityChanged { add { } remove { } }
+        public static event System.Net.NetworkInformation.NetworkAddressChangedEventHandler? NetworkAddressChanged { add { } remove { } }
+        public static event System.Net.NetworkInformation.NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged { add { } remove { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public static void RegisterNetworkChange(System.Net.NetworkInformation.NetworkChange nc) { }
@@ -366,13 +366,13 @@ namespace System.Net.NetworkInformation
     {
         public static readonly System.Net.NetworkInformation.PhysicalAddress None;
         public PhysicalAddress(byte[] address) { }
-        public override bool Equals(object comparand) { throw null; }
+        public override bool Equals(object? comparand) { throw null; }
         public byte[] GetAddressBytes() { throw null; }
         public override int GetHashCode() { throw null; }
-        public static System.Net.NetworkInformation.PhysicalAddress Parse(string address) { throw null; }
+        public static System.Net.NetworkInformation.PhysicalAddress Parse(string? address) { throw null; }
         public static System.Net.NetworkInformation.PhysicalAddress Parse(ReadOnlySpan<char> address) { throw null; }
-        public static bool TryParse(string address, out System.Net.NetworkInformation.PhysicalAddress value) { throw null; }
-        public static bool TryParse(ReadOnlySpan<char> address, out System.Net.NetworkInformation.PhysicalAddress value) { throw null; }
+        public static bool TryParse(string? address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.NetworkInformation.PhysicalAddress? value) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.NetworkInformation.PhysicalAddress? value) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum PrefixOrigin

@@ -8,23 +8,22 @@ Here is one example of a daily workflow for a developer working mainly on the li
 :: From root:
 git clean -xdf
 git pull upstream master & git push origin master
-build -subsetCategory coreclr -c Release
 :: Build Debug libraries on top of Release runtime:
-build -subsetCategory libraries -runtimeConfiguration Release
-
+build -subsetCategory coreclr-libraries -runtimeConfiguration Release
 :: The above you may only perform once in a day, or when you pull down significant new changes.
 
 :: Switch to working on a given library (RegularExpressions in this case)
 cd src\libraries\System.Text.RegularExpressions
 
 :: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
+build -vs System.Text.RegularExpressions
 
 :: Change to test directory
 cd tests
 
 :: Then inner loop build / test
 :: (If using Visual Studio, you might run tests inside it instead)
-pushd ..\src & dotnet build & popd & dotnet build /t:buildandtest
+pushd ..\src & dotnet build & popd & dotnet build /t:test
 ```
 
 The instructions for Linux and macOS are essentially the same:
@@ -33,10 +32,8 @@ The instructions for Linux and macOS are essentially the same:
 # From root:
 git clean -xdf
 git pull upstream master & git push origin master
-./build.sh -subsetCategory coreclr -c Release
 # Build Debug libraries on top of Release runtime:
-./build.sh -subsetCategory libraries -runtimeConfiguration Release
-
+./build.sh -subsetCategory coreclr-libraries -runtimeconfiguration Release
 # The above you may only perform once in a day, or when you pull down significant new changes.
 
 # Switch to working on a given library (RegularExpressions in this case)
@@ -46,7 +43,7 @@ cd src/libraries/System.Text.RegularExpressions
 cd tests
 
 # Then inner loop build / test:
-pushd ../src & dotnet build & popd & dotnet build /t:buildandtest
+pushd ../src & dotnet build & popd & dotnet build /t:test
 ```
 
 The steps above may be all you need to know to make a change. Want more details about what this means? Read on.
@@ -75,12 +72,12 @@ The above commands will give you libraries in "debug" configuration (the default
 
 The libraries build has two logical components, the native build which produces the "shims" (which provide a stable interface between the OS and managed code) and the managed build which produces the MSIL code and NuGet packages that make up Libraries. The commands above will build both.
 
-The build settings (BuildTargetFramework, OSGroup, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
+The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
 - `-framework|-f` identifies the target framework for the build. Possible values include `netcoreapp5.0` (currently the latest .NET Core version) or `net472`. (msbuild property `BuildTargetFramework`)
-- `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `OSGroup`)
+- `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
-- `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `ArchGroup`)
+- `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
 
 For more details on the build settings see [project-guidelines](../../../coding-guidelines/project-guidelines.md#build-pivots).
 
@@ -163,7 +160,7 @@ Under the `src` directory is a set of directories, each of which represents a pa
 
 For example the `src\libraries\System.Diagnostics.DiagnosticSource` directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly.
 
-You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)]`.
+You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)]`.
 
 You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to
 `src\libraries\System.Diagnostics.DiagnosticSource\tests` and typing `dotnet build`.
@@ -174,9 +171,9 @@ For libraries that have multiple target frameworks the target frameworks will be
 
 **Examples**
 
-- Build project for Linux for .NET Core
+- Build project for Linux
 ```
-dotnet build System.Net.NetworkInformation.csproj /p:OSGroup=Linux
+dotnet build System.Net.NetworkInformation.csproj /p:TargetOS=Linux
 ```
 
 - Build Release version of library
@@ -205,7 +202,7 @@ One can build in Debug or Release mode from the root by doing `./build.sh -subse
 
 ### Building other Architectures
 
-One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh -subsetCategory libraries -arch [value]` or in a project `/p:ArchGroup=[value]` after the `dotnet build` command.
+One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh -subsetCategory libraries -arch [value]` or in a project `/p:TargetArchitecture=[value]` after the `dotnet build` command.
 
 ## Working in Visual Studio
 

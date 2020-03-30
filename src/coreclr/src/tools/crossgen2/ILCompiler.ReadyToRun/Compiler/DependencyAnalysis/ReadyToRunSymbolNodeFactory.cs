@@ -80,6 +80,14 @@ namespace ILCompiler.DependencyAnalysis
                 );
             });
 
+            _checkFieldOffsetCache = new NodeCache<FieldDesc, ISymbolNode>(key =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    new FieldFixupSignature(ReadyToRunFixupKind.Check_FieldOffset, key)
+                );
+            });
+
             _interfaceDispatchCells = new NodeCache<MethodAndCallSite, ISymbolNode>(cellKey =>
             {
                 return new DelayLoadHelperMethodImport(
@@ -374,6 +382,13 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode FieldOffset(FieldDesc fieldDesc)
         {
             return _fieldOffsetCache.GetOrAdd(fieldDesc);
+        }
+
+        private NodeCache<FieldDesc, ISymbolNode> _checkFieldOffsetCache;
+
+        public ISymbolNode CheckFieldOffset(FieldDesc fieldDesc)
+        {
+            return _checkFieldOffsetCache.GetOrAdd(fieldDesc);
         }
 
         private NodeCache<TypeDesc, ISymbolNode> _fieldBaseOffsetCache;

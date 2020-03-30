@@ -2884,18 +2884,18 @@ mono_gc_add_memory_pressure (gint64 value)
 void
 sgen_client_degraded_allocation (void)
 {
+	//The WASM target aways triggers degrated allocation before collecting. So no point in printing the warning as it will just confuse users
+#ifndef HOST_WASM
 	static gint32 last_major_gc_warned = -1;
 	static gint32 num_degraded = 0;
 
 	gint32 major_gc_count = mono_atomic_load_i32 (&mono_gc_stats.major_gc_count);
-	//The WASM target aways triggers degrated allocation before collecting. So no point in printing the warning as it will just confuse users
-#if !defined (TARGET_WASM)
 	if (mono_atomic_load_i32 (&last_major_gc_warned) < major_gc_count) {
 		gint32 num = mono_atomic_inc_i32 (&num_degraded);
 		if (num == 1 || num == 3)
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
 		else if (num == 10)
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
 
 		mono_atomic_store_i32 (&last_major_gc_warned, major_gc_count);
 	}
@@ -2970,9 +2970,9 @@ sgen_client_init (void)
 void
 mono_gc_init_icalls (void)
 {
-	mono_register_jit_icall (mono_gc_alloc_obj, mono_icall_sig_object_ptr_int, FALSE);
-	mono_register_jit_icall (mono_gc_alloc_vector, mono_icall_sig_object_ptr_int_int, FALSE);
-	mono_register_jit_icall (mono_gc_alloc_string, mono_icall_sig_object_ptr_int_int32, FALSE);
+	mono_register_jit_icall (mono_gc_alloc_obj, mono_icall_sig_object_ptr_sizet, FALSE);
+	mono_register_jit_icall (mono_gc_alloc_vector, mono_icall_sig_object_ptr_sizet_ptr, FALSE);
+	mono_register_jit_icall (mono_gc_alloc_string, mono_icall_sig_object_ptr_sizet_int32, FALSE);
 	mono_register_jit_icall (mono_profiler_raise_gc_allocation, mono_icall_sig_void_object, FALSE);
 }
 

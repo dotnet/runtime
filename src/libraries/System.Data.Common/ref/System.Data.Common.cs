@@ -1786,7 +1786,7 @@ namespace System.Data.Common
         public int? NumericScale { get { throw null; } protected set { } }
         public string UdtAssemblyQualifiedName { get { throw null; } protected set { } }
     }
-    public abstract partial class DbCommand : System.ComponentModel.Component, System.Data.IDbCommand, System.IDisposable
+    public abstract partial class DbCommand : System.ComponentModel.Component, System.Data.IDbCommand, System.IDisposable, System.IAsyncDisposable
     {
         protected DbCommand() { }
         [System.ComponentModel.DefaultValueAttribute("")]
@@ -1883,7 +1883,7 @@ namespace System.Data.Common
         protected abstract void SetRowUpdatingHandler(System.Data.Common.DbDataAdapter adapter);
         public virtual string UnquoteIdentifier(string quotedIdentifier) { throw null; }
     }
-    public abstract partial class DbConnection : System.ComponentModel.Component, System.Data.IDbConnection, System.IDisposable
+    public abstract partial class DbConnection : System.ComponentModel.Component, System.Data.IDbConnection, System.IDisposable, System.IAsyncDisposable
     {
         protected DbConnection() { }
         [System.ComponentModel.DefaultValueAttribute("")]
@@ -2040,7 +2040,7 @@ namespace System.Data.Common
         public int Update(System.Data.DataSet dataSet, string srcTable) { throw null; }
         public int Update(System.Data.DataTable dataTable) { throw null; }
     }
-    public abstract partial class DbDataReader : System.MarshalByRefObject, System.Collections.IEnumerable, System.Data.IDataReader, System.Data.IDataRecord, System.IDisposable
+    public abstract partial class DbDataReader : System.MarshalByRefObject, System.Collections.IEnumerable, System.Data.IDataReader, System.Data.IDataRecord, System.IDisposable, System.IAsyncDisposable
     {
         protected DbDataReader() { }
         public abstract int Depth { get; }
@@ -2343,7 +2343,7 @@ namespace System.Data.Common
         public DbProviderSpecificTypePropertyAttribute(bool isProviderSpecificTypeProperty) { }
         public bool IsProviderSpecificTypeProperty { get { throw null; } }
     }
-    public abstract partial class DbTransaction : System.MarshalByRefObject, System.Data.IDbTransaction, System.IDisposable
+    public abstract partial class DbTransaction : System.MarshalByRefObject, System.Data.IDbTransaction, System.IDisposable, System.IAsyncDisposable
     {
         protected DbTransaction() { }
         public System.Data.Common.DbConnection Connection { get { throw null; } }

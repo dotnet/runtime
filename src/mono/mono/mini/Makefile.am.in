@@ -519,6 +519,7 @@ common_sources = \
 	mini-cross-helpers.c \
 	arch-stubs.c		\
 	llvm-runtime.h	\
+	llvm-intrinsics.h	\
 	type-checking.c \
 	calls.c			\
 	lldb.h			\
@@ -782,7 +783,9 @@ libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 # These are public headers.
 # They should not use glib.h, G_BEGIN_DECLS, guint, etc.
 # They should be wrapped in MONO_BEGIN_DECLS / MONO_END_DECLS.
-libmonoinclude_HEADERS = jit.h
+libmonoinclude_HEADERS = \
+	jit.h		\
+	mono-private-unstable.h
 
 CSFLAGS = -unsafe -nowarn:0219,0169,0414,0649,0618
 
@@ -920,11 +923,7 @@ gctest: mono gc-test.exe
 	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(MINI_RUNTIME) --regression gc-test.exe
 
 LLVM_AOT_RUNTIME_OPTS=$(if $(LLVM),--llvm,)
-if AMD64
-LLVM_AOT_COMPILER_OPTS=$(if $(LLVM),llvmllc=-mattr=+sse3,)
-else
-LLVM_AOT_COMPILER_OPTS=
-endif
+LLVM_AOT_COMPILER_OPTS=mcpu=native
 GSHAREDVT_RUNTIME_OPTS=$(if $(GSHAREDVT),-O=gsharedvt,)
 
 aotcheck: mono $(regtests)

@@ -347,7 +347,7 @@ GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<LONG>   g_TrapReturningThreads;
 
-EXTERN HINSTANCE            g_pMSCorEE;
+EXTERN HINSTANCE            g_hThisInst;
 EXTERN BBSweep              g_BBSweep;
 EXTERN IBCLogger            g_IBCLogger;
 
@@ -470,8 +470,6 @@ extern int g_IGCHoardVM;
 #ifdef GCTRIMCOMMIT
 extern int g_IGCTrimCommit;
 #endif
-
-extern BOOL g_fEnableETW;
 
 // Returns a BOOL to indicate if the runtime is active or not
 BOOL IsRuntimeActive();
@@ -628,12 +626,6 @@ inline bool CORDebuggerAttached()
 #endif// defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
 
-
-
-//
-// IJW needs the shim HINSTANCE
-//
-EXTERN HINSTANCE g_hInstShim;
 
 #ifndef TARGET_UNIX
 GVAL_DECL(SIZE_T, g_runtimeLoadedBaseAddress);
