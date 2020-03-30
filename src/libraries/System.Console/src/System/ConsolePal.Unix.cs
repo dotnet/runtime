@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -73,9 +74,7 @@ namespace System
         {
             get
             {
-                EnsureInitialized();
-
-                return Console.EnsureInitialized(
+                return LazyInitializeConsoleAndField(
                         ref s_stdInReader,
                         () => SyncTextReader.GetSynchronizedTextReader(
                             new StdInReader(
@@ -84,7 +83,7 @@ namespace System
             }
         }
 
-        internal static TextReader GetOrCreateReader()
+        private static TextReader GetOrCreateReader()
         {
             if (Console.IsInputRedirected)
             {
@@ -105,6 +104,9 @@ namespace System
                 return StdInReader;
             }
         }
+
+        internal static TextReader GetIn([NotNull] ref TextReader? field)
+            => LazyInitializeConsoleAndField(ref field, () => GetOrCreateReader());
 
         public static bool KeyAvailable { get { return StdInReader.KeyAvailable; } }
 
@@ -923,6 +925,21 @@ namespace System
             {
                 EnsureInitializedCore(); // factored out for inlinability
             }
+        }
+
+        internal static T LazyInitializeConsoleAndField<T>([NotNull] ref T? field, Func<T> initializer) where T : class =>
+            Volatile.Read(ref field) ?? LazyInitializeConsoleAndFieldCore(ref field, initializer);
+
+        private static T LazyInitializeConsoleAndFieldCore<T>([NotNull] ref T? field, Func<T> initializer) where T : class
+        {
+            // We don't call ConsolePal.EnsureInitialized from within the initializer function to avoid deadlocks.
+            // ConsolePal.EnsureInitialized takes a lock on Console.Out.
+            // Console.EnsureInitialized takes a lock on InternalSyncObject.
+            // When called from the initializer, a deadlock could happen when another thread locks these objects
+            // in the opposite order.
+            EnsureInitialized();
+
+            return Console.EnsureInitialized(ref field, initializer);
         }
 
         /// <summary>Ensures that the console has been initialized for use.</summary>

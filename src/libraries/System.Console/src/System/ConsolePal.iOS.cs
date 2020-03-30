@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -47,7 +48,10 @@ namespace System
 
         public static bool IsErrorRedirectedCore() => false;
 
-        internal static TextReader GetOrCreateReader() => throw new PlatformNotSupportedException();
+        private static TextReader GetOrCreateReader() => throw new PlatformNotSupportedException();
+
+        internal static TextReader GetIn([NotNull] ref TextReader? field)
+            => Console.EnsureInitialized(ref field, () => GetOrCreateReader());
 
         public static bool NumberLock => false;
 

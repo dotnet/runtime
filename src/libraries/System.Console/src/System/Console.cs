@@ -36,7 +36,7 @@ namespace System
         internal static T EnsureInitialized<T>([NotNull] ref T? field, Func<T> initializer) where T : class =>
             LazyInitializer.EnsureInitialized(ref field, ref InternalSyncObject, initializer);
 
-        public static TextReader In => EnsureInitialized(ref s_in, () => ConsolePal.GetOrCreateReader());
+        public static TextReader In => ConsolePal.GetIn(ref s_in);
 
         public static Encoding InputEncoding
         {

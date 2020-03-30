@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -146,7 +147,7 @@ namespace System
             return (!Interop.Kernel32.IsGetConsoleModeCallSuccessful(handle));
         }
 
-        internal static TextReader GetOrCreateReader()
+        private static TextReader GetOrCreateReader()
         {
             Stream inputStream = OpenStandardInput();
             return SyncTextReader.GetSynchronizedTextReader(inputStream == Stream.Null ?
@@ -158,6 +159,9 @@ namespace System
                     bufferSize: Console.ReadBufferSize,
                     leaveOpen: true));
         }
+
+        internal static TextReader GetIn([NotNull] ref TextReader? field)
+            => Console.EnsureInitialized(ref field, () => GetOrCreateReader());
 
         // Use this for blocking in Console.ReadKey, which needs to protect itself in case multiple threads call it simultaneously.
         // Use a ReadKey-specific lock though, to allow other fields to be initialized on this type.
