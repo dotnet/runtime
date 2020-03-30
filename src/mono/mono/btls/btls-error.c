@@ -58,8 +58,8 @@ mono_btls_error_get_reason (int error)
         case SSL_R_NO_RENEGOTIATION:
             return 100;
         default:
-            return 0;
+            break;
     }
 
-    return reason;
+    return 0;
 }

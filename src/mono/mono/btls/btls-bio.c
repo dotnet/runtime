@@ -72,17 +72,16 @@ mono_ctrl (BIO *bio, int cmd, long num, void *ptr)
 {
 	MonoBtlsBio *mono = (MonoBtlsBio *)bio->ptr;
 
-	if (!mono)
-		return -1;
-
-	// fprintf (stderr, "mono_ctrl: %x - %lx - %p\n", cmd, num, ptr);
-	switch (cmd) {
-		case BIO_CTRL_FLUSH:
-			return (long)mono->control_func (mono->instance, MONO_BTLS_CONTROL_COMMAND_FLUSH, 0);
-		default:
-			return -1;
-	}
-	return -1;
+    if (mono) {
+        // fprintf (stderr, "mono_ctrl: %x - %lx - %p\n", cmd, num, ptr);
+        switch (cmd) {
+            case BIO_CTRL_FLUSH:
+                return (long) mono->control_func(mono->instance, MONO_BTLS_CONTROL_COMMAND_FLUSH, 0);
+            default:
+                break;
+        }
+    }
+    return -1;
 }
 
 static int
