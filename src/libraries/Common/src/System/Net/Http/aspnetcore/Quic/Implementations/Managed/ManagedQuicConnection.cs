@@ -26,6 +26,7 @@ namespace System.Net.Quic.Implementations.Managed
 
     internal class ManagedQuicConnection : QuicConnectionProvider
     {
+        private readonly Tls _tls;
         internal enum ProcessPacketResult
         {
             Ok,
@@ -36,7 +37,6 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly QuicClientConnectionOptions? _clientOpts;
         private readonly QuicListenerOptions? _serverOpts;
 
-        private readonly IntPtr _ssl;
         private GCHandle _gcHandle;
 
         private bool _isServer;
@@ -44,7 +44,6 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly EpochData[] _epochs;
 
         private readonly TransportParameters localTransportParams;
-        private TransportParameters? remoteTransportParams;
 
         private QuicVersion version = QuicVersion.Draft27;
 
@@ -60,25 +59,6 @@ namespace System.Net.Quic.Implementations.Managed
         private string? cert;
 
         private string? privateKey;
-
-
-        public int OnDataReceived(OpenSslEncryptionLevel level, ReadOnlySpan<byte> data)
-        {
-            return Interop.OpenSslQuic.SslProvideQuicData(_ssl, level, data);
-        }
-
-        private static OpenSslEncryptionLevel GetOsslEncryptionLevel(EncryptionLevel level)
-        {
-            var osslLevel = level switch
-            {
-                EncryptionLevel.Initial => OpenSslEncryptionLevel.Initial,
-                EncryptionLevel.Handshake => OpenSslEncryptionLevel.Handshake,
-                EncryptionLevel.EarlyData => OpenSslEncryptionLevel.EarlyData,
-                EncryptionLevel.Application => OpenSslEncryptionLevel.Application,
-                _ => throw new ArgumentOutOfRangeException(nameof(level), level, null)
-            };
-            return osslLevel;
-        }
 
         public ConnectionId? SourceConnectionId => _scid;
 
@@ -104,8 +84,8 @@ namespace System.Net.Quic.Implementations.Managed
 
         public ManagedQuicConnection(bool isServer)
         {
-            _ssl = Interop.OpenSslQuic.SslCreate();
             _gcHandle = GCHandle.Alloc(this);
+            _tls = new Tls();
 
             _isServer = isServer;
 
@@ -115,48 +95,22 @@ namespace System.Net.Quic.Implementations.Managed
             _epochs = new EpochData[3] {new EpochData(), new EpochData(), new EpochData()};
         }
 
-        private unsafe void Init()
+        private void Init()
         {
-            QuicMethods.InitCallbacks(_gcHandle, _ssl);
-
-            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMinProtoVersion, (long)OpenSslTlsVersion.Tls13,
-                IntPtr.Zero);
-            Interop.OpenSslQuic.SslCtrl(_ssl, SslCtrlCommand.SetMaxProtoVersion, (long)OpenSslTlsVersion.Tls13,
-                IntPtr.Zero);
-
-            if (cert != null)
-                Interop.OpenSslQuic.SslUseCertificateFile(_ssl, cert, SslFiletype.Pem);
-            if (privateKey != null)
-                Interop.OpenSslQuic.SslUsePrivateKeyFile(_ssl, privateKey, SslFiletype.Pem);
+            _tls.Init(_gcHandle, cert, privateKey, _isServer, localTransportParams);
 
             if (_isServer)
             {
-                Interop.OpenSslQuic.SslSetAcceptState(_ssl);
-            }
-            else
-            {
-                Interop.OpenSslQuic.SslSetConnectState(_ssl);
-                // TODO-RZ get hostname
-                Interop.OpenSslQuic.SslSetTlsExHostName(_ssl, "localhost:2000");
-
-                // init random connection ids for the client
-                _scid = ConnectionId.Random(20);
-                _dcid = ConnectionId.Random(20);
-                _connectionIdCollection.Add(_dcid.Data);
-
-                // derive encryption secrets straight away.
-                DeriveInitialProtectionKeys(_dcid.Data);
+                return;
             }
 
-            // init transport parameters
-            byte[] buffer = new byte[1024];
-            var writer = new QuicWriter(buffer);
-            TransportParameters.Write(writer, _isServer, localTransportParams);
-            fixed (byte* pData = buffer)
-            {
-                // TODO-RZ: check return value == 1
-                Interop.OpenSslQuic.SslSetQuicTransportParams(_ssl, pData, new IntPtr(writer.BytesWritten));
-            }
+            // init random connection ids for the client
+            _scid = ConnectionId.Random(20);
+            _dcid = ConnectionId.Random(20);
+            _connectionIdCollection.Add(_dcid.Data);
+
+            // derive also clients initial secrets.
+            DeriveInitialProtectionKeys(_dcid.Data);
         }
 
         private void DeriveInitialProtectionKeys(byte[] dcid)
@@ -226,7 +180,7 @@ namespace System.Net.Quic.Implementations.Managed
                         handshakeWanted = true;
                         if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.ParsingFail;
                         // TODO-RZ: Utilize the offset
-                        OnDataReceived(GetOsslEncryptionLevel(GetEncryptionLevel(packetType)), crypto.CryptoData);
+                        _tls.OnDataReceived(GetEncryptionLevel(packetType), crypto.CryptoData);
 
                         break;
                     }
@@ -322,7 +276,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             // HACK: we do not want to try processing the AEAD integrity tag as if it were frames.
             var originalSegment = reader.Buffer;
-            var tagLength = GetEpoch(GetEncryptionLevel(packetType)).RecvCryptoSeal.TagLength;
+            var tagLength = GetEpoch(GetEncryptionLevel(packetType)).RecvCryptoSeal!.TagLength;
             reader.Reset(reader.Buffer.Slice(reader.BytesRead, reader.BytesLeft - tagLength));
             var retval = ProcessFrames(reader, packetType);
             reader.Reset(originalSegment);
@@ -395,9 +349,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal EncryptionLevel GetWriteLevel()
         {
             // TODO-RZ: handle resend and packet loss of earlier levels
-            EncryptionLevel desiredLevel = QuicMethods.ToManagedEncryptionLevel(
-                Interop.OpenSslQuic.SslQuicWriteLevel(_ssl));
-
+            EncryptionLevel desiredLevel = _tls.GetWriteLevel();
             // if not connected, then handshake is not done yet
             // if (!Connected && desiredLevel == EncryptionLevel.Application)
                 // return EncryptionLevel.Handshake;
@@ -450,7 +402,7 @@ namespace System.Net.Quic.Implementations.Managed
                 // short header
                 // TODO-RZ: implement spin
                 // TODO-RZ: implement key update
-                ShortPacketHeader.Write(writer, new ShortPacketHeader(false, false, pnLength, DestinationConnectionId));
+                ShortPacketHeader.Write(writer, new ShortPacketHeader(false, false, pnLength, DestinationConnectionId!));
             }
             else
             {
@@ -543,33 +495,12 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal SslError DoHandshake()
         {
-            int status = Interop.OpenSslQuic.SslDoHandshake(_ssl);
-            if (status < 0)
-            {
-                return (SslError)Interop.OpenSslQuic.SslGetError(_ssl, status);
-            }
-
-            return SslError.None;
+            return _tls.DoHandshake();
         }
 
-        internal unsafe TransportParameters GetPeerTransportParameters()
+        internal TransportParameters GetPeerTransportParameters()
         {
-            if (remoteTransportParams == null)
-            {
-                byte[] buffer = new byte[1024];
-                byte* data;
-                IntPtr length;
-                Interop.OpenSslQuic.SslGetPeerQuicTransportParams(_ssl, out data, out length);
-
-                new Span<byte>(data, length.ToInt32()).CopyTo(buffer);
-                var reader = new QuicReader(new ArraySegment<byte>(buffer, 0, length.ToInt32()));
-                if (!TransportParameters.Read(reader, _isServer, out remoteTransportParams))
-                {
-                    throw new InvalidOperationException("Failed to get peers transport params");
-                }
-            }
-
-            return remoteTransportParams!;
+            return _tls.GetPeerTransportParameters(_isServer);
         }
 
         private EncryptionLevel GetEncryptionLevel(PacketType packetType)
@@ -600,7 +531,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         #region Public API implementation
 
-        internal override bool Connected => Interop.OpenSslQuic.SslIsInInit(_ssl) == 0;
+        internal override bool Connected => _tls.IsHandshakeFinishhed;
 
         internal override IPEndPoint LocalEndPoint => _clientOpts!.LocalEndPoint!;
 
@@ -630,9 +561,8 @@ namespace System.Net.Quic.Implementations.Managed
 
         public override void Dispose()
         {
-            QuicMethods.DeinitCallbacks(_ssl);
+            _tls.Dispose();
             _gcHandle.Free();
-            Interop.OpenSslQuic.SslFree(_ssl);
         }
 
         internal int HandleSetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
