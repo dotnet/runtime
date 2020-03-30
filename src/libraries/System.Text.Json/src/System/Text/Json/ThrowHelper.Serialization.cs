@@ -34,9 +34,9 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static NotSupportedException GetNotSupportedException_DeserializeTypeInstanceNotSupported()
+        public static NotSupportedException GetNotSupportedException_SerializeTypeInstanceNotSupported()
         {
-            return new NotSupportedException(SR.DeserializeTypeInstanceNotSupported);
+            return new NotSupportedException(SR.SerializeTypeInstanceNotSupported);
         }
 
         [DoesNotReturn]

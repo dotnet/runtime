@@ -394,47 +394,5 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Throws<OutOfMemoryException>(() => JsonSerializer.Serialize(temp, typeof(CustomClassToExceedMaxBufferSize)));
         }
-
-        [Fact]
-        public static void SerializeTypeInstance()
-        {
-            Type type = typeof(int);
-
-            string serialized = JsonSerializer.Serialize(type);
-            Assert.Contains("System.Int32", serialized);
-            Assert.Contains("Version=", serialized);
-            Assert.Contains("Culture=", serialized);
-            Assert.Contains("PublicKeyToken=", serialized);
-
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Type>(serialized));
-
-            type = null;
-            serialized = JsonSerializer.Serialize(type);
-            Assert.Equal("null", serialized);
-
-            ClassWithType obj = new ClassWithType { Type = typeof(int) };
-
-            serialized = JsonSerializer.Serialize(obj);
-            Assert.Contains(@"{""Type"":", serialized);
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithType>(serialized));
-
-            serialized = JsonSerializer.Serialize(obj.Type);
-            Assert.Contains("System.Int32", serialized);
-            Assert.Contains("Version=", serialized);
-            Assert.Contains("Culture=", serialized);
-            Assert.Contains("PublicKeyToken=", serialized);
-
-            obj.Type = null;
-
-            serialized = JsonSerializer.Serialize(obj);
-            Assert.Equal(@"{""Type"":null}", serialized);
-
-            obj = JsonSerializer.Deserialize<ClassWithType>(serialized);
-            // NSE is not thrown because the serializer handles null and sets the property to null.
-            Assert.Null(obj.Type);
-
-            serialized = JsonSerializer.Serialize(obj, new JsonSerializerOptions { IgnoreNullValues = true });
-            Assert.Equal(@"{}", serialized);
-        }
     }
 }

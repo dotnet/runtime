@@ -8,12 +8,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override Type Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            throw ThrowHelper.GetNotSupportedException_DeserializeTypeInstanceNotSupported();
+            throw ThrowHelper.GetNotSupportedException_SerializeTypeInstanceNotSupported();
         }
 
         public override void Write(Utf8JsonWriter writer, Type value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(value.AssemblyQualifiedName);
+            throw ThrowHelper.GetNotSupportedException_SerializeTypeInstanceNotSupported();
         }
     }
 }
