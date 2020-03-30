@@ -728,11 +728,9 @@ check_symbol_exists(
 
 if(CLR_CMAKE_TARGET_IOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
-    set(NET_ROUTE_H_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
-    set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h ${NET_ROUTE_H_INCLUDE})
+    set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
 else()
-    set(NET_ROUTE_H_INCLUDE net/route.h)
-    set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h net/if.h ${NET_ROUTE_H_INCLUDE})
+    set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h net/if.h net/route.h)
 endif()
 
 check_type_size(
