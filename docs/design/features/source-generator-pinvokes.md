@@ -201,7 +201,7 @@ namespace System.Runtime.InteropServices
 
     * The Source Generator API will be permitted to provide warnings and errors through the [Roslyn SDK](https://docs.microsoft.com/dotnet/csharp/roslyn-sdk/).
 
-* Is it be possible to completely replicate the marshaling rules in the current built-in system using existing .NET APIs?
+* Will it be possible to completely replicate the marshaling rules in the current built-in system using existing .NET APIs?
 
     * No. There are rules and semantics that would be difficult to replicate with the current .NET API surface. Additional .NET APIs will likely need to be added in order to allow a Source Generator implementation to provide identical semantics with the built-in system.
 
