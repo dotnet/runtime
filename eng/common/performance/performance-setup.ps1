@@ -55,7 +55,7 @@ $SetupArguments = "--repository https://github.com/$Repository --branch $Branch 
 
 if (!$Internal)
 {
-    $temp = Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/dotnet/runtime/master/global.json | ConvertFrom-Json
+    $temp = Get-Content global.json | ConvertFrom-Json
     $DotNetVersion = $temp.tools.dotnet
     $SetupArguments = "--dotnet-versions $DotNetVersion $SetupArguments"
 }

@@ -169,7 +169,7 @@ setup_arguments="--repository https://github.com/$repository --branch $branch --
 
 if [[ "$interal" != true ]]; then
     # Get the tools section from the global.json.
-    dotnet_version=`curl https://raw.githubusercontent.com/dotnet/runtime/master/global.json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["tools"]["dotnet"])'`
+    dotnet_version=`cat global.json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["tools"]["dotnet"])'`
     setup_arguments="--dotnet-versions $dotnet_version $setup_arguments"
 fi
 
