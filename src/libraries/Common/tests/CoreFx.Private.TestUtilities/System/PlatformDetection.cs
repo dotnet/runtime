@@ -230,9 +230,15 @@ namespace System
                 // assume no if key is missing or on error.
                 return false;
             }
+            else if (IsOSX)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
+                return false;
+            }
             else
             {
-                return !IsOSX && (OpenSslVersion.CompareTo(new Version(1,1,1)) >= 0);
+                // Covers Linux and FreeBSD
+                return OpenSslVersion >= new Version(1,1,1);
             }
         }
 
