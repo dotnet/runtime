@@ -79,7 +79,7 @@ jobs:
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'Android') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
