@@ -94,8 +94,6 @@ namespace Mono.Linker.Steps
 			var action = rootVisibility == RootVisibility.Any ? AssemblyAction.Copy : AssemblyAction.Link;
 			context.SetAction (assembly, action);
 
-			context.Tracer.Push (assembly);
-
 			foreach (TypeDefinition type in assembly.MainModule.Types)
 				MarkType (context, type, rootVisibility);
 
@@ -132,11 +130,9 @@ namespace Mono.Linker.Steps
 
 					context.Resolve (resolvedExportedType.Scope);
 					MarkType (context, resolvedExportedType, rootVisibility);
-					context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule);
+					context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule, new DependencyInfo (DependencyKind.ExportedType, resolvedExportedType));
 				}
 			}
-
-			context.Tracer.Pop ();
 		}
 
 		static void MarkType (LinkContext context, TypeDefinition type, RootVisibility rootVisibility)
@@ -151,8 +147,7 @@ namespace Mono.Linker.Steps
 				return;
 			}
 
-			context.Annotations.MarkAndPush (type);
-
+			context.Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly));
 			if (type.HasFields)
 				MarkFields (context, type.Fields, rootVisibility);
 			if (type.HasMethods)
@@ -160,21 +155,17 @@ namespace Mono.Linker.Steps
 			if (type.HasNestedTypes)
 				foreach (var nested in type.NestedTypes)
 					MarkType (context, nested, rootVisibility);
-
-			context.Tracer.Pop ();
 		}
 
 		void ProcessExecutable (AssemblyDefinition assembly)
 		{
 			Context.SetAction (assembly, AssemblyAction.Link);
 
-			Tracer.Push (assembly);
+			MethodDefinition entryPoint = assembly.EntryPoint;
+			TypeDefinition declaringType = entryPoint.DeclaringType;
+			Annotations.Mark (declaringType, new DependencyInfo (DependencyKind.RootAssembly, declaringType.Module.Assembly));
 
-			Annotations.Mark (assembly.EntryPoint.DeclaringType);
-
-			MarkMethod (Context, assembly.EntryPoint, MethodAction.Parse, RootVisibility.Any);
-
-			Tracer.Pop ();
+			MarkMethod (Context, entryPoint, MethodAction.Parse, RootVisibility.Any);
 		}
 
 		static void MarkFields (LinkContext context, Collection<FieldDefinition> fields, RootVisibility rootVisibility)
@@ -186,7 +177,7 @@ namespace Mono.Linker.Steps
 					_ => true
 				};
 				if (markField) {
-					context.Annotations.Mark (field);
+					context.Annotations.Mark (field, new DependencyInfo (DependencyKind.RootAssembly, field.Module.Assembly));
 				}
 			}
 		}
@@ -206,7 +197,7 @@ namespace Mono.Linker.Steps
 			};
 
 			if (markMethod) {
-				context.Annotations.Mark (method);
+				context.Annotations.Mark (method, new DependencyInfo (DependencyKind.RootAssembly, method.Module.Assembly));
 				context.Annotations.SetAction (method, action);
 			}
 		}

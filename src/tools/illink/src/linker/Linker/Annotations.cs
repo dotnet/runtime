@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -150,21 +151,30 @@ namespace Mono.Linker {
 			return fieldType_init.Contains (type);
 		}
 
+		[Obsolete ("Mark token providers with a reason instead.")]
 		public void Mark (IMetadataTokenProvider provider)
 		{
 			marked.Add (provider);
-			Tracer.AddDependency (provider, true);
 		}
 
+		public void Mark (IMetadataTokenProvider provider, in DependencyInfo reason)
+		{
+			Debug.Assert (!(reason.Kind == DependencyKind.AlreadyMarked));
+			marked.Add (provider);
+			Tracer.AddDirectDependency (provider, reason, marked: true);
+		}
+
+		[Obsolete ("Mark attributes with a reason instead.")]
 		public void Mark (CustomAttribute attribute)
 		{
 			marked_attributes.Add (attribute);
 		}
 
-		public void MarkAndPush (IMetadataTokenProvider provider)
+		public void Mark (CustomAttribute attribute, in DependencyInfo reason)
 		{
-			Mark (provider);
-			Tracer.Push (provider, false);
+			Debug.Assert (!(reason.Kind == DependencyKind.AlreadyMarked));
+			marked_attributes.Add (attribute);
+			Tracer.AddDirectDependency (attribute, reason, marked: true);
 		}
 
 		public bool IsMarked (IMetadataTokenProvider provider)
