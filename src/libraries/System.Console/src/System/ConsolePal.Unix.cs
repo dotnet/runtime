@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -75,21 +76,22 @@ namespace System
             {
                 EnsureInitialized();
 
-                return Console.EnsureInitializedDisposable(
+                return Volatile.Read(ref s_stdInReader) ??
+                    Console.EnsureInitialized(
                         ref s_stdInReader,
-                        () => SyncTextReader.GetSynchronizedTextReader(
+                        SyncTextReader.GetSynchronizedTextReader(
                             new StdInReader(
                                 encoding: Console.InputEncoding,
                                 bufferSize: InteractiveBufferSize)));
             }
         }
 
-        internal static TextReader GetOrCreateReader()
+        internal static TextReader EnsureInitializedIn([NotNull] ref TextReader? field)
         {
             if (Console.IsInputRedirected)
             {
                 Stream inputStream = OpenStandardInput();
-                return SyncTextReader.GetSynchronizedTextReader(
+                TextReader reader = SyncTextReader.GetSynchronizedTextReader(
                     inputStream == Stream.Null ?
                     StreamReader.Null :
                     new StreamReader(
@@ -99,6 +101,7 @@ namespace System
                         bufferSize: Console.ReadBufferSize,
                         leaveOpen: true)
                         );
+                return Console.EnsureInitializedDisposable(ref field, reader, inputStream);
             }
             else
             {

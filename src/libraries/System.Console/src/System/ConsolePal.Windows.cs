@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -146,10 +147,10 @@ namespace System
             return (!Interop.Kernel32.IsGetConsoleModeCallSuccessful(handle));
         }
 
-        internal static TextReader GetOrCreateReader()
+        internal static TextReader EnsureInitializedIn([NotNull] ref TextReader? field)
         {
             Stream inputStream = OpenStandardInput();
-            return SyncTextReader.GetSynchronizedTextReader(inputStream == Stream.Null ?
+            TextReader reader = SyncTextReader.GetSynchronizedTextReader(inputStream == Stream.Null ?
                 StreamReader.Null :
                 new StreamReader(
                     stream: inputStream,
@@ -157,6 +158,7 @@ namespace System
                     detectEncodingFromByteOrderMarks: false,
                     bufferSize: Console.ReadBufferSize,
                     leaveOpen: true));
+            return Console.EnsureInitializedDisposable(ref field, reader, inputStream);
         }
 
         // Use this for blocking in Console.ReadKey, which needs to protect itself in case multiple threads call it simultaneously.
