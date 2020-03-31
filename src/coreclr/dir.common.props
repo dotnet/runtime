@@ -11,9 +11,11 @@
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
     <!-- TODO: Cleanup use of __BuildArch and __BuildType in the CI scripts -->
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(__BuildArch)</TargetArchitecture>
-    <Configuration Condition="'$(Configuration)'==''">$(__BuildType)</Configuration>
 
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(__BuildArch)</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
+
+    <Configuration Condition="'$(Configuration)'==''">$(__BuildType)</Configuration>
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
     <Configuration Condition="'$(Configuration)' == 'debug'">Debug</Configuration>
     <Configuration Condition="'$(Configuration)' == 'release'">Release</Configuration>
