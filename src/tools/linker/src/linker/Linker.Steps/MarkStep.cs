@@ -3619,6 +3619,7 @@ namespace Mono.Linker.Steps {
 						case "CreateInstance" when !calledMethod.ContainsGenericParameter
 							&& calledMethod.DeclaringType.Name == "Activator"
 							&& calledMethod.Parameters.Count >= 1
+							&& calledMethod.DeclaringType.Namespace == "System"
 							&& calledMethod.Parameters [0].ParameterType.MetadataType != MetadataType.String: {
 
 								var parameters = calledMethod.Parameters;
@@ -3679,6 +3680,41 @@ namespace Mono.Linker.Steps {
 												? DynamicallyAccessedMemberKinds.PublicConstructors
 												: DynamicallyAccessedMemberKinds.Constructors;
 										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
+									}
+								}
+							}
+							break;
+						//
+						// GetConstructor (Type[])
+						// GetConstructor (BindingFlags, Binder, Type[], ParameterModifier [])
+						// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
+						//
+						case "GetConstructor" when calledMethod.DeclaringType.Name == "Type"
+						  && calledMethod.Parameters.Count >= 1
+						  && calledMethod.DeclaringType.Namespace == "System": {
+
+								reflectionContext.AnalyzingPattern ();
+								var parameters = calledMethod.Parameters;
+								int? ctorParameterCount = null;
+								BindingFlags bindingFlags = BindingFlags.Default;
+								if (parameters.Count > 1) {
+									if (methodParams [1].AsConstInt () != null)
+										bindingFlags |= (BindingFlags)methodParams [1].AsConstInt ();
+								}
+								// Go over all types we've seen
+								foreach (var value in methodParams [0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", bindingFlags, ctorParameterCount);
+									} else if (value == NullValue.Instance) {
+										// Nothing to report. This is likely just a value on some unreachable branch.
+										reflectionContext.RecordHandledPattern ();
+									} else if (value is MethodParameterValue methodParameterValue) {
+										// This is the case where the value comes from a method parameter.
+										// TODO: If the parameter is annotated, we're good. If it's not annotated, we shold warn.
+										reflectionContext.RecordUnrecognizedPattern ($"Activator call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument expression which cannot be analyzed");
+									} else {
+										// Not known where the value is coming from
+										reflectionContext.RecordUnrecognizedPattern ($"Activator call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument expression which cannot be analyzed");
 									}
 								}
 							}
