@@ -40,6 +40,23 @@ namespace BundleTests.Helpers
             return Path.GetFileName(fixture.TestProject.AppDll);
         }
 
+        public static string GetAppBaseName(TestProjectFixture fixture)
+        {
+            return Path.GetFileNameWithoutExtension(GetAppName(fixture));
+        }
+
+        public static string[] GetBundledFiles(TestProjectFixture fixture)
+        {
+            string appBaseName = GetAppBaseName(fixture);
+            return new string[] { $"{appBaseName}.dll", $"{appBaseName}.deps.json", $"{appBaseName}.runtimeconfig.json" };
+        }
+
+        public static string[] GetExtractedFiles(TestProjectFixture fixture)
+        {
+            string appBaseName = GetAppBaseName(fixture);
+            return new string[] { $"{appBaseName}.dll" };
+        }
+
         public static string GetPublishPath(TestProjectFixture fixture)
         {
             return Path.Combine(fixture.TestProject.ProjectDirectory, "publish");
@@ -50,9 +67,24 @@ namespace BundleTests.Helpers
             return Directory.CreateDirectory(Path.Combine(fixture.TestProject.ProjectDirectory, "bundle"));
         }
 
-        public static DirectoryInfo GetExtractDir(TestProjectFixture fixture)
+        public static string  GetExtractionRootPath(TestProjectFixture fixture)
         {
-            return Directory.CreateDirectory(Path.Combine(fixture.TestProject.ProjectDirectory, "extract"));
+            return Path.Combine(fixture.TestProject.ProjectDirectory, "extract");
+        }
+
+        public static DirectoryInfo GetExtractionRootDir(TestProjectFixture fixture)
+        {
+            return Directory.CreateDirectory(GetExtractionRootPath(fixture));
+        }
+
+        public static string GetExtractionPath(TestProjectFixture fixture, Bundler bundler)
+        {
+            return Path.Combine(GetExtractionRootPath(fixture), GetAppBaseName(fixture), bundler.BundleManifest.BundleID);
+
+        }
+        public static DirectoryInfo GetExtractionDir(TestProjectFixture fixture, Bundler bundler)
+        {
+            return new DirectoryInfo(GetExtractionPath(fixture, bundler));
         }
 
         /// Generate a bundle containind the (embeddable) files in sourceDir
@@ -81,20 +113,26 @@ namespace BundleTests.Helpers
         // instead of the SDK via /p:PublishSingleFile=true.
         // This is necessary when the test needs the latest changes in the AppHost, 
         // which may not (yet) be available in the SDK.
-        //
-        // Currently, AppHost can only handle bundles if all content is extracted to disk on startup.
-        // Therefore, the BundleOption is BundleAllContent by default.
-        // The default should be BundleOptions.None once host/runtime no longer requires full-extraction.
-        public static string BundleApp(TestProjectFixture fixture,
-                                       BundleOptions options = BundleOptions.BundleAllContent,
-                                       Version targetFrameworkVersion = null)
+        public static Bundler BundleApp(TestProjectFixture fixture,
+                                        out string singleFile,
+                                        BundleOptions options = BundleOptions.None,
+                                        Version targetFrameworkVersion = null)
         {
             var hostName = GetHostName(fixture);
             string publishPath = GetPublishPath(fixture);
             var bundleDir = GetBundleDir(fixture);
 
             var bundler = new Bundler(hostName, bundleDir.FullName, options, targetFrameworkVersion: targetFrameworkVersion);
-            string singleFile = GenerateBundle(bundler, publishPath);
+            singleFile = GenerateBundle(bundler, publishPath);
+            return bundler;
+        }
+
+        public static string BundleApp(TestProjectFixture fixture,
+                                       BundleOptions options = BundleOptions.None,
+                                       Version targetFrameworkVersion = null)
+        {
+            string singleFile;
+            BundleApp(fixture, out singleFile, options, targetFrameworkVersion);
             return singleFile;
         }
 

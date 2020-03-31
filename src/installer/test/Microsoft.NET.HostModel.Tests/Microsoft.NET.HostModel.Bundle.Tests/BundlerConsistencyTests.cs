@@ -177,7 +177,7 @@ namespace Microsoft.NET.HostModel.Tests
             string publishPath = BundleHelper.GetPublishPath(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
 
-            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
+            var bundler = new Bundler(hostName, bundleDir.FullName);
             BundleHelper.GenerateBundle(bundler, publishPath);
 
             bundler.BundleManifest.Files.ForEach(file => 
@@ -188,13 +188,7 @@ namespace Microsoft.NET.HostModel.Tests
         public void TestWithAdditionalContentAfterBundleMetadata()
         {
             var fixture = sharedTestState.TestFixture.Copy();
-
-            var hostName = BundleHelper.GetHostName(fixture);
-            var bundleDir = BundleHelper.GetBundleDir(fixture);
-            string publishPath = BundleHelper.GetPublishPath(fixture);
-
-            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
-            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
+            string singleFile = BundleHelper.BundleApp(fixture);
 
             using (var file = File.OpenWrite(singleFile))
             {

@@ -41,8 +41,7 @@ namespace Microsoft.NET.HostModel.Tests
             RunTheApp(Path.Combine(publishPath, hostName));
 
             // Bundle to a single-file
-            // Bundle all content, until the host can handle other scenarios.
-            Bundler bundler = new Bundler(hostName, singleFileDir, BundleOptions.BundleAllContent);
+            Bundler bundler = new Bundler(hostName, singleFileDir);
             string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
 
             // Run the extracted app
