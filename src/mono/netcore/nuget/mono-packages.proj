@@ -1,4 +1,6 @@
-<Project Sdk="Microsoft.Build.Traversal">
+<Project>
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
+
   <ItemGroup>
     <ProjectReference Include="Microsoft.NETCore.Tool.MonoAOT\Microsoft.NETCore.Tool.MonoAOT.proj" Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" />
     <ProjectReference Include="Microsoft.NETCore.Runtime.Mono\Microsoft.NETCore.Runtime.Mono.proj" />
@@ -30,7 +32,12 @@
     <ItemGroup>
       <!-- Pass the FileVersion calculated by _InitializeAssemblyVersion to referenced projects -->
       <ProjectReference Update="@(ProjectReference)"
-                        AdditionalProperties="%(AdditionalProperties);FileVersion=$(FileVersion)" />
+                        AdditionalProperties="%(ProjectReference.AdditionalProperties);FileVersion=$(FileVersion)" />
     </ItemGroup>
   </Target>
+
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
+
+  <!-- Ordering matters! Overwriting the Pack target which should just invoke Build. -->
+  <Target Name="Pack" DependsOnTargets="Build" />
 </Project>

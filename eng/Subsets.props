@@ -63,7 +63,8 @@
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS'">depproj-pkgproj</DefaultInstallerSubsets>
     <DefaultCoreClrSubsets>runtime-linuxdac-corelib-nativecorelib-tools-packages</DefaultCoreClrSubsets>
-    <DefaultMonoSubsets>all</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">llvm-</DefaultMonoSubsets>
+    <DefaultMonoSubsets>$(DefaultMonoSubsets)runtime-corelib-package</DefaultMonoSubsets>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -106,7 +107,9 @@
     <SubsetName Include="Packages" Category="CoreClr" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
 
     <!-- Mono -->
-    <SubsetName Include="All" Category="Mono" Description="The Mono .NET runtime." />
+    <SubsetName Include="Runtime" Category="Mono" Description="The Mono .NET runtime." />
+    <SubsetName Include="CoreLib" Category="Mono" Description="The managed System.Private.CoreLib library for Mono." />
+    <SubsetName Include="Package" Category="Mono" Description="The projects that produce NuGet packages for the Mono runtime." />
 
     <!-- Installer -->
     <SubsetName Include="All" Category="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
@@ -124,22 +127,28 @@
     <CoreClrProject>
       <Test>false</Test>
       <Pack>false</Pack>
+      <Publish>false</Publish>
       <BuildInParallel>false</BuildInParallel>
       <AdditionalProperties Condition="'$(CoreCLRConfiguration)' != ''">Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
     </CoreClrProject>
     <MonoProject>
+      <Test>false</Test>
+      <Pack>false</Pack>
+      <Publish>false</Publish>
       <BuildInParallel>false</BuildInParallel>
       <AdditionalProperties Condition="'$(MonoConfiguration)' != ''">Configuration=$(MonoConfiguration)</AdditionalProperties>
     </MonoProject>
     <LibrariesProject>
       <Test>false</Test>
       <Pack>false</Pack>
+      <Publish>false</Publish>
       <BuildInParallel>false</BuildInParallel>
       <AdditionalProperties Condition="'$(LibrariesConfiguration)' != ''">Configuration=$(LibrariesConfiguration)</AdditionalProperties>
     </LibrariesProject>
     <InstallerProject>
       <Test>false</Test>
       <Pack>true</Pack>
+      <Publish>false</Publish>
       <BuildInParallel>false</BuildInParallel>
     </InstallerProject>
   </ItemDefinitionGroup>
@@ -178,9 +187,20 @@
   </ItemGroup>
 
   <!-- Mono sets -->
-  <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('-all-'))">
+  <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('-llvm-'))">
+    <MonoProject Include="$(MonoProjectRoot)llvm\llvm-init.proj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('-runtime-'))">
     <MonoProject Include="$(MonoProjectRoot)mono.proj" />
-    <MonoProject Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj" Test="false" Pack="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('-corelib-'))">
+    <MonoProject Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('-package-'))">
+    <MonoProject Include="$(MonoProjectRoot)netcore\nuget\mono-packages.proj" Pack="True" />
   </ItemGroup>
 
   <!-- Libraries sets -->

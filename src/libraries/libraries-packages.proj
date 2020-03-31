@@ -1,4 +1,5 @@
-<Project Sdk="Microsoft.Build.Traversal">
+<Project>
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
 
   <PropertyGroup>
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
@@ -69,4 +70,8 @@
     <Message Condition="'@(_PackageReports)' != ''" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
   </Target>
 
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
+
+  <!-- Pack is a no-op and should just invoke build. -->
+  <Target Name="Pack" DependsOnTargets="Build" />
 </Project>
