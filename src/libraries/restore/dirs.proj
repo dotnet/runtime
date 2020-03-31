@@ -8,7 +8,6 @@
     <Project Include="netstandard/netstandard.depproj" />
     <Project Include="netfx/netfx.depproj" />
     <Project Include="tools/tools.depproj" />
-    <Project Include="runtime/runtime.depproj" />
     <Project Include="harvestPackages/harvestPackages.depproj" />
     <Project Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>
