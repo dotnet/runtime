@@ -367,8 +367,6 @@ Initialize(
         }
 
         // Initialize debug channel settings before anything else.
-        // This depends on the environment, so it must come after
-        // EnvironInitialize.
         if (FALSE == DBG_init_channels())
         {
             palError = ERROR_PALINIT_DBG_CHANNELS;
