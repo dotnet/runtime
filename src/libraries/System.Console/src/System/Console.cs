@@ -22,7 +22,7 @@ namespace System
         // there's little benefit to having a large buffer.  So we use a smaller buffer size to reduce working set.
         private const int WriteBufferSize = 256;
 
-        internal static object InternalSyncObject = new object(); // for synchronizing changing of Console's static fields
+        private static readonly object EventSyncObject = new object(); // for synchronizing changing of Console's event handlers.
         private static TextReader? s_in;
         private static TextWriter? s_out, s_error;
         private static Encoding? s_inputEncoding;
@@ -59,18 +59,16 @@ namespace System
             set
             {
                 CheckNonNull(value, nameof(value));
-                lock (InternalSyncObject)
-                {
-                    // Set the terminal console encoding.
-                    ConsolePal.SetConsoleInputEncoding(value);
 
-                    Volatile.Write(ref s_inputEncoding, (Encoding)value.Clone());
+                // Set the terminal console encoding.
+                ConsolePal.SetConsoleInputEncoding(value);
 
-                    // We need to reinitialize 'Console.In' in the next call to s_in
-                    // This will discard the current StreamReader, potentially
-                    // losing buffered data.
-                    Volatile.Write(ref s_in, null);
-                }
+                Volatile.Write(ref s_inputEncoding, (Encoding)value.Clone());
+
+                // We need to reinitialize 'Console.In' in the next call to s_in
+                // This will discard the current StreamReader, potentially
+                // losing buffered data.
+                Volatile.Write(ref s_in, null);
             }
         }
 
@@ -84,27 +82,26 @@ namespace System
             {
                 CheckNonNull(value, nameof(value));
 
-                lock (InternalSyncObject)
+                // Set the terminal console encoding.
+                ConsolePal.SetConsoleOutputEncoding(value);
+
+                // Before changing the code page we need to flush the data
+                // if Out hasn't been redirected. Also, have the next call to
+                // s_out reinitialize the console code page.
+                if (Volatile.Read(ref s_out) != null && !s_isOutTextWriterRedirected)
                 {
-                    // Set the terminal console encoding.
-                    ConsolePal.SetConsoleOutputEncoding(value);
-
-                    // Before changing the code page we need to flush the data
-                    // if Out hasn't been redirected. Also, have the next call to
-                    // s_out reinitialize the console code page.
-                    if (Volatile.Read(ref s_out) != null && !s_isOutTextWriterRedirected)
-                    {
-                        s_out!.Flush();
-                        Volatile.Write(ref s_out, null);
-                    }
-                    if (Volatile.Read(ref s_error) != null && !s_isErrorTextWriterRedirected)
-                    {
-                        s_error!.Flush();
-                        Volatile.Write(ref s_error, null);
-                    }
-
-                    Volatile.Write(ref s_outputEncoding, (Encoding)value.Clone());
+                    s_out?.Flush();
                 }
+                if (Volatile.Read(ref s_error) != null && !s_isErrorTextWriterRedirected)
+                {
+                    s_error?.Flush();
+                }
+
+                Volatile.Write(ref s_outputEncoding, (Encoding)value.Clone());
+
+                // Reinitialize in the next call to s_out, s_error.
+                Volatile.Write(ref s_out, null);
+                Volatile.Write(ref s_error, null);
             }
         }
 
@@ -343,7 +340,7 @@ namespace System
         {
             add
             {
-                lock (InternalSyncObject)
+                lock (EventSyncObject)
                 {
                     s_cancelCallbacks += value;
 
@@ -357,7 +354,7 @@ namespace System
             }
             remove
             {
-                lock (InternalSyncObject)
+                lock (EventSyncObject)
                 {
                     s_cancelCallbacks -= value;
                     if (s_registrar != null && s_cancelCallbacks == null)
@@ -424,10 +421,7 @@ namespace System
         {
             CheckNonNull(newIn, nameof(newIn));
             newIn = SyncTextReader.GetSynchronizedTextReader(newIn);
-            lock (InternalSyncObject)
-            {
-                Volatile.Write(ref s_in, newIn);
-            }
+            Volatile.Write(ref s_in, newIn);
         }
 
         public static void SetOut(TextWriter newOut)
@@ -435,11 +429,7 @@ namespace System
             CheckNonNull(newOut, nameof(newOut));
             newOut = TextWriter.Synchronized(newOut);
             Volatile.Write(ref s_isOutTextWriterRedirected, true);
-
-            lock (InternalSyncObject)
-            {
-                Volatile.Write(ref s_out, newOut);
-            }
+            Volatile.Write(ref s_out, newOut);
         }
 
         public static void SetError(TextWriter newError)
@@ -447,11 +437,7 @@ namespace System
             CheckNonNull(newError, nameof(newError));
             newError = TextWriter.Synchronized(newError);
             Volatile.Write(ref s_isErrorTextWriterRedirected, true);
-
-            lock (InternalSyncObject)
-            {
-                Volatile.Write(ref s_error, newError);
-            }
+            Volatile.Write(ref s_error, newError);
         }
 
         private static void CheckNonNull(object obj, string paramName)
