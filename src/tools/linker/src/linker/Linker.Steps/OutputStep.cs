@@ -139,13 +139,11 @@ namespace Mono.Linker.Steps {
 			case AssemblyAction.Save:
 			case AssemblyAction.Link:
 			case AssemblyAction.AddBypassNGen:
-				Context.Tracer.AddDependency (assembly);
 				WriteAssembly (assembly, directory);
 				CopySatelliteAssembliesIfNeeded (assembly, directory);
 				assembliesWritten.Add (GetOriginalAssemblyFileInfo (assembly).Name);
 				break;
 			case AssemblyAction.Copy:
-				Context.Tracer.AddDependency (assembly);
 				CloseSymbols (assembly);
 				CopyAssembly (assembly, directory);
 				CopySatelliteAssembliesIfNeeded (assembly, directory);

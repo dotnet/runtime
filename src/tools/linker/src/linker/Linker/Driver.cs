@@ -405,7 +405,7 @@ namespace Mono.Linker {
 						case "x":
 							if (!GetStringParam (token, l => {
 								foreach (string file in GetFiles (l))
-									p.PrependStep (new ResolveFromXmlStep (new XPathDocument (file)));
+									p.PrependStep (new ResolveFromXmlStep (new XPathDocument (file), file));
 
 								}))
 								return false;
