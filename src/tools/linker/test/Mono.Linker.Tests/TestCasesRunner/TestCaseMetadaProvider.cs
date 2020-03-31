@@ -99,7 +99,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				  && _testCaseTypeDefinition.NestedTypes.Any (nestedType =>
 					  nestedType.CustomAttributes.Any (attr =>
 						  attr.AttributeType.Name == nameof (VerifyAllReflectionAccessPatternsAreValidatedAttribute)
-					  || _testCaseTypeDefinition.AllMethods ().Any (method => method.CustomAttributes.Any (attr =>
+					  || nestedType.AllMethods ().Any (method => method.CustomAttributes.Any (attr =>
 						  attr.AttributeType.Name == nameof (RecognizedReflectionAccessPatternAttribute) ||
 						  attr.AttributeType.Name == nameof (UnrecognizedReflectionAccessPatternAttribute)))))) {
 				customizations.ReflectionPatternRecorder = new TestReflectionPatternRecorder ();
