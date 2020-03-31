@@ -1588,12 +1588,12 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
 {
     jitInstance->mc->cr->AddCall("allocMem");
     // TODO-Cleanup: investigate if we need to check roDataBlock as well. Could hot block size be ever 0?
-    *hotCodeBlock = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, hotCodeSize);
+    *hotCodeBlock = new BYTE[hotCodeSize];
     if (coldCodeSize > 0)
-        *coldCodeBlock = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, coldCodeSize);
+        *coldCodeBlock = new BYTE[coldCodeSize];
     else
         *coldCodeBlock = nullptr;
-    *roDataBlock       = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, roDataSize);
+    *roDataBlock       = new BYTE[roDataSize];
     jitInstance->mc->cr->recAllocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock,
                                      coldCodeBlock, roDataBlock);
 }
@@ -1657,7 +1657,7 @@ void* MyICJI::allocGCInfo(size_t size /* IN */
                           )
 {
     jitInstance->mc->cr->AddCall("allocGCInfo");
-    void* temp = (unsigned char*)HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, size);
+    void* temp = (unsigned char*)new BYTE[size];
     jitInstance->mc->cr->recAllocGCInfo(size, temp);
 
     return temp;

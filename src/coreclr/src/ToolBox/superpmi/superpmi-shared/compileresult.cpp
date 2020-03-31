@@ -30,8 +30,6 @@ CompileResult::CompileResult()
 
     allocGCInfoDets.retval = 0;
     allocGCInfoDets.size   = 0;
-
-    codeHeap = nullptr;
 }
 
 CompileResult::~CompileResult()
@@ -43,11 +41,6 @@ CompileResult::~CompileResult()
 
     if (CallTargetTypes != nullptr)
         delete CallTargetTypes;
-
-#ifndef TARGET_UNIX // PAL doesn't have HeapDestroy()
-    if (codeHeap != nullptr)
-        ::HeapDestroy(codeHeap);
-#endif // !TARGET_UNIX
 }
 
 // Is the CompileResult empty? Define this as whether all the maps that store information given by the JIT are empty.
@@ -62,18 +55,6 @@ bool CompileResult::IsEmpty()
 #include "crlwmlist.h"
 
     return isEmpty;
-}
-
-HANDLE CompileResult::getCodeHeap()
-{
-    if (codeHeap == nullptr)
-        codeHeap = ::HeapCreate(0, 0, 0);
-    if (codeHeap == nullptr)
-    {
-        LogError("CompileResult::codeHeap() failed to acquire a heap.");
-        __debugbreak();
-    }
-    return codeHeap;
 }
 
 void CompileResult::recAssert(const char* assertText)
