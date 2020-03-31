@@ -317,19 +317,6 @@ HRESULT EEConfig::Cleanup()
         MODE_ANY;
     } CONTRACTL_END;
 
-#ifdef _DEBUG
-    if (g_pConfig) {
-        // TODO: Do we even need this? CLRConfig::GetConfigValue has FORBID_FAULT in its contract.
-        FAULT_NOT_FATAL();  // If GetConfigValue fails the alloc, that's ok.
-
-        DWORD setting = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DumpConfiguration);
-        if (setting != 0)
-       {
-
-        }
-    }
-#endif
-
     if (m_fFreepZapSet)
         delete[] pZapSet;
     delete[] szZapBBInstr;
