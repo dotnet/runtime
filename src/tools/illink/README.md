@@ -24,10 +24,6 @@ There is a shell script available in the root folder which can build the whole p
 
 ## Build & Test Status
 
-**.NET Core**
+**.NET Core / Mono**
 
 [![Build Status](https://dev.azure.com/dnceng/public/_apis/build/status/mono/linker-ci?branchName=master)](https://dev.azure.com/dnceng/public/_build/latest?definitionId=364&branchName=master)
-
-**Mono**
-
-[![Build Status](https://jenkins.mono-project.com/buildStatus/icon?job=test-linker-mainline)](https://jenkins.mono-project.com/job/test-linker-mainline/)
