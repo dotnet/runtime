@@ -85,7 +85,7 @@ public:
         "Specifies the name of the GC config log file")                                          \
     BOOL_CONFIG(GCNumaAware,   "GCNumaAware", true, "Enables numa allocations in the GC")        \
     BOOL_CONFIG(GCCpuGroup,    "GCCpuGroup", false, "Enables CPU groups in the GC")              \
-    BOOL_CONFIG(GCLargePages,  "gcLargePages", false, "Enables using Large Pages in the GC")     \
+    BOOL_CONFIG(GCLargePages,  "GCLargePages", false, "Enables using Large Pages in the GC")     \
     INT_CONFIG(HeapVerifyLevel, "HeapVerify", HEAPVERIFY_NONE,                                   \
         "When set verifies the integrity of the managed heap on entry and exit of each GC")      \
     INT_CONFIG(LOHCompactionMode, "GCLOHCompact", 0, "Specifies the LOH compaction mode")        \

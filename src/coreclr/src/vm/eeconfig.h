@@ -703,7 +703,7 @@ private: //----------------------------------------------------------------
     size_t iGCgen0size;
     size_t iGCSegmentSize;
     int  iGCconcurrent;
-    int iGClarge;
+    int  iGClarge;
 #ifdef _DEBUG
     int  iGCLatencyMode;
 #endif //_DEBUG

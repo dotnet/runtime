@@ -502,12 +502,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     if (IsCompilationProcess())
         iGCconcurrent = FALSE;
 
-    bool gcLarge = Configuration::GetKnobBooleanValue(W("System.GC.LargePages"), false);
-    if (!gcLarge)
-    {
-        gcLarge = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCLargePages);
-    }
-    if (gcLarge)
+    if (Configuration::GetKnobBooleanValue(W("System.GC.LargePages"), CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCLargePages)))
     {
         iGClarge = TRUE;
     }

@@ -1049,7 +1049,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
         return true;
     }
 
-    if (strcmp(key, "gcLargePages") == 0)
+    if (strcmp(key, "GCLargePages") == 0)
     {
         *value = !!g_pConfig->GetGCLargePages();
         return true;
