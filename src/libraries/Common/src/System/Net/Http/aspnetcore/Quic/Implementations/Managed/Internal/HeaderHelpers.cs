@@ -1,8 +1,6 @@
 using System.Diagnostics;
-using System.Linq;
-using System.Security.Cryptography;
 
-namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
+namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal static class QuicConstants
     {

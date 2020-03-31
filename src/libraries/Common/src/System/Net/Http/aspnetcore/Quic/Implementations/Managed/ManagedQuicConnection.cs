@@ -70,7 +70,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Error received via CONNECTION_CLOSE frame to be reported to the user.
         /// </summary>
-        private TransportErrorCode? inboundError;
+        // private TransportErrorCode? inboundError;
 
         public ConnectionId? SourceConnectionId => _scid;
 
@@ -148,7 +148,6 @@ namespace System.Net.Quic.Implementations.Managed
             while (reader.BytesLeft > 0)
             {
                 var status = ReceiveOne(reader);
-                Console.WriteLine($"Packet: {status}");
 
                 // Receive will adjust the buffer length once it is known
                 segment = segment.Slice(reader.Buffer.Count);
@@ -169,6 +168,18 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult ReceiveVersionNegotiation(QuicReader reader, in LongPacketHeader header)
         {
             throw new NotImplementedException();
+        }
+
+        private static bool IsAckEliciting(FrameType frameType)
+        {
+            return frameType switch
+            {
+                FrameType.Padding => false,
+                FrameType.Ack => false,
+                FrameType.ConnectionCloseQuic => false,
+                FrameType.ConnectionCloseApplication => false,
+                _ => true
+            };
         }
 
         private static bool IsFrameAllowed(FrameType frameType, PacketType packetType)
@@ -226,13 +237,16 @@ namespace System.Net.Quic.Implementations.Managed
             while (reader.BytesLeft > 0)
             {
                 var frameType = reader.PeekFrameType();
-                if (frameType != FrameType.Padding)
-                    Console.WriteLine($"Received {packetType} - {reader.PeekFrameType()}");
 
                 if (!IsFrameAllowed(frameType, packetType))
                 {
                     outboundError ??= TransportErrorCode.ProtocolViolation;
                     return ProcessPacketResult.HardError;
+                }
+
+                if (IsAckEliciting(frameType))
+                {
+                    GetEpoch(GetEncryptionLevel(packetType)).AckElicited = true;
                 }
 
                 switch (frameType)
@@ -475,9 +489,9 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            if (packetType == PacketType.Initial)
+            if (!_isServer && packetType == PacketType.Initial)
             {
-                // Pad initial packets to the minimum size
+                // Pad client initial packets to the minimum size
                 int paddingLength = QuicConstants.MinimumClientInitialDatagramSize - seal.TagLength - writer.BytesWritten;
                 if (paddingLength > 0)
                     // zero bytes are equivalent to PADDING frames
@@ -533,6 +547,8 @@ namespace System.Net.Quic.Implementations.Managed
                 // if initial secrets have not been derived yet, we have nothing to send
                 return 0;
             }
+
+            _tls.DoHandshake();
 
             var writer = new QuicWriter(targetBuffer);
 
@@ -602,7 +618,7 @@ namespace System.Net.Quic.Implementations.Managed
             };
         }
 
-        private EpochData GetEpoch(EncryptionLevel encryptionLevel)
+        internal EpochData GetEpoch(EncryptionLevel encryptionLevel)
         {
             return encryptionLevel switch
             {
@@ -653,8 +669,6 @@ namespace System.Net.Quic.Implementations.Managed
         internal int HandleSetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
             ReadOnlySpan<byte> writeSecret)
         {
-            Console.WriteLine($"SetEncryptionSecrets({level})");
-
             var epoch = GetEpoch(level);
             Debug.Assert(epoch.SendCryptoSeal == null, "Protection keys already derived");
 
@@ -666,15 +680,12 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal int HandleAddHandshakeData(EncryptionLevel level, ReadOnlySpan<byte> data)
         {
-            Console.WriteLine($"AddHandshakeData({level})");
             GetEpoch(level).CryptoStream.Add(data);
             return 1;
         }
 
         internal int HandleFlush()
         {
-            Console.WriteLine("FlushFlight");
-
             return 1;
         }
 

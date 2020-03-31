@@ -134,6 +134,9 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal SslError DoHandshake()
         {
+            if (IsHandshakeFinishhed)
+                return SslError.None;
+
             int status = Interop.OpenSslQuic.SslDoHandshake(_ssl);
             if (status < 0)
             {
