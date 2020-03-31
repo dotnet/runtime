@@ -26,7 +26,7 @@ namespace System
             {
                 if (!s_specialFolders.TryGetValue(folder, out path))
                 {
-                    path = GetSpecialFolder(folder);
+                    path = GetSpecialFolder(folder) ?? string.Empty;
                     s_specialFolders[folder] = path;
                 }
             }
