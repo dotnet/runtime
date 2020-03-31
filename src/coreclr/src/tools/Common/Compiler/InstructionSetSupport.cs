@@ -14,13 +14,10 @@ namespace ILCompiler
 {
     public class InstructionSetSupport
     {
-        private static Dictionary<ValueTuple<TargetArchitecture, string, string>, bool> s_apiSupportViaImplication = new Dictionary<ValueTuple<TargetArchitecture, string, string>, bool>();
-        private static object s_lock = new object();
-
         private readonly TargetArchitecture _targetArchitecture;
-        private InstructionSetFlags _optimisticInstructionSets;
-        private InstructionSetFlags _supportedInstructionSets;
-        private InstructionSetFlags _unsupportedInstructionSets;
+        private readonly InstructionSetFlags _optimisticInstructionSets;
+        private readonly InstructionSetFlags _supportedInstructionSets;
+        private readonly InstructionSetFlags _unsupportedInstructionSets;
 
         public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, TargetArchitecture architecture)
         {
@@ -48,10 +45,8 @@ namespace ILCompiler
 
         public static string GetHardwareIntrinsicId(TargetArchitecture architecture, TypeDesc potentialTypeDesc)
         {
-            if (!(potentialTypeDesc is MetadataType))
+            if (!potentialTypeDesc.IsIntrinsic || !(potentialTypeDesc is MetadataType potentialType))
                 return "";
-
-            MetadataType potentialType = (MetadataType)potentialTypeDesc;
 
             if (architecture == TargetArchitecture.X64)
             {
@@ -89,7 +84,7 @@ namespace ILCompiler
         {
             if ((_targetArchitecture == TargetArchitecture.X64) || (_targetArchitecture == TargetArchitecture.X86))
             {
-                Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
+                Debug.Assert(InstructionSet.X64_AVX2 == InstructionSet.X86_AVX2);
                 Debug.Assert(InstructionSet.X64_SSE2 == InstructionSet.X86_SSE2);
                 if (IsInstructionSetSupported(InstructionSet.X86_AVX2))
                     return SimdVectorLength.Vector256Bit;
@@ -108,7 +103,8 @@ namespace ILCompiler
             }
             else
             {
-                throw new InternalCompilerErrorException("Unknown architecture");
+                Debug.Assert(false); // Unknown architecture
+                return SimdVectorLength.None;
             }
         }
     }
@@ -133,8 +129,9 @@ namespace ILCompiler
             var support = new Dictionary<string, InstructionSet>();
             foreach (var instructionSet in InstructionSetFlags.ArchitectureToValidInstructionSets(architecture))
             {
-                if (!instructionSet.Key.StartsWith("Vector"))
-                    support.Add(instructionSet.Key, instructionSet.Value);
+                // Only instruction sets with associated R2R enum values are are specifiable
+                if (instructionSet.Specifiable)
+                    support.Add(instructionSet.Name, instructionSet.InstructionSet);
             }
 
             return support;

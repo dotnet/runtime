@@ -371,61 +371,75 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
-        public static IEnumerable<KeyValuePair<string,InstructionSet>> ArchitectureToValidInstructionSets(TargetArchitecture architecture)
+        public struct InstructionSetInfo
+        {
+            public readonly string Name;
+            public readonly InstructionSet InstructionSet;
+            public readonly bool Specifiable;
+
+            public InstructionSetInfo(string name, InstructionSet instructionSet, bool specifiable)
+            {
+                Name = name;
+                InstructionSet = instructionSet;
+                Specifiable = specifiable;
+            }
+        }
+
+        public static IEnumerable<InstructionSetInfo> ArchitectureToValidInstructionSets(TargetArchitecture architecture)
         {
             switch (architecture)
             {
 
                 case TargetArchitecture.ARM64:
-                    yield return new KeyValuePair<string, InstructionSet>("ArmBase", InstructionSet.ARM64_ArmBase);
-                    yield return new KeyValuePair<string, InstructionSet>("AdvSimd", InstructionSet.ARM64_AdvSimd);
-                    yield return new KeyValuePair<string, InstructionSet>("Aes", InstructionSet.ARM64_Aes);
-                    yield return new KeyValuePair<string, InstructionSet>("Crc32", InstructionSet.ARM64_Crc32);
-                    yield return new KeyValuePair<string, InstructionSet>("Sha1", InstructionSet.ARM64_Sha1);
-                    yield return new KeyValuePair<string, InstructionSet>("Sha256", InstructionSet.ARM64_Sha256);
-                    yield return new KeyValuePair<string, InstructionSet>("Atomics", InstructionSet.ARM64_Atomics);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector64", InstructionSet.ARM64_Vector64);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector128", InstructionSet.ARM64_Vector128);
+                    yield return new InstructionSetInfo("ArmBase", InstructionSet.ARM64_ArmBase, true);
+                    yield return new InstructionSetInfo("AdvSimd", InstructionSet.ARM64_AdvSimd, true);
+                    yield return new InstructionSetInfo("Aes", InstructionSet.ARM64_Aes, true);
+                    yield return new InstructionSetInfo("Crc32", InstructionSet.ARM64_Crc32, true);
+                    yield return new InstructionSetInfo("Sha1", InstructionSet.ARM64_Sha1, true);
+                    yield return new InstructionSetInfo("Sha256", InstructionSet.ARM64_Sha256, true);
+                    yield return new InstructionSetInfo("Atomics", InstructionSet.ARM64_Atomics, true);
+                    yield return new InstructionSetInfo("Vector64", InstructionSet.ARM64_Vector64, false);
+                    yield return new InstructionSetInfo("Vector128", InstructionSet.ARM64_Vector128, false);
                     break;
 
                 case TargetArchitecture.X64:
-                    yield return new KeyValuePair<string, InstructionSet>("Sse", InstructionSet.X64_SSE);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse2", InstructionSet.X64_SSE2);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse3", InstructionSet.X64_SSE3);
-                    yield return new KeyValuePair<string, InstructionSet>("Ssse3", InstructionSet.X64_SSSE3);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse41", InstructionSet.X64_SSE41);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse42", InstructionSet.X64_SSE42);
-                    yield return new KeyValuePair<string, InstructionSet>("Avx", InstructionSet.X64_AVX);
-                    yield return new KeyValuePair<string, InstructionSet>("Avx2", InstructionSet.X64_AVX2);
-                    yield return new KeyValuePair<string, InstructionSet>("Aes", InstructionSet.X64_AES);
-                    yield return new KeyValuePair<string, InstructionSet>("Bmi1", InstructionSet.X64_BMI1);
-                    yield return new KeyValuePair<string, InstructionSet>("Bmi2", InstructionSet.X64_BMI2);
-                    yield return new KeyValuePair<string, InstructionSet>("Fma", InstructionSet.X64_FMA);
-                    yield return new KeyValuePair<string, InstructionSet>("Lzcnt", InstructionSet.X64_LZCNT);
-                    yield return new KeyValuePair<string, InstructionSet>("Pclmulqdq", InstructionSet.X64_PCLMULQDQ);
-                    yield return new KeyValuePair<string, InstructionSet>("Popcnt", InstructionSet.X64_POPCNT);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector128", InstructionSet.X64_Vector128);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector256", InstructionSet.X64_Vector256);
+                    yield return new InstructionSetInfo("Sse", InstructionSet.X64_SSE, true);
+                    yield return new InstructionSetInfo("Sse2", InstructionSet.X64_SSE2, true);
+                    yield return new InstructionSetInfo("Sse3", InstructionSet.X64_SSE3, true);
+                    yield return new InstructionSetInfo("Ssse3", InstructionSet.X64_SSSE3, true);
+                    yield return new InstructionSetInfo("Sse41", InstructionSet.X64_SSE41, true);
+                    yield return new InstructionSetInfo("Sse42", InstructionSet.X64_SSE42, true);
+                    yield return new InstructionSetInfo("Avx", InstructionSet.X64_AVX, true);
+                    yield return new InstructionSetInfo("Avx2", InstructionSet.X64_AVX2, true);
+                    yield return new InstructionSetInfo("Aes", InstructionSet.X64_AES, true);
+                    yield return new InstructionSetInfo("Bmi1", InstructionSet.X64_BMI1, true);
+                    yield return new InstructionSetInfo("Bmi2", InstructionSet.X64_BMI2, true);
+                    yield return new InstructionSetInfo("Fma", InstructionSet.X64_FMA, true);
+                    yield return new InstructionSetInfo("Lzcnt", InstructionSet.X64_LZCNT, true);
+                    yield return new InstructionSetInfo("Pclmulqdq", InstructionSet.X64_PCLMULQDQ, true);
+                    yield return new InstructionSetInfo("Popcnt", InstructionSet.X64_POPCNT, true);
+                    yield return new InstructionSetInfo("Vector128", InstructionSet.X64_Vector128, false);
+                    yield return new InstructionSetInfo("Vector256", InstructionSet.X64_Vector256, false);
                     break;
 
                 case TargetArchitecture.X86:
-                    yield return new KeyValuePair<string, InstructionSet>("Sse", InstructionSet.X86_SSE);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse2", InstructionSet.X86_SSE2);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse3", InstructionSet.X86_SSE3);
-                    yield return new KeyValuePair<string, InstructionSet>("Ssse3", InstructionSet.X86_SSSE3);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse41", InstructionSet.X86_SSE41);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse42", InstructionSet.X86_SSE42);
-                    yield return new KeyValuePair<string, InstructionSet>("Avx", InstructionSet.X86_AVX);
-                    yield return new KeyValuePair<string, InstructionSet>("Avx2", InstructionSet.X86_AVX2);
-                    yield return new KeyValuePair<string, InstructionSet>("Aes", InstructionSet.X86_AES);
-                    yield return new KeyValuePair<string, InstructionSet>("Bmi1", InstructionSet.X86_BMI1);
-                    yield return new KeyValuePair<string, InstructionSet>("Bmi2", InstructionSet.X86_BMI2);
-                    yield return new KeyValuePair<string, InstructionSet>("Fma", InstructionSet.X86_FMA);
-                    yield return new KeyValuePair<string, InstructionSet>("Lzcnt", InstructionSet.X86_LZCNT);
-                    yield return new KeyValuePair<string, InstructionSet>("Pclmulqdq", InstructionSet.X86_PCLMULQDQ);
-                    yield return new KeyValuePair<string, InstructionSet>("Popcnt", InstructionSet.X86_POPCNT);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector128", InstructionSet.X86_Vector128);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector256", InstructionSet.X86_Vector256);
+                    yield return new InstructionSetInfo("Sse", InstructionSet.X86_SSE, true);
+                    yield return new InstructionSetInfo("Sse2", InstructionSet.X86_SSE2, true);
+                    yield return new InstructionSetInfo("Sse3", InstructionSet.X86_SSE3, true);
+                    yield return new InstructionSetInfo("Ssse3", InstructionSet.X86_SSSE3, true);
+                    yield return new InstructionSetInfo("Sse41", InstructionSet.X86_SSE41, true);
+                    yield return new InstructionSetInfo("Sse42", InstructionSet.X86_SSE42, true);
+                    yield return new InstructionSetInfo("Avx", InstructionSet.X86_AVX, true);
+                    yield return new InstructionSetInfo("Avx2", InstructionSet.X86_AVX2, true);
+                    yield return new InstructionSetInfo("Aes", InstructionSet.X86_AES, true);
+                    yield return new InstructionSetInfo("Bmi1", InstructionSet.X86_BMI1, true);
+                    yield return new InstructionSetInfo("Bmi2", InstructionSet.X86_BMI2, true);
+                    yield return new InstructionSetInfo("Fma", InstructionSet.X86_FMA, true);
+                    yield return new InstructionSetInfo("Lzcnt", InstructionSet.X86_LZCNT, true);
+                    yield return new InstructionSetInfo("Pclmulqdq", InstructionSet.X86_PCLMULQDQ, true);
+                    yield return new InstructionSetInfo("Popcnt", InstructionSet.X86_POPCNT, true);
+                    yield return new InstructionSetInfo("Vector128", InstructionSet.X86_Vector128, false);
+                    yield return new InstructionSetInfo("Vector256", InstructionSet.X86_Vector256, false);
                     break;
 
             }

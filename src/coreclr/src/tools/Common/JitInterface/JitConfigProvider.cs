@@ -29,9 +29,9 @@ namespace Internal.JitInterface
         private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private object _keepAlive; // Keeps callback delegates alive
 
-        public static void Initialize(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, InstructionSetSupport instructionSetSupport, string jitPath = null)
+        public static void Initialize(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, string jitPath = null)
         {
-            var config = new JitConfigProvider(jitFlags, parameters, instructionSetSupport);
+            var config = new JitConfigProvider(jitFlags, parameters);
 
             // Make sure we didn't try to initialize two instances of JIT configuration.
             // RyuJIT doesn't support multiple hosts in a single process.
@@ -70,18 +70,12 @@ namespace Internal.JitInterface
         /// </summary>
         /// <param name="jitFlags">A collection of JIT compiler flags.</param>
         /// <param name="parameters">A collection of parameter name/value pairs.</param>
-        public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, InstructionSetSupport instructionSetSupport)
+        public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters)
         {
             ArrayBuilder<CorJitFlag> jitFlagBuilder = new ArrayBuilder<CorJitFlag>();
             foreach (CorJitFlag jitFlag in jitFlags)
             {
                 jitFlagBuilder.Add(jitFlag);
-            }
-
-            Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
-            if (instructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2) || instructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd))
-            {
-                jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
             }
 
             _jitFlags = jitFlagBuilder.ToArray();

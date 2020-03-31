@@ -2883,6 +2883,25 @@ namespace Internal.JitInterface
 
             TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
 
+            switch (targetArchitecture)
+            {
+                case TargetArchitecture.X64:
+                case TargetArchitecture.X86:
+                    Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
+                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2))
+                    {
+                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
+                    }
+                    break;
+
+                case TargetArchitecture.ARM64:
+                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd))
+                    {
+                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
+                    }
+                    break;
+            }
+
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
 

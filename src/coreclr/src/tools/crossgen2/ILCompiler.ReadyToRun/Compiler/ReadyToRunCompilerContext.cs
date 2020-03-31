@@ -113,7 +113,6 @@ namespace ILCompiler
         private FieldLayoutAlgorithm _vectorFallbackAlgorithm;
         private string _similarVectorName;
         private DefType _similarVectorOpenType;
-        private object _lockObject = new object();
 
         public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, string similarVector)
         {

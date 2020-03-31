@@ -511,7 +511,21 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
-        public static IEnumerable<KeyValuePair<string,InstructionSet>> ArchitectureToValidInstructionSets(TargetArchitecture architecture)
+        public struct InstructionSetInfo
+        {
+            public readonly string Name;
+            public readonly InstructionSet InstructionSet;
+            public readonly bool Specifiable;
+
+            public InstructionSetInfo(string name, InstructionSet instructionSet, bool specifiable)
+            {
+                Name = name;
+                InstructionSet = instructionSet;
+                Specifiable = specifiable;
+            }
+        }
+
+        public static IEnumerable<InstructionSetInfo> ArchitectureToValidInstructionSets(TargetArchitecture architecture)
         {
             switch (architecture)
             {
@@ -524,7 +538,11 @@ namespace Internal.JitInterface
                 foreach (var instructionSet in _instructionSets)
                 {
                     if (instructionSet.Architecture != architecture) continue;
-                    tr.WriteLine($"                    yield return new KeyValuePair<string, InstructionSet>(\"{instructionSet.PublicName}\", InstructionSet.{architecture}_{instructionSet.JitName});");
+                    bool instructionSetIsSpecifiable = !String.IsNullOrEmpty(instructionSet.R2rName);
+                    string name = instructionSet.PublicName;
+                    string specifiable = instructionSetIsSpecifiable ? "true" : "false";
+                    string instructionSetString = $"InstructionSet.{architecture}_{instructionSet.JitName}";
+                    tr.WriteLine($"                    yield return new InstructionSetInfo(\"{name}\", {instructionSetString}, {specifiable});");
                 }
                 tr.WriteLine("                    break;");
             }
