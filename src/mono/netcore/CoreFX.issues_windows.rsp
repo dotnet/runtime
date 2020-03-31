@@ -143,3 +143,5 @@
 -nomethod Microsoft.Extensions.Hosting.HostTests.CreateDefaultBuilder_EnablesValidateOnBuild
 -nomethod Microsoft.Extensions.Hosting.HostTests.CreateDefaultBuilder_EnablesScopeValidation
 -nomethod Microsoft.Extensions.Hosting.HostTests.CreateDefaultBuilder_IncludesCommandLineArguments
+-nomethod Microsoft.Extensions.Hosting.HostTests.CreateDefaultBuilder_ConfigJsonDoesNotReload
+-nomethod Microsoft.Extensions.Hosting.HostTests.CreateDefaultBuilder_ConfigJsonDoesReload
