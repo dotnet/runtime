@@ -540,14 +540,6 @@ public:
                                              DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
                                              BOOL fPrependCOMPLUS = TRUE,
                                              ConfigSearch direction = CONFIG_SYSTEM);
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    static DWORD GetConfigDWORDFavoringConfigFile_DontUse_(__in_z LPCWSTR name, DWORD defValue,
-                                                  DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
-                                                  BOOL fPrependCOMPLUS = TRUE,
-                                                  ConfigSearch direction = CONFIG_SYSTEM);
 
     //
     // NOTE: The following function is deprecated; use the CLRConfig class instead.
@@ -860,8 +852,6 @@ private: //----------------------------------------------------------------
     bool fGDBJitEmitDebugFrame;
 #endif
 public:
-
-    HRESULT GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch direction, __deref_out_opt LPCWSTR* value);
 
     DWORD GetConfigDWORDInternal_DontUse_ (__in_z LPCWSTR name, DWORD defValue,    //for getting data in the constructor of EEConfig
                                     DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,

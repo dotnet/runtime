@@ -397,24 +397,7 @@ HRESULT EEConfig::GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LP
         POSTCONDITION(CheckPointer(outVal, NULL_OK));
     } CONTRACT_END;
 
-    LPWSTR pvalue = REGUTIL::GetConfigString_DontUse_(name, fPrependCOMPLUS);
-    if(pvalue == NULL && g_pConfig != NULL)
-    {
-        LPCWSTR pResult;
-        if(SUCCEEDED(g_pConfig->GetConfiguration_DontUse_(name, direction, &pResult)) && pResult != NULL)
-        {
-            size_t len = wcslen(pResult) + 1;
-            pvalue = new (nothrow) WCHAR[len];
-            if (pvalue == NULL)
-            {
-                RETURN E_OUTOFMEMORY;
-            }
-
-            wcscpy_s(pvalue,len,pResult);
-        }
-    }
-
-    *outVal = pvalue;
+    *outVal = REGUTIL::GetConfigString_DontUse_(name, fPrependCOMPLUS);
 
     RETURN S_OK;
 }
@@ -434,25 +417,7 @@ DWORD EEConfig::GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWO
     } CONTRACTL_END;
 
     // <TODO>@TODO: After everyone has moved off registry, key remove the following line in golden</TODO>
-    DWORD result = REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
-    if(result == defValue && g_pConfig != NULL)
-    {
-        LPCWSTR pvalue;
-        if(SUCCEEDED(g_pConfig->GetConfiguration_DontUse_(name, direction, &pvalue)) && pvalue != NULL)
-        {
-            WCHAR *end;
-            errno = 0;
-            result = wcstoul(pvalue, &end, 0);
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno == ERANGE || end == pvalue)
-            {
-                result = defValue;
-            }
-        }
-    }
-
-    return result;
+    return REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
 }
 
 //
@@ -471,73 +436,7 @@ ULONGLONG EEConfig::GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG d
     } CONTRACTL_END;
 
     // <TODO>@TODO: After everyone has moved off registry, key remove the following line in golden</TODO>
-    ULONGLONG result = REGUTIL::GetConfigULONGLONG_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
-    if(result == defValue && g_pConfig != NULL)
-    {
-        LPCWSTR pvalue;
-        if(SUCCEEDED(g_pConfig->GetConfiguration_DontUse_(name, direction, &pvalue)) && pvalue != NULL)
-        {
-            WCHAR *end;
-            errno = 0;
-            result = _wcstoui64(pvalue, &end, 0);
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno == ERANGE || end == pvalue)
-            {
-                result = defValue;
-            }
-        }
-    }
-
-    return result;
-}
-
-//
-// NOTE: This function is deprecated; use the CLRConfig class instead.
-// To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
-//
-// This is very similar to GetConfigDWORD, except that it favors the settings in config files over those in the
-// registry. This is the Shim's policy with configuration flags, and there are a few flags in EEConfig that adhere
-// to this policy.
-//
-DWORD EEConfig::GetConfigDWORDFavoringConfigFile_DontUse_(__in_z LPCWSTR name,
-                                                 DWORD defValue,
-                                                 DWORD level,
-                                                 BOOL fPrependCOMPLUS,
-                                                 ConfigSearch direction)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(name));
-    } CONTRACTL_END;
-
-    DWORD result = defValue;
-
-    if (g_pConfig != NULL)
-    {
-        LPCWSTR pvalue;
-        if (SUCCEEDED(g_pConfig->GetConfiguration_DontUse_(name, direction, &pvalue)) && pvalue != NULL)
-        {
-            WCHAR *end = NULL;
-            errno = 0;
-            result = wcstoul(pvalue, &end, 0);
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno == ERANGE || end == pvalue)
-            {
-                result = defValue;
-            }
-        }
-        else
-        {
-            result = REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
-        }
-    }
-
-    return result;
+    return REGUTIL::GetConfigULONGLONG_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
 }
 
 //
@@ -554,24 +453,7 @@ DWORD EEConfig::GetConfigDWORDInternal_DontUse_(__in_z LPCWSTR name, DWORD defVa
     } CONTRACTL_END;
 
     // <TODO>@TODO: After everyone has moved off registry, key remove the following line in golden</TODO>
-    DWORD result = REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
-    if(result == defValue)
-    {
-        LPCWSTR pvalue;
-        if(SUCCEEDED(GetConfiguration_DontUse_(name, direction, &pvalue)) && pvalue != NULL)
-        {
-            WCHAR *end = NULL;
-            errno = 0;
-            result = wcstoul(pvalue, &end, 0);
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno == ERANGE || end == pvalue)
-            {
-                result = defValue;
-            }
-        }
-    }
-    return result;
+    return REGUTIL::GetConfigDWORD_DontUse_(name, defValue, (REGUTIL::CORConfigLevel)level, fPrependCOMPLUS);
 }
 
 /**************************************************************/
@@ -1217,39 +1099,7 @@ HRESULT EEConfig::GetConfigValueCallback(__in_z LPCWSTR pKey, __deref_out_opt LP
     // Ensure that both options aren't set.
     _ASSERTE(!(systemOnly && applicationFirst));
 
-    if(g_pConfig != NULL)
-    {
-        ConfigSearch direction = CONFIG_SYSTEM;
-        if(systemOnly)
-        {
-            direction = CONFIG_SYSTEMONLY;
-        }
-        else if(applicationFirst)
-        {
-            direction = CONFIG_APPLICATION;
-        }
-
-        RETURN g_pConfig->GetConfiguration_DontUse_(pKey, direction, pValue);
-    }
-    else
-    {
-        RETURN E_FAIL;
-    }
-}
-
-HRESULT EEConfig::GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch direction, __deref_out_opt LPCWSTR* pValue)
-{
-    CONTRACT (HRESULT) {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pValue));
-        PRECONDITION(CheckPointer(pKey));
-    } CONTRACT_END;
-
-    Thread *pThread = GetThread();
-
-    *pValue = NULL;
+    // TODO: Eliminate this function as well.
     RETURN E_FAIL;
 }
 
