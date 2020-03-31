@@ -7,8 +7,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />
+    <Compile Include="../NativeLibraryToLoad/NativeLibraryToLoad.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
+    <ProjectReference Include="TestAsm/TestAsm.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
 </Project>

@@ -11,6 +11,6 @@ public class TestAsm
         return NativeSum(a, b);
     }
 
-    [DllImport("NativeLib")]
+    [DllImport("DoesNotExist")]
     static extern int NativeSum(int arg1, int arg2);
 }

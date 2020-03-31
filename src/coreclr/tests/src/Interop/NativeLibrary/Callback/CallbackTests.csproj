@@ -5,8 +5,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CallbackTests.cs" />
+    <Compile Include="../NativeLibraryToLoad/NativeLibraryToLoad.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
   </ItemGroup>
 </Project>

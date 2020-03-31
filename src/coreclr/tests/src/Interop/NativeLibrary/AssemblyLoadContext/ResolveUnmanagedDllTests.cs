@@ -15,7 +15,7 @@ public class ALC : AssemblyLoadContext
     }
 }
 
-public class ResolveEventTests
+public class ResolveUnmanagedDllTests
 {
     static int HandlerTracker = 1;
 
@@ -107,10 +107,10 @@ public class ResolveEventTests
     public static IntPtr HandlerPass(Assembly assembly, string libraryName)
     {
         HandlerTracker++;
-        return NativeLibrary.Load("ResolvedLib", assembly, null);
+        return NativeLibrary.Load(NativeLibraryToLoad.Name, assembly, null);
     }
 
-    [DllImport("NativeLib")]
+    [DllImport("DoesNotExist")]
     static extern int NativeSum(int arg1, int arg2);
 
 }
