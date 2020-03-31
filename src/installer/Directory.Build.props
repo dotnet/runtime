@@ -51,7 +51,6 @@
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == '' AND '$(BuildArchitecture)' == 'arm64'">$(BuildArchitecture)</TargetArchitecture>
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
-    <TargetOS Condition="'$(TargetOS)' == 'Linux'">Unix</TargetOS>
   </PropertyGroup>
 
 
@@ -93,8 +92,8 @@
   <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
     <OutputRid Condition="'$(TargetOS)' == 'Windows_NT'">win-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Unix'">linux-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(TargetOS)' == 'FreeBSD' or $([MSBuild]::IsOSPlatform('FREEBSD'))">freebsd-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup>
