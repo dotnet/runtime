@@ -2244,11 +2244,6 @@ MethodTableBuilder::EnumerateMethodImpls()
 
     if (bmtMethod->dwNumberMethodImpls != 0)
     {
-        if (strstr(this->GetHalfBakedClass()->m_szDebugClassName, "Foo") != NULL || strstr(this->GetHalfBakedClass()->m_szDebugClassName, "Bar") != NULL)
-        {
-            int a = 0;
-        }
-
         //
         // Allocate the structures to keep track of the impl matches
         //
@@ -2388,9 +2383,6 @@ MethodTableBuilder::EnumerateMethodImpls()
 
                     if (GetCl() != tkParent)
                     {
-                        // Skip checking if the declaring type is an interface if we already know this is a scenario where
-                        // we can't allow for covariant returns
-
                         CONTRACT_VIOLATION(LoadsTypeViolation);
                         MethodTable* pDeclMT = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(
                             GetModule(),
@@ -2403,16 +2395,11 @@ MethodTableBuilder::EnumerateMethodImpls()
 
                         CONSISTENCY_CHECK(pDeclMT != NULL);
 
-                        if (!pDeclMT->IsInterface())
+                        if (!pDeclMT->IsInterface() && !pDeclMT->IsValueType())
                         {
                             allowCovariantReturn = TRUE;
                         }
                     }
-                }
-
-                if (strstr(this->GetHalfBakedClass()->m_szDebugClassName, "Foo") != NULL || strstr(this->GetHalfBakedClass()->m_szDebugClassName, "Bar") != NULL)
-                {
-                    int a = 0;
                 }
 
                 // Can't use memcmp because there may be two AssemblyRefs
@@ -2428,14 +2415,7 @@ MethodTableBuilder::EnumerateMethodImpls()
                         NULL,
                         allowCovariantReturn))
                 {
-                    MetaSig::CompareMethodSigs(pSigDecl, cbSigDecl, GetModule(), &theDeclSubst, pSigBody, cbSigBody, GetModule(), NULL, allowCovariantReturn);
-                    printf("MethodImpl %x with MethodDecl %x failed\n", theBody, theDecl);
-                    //BuildMethodTableThrowException(IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH);
-                }
-                else
-                {
-                    if (strstr(GetModule()->GetSimpleName(), "CovRetInterfaces") != NULL)
-                        printf("MethodImpl %x with MethodDecl %x OK\n", theBody, theDecl);
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_MI_BODY_DECL_MISMATCH);
                 }
             }
             else
