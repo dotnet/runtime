@@ -2814,11 +2814,11 @@ typedef enum {
 	//     pclmul
 	//     aes
 	//     sse3
-	//       ssse3     (doesn't imply 'pclmul' and 'aes' are available)
+	//       ssse3     (doesn't include 'pclmul' and 'aes')
 	//         sse4.1
 	//           sse4.2
 	//             popcnt
-	//             avx     (includes 'popcnt')
+	//             avx     (doesn't include 'popcnt')
 	//               avx2
 	//               fma
 	// lzcnt
@@ -2833,7 +2833,7 @@ typedef enum {
 	MONO_CPU_X86_SSE41_COMBINED       = MONO_CPU_X86_SSSE3_COMBINED | MONO_CPU_X86_SSE41,
 	MONO_CPU_X86_SSE42_COMBINED       = MONO_CPU_X86_SSE41_COMBINED | MONO_CPU_X86_SSE42,
 	MONO_CPU_X86_POPCNT_COMBINED      = MONO_CPU_X86_SSE42_COMBINED | MONO_CPU_X86_POPCNT,
-	MONO_CPU_X86_AVX_COMBINED         = MONO_CPU_X86_SSE42_COMBINED | MONO_CPU_X86_POPCNT | MONO_CPU_X86_AVX,
+	MONO_CPU_X86_AVX_COMBINED         = MONO_CPU_X86_SSE42_COMBINED | MONO_CPU_X86_AVX,
 	MONO_CPU_X86_AVX2_COMBINED        = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_AVX2,
 	MONO_CPU_X86_FMA_COMBINED         = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_FMA,
 	MONO_CPU_X86_FULL_SSEAVX_COMBINED = MONO_CPU_X86_FMA_COMBINED   | MONO_CPU_X86_AVX2   | MONO_CPU_X86_PCLMUL 
