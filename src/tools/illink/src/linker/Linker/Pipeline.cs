@@ -130,9 +130,7 @@ namespace Mono.Linker {
 		
 		protected virtual void ProcessStep (LinkContext context, IStep step)
 		{
-			context.Tracer.Push (step);
 			step.Process (context);
-			context.Tracer.Pop ();
 		}
 
 		public IStep [] GetSteps ()
