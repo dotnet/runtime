@@ -56,26 +56,7 @@
 # Space to keep xmm0 and xmm1
 .equ SIZEOF_FP_ARG_SPILL, 0x10*2
 
-.equ OFFSETOF_FP_ARG_SPILL, SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA
-
-# SIZEOF_STACK_FRAME is how many bytes we reserve in our ELT helpers below
-# There are three components, the first is space for profiler platform specific
-# data struct that we spill the general purpose registers to, then space to
-# spill xmm0 and xmm1, then finally 8 bytes of padding to ensure that the xmm
-# register reads/writes are aligned on 16 bytes.
-.equ SIZEOF_STACK_FRAME, SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA + SIZEOF_FP_ARG_SPILL + STACK_FUDGE_FACTOR
-
-# general purpose registers
-.equ SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA, 0x8*22
-
-# Pad the frame size by 0x8 so when the xmm0 and xmm1 register store/restore happens
-# we can align to 16 and be guaranteed to not exceed the frame size
-.equ STACK_FUDGE_FACTOR, 0x8
-
-# Space to keep xmm0 and xmm1
-.equ SIZEOF_FP_ARG_SPILL, 0x10*2
-
-.equ OFFSETOF_FP_ARG_SPILL, SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA
+.equ OFFSETOF_FP_ARG_SPILL, SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA + STACK_FUDGE_FACTOR
 
 # SIZEOF_STACK_FRAME is how many bytes we reserve in our ELT helpers below
 # There are three components, the first is space for profiler platform specific
@@ -95,11 +76,10 @@
 #
 #       Preserved:
 #           - all non-volatile registers
-#           - rax, rdx
+#           - rax, rcx, rdx, r8, r9
 #           - xmm0, xmm1
 #
 #       Not Preserved:
-#           - integer argument registers (rcx, rdx, r8, r9)
 #           - floating point argument registers (xmm2-3)
 #           - volatile integer registers (r10, r11)
 #           - volatile floating point registers (xmm4-5)
