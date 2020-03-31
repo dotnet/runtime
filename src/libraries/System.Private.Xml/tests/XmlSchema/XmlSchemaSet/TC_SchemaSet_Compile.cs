@@ -202,21 +202,8 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.Add(null, XmlReader.Create(new StringReader(schema)));
 
-            Exception exception;
-
-            try
-            {
-                ss.Compile();
-                exception = null;
-            }
-            catch (Exception ex)
-            {
-                exception = ex;
-            }
-
-            Assert.NotNull(exception);
-            Assert.IsType<XmlSchemaException>(exception);
-            Assert.Contains("minLength", exception.Message);
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+            Assert.Contains("minLength", ex.Message);
         }
 
         /// <summary>
@@ -244,21 +231,8 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.Add(null, XmlReader.Create(new StringReader(schema)));
 
-            Exception exception;
-
-            try
-            {
-                ss.Compile();
-                exception = null;
-            }
-            catch (Exception ex)
-            {
-                exception = ex;
-            }
-
-            Assert.NotNull(exception);
-            Assert.IsType<XmlSchemaException>(exception);
-            Assert.Contains("maxLength", exception.Message);
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+            Assert.Contains("maxLength", ex.Message);
         }
     }
 }
