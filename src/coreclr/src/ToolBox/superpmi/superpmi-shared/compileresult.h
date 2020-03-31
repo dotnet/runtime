@@ -168,8 +168,6 @@ public:
 
     void dumpToConsole();
 
-    HANDLE getCodeHeap();
-
     void recAssert(const char* buff);
     void dmpAssertLog(DWORD key, DWORD value);
     const char* repAssert();
@@ -309,7 +307,6 @@ public:
     LightWeightMap<DWORDLONG, DWORD>* CallTargetTypes;
 
 private:
-    HANDLE                  codeHeap;
     Capture_AllocMemDetails allocMemDets;
     allocGCInfoDetails      allocGCInfoDets;
 };

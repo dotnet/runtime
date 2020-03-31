@@ -1925,6 +1925,183 @@ mono_jit_map_is_enabled (void)
 
 #endif
 
+#ifdef ENABLE_JIT_DUMP
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#include <elf.h>
+
+static FILE *perf_dump_file;
+static mono_mutex_t perf_dump_mutex;
+static void *perf_dump_mmap_addr = MAP_FAILED;
+static guint32 perf_dump_pid;
+
+enum {
+	JIT_DUMP_MAGIC = 0x4A695444,
+	JIT_DUMP_VERSION = 2,
+#if HOST_X86
+	ELF_MACHINE = EM_386,
+#elif HOST_AMD64
+	ELF_MACHINE = EM_X86_64,
+#elif HOST_ARM
+	ELF_MACHINE = EM_ARM,
+#elif HOST_ARM64
+	ELF_MACHINE = EM_AARCH64,
+#endif
+	JIT_CODE_LOAD = 0
+};
+typedef struct
+{
+	guint32 magic;
+	guint32 version;
+	guint32 total_size;
+	guint32 elf_mach;
+	guint32 pad1;
+	guint32 pid;
+	guint64 timestamp;
+	guint64 flags;
+} FileHeader;
+typedef struct
+{
+	guint32 id;
+	guint32 total_size;
+	guint64 timestamp;
+} RecordHeader;
+typedef struct
+{
+	RecordHeader header;
+	guint32 pid;
+	guint32 tid;
+	guint64 vma;
+	guint64 code_addr;
+	guint64 code_size;
+	guint64 code_index;
+	// Null terminated function name
+	// Native code
+} JitCodeLoadRecord;
+
+static void add_file_header_info (FileHeader *header);
+static guint64 get_time_stamp_ns (void);
+static void add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record);
+
+void
+mono_enable_jit_dump (void)
+{
+	if (perf_dump_pid == 0)
+		perf_dump_pid = getpid();
+	
+	if (!perf_dump_file) {
+		char name [64];
+		FileHeader header;
+		memset (&header, 0, sizeof (header));
+
+		mono_os_mutex_init (&perf_dump_mutex);
+		mono_os_mutex_lock (&perf_dump_mutex);
+		
+		g_snprintf (name, sizeof (name), "/tmp/jit-%d.dump", perf_dump_pid);
+		unlink (name);
+		perf_dump_file = fopen (name, "w");
+		
+		add_file_header_info (&header);
+		if (perf_dump_file) {
+			fwrite (&header, sizeof (header), 1, perf_dump_file);
+			//This informs perf of the presence of the jitdump file and support for the feature.​
+			perf_dump_mmap_addr = mmap (NULL, sizeof (header), PROT_READ | PROT_EXEC, MAP_PRIVATE, fileno (perf_dump_file), 0);
+		}
+		
+		mono_os_mutex_unlock (&perf_dump_mutex);
+	}
+}
+
+static void
+add_file_header_info (FileHeader *header)
+{
+	header->magic = JIT_DUMP_MAGIC;
+	header->version = JIT_DUMP_VERSION;
+	header->total_size = sizeof (header);
+	header->elf_mach = ELF_MACHINE;
+	header->pad1 = 0;
+	header->pid = perf_dump_pid;
+	header->timestamp = get_time_stamp_ns ();
+	header->flags = 0;
+}
+
+static guint64
+get_time_stamp_ns (void)
+{
+	struct timespec ts;
+	int result = clock_gettime (CLOCK_MONOTONIC, &ts);
+	return  ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+}
+
+void
+mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
+{
+	static uint64_t code_index;
+	
+	if (perf_dump_file) {
+		JitCodeLoadRecord record;
+		size_t nameLen = strlen (jinfo->d.method->name);
+		memset (&record, 0, sizeof (record));
+		
+		add_basic_JitCodeLoadRecord_info (&record);
+		record.header.total_size = sizeof (record) + nameLen + 1 + jinfo->code_size;
+		record.vma = (guint64)jinfo->code_start;
+		record.code_addr = (guint64)jinfo->code_start;
+		record.code_size = (guint64)jinfo->code_size;
+
+		mono_os_mutex_lock (&perf_dump_mutex);
+		
+		record.code_index = ++code_index;
+		
+		// TODO: write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
+		
+		record.header.timestamp = get_time_stamp_ns ();
+		
+		fwrite (&record, sizeof (record), 1, perf_dump_file);
+		fwrite (jinfo->d.method->name, nameLen + 1, 1, perf_dump_file);
+		fwrite (code, jinfo->code_size, 1, perf_dump_file);
+
+		mono_os_mutex_unlock (&perf_dump_mutex);
+	}
+}
+
+static void
+add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record)
+{
+	record->header.id = JIT_CODE_LOAD;
+	record->header.timestamp = get_time_stamp_ns ();
+	record->pid = perf_dump_pid;
+	record->tid = syscall (SYS_gettid);
+}
+
+void
+mono_jit_dump_cleanup (void)
+{
+	if (perf_dump_mmap_addr != MAP_FAILED)
+		munmap (perf_dump_mmap_addr, sizeof(FileHeader));
+	if (perf_dump_file)
+		fclose (perf_dump_file);
+}
+
+#else
+
+void
+mono_enable_jit_dump (void)
+{
+}
+
+void
+mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
+{
+}
+
+void
+mono_jit_dump_cleanup (void)
+{
+}
+
+#endif
+
 static void
 no_gsharedvt_in_wrapper (void)
 {
@@ -4775,6 +4952,7 @@ mini_cleanup (MonoDomain *domain)
 		g_printf ("Printing runtime stats at shutdown\n");
 	mono_runtime_print_stats ();
 	jit_stats_cleanup ();
+	mono_jit_dump_cleanup ();
 }
 #else
 void

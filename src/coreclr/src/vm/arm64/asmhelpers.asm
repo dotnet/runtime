@@ -24,7 +24,10 @@
     IMPORT COMToCLRWorker
     IMPORT CallDescrWorkerUnwindFrameChainHandler
     IMPORT UMEntryPrestubUnwindFrameChainHandler
+    IMPORT UMThunkStubUnwindFrameChainHandler
     IMPORT TheUMEntryPrestubWorker
+    IMPORT CreateThreadBlockThrow
+    IMPORT UMThunkStubRareDisableWorker
     IMPORT GetCurrentSavedRedirectContext
     IMPORT LinkFrameAndThrow
     IMPORT FixContextHandler
@@ -949,6 +952,118 @@ COMToCLRDispatchHelper_RegSetup
     EPILOG_BRANCH_REG x12
 
     NESTED_END
+
+;
+; x12 = UMEntryThunk*
+;
+    NESTED_ENTRY UMThunkStub,,UMThunkStubUnwindFrameChainHandler
+
+    ; Save arguments and return address
+    PROLOG_SAVE_REG_PAIR           fp, lr, #-112! ; 72 for regArgs, 8 for x19 & 8 for x12 & 8 for 16-byte align
+    ; save callee saved reg x19. x19 is used in the method to store thread*
+    PROLOG_SAVE_REG                x19, #96
+
+    SAVE_ARGUMENT_REGISTERS        sp, 16
+
+    GBLA UMThunkStub_HiddenArg ; offset of saved UMEntryThunk *
+    GBLA UMThunkStub_StackArgs ; offset of original stack args (total size of UMThunkStub frame)
+UMThunkStub_HiddenArg SETA 88
+UMThunkStub_StackArgs SETA 112
+
+    ; save UMEntryThunk*
+    str                 x12, [sp, #UMThunkStub_HiddenArg]
+
+    ; x0 = GetThread(). Trashes x19
+    INLINE_GETTHREAD    x0, x19
+    cbz                 x0, UMThunkStub_DoThreadSetup
+
+UMThunkStub_HaveThread
+    mov                 x19, x0                  ; x19 = Thread *
+
+    mov                 x9, 1
+    ; m_fPreemptiveGCDisabled is 4 byte field so using 32-bit variant
+    str                 w9, [x19, #Thread__m_fPreemptiveGCDisabled]
+
+    ldr                 x2, =g_TrapReturningThreads
+    ldr                 x3, [x2]
+    ; assuming x0 contains Thread* before jumping to UMThunkStub_DoTrapReturningThreads
+    cbnz                x3, UMThunkStub_DoTrapReturningThreads
+
+UMThunkStub_InCooperativeMode
+    ldr                 x12, [fp, #UMThunkStub_HiddenArg] ; x12 = UMEntryThunk*
+    ldr                 x3, [x12, #UMEntryThunk__m_pUMThunkMarshInfo] ; x3 = m_pUMThunkMarshInfo
+
+    ; m_cbActualArgSize is UINT32 and hence occupies 4 bytes
+    ldr                 w2, [x3, #UMThunkMarshInfo__m_cbActualArgSize] ; w2 = Stack arg bytes
+    cbz                 w2, UMThunkStub_RegArgumentsSetup
+
+    ; extend to 64-bits
+    uxtw                x2, w2
+
+    ; Source pointer
+    add                 x0, fp, #UMThunkStub_StackArgs
+
+    ; move source pointer to end of Stack Args
+    add                 x0, x0, x2
+
+    ; Count of stack slot pairs to copy (divide by 16)
+    lsr                 x1, x2, #4
+
+    ; Is there an extra stack slot (can happen when stack arg bytes not multiple of 16)
+    and                 x2, x2, #8
+
+    ; If yes then start source pointer from 16 byte aligned stack slot
+    add                 x0, x0, x2
+
+    ; increment stack slot pair count by 1 if x2 is not zero
+    add                 x1, x1, x2, LSR #3
+
+UMThunkStub_StackLoop
+    ldp                 x4, x5, [x0, #-16]! ; pre-Index
+    stp                 x4, x5, [sp, #-16]! ; pre-Index
+    subs                x1, x1, #1
+    bne                 UMThunkStub_StackLoop
+
+UMThunkStub_RegArgumentsSetup
+    ldr                 x16, [x3, #UMThunkMarshInfo__m_pILStub]
+
+    RESTORE_ARGUMENT_REGISTERS        fp, 16
+
+    blr                 x16
+
+UMThunkStub_PostCall
+    mov                 x4, 0
+    ; m_fPreemptiveGCDisabled is 4 byte field so using 32-bit variant
+    str                 w4, [x19, #Thread__m_fPreemptiveGCDisabled]
+
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG                x19, #96
+    EPILOG_RESTORE_REG_PAIR           fp, lr, #112!
+
+    EPILOG_RETURN
+
+UMThunkStub_DoThreadSetup
+    sub                 sp, sp, #SIZEOF__FloatArgumentRegisters
+    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
+    bl                  CreateThreadBlockThrow
+    RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 0
+    add                 sp, sp, #SIZEOF__FloatArgumentRegisters
+    b                   UMThunkStub_HaveThread
+
+UMThunkStub_DoTrapReturningThreads
+    sub                 sp, sp, #SIZEOF__FloatArgumentRegisters
+    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
+    ; x0 already contains Thread* pThread
+    ; UMEntryThunk* pUMEntry
+    ldr                 x1, [fp, #UMThunkStub_HiddenArg]
+    bl                  UMThunkStubRareDisableWorker
+    RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 0
+    add                 sp, sp, #SIZEOF__FloatArgumentRegisters
+    b                   UMThunkStub_InCooperativeMode
+
+    NESTED_END
+
+    INLINE_GETTHREAD_CONSTANT_POOL
 
 #ifdef FEATURE_HIJACK
 ; ------------------------------------------------------------------

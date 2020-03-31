@@ -306,6 +306,96 @@ LOCAL_LABEL(LNullThis):
 
         NESTED_END TheUMEntryPrestub,_TEXT
 
+//
+// r12 = UMEntryThunk*
+//
+        NESTED_ENTRY UMThunkStub,_TEXT,UnhandledExceptionHandlerUnix
+        PROLOG_PUSH         "{r4,r5,r7,r11,lr}"
+        PROLOG_STACK_SAVE_OFFSET   r7, #8
+
+        alloc_stack         4 * 5
+        stm                 sp, {r0-r3,r12}
+
+        //GBLA UMThunkStub_HiddenArgOffest // offset of saved UMEntryThunk *
+        //GBLA UMThunkStub_StackArgsOffest // offset of original stack args
+        //GBLA UMThunkStub_StackArgsSize   // total size of UMThunkStub frame
+UMThunkStub_HiddenArgOffset = (-3)*4
+UMThunkStub_StackArgsOffset = 3*4
+UMThunkStub_StackArgsSize = 10*4
+
+        CHECK_STACK_ALIGNMENT
+
+        bl                  C_FUNC(GetThread)
+        cbz                 r0, LOCAL_LABEL(UMThunkStub_DoThreadSetup)
+
+LOCAL_LABEL(UMThunkStub_HaveThread):
+        mov                 r5, r0                  // r5 = Thread *
+
+        ldr                 r2, =g_TrapReturningThreads
+
+        mov                 r4, 1
+        str                 r4, [r5, #Thread__m_fPreemptiveGCDisabled]
+
+        ldr                 r3, [r2]
+        cbnz                r3, LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads)
+
+LOCAL_LABEL(UMThunkStub_InCooperativeMode):
+        ldr                 r12, [r7, #UMThunkStub_HiddenArgOffset]
+        ldr                 r3, [r12, #UMEntryThunk__m_pUMThunkMarshInfo]
+        ldr                 r2, [r3, #UMThunkMarshInfo__m_cbActualArgSize]
+        cbz                 r2, LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
+
+        add                 r0, r7, #UMThunkStub_StackArgsOffset // Source pointer
+        add                 r0, r0, r2
+        lsr                 r1, r2, #2      // Count of stack slots to copy
+
+        and                 r2, r2, #4      // Align the stack
+        sub                 sp, sp, r2
+
+LOCAL_LABEL(UMThunkStub_StackLoop):
+        ldr                 r2, [r0,#-4]!
+        str                 r2, [sp,#-4]!
+        subs                r1, r1, #1
+        bne                 LOCAL_LABEL(UMThunkStub_StackLoop)
+
+LOCAL_LABEL(UMThunkStub_ArgumentsSetup):
+        ldr                 r4, [r3, #UMThunkMarshInfo__m_pILStub]
+
+        // reload argument registers
+        sub                 r0, r7, #28
+        ldm                 r0, {r0-r3}
+
+        CHECK_STACK_ALIGNMENT
+
+        blx                 r4
+
+LOCAL_LABEL(UMThunkStub_PostCall):
+        mov                 r4, 0
+        str                 r4, [r5, #Thread__m_fPreemptiveGCDisabled]
+
+        EPILOG_STACK_RESTORE_OFFSET    r7, #8
+        EPILOG_POP           "{r4,r5,r7,r11,pc}"
+
+LOCAL_LABEL(UMThunkStub_DoThreadSetup):
+        sub                 sp, #SIZEOF__FloatArgumentRegisters
+        vstm                sp, {d0-d7}
+        bl                  C_FUNC(CreateThreadBlockThrow)
+        vldm                sp, {d0-d7}
+        add                 sp, #SIZEOF__FloatArgumentRegisters
+        b                   LOCAL_LABEL(UMThunkStub_HaveThread)
+
+LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads):
+        sub                 sp, #SIZEOF__FloatArgumentRegisters
+        vstm                sp, {d0-d7}
+        mov                 r0, r5              // Thread* pThread
+        ldr                 r1, [r7, #UMThunkStub_HiddenArgOffset]  // UMEntryThunk* pUMEntry
+        bl                  C_FUNC(UMThunkStubRareDisableWorker)
+        vldm                sp, {d0-d7}
+        add                 sp, #SIZEOF__FloatArgumentRegisters
+        b                   LOCAL_LABEL(UMThunkStub_InCooperativeMode)
+
+        NESTED_END UMThunkStub,_TEXT
+
 // ------------------------------------------------------------------
 
         NESTED_ENTRY ThePreStub, _TEXT, NoHandler

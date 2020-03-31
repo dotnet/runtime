@@ -9557,14 +9557,14 @@ public:
 private:
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#if defined(DEBUG) || defined(INLINE_DATA)
     // These variables are associated with maintaining SQM data about compile time.
     unsigned __int64 m_compCyclesAtEndOfInlining; // The thread-virtualized cycle count at the end of the inlining phase
                                                   // in the current compilation.
     unsigned __int64 m_compCycles;                // Net cycle count for current compilation
     DWORD m_compTickCountAtEndOfInlining; // The result of GetTickCount() (# ms since some epoch marker) at the end of
                                           // the inlining phase in the current compilation.
-#endif                                    // defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#endif                                    // defined(DEBUG) || defined(INLINE_DATA)
 
     // Records the SQM-relevant (cycles and tick count).  Should be called after inlining is complete.
     // (We do this after inlining because this marks the last point at which the JIT is likely to cause
@@ -9572,11 +9572,6 @@ private:
     void RecordStateAtEndOfInlining();
     // Assumes being called at the end of compilation.  Update the SQM state.
     void RecordStateAtEndOfCompilation();
-
-#ifdef FEATURE_CLRSQM
-    // Does anything SQM related necessary at process shutdown time.
-    static void ProcessShutdownSQMWork(ICorStaticInfo* statInfo);
-#endif // FEATURE_CLRSQM
 
 public:
 #if FUNC_INFO_LOGGING
