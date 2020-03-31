@@ -597,10 +597,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
 				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes) {
 					if (attr.AttributeType.Resolve ().Name == nameof (LogContainsAttribute)) {
-						var expectedMessagePattern = (string)attr.ConstructorArguments [0].Value;
-						Assert.That (
-							logger.Messages.Any (mc => Regex.IsMatch (mc.Message, expectedMessagePattern)),
-							$"Expected to find logged message matching `{expectedMessagePattern}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
+						var expectedMessage = (string)attr.ConstructorArguments [0].Value;
+
+						Assert.That (new Func<bool> (() => {
+							if ((bool)attr.ConstructorArguments [1].Value)
+								return logger.Messages.Any (mc => Regex.IsMatch (mc.Message, expectedMessage));
+							return logger.Messages.Any (mc => mc.Message.Contains (expectedMessage));
+						}), $"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{allMessages}");
 					}
 
 					if (attr.AttributeType.Resolve ().Name == nameof (LogDoesNotContainAttribute)) {
