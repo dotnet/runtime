@@ -55,13 +55,20 @@ bool IpcStreamFactory::HasActiveConnections()
 
 void IpcStreamFactory::CloseConnections()
 {
-    while (s_rgIpcPollHandles.Size() > 0)
+    auto ErrorCallback = [](const char *szMessage, uint32_t code) {
+                STRESS_LOG2(
+                    LF_DIAGNOSTICS_PORT,                                  // facility
+                    LL_ERROR,                                             // level
+                    "Failed to close diagnostic IPC: error (%d): %s.\n",  // msg
+                    code,                                                 // data1
+                    szMessage);                                           // data2
+            };
+    for (uint32_t i = 0; i < (uint32_t)s_rgIpcPollHandles.Size(); i++)
     {
-        IpcStream::DiagnosticsIpc::IpcPollHandle ipcPollHandle = s_rgIpcPollHandles.Pop();
-        if (ipcPollHandle.pStream != nullptr)
-            delete ipcPollHandle.pStream;
-        if (ipcPollHandle.pIpc != nullptr)
-            delete ipcPollHandle.pIpc;
+        if (s_rgIpcPollHandles[i].pStream != nullptr)
+            s_rgIpcPollHandles[i].pStream->Close(ErrorCallback);
+        if (s_rgIpcPollHandles[i].pIpc != nullptr)
+            s_rgIpcPollHandles[i].pIpc->Close(ErrorCallback);
     }
 }
 
@@ -163,6 +170,7 @@ IpcStream *IpcStreamFactory::GetNextAvailableStream(ErrorCallback callback)
                         }
                         break;
                     case IpcStream::DiagnosticsIpc::PollEvents::ERR:
+                        return nullptr;
                     default:
                         // TODO: Error handling
                         break;

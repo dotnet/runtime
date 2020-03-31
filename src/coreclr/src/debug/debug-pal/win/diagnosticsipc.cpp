@@ -155,11 +155,6 @@ void IpcStream::DiagnosticsIpc::Close(ErrorCallback)
             const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
             _ASSERTE(fSuccessDisconnectNamedPipe != 0);
         }
-        
-        // make sure overlapped io is complete before cleaning
-        DWORD dwDummy = 0;
-        const BOOL fSuccessOverlappedComplete = ::GetOverlappedResult(_hPipe, &_oOverlap, &dwDummy, true);
-        _ASSERTE(fSuccessOverlappedComplete != 0);
 
         const BOOL fSuccessCloseHandle = ::CloseHandle(_hPipe);
         _ASSERTE(fSuccessCloseHandle != 0);
@@ -181,6 +176,11 @@ IpcStream::IpcStream(HANDLE hPipe, DiagnosticsIpc::ConnectionMode mode) :
 
 IpcStream::~IpcStream()
 {
+    Close();
+}
+
+void IpcStream::Close(ErrorCallback)
+{
     if (_hPipe != INVALID_HANDLE_VALUE)
     {
         Flush();
@@ -190,10 +190,6 @@ IpcStream::~IpcStream()
             const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
             _ASSERTE(fSuccessDisconnectNamedPipe != 0);
         }
-
-        DWORD dwDummy = 0;
-        const BOOL fSuccessOverlappedComplete = ::GetOverlappedResult(_hPipe, &_oOverlap, &dwDummy, true);
-        _ASSERTE(fSuccessOverlappedComplete != 0);
 
         const BOOL fSuccessCloseHandle = ::CloseHandle(_hPipe);
         _ASSERTE(fSuccessCloseHandle != 0);
@@ -228,8 +224,15 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
                 0,                                          // read 0 bytes
                 &dwDummy,                                   // dummy variable
                 &rgpIpcPollHandles[i]->pStream->_oOverlap); // overlap object to use
-            _ASSERTE(!fSuccess && ::GetLastError() == ERROR_IO_PENDING);
-            pHandles[i] = rgpIpcPollHandles[i]->pStream->_oOverlap.hEvent;
+            if (!fSuccess && ::GetLastError() == ERROR_IO_PENDING)
+                pHandles[i] = rgpIpcPollHandles[i]->pStream->_oOverlap.hEvent;
+            else
+            {
+                if (callback != nullptr)
+                    callback("0 byte async read on client connection failed", -1);
+                delete[] pHandles;
+                return -1;
+            }
         }
     }
 
@@ -293,7 +296,13 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
             if (error == ERROR_PIPE_NOT_CONNECTED)
                 rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::HANGUP;
             else
+            {
+                if (callback != nullptr)
+                    callback("Client connection error", -1);
                 rgpIpcPollHandles[index]->revents = (uint8_t)IpcStream::DiagnosticsIpc::PollEvents::ERR;
+                delete[] pHandles;
+                return -1;
+            }
         }
         else
         {

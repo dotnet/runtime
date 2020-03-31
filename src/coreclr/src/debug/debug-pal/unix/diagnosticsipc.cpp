@@ -314,6 +314,11 @@ void IpcStream::DiagnosticsIpc::Unlink(ErrorCallback callback)
 
 IpcStream::~IpcStream()
 {
+    Close();
+}
+
+void IpcStream::Close(ErrorCallback)
+{
     if (_clientSocket != -1)
     {
         Flush();

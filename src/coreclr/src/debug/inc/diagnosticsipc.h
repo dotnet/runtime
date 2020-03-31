@@ -22,6 +22,7 @@ public:
     bool Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead);
     bool Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten);
     bool Flush() const;
+    void Close(ErrorCallback callback = nullptr);
 
     class DiagnosticsIpc final
     {
