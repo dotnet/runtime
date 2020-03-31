@@ -88,7 +88,7 @@ namespace BundleTests.Helpers
         }
 
         /// Generate a bundle containind the (embeddable) files in sourceDir
-        public static string GenerateBundle(Bundler bundler, string sourceDir)
+        public static string GenerateBundle(Bundler bundler, string sourceDir, string outputDir, bool copyExludedFiles=true)
         {
             // Convert sourceDir to absolute path
             sourceDir = Path.GetFullPath(sourceDir);
@@ -105,7 +105,23 @@ namespace BundleTests.Helpers
                 fileSpecs.Add(new FileSpec(file, Path.GetRelativePath(sourceDir, file)));
             }
 
-            return bundler.GenerateBundle(fileSpecs);
+
+            var singleFile = bundler.GenerateBundle(fileSpecs);
+
+            if (copyExludedFiles)
+            {
+                foreach (var spec in fileSpecs)
+                {
+                    if (spec.Excluded)
+                    {
+                        var outputFilePath = Path.Combine(outputDir, spec.BundleRelativePath);
+                        Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath));
+                        File.Copy(spec.SourcePath, outputFilePath, true);
+                    }
+                }
+            }
+
+            return singleFile;
         }
 
         // Bundle to a single-file
@@ -116,14 +132,16 @@ namespace BundleTests.Helpers
         public static Bundler BundleApp(TestProjectFixture fixture,
                                         out string singleFile,
                                         BundleOptions options = BundleOptions.None,
-                                        Version targetFrameworkVersion = null)
+                                        Version targetFrameworkVersion = null,
+                                        bool copyExcludedFiles = true)
         {
             var hostName = GetHostName(fixture);
             string publishPath = GetPublishPath(fixture);
             var bundleDir = GetBundleDir(fixture);
 
             var bundler = new Bundler(hostName, bundleDir.FullName, options, targetFrameworkVersion: targetFrameworkVersion);
-            singleFile = GenerateBundle(bundler, publishPath);
+            singleFile = GenerateBundle(bundler, publishPath, bundleDir.FullName, copyExcludedFiles);
+
             return bundler;
         }
 
@@ -135,6 +153,13 @@ namespace BundleTests.Helpers
             BundleApp(fixture, out singleFile, options, targetFrameworkVersion);
             return singleFile;
         }
+
+        public static Bundler Bundle(TestProjectFixture fixture, BundleOptions options = BundleOptions.None)
+        {
+            string singleFile;
+            return BundleApp(fixture, out singleFile, copyExcludedFiles:false);
+        }
+
 
         public static void AddLongNameContentToAppWithSubDirs(TestProjectFixture fixture)
         {

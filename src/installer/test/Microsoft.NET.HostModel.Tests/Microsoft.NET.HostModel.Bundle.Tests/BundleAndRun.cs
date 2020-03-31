@@ -7,7 +7,6 @@ using System.IO;
 using Xunit;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
-using Microsoft.NET.HostModel.Bundle;
 using BundleTests.Helpers;
 
 namespace Microsoft.NET.HostModel.Tests
@@ -41,8 +40,7 @@ namespace Microsoft.NET.HostModel.Tests
             RunTheApp(Path.Combine(publishPath, hostName));
 
             // Bundle to a single-file
-            Bundler bundler = new Bundler(hostName, singleFileDir);
-            string singleFile = BundleHelper.GenerateBundle(bundler, publishPath);
+            string singleFile = BundleHelper.BundleApp(fixture);
 
             // Run the extracted app
             RunTheApp(singleFile);
