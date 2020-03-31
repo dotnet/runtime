@@ -50,75 +50,6 @@
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
     <BuildSettings Condition="'$(BuildSettings)' == ''">$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
   </PropertyGroup>
-  
-  <Choose>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Windows_NT'">
-      <PropertyGroup>
-        <TargetsWindows>true</TargetsWindows>
-        <PackageTargetRuntime>win</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Unix'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <PackageTargetRuntime>unix</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Linux'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsLinux>true</TargetsLinux>
-        <PackageTargetRuntime>linux</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Android'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsLinux>true</TargetsLinux>
-        <TargetsAndroid>true</TargetsAndroid>
-        <PackageTargetRuntime>android</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'OSX'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsOSX>true</TargetsOSX>
-        <PackageTargetRuntime>osx</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'iOS'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsiOS>true</TargetsiOS>
-        <PackageTargetRuntime>ios</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'FreeBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsFreeBSD>true</TargetsFreeBSD>
-        <PackageTargetRuntime>freebsd</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'NetBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsNetBSD>true</TargetsNetBSD>
-        <PackageTargetRuntime>netbsd</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'WebAssembly'">
-      <PropertyGroup>
-        <TargetsLinux>true</TargetsLinux>
-        <TargetsWebAssembly>true</TargetsWebAssembly>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == ''">
-      <PropertyGroup>
-        <TargetsAnyOS>true</TargetsAnyOS>
-      </PropertyGroup>
-    </When>
-  </Choose>
 
   <!-- Define test projects and companions -->
   <PropertyGroup>
@@ -207,13 +138,6 @@
     <PackageRID Condition="'$(PackageRID)' == ''">$(RuntimeOS)-$(TargetArchitecture)</PackageRID>
   </PropertyGroup>
 
-  <!-- Set some shortcuts for more terse conditions in project files -->
-  <PropertyGroup>
-    <TargetsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
-    <TargetsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</TargetsNetStandard>
-    <TargetsNetFx Condition="$(TargetFramework.StartsWith('net4'))">true</TargetsNetFx>
-  </PropertyGroup>
-
   <!-- set properties for each vertical -->
   <PropertyGroup>
     <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' and ('$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
@@ -238,6 +162,7 @@
 
   <!-- Import packaging props -->
   <Import Project="$(RepositoryEngineeringDir)packaging.props" />
+  <Import Project="$(MSBuildThisDirectory)targetframework.props" Condition="'$(DesignTimeBuild)' != 'true'" />
 
   <PropertyGroup>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
@@ -316,9 +241,7 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(BuildSettings)'))</RuntimePath>
-    <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
     <BuildTargetFrameworkRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(BuildTargetFramework)'))</BuildTargetFrameworkRefPath>
-    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
     <NetStandard20RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.0'))</NetStandard20RefPath>
     <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
     <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(NetFrameworkCurrent)'))</NetFxRefPath>
@@ -350,9 +273,6 @@
     <!-- setting the output paths -->
     <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)\</OutputPath>
     <OutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseOutputPath)$(TargetFramework)-$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)\</IntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)\</IntermediateOutputPath>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
