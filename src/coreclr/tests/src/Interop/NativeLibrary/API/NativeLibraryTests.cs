@@ -25,13 +25,14 @@ public class NativeLibraryTest
 {
     static string CurrentTest;
     static bool Verbose = false;
- 
+
     public static int Main()
     {
         bool success = true;
 
         Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
         string testBinDir = Path.GetDirectoryName(assembly.Location);
+        string libFullPath = NativeLibraryToLoad.GetFullPath();
         string libName;
         IntPtr handle;
 
@@ -42,7 +43,7 @@ public class NativeLibraryTest
             // -----------------------------------------------
 
             // Calls on correct full-path to native lib
-            libName = Path.Combine(testBinDir, GetNativeLibraryName());
+            libName = libFullPath;
             success &= EXPECT(LoadLibrarySimple(libName));
             success &= EXPECT(TryLoadLibrarySimple(libName));
 
@@ -68,7 +69,7 @@ public class NativeLibraryTest
 
             // Advanced LoadLibrary() API Tests
             // Calls on correct full-path to native lib
-            libName = Path.Combine(testBinDir, GetNativeLibraryName());
+            libName = libFullPath;
             success &= EXPECT(LoadLibraryAdvanced(libName, assembly, null));
             success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, null));
 
@@ -85,17 +86,17 @@ public class NativeLibraryTest
             success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, null), TestResult.ReturnFailure);
 
             // Calls on just Native Library name
-            libName = GetNativeLibraryPlainName();
+            libName = NativeLibraryToLoad.Name;
             success &= EXPECT(LoadLibraryAdvanced(libName, assembly, null));
             success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, null));
 
             // Calls on Native Library name with correct prefix-suffix
-            libName = GetNativeLibraryName();
+            libName = NativeLibraryToLoad.GetFileName();
             success &= EXPECT(LoadLibraryAdvanced(libName, assembly, null));
             success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, null));
 
             // Calls on full path without prefix-siffix
-            libName = Path.Combine(testBinDir, GetNativeLibraryPlainName());
+            libName = Path.Combine(testBinDir, NativeLibraryToLoad.Name);
             // DllImport doesn't add a prefix if the name is preceeded by a path specification.
             // Windows only needs a suffix, but Linux and Mac need both prefix and suffix
             success &= EXPECT(LoadLibraryAdvanced(libName, assembly, null),
@@ -107,7 +108,7 @@ public class NativeLibraryTest
             // The choice of the binary is arbitrary, and may not be available on
             // all Windows platforms (ex: Nano server)
             libName = "url.dll";
-            if (TestLibrary.Utilities.IsWindows && 
+            if (TestLibrary.Utilities.IsWindows &&
                 File.Exists(Path.Combine(Environment.SystemDirectory, libName)))
             {
                 // Calls on a valid library from System32 directory
@@ -124,13 +125,13 @@ public class NativeLibraryTest
             success &= EXPECT(TryLoadLibraryAdvanced(null, assembly, null), TestResult.ArgumentNull);
 
             // Calls with null assembly
-            libName = GetNativeLibraryPlainName();
+            libName = NativeLibraryToLoad.Name;
             success &= EXPECT(LoadLibraryAdvanced(libName, null, null), TestResult.ArgumentNull);
             success &= EXPECT(TryLoadLibraryAdvanced(libName, null, null), TestResult.ArgumentNull);
 
             // Ensure that a lib is not picked up from current directory when
             // a different full-path is specified.
-            libName = Path.Combine(testBinDir, Path.Combine("lib", GetNativeLibraryPlainName()));
+            libName = Path.Combine(testBinDir, Path.Combine("lib", NativeLibraryToLoad.Name));
             success &= EXPECT(LoadLibraryAdvanced(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.DllNotFound);
             success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.ReturnFailure);
 
@@ -138,7 +139,7 @@ public class NativeLibraryTest
             //         FreeLibrary Tests
             // -----------------------------------------------
 
-            libName = Path.Combine(testBinDir, GetNativeLibraryName());
+            libName = libFullPath;
             handle = NativeLibrary.Load(libName);
 
             // Valid Free
@@ -148,7 +149,7 @@ public class NativeLibraryTest
             if (TestLibrary.Utilities.IsWindows)
             {
                 // The FreeLibrary() implementation simply calls the appropriate OS API
-                // with the supplied handle. Not all OSes consistently return an error 
+                // with the supplied handle. Not all OSes consistently return an error
                 // when a library is double-freed.
                 success &= EXPECT(FreeLibrary(handle), TestResult.InvalidOperation);
             }
@@ -159,7 +160,7 @@ public class NativeLibraryTest
             // -----------------------------------------------
             //         GetLibraryExport Tests
             // -----------------------------------------------
-            libName = Path.Combine(testBinDir, GetNativeLibraryName());
+            libName = libFullPath;
             handle = NativeLibrary.Load(libName);
 
             // Valid Call (with some hard-coded name mangling)
@@ -192,31 +193,6 @@ public class NativeLibraryTest
         return (success) ? 100 : -100;
     }
 
-    static string GetNativeLibraryPlainName()
-    {
-        return "NativeLibrary";
-    }
-
-    static string GetNativeLibraryName()
-    {
-        string baseName = GetNativeLibraryPlainName();
-
-        if (TestLibrary.Utilities.IsWindows)
-        {
-            return baseName + ".dll";
-        }
-        if (TestLibrary.Utilities.IsLinux)
-        {
-            return "lib" + baseName + ".so";
-        }
-        if (TestLibrary.Utilities.IsMacOSX)
-        {
-            return "lib" + baseName + ".dylib";
-        }
-
-        return "ERROR";
-    }
-
     static bool EXPECT(TestResult actualValue, TestResult expectedValue = TestResult.Success)
     {
         if (actualValue == expectedValue)
@@ -234,7 +210,6 @@ public class NativeLibraryTest
 
     static TestResult Run (Func<TestResult> test)
     {
-
         TestResult result;
 
         try
@@ -390,7 +365,7 @@ public class NativeLibraryTest
             return TestResult.Success;
         });
     }
- 
-    [DllImport("NativeLibrary")]
+
+    [DllImport(NativeLibraryToLoad.Name)]
     static extern int RunExportedFunction(IntPtr address, int arg1, int arg2);
 }

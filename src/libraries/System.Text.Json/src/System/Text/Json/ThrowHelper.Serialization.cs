@@ -94,6 +94,13 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_CannotSerializeOpenGeneric(Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.CannotSerializeOpenGeneric, type));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_SerializationConverterNotCompatible(Type converterType, Type type)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializationConverterNotCompatible, converterType, type));
@@ -188,7 +195,7 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static NotSupportedException ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(
+        public static void ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(
             PropertyInfo propertyInfo,
             Type classType,
             ConstructorInfo constructorInfo)

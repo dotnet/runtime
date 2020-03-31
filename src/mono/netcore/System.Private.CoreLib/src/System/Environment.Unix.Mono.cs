@@ -21,10 +21,7 @@ namespace System
 
             if (s_environment == null)
             {
-                using (var h = RuntimeMarshal.MarshalString(variable))
-                {
-                    return internalGetEnvironmentVariable_native(h.Value);
-                }
+                return InternalGetEnvironmentVariable(variable);
             }
 
             variable = TrimStringOnFirstZero(variable);
@@ -32,6 +29,14 @@ namespace System
             {
                 s_environment.TryGetValue(variable, out string value);
                 return value;
+            }
+        }
+
+        private static string InternalGetEnvironmentVariable(string name)
+        {
+            using (SafeStringMarshal handle = RuntimeMarshal.MarshalString(name))
+            {
+                return internalGetEnvironmentVariable_native(handle.Value);
             }
         }
 
@@ -97,10 +102,7 @@ namespace System
             {
                 if (name != null)
                 {
-                    using (var h = RuntimeMarshal.MarshalString(name))
-                    {
-                        results.Add(name, internalGetEnvironmentVariable_native(h.Value));
-                    }
+                    results.Add(name, InternalGetEnvironmentVariable(name));
                 }
             }
 

@@ -204,6 +204,7 @@ __BuildArch=$arch
 __HostArch=$arch
 __TargetOS=$os
 __HostOS=$os
+__BuildOS=$os
 
 __msbuildonunsupportedplatform=0
 

@@ -5383,8 +5383,14 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame)
     if (thread->PreemptiveGCDisabled())
         ReversePInvokeBadTransition();
 
-    thread->DisablePreemptiveGC();
     frame->currentThread = thread;
+
+    thread->DisablePreemptiveGC();
+}
+
+NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame)
+{
+    frame->currentThread->RareDisablePreemptiveGC();
 }
 
 EXTERN_C void JIT_ReversePInvokeEnter(ReversePInvokeFrame* frame)
@@ -5397,13 +5403,17 @@ EXTERN_C void JIT_ReversePInvokeEnter(ReversePInvokeFrame* frame)
     if (thread != NULL
         && !thread->PreemptiveGCDisabled())
     {
+        frame->currentThread = thread;
+
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
         if (g_TrapReturningThreads.LoadWithoutBarrier() == 0)
         {
-            frame->currentThread = thread;
             return;
         }
+
+        JIT_ReversePInvokeEnterRare2(frame);
+        return;
     }
 
     JIT_ReversePInvokeEnterRare(frame);

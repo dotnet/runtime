@@ -1,12 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CallbackTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <Compile Include="*.cs" />
+    <Compile Include="../../NativeLibraryToLoad/NativeLibraryToLoad.cs" />
   </ItemGroup>
 </Project>
