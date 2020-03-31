@@ -841,7 +841,7 @@ static gboolean
 mono_is_simd_accessor (MonoInst *ins)
 {
 	switch (ins->opcode) {
-#if defined(MONO_ARCH_SIMD_INTRINSICS) && !defined(TARGET_ARM64) // FIXME: enable for Arm64
+#ifdef MONO_ARCH_SIMD_INTRINSICS
 	case OP_INSERT_I1:
 	case OP_INSERT_I2:
 	case OP_INSERT_I4:

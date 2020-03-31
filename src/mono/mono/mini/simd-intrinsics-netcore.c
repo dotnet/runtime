@@ -266,8 +266,7 @@ get_vector_t_elem_type (MonoType *vector_type)
 	return etype;
 }
 
-// FIXME: implement for Arm64
-#ifndef TARGET_ARM64
+#ifdef TARGET_AMD64
 
 static int
 type_to_expand_op (MonoType *type)
@@ -1705,10 +1704,6 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 
 	return NULL;
 }
-#endif
-
-// FIXME: implement for Arm64
-#ifndef TARGET_ARM64
 
 static guint16 vector_128_methods [] = {
 	SN_AsByte,
@@ -1887,13 +1882,6 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (m_class_get_nested_in (cmethod->klass))
 		class_ns = m_class_get_name_space (m_class_get_nested_in (cmethod->klass));
 
-#ifdef TARGET_AMD64 // TODO: test and enable for x86 too
-	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86")) {
-		MonoInst *ins = emit_x86_intrinsics (cfg, cmethod, fsig, args);
-		return ins;
-	}
-#endif // TARGET_AMD64
-
 #ifdef TARGET_ARM64
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics.Arm")) {
 		MonoInst *ins = emit_arm64_intrinsics (cfg, cmethod, fsig, args);
@@ -1901,7 +1889,14 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 #endif // TARGET_ARM64
 
-#ifndef TARGET_ARM64 // FIXME: make Vector<T> and Vector128 Arm64 friendly
+#ifdef TARGET_AMD64 // TODO: test and enable for x86 too
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86")) {
+		MonoInst *ins = emit_x86_intrinsics (cfg, cmethod, fsig, args);
+		return ins;
+	}
+
+	// FIXME: implement Vector64<T>, Vector128<T> and Vector<T> for Arm64
+
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128`1"))
 			return emit_vector128_t (cfg, cmethod, fsig, args);
@@ -1917,7 +1912,7 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (!strcmp (class_name, "Vector`1"))
 			return emit_sys_numerics_vector_t (cfg, cmethod, fsig, args);
 	}
-#endif // !TARGET_ARM64
+#endif // TARGET_AMD64
 
 	return NULL;
 }

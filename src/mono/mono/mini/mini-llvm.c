@@ -8563,6 +8563,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_LZCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64), args, 2, "");
 			break;
 		}
+#endif
+
+#if defined(ENABLE_NETCORE) && defined(TARGET_ARM64)
 		case OP_XOP_I4_I4:
 		case OP_XOP_I8_I8: {
 			IntrinsicId id = (IntrinsicId)0;
@@ -8596,9 +8599,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
-#endif
-
-#if defined(ENABLE_NETCORE) && defined(TARGET_ARM64)
 		case OP_LSCNT32:
 		case OP_LSCNT64: {
 			// %shr = ashr i32 %x, 31
@@ -10011,13 +10011,13 @@ add_intrinsic (LLVMModuleRef module, int id)
 		intrins = add_intrins1 (module, id, sse_i8_t);
 		break;
 #endif
-#ifdef TARGET_ARM64
-	case INTRINS_BITREVERSE_I32:
-		intrins = add_intrins1 (module, id, LLVMInt32Type ());
-		break;
-	case INTRINS_BITREVERSE_I64:
-		intrins = add_intrins1 (module, id, LLVMInt64Type ());
-		break;
+#ifdef TARGET_ARM64	
+	case INTRINS_BITREVERSE_I32:	
+		intrins = add_intrins1 (module, id, LLVMInt32Type ());	
+		break;	
+	case INTRINS_BITREVERSE_I64:	
+		intrins = add_intrins1 (module, id, LLVMInt64Type ());	
+		break;	
 #endif
 	default:
 		g_assert_not_reached ();
