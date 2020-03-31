@@ -1864,7 +1864,8 @@ void WaitLonger (int i
     }
 }
 
-static void enter_spin_lock_slow (GCSpinLock* spin_lock)
+inline
+static void enter_spin_lock (GCSpinLock* spin_lock)
 {
 retry:
 
@@ -1920,13 +1921,6 @@ inline
 static BOOL try_enter_spin_lock(GCSpinLock* spin_lock)
 {
     return (Interlocked::CompareExchange(&spin_lock->lock, 0, -1) < 0);
-}
-
-inline
-static void enter_spin_lock (GCSpinLock* spin_lock)
-{
-    if (!try_enter_spin_lock(spin_lock))
-        enter_spin_lock_slow(spin_lock);
 }
 
 inline
@@ -11957,20 +11951,18 @@ void allocator::thread_item_front (uint8_t* item, size_t size)
 {
     unsigned int a_l_number = first_suitable_bucket (size);
     alloc_list* al = &alloc_list_of (a_l_number);
-    uint8_t*& head = al->alloc_list_head();
-    uint8_t*& tail = al->alloc_list_tail();
 
-    free_list_slot (item) = head;
+    free_list_slot (item) = al->alloc_list_head();
     free_list_undo (item) = UNDO_EMPTY;
 
-    if (tail == 0)
+    if (al->alloc_list_tail() == 0)
     {
-        tail = head;
+        al->alloc_list_tail() = al->alloc_list_head();
     }
-    head = item;
-    if (tail == 0)
+    al->alloc_list_head() = item;
+    if (al->alloc_list_tail() == 0)
     {
-        tail = item;
+        al->alloc_list_tail() = item;
     }
 }
 

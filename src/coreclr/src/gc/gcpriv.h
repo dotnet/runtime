@@ -707,7 +707,7 @@ public:
     allocator()
     {
         num_buckets = 1;
-        first_bucket_bits = sizeof(size_t) * 8;
+        first_bucket_bits = sizeof(size_t) * 8 - 1;
     }
 
     unsigned int number_of_buckets()
@@ -735,7 +735,7 @@ public:
 
     size_t first_bucket_size()
     {
-        return (size_t)1 << (first_bucket_bits + 1);
+        return ((size_t)1 << (first_bucket_bits + 1));
     }
 
     uint8_t*& alloc_list_head_of (unsigned int bn)
