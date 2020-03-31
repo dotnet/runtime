@@ -162,6 +162,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("Tracing");
 		}
 
+		public static IEnumerable<TestCaseData> LoggingTests ()
+		{
+			return NUnitCasesBySuiteName ("Logging");
+		}
+
 		public static TestCaseCollector CreateCollector ()
 		{
 			GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath);
