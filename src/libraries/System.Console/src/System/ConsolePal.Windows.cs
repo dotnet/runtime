@@ -147,7 +147,7 @@ namespace System
             return (!Interop.Kernel32.IsGetConsoleModeCallSuccessful(handle));
         }
 
-        private static TextReader GetOrCreateReader()
+        internal static TextReader GetOrCreateReader()
         {
             Stream inputStream = OpenStandardInput();
             return SyncTextReader.GetSynchronizedTextReader(inputStream == Stream.Null ?
@@ -159,9 +159,6 @@ namespace System
                     bufferSize: Console.ReadBufferSize,
                     leaveOpen: true));
         }
-
-        internal static TextReader GetIn([NotNull] ref TextReader? field)
-            => Console.EnsureInitialized(ref field, () => GetOrCreateReader());
 
         // Use this for blocking in Console.ReadKey, which needs to protect itself in case multiple threads call it simultaneously.
         // Use a ReadKey-specific lock though, to allow other fields to be initialized on this type.

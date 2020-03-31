@@ -74,7 +74,9 @@ namespace System
         {
             get
             {
-                return LazyInitializeConsoleAndField(
+                EnsureInitialized();
+
+                return Console.EnsureInitializedDisposable(
                         ref s_stdInReader,
                         () => SyncTextReader.GetSynchronizedTextReader(
                             new StdInReader(
@@ -83,7 +85,7 @@ namespace System
             }
         }
 
-        private static TextReader GetOrCreateReader()
+        internal static TextReader GetOrCreateReader()
         {
             if (Console.IsInputRedirected)
             {
@@ -104,9 +106,6 @@ namespace System
                 return StdInReader;
             }
         }
-
-        internal static TextReader GetIn([NotNull] ref TextReader? field)
-            => LazyInitializeConsoleAndField(ref field, () => GetOrCreateReader());
 
         public static bool KeyAvailable { get { return StdInReader.KeyAvailable; } }
 
@@ -925,21 +924,6 @@ namespace System
             {
                 EnsureInitializedCore(); // factored out for inlinability
             }
-        }
-
-        internal static T LazyInitializeConsoleAndField<T>([NotNull] ref T? field, Func<T> initializer) where T : class =>
-            Volatile.Read(ref field) ?? LazyInitializeConsoleAndFieldCore(ref field, initializer);
-
-        private static T LazyInitializeConsoleAndFieldCore<T>([NotNull] ref T? field, Func<T> initializer) where T : class
-        {
-            // We don't call ConsolePal.EnsureInitialized from within the initializer function to avoid deadlocks.
-            // ConsolePal.EnsureInitialized takes a lock on Console.Out.
-            // Console.EnsureInitialized takes a lock on InternalSyncObject.
-            // When called from the initializer, a deadlock could happen when another thread locks these objects
-            // in the opposite order.
-            EnsureInitialized();
-
-            return Console.EnsureInitialized(ref field, initializer);
         }
 
         /// <summary>Ensures that the console has been initialized for use.</summary>

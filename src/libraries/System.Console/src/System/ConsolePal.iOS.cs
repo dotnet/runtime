@@ -48,10 +48,7 @@ namespace System
 
         public static bool IsErrorRedirectedCore() => false;
 
-        private static TextReader GetOrCreateReader() => throw new PlatformNotSupportedException();
-
-        internal static TextReader GetIn([NotNull] ref TextReader? field)
-            => Console.EnsureInitialized(ref field, () => GetOrCreateReader());
+        internal static TextReader GetOrCreateReader() => throw new PlatformNotSupportedException();
 
         public static bool NumberLock => false;
 

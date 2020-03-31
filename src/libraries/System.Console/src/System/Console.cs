@@ -33,16 +33,28 @@ namespace System
         private static ConsoleCancelEventHandler? s_cancelCallbacks;
         private static ConsolePal.ControlCHandlerRegistrar? s_registrar;
 
-        internal static T EnsureInitialized<T>([NotNull] ref T? field, Func<T> initializer) where T : class =>
-            LazyInitializer.EnsureInitialized(ref field, ref InternalSyncObject, initializer);
+        internal static T EnsureInitializedDisposable<T>([AllowNull] ref T? field, Func<T> initializer) where T : class, IDisposable
+            => Volatile.Read(ref field) ?? EnsureInitializedDisposableCore(ref field, initializer);
 
-        public static TextReader In => ConsolePal.GetIn(ref s_in);
+        private static T EnsureInitializedDisposableCore<T>([AllowNull] ref T? field, Func<T> initializer) where T : class, IDisposable
+        {
+            T value = initializer();
+
+            if (Interlocked.CompareExchange(ref field, value, null) != null)
+            {
+                value.Dispose();
+            }
+
+            return field;
+        }
+
+        public static TextReader In => EnsureInitializedDisposable(ref s_in, () => ConsolePal.GetOrCreateReader());
 
         public static Encoding InputEncoding
         {
             get
             {
-                return EnsureInitialized(ref s_inputEncoding, () => ConsolePal.InputEncoding);
+                return LazyInitializer.EnsureInitialized(ref s_inputEncoding, () => ConsolePal.InputEncoding);
             }
             set
             {
@@ -66,7 +78,7 @@ namespace System
         {
             get
             {
-                return EnsureInitialized(ref s_outputEncoding, () => ConsolePal.OutputEncoding);
+                return LazyInitializer.EnsureInitialized(ref s_outputEncoding, () => ConsolePal.OutputEncoding);
             }
             set
             {
@@ -119,9 +131,9 @@ namespace System
             return ConsolePal.ReadKey(intercept);
         }
 
-        public static TextWriter Out => EnsureInitialized(ref s_out, () => CreateOutputWriter(OpenStandardOutput()));
+        public static TextWriter Out => EnsureInitializedDisposable(ref s_out, () => CreateOutputWriter(OpenStandardOutput()));
 
-        public static TextWriter Error => EnsureInitialized(ref s_error, () => CreateOutputWriter(OpenStandardError()));
+        public static TextWriter Error => EnsureInitializedDisposable(ref s_error, () => CreateOutputWriter(OpenStandardError()));
 
         private static TextWriter CreateOutputWriter(Stream outputStream)
         {
@@ -145,7 +157,7 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = EnsureInitialized(ref _isStdInRedirected, () => new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
+                StrongBox<bool> redirected = LazyInitializer.EnsureInitialized(ref _isStdInRedirected, () => new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
                 return redirected.Value;
             }
         }
@@ -154,7 +166,7 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = EnsureInitialized(ref _isStdOutRedirected, () => new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
+                StrongBox<bool> redirected = LazyInitializer.EnsureInitialized(ref _isStdOutRedirected, () => new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
                 return redirected.Value;
             }
         }
@@ -163,7 +175,7 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = EnsureInitialized(ref _isStdErrRedirected, () => new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
+                StrongBox<bool> redirected = LazyInitializer.EnsureInitialized(ref _isStdErrRedirected, () => new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
                 return redirected.Value;
             }
         }
