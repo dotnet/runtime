@@ -22,8 +22,8 @@ elseif (CLR_CMAKE_TARGET_IOS)
     set(PAL_UNIX_NAME \"IOS\")
 elseif (CLR_CMAKE_TARGET_FREEBSD)
     set(PAL_UNIX_NAME \"FREEBSD\")
-    include_directories(SYSTEM /usr/local/include)
-    set(CMAKE_REQUIRED_INCLUDES /usr/local/include)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
+    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
 elseif (CLR_CMAKE_TARGET_NETBSD)
     set(PAL_UNIX_NAME \"NETBSD\")
 elseif (CLR_CMAKE_TARGET_ARCH_WASM)
@@ -728,12 +728,11 @@ check_symbol_exists(
 
 if(CLR_CMAKE_TARGET_IOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
-    set(NET_ROUTE_H_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
+    set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
 else()
-    set(NET_ROUTE_H_INCLUDE net/route.h)
+    set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h net/if.h net/route.h)
 endif()
 
-set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h ${NET_ROUTE_H_INCLUDE})
 check_type_size(
     "struct rt_msghdr"
      HAVE_RT_MSGHDR

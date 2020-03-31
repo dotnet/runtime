@@ -5,6 +5,8 @@ endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
+elseif (CLR_CMAKE_TARGET_FREEBSD)
+  include_directories(SYSTEM $ENV{ROOTFS_DIR}/usr/local/include)
 endif()
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)

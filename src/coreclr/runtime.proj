@@ -10,6 +10,8 @@
       <_CoreClrBuildArg Include="$(Compiler)" />
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
       <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
+      <_CoreClrBuildArg Include="-os $(TargetOS)" />
+
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and '$(Configuration)' == 'Release'" Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />
       <_CoreClrBuildArg Condition="'$(OfficialBuildId)' != ''" Include="/p:OfficialBuildId=$(OfficialBuildId)" />
