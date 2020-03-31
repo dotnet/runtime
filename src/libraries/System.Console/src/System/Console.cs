@@ -33,10 +33,10 @@ namespace System
         private static ConsoleCancelEventHandler? s_cancelCallbacks;
         private static ConsolePal.ControlCHandlerRegistrar? s_registrar;
 
-        internal static T EnsureInitializedDisposable<T>([AllowNull] ref T? field, Func<T> initializer) where T : class, IDisposable
+        internal static T EnsureInitializedDisposable<T>([NotNull] ref T? field, Func<T> initializer) where T : class, IDisposable
             => Volatile.Read(ref field) ?? EnsureInitializedDisposableCore(ref field, initializer);
 
-        private static T EnsureInitializedDisposableCore<T>([AllowNull] ref T? field, Func<T> initializer) where T : class, IDisposable
+        private static T EnsureInitializedDisposableCore<T>([NotNull] ref T? field, Func<T> initializer) where T : class, IDisposable
         {
             T value = initializer();
 
