@@ -69,7 +69,7 @@ namespace System.IO.Tests
             Assert.All(times, time =>
             {
                 // We check that all the file times have been refreshed
-                Assert.NotEqual(time.Key.Getter.Invoke(item), time.Value);
+                Assert.NotEqual(time.Key.Getter(item), time.Value);
             });
         }
     }
