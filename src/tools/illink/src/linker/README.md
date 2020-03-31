@@ -101,7 +101,9 @@ Example:
 
 An option called `--substitutions` allows external customization of any
 method or field for assemblies which are linked. The syntax used for that is based on
-XML files.
+XML files. Using substitutions with `ipconstprop` optimization (enabled by
+default) can help reduce output size as any dependencies under conditional
+logic which will be evaluated as unreachable will be removed.
 
 An example of a substitution XML file
 
