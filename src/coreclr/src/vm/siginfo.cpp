@@ -3567,7 +3567,7 @@ ErrExit:
 //
 // Compare two type handles for equality, or that hType2 is a derived class of hType1.
 // The derived type check is used by the covariant returns feature, which only supports
-// class today (interface types are not supported right now)
+// classes today (interface types are not supported right now)
 //
 // static
 BOOL MetaSig::CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allowDerivedClass)
@@ -3602,6 +3602,10 @@ BOOL MetaSig::CompareTypeHandles(TypeHandle hType1, TypeHandle hType2, BOOL allo
     return FALSE;
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Check if a type signature is eligible for covariant return types.
+//
 // static
 BOOL MetaSig::IsTypeSignatureEligibleForCovariantReturnType(
     PCCOR_SIGNATURE     pSig,
@@ -3669,11 +3673,16 @@ BOOL MetaSig::IsTypeSignatureEligibleForCovariantReturnType(
     return TRUE;
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Compute the base type token (it will either be a typedef or typeref token), and returns the
+// module where that base type token is declared.
+//
 // static
 BOOL MetaSig::ComputeBaseTypeTokenAndModule(
     mdToken     tk,
     Module*     pModule,
-    mdToken*    baseTypeDefOrRefToken,
+    mdToken*    pBaseTypeDefOrRefToken,
     Module**    ppBaseTypeTokenModule)
 {
     CONTRACTL
@@ -3718,13 +3727,13 @@ BOOL MetaSig::ComputeBaseTypeTokenAndModule(
         if (elementType != ELEMENT_TYPE_CLASS)
             return FALSE;
 
-        IfFailThrow(CorSigUncompressToken_EndPtr(pSig, pEndSig, baseTypeDefOrRefToken));
+        IfFailThrow(CorSigUncompressToken_EndPtr(pSig, pEndSig, pBaseTypeDefOrRefToken));
         *ppBaseTypeTokenModule = pFoundModule;
         return TRUE;
     }
     else if (TypeFromToken(tkTypeParent) == mdtTypeRef || TypeFromToken(tkTypeParent) == mdtTypeDef)
     {
-        *baseTypeDefOrRefToken = tkTypeParent;
+        *pBaseTypeDefOrRefToken = tkTypeParent;
         *ppBaseTypeTokenModule = pFoundModule;
         return TRUE;
     }
@@ -3732,6 +3741,10 @@ BOOL MetaSig::ComputeBaseTypeTokenAndModule(
     return FALSE;
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Extract the parent type's signature and stubstitution from the input type signature
+//
 // static
 BOOL MetaSig::GetParentSignatureAndSubstitution(
     PCCOR_SIGNATURE     pSig,
@@ -3761,8 +3774,8 @@ BOOL MetaSig::GetParentSignatureAndSubstitution(
         return FALSE;
     }
 
-    // We load the uninstantiated type here, and we will also return back a valid substitution
-    // for the caller to use (when applicable)
+    // If the parent type token is a TypeSpec token, we need to load the substitution from the signature and
+    // chain it to the existing substitution (if there is one)
 
     if (TypeFromToken(parentTypeDefOrRefOrSpecToken) == mdtTypeSpec)
     {
@@ -4189,16 +4202,16 @@ MetaSig::CompareElementType(
                 //
                 // In that example, if we just look at the typedef tokens for Class0<A,B> and Class4, and traverse the
                 // parent chain of Class4 to check if it derives from Class0, we would be always returning true, which
-                // is wrong (ex: if Class2 was declared as 'Class2<T> : Class1<string,int16>', then Class4 would be
-                // deriving from Class0<string,int16>, and not from Class0<int32,int16>.
+                // is wrong. Here's a counter example: if Class2 was declared as 'Class2<T> : Class1<string,int16>',
+                // then Class4 would be deriving from Class0<string,int16>, and not from Class0<int32,int16>.
                 //
                 // Therefore, we need to keep track of the substitutions:
                 //      A -> ARG1 -> T -> int32
-                //      b -> ARG2 -> int16
+                //      B -> ARG2 -> int16
                 //
-                // To handle that case, we compute the parent *AND* substitution chain of type2, and recompare that with
-                // type1 starting from the ELEMENT_TYPE_GENERICINST (see how ELEMENT_TYPE_GENERICINST is handled a few
-                // lines below).
+                // To handle that case, we need to compute the base type *AND* base type substitution chain of type2, and
+                // recompare that with type1. If type1 is generic, we'll return return FALSE here, so that we can properly
+                // handle this scenario correctly under ELEMENT_TYPE_GENERICINST.
                 //
 
                 // First, check if Type1 is eligible for covariant returns
@@ -4291,8 +4304,6 @@ MetaSig::CompareElementType(
 
         case ELEMENT_TYPE_GENERICINST:
         {
-            PCCOR_SIGNATURE pCurSig1 = pSig1;
-
             TokenPairList newVisited = TokenPairList::AdjustForTypeSpec(
                 pVisited,
                 pModule1,

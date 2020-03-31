@@ -5606,11 +5606,6 @@ MethodTableBuilder::ProcessMethodImpls()
 
     HRESULT hr = S_OK;
 
-    if (strstr(this->GetHalfBakedClass()->m_szDebugClassName, "MyFoo") != NULL || strstr(this->GetHalfBakedClass()->m_szDebugClassName, "MyBar") != NULL)
-    {
-        int a = 0;
-    }
-
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
@@ -5826,9 +5821,8 @@ MethodTableBuilder::ProcessMethodImpls()
                                 bmtRTType *pCurDeclType = pDeclType;
                                 do
                                 {
-                                    // Two pass algorithm:
-                                    //  1: Search for exact matches
-                                    //  2: Search for equivalent matches.
+                                    // two pass algorithm. search for exact matches followed
+                                    // by equivalent matches.
                                     for (int iPass = 0; (iPass < 2) && (declMethod.IsNull()); iPass++)
                                     {
                                         MethodTable *pCurDeclMT = pCurDeclType->GetMethodTable();

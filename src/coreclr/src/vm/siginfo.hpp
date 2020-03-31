@@ -990,7 +990,7 @@ class MetaSig
         static BOOL ComputeBaseTypeTokenAndModule(
             mdToken     tk,
             Module*     pModule,
-            mdToken*    baseTypeDefOrRefToken,
+            mdToken*    pBaseTypeDefOrRefToken,
             Module**    ppBaseTypeTokenModule);
 
         // Extract the parent type's signature and stubstitution from the input type signature
