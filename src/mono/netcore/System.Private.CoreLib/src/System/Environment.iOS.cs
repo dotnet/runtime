@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.IO;
 using System.Threading;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ namespace System
 {
     public static partial class Environment
     {
-        private static Dictionary<SpecialFolder, string> s_specialFolders;
+        private static Dictionary<SpecialFolder, string>? s_specialFolders;
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
@@ -33,7 +34,7 @@ namespace System
             return path;
         }
 
-        private static string GetSpecialFolder(SpecialFolder folder)
+        private static string? GetSpecialFolder(SpecialFolder folder)
         {
             switch (folder)
             {
