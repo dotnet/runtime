@@ -20,9 +20,20 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly Tls _tls;
         internal enum ProcessPacketResult
         {
+            /// <summary>
+            ///     Packet processed without errors.
+            /// </summary>
             Ok,
-            DecryptionFail,
-            ParsingFail,
+
+            /// <summary>
+            ///     Packet is discarded. E.g. because it could not be decrypted (yet).
+            /// </summary>
+            SoftError,
+
+            /// <summary>
+            ///     Packet is valid but violates the protocol, the connection should be closed.
+            /// </summary>
+            HardError,
         }
 
         private readonly QuicClientConnectionOptions? _clientOpts;
@@ -46,10 +57,20 @@ namespace System.Net.Quic.Implementations.Managed
 
         // TODO-RZ: flow control counts
 
-        // TODO-RZ: remove these
+        // TODO-RZ: remove these, they don't need to be saved
         private string? cert;
 
         private string? privateKey;
+
+        /// <summary>
+        ///     Error to send in next packet in a CONNECTION_CLOSE frame.
+        /// </summary>
+        private TransportErrorCode? outboundError;
+
+        /// <summary>
+        ///     Error received via CONNECTION_CLOSE frame to be reported to the user.
+        /// </summary>
+        private TransportErrorCode? inboundError;
 
         public ConnectionId? SourceConnectionId => _scid;
 
@@ -150,17 +171,71 @@ namespace System.Net.Quic.Implementations.Managed
             throw new NotImplementedException();
         }
 
+        private static bool IsFrameAllowed(FrameType frameType, PacketType packetType)
+        {
+            return packetType switch
+            {
+                // 1-RTT packets may contain any frame
+                PacketType.OneRtt => true,
+
+                PacketType.Initial => frameType switch
+                {
+                    FrameType.Padding => true,
+                    FrameType.Ping => true,
+                    FrameType.Ack => true,
+                    FrameType.AckWithEcn => true,
+                    FrameType.Crypto => true,
+                    FrameType.ConnectionCloseQuic => true,
+                    _ => false
+                },
+
+                PacketType.ZeroRtt => frameType switch
+                {
+                    FrameType.Ack => false,
+                    FrameType.AckWithEcn => false,
+                    FrameType.Crypto => false,
+                    FrameType.NewToken => false,
+                    FrameType.ConnectionCloseQuic => false,
+                    FrameType.ConnectionCloseApplication => false,
+                    FrameType.HandshakeDone => false,
+                    _ => true
+                },
+
+                PacketType.Handshake => frameType switch
+                {
+                    FrameType.Padding => true,
+                    FrameType.Ping => true,
+                    FrameType.Ack => true,
+                    FrameType.AckWithEcn => true,
+                    FrameType.Crypto => true,
+                    FrameType.ConnectionCloseQuic => true,
+                    _ => false
+                },
+
+                // these two types do not carry frames, and should never be passed to this function
+                // PacketType.Retry,
+                // PacketType.VersionNegotiation,
+                _ => throw new ArgumentOutOfRangeException(nameof(packetType), packetType, null)
+            };
+        }
+
         private ProcessPacketResult ProcessFrames(QuicReader reader, PacketType packetType)
         {
             bool handshakeWanted = false;
 
-            // TODO-RZ: check permitted frames by the packet type
             while (reader.BytesLeft > 0)
             {
-                if (reader.PeekFrameType() != FrameType.Padding)
+                var frameType = reader.PeekFrameType();
+                if (frameType != FrameType.Padding)
                     Console.WriteLine($"Received {packetType} - {reader.PeekFrameType()}");
 
-                switch (reader.PeekFrameType())
+                if (!IsFrameAllowed(frameType, packetType))
+                {
+                    outboundError ??= TransportErrorCode.ProtocolViolation;
+                    return ProcessPacketResult.HardError;
+                }
+
+                switch (frameType)
                 {
                     case FrameType.Padding:
                         // discard the padding
@@ -169,7 +244,7 @@ namespace System.Net.Quic.Implementations.Managed
                     case FrameType.Crypto:
                     {
                         handshakeWanted = true;
-                        if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.ParsingFail;
+                        if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.HardError;
                         // TODO-RZ: Utilize the offset
                         _tls.OnDataReceived(GetEncryptionLevel(packetType), crypto.CryptoData);
 
@@ -200,7 +275,9 @@ namespace System.Net.Quic.Implementations.Managed
                     case FrameType.HandshakeDone:
                         throw new NotImplementedException();
                     default:
-                        throw new ArgumentOutOfRangeException();
+                        // unknown frame type
+                        outboundError ??= TransportErrorCode.FrameEncodingError;
+                        return ProcessPacketResult.HardError;
                 }
             }
 
@@ -240,7 +317,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 // Decryption keys are not available yet, drop the packet for now
                 // TODO-RZ: consider buffering the packet
-                return ProcessPacketResult.DecryptionFail;
+                return ProcessPacketResult.SoftError;
             }
 
             var seal = epoch.RecvCryptoSeal!;
@@ -250,7 +327,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 // decryption failed, drop the packet.
                 reader.Advance(payloadLength);
-                return ProcessPacketResult.DecryptionFail;
+                return ProcessPacketResult.SoftError;
             }
 
             // TODO-RZ: read in a better way
@@ -287,7 +364,7 @@ namespace System.Net.Quic.Implementations.Managed
                 case PacketType.ZeroRtt:
                     if (!SharedPacketData.Read(reader, header.FirstByte, out var headerData))
                     {
-                        return ProcessPacketResult.ParsingFail;
+                        return ProcessPacketResult.HardError;
                     }
 
                     // total length of the packet is known
@@ -318,7 +395,7 @@ namespace System.Net.Quic.Implementations.Managed
                 // TODO-RZ: check encryption keys availability
                 if (!LongPacketHeader.Read(reader, out var header))
                 {
-                    return ProcessPacketResult.ParsingFail;
+                    return ProcessPacketResult.HardError;
                 }
 
                 result = ReceiveLongHeaderPackets(reader, header);
@@ -328,7 +405,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 if (!ShortPacketHeader.Read(reader, _connectionIdCollection, out var header))
                 {
-                    return ProcessPacketResult.ParsingFail;
+                    return ProcessPacketResult.HardError;
                 }
 
                 result = Receive1Rtt(reader, header);
