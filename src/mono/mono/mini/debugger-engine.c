@@ -737,7 +737,7 @@ ss_destroy (SingleStepReq *req)
 	g_free (req);
 }
 
-SingleStepReq*
+static SingleStepReq*
 ss_req_acquire (MonoInternalThread *thread)
 {
 	SingleStepReq *req = NULL;
@@ -754,7 +754,7 @@ ss_req_acquire (MonoInternalThread *thread)
 	return req;
 }
 
-int 
+static int 
 ss_req_count ()
 {
 	return the_ss_reqs->len;
