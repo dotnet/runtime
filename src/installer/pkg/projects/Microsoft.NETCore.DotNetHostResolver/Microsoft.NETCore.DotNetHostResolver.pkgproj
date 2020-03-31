@@ -45,6 +45,12 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$(MSBuildProjectName).props" />
+  <Target Name="MobileSkipBuildProps" BeforeTargets="GetSkipBuildProps" Condition="'$(TargetOS)' == 'iOS'">
+    <PropertyGroup>
+        <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
+  <Import Project="$(MSBuildProjectName).props" Condition="'$(TargetOS)' != 'iOS'" />
 
 </Project>

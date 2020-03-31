@@ -26,4 +26,9 @@
     <CrossArchSdkMsiInstallerArch Include="x64;x86" />
   </ItemGroup>
 
+  <Target Name="MobileSkipBuildProps" BeforeTargets="GetSkipBuildProps" Condition="'$(TargetOS)' == 'iOS'">
+    <PropertyGroup>
+        <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
 </Project>

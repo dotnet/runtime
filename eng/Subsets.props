@@ -225,22 +225,8 @@
     <ProjectToBuild Include="@(DepprojProjectToBuild)" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-pkgproj-')) and '$(TargetOS)' != 'iOS'">
+  <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-pkgproj-'))">
     <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" BuildInParallel="false" />
-    <ProjectToBuild Include="@(PkgprojProjectToBuild)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-pkgproj-')) and '$(TargetOS)' == 'iOS'">    
-    <!-- For iOS we only need to construct runtime packs-->
-    <PkgprojProjectToBuild  
-        Include="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\Microsoft.NETCore.App.Runtime.pkgproj" 
-        SignPhase="MsiFiles" BuildInParallel="false" />
-    <PkgprojProjectToBuild  
-        Include="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\legacy\**\*.pkgproj" 
-        SignPhase="MsiFiles" BuildInParallel="false" />
-    <PkgprojProjectToBuild  
-        Include="$(InstallerProjectRoot)pkg\projects\netcoreapp\pkg\workaround\**\*.pkgproj" 
-        SignPhase="MsiFiles" BuildInParallel="false" />
     <ProjectToBuild Include="@(PkgprojProjectToBuild)" />
   </ItemGroup>
 

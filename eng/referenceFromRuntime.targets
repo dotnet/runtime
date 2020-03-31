@@ -33,7 +33,7 @@
 
   <Target Name="GetFilesFromRuntime" Returns="@(RuntimeFiles)" DependsOnTargets="GetFilesFromCoreClr;GetFilesFromMono">
     <ItemGroup>
-      <RuntimeFiles Include="@(VMFiles)" />
+      <RuntimeFiles Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>
 
@@ -43,13 +43,13 @@
   -->
   <Target Name="GetFilesFromCoreCLR" 
           Condition="'$(RuntimeFlavor)' != 'Mono'"
-          Returns="@(VMFiles)"
-          DependsOnTargets="ResolveVMFilesFromLocalBuild" />
+          Returns="@(RuntimeFiles)"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild" />
 
   <Target Name="GetFilesFromMono" 
           Condition="'$(RuntimeFlavor)' == 'Mono'"
-          Returns="@(VMFiles)"
-          DependsOnTargets="ResolveVMFilesFromLocalBuild" />
+          Returns="@(RuntimeFiles)"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild" />
 
   <Target Name="FilterReferenceFromRuntime"
           AfterTargets="ResolveProjectReferences"

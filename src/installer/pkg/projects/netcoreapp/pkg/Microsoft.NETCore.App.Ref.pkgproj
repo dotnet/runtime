@@ -5,4 +5,10 @@
     <File Include="PackageOverrides.txt" TargetPath="data/" />
   </ItemGroup>
 
+  <Target Name="MobileSkipBuildProps" BeforeTargets="GetSkipBuildProps" Condition="'$(TargetOS)' == 'iOS'">
+    <PropertyGroup>
+        <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
 </Project>

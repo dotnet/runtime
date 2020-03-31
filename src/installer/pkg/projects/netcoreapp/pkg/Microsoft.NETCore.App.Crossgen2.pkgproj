@@ -87,6 +87,12 @@
 
   </Target>
 
+  <Target Name="MobileSkipBuildProps" BeforeTargets="GetSkipBuildProps" Condition="'$(TargetOS)' == 'iOS'">
+    <PropertyGroup>
+        <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>

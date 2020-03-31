@@ -1,9 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <VersionProp>AppHostVersion</VersionProp>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildProjectName).props" />
+  <Import Project="$(MSBuildProjectName).props" Condition="'$(TargetOS)' != 'iOS'" />
+
+  <Target Name="MobileSkipBuildProps" BeforeTargets="GetSkipBuildProps" Condition="'$(TargetOS)' == 'iOS'">
+    <PropertyGroup>
+        <SkipBuild>true</SkipBuild>
+    </PropertyGroup>
+  </Target>
 
 </Project>
