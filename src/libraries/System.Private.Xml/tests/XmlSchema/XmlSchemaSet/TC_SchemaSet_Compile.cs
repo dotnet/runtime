@@ -6,6 +6,8 @@ using Xunit;
 using Xunit.Abstractions;
 using System.IO;
 using System.Xml.Schema;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace System.Xml.Tests
 {
@@ -234,5 +236,383 @@ namespace System.Xml.Tests
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
             Assert.Contains("maxLength", ex.Message);
         }
+
+        #region "Testing presence of minLength or maxLength and Length"
+
+        public static IEnumerable<object[]> MaxMinLengthBaseLength_ThrowsData
+        {
+            get
+            {
+                return new List<object[]>()
+                {
+                    new object[]
+                    {  // minLength and length specified in same derivation step.
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:minLength value='5'/>
+            <xs:length value='5' />
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // maxLength and length specified in same derivation step.
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:maxLength value='5'/>
+            <xs:length value='5' />
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has minLength; derived type has lesser length
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:minLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:length value='4'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has maxLength; derived type has greater length
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:maxLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:length value='6'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has length; derived type has lesser maxLength
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:length value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:maxLength value='4'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has length; derived type has greater minLength
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:length value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:minLength value='6'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has maxLength; derived type has greater length
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:maxLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:length value='6'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    }
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MaxMinLengthBaseLength_ThrowsData))]
+        public void MaxMinLengthBaseLength_Throws(string schema)
+        {
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+            Assert.Contains("length", ex.Message);
+            Assert.Contains("minLength", ex.Message);
+            Assert.Contains("maxLength", ex.Message);
+
+            // Issue 30218: invalid formatters
+            Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
+            Assert.Empty(rx.Matches(ex.Message));
+        }
+
+        [Fact]
+        public void MinLengthGtMaxLength_Throws()
+        {
+            string schema = @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:maxLength value='5'/>
+            <xs:minLength value='8'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+";
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+            // The thrown error message has an upper case 'M' in both
+            // minLength and maxLength.
+            Assert.Contains("minlength", ex.Message.ToLower());
+            Assert.Contains("maxlength", ex.Message.ToLower());
+
+            // Issue 30218: invalid formatters
+            Regex rx = new Regex(@"\{[0-9]*[a-zA-Z ]+[^\}]*\}");
+            Assert.Empty(rx.Matches(ex.Message));
+        }
+
+        public static IEnumerable<object[]> MaxMinLengthBaseLength_TestData
+        {
+            get
+            {
+                return new List<object[]>()
+                {
+                    new object[]
+                    {  // base type has length; derived type has equal maxLength
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:length value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:maxLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has length; derived type has greater maxLength
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:length value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:maxLength value='6'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has length; derived type has equal minLength
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:length value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:minLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has length; derived type has lesser minLength
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:length value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:minLength value='4'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has minLength; derived type has equal length
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:minLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:length value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has minLength; derived type has greater length
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:minLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:length value='6'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has maxLength; derived type has equal length
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:maxLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:length value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // base type has maxLength; derived type has lesser length
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:maxLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:length value='4'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // minLength is equal to maxLength
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:maxLength value='5'/>
+            <xs:minLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // minLength is less than maxLength
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:maxLength value='8'/>
+            <xs:minLength value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    }
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MaxMinLengthBaseLength_TestData))]
+        public void MaxMinLengthBaseLength_Test(string schema)
+        {
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception exception;
+            try
+            {
+                ss.Compile();
+                exception = null;
+            } catch (Exception ex)
+            {
+                exception = ex;
+            }
+            Assert.Null(exception);
+        }
+
+        #endregion
     }
 }
