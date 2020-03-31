@@ -38,7 +38,11 @@ You can also build and test with code coverage for a particular test project rat
 
     dotnet build /t:Test /p:Coverage=true
 
-The results for this one library will then show up in the aforementioned index.htm file. For example, to build, test, and get code coverage results for the System.Diagnostics.Debug library, from the root of the repo one can do:
+The results for this one library will then be available in this index.htm file, where $(OutDir) is the directory where the binaries were generated.
+
+    $(OutDir)\report\index.htm
+
+For example, to build, test, and get code coverage results for the System.Diagnostics.Debug library, from the root of the repo one can do:
 
     cd src\System.Diagnostics.Debug\tests\
     dotnet build /t:Test /p:Coverage=true
