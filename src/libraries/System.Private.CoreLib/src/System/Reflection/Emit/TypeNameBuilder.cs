@@ -16,40 +16,21 @@ namespace System.Reflection.Emit
 {
     internal class TypeNameBuilder
     {
-        private enum ParseState
-        {
-            START = 0x0001,
-            NAME = 0x0004,
-            GENARGS = 0x0008,
-            PTRARR = 0x0010,
-            BYREF = 0x0020,
-            ASSEMSPEC = 0x0080,
-        }
-
-        private ParseState parseState;
-        private StringBuilder str = new StringBuilder();
-        private int instNesting;
-        private bool firstInstArg;
-        private bool nestedName;
-        private bool hasAssemblySpec;
-        private bool useAngleBracketsForGenerics;
-        private List<int> stack = new List<int>();
-        private int stackIdx;
-
-        public TypeNameBuilder()
-        {
-            parseState = ParseState.START;
-        }
+        private StringBuilder _str = new StringBuilder();
+        private int _instNesting;
+        private bool _firstInstArg;
+        private bool _nestedName;
+        private bool _hasAssemblySpec;
+        private bool _useAngleBracketsForGenerics;
+        private List<int> _stack = new List<int>();
+        private int _stackIdx;
 
         public void OpenGenericArguments()
         {
-            CheckParseState(ParseState.NAME);
+            _instNesting++;
+            _firstInstArg = true;
 
-            parseState = ParseState.START;
-            instNesting++;
-            firstInstArg = true;
-
-            if (useAngleBracketsForGenerics)
+            if (_useAngleBracketsForGenerics)
                 Append('<');
             else
                 Append('[');
@@ -57,21 +38,17 @@ namespace System.Reflection.Emit
 
         public void CloseGenericArguments()
         {
-            CheckParseState(ParseState.START);
+            Debug.Assert(_instNesting != 0);
 
-            Debug.Assert(instNesting != 0);
+            _instNesting--;
 
-            parseState = ParseState.GENARGS;
-
-            instNesting--;
-
-            if (firstInstArg)
+            if (_firstInstArg)
             {
-                str.Remove(str.Length - 1, 1);
+                _str.Remove(_str.Length - 1, 1);
             }
             else
             {
-                if (useAngleBracketsForGenerics)
+                if (_useAngleBracketsForGenerics)
                     Append('>');
                 else
                     Append(']');
@@ -80,19 +57,16 @@ namespace System.Reflection.Emit
 
         public void OpenGenericArgument()
         {
-            CheckParseState(ParseState.START);
+            Debug.Assert(_instNesting != 0);
 
-            Debug.Assert(instNesting != 0);
+            _nestedName = false;
 
-            parseState = ParseState.START;
-            nestedName = false;
-
-            if (!firstInstArg)
+            if (!_firstInstArg)
                 Append(',');
 
-            firstInstArg = false;
+            _firstInstArg = false;
 
-            if (useAngleBracketsForGenerics)
+            if (_useAngleBracketsForGenerics)
                 Append('<');
             else
                 Append('[');
@@ -102,15 +76,11 @@ namespace System.Reflection.Emit
 
         public void CloseGenericArgument()
         {
-            CheckParseState(ParseState.NAME | ParseState.GENARGS | ParseState.PTRARR | ParseState.BYREF | ParseState.ASSEMSPEC);
+            Debug.Assert(_instNesting != 0);
 
-            Debug.Assert(instNesting != 0);
-
-            parseState = ParseState.START;
-
-            if (hasAssemblySpec)
+            if (_hasAssemblySpec)
             {
-                if (useAngleBracketsForGenerics)
+                if (_useAngleBracketsForGenerics)
                     Append('>');
                 else
                     Append(']');
@@ -123,51 +93,31 @@ namespace System.Reflection.Emit
         {
             Debug.Assert(name != null);
 
-            CheckParseState(ParseState.START | ParseState.NAME);
-
-            parseState = ParseState.NAME;
-
-            if (nestedName)
+            if (_nestedName)
                 Append('+');
 
-            nestedName = true;
+            _nestedName = true;
 
             EscapeName(name!);
         }
 
         public void AddPointer()
         {
-            CheckParseState(ParseState.NAME | ParseState.GENARGS | ParseState.PTRARR);
-
-            parseState = ParseState.PTRARR;
-
             Append('*');
         }
 
         public void AddByRef()
         {
-            CheckParseState(ParseState.NAME | ParseState.GENARGS | ParseState.PTRARR);
-
-            parseState = ParseState.BYREF;
-
             Append('&');
         }
 
         public void AddSzArray()
         {
-            CheckParseState(ParseState.NAME | ParseState.GENARGS | ParseState.PTRARR);
-
-            parseState = ParseState.PTRARR;
-
             Append("[]");
         }
 
         public void AddArray(int rank)
         {
-            CheckParseState(ParseState.NAME | ParseState.GENARGS | ParseState.PTRARR);
-
-            parseState = ParseState.PTRARR;
-
             if (rank <= 0)
                 throw new ArgumentOutOfRangeException();
 
@@ -178,7 +128,7 @@ namespace System.Reflection.Emit
             else if (rank > 64)
             {
                 // Only taken in an error path, runtime will not load arrays of more than 32 dimensions
-                Append($"[{rank}]");
+                _str.Append('[').Append(rank).Append(']');
             }
             else
             {
@@ -191,15 +141,11 @@ namespace System.Reflection.Emit
 
         public void AddAssemblySpec(string assemblySpec)
         {
-            CheckParseState(ParseState.NAME | ParseState.GENARGS | ParseState.PTRARR | ParseState.BYREF);
-
-            parseState = ParseState.ASSEMSPEC;
-
             if (assemblySpec != null && !assemblySpec.Equals(""))
             {
                 Append(", ");
 
-                if (instNesting > 0)
+                if (_instNesting > 0)
                 {
                     EscapeEmbeddedAssemblyName(assemblySpec);
                 }
@@ -208,17 +154,15 @@ namespace System.Reflection.Emit
                     EscapeAssemblyName(assemblySpec);
                 }
 
-                hasAssemblySpec = true;
+                _hasAssemblySpec = true;
             }
         }
 
         public override string ToString()
         {
-            CheckParseState(ParseState.NAME | ParseState.GENARGS | ParseState.PTRARR | ParseState.BYREF | ParseState.ASSEMSPEC);
+            Debug.Assert(_instNesting == 0);
 
-            Debug.Assert(instNesting == 0);
-
-            return str.ToString();
+            return _str.ToString();
         }
 
         private static bool ContainsReservedChar(string name)
@@ -260,8 +204,8 @@ namespace System.Reflection.Emit
                     if (c == '\0')
                         break;
                     if (IsTypeNameReservedChar(c))
-                        str.Append('\\');
-                    str.Append(c);
+                        _str.Append('\\');
+                    _str.Append(c);
                 }
             }
             else
@@ -302,31 +246,26 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void CheckParseState(ParseState validState)
-        {
-            Debug.Assert((parseState & validState) != 0);
-        }
-
         private void PushOpenGenericArgument()
         {
-            stack.Add(str.Length);
-            stackIdx++;
+            _stack.Add(_str.Length);
+            _stackIdx++;
         }
 
         private void PopOpenGenericArgument()
         {
-            int index = stack[--stackIdx];
-            stack.RemoveAt(stackIdx);
+            int index = _stack[--_stackIdx];
+            _stack.RemoveAt(_stackIdx);
 
-            if (!hasAssemblySpec)
-                str.Remove(index - 1, 1);
+            if (!_hasAssemblySpec)
+                _str.Remove(index - 1, 1);
 
-            hasAssemblySpec = false;
+            _hasAssemblySpec = false;
         }
 
         private void SetUseAngleBracketsForGenerics(bool value)
         {
-            useAngleBracketsForGenerics = value;
+            _useAngleBracketsForGenerics = value;
         }
 
         private void Append(string pStr)
@@ -335,13 +274,13 @@ namespace System.Reflection.Emit
             {
                 if (c == '\0')
                     break;
-                str.Append(c);
+                _str.Append(c);
             }
         }
 
         private void Append(char c)
         {
-            str.Append(c);
+            _str.Append(c);
         }
 
         internal enum Format
@@ -359,27 +298,29 @@ namespace System.Reflection.Emit
                     return null;
             }
 
-            TypeNameBuilder tnb = new TypeNameBuilder();
-            ConstructAssemblyQualifiedNameWorker(tnb, type, format);
+            var tnb = new TypeNameBuilder();
+            tnb.AddAssemblyQualifiedName(type, format);
             return tnb.ToString();
         }
 
-        private static void AddElementType(TypeNameBuilder tnb, Type elementType)
+        private void AddElementType(Type type)
         {
-            if (elementType.HasElementType)
-                AddElementType(tnb, elementType.GetElementType()!);
+            if (!type.HasElementType)
+                return;
 
-            if (elementType.IsPointer)
-                tnb.AddPointer();
-            else if (elementType.IsByRef)
-                tnb.AddByRef();
-            else if (elementType.IsSZArray)
-                tnb.AddSzArray();
-            else if (elementType.IsArray)
-                tnb.AddArray(elementType.GetArrayRank());
+            AddElementType(type.GetElementType()!);
+
+            if (type.IsPointer)
+                AddPointer();
+            else if (type.IsByRef)
+                AddByRef();
+            else if (type.IsSZArray)
+                AddSzArray();
+            else if (type.IsArray)
+                AddArray(type.GetArrayRank());
         }
 
-        private static void ConstructAssemblyQualifiedNameWorker(TypeNameBuilder tnb, Type type, Format format)
+        private void AddAssemblyQualifiedName(Type type, Format format)
         {
             Type rootType = type;
 
@@ -387,7 +328,7 @@ namespace System.Reflection.Emit
                 rootType = rootType.GetElementType()!;
 
             // Append namespace + nesting + name
-            List<Type> nestings = new List<Type>();
+            var nestings = new List<Type>();
             for (Type? t = rootType; t != null; t = t.IsGenericParameter ? null : t.DeclaringType)
                 nestings.Add(t);
 
@@ -399,7 +340,7 @@ namespace System.Reflection.Emit
                 if (i == nestings.Count - 1 && enclosingType.Namespace != null && enclosingType.Namespace.Length != 0)
                     name = enclosingType.Namespace + "." + name;
 
-                tnb.AddName(name);
+                AddName(name);
             }
 
             // Append generic arguments
@@ -407,23 +348,23 @@ namespace System.Reflection.Emit
             {
                 Type[] genericArguments = rootType.GetGenericArguments();
 
-                tnb.OpenGenericArguments();
+                OpenGenericArguments();
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
                     Format genericArgumentsFormat = format == Format.FullName ? Format.AssemblyQualifiedName : format;
 
-                    tnb.OpenGenericArgument();
-                    ConstructAssemblyQualifiedNameWorker(tnb, genericArguments[i], genericArgumentsFormat);
-                    tnb.CloseGenericArgument();
+                    OpenGenericArgument();
+                    AddAssemblyQualifiedName(genericArguments[i], genericArgumentsFormat);
+                    CloseGenericArgument();
                 }
-                tnb.CloseGenericArguments();
+                CloseGenericArguments();
             }
 
             // Append pointer, byRef and array qualifiers
-            AddElementType(tnb, type);
+            AddElementType(type);
 
             if (format == Format.AssemblyQualifiedName)
-                tnb.AddAssemblySpec(type.Module.Assembly.FullName!);
+                AddAssemblySpec(type.Module.Assembly.FullName!);
         }
     }
 }
