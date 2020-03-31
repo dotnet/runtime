@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -33,6 +34,19 @@ namespace System
         private static ConsoleCancelEventHandler? s_cancelCallbacks;
         private static ConsolePal.ControlCHandlerRegistrar? s_registrar;
 
+        private static T EnsureInitialized<T>([NotNull] ref T? field, Func<T> initializer) where T : class
+            => Volatile.Read(ref field) ?? EnsureInitializedCore(ref field, initializer);
+
+        private static T EnsureInitializedCore<T>([NotNull] ref T? field, Func<T> initializer) where T : class
+        {
+            T value = initializer();
+            Debug.Assert(!(value is IDisposable)); // Use EnsureInitializedDisposable instead.
+
+            Interlocked.CompareExchange(ref field, value, null);
+
+            return field;
+        }
+
         internal static T EnsureInitializedDisposable<T>([NotNull] ref T? field, Func<T> initializer) where T : class, IDisposable
             => Volatile.Read(ref field) ?? EnsureInitializedDisposableCore(ref field, initializer);
 
@@ -54,7 +68,7 @@ namespace System
         {
             get
             {
-                return LazyInitializer.EnsureInitialized(ref s_inputEncoding, () => ConsolePal.InputEncoding);
+                return EnsureInitialized(ref s_inputEncoding, () => ConsolePal.InputEncoding);
             }
             set
             {
@@ -76,7 +90,7 @@ namespace System
         {
             get
             {
-                return LazyInitializer.EnsureInitialized(ref s_outputEncoding, () => ConsolePal.OutputEncoding);
+                return EnsureInitialized(ref s_outputEncoding, () => ConsolePal.OutputEncoding);
             }
             set
             {
@@ -154,7 +168,7 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = LazyInitializer.EnsureInitialized(ref _isStdInRedirected, () => new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
+                StrongBox<bool> redirected = EnsureInitialized(ref _isStdInRedirected, () => new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
                 return redirected.Value;
             }
         }
@@ -163,7 +177,7 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = LazyInitializer.EnsureInitialized(ref _isStdOutRedirected, () => new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
+                StrongBox<bool> redirected = EnsureInitialized(ref _isStdOutRedirected, () => new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
                 return redirected.Value;
             }
         }
@@ -172,7 +186,7 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = LazyInitializer.EnsureInitialized(ref _isStdErrRedirected, () => new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
+                StrongBox<bool> redirected = EnsureInitialized(ref _isStdErrRedirected, () => new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
                 return redirected.Value;
             }
         }
