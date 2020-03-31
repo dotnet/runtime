@@ -484,6 +484,7 @@ mono_llvm_jit_init ()
 
 	EB.setOptLevel(CodeGenOpt::Aggressive);
 	EB.setMCPU(sys::getHostCPUName());
+	EB.setMArch(llvm::Triple(llvm::sys::getDefaultTargetTriple()).getArchName());
 	auto TM = EB.selectTarget ();
 	assert (TM);
 
