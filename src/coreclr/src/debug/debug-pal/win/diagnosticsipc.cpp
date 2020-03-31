@@ -57,10 +57,16 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
 
 bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 {
+    _ASSERTE(mode == ConnectionMode::SERVER);
+    if (mode != ConnectionMode::SERVER)
+    {
+        if (callback != nullptr)
+            callback("Cannot call Listen on a client connection", -1);
+        return false;
+    }
+
     if (_isListening)
         return true;
-
-    _ASSERTE(mode == ConnectionMode::SERVER);
 
     const uint32_t nInBufferSize = 16 * 1024;
     const uint32_t nOutBufferSize = 16 * 1024;
@@ -117,7 +123,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
     if (mode != ConnectionMode::CLIENT)
     {
         if (callback != nullptr)
-            callback("Cannot call connect on a client connection", 0);
+            callback("Cannot call connect on a server connection", 0);
         return nullptr;
     }
 
@@ -149,6 +155,11 @@ void IpcStream::DiagnosticsIpc::Close(ErrorCallback)
             const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
             _ASSERTE(fSuccessDisconnectNamedPipe != 0);
         }
+        
+        // make sure overlapped io is complete before cleaning
+        DWORD dwDummy = 0;
+        const BOOL fSuccessOverlappedComplete = ::GetOverlappedResult(_hPipe, &_oOverlap, &dwDummy, true);
+        _ASSERTE(fSuccessOverlappedComplete != 0);
 
         const BOOL fSuccessCloseHandle = ::CloseHandle(_hPipe);
         _ASSERTE(fSuccessCloseHandle != 0);
@@ -180,6 +191,10 @@ IpcStream::~IpcStream()
             _ASSERTE(fSuccessDisconnectNamedPipe != 0);
         }
 
+        DWORD dwDummy = 0;
+        const BOOL fSuccessOverlappedComplete = ::GetOverlappedResult(_hPipe, &_oOverlap, &dwDummy, true);
+        _ASSERTE(fSuccessOverlappedComplete != 0);
+
         const BOOL fSuccessCloseHandle = ::CloseHandle(_hPipe);
         _ASSERTE(fSuccessCloseHandle != 0);
     }
@@ -206,12 +221,12 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
             // check for data by doing an asynchronous 0 byte read.
             // This will signal if the pipe closes (hangup) or the server
             // sends new data
-            DWORD dummyDW = 0;
+            DWORD dwDummy = 0;
             bool fSuccess = ::ReadFile(
                 rgpIpcPollHandles[i]->pStream->_hPipe,      // handle
                 nullptr,                                    // null buffer
                 0,                                          // read 0 bytes
-                &dummyDW,                                   // dummy variable
+                &dwDummy,                                   // dummy variable
                 &rgpIpcPollHandles[i]->pStream->_oOverlap); // overlap object to use
             _ASSERTE(!fSuccess && ::GetLastError() == ERROR_IO_PENDING);
             pHandles[i] = rgpIpcPollHandles[i]->pStream->_oOverlap.hEvent;
@@ -267,10 +282,10 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
     if (rgpIpcPollHandles[index]->pIpc->mode == IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT)
     {
         // check if the connection got hung up
-        DWORD dummyDW = 0;
+        DWORD dwDummy = 0;
         bool fSuccess = GetOverlappedResult(rgpIpcPollHandles[index]->pStream->_hPipe,
                                             &rgpIpcPollHandles[index]->pStream->_oOverlap,
-                                            &dummyDW,
+                                            &dwDummy,
                                             true);
         if (!fSuccess)
         {
@@ -288,10 +303,10 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
     else
     {
         // complete the async listen
-        DWORD dummyDW = 0;
+        DWORD dwDummy = 0;
         bool fSuccess = GetOverlappedResult(rgpIpcPollHandles[index]->pIpc->_hPipe,
                                             &rgpIpcPollHandles[index]->pIpc->_oOverlap,
-                                            &dummyDW,
+                                            &dwDummy,
                                             true);
         if (!fSuccess)
         {

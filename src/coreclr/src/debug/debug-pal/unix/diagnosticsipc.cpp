@@ -117,6 +117,14 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
 
 bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 {
+    _ASSERTE(mode == ConnectionMode::SERVER);
+    if (mode != ConnectionMode::SERVER)
+    {
+        if (callback != nullptr)
+            callback("Cannot call Listen on a client connection", -1);
+        return false;
+    }
+
     if (_isListening)
         return true;
 
@@ -143,6 +151,14 @@ bool IpcStream::DiagnosticsIpc::Listen(ErrorCallback callback)
 
 IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 {
+    _ASSERTE(mode == ConnectionMode::CLIENT);
+    if (mode != ConnectionMode::CLIENT)
+    {
+        if (callback != nullptr)
+            callback("Cannot call connect on a server connection", 0);
+        return nullptr;
+    }
+
     sockaddr_un clientAddress{};
     clientAddress.sun_family = AF_UNIX;
     const int clientSocket = ::socket(AF_UNIX, SOCK_STREAM, 0);

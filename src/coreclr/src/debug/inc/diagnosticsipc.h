@@ -40,6 +40,7 @@ public:
             ERR      = 0x04  // other error
         };
 
+        // The bookeeping struct used for polling on server and client structs
         struct IpcPollHandle
         {
             DiagnosticsIpc *pIpc;
