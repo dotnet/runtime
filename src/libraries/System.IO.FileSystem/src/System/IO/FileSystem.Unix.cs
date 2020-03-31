@@ -172,8 +172,9 @@ namespace System.IO
             // link/unlink approach and generating any exceptional messages from there as necessary.
             Interop.Sys.FileStatus sourceStat, destStat;
             if (Interop.Sys.LStat(sourceFullPath, out sourceStat) == 0 && // source file exists
-               (Interop.Sys.LStat(destFullPath, out destStat) != 0 || // dest file does not exist
-                    sourceStat.Ino == destStat.Ino) && // source and dest are the same file on that device
+                (Interop.Sys.LStat(destFullPath, out destStat) != 0 || // dest file does not exist
+                (sourceStat.Dev == destStat.Dev && // source and dest are on the same device
+                sourceStat.Ino == destStat.Ino)) && // source and dest are the same file on that device
                 Interop.Sys.Rename(sourceFullPath, destFullPath) == 0) // try the rename
             {
                 // Renamed successfully.
