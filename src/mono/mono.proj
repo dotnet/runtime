@@ -61,7 +61,7 @@
       <_MonoCXXFLAGS Include="-O0" />
       <_MonoCXXFLAGS Include="-ggdb3" />
       <_MonoCXXFLAGS Include="-fno-omit-frame-pointer" />
-      <_MonoCXXFLAGS Condition="$(HostArch.Contains('arm')) and '$(MonoEnableLLVM)' == 'true'" Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
+      <_MonoCXXFLAGS Condition="!$(HostArch.Contains('arm')) or '$(MonoEnableLLVM)' != 'true'" Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
     </ItemGroup>
 
     <!-- Release specific options -->
@@ -71,7 +71,7 @@
 
       <_MonoCXXFLAGS Include="-O2" />
       <_MonoCXXFLAGS Include="-g" />
-      <_MonoCXXFLAGS Condition="$(HostArch.Contains('arm')) and '$(MonoEnableLLVM)' == 'true'" Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
+      <_MonoCXXFLAGS Condition="!$(HostArch.Contains('arm')) or '$(MonoEnableLLVM)' != 'true'" Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
     </ItemGroup>
 
     <!-- iOS device specific options -->
