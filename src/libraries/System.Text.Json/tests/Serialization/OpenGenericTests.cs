@@ -41,54 +41,53 @@ namespace System.Text.Json.Serialization.Tests
             Serializer = serializer;
         }
 
-        [Fact]
-        public void DeserializeOpenGeneric()
+        [Theory]
+        [MemberData(nameof(TypesWithOpenGenerics))]
+        public void DeserializeOpenGeneric(Type type)
         {
-            foreach (object[] obj in TypesWithOpenGenerics_ToDeserialize())
-            {
-                Type type = (Type)obj[0];
-
-                InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("", type));
-                Assert.Contains(type.ToString(), ex.ToString());
-            }
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("", type));
+            Assert.Contains(type.ToString(), ex.ToString());
         }
 
-        [Fact]
-        public void SerializeOpenGeneric()
+        [Theory]
+        [MemberData(nameof(TypesWithOpenGenerics_ToSerialize))]
+        public void SerializeOpenGeneric(Type type)
         {
             object obj;
 
-            InvalidOperationException ex;
-
-            foreach (object[] types in TypesWithOpenGenerics_ToSerialize())
+            if (type.GetGenericArguments().Length == 1)
             {
-                Type type = (Type)types[0];
-
-                if (type.GetGenericArguments().Length == 1)
-                {
-                    obj = Activator.CreateInstance(type.MakeGenericType(typeof(int)));
-                }
-                else
-                {
-                    obj = Activator.CreateInstance(type.MakeGenericType(typeof(string), typeof(int)));
-                }
-
-                Assert.Throws<ArgumentException>(() => Serializer.Serialize(obj, type));
-
-                ex = Assert.Throws<InvalidOperationException>(() => Serializer.Serialize(null, type));
-                Assert.Contains(type.ToString(), ex.ToString());
+                obj = Activator.CreateInstance(type.MakeGenericType(typeof(int)));
+            }
+            else
+            {
+                obj = Activator.CreateInstance(type.MakeGenericType(typeof(string), typeof(int)));
             }
 
-            Type openNullableType = typeof(Nullable<>);
+            Assert.Throws<ArgumentException>(() => Serializer.Serialize(obj, type));
+        }
 
-            obj = Activator.CreateInstance(openNullableType.MakeGenericType(typeof(int)));
-            ex = Assert.Throws<InvalidOperationException>(() => Serializer.Serialize(obj, openNullableType));
+        [Theory]
+        [MemberData(nameof(TypesWithOpenGenerics))]
+        public void SerializeOpenGeneric_NullValue(Type type)
+        {
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Serializer.Serialize(null, type));
+            Assert.Contains(type.ToString(), ex.ToString());
+        }
+
+        [Fact]
+        public void SerializeOpenGeneric_NullableOfT()
+        {
+            Type openNullableType = typeof(Nullable<>);
+            object obj = Activator.CreateInstance(openNullableType.MakeGenericType(typeof(int)));
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => Serializer.Serialize(obj, openNullableType));
             Assert.Contains(openNullableType.ToString(), ex.ToString());
         }
 
         private class Test<T> { }
 
-        private static IEnumerable<object[]> TypesWithOpenGenerics_ToDeserialize()
+        private static IEnumerable<object[]> TypesWithOpenGenerics()
         {
             yield return new object[] { typeof(Test<>) };
             yield return new object[] { typeof(Nullable<>) };
