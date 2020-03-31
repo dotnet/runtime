@@ -1,6 +1,3 @@
-# GCSettings.SetGCLatencyMode is not implemented
--nomethod System.Tests.GCTests.LatencyRoundtrips_LowLatency
-
 # Type.GetTypeFromCLSID is not implemented
 -nomethod System.Tests.TypeTests.*
 -nomethod System.Reflection.Tests.MemberInfoTests.HasSameMetadataDefinitionAs_CornerCase_CLSIDConstructor
