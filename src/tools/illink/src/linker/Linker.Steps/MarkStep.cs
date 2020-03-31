@@ -3528,7 +3528,7 @@ namespace Mono.Linker.Steps {
 					if (requiredMemberKinds != 0) {
 						var reflectionContext = new ReflectionPatternContext (_markStep._context, methodBody.Method, methodBody.Method, 0);
 						reflectionContext.AnalyzingPattern ();
-						RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, MethodReturnValue);
+						RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, MethodReturnValue, methodBody.Method.MethodReturnType);
 					}
 				}
 			}
@@ -3600,7 +3600,7 @@ namespace Mono.Linker.Steps {
 						case "CreateInstance" when !calledMethod.ContainsGenericParameter
 							&& calledMethod.DeclaringType.Name == "Activator"
 							&& calledMethod.Parameters.Count >= 1
-							&& calledMethod.Parameters[0].ParameterType.MetadataType != MetadataType.String: {
+							&& calledMethod.Parameters [0].ParameterType.MetadataType != MetadataType.String: {
 
 								var parameters = calledMethod.Parameters;
 
@@ -3648,7 +3648,7 @@ namespace Mono.Linker.Steps {
 								}
 
 								// Go over all types we've seen
-								foreach (var value in methodParams[0].UniqueValues ()) {
+								foreach (var value in methodParams [0].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
 										// Special case known type values as we can do better by applying exact binding flags and parameter count.
 										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", bindingFlags, ctorParameterCount);
@@ -3659,7 +3659,7 @@ namespace Mono.Linker.Steps {
 											: ((bindingFlags & BindingFlags.NonPublic) == 0)
 												? DynamicallyAccessedMemberKinds.PublicConstructors
 												: DynamicallyAccessedMemberKinds.Constructors;
-										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value);
+										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, value, calledMethod.Parameters [0]);
 									}
 								}
 							}
@@ -3669,8 +3669,10 @@ namespace Mono.Linker.Steps {
 								reflectionContext.AnalyzingPattern ();
 								for (int parameterIndex = 0; parameterIndex < methodParams.Count; parameterIndex ++) {
 									var requiredMemberKinds = _flowAnnotations.GetParameterAnnotation (calledMethodDefinition, parameterIndex);
-									if (requiredMemberKinds != 0)
-										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, methodParams [parameterIndex]);
+									if (requiredMemberKinds != 0) {
+										var targetParameter = calledMethodDefinition.Parameters [parameterIndex - (calledMethodDefinition.HasImplicitThis () ? 1 : 0)];
+										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, methodParams [parameterIndex], targetParameter);
+									}
 								}
 
 								reflectionContext.RecordHandledPattern ();
@@ -3719,12 +3721,16 @@ namespace Mono.Linker.Steps {
 				return true;
 			}
 
-			void RequireDynamicallyAccessedMembers(ref ReflectionPatternContext reflectionContext, DynamicallyAccessedMemberKinds requiredMemberKinds, ValueNode value)
+			void RequireDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, DynamicallyAccessedMemberKinds requiredMemberKinds, ValueNode value, IMetadataTokenProvider targetContext)
 			{
 				foreach (var uniqueValue in value.UniqueValues ()) {
 					if (uniqueValue is LeafValueWithDynamicallyAccessedMemberNode valueWithDynamicallyAccessedMember) {
 						if (!valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberKinds.HasFlag (requiredMemberKinds)) {
-							reflectionContext.RecordUnrecognizedPattern ($"Value from {valueWithDynamicallyAccessedMember.SourceContext} doesn't have enough dynamically accessed members required by {reflectionContext.MethodCalled}.");
+							reflectionContext.RecordUnrecognizedPattern ($"The {GetValueDescriptionForErrorMessage (valueWithDynamicallyAccessedMember)} " +
+								$"with dynamically accessed member kinds '{GetDynamicallyAccessedMemberKindsDescription (valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberKinds)}' " +
+								$"is passed into the {GetMetadataTokenDescriptionForErrorMessage (targetContext)} " +
+								$"which requires dynamically accessed member kinds `{GetDynamicallyAccessedMemberKindsDescription (requiredMemberKinds)}`. " +
+								$"To fix this add DynamicallyAccessedMembersAttribute to it and specify at least these member kinds '{GetDynamicallyAccessedMemberKindsDescription (requiredMemberKinds)}'.");
 						} else {
 							reflectionContext.RecordHandledPattern ();
 						}
@@ -3743,7 +3749,10 @@ namespace Mono.Linker.Steps {
 					} else if (uniqueValue == NullValue.Instance) {
 						// Ignore - probably unreachable path as it would fail at runtime anyway.
 					} else {
-						reflectionContext.RecordUnrecognizedPattern ($"Value comes from unsupported source.");
+						reflectionContext.RecordUnrecognizedPattern ($"A {GetValueDescriptionForErrorMessage (uniqueValue)} " +
+							$"is passed into the {GetMetadataTokenDescriptionForErrorMessage (targetContext)} " +
+							$"which requires dynamically accessed member kinds `{GetDynamicallyAccessedMemberKindsDescription (requiredMemberKinds)}`. " +
+							$"It's not possible to guarantee that these requirements are met by the application.");
 					}
 				}
 
@@ -3784,6 +3793,82 @@ namespace Mono.Linker.Steps {
 					bool publicOnly = (bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public;
 					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve {(publicOnly ? "public" : "")} method `{name}` on type `{declaringType.FullName}`.");
 				}
+			}
+
+			string GetValueDescriptionForErrorMessage (ValueNode value)
+			{
+				switch (value) {
+					case MethodParameterValue methodParameterValue: {
+							if (methodParameterValue.SourceContext is MethodDefinition method) {
+								int declaredParameterIndex = methodParameterValue.ParameterIndex - (method.HasImplicitThis () ? 1 : 0);
+								if (declaredParameterIndex >= 0 && declaredParameterIndex < method.Parameters.Count)
+									return GetMetadataTokenDescriptionForErrorMessage (method.Parameters [declaredParameterIndex]);
+							}
+
+							return $"method prameter #{methodParameterValue.ParameterIndex}";
+						}
+
+					case MethodReturnValue methodReturnValue: {
+							if (methodReturnValue.SourceContext is MethodDefinition method) {
+								return GetMetadataTokenDescriptionForErrorMessage (method.MethodReturnType);
+							}
+
+							return "method return value";
+						}
+
+					default:
+						return $"value from unknown source";
+				}
+			}
+
+			string GetMetadataTokenDescriptionForErrorMessage (IMetadataTokenProvider targetContext)
+			{
+				switch (targetContext) {
+					case ParameterDefinition parameterDefinition: return $"parameter '{parameterDefinition.Name}' of method '{parameterDefinition.Method}'";
+					case MethodReturnType methodReturnType: return $"return value of method '{methodReturnType.Method}'";
+					default: return targetContext.ToString ();
+				};
+			}
+
+			string GetDynamicallyAccessedMemberKindsDescription (DynamicallyAccessedMemberKinds memberKinds)
+			{
+				var results = new List<DynamicallyAccessedMemberKinds> ();
+				if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.Constructors))
+					results.Add (DynamicallyAccessedMemberKinds.Constructors);
+				else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicConstructors))
+					results.Add (DynamicallyAccessedMemberKinds.PublicConstructors);
+				else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.DefaultConstructor))
+					results.Add (DynamicallyAccessedMemberKinds.DefaultConstructor);
+				
+				if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.Methods))
+					results.Add (DynamicallyAccessedMemberKinds.Methods);
+				else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicMethods))
+					results.Add (DynamicallyAccessedMemberKinds.PublicMethods);
+				
+				if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.Properties))
+					results.Add (DynamicallyAccessedMemberKinds.Properties);
+				else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicProperties))
+					results.Add (DynamicallyAccessedMemberKinds.PublicProperties);
+				
+				if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.Fields))
+					results.Add (DynamicallyAccessedMemberKinds.Fields);
+				else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicFields))
+					results.Add (DynamicallyAccessedMemberKinds.PublicFields);
+				
+				if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.Events))
+					results.Add (DynamicallyAccessedMemberKinds.Events);
+				else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicEvents))
+					results.Add (DynamicallyAccessedMemberKinds.PublicEvents);
+				
+				if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.NestedTypes))
+					results.Add (DynamicallyAccessedMemberKinds.NestedTypes);
+				else if (memberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicNestedTypes))
+					results.Add (DynamicallyAccessedMemberKinds.PublicNestedTypes);
+
+				if (results.Count == 0)
+					return "None";
+
+				return string.Join (" | ", results.Select (r => r.ToString ()));
 			}
 		}
 	}
