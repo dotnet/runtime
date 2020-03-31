@@ -4,11 +4,12 @@
 
 namespace Mono.Linker
 {
-	public enum TypePreserve
+	public enum MethodAction
 	{
 		Nothing,
-		All,
-		Fields,
-		Methods
+		Parse,
+		ForceParse,
+		ConvertToStub,
+		ConvertToThrow,
 	}
 }
