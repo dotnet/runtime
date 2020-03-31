@@ -364,6 +364,7 @@ namespace Mono.Linker.Dataflow
 				case ValueNodeKind.KnownString:
 				case ValueNodeKind.ConstInt:
 				case ValueNodeKind.MethodParameter:
+				case ValueNodeKind.LoadField:
 					break;
 
 				//
@@ -381,11 +382,6 @@ namespace Mono.Linker.Dataflow
 					GetTypeFromStringValue gtfsv = (GetTypeFromStringValue)node;
 					foundCycle = gtfsv.AssemblyIdentity.DetectCycle (seenNodes, allNodesSeen);
 					foundCycle |= gtfsv.NameString.DetectCycle (seenNodes, allNodesSeen);
-					break;
-
-				case ValueNodeKind.LoadField:
-					LoadFieldValue lfv = (LoadFieldValue)node;
-					foundCycle = lfv.InstanceValue.DetectCycle (seenNodes, allNodesSeen);
 					break;
 
 				case ValueNodeKind.Array:
@@ -925,36 +921,16 @@ namespace Mono.Linker.Dataflow
 	/// A representation of a ldfld.  Note that we don't have a representation of objects containing fields
 	/// so there isn't much that can be done with this node type yet.
 	/// </summary>
-	class LoadFieldValue : ValueNode
+	class LoadFieldValue : LeafValueWithDynamicallyAccessedMemberNode
 	{
-		public LoadFieldValue (ValueNode instanceValue, FieldDefinition fieldToLoad)
+		public LoadFieldValue (FieldDefinition fieldToLoad, DynamicallyAccessedMemberKinds dynamicallyAccessedMemberKinds)
 		{
 			Kind = ValueNodeKind.LoadField;
-			InstanceValue = instanceValue;
 			Field = fieldToLoad;
+			DynamicallyAccessedMemberKinds = dynamicallyAccessedMemberKinds;
 		}
 
 		public FieldDefinition Field { get; private set; }
-
-		public ValueNode InstanceValue { get; private set; }
-
-		protected override int NumChildren { get { return 1; } }
-		protected override ValueNode ChildAt (int index)
-		{
-			if (index == 0) return InstanceValue;
-			throw new InvalidOperationException ();
-		}
-
-		protected override bool RepresentsExactlyOneValue { get { return true; } }
-
-		protected override ValueNode GetSingleUniqueValue () { return UnknownValue.Instance; }
-
-		protected override IEnumerable<ValueNode> EvaluateUniqueValues ()
-		{
-			// Not implemented because RepresentsExactlyOneValue returns false and, therefore, this method should be
-			// unreachable.
-			throw new NotImplementedException ();
-		}
 
 		public override bool Equals (ValueNode other)
 		{
@@ -966,18 +942,18 @@ namespace Mono.Linker.Dataflow
 			LoadFieldValue otherLfv = (LoadFieldValue)other;
 			if (!Equals (this.Field, otherLfv.Field))
 				return false;
-
-			return this.InstanceValue.Equals (otherLfv.InstanceValue);
+			
+			return this.DynamicallyAccessedMemberKinds == otherLfv.DynamicallyAccessedMemberKinds;
 		}
 
 		public override int GetHashCode ()
 		{
-			return HashUtils.CalcHashCode (Kind, Field, InstanceValue);
+			return HashUtils.CalcHashCode(HashUtils.CalcHashCode (Kind, Field), (int)this.DynamicallyAccessedMemberKinds);
 		}
 
 		protected override string NodeToString ()
 		{
-			return ValueNodeDump.ValueNodeToString (this, Field);
+			return ValueNodeDump.ValueNodeToString (this, Field, DynamicallyAccessedMemberKinds);
 		}
 	}
 
@@ -1205,9 +1181,8 @@ namespace Mono.Linker.Dataflow
 		public static int CalcHashCode<T1, T2> (ValueNodeKind kind, T1 obj1, T2 obj2)
 			where T1 : class
 			where T2 : class
-
 		{
-			return CalcHashCode (kind, obj1.GetHashCode(), obj2.GetHashCode());
+			return CalcHashCode (kind, obj1 == null ? 0 : obj1.GetHashCode(), obj2 == null ? 0 : obj2.GetHashCode());
 		}
 
 		static int CalcHashCode (ValueNodeKind kind, int hashCode1, int hashCode2)
