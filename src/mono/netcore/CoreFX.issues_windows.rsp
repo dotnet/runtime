@@ -1,10 +1,3 @@
-# Type.GetTypeFromCLSID is not implemented
--nomethod System.Tests.TypeTests.*
--nomethod System.Reflection.Tests.MemberInfoTests.HasSameMetadataDefinitionAs_CornerCase_CLSIDConstructor
--nomethod System.Reflection.Tests.MemberInfoTests.HasSameMetadataDefinitionAs_Negative_Null
--nomethod System.Reflection.Tests.MemberInfoTests.HasSameMetadataDefinitionAs_Negative_NonRuntimeType
--nomethod System.Reflection.Tests.AssemblyTests.LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath
-
 # these math functions should be portable, e.g. see HAVE_COMPATIBLE_EXP in coreclr
 -nomethod System.Tests.MathFTests.Acosh
 -nomethod System.Tests.MathFTests.Atanh
