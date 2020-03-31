@@ -903,6 +903,10 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
         private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, ref bool pfIsOpenDelegate)
         { throw new NotImplementedException("isCompatibleDelegate"); }
+        private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
+        { throw new NotImplementedException("setPatchpointInfo"); }
+        private PatchpointInfo* getOSRInfo(ref uint ilOffset)
+        { throw new NotImplementedException("getOSRInfo"); }
 
         private void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_STRUCT_* method)
         {
@@ -2936,6 +2940,11 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_MIN_OPT);
 
             return (uint)sizeof(CORJIT_FLAGS);
+        }
+
+        private void notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
+        {
+            // Do nothing. This is currently just a notification that has no impact on anything
         }
     }
 }

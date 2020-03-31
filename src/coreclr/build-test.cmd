@@ -44,7 +44,7 @@ set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 :: Default __Exclude to issues.targets
 set __Exclude=%__TestDir%\issues.targets
 
-REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:__BuildArch=x64)
+REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:TargetArchitecture=x64)
 set "__args= %*"
 set processedArgs=
 set __UnprocessedBuildArgs=
@@ -141,8 +141,8 @@ if "%__TargetsWindows%"=="1" (
 
 @if defined _echo @echo on
 
-set __CommonMSBuildArgs=/p:__TargetOS=%__TargetOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch%
-set __msbuildArgs=/p:__TargetOS=%__TargetOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch% /nologo /verbosity:minimal /clp:Summary /maxcpucount
+set __CommonMSBuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch%
+set __msbuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch% /nologo /verbosity:minimal /clp:Summary /maxcpucount
 
 echo %__MsgPrefix%Commencing CoreCLR test build
 
@@ -296,7 +296,7 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging='!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!'
 
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-  %__ProjectDir%\tests\build.proj -warnAsError:1 /t:BatchRestorePackages /nodeReuse:false^
+  %__ProjectDir%\tests\build.proj -warnAsError:0 /t:BatchRestorePackages /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   %__SkipFXRestoreArg%^
@@ -355,7 +355,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
 
     if not "%__CopyNativeTestBinaries%" == "1" (
         set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj
-        set __MSBuildBuildArgs=!__MSBuildBuildArgs! -warnAsError:1
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! -warnAsError:0
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /nodeReuse:false
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__Logging!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !TargetsWindowsMsbuildArg!
@@ -379,7 +379,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
             goto     :Exit_Failure
         )
     ) else (
-        set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj -warnAsError:1 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__SkipFXRestoreArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
+        set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__SkipFXRestoreArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 

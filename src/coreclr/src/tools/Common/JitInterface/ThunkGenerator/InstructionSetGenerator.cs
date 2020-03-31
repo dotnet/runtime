@@ -480,6 +480,9 @@ namespace Internal.JitInterface
 #ifndef CORINFOINSTRUCTIONSET_H
 #define CORINFOINSTRUCTIONSET_H
 
+#include ""readytoruninstructionset.h""
+#include <stdint.h>
+
 enum CORINFO_InstructionSet
 {
     InstructionSet_ILLEGAL = 0,
@@ -603,7 +606,40 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
     return resultflags;
 }
 
+inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
+{
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4065) // disable warning for switch statement with only default label.
+#endif
 
+    switch (instructionSet)
+    {
+");
+            foreach (string architecture in _architectures)
+            {
+                tr.WriteLine($"#ifdef TARGET_{ArchToIfDefArch(architecture)}");
+                foreach (var instructionSet in _instructionSets)
+                {
+                    if (instructionSet.Architecture != architecture) continue;
+                    tr.WriteLine($"        case InstructionSet_{instructionSet.JitName} :");
+                    tr.WriteLine($"            return \"{instructionSet.JitName}\";");
+                    if (_64BitArchitectures.Contains(architecture) && _64bitVariants[architecture].Contains(instructionSet.JitName))
+                    {
+                        tr.WriteLine($"        case InstructionSet_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)} :");
+                        tr.WriteLine($"            return \"{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}\";");
+                    }
+                }
+                tr.WriteLine($"#endif // TARGET_{ArchToIfDefArch(architecture)}");
+            }
+            tr.Write(@"
+        default:
+            return ""UnknownInstructionSet"";
+    }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+}
 
 #endif // CORINFOINSTRUCTIONSET_H
 ");

@@ -177,6 +177,7 @@ namespace System.Linq.Expressions
         public static MemberExpression Field(Expression? expression, Type type, string fieldName)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
+            ContractUtils.RequiresNotNull(fieldName, nameof(fieldName));
 
             // bind to public names first
             FieldInfo? fi = type.GetField(fieldName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy)

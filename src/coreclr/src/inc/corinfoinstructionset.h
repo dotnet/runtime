@@ -10,6 +10,9 @@
 #ifndef CORINFOINSTRUCTIONSET_H
 #define CORINFOINSTRUCTIONSET_H
 
+#include "readytoruninstructionset.h"
+#include <stdint.h>
+
 enum CORINFO_InstructionSet
 {
     InstructionSet_ILLEGAL = 0,
@@ -293,6 +296,136 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
     return resultflags;
 }
 
+inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
+{
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4065) // disable warning for switch statement with only default label.
+#endif
 
+    switch (instructionSet)
+    {
+#ifdef TARGET_ARM64
+        case InstructionSet_ArmBase :
+            return "ArmBase";
+        case InstructionSet_ArmBase_Arm64 :
+            return "ArmBase_Arm64";
+        case InstructionSet_AdvSimd :
+            return "AdvSimd";
+        case InstructionSet_AdvSimd_Arm64 :
+            return "AdvSimd_Arm64";
+        case InstructionSet_Aes :
+            return "Aes";
+        case InstructionSet_Crc32 :
+            return "Crc32";
+        case InstructionSet_Crc32_Arm64 :
+            return "Crc32_Arm64";
+        case InstructionSet_Sha1 :
+            return "Sha1";
+        case InstructionSet_Sha256 :
+            return "Sha256";
+        case InstructionSet_Atomics :
+            return "Atomics";
+        case InstructionSet_Vector64 :
+            return "Vector64";
+        case InstructionSet_Vector128 :
+            return "Vector128";
+#endif // TARGET_ARM64
+#ifdef TARGET_AMD64
+        case InstructionSet_SSE :
+            return "SSE";
+        case InstructionSet_SSE_X64 :
+            return "SSE_X64";
+        case InstructionSet_SSE2 :
+            return "SSE2";
+        case InstructionSet_SSE2_X64 :
+            return "SSE2_X64";
+        case InstructionSet_SSE3 :
+            return "SSE3";
+        case InstructionSet_SSSE3 :
+            return "SSSE3";
+        case InstructionSet_SSE41 :
+            return "SSE41";
+        case InstructionSet_SSE41_X64 :
+            return "SSE41_X64";
+        case InstructionSet_SSE42 :
+            return "SSE42";
+        case InstructionSet_SSE42_X64 :
+            return "SSE42_X64";
+        case InstructionSet_AVX :
+            return "AVX";
+        case InstructionSet_AVX2 :
+            return "AVX2";
+        case InstructionSet_AES :
+            return "AES";
+        case InstructionSet_BMI1 :
+            return "BMI1";
+        case InstructionSet_BMI1_X64 :
+            return "BMI1_X64";
+        case InstructionSet_BMI2 :
+            return "BMI2";
+        case InstructionSet_BMI2_X64 :
+            return "BMI2_X64";
+        case InstructionSet_FMA :
+            return "FMA";
+        case InstructionSet_LZCNT :
+            return "LZCNT";
+        case InstructionSet_LZCNT_X64 :
+            return "LZCNT_X64";
+        case InstructionSet_PCLMULQDQ :
+            return "PCLMULQDQ";
+        case InstructionSet_POPCNT :
+            return "POPCNT";
+        case InstructionSet_POPCNT_X64 :
+            return "POPCNT_X64";
+        case InstructionSet_Vector128 :
+            return "Vector128";
+        case InstructionSet_Vector256 :
+            return "Vector256";
+#endif // TARGET_AMD64
+#ifdef TARGET_X86
+        case InstructionSet_SSE :
+            return "SSE";
+        case InstructionSet_SSE2 :
+            return "SSE2";
+        case InstructionSet_SSE3 :
+            return "SSE3";
+        case InstructionSet_SSSE3 :
+            return "SSSE3";
+        case InstructionSet_SSE41 :
+            return "SSE41";
+        case InstructionSet_SSE42 :
+            return "SSE42";
+        case InstructionSet_AVX :
+            return "AVX";
+        case InstructionSet_AVX2 :
+            return "AVX2";
+        case InstructionSet_AES :
+            return "AES";
+        case InstructionSet_BMI1 :
+            return "BMI1";
+        case InstructionSet_BMI2 :
+            return "BMI2";
+        case InstructionSet_FMA :
+            return "FMA";
+        case InstructionSet_LZCNT :
+            return "LZCNT";
+        case InstructionSet_PCLMULQDQ :
+            return "PCLMULQDQ";
+        case InstructionSet_POPCNT :
+            return "POPCNT";
+        case InstructionSet_Vector128 :
+            return "Vector128";
+        case InstructionSet_Vector256 :
+            return "Vector256";
+#endif // TARGET_X86
+
+        default:
+            return "UnknownInstructionSet";
+    }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+}
 
 #endif // CORINFOINSTRUCTIONSET_H

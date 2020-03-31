@@ -59,7 +59,7 @@ if (GEN_SHARED_LIB)
         target_link_libraries(System.Native ${INOTIFY_LIBRARY})
     endif ()
     endif ()
-    install_library_and_symbols (System.Native)
+    install_with_stripped_symbols (System.Native PROGRAMS .)
 endif ()
 
 add_library(System.Native-Static
