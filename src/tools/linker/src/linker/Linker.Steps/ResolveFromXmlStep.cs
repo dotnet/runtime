@@ -111,7 +111,6 @@ namespace Mono.Linker.Steps {
 			if (IsExcluded (iterator.Current))
 				return;
 
-			Tracer.Push (assembly);
 			if (GetTypePreserve (iterator.Current) == TypePreserve.All) {
 				foreach (var type in assembly.MainModule.Types)
 					MarkAndPreserveAll (type);
@@ -119,7 +118,6 @@ namespace Mono.Linker.Steps {
 				ProcessTypes (assembly, iterator.Current.SelectChildren ("type", _ns));
 				ProcessNamespaces (assembly, iterator.Current.SelectChildren ("namespace", _ns));
 			}
-			Tracer.Pop ();
 		}
 
 		void ProcessNamespaces (AssemblyDefinition assembly, XPathNodeIterator iterator)
@@ -137,18 +135,14 @@ namespace Mono.Linker.Steps {
 
 		void MarkAndPreserveAll (TypeDefinition type)
 		{
-			Annotations.MarkAndPush (type);
+			Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 			Annotations.SetPreserve (type, TypePreserve.All);
 
-			if (!type.HasNestedTypes) {
-				Tracer.Pop ();
+			if (!type.HasNestedTypes)
 				return;
-			}
 
 			foreach (TypeDefinition nested in type.NestedTypes)
 				MarkAndPreserveAll (nested);
-
-			Tracer.Pop ();
 		}
 
 		void ProcessTypes (AssemblyDefinition assembly, XPathNodeIterator iterator)
@@ -169,10 +163,8 @@ namespace Mono.Linker.Steps {
 					if (assembly.MainModule.HasExportedTypes) {
 						foreach (var exported in assembly.MainModule.ExportedTypes) {
 							if (fullname == exported.FullName) {
-								Tracer.Push (exported);
-								MarkingHelpers.MarkExportedType (exported, assembly.MainModule);
+								MarkingHelpers.MarkExportedType (exported, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 								var resolvedExternal = exported.Resolve ();
-								Tracer.Pop ();
 								if (resolvedExternal != null) {
 									type = resolvedExternal;
 									break;
@@ -214,7 +206,7 @@ namespace Mono.Linker.Steps {
 		void MatchExportedType (ExportedType exportedType, ModuleDefinition module, Regex regex, XPathNavigator nav)
 		{
 			if (regex.Match (exportedType.FullName).Success) {
-				MarkingHelpers.MarkExportedType (exportedType, module);
+				MarkingHelpers.MarkExportedType (exportedType, module, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 				TypeDefinition type = exportedType.Resolve ();
 				if (type != null) {
 					ProcessType (type, nav);
@@ -257,21 +249,19 @@ namespace Mono.Linker.Steps {
 				Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {type.FullName} ({existingLevel}).  Duplicate uses ({duplicateLevel})"); 
 			} 
 
-			Annotations.MarkAndPush (type);
-			Tracer.AddDirectDependency (this, type);
+			Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 
 			if (type.IsNested) {
-				var parent = type;
-				while (parent.IsNested) {
-					parent = parent.DeclaringType;
-					Annotations.Mark (parent);
+				var currentType = type;
+				while (currentType.IsNested) {
+					var parent = currentType.DeclaringType;
+					Context.Annotations.Mark (parent, new DependencyInfo (DependencyKind.DeclaringType, currentType));
+					currentType = parent;
 				}
 			}
 
 			if (preserve != TypePreserve.Nothing)
 				Annotations.SetPreserve (type, preserve);
-
-			Tracer.Pop ();
 		}
 
 		void MarkSelectedFields (XPathNavigator nav, TypeDefinition type)
@@ -363,7 +353,7 @@ namespace Mono.Linker.Steps {
 				if (Annotations.IsMarked (field))
 					Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {field.FullName}");
 				
-				Annotations.Mark (field);
+				Context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 			} else {
 				AddUnresolveMarker (string.Format ("T: {0}; F: {1}", type, signature));
 			}
@@ -435,9 +425,8 @@ namespace Mono.Linker.Steps {
 			if (Annotations.IsMarked (method)) 
 				Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {method.FullName}"); 
 
-			Annotations.Mark (method);
+			Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 			Annotations.MarkIndirectlyCalledMethod (method);
-			Tracer.AddDirectDependency (this, method);
 			Annotations.SetAction (method, MethodAction.Parse);
 		}
 
@@ -525,7 +514,7 @@ namespace Mono.Linker.Steps {
 				if (Annotations.IsMarked (@event))
 					Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {@event.FullName}");
 
-				Annotations.Mark (@event);
+				Annotations.Mark (@event, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 
 				MarkMethod (@event.AddMethod);
 				MarkMethod (@event.RemoveMethod);
@@ -593,7 +582,7 @@ namespace Mono.Linker.Steps {
 				if (Annotations.IsMarked (property))
 					Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {property.FullName}");
 				
-				Annotations.Mark (property);
+				Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 
 				MarkPropertyAccessors (type, property, accessors);
 			} else
