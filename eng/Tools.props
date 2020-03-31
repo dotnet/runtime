@@ -5,9 +5,6 @@
     <_RepoToolManifest Condition="'$(ContinuousIntegrationBuild)' == 'true'" />
   </PropertyGroup>
 
-  <!-- Import to have access to properties/items used both during the Arcade phase and in the repo. -->
-  <Import Project="$(MSBuildThisFileDirectory)Configurations.props" />
-
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
   </ItemGroup>
@@ -16,13 +13,6 @@
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Feed" Version="$(MicrosoftDotNetBuildTasksFeedVersion)" />
     <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksVersion)" />
-
-    <!-- SourceLink -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
-    <PackageReference Include="Microsoft.SourceLink.AzureRepos.Git" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)restore\configurations.targets" />
 </Project>

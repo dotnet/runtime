@@ -90,7 +90,7 @@ crossBuild=0
 source $scriptroot/native/init-os-and-arch.sh
 
 # Check if an action is passed in
-declare -a actions=("r" "restore" "testnobuild" "sign" "publish" "clean")
+declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
 actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 
 while [[ $# > 0 ]]; do

@@ -59,7 +59,7 @@
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">llvm-</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)runtime-corelib-package</DefaultMonoSubsets>
 
-    <DefaultLibrariesSubsets>depproj-native-ref-src</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>native-ref-src</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(DefaultLibrariesSubsets)-apicompat</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">$(DefaultLibrariesSubsets)-pretest</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(IncludeLibrariesTestSubset)' == 'true'">$(DefaultLibrariesSubsets)-test</DefaultLibrariesSubsets>
@@ -90,7 +90,6 @@
 
   <ItemGroup>
     <!-- Libraries -->
-    <SubsetName Include="DepProj" Category="Libraries" Description="The upfront restore projects which are necessary to compose the libraries." />
     <SubsetName Include="Native" Category="Libraries" Description="The native libraries used in the shared framework." />
     <SubsetName Include="Ref" Category="Libraries" Description="The managed reference libraries." />
     <SubsetName Include="Src" Category="Libraries" Description="The managed implementation libraries." />
@@ -206,7 +205,7 @@
   </ItemGroup>
 
   <!-- Libraries sets -->
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-depproj-'))">
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries'))">
     <LibrariesRestoreProject Include="$(LibrariesProjectRoot)restore\depproj.proj">
       <AdditionalProperties Condition="'$(LibrariesConfiguration)' != ''">Configuration=$(LibrariesConfiguration)</AdditionalProperties>
     </LibrariesRestoreProject>

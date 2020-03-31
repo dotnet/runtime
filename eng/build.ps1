@@ -114,7 +114,7 @@ if ($vs) {
 }
 
 # Check if an action is passed in
-$actions = "r","restore","sign","testnobuild","publish","clean"
+$actions = "b","build","r","restore","rebuild","sign","testnobuild","publish","clean"
 $actionPassedIn = @(Compare-Object -ReferenceObject @($PSBoundParameters.Keys) -DifferenceObject $actions -ExcludeDifferent -IncludeEqual).Length -ne 0
 if ($null -ne $properties -and $actionPassedIn -ne $true) {
   $actionPassedIn = @(Compare-Object -ReferenceObject $properties -DifferenceObject $actions.ForEach({ "-" + $_ }) -ExcludeDifferent -IncludeEqual).Length -ne 0
