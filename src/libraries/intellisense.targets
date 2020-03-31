@@ -1,4 +1,8 @@
 <Project>
+  <!-- We are reseting the target framework, so we need to reset the properties derived by the sdk
+    eg TargetFrameworkIdentifier, TargetFrameworkVersion. In order to do that we are copying the sdk
+    parsing code https://github.com/dotnet/sdk/blob/master/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.TargetFrameworkInference.targets#L47
+  -->
   <PropertyGroup>
     <_UnsupportedTargetFrameworkError></_UnsupportedTargetFrameworkError>
     <TargetFrameworkIdentifier></TargetFrameworkIdentifier>
