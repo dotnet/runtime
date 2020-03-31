@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Cryptography;
-using System.Diagnostics;
 using System.IO;
-using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -87,31 +85,6 @@ namespace System.Security.Cryptography
         private void ImportKeyBlob(byte[] ecfullKeyBlob, string curveName, bool includePrivateParameters)
         {
             Key = ECCng.ImportKeyBlob(ecfullKeyBlob, curveName, includePrivateParameters);
-        }
-
-        private void ImportLimitedPrivateKeyBlob(in ECParameters ecParams)
-        {
-            Debug.Assert(ecParams.Q.X is null && ecParams.Q.Y is null);
-            using AsnWriter writer = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParams);
-            int length = writer.GetEncodedLength();
-            byte[] pkcs8Buffer = CryptoPool.Rent(length);
-
-            try
-            {
-                if (!writer.TryEncode(pkcs8Buffer, out int encodedWritten))
-                {
-                    Debug.Fail("Pre-allocated encode buffer was too small.");
-                    throw new CryptographicException();
-                }
-
-                Debug.Assert(encodedWritten == length);
-                ImportPkcs8PrivateKey(pkcs8Buffer, out int bytesRead);
-                Debug.Assert(bytesRead == encodedWritten);
-            }
-            finally
-            {
-                CryptoPool.Return(pkcs8Buffer, length);
-            }
         }
 
         private byte[] ExportKeyBlob(bool includePrivateParameters)

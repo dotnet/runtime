@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
-using System.Security.Cryptography.Asn1;
 using static Internal.NativeCrypto.BCryptNative;
 
 namespace System.Security.Cryptography
@@ -54,31 +53,6 @@ namespace System.Security.Cryptography
 
                 _key.SetHandle(keyHandle, ECCng.EcdhCurveNameToAlgorithm(curveName));
                 ForceSetKeySize(_key.KeySize);
-            }
-
-            private void ImportLimitedPrivateKeyBlob(in ECParameters ecParams)
-            {
-                Debug.Assert(ecParams.Q.X is null && ecParams.Q.Y is null);
-                using AsnWriter writer = EccKeyFormatHelper.WritePkcs8PrivateKey(ecParams);
-                int length = writer.GetEncodedLength();
-                byte[] pkcs8Buffer = CryptoPool.Rent(length);
-
-                try
-                {
-                    if (!writer.TryEncode(pkcs8Buffer, out int encodedWritten))
-                    {
-                        Debug.Fail("Pre-allocated encode buffer was too small.");
-                        throw new CryptographicException();
-                    }
-
-                    Debug.Assert(encodedWritten == length);
-                    ImportPkcs8PrivateKey(pkcs8Buffer, out int bytesRead);
-                    Debug.Assert(bytesRead == encodedWritten);
-                }
-                finally
-                {
-                    CryptoPool.Return(pkcs8Buffer, length);
-                }
             }
 
             private byte[] ExportKeyBlob(bool includePrivateParameters)

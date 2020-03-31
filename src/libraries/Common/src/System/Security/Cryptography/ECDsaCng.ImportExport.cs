@@ -42,21 +42,26 @@ namespace System.Security.Cryptography
                     byte[] ecExplicitBlob = ECCng.GetPrimeCurveBlob(ref parameters, ecdh: false);
                     ImportFullKeyBlob(ecExplicitBlob, includePrivateParameters);
                 }
-                else if (curve.IsNamed && hasPublicParameters)
+                else if (curve.IsNamed)
                 {
                     // FriendlyName is required; an attempt was already made to default it in ECCurve
                     if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
                         throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value!.ToString()));
 
-                    byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref parameters, ecdh: false);
-                    ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, includePrivateParameters);
-                }
-                else if (curve.IsNamed && !hasPublicParameters && includePrivateParameters)
-                {
-                    // Import through PKCS8 so that the public key can be reconstructed from the
-                    // private key if the public ECPoint is not specified.
-
-                    ImportLimitedPrivateKeyBlob(parameters);
+                    if (!hasPublicParameters && includePrivateParameters)
+                    {
+                        byte[] zero = new byte[parameters.D!.Length];
+                        ECParameters ecParamsCopy = parameters;
+                        ecParamsCopy.Q.X = zero;
+                        ecParamsCopy.Q.Y = zero;
+                        byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref ecParamsCopy, ecdh: false);
+                        ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, true);
+                    }
+                    else
+                    {
+                        byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref parameters, ecdh: false);
+                        ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, includePrivateParameters);
+                    }
                 }
                 else
                 {
