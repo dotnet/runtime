@@ -1130,6 +1130,13 @@ enum class PhaseChecks
     CHECK_ALL
 };
 
+// Specify compiler data that a phase might modify
+enum class PhaseStatus : unsigned
+{
+    MODIFIED_NOTHING,
+    MODIFIED_EVERYTHING
+};
+
 // The following enum provides a simple 1:1 mapping to CLR API's
 enum API_ICorJitInfo_Names
 {
@@ -3682,7 +3689,7 @@ protected:
                                        bool                  mustExpand);
 
 protected:
-    bool compSupportsHWIntrinsic(InstructionSet isa);
+    bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -4367,31 +4374,35 @@ public:
 
     void fgInit();
 
-    void fgImport();
+    PhaseStatus fgImport();
 
-    void fgTransformIndirectCalls();
+    PhaseStatus fgTransformIndirectCalls();
 
-    void fgTransformPatchpoints();
+    PhaseStatus fgTransformPatchpoints();
 
-    void fgInline();
+    PhaseStatus fgInline();
 
-    void fgRemoveEmptyTry();
+    PhaseStatus fgRemoveEmptyTry();
 
-    void fgRemoveEmptyFinally();
+    PhaseStatus fgRemoveEmptyFinally();
 
-    void fgMergeFinallyChains();
+    PhaseStatus fgMergeFinallyChains();
 
-    void fgCloneFinally();
+    PhaseStatus fgCloneFinally();
 
     void fgCleanupContinuation(BasicBlock* continuation);
 
-    void fgUpdateFinallyTargetFlags();
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
+    PhaseStatus fgUpdateFinallyTargetFlags();
 
     void fgClearAllFinallyTargetBits();
 
     void fgAddFinallyTargetFlags();
 
-    void fgTailMergeThrows();
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
+    PhaseStatus fgTailMergeThrows();
     void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                             BasicBlock* nonCanonicalBlock,
                                             BasicBlock* canonicalBlock,
@@ -4436,6 +4447,8 @@ public:
 
     void fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw);
     void fgMorphBlocks();
+
+    void fgMergeBlockReturn(BasicBlock* block);
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
 
@@ -8298,7 +8311,7 @@ private:
         return false;
     }
 
-    bool compSupports(InstructionSet isa) const
+    bool compSupports(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (opts.compSupportsISA & (1ULL << isa)) != 0;
@@ -8306,6 +8319,8 @@ private:
         return false;
 #endif
     }
+
+    void notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
 
     bool canUseVexEncoding() const
     {
@@ -8407,11 +8422,13 @@ public:
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         uint64_t compSupportsISA;
-        void setSupportedISA(InstructionSet isa)
-        {
-            compSupportsISA |= 1ULL << isa;
-        }
 #endif
+        void setSupportedISAs(CORINFO_InstructionSetFlags isas)
+        {
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+            compSupportsISA = isas.GetFlagsRaw();
+#endif
+        }
 
         unsigned compFlags; // method attributes
         unsigned instrCount;
@@ -9571,14 +9588,14 @@ public:
 private:
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#if defined(DEBUG) || defined(INLINE_DATA)
     // These variables are associated with maintaining SQM data about compile time.
     unsigned __int64 m_compCyclesAtEndOfInlining; // The thread-virtualized cycle count at the end of the inlining phase
                                                   // in the current compilation.
     unsigned __int64 m_compCycles;                // Net cycle count for current compilation
     DWORD m_compTickCountAtEndOfInlining; // The result of GetTickCount() (# ms since some epoch marker) at the end of
                                           // the inlining phase in the current compilation.
-#endif                                    // defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#endif                                    // defined(DEBUG) || defined(INLINE_DATA)
 
     // Records the SQM-relevant (cycles and tick count).  Should be called after inlining is complete.
     // (We do this after inlining because this marks the last point at which the JIT is likely to cause
@@ -9586,11 +9603,6 @@ private:
     void RecordStateAtEndOfInlining();
     // Assumes being called at the end of compilation.  Update the SQM state.
     void RecordStateAtEndOfCompilation();
-
-#ifdef FEATURE_CLRSQM
-    // Does anything SQM related necessary at process shutdown time.
-    static void ProcessShutdownSQMWork(ICorStaticInfo* statInfo);
-#endif // FEATURE_CLRSQM
 
 public:
 #if FUNC_INFO_LOGGING

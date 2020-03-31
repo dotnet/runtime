@@ -44,7 +44,7 @@ set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 :: Default __Exclude to issues.targets
 set __Exclude=%__TestDir%\issues.targets
 
-REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:__BuildArch=x64)
+REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:TargetArchitecture=x64)
 set "__args= %*"
 set processedArgs=
 set __UnprocessedBuildArgs=
@@ -52,6 +52,8 @@ set __CommonMSBuildArgs=
 
 set __SkipRestorePackages=
 set __SkipManaged=
+set __SkipTestWrappers=
+set __BuildTestWrappersOnly=
 set __SkipNative=
 set __RuntimeId=
 set __TargetsWindows=1
@@ -95,7 +97,9 @@ if /i "%1" == "ci"                    (set __ArcadeScriptArgs="-ci"&set __ErrMsg
 
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"            (set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skiptestwrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildtesthostonly"     (set __SkipNative=1&set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages switch&&exit /b1)
 if /i "%1" == "skiprestorepackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen"              (set __DoCrossgen=1&set __TestBuildMode=crossgen&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -137,8 +141,8 @@ if "%__TargetsWindows%"=="1" (
 
 @if defined _echo @echo on
 
-set __CommonMSBuildArgs=/p:__TargetOS=%__TargetOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch%
-set __msbuildArgs=/p:__TargetOS=%__TargetOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch% /nologo /verbosity:minimal /clp:Summary /maxcpucount
+set __CommonMSBuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch%
+set __msbuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch% /nologo /verbosity:minimal /clp:Summary /maxcpucount
 
 echo %__MsgPrefix%Commencing CoreCLR test build
 
@@ -291,7 +295,6 @@ set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging='!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!'
 
-REM Disable warnAsError - coreclr issue 19922
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
   %__ProjectDir%\tests\build.proj -warnAsError:0 /t:BatchRestorePackages /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
@@ -351,7 +354,6 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
     set __TestGroupToBuild=%%G
 
     if not "%__CopyNativeTestBinaries%" == "1" (
-        REM Disable warnAsError - coreclr issue 19922
         set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! -warnAsError:0
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /nodeReuse:false
@@ -377,7 +379,6 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
             goto     :Exit_Failure
         )
     ) else (
-        REM Disable warnAsError - coreclr issue 19922
         set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__SkipFXRestoreArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
@@ -480,8 +481,12 @@ REM === Create test wrappers.
 REM ===
 REM =========================================================================================
 
-if defined __SkipManaged goto SkipBuildingWrappers
+if defined __BuildTestWrappersOnly goto BuildTestWrappers
 
+if defined __SkipManaged goto SkipBuildingWrappers
+if defined __SkipTestWrappers goto SkipBuildingWrappers
+
+:BuildTestWrappers
 echo %__MsgPrefix%Creating test wrappers
 
 set __BuildLogRootName=Tests_XunitWrapper
@@ -514,6 +519,7 @@ REM ===
 REM =========================================================================================
 
 if defined __SkipCrossgenFramework goto SkipCrossgen
+if defined __BuildTestWrappersOnly goto SkipCrossgen
 
 set __CrossgenArg = ""
 if defined __DoCrossgen (

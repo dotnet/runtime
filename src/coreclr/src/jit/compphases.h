@@ -38,6 +38,7 @@ CompPhaseNameMacro(PHASE_EMPTY_TRY,              "Remove empty try",            
 CompPhaseNameMacro(PHASE_EMPTY_FINALLY,          "Remove empty finally",           "EMPTYFIN", false, -1, false)
 CompPhaseNameMacro(PHASE_MERGE_FINALLY_CHAINS,   "Merge callfinally chains",       "MRGCFCHN", false, -1, false)
 CompPhaseNameMacro(PHASE_CLONE_FINALLY,          "Clone finally",                  "CLONEFIN", false, -1, false)
+CompPhaseNameMacro(PHASE_UPDATE_FINALLY_FLAGS,   "Update finally target flags",    "UPD-FTF",  false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_PREDS,          "Compute preds",                  "PREDS",    false, -1, false)
 CompPhaseNameMacro(PHASE_EARLY_UPDATE_FLOW_GRAPH,"Update flow graph early pass",   "UPD-FG-E", false, -1, false)
 CompPhaseNameMacro(PHASE_STR_ADRLCL,             "Morph - Structs/AddrExp",        "MOR-STRAL",false, -1, false)

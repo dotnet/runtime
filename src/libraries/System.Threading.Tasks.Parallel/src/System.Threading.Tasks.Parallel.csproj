@@ -2,7 +2,6 @@
   <PropertyGroup>
     <RootNamespace>System.Threading.Tasks.Parallel</RootNamespace>
     <AssemblyName>System.Threading.Tasks.Parallel</AssemblyName>
-    <FileAlignment>512</FileAlignment>
     <DefineConstants>$(DefineConstants);CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>

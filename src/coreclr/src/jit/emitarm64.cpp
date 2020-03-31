@@ -4504,27 +4504,30 @@ void emitter::emitIns_R_R(
         case INS_fcmgt:
         case INS_fcmle:
         case INS_fcmlt:
+        case INS_frecpe:
+        case INS_frsqrte:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
-                assert((elemsize == EA_8BYTE) || (elemsize == EA_4BYTE)); // Only Double/Float supported
-                assert(opt != INS_OPTS_1D);                               // Reserved encoding
+                assert(isValidVectorElemsizeFloat(elemsize)); // Only Double/Float supported
+                assert(opt != INS_OPTS_1D);                   // Reserved encoding
                 fmt = IF_DV_2A;
             }
             else
             {
-                NYI("Untested");
                 // Scalar operation
-                assert((size == EA_8BYTE) || (size == EA_4BYTE)); // Only Double/Float supported
+                assert(isValidScalarDatasize(size)); // Only Double/Float supported
+                assert(insOptsNone(opt));
                 fmt = IF_DV_2G;
             }
             break;
+
         case INS_aesd:
         case INS_aese:
         case INS_aesmc:
@@ -4584,6 +4587,25 @@ void emitter::emitIns_R_R(
             // Load single structure and replicate  base register
             reg2 = encodingSPtoZR(reg2);
             fmt  = IF_LS_2D;
+            break;
+
+        case INS_urecpe:
+        case INS_ursqrte:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidVectorDatasize(size));
+            assert(isValidArrangement(size, opt));
+            elemsize = optGetElemsize(opt);
+            assert(elemsize == EA_4BYTE);
+            fmt = IF_DV_2A;
+            break;
+
+        case INS_frecpx:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidScalarDatasize(size));
+            assert(insOptsNone(opt));
+            fmt = IF_DV_2G;
             break;
 
         default:
@@ -5532,6 +5554,8 @@ void emitter::emitIns_R_R_R(
         case INS_fcmeq:
         case INS_fcmge:
         case INS_fcmgt:
+        case INS_frecps:
+        case INS_frsqrts:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -12151,7 +12175,16 @@ void emitter::emitDispIns(
         case IF_DV_2L: // DV_2L   ........XX...... ......nnnnnddddd      Vd Vn      (abs, neg - scalar)
             elemsize = id->idOpSize();
             emitDispReg(id->idReg1(), elemsize, true);
-            emitDispReg(id->idReg2(), elemsize, false);
+            if ((ins == INS_fcmeq) || (ins == INS_fcmge) || (ins == INS_fcmgt) || (ins == INS_fcmle) ||
+                (ins == INS_fcmlt))
+            {
+                emitDispReg(id->idReg2(), elemsize, true);
+                emitDispImm(0, false);
+            }
+            else
+            {
+                emitDispReg(id->idReg2(), elemsize, false);
+            }
             break;
 
         case IF_DV_2H: // DV_2H   X........X...... ......nnnnnddddd      Rd Vn      (fmov, fcvtXX - to general)
@@ -13516,6 +13549,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fcmgt:
                 case INS_fcmle:
                 case INS_fcmlt:
+                case INS_frecpe:
+                case INS_frsqrte:
+                case INS_urecpe:
+                case INS_ursqrte:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
@@ -13580,6 +13617,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
 
+                case INS_frecpe:
+                case INS_frecpx:
+                case INS_frsqrte:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
                 case INS_fsqrt:
                     if (id->idOpSize() == EA_8BYTE)
                     {
@@ -13629,6 +13673,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fmulx:
                 case INS_fmla:
                 case INS_fmls:
+                case INS_frecps:
+                case INS_frsqrts:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
@@ -13718,6 +13764,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fmul:
                 case INS_fmulx:
                 case INS_fnmul:
+                case INS_frecps:
+                case INS_frsqrts:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;

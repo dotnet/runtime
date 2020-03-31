@@ -5,16 +5,4 @@
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Configuration.Abstractions" />
-    <Reference Include="Microsoft.Extensions.Configuration.Binder" />
-    <Reference Include="Microsoft.Extensions.Configuration" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection" />
-    <Reference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
-    <Reference Include="Microsoft.Extensions.Options.DataAnnotations" />
-    <Reference Include="Microsoft.Extensions.Options" />
-    <Reference Include="Microsoft.Extensions.Primitives" />
-  </ItemGroup>
-
 </Project>

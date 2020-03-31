@@ -4,7 +4,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Logging.Configuration.cs" />
-    <Reference Include="Microsoft.Extensions.Logging"  />
-    <Reference Include="Microsoft.Extensions.Options.ConfigurationExtensions"  />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Configuration.Abstractions\ref\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.DependencyInjection.Abstractions\ref\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Logging\ref\Microsoft.Extensions.Logging.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Options.ConfigurationExtensions\ref\Microsoft.Extensions.Options.ConfigurationExtensions.csproj" />
   </ItemGroup>
 </Project>

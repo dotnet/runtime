@@ -1409,6 +1409,13 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 		mono_error_set_pending_exception (error);
 		return FALSE;
 	}
+
+#ifdef DISABLE_THREADS
+	if (ms == MONO_INFINITE_WAIT) {
+		mono_error_set_synchronization_lock (error, "Cannot wait on monitors on this runtime.");
+		return FALSE;
+	}
+#endif
 	
 	LOCK_DEBUG (g_message ("%s: (%d) queuing handle %p", __func__, id, event));
 

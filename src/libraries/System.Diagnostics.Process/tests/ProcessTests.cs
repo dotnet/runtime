@@ -226,6 +226,7 @@ namespace System.Diagnostics.Tests
 
                         px.Kill();
                         Assert.True(px.WaitForExit(WaitInMS));
+                        px.WaitForExit(); // wait for event handlers to complete
                     }
                 }
             }
@@ -1407,6 +1408,9 @@ namespace System.Diagnostics.Tests
                 process.BeginOutputReadLine();
 
                 Assert.True(process.Start());
+
+                Assert.True(process.WaitForExit(WaitInMS));
+                process.WaitForExit(); // ensure event handlers have completed
             }
         }
 

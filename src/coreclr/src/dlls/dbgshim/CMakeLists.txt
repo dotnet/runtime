@@ -35,10 +35,10 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
-if(CLR_CMAKE_HOST_DARWIN)
+if(CLR_CMAKE_HOST_OSX)
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-endif(CLR_CMAKE_HOST_DARWIN)
+endif(CLR_CMAKE_HOST_OSX)
 
 add_library_clr(dbgshim SHARED ${DBGSHIM_SOURCES})
 
@@ -83,5 +83,4 @@ endif(CLR_CMAKE_HOST_WIN32)
 target_link_libraries(dbgshim ${DBGSHIM_LIBRARIES})
 
 # add the install targets
-install_clr(TARGETS dbgshim)
-install_clr(TARGETS dbgshim DESTINATION sharedFramework)
+install_clr(TARGETS dbgshim ADDITIONAL_DESTINATION sharedFramework)

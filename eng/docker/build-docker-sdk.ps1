@@ -6,7 +6,8 @@
 Param(
   [string][Alias('t')]$imageName = "dotnet-sdk-libs-current",
   [string][Alias('c')]$configuration = "Release",
-  [switch][Alias('w')]$buildWindowsContainers
+  [switch][Alias('w')]$buildWindowsContainers,
+  [switch][Alias('pa')]$privateAspNetCore
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,17 +23,38 @@ if ($buildWindowsContainers)
   & "$REPO_ROOT_DIR/libraries.cmd" -ci -c $configuration -runtimeConfiguration release
   
   # Dockerize the build artifacts
-  docker build --tag $imageName `
+  if($privateAspNetCore)
+  {
+    docker build --tag $imageName `
+      --build-arg CONFIGURATION=$configuration `
+      --build-arg TESTHOST_LOCATION=. `
+      --file "$PSScriptRoot/libraries-sdk-aspnetcore.windows.Dockerfile" `
+      "$REPO_ROOT_DIR/artifacts/bin/testhost"
+  }
+  else
+  {
+    docker build --tag $imageName `
       --build-arg CONFIGURATION=$configuration `
       --build-arg TESTHOST_LOCATION=. `
       --file "$PSScriptRoot/libraries-sdk.windows.Dockerfile" `
       "$REPO_ROOT_DIR/artifacts/bin/testhost"
+  }
 }
 else 
 {
   # Docker build libraries and copy to dotnet sdk image
+  if($privateAspNetCore)
+  {
+    docker build --tag $imageName `
+      --build-arg CONFIGURATION=$configuration `
+      --file "$PSScriptRoot/libraries-sdk-aspnetcore.linux.Dockerfile" `
+      $REPO_ROOT_DIR
+  }
+  else
+  {
   docker build --tag $imageName `
       --build-arg CONFIGURATION=$configuration `
       --file "$PSScriptRoot/libraries-sdk.linux.Dockerfile" `
       $REPO_ROOT_DIR
+  }
 }

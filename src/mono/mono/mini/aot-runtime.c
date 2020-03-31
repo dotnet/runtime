@@ -71,6 +71,7 @@
 #include "aot-runtime.h"
 #include "jit-icalls.h"
 #include "mini-runtime.h"
+#include "mono-private-unstable.h"
 #include "llvmonly-runtime.h"
 
 #ifndef DISABLE_AOT
@@ -6077,7 +6078,11 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		}
 	}
 
-	code = get_call_table_entry (amodule->unbox_trampoline_addresses, entry_index, amodule->info.call_table_entry_size);
+	if (amodule->info.flags & MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY)
+		code = ((gpointer*)amodule->unbox_trampoline_addresses) [entry_index];
+	else
+		code = get_call_table_entry (amodule->unbox_trampoline_addresses, entry_index, amodule->info.call_table_entry_size);
+
 	g_assert (code);
 
 	tinfo = mono_tramp_info_create (NULL, (guint8 *)code, 0, NULL, NULL);

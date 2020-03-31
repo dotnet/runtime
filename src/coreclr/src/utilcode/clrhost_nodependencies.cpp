@@ -69,26 +69,19 @@ thread_local ClrDebugState* t_pClrDebugState;
 // Fls callback to deallocate ClrDebugState when our FLS block goes away.
 void FreeClrDebugState(LPVOID pTlsData)
 {
-#ifdef _DEBUG
     ClrDebugState *pClrDebugState = (ClrDebugState*)pTlsData;
 
     // Make sure the ClrDebugState was initialized by a compatible version of
     // utilcode.lib. If it was initialized by an older version, we just let it leak.
     if (pClrDebugState && (pClrDebugState->ViolationMask() & CanFreeMe) && !(pClrDebugState->ViolationMask() & BadDebugState))
     {
-#undef HeapFree
-#undef GetProcessHeap
-
         // Since "!(pClrDebugState->m_violationmask & BadDebugState)", we know we have
         // a valid m_pLockData
         _ASSERTE(pClrDebugState->GetDbgStateLockData() != NULL);
-        ::HeapFree (GetProcessHeap(), 0, pClrDebugState->GetDbgStateLockData());
+        HeapFree(GetProcessHeap(), 0, pClrDebugState->GetDbgStateLockData());
 
-        ::HeapFree (GetProcessHeap(), 0, pClrDebugState);
-#define HeapFree(hHeap, dwFlags, lpMem) Dont_Use_HeapFree(hHeap, dwFlags, lpMem)
-#define GetProcessHeap() Dont_Use_GetProcessHeap()
+        HeapFree(GetProcessHeap(), 0, pClrDebugState);
     }
-#endif //_DEBUG
 }
 
 //=============================================================================================
@@ -109,22 +102,18 @@ ClrDebugState *CLRInitDebugState()
     gBadClrDebugState.SetOkToThrow();
 
     ClrDebugState *pNewClrDebugState = NULL;
-    ClrDebugState *pClrDebugState    = NULL;
-    DbgStateLockData    *pNewLockData      = NULL;
+    ClrDebugState *pClrDebugState = NULL;
+    DbgStateLockData *pNewLockData = NULL;
 
     // Yuck. We cannot call the hosted allocator for ClrDebugState (it is impossible to maintain a guarantee
     // that none of code paths, many of them called conditionally, don't themselves trigger a ClrDebugState creation.)
     // We have to call the OS directly for this.
-#undef HeapAlloc
-#undef GetProcessHeap
-    pNewClrDebugState = (ClrDebugState*)::HeapAlloc(GetProcessHeap(), 0, sizeof(ClrDebugState));
+    pNewClrDebugState = (ClrDebugState*)HeapAlloc(GetProcessHeap(), 0, sizeof(ClrDebugState));
     if (pNewClrDebugState != NULL)
     {
         // Only allocate a DbgStateLockData if its owning ClrDebugState was successfully allocated
-        pNewLockData  = (DbgStateLockData *)::HeapAlloc(GetProcessHeap(), 0, sizeof(DbgStateLockData));
+        pNewLockData  = (DbgStateLockData *)HeapAlloc(GetProcessHeap(), 0, sizeof(DbgStateLockData));
     }
-#define GetProcessHeap() Dont_Use_GetProcessHeap()
-#define HeapAlloc(hHeap, dwFlags, dwBytes) Dont_Use_HeapAlloc(hHeap, dwFlags, dwBytes)
 
     if ((pNewClrDebugState != NULL) && (pNewLockData != NULL))
     {
@@ -175,7 +164,6 @@ ClrDebugState *CLRInitDebugState()
 
     t_pClrDebugState = pClrDebugState;
 
-#if defined(_DEBUG)
     // The ClrDebugState we allocated above made it into FLS iff
     //      the DbgStateLockData we allocated above made it into
     //      the FLS's ClrDebugState::m_pLockData
@@ -207,29 +195,19 @@ ClrDebugState *CLRInitDebugState()
     // we'll never have a DbgStateLockData without a ClrDebugState
     _ASSERTE((pNewLockData == NULL) || (pNewClrDebugState != NULL));
 
-#endif //_DEBUG
-
-#undef HeapFree
-#undef GetProcessHeap
     if (pNewClrDebugState != NULL && pClrDebugState != pNewClrDebugState)
     {
         // We allocated a ClrDebugState which didn't make it into FLS, so free it.
-        ::HeapFree (GetProcessHeap(), 0, pNewClrDebugState);
+        HeapFree(GetProcessHeap(), 0, pNewClrDebugState);
         if (pNewLockData != NULL)
         {
             // We also allocated a DbgStateLockData that didn't make it into FLS, so
             // free it, too.  (Remember, we asserted above that we can only have
             // this unused DbgStateLockData if we had an unused ClrDebugState
             // as well (which we just freed).)
-            ::HeapFree (GetProcessHeap(), 0, pNewLockData);
+            HeapFree(GetProcessHeap(), 0, pNewLockData);
         }
     }
-#define HeapFree(hHeap, dwFlags, lpMem) Dont_Use_HeapFree(hHeap, dwFlags, lpMem)
-#define GetProcessHeap() Dont_Use_GetProcessHeap()
-
-    // Not necessary as TLS slots are born NULL and potentially problematic for OOM cases as we can't
-    // take an exception here.
-    //ClrFlsSetValue(TlsIdx_OwnedCrstsChain, NULL);
 
     return pClrDebugState;
 } // CLRInitDebugState
@@ -241,6 +219,92 @@ const NoThrow nothrow = { 0 };
 #ifdef HAS_ADDRESS_SANITIZER
 // use standard heap functions for address santizier
 #else
+
+#ifdef _DEBUG
+#ifdef TARGET_X86
+#define OS_HEAP_ALIGN 8
+#else
+#define OS_HEAP_ALIGN 16
+#endif
+#define CLRALLOC_TAG 0x2ce145f1
+#endif
+
+#ifdef HOST_WINDOWS
+static HANDLE g_hProcessHeap;
+#endif
+
+FORCEINLINE void* ClrMalloc(size_t size)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+#ifdef FAILPOINTS_ENABLED
+    if (RFS_HashStack())
+        return NULL;
+#endif
+
+    void* p;
+
+#ifdef _DEBUG
+    size += OS_HEAP_ALIGN;
+#endif
+
+#ifdef HOST_WINDOWS
+    HANDLE hHeap = g_hProcessHeap;
+    if (hHeap == NULL)
+    {
+        InterlockedCompareExchangeT(&g_hProcessHeap, ::GetProcessHeap(), NULL);
+        hHeap = g_hProcessHeap;
+    }
+
+    p = HeapAlloc(hHeap, 0, size);
+#else
+    p = malloc(size);
+#endif
+
+#ifdef _DEBUG
+    // Store the tag to detect heap contamination
+    if (p != NULL)
+    {
+        *((DWORD*)p) = CLRALLOC_TAG;
+        p = (BYTE*)p + OS_HEAP_ALIGN;
+    }
+#endif
+
+#ifndef SELF_NO_HOST
+    if (p == NULL
+        // If we have not created StressLog ring buffer, we should not try to use it.
+        // StressLog is going to do a memory allocation.  We may enter an endless loop.
+        && StressLog::t_pCurrentThreadLog != NULL)
+    {
+        STRESS_LOG_OOM_STACK(size);
+    }
+#endif
+
+    return p;
+}
+
+FORCEINLINE void ClrFree(void* p)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+#ifdef _DEBUG
+    if (p != NULL)
+    {
+        // Check the heap handle to detect heap contamination
+        p = (BYTE*)p - OS_HEAP_ALIGN;
+        if (*((DWORD*)p) != CLRALLOC_TAG)
+            _ASSERTE(!"Heap contamination detected! HeapFree was called on a heap other than the one that memory was allocated from.\n"
+                "Possible cause: you used new (executable) to allocate the memory, but didn't use DeleteExecutable() to free it.");
+    }
+#endif
+
+#ifdef HOST_WINDOWS
+    if (p != NULL)
+        HeapFree(g_hProcessHeap, 0, p);
+#else
+    free(p);
+#endif
+}
 
 void * __cdecl
 operator new(size_t n)
@@ -254,7 +318,7 @@ operator new(size_t n)
     STATIC_CONTRACT_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
-    void * result = ClrAllocInProcessHeap(0, S_SIZE_T(n));
+    void* result = ClrMalloc(n);
     if (result == NULL) {
         ThrowOutOfMemory();
     }
@@ -274,7 +338,7 @@ operator new[](size_t n)
     STATIC_CONTRACT_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
-    void * result = ClrAllocInProcessHeap(0, S_SIZE_T(n));
+    void* result = ClrMalloc(n);
     if (result == NULL) {
         ThrowOutOfMemory();
     }
@@ -297,7 +361,7 @@ void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
-    void * result = ClrAllocInProcessHeap(0, S_SIZE_T(n));
+    void* result = ClrMalloc(n);
 #endif // HAS_ADDRESS_SANITIZER
 	TRASH_LASTERROR;
     return result;
@@ -316,7 +380,7 @@ void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
 
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
-    void * result = ClrAllocInProcessHeap(0, S_SIZE_T(n));
+    void* result = ClrMalloc(n);
 #endif // HAS_ADDRESS_SANITIZER
 	TRASH_LASTERROR;
     return result;
@@ -332,8 +396,8 @@ operator delete(void *p) NOEXCEPT
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
-    if (p != NULL)
-        ClrFreeInProcessHeap(0, p);
+    ClrFree(p);
+
     TRASH_LASTERROR;
 }
 
@@ -344,19 +408,50 @@ operator delete[](void *p) NOEXCEPT
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
-    if (p != NULL)
-        ClrFreeInProcessHeap(0, p);
+    ClrFree(p);
     TRASH_LASTERROR;
 }
 
 #endif // HAS_ADDRESS_SANITIZER
 
-
 /* ------------------------------------------------------------------------ *
  * New operator overloading for the executable heap
  * ------------------------------------------------------------------------ */
 
-#ifndef TARGET_UNIX
+#ifdef HOST_WINDOWS
+
+HANDLE ClrGetProcessExecutableHeap()
+{
+    // Note: this can be called a little early for real contracts, so we use static contracts instead.
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    static HANDLE g_ExecutableHeapHandle;
+
+    //
+    // Create the executable heap lazily
+    //
+    if (g_ExecutableHeapHandle == NULL)
+    {
+
+        HANDLE ExecutableHeapHandle = HeapCreate(
+            HEAP_CREATE_ENABLE_EXECUTE,                 // heap allocation attributes
+            0,                                          // initial heap size
+            0                                           // maximum heap size; 0 == growable
+        );
+
+        if (ExecutableHeapHandle == NULL)
+            return NULL;
+
+        HANDLE ExistingValue = InterlockedCompareExchangeT(&g_ExecutableHeapHandle, ExecutableHeapHandle, NULL);
+        if (ExistingValue != NULL)
+        {
+            HeapDestroy(ExecutableHeapHandle);
+        }
+    }
+
+    return g_ExecutableHeapHandle;
+}
 
 const CExecutable executable = { 0 };
 
@@ -375,7 +470,7 @@ void * __cdecl operator new(size_t n, const CExecutable&)
         ThrowOutOfMemory();
     }
 
-    void * result = ClrHeapAlloc(hExecutableHeap, 0, S_SIZE_T(n));
+    void * result = HeapAlloc(hExecutableHeap, 0, n);
     if (result == NULL) {
         ThrowOutOfMemory();
     }
@@ -398,7 +493,7 @@ void * __cdecl operator new[](size_t n, const CExecutable&)
         ThrowOutOfMemory();
     }
 
-    void * result = ClrHeapAlloc(hExecutableHeap, 0, S_SIZE_T(n));
+    void * result = HeapAlloc(hExecutableHeap, 0, n);
     if (result == NULL) {
         ThrowOutOfMemory();
     }
@@ -418,7 +513,7 @@ void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&)
     if (hExecutableHeap == NULL)
         return NULL;
 
-    void * result = ClrHeapAlloc(hExecutableHeap, 0, S_SIZE_T(n));
+    void * result = HeapAlloc(hExecutableHeap, 0, n);
     TRASH_LASTERROR;
     return result;
 }
@@ -435,12 +530,12 @@ void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&)
     if (hExecutableHeap == NULL)
         return NULL;
 
-    void * result = ClrHeapAlloc(hExecutableHeap, 0, S_SIZE_T(n));
+    void * result = HeapAlloc(hExecutableHeap, 0, n);
     TRASH_LASTERROR;
     return result;
 }
 
-#endif // TARGET_UNIX
+#endif // HOST_WINDOWS
 
 #ifdef _DEBUG
 

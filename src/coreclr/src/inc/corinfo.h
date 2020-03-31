@@ -338,6 +338,8 @@ private:
     }
 };
 
+#include "corinfoinstructionset.h"
+
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
 // These helpers can be called by native code which executes in the runtime.
 // Compilers can emit calls to these helpers.
@@ -3163,6 +3165,11 @@ public:
                     CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     bool fMustConvert
                     ) = 0;
+
+    virtual void notifyInstructionSetUsage(
+                CORINFO_InstructionSet instructionSet,
+                bool supportEnabled
+            ) = 0;
 };
 
 /**********************************************************************************/

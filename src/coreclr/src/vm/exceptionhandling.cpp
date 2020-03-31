@@ -1138,7 +1138,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             // Once we reach the target frame in the second pass unwind, we call
             // the catch funclet that caused us to resume execution and it
             // tells us where we are resuming to.  At that point, we patch
-            // the context record with the resume IP and RtlUnwind2 finishes
+            // the context record with the resume IP and RtlUnwind finishes
             // by restoring our context at the right spot.
             //
             // If we are unable to set the resume PC for some reason, then
@@ -5367,15 +5367,10 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 #ifndef TARGET_UNIX
 void ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord, UINT_PTR ReturnValue, UINT_PTR TargetIP, UINT_PTR TargetFrameSp)
 {
-    PVOID TargetFrame = (PVOID)TargetFrameSp;
-
-    CONTEXT ctx;
-    RtlUnwindEx(TargetFrame,
-                (PVOID)TargetIP,
-                pExceptionRecord,
-                (PVOID)ReturnValue, // ReturnValue
-                &ctx,
-                NULL);      // HistoryTable
+    RtlUnwind((PVOID)TargetFrameSp, // TargetFrame
+              (PVOID)TargetIP,
+              pExceptionRecord,
+              (PVOID)ReturnValue);
 
     // doesn't return
     UNREACHABLE();

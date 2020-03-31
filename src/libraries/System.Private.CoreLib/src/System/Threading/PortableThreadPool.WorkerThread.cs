@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
-
 namespace System.Threading
 {
     internal partial class PortableThreadPool
@@ -16,7 +14,7 @@ namespace System.Threading
             /// <summary>
             /// Semaphore for controlling how many threads are currently working.
             /// </summary>
-            private static LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, MaxPossibleThreadCount, SemaphoreSpinCount);
+            private static readonly LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, MaxPossibleThreadCount, SemaphoreSpinCount);
 
             /// <summary>
             /// Maximum number of spins a thread pool worker thread performs before waiting for work
@@ -173,7 +171,7 @@ namespace System.Threading
                             newCounts.numExistingThreads -= (short)toCreate;
 
                             ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
-                            if(oldCounts == counts)
+                            if (oldCounts == counts)
                             {
                                 break;
                             }

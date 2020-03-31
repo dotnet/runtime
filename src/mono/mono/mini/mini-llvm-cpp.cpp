@@ -51,16 +51,18 @@ void
 mono_llvm_dump_value (LLVMValueRef value)
 {
 	/* Same as LLVMDumpValue (), but print to stdout */
-	outs () << (*unwrap<Value> (value)) << "\n";
 	fflush (stdout);
+	outs () << (*unwrap<Value> (value)) << "\n";
+	outs ().flush ();
 }
 
 void
 mono_llvm_dump_module (LLVMModuleRef module)
 {
 	/* Same as LLVMDumpModule (), but print to stdout */
-	outs () << (*unwrap (module));
 	fflush (stdout);
+	outs () << (*unwrap (module));
+	outs ().flush ();
 }
 
 /* Missing overload for building an alloca with an alignment */

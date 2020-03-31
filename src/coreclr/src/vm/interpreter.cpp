@@ -1663,7 +1663,9 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             // interpreter I didn't wring my hands too much trying to determine the ideal
             // policy.
 #ifdef FEATURE_TIERED_COMPILATION
-            GetAppDomain()->GetTieredCompilationManager()->AsyncPromoteMethodToTier1(md);
+            bool scheduleTieringBackgroundWork = false;
+            NativeCodeVersion activeCodeVersion = md->GetCodeVersionManager()->GetActiveILCodeVersion(md).GetActiveNativeCodeVersion(md);
+            GetAppDomain()->GetTieredCompilationManager()->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);
 #else
 #error FEATURE_INTERPRETER depends on FEATURE_TIERED_COMPILATION now
 #endif
@@ -1799,7 +1801,7 @@ AwareLock* Interpreter::GetMonitorForStaticMethod()
     CORINFO_LOOKUP_KIND kind;
     {
         GCX_PREEMP();
-        kind = m_interpCeeInfo.getLocationOfThisType(m_methInfo->m_method);
+        m_interpCeeInfo.getLocationOfThisType(m_methInfo->m_method, &kind);
     }
     if (!kind.needsRuntimeLookup)
     {

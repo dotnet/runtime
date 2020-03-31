@@ -4,8 +4,8 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 
 #if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;

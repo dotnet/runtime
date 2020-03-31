@@ -10,6 +10,7 @@
 
 #include <Security/Security.h>
 
+#ifndef TARGET_IOS
 /*
 Generate a signature for algorithms which require only the data hash blob, like DSA and ECDSA.
 
@@ -56,3 +57,4 @@ PALEXPORT int32_t AppleCryptoNative_VerifySignature(SecKeyRef publicKey,
                                                     uint8_t* pbSignature,
                                                     int32_t cbSignature,
                                                     CFErrorRef* pErrorOut);
+#endif

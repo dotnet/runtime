@@ -426,7 +426,7 @@ namespace System.IO
             ValidateReadWriteArgs(array, offset, count);
             if (_useAsyncIO)
             {
-                WriteAsyncInternal(new ReadOnlyMemory<byte>(array, offset, count), CancellationToken.None).GetAwaiter().GetResult();
+                WriteAsyncInternal(new ReadOnlyMemory<byte>(array, offset, count), CancellationToken.None).AsTask().GetAwaiter().GetResult();
             }
             else
             {

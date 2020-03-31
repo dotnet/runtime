@@ -378,6 +378,9 @@ collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
 	CollectDomainData *ud = (CollectDomainData*)user_data;
 	MonoMethod *m;
 
+	if (mono_domain_is_unloading (domain))
+		return;
+
 	mono_domain_lock (domain);
 	g_hash_table_iter_init (&iter, domain_jit_info (domain)->seq_points);
 	while (g_hash_table_iter_next (&iter, (void**)&m, (void**)&seq_points)) {
@@ -591,8 +594,26 @@ mono_de_clear_breakpoints_for_domain (MonoDomain *domain)
 /* Number of single stepping operations in progress */
 static int ss_count;
 
-/* The single step request instance */
-static SingleStepReq *the_ss_req;
+/* The single step request instances */
+static GPtrArray *the_ss_reqs;
+
+static void
+ss_req_init (void)
+{
+	the_ss_reqs = g_ptr_array_new ();
+}
+
+static void
+ss_req_cleanup (void)
+{
+	dbg_lock ();
+
+	g_ptr_array_free (the_ss_reqs, TRUE);
+
+	the_ss_reqs = NULL;
+
+	dbg_unlock ();
+}
 
 /*
  * mono_de_start_single_stepping:
@@ -717,16 +738,26 @@ ss_destroy (SingleStepReq *req)
 }
 
 static SingleStepReq*
-ss_req_acquire (void)
+ss_req_acquire (MonoInternalThread *thread)
 {
-	SingleStepReq *req;
-
+	SingleStepReq *req = NULL;
 	dbg_lock ();
-	req = the_ss_req;
-	if (req)
-		req->refcount ++;
+	int i;
+	for (i = 0; i < the_ss_reqs->len; ++i) {
+		SingleStepReq *current_req = (SingleStepReq *)g_ptr_array_index (the_ss_reqs, i);
+		if (current_req->thread == thread) {
+			current_req->refcount ++;	
+			req = current_req;
+		}
+	}
 	dbg_unlock ();
 	return req;
+}
+
+static int 
+ss_req_count ()
+{
+	return the_ss_reqs->len;
 }
 
 static void
@@ -739,23 +770,30 @@ mono_de_ss_req_release (SingleStepReq *req)
 	req->refcount --;
 	if (req->refcount == 0)
 		free = TRUE;
-	dbg_unlock ();
 	if (free) {
-		if (req == the_ss_req)
-			the_ss_req = NULL;
+		g_ptr_array_remove (the_ss_reqs, req);
 		ss_destroy (req);
+	}
+	dbg_unlock ();
+}
+
+void
+mono_de_cancel_ss (SingleStepReq *req)
+{
+	if (the_ss_reqs) {
+		mono_de_ss_req_release (req);
 	}
 }
 
 void
-mono_de_cancel_ss (void)
+mono_de_cancel_all_ss ()
 {
-	if (the_ss_req) {
-		mono_de_ss_req_release (the_ss_req);
-		the_ss_req = NULL;
+	int i;
+	for (i = 0; i < the_ss_reqs->len; ++i) {
+		SingleStepReq *current_req = (SingleStepReq *)g_ptr_array_index (the_ss_reqs, i);
+		mono_de_ss_req_release (current_req);
 	}
 }
-
 
 void
 mono_de_process_single_step (void *tls, gboolean from_signal)
@@ -774,21 +812,17 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	/* Skip the instruction causing the single step */
 	rt_callbacks.begin_single_step_processing (ctx, from_signal);
 
-	if (rt_callbacks.try_process_suspend (tls, ctx))
+	if (rt_callbacks.try_process_suspend (tls, ctx, FALSE))
 		return;
 
 	/*
 	 * This can run concurrently with a clear_event_request () call, so needs locking/reference counts.
 	 */
-	ss_req = ss_req_acquire ();
+	ss_req = ss_req_acquire (mono_thread_internal_current ());
 
 	if (!ss_req)
 		// FIXME: A suspend race
 		return;
-
-	if (mono_thread_internal_current () != ss_req->thread)
-		goto exit;
-
 	ip = (guint8 *)MONO_CONTEXT_GET_IP (ctx);
 
 	ji = get_top_method_ji (ip, &domain, (gpointer*)&ip);
@@ -1022,7 +1056,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 	SeqPoint sp;
 	gboolean found_sp;
 
-	if (rt_callbacks.try_process_suspend (tls, ctx))
+	if (rt_callbacks.try_process_suspend (tls, ctx, TRUE))
 		return;
 
 	ip = (guint8 *)MONO_CONTEXT_GET_IP (ctx);
@@ -1488,7 +1522,7 @@ mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, S
 		return err;
 
 	// FIXME: Multiple requests
-	if (the_ss_req) {
+	if (ss_req_count () > 1) {
 		err = rt_callbacks.handle_multiple_ss_requests ();
 
 		if (err == DE_ERR_NOT_IMPLEMENTED) {
@@ -1519,8 +1553,7 @@ mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, S
 	err = rt_callbacks.ss_create_init_args (ss_req, &args);
 	if (err)
 		return err;
-
-	the_ss_req = ss_req;
+	g_ptr_array_add (the_ss_reqs, ss_req);
 
 	mono_de_ss_start (ss_req, &args);
 
@@ -1552,7 +1585,7 @@ mono_de_init (DebuggerEngineCallbacks *cbs)
 
 	domains_init ();
 	breakpoints_init ();
-
+	ss_req_init ();
 	mono_debugger_log_init ();
 }
 
@@ -1561,6 +1594,7 @@ mono_de_cleanup (void)
 {
 	breakpoints_cleanup ();
 	domains_cleanup ();
+	ss_req_cleanup ();
 }
 
 void

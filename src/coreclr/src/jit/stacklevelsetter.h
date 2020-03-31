@@ -12,7 +12,7 @@ class StackLevelSetter final : public Phase
 public:
     StackLevelSetter(Compiler* compiler);
 
-    virtual void DoPhase() override;
+    virtual PhaseStatus DoPhase() override;
 
 private:
     void ProcessBlock(BasicBlock* block);

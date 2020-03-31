@@ -11,7 +11,7 @@
 #define _STRINGIFY(s) _X(s)
 #if defined(_WIN32)
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=798306")
-#elif defined(TARGET_DARWIN)
+#elif defined(TARGET_OSX)
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=2063366")
 #else
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=2063370")

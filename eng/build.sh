@@ -19,7 +19,7 @@ usage()
   echo "Common settings:"
   echo "  --subset                   Build a subset, print available subsets with -subset help"
   echo "  --subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
-  echo "  --os                       Build operating system: Windows_NT or Unix"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, iOS or Android"
   echo "  --arch                     Build platform: x86, x64, arm or arm64"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
@@ -112,7 +112,6 @@ while [[ $# > 0 ]]; do
       ;;
      -arch)
       arch=$2
-      arguments="$arguments /p:ArchGroup=$2 /p:TargetArchitecture=$2"
       shift 2
       ;;
      -configuration|-c)
@@ -149,10 +148,6 @@ while [[ $# > 0 ]]; do
       ;;
      -coverage)
       arguments="$arguments /p:Coverage=true"
-      shift 1
-      ;;
-     -stripsymbols)
-      arguments="$arguments /p:BuildNativeStripSymbols=true"
       shift 1
       ;;
      -runtimeconfiguration)
@@ -217,5 +212,6 @@ initDistroRid $os $arch $crossBuild
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
 cmakeargs="${cmakeargs// /%20}"
+arguments="$arguments /p:TargetArchitecture=$arch"
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
 "$scriptroot/common/build.sh" $arguments

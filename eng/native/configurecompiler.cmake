@@ -182,7 +182,7 @@ if(CLR_CMAKE_HOST_LINUX)
 endif(CLR_CMAKE_HOST_LINUX)
 if(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options(-fuse-ld=lld LINKER:--build-id=sha1)
+  add_link_options(LINKER:--build-id=sha1)
 endif(CLR_CMAKE_HOST_FREEBSD)
 
 #------------------------------------
@@ -221,9 +221,9 @@ endif(CLR_CMAKE_HOST_UNIX)
 if (CLR_CMAKE_HOST_UNIX)
   add_definitions(-DHOST_UNIX)
 
-  if(CLR_CMAKE_HOST_DARWIN)
+  if(CLR_CMAKE_HOST_OSX)
     message("Detected OSX x86_64")
-  endif(CLR_CMAKE_HOST_DARWIN)
+  endif(CLR_CMAKE_HOST_OSX)
 
   if(CLR_CMAKE_HOST_FREEBSD)
     message("Detected FreeBSD amd64")
@@ -278,7 +278,7 @@ if (CLR_CMAKE_HOST_UNIX)
   # using twos-complement representation (this is normally undefined according to the C++ spec).
   add_compile_options(-fwrapv)
 
-  if(CLR_CMAKE_HOST_DARWIN)
+  if(CLR_CMAKE_HOST_OSX)
     # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
     add_compile_options(-fstack-protector)
   else()
@@ -286,7 +286,7 @@ if (CLR_CMAKE_HOST_UNIX)
     if (COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
       add_compile_options(-fstack-protector-strong)
     endif()
-  endif(CLR_CMAKE_HOST_DARWIN)
+  endif(CLR_CMAKE_HOST_OSX)
 
   # Suppress warnings-as-errors in release branches to reduce servicing churn
   if (PRERELEASE)
@@ -350,20 +350,20 @@ if (CLR_CMAKE_HOST_UNIX)
   add_compile_options(-fvisibility=hidden)
 
   # Specify the minimum supported version of macOS
-  if(CLR_CMAKE_HOST_DARWIN)
+  if(CLR_CMAKE_HOST_OSX)
     set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.12)
     add_compile_options(${MACOS_VERSION_MIN_FLAGS})
     add_link_options(${MACOS_VERSION_MIN_FLAGS})
-  endif(CLR_CMAKE_HOST_DARWIN)
+  endif(CLR_CMAKE_HOST_OSX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_TARGET_UNIX)
   add_definitions(-DTARGET_UNIX)
   # Contracts are disabled on UNIX.
   add_definitions(-DDISABLE_CONTRACTS)
-  if(CLR_CMAKE_TARGET_DARWIN)
-    add_definitions(-DTARGET_DARWIN)
-  endif(CLR_CMAKE_TARGET_DARWIN)
+  if(CLR_CMAKE_TARGET_OSX)
+    add_definitions(-DTARGET_OSX)
+  endif(CLR_CMAKE_TARGET_OSX)
   if(CLR_CMAKE_TARGET_FREEBSD)
     add_definitions(-DTARGET_FREEBSD)
   endif(CLR_CMAKE_TARGET_FREEBSD)
@@ -413,7 +413,6 @@ if (MSVC)
 
   # The following options are set by the razzle build
   add_compile_options(/TP) # compile all files as C++
-  add_compile_options(/d2Zi+) # make optimized builds debugging easier
   add_compile_options(/nologo) # Suppress Startup Banner
   add_compile_options(/W3) # set warning level to 3
   add_compile_options(/WX) # treat warnings as errors
@@ -422,7 +421,6 @@ if (MSVC)
   add_compile_options(/U_MT) # undefine the predefined _MT macro
   add_compile_options(/GF) # enable read-only string pooling
   add_compile_options(/Gm-) # disable minimal rebuild
-  add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)
   add_compile_options(/Zp8) # pack structs on 8-byte boundary
   add_compile_options(/Gy) # separate functions for linker
   add_compile_options(/Zc:wchar_t-) # C++ language conformance: wchar_t is NOT the native type, but a typedef
