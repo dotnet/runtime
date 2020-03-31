@@ -7,7 +7,7 @@ To build the tests and run them you can call the libraries build script.
 **Examples**
 - The following shows how to build only the tests but not run them:
 ```
-libraries -subset test
+libraries -subset libtests
 ```
 
 - The following builds and runs all tests in release configuration:
@@ -28,7 +28,7 @@ libraries -test -testnobuild
 
 ## Running tests on the command line
 
-To build tests you need to specify the `test` subset when invoking build.cmd/sh: `libraries -subset test`.
+To build tests you need to specify the `test` subset when invoking build.cmd/sh: `libraries -subset libtests`.
 
 The easiest (and recommended) way to build and run the tests for a specific library, is to invoke the `Test` target on that library:
 ```cmd

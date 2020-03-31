@@ -57,13 +57,13 @@
     <DefaultCoreClrSubsets>runtime-linuxdac-corelib-nativecorelib-tools-packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">llvm-</DefaultMonoSubsets>
-    <DefaultMonoSubsets>$(DefaultMonoSubsets)runtime-corelib-package</DefaultMonoSubsets>
+    <DefaultMonoSubsets>$(DefaultMonoSubsets)runtime-corelib-packages</DefaultMonoSubsets>
 
     <DefaultLibrariesSubsets>native-ref-src</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(DefaultLibrariesSubsets)-apicompat</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">$(DefaultLibrariesSubsets)-pretest</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets Condition="'$(IncludeLibrariesTestSubset)' == 'true'">$(DefaultLibrariesSubsets)-test</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)-package</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets Condition="'$(IncludeLibrariesTestSubset)' == 'true'">$(DefaultLibrariesSubsets)-libtests</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)-packages</DefaultLibrariesSubsets>
 
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS'">depproj-pkgproj</DefaultInstallerSubsets>
@@ -95,8 +95,8 @@
     <SubsetName Include="Src" Category="Libraries" Description="The managed implementation libraries." />
     <SubsetName Include="ApiCompat" Category="Libraries" Description="The ApiCompat tool which scans for api compatibility." />
     <SubsetName Include="PreTest" Category="Libraries" Description="Test assets which are necessary to run tests." />
-    <SubsetName Include="Package" Category="Libraries" Description="The projects that produce NuGet packages from libraries." />
-    <SubsetName Include="Test" Category="Libraries" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
+    <SubsetName Include="Packages" Category="Libraries" Description="The projects that produce NuGet packages from libraries." />
+    <SubsetName Include="LibTests" Category="Libraries" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
 
     <!-- CoreClr -->
     <SubsetName Include="Runtime" Category="CoreClr" Description="The CoreCLR .NET runtime." />
@@ -110,7 +110,7 @@
     <!-- Mono -->
     <SubsetName Include="Runtime" Category="Mono" Description="The Mono .NET runtime." />
     <SubsetName Include="CoreLib" Category="Mono" Description="The managed System.Private.CoreLib library for Mono." />
-    <SubsetName Include="Package" Category="Mono" Description="The projects that produce NuGet packages for the Mono runtime." />
+    <SubsetName Include="Packages" Category="Mono" Description="The projects that produce NuGet packages for the Mono runtime." />
 
     <!-- Installer -->
     <SubsetName Include="All" Category="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
@@ -200,7 +200,7 @@
     <MonoProject Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('-package-'))">
+  <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('-packages-'))">
     <MonoProject Include="$(MonoProjectRoot)netcore\nuget\mono-packages.proj" Pack="True" />
   </ItemGroup>
 
@@ -231,11 +231,11 @@
     <LibrariesProject Include="$(LibrariesProjectRoot)pretest.proj"  />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-test-'))">
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-libtests-'))">
     <LibrariesProject Include="$(LibrariesProjectRoot)tests.proj" Test="true" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-package-'))">
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-packages-'))">
     <LibrariesProject Include="$(LibrariesProjectRoot)libraries-packages.proj" Pack="true" />
   </ItemGroup>
 
