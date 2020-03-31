@@ -105,12 +105,6 @@ jobs:
         artifactName: $(corelibProductArtifactName)
         displayName: 'corelib build'
 
-    # Save packages using the prepare-signed-artifacts format.
-    - ${{ if eq(parameters.isOfficialBuild, true) }}:
-      - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
-        parameters:
-          name: ${{ parameters.platform }}
-
     # Publish Logs
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
