@@ -54,6 +54,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <DefaultCoreClrSubsets>runtime-linuxdac-corelib-nativecorelib-tools-packages</DefaultCoreClrSubsets>
+
+    <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">llvm-</DefaultMonoSubsets>
+    <DefaultMonoSubsets>$(DefaultMonoSubsets)runtime-corelib-package</DefaultMonoSubsets>
+
     <DefaultLibrariesSubsets>depproj-native-ref-src</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(DefaultLibrariesSubsets)-apicompat</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">$(DefaultLibrariesSubsets)-pretest</DefaultLibrariesSubsets>
@@ -62,9 +67,6 @@
 
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS'">depproj-pkgproj</DefaultInstallerSubsets>
-    <DefaultCoreClrSubsets>runtime-linuxdac-corelib-nativecorelib-tools-packages</DefaultCoreClrSubsets>
-    <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">llvm-</DefaultMonoSubsets>
-    <DefaultMonoSubsets>$(DefaultMonoSubsets)runtime-corelib-package</DefaultMonoSubsets>
   </PropertyGroup>
 
   <PropertyGroup>

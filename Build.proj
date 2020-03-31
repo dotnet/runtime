@@ -2,12 +2,12 @@
 
   <!--
     Subsets are already imported by Directory.Build.props.
-    Reference the projects for traversal build.
+    Reference the projects for traversal build. Ordering matters here.
   -->
   <ItemGroup>
     <ProjectReference Include="@(CoreClrProject)" />
-    <ProjectReference Include="@(LibrariesProject)" />
     <ProjectReference Include="@(MonoProject)" />
+    <ProjectReference Include="@(LibrariesProject)" />
     <ProjectReference Include="@(InstallerProject)" />
   </ItemGroup>
 
