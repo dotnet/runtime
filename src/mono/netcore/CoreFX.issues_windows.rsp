@@ -1,5 +1,3 @@
--nomethod System.Collections.Concurrent.Tests.BlockingCollectionTests.Test_LargeSize_STA
-
 # segfault
 -nomethod Microsoft.VisualBasic.Tests.FileSystemTests.Input_Object_Write
 
