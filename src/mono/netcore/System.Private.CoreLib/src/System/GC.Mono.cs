@@ -272,8 +272,11 @@ namespace System
 
         public static T[] AllocateArray<T>(int length, bool pinned = false)
         {
-            if (pinned)
+            if (pinned) {
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
                 return Unsafe.As<T[]>(AllocPinnedArray(typeof(T[]), length));
+            }
 
             return new T[length];
         }
