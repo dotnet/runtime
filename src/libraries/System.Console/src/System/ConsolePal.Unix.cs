@@ -74,15 +74,19 @@ namespace System
         {
             get
             {
-                EnsureInitialized();
+                return Volatile.Read(ref s_stdInReader) ?? EnsureInitializedStdInReader(ref s_stdInReader);
 
-                return Volatile.Read(ref s_stdInReader) ??
-                    Console.EnsureInitialized(
+                static SyncTextReader EnsureInitializedStdInReader([NotNull] ref SyncTextReader? reader)
+                {
+                    EnsureInitialized();
+
+                    return Console.EnsureInitialized(
                         ref s_stdInReader,
                         SyncTextReader.GetSynchronizedTextReader(
                             new StdInReader(
                                 encoding: Console.InputEncoding,
                                 bufferSize: InteractiveBufferSize)));
+                }
             }
         }
 
