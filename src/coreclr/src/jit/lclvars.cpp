@@ -6847,7 +6847,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
 
 void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t refCntWtdWidth)
 {
-    LclVarDsc* varDsc = lvaTable + lclNum;
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
     var_types  type   = varDsc->TypeGet();
 
     if (curState == INITIAL_FRAME_LAYOUT)
@@ -6856,30 +6856,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         gtDispLclVar(lclNum);
 
         printf(" %7s ", varTypeName(type));
-        if (genTypeSize(type) == 0)
-        {
-#if FEATURE_FIXED_OUT_ARGS
-            if (lclNum == lvaOutgoingArgSpaceVar)
-            {
-                // Since lvaOutgoingArgSpaceSize is a PhasedVar we can't read it for Dumping until
-                // after we set it to something.
-                if (lvaOutgoingArgSpaceSize.HasFinalValue())
-                {
-                    // A PhasedVar<T> can't be directly used as an arg to a variadic function
-                    unsigned value = lvaOutgoingArgSpaceSize;
-                    printf("(%2d) ", value);
-                }
-                else
-                {
-                    printf("(na) "); // The value hasn't yet been determined
-                }
-            }
-            else
-#endif // FEATURE_FIXED_OUT_ARGS
-            {
-                printf("(%2d) ", lvaLclSize(lclNum));
-            }
-        }
+        gtDispLclVarStructType(lclNum);
     }
     else
     {

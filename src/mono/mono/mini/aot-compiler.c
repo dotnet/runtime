@@ -8068,7 +8068,7 @@ parse_cpu_features (const gchar *attr)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	// e.g.:
-	// `mattr=+sse3` = +sse,+sse2,+pclmul,+aes,+sse3
+	// `mattr=+sse3` = +sse,+sse2,+sse3
 	// `mattr=-sse3` = -sse3,-ssse3,-sse4.1,-sse4.2,-popcnt,-avx,-avx2,-fma
 	if (!strcmp (attr + prefix, "sse"))
 		feature = MONO_CPU_X86_SSE_COMBINED;
@@ -10318,7 +10318,12 @@ emit_code (MonoAotCompile *acfg)
 
 	/* Emit a separate table with the trampoline addresses/offsets */
 	sprintf (symbol, "unbox_trampoline_addresses");
-	emit_section_change (acfg, ".text", 0);
+	if (acfg->flags & MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY) {
+		/* Emit the unbox trampoline address table as a table of pointers */
+		emit_section_change (acfg, ".data", 0);
+	} else {
+		emit_section_change (acfg, ".text", 0);
+	}
 	emit_alignment_code (acfg, 8);
 	emit_info_symbol (acfg, symbol, TRUE);
 
@@ -10335,12 +10340,15 @@ emit_code (MonoAotCompile *acfg)
 
 		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass)) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
-			int call_size;
-
 			const int index = get_method_index (acfg, method);
 			sprintf (symbol, "ut_%d", index);
 
-			arch_emit_direct_call (acfg, symbol, FALSE, acfg->thumb_mixed && cfg->compile_llvm, NULL, &call_size);
+			if (acfg->flags & MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY) {
+				emit_pointer (acfg, symbol);
+			} else {
+				int call_size;
+				arch_emit_direct_call (acfg, symbol, FALSE, acfg->thumb_mixed && cfg->compile_llvm, NULL, &call_size);
+			}
 #endif
 		}
 	}
@@ -13156,9 +13164,6 @@ static void aot_dump (MonoAotCompile *acfg)
 
 static const MonoJitICallId preinited_jit_icalls [] = {
 	MONO_JIT_ICALL_mini_llvm_init_method,
-	MONO_JIT_ICALL_mini_llvm_init_gshared_method_this,
-	MONO_JIT_ICALL_mini_llvm_init_gshared_method_mrgctx,
-	MONO_JIT_ICALL_mini_llvm_init_gshared_method_vtable,
 	MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception,
 	MONO_JIT_ICALL_mono_llvm_throw_corlib_exception,
 	MONO_JIT_ICALL_mono_threads_state_poll,

@@ -62,7 +62,7 @@ namespace System.Text.Json.Serialization.Tests
                     using var stream = new MemoryStream();
                     await JsonSerializer.SerializeAsync(stream, value, inputType, options);
                     return Encoding.UTF8.GetString(stream.ToArray());
-                }).Result;
+                }).GetAwaiter().GetResult();
             }
 
             protected internal override string Serialize<T>(T value, JsonSerializerOptions options = null)
@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization.Tests
                     using var stream = new MemoryStream();
                     await JsonSerializer.SerializeAsync<T>(stream, value, options);
                     return Encoding.UTF8.GetString(stream.ToArray());
-                }).Result;
+                }).GetAwaiter().GetResult();
             }
         }
 

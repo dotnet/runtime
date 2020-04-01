@@ -20,17 +20,23 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
     internal enum CborAdditionalInfo : byte
     {
-        Unsigned8BitIntegerEncoding = 24,
-        Unsigned16BitIntegerEncoding = 25,
-        Unsigned32BitIntegerEncoding = 26,
-        Unsigned64BitIntegerEncoding = 27,
+        SpecialValueFalse = 20,
+        SpecialValueTrue = 21,
+        SpecialValueNull = 22,
+
+        Additional8BitData = 24,
+        Additional16BitData = 25,
+        Additional32BitData = 26,
+        Additional64BitData = 27,
         IndefiniteLength = 31,
     }
 
     /// Represents the Cbor Data item initial byte structure
     internal readonly struct CborInitialByte
     {
+        public const byte IndefiniteLengthBreakByte = 0xff;
         private const byte AdditionalInformationMask = 0b000_11111;
+
         public byte InitialByte { get; }
 
         internal CborInitialByte(CborMajorType majorType, CborAdditionalInfo additionalInfo)

@@ -103,7 +103,7 @@ replay. (MCH stands for "method context hive".)
 equivalent, such as trivial class constructors, or if some functions are
 compiled multiple times in different scenarios or tests. We filter out the
 duplicates, which makes playback much faster, and the resultant MCH file much
-smaller.
+smaller. This can be done as part of the "merge" step.
 4. Create a "clean" .MCH with no SuperPMI failures. The original collected MCH
 file might not replay cleanly. This is generally due to existing, un-investigated
 SuperPMI bugs or limitations. We don't want to see these during normal playback,
@@ -166,7 +166,7 @@ directory (specified by `SuperPMIShimLogPath`).
 Merge the generated .MC files using the `mcs` tool:
 
 ```
-mcs -merge base.mch *.mc -recursive
+mcs -merge base.mch *.mc -recursive -dedup -thin
 ```
 
 This assumes the current directory is the root directory where the .MC files
@@ -174,14 +174,18 @@ were placed, namely the directory specified as `SuperPMIShimLogPath` above.
 You can also specify a directory prefix to the file system regular expression.
 The `-recursive` flag is only necessary if .MC files also exist in subdirectories
 of this, and you want those also added to the resultant, collected `base.mch`
-file. So, for the example above, you might use:
+file. The `-dedup` and `-thin` options remove duplicates as the files are merged,
+and remove the normally-unused CompileResults (e.g., the code generated during
+the initial collection).
+
+So, for the example above, you might use:
 
 ```
-f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\mcs.exe -merge f:\spmi\base.mch f:\spmi\temp\*.mc -recursive
+f:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked\mcs.exe -merge f:\spmi\base.mch f:\spmi\temp\*.mc -recursive -dedup -thin
 ```
 
-Note that `mcs -merge` is literally just a file concatenation of many files into
-one, so this step will double the required disk space.
+Note that `mcs -merge` without `-dedup -thin` is literally just a file concatenation
+of many files into one, which would double the required disk space.
 
 After this step, you can remove all the individual .MC files unless you want
 to keep them to debug the SuperPMI collection process itself.
@@ -190,7 +194,8 @@ to keep them to debug the SuperPMI collection process itself.
 ## Remove duplicates in the .MCH file
 
 One benefit of SuperPMI is the ability to remove duplicated compilations, so
-on replay only unique functions are compiled. Use the following to create a
+on replay only unique functions are compiled. If you didn't use the `-merge -dedup -thin`
+option above, you can do the deduplication separately, using the following to create a
 "unique" set of functions:
 
 ```
@@ -217,6 +222,9 @@ the SuperPMI collection process itself).
 As stated above, due to various bugs or otherwise uninvestigated issues, a SuperPMI
 replay of the unique.mch file might contain errors. We don't want that, so we filter
 out those errors in a "baseline" run, as follows.
+
+(Note that if you are following the steps above, you most likely deduplicated
+during the merge operation, so you have a `base.mch` file, not a `unique.mch` file.)
 
 ```
 superpmi -p -f basefail.mcl unique.mch clrjit.dll

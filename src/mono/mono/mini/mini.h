@@ -1287,7 +1287,8 @@ typedef struct {
 	MonoInst        *domainvar; /* a cache for the current domain */
 	MonoInst        *got_var; /* Global Offset Table variable */
 	MonoInst        **locals;
-	MonoInst	*rgctx_var; /* Runtime generic context variable (for static generic methods) */
+	/* Variable holding the mrgctx/vtable address for gshared methods */
+	MonoInst        *rgctx_var;
 	MonoInst        **args;
 	MonoType        **arg_types;
 	MonoMethod      *current_method; /* The method currently processed by method_to_ir () */
@@ -2813,11 +2814,11 @@ typedef enum {
 	//     pclmul
 	//     aes
 	//     sse3
-	//       ssse3
+	//       ssse3     (doesn't include 'pclmul' and 'aes')
 	//         sse4.1
 	//           sse4.2
 	//             popcnt
-	//             avx
+	//             avx     (doesn't include 'popcnt')
 	//               avx2
 	//               fma
 	// lzcnt
@@ -2828,14 +2829,15 @@ typedef enum {
 	MONO_CPU_X86_PCLMUL_COMBINED      = MONO_CPU_X86_SSE2_COMBINED  | MONO_CPU_X86_PCLMUL,
 	MONO_CPU_X86_AES_COMBINED         = MONO_CPU_X86_SSE2_COMBINED  | MONO_CPU_X86_AES,
 	MONO_CPU_X86_SSE3_COMBINED        = MONO_CPU_X86_SSE2_COMBINED  | MONO_CPU_X86_SSE3,
-	MONO_CPU_X86_SSSE3_COMBINED       = MONO_CPU_X86_SSE3_COMBINED  | MONO_CPU_X86_PCLMUL | MONO_CPU_X86_AES | MONO_CPU_X86_SSSE3,
+	MONO_CPU_X86_SSSE3_COMBINED       = MONO_CPU_X86_SSE3_COMBINED  | MONO_CPU_X86_SSSE3,
 	MONO_CPU_X86_SSE41_COMBINED       = MONO_CPU_X86_SSSE3_COMBINED | MONO_CPU_X86_SSE41,
 	MONO_CPU_X86_SSE42_COMBINED       = MONO_CPU_X86_SSE41_COMBINED | MONO_CPU_X86_SSE42,
 	MONO_CPU_X86_POPCNT_COMBINED      = MONO_CPU_X86_SSE42_COMBINED | MONO_CPU_X86_POPCNT,
 	MONO_CPU_X86_AVX_COMBINED         = MONO_CPU_X86_SSE42_COMBINED | MONO_CPU_X86_AVX,
-	MONO_CPU_X86_AVX2_COMBINED        = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_POPCNT | MONO_CPU_X86_AVX2,
-	MONO_CPU_X86_FMA_COMBINED         = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_POPCNT | MONO_CPU_X86_FMA,
-	MONO_CPU_X86_FULL_SSEAVX_COMBINED = MONO_CPU_X86_FMA_COMBINED   | MONO_CPU_X86_AVX2,
+	MONO_CPU_X86_AVX2_COMBINED        = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_AVX2,
+	MONO_CPU_X86_FMA_COMBINED         = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_FMA,
+	MONO_CPU_X86_FULL_SSEAVX_COMBINED = MONO_CPU_X86_FMA_COMBINED   | MONO_CPU_X86_AVX2   | MONO_CPU_X86_PCLMUL 
+									  | MONO_CPU_X86_AES            | MONO_CPU_X86_POPCNT | MONO_CPU_X86_FMA,
 #endif
 #ifdef TARGET_WASM
 	MONO_CPU_WASM_SIMD = 1 << 1,
@@ -2874,10 +2876,6 @@ typedef enum {
 	SIMD_OP_SSE_CVTTSD2SI,
 	SIMD_OP_SSE_CVTSD2SI64,
 	SIMD_OP_SSE_CVTTSD2SI64,
-	SIMD_OP_SSE_CVTSI2SS,
-	SIMD_OP_SSE_CVTSI2SS64,
-	SIMD_OP_SSE_CVTSI2SD,
-	SIMD_OP_SSE_CVTSI2SD64,
 	SIMD_OP_SSE_CVTSD2SS,
 	SIMD_OP_SSE_MAXPS,
 	SIMD_OP_SSE_MAXSS,
@@ -2920,12 +2918,7 @@ typedef enum {
 	SIMD_OP_SSE_PSRAD_IMM,
 	SIMD_OP_SSE_PSRAW,
 	SIMD_OP_SSE_PSRAD,
-	SIMD_OP_SSE_PSUBSB,
-	SIMD_OP_SSE_PSUBSW,
-	SIMD_OP_SSE_PSUBUSB,
-	SIMD_OP_SSE_PSUBUSW,
 	SIMD_OP_SSE_PSADBW,
-	SIMD_OP_SSE_MASKMOVDQU,
 	SIMD_OP_SSE_ADDSUBPS,
 	SIMD_OP_SSE_ADDSUBPD,
 	SIMD_OP_SSE_HADDPS,

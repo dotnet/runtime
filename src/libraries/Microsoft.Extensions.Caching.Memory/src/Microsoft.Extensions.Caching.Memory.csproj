@@ -11,7 +11,7 @@
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
     <Reference Include="Microsoft.Extensions.Options" />
-    <Reference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" PrivateAssets="All" />
+    <Reference Include="Microsoft.Extensions.Primitives" />
   </ItemGroup>
 
 </Project>

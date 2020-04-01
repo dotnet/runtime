@@ -1133,7 +1133,7 @@ ClassTypeInfo::ClassTypeInfo(TypeHandle typeHandle, int num_members, FunctionMem
             break;
         case ELEMENT_TYPE_ARRAY:
         case ELEMENT_TYPE_SZARRAY:
-            m_type_size = pMT->GetClass()->GetSize();
+            m_type_size = typeHandle.AsMethodTable()->GetBaseSize();
             break;
         default:
             m_type_size = 0;

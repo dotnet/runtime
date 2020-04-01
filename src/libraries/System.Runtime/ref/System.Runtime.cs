@@ -5618,17 +5618,17 @@ namespace System.Diagnostics.CodeAnalysis
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
     }
-    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
-    [System.CLSCompliant(false)]
+    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
     public sealed class MemberNotNullAttribute : System.Attribute
     {
+        public MemberNotNullAttribute(string member) { }
         public MemberNotNullAttribute(params string[] members) { }
         public string[] Members { get { throw null; } }
     }
-    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
-    [System.CLSCompliant(false)]
+    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
     public sealed class MemberNotNullWhenAttribute : System.Attribute
     {
+        public MemberNotNullWhenAttribute(bool returnValue, string member) { }
         public MemberNotNullWhenAttribute(bool returnValue, params string[] members) { }
         public bool ReturnValue { get { throw null; } }
         public string[] Members { get { throw null; } }
@@ -8573,7 +8573,7 @@ namespace System.Runtime
     public static partial class ProfileOptimization
     {
         public static void SetProfileRoot(string directoryPath) { }
-        public static void StartProfile(string profile) { }
+        public static void StartProfile(string? profile) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class TargetedPatchingOptOutAttribute : System.Attribute

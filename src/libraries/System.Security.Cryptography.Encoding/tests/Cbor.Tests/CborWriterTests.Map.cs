@@ -45,6 +45,33 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(new object[] { Map }, "bfff")]
+        [InlineData(new object[] { Map, 1, 2, 3, 4 }, "bf01020304ff")]
+        [InlineData(new object[] { Map, "a", "A", "b", "B", "c", "C", "d", "D", "e", "E" }, "bf6161614161626142616361436164614461656145ff")]
+        [InlineData(new object[] { Map, "a", "A", -1, 2, new byte[] { }, new byte[] { 1 } }, "bf616161412002404101ff")]
+        public static void WriteMap_IndefiniteLength_SimpleValues_HappyPath(object[] values, string expectedHexEncoding)
+        {
+            byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
+            using var writer = new CborWriter();
+            Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
+            byte[] actualEncoding = writer.ToArray();
+            AssertHelper.HexEqual(expectedEncoding, actualEncoding);
+        }
+
+        [Theory]
+        [InlineData(new object[] { Map, "a", 1, "b", new object[] { Map, 2, 3 } }, "bf6161016162bf0203ffff")]
+        [InlineData(new object[] { Map, "a", new object[] { Map, 2, 3 }, "b", new object[] { Map, "x", -1, "y", new object[] { Map, "z", 0 } } }, "bf6161bf0203ff6162bf6178206179bf617a00ffffff")]
+        [InlineData(new object[] { Map, new object[] { Map, "x", 2 }, 42 }, "bfbf617802ff182aff")] // using maps as keys
+        public static void WriteMap_IndefiniteLength_NestedValues_HappyPath(object[] values, string expectedHexEncoding)
+        {
+            byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
+            using var writer = new CborWriter();
+            Helpers.WriteMap(writer, values, useDefiniteLengthCollections: false);
+            byte[] actualEncoding = writer.ToArray();
+            AssertHelper.HexEqual(expectedEncoding, actualEncoding);
+        }
+
+        [Theory]
         [InlineData(new object[] { Map, "a", 1, "b", new object[] { 2, 3 } }, "a26161016162820203")]
         [InlineData(new object[] { Map, "a", new object[] { 2, 3, "b", new object[] { Map, "x", -1, "y", new object[] { "z", 0 } } } }, "a161618402036162a2617820617982617a00")]
         [InlineData(new object[] { "a", new object[] { Map, "b", "c" } }, "826161a161626163")]
@@ -141,6 +168,26 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 writer.WriteInt64(i);
                 writer.WriteEndMap();
             }
+
+            Assert.Throws<InvalidOperationException>(() => writer.WriteEndMap());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(3)]
+        [InlineData(10)]
+        public static void EndWriteMap_IndefiniteLength_EvenItems_ShouldThrowInvalidOperationException(int length)
+        {
+            using var writer = new CborWriter();
+            writer.WriteStartMapIndefiniteLength();
+
+            for (int i = 1; i < length; i++)
+            {
+                writer.WriteTextString($"key_{i}");
+                writer.WriteInt64(i);
+            }
+
+            writer.WriteInt64(0);
 
             Assert.Throws<InvalidOperationException>(() => writer.WriteEndMap());
         }

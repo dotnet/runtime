@@ -1,12 +1,12 @@
 {
-    "maintainer_name":".NET Core Team",
+    "maintainer_name":".NET Team",
     "maintainer_email": "dotnetpackages@dotnetfoundation.org",
 
     "package_name": "%RUNTIME_DEPS_DEBIAN_PACKAGE_NAME%",
     "install_root": "/usr/share/dotnet",
 
     "short_description": "%RUNTIME_DEPS_DEBIAN_PACKAGE_NAME% %RUNTIME_DEPS_VERSION%",
-    "long_description": ".NET Core is a development platform that you can use to build command-line applications, microservices and modern websites. This package installs all the system dependencies for .NET Core Runtime.",
+    "long_description": ".NET is a development platform that you can use to build command-line applications, microservices and modern websites. This package installs all the system dependencies for .NET Runtime.",
     "homepage": "https://dot.net/core",
 
     "release":{

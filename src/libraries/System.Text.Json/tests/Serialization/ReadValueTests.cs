@@ -761,21 +761,6 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class FullNameNullTest
-    {
-        private static void EmptyGenericMethod<T>(List<T> param)
-        {
-        }
-
-        [Fact]
-        public static void TypeFullNameNullTest()
-        {
-            MethodInfo[] methods = typeof(FullNameNullTest).GetMethods(BindingFlags.Static | BindingFlags.NonPublic);
-            ParameterInfo[] parameters = methods[0].GetParameters();
-            Assert.Throws<ArgumentException>(() => JsonSerializer.Deserialize("{}", parameters[0].ParameterType));
-        }
-    }
-
     // From https://github.com/dotnet/runtime/issues/882
     public interface IContent { }
 

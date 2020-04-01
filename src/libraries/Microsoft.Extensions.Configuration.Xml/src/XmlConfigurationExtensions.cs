@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Configuration
             }
             if (string.IsNullOrEmpty(path))
             {
-                throw new ArgumentException(Resources.Error_InvalidFilePath, nameof(path));
+                throw new ArgumentException(SR.Error_InvalidFilePath, nameof(path));
             }
 
             return builder.AddXmlFile(s =>

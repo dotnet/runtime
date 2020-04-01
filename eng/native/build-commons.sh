@@ -187,7 +187,6 @@ usage()
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-skipgenerateversion: disable version generation even if MSBuild is supported."
-    echo "-stripsymbols: skip native image generation."
     echo "-verbose: optional argument to enable verbose build output."
     echo ""
     echo "Additional Options:"
@@ -205,6 +204,7 @@ __BuildArch=$arch
 __HostArch=$arch
 __TargetOS=$os
 __HostOS=$os
+__BuildOS=$os
 
 __msbuildonunsupportedplatform=0
 
@@ -336,10 +336,6 @@ while :; do
             __SkipGenerateVersion=1
             ;;
 
-        stripsymbols|-stripsymbols)
-            __CMakeArgs="-DSTRIP_SYMBOLS=true $__CMakeArgs"
-            ;;
-
         verbose|-verbose)
             __VerboseBuild=1
             ;;
@@ -392,7 +388,7 @@ else
   __NumProc=$(nproc --all)
 fi
 
-__CommonMSBuildArgs="/p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
+__CommonMSBuildArgs="/p:TargetArchitecture=$__BuildArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 
 # Configure environment if we are doing a verbose build
 if [[ "$__VerboseBuild" == 1 ]]; then

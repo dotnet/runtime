@@ -2,18 +2,21 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
-    <RootNamespace>Microsoft.Extensions.DependencyInjection</RootNamespace>
+    <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection.Specification.Tests" />
-    <Reference Include="Microsoft.Extensions.DependencyInjection" />
-    <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
-    <Reference Include="Newtonsoft.Json" />
+    <Compile Include="..\..\Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ExceptionAssertions.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ExceptionAssertions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\CultureReplacer.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\CultureReplacer.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
+    <ReferenceFromRuntime Include="Microsoft.Extensions.DependencyInjection" />
+    <ReferenceFromRuntime Include="Microsoft.Extensions.DependencyInjection.Abstractions" Aliases="DIAbstractions" />
     <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

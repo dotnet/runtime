@@ -1454,8 +1454,6 @@ void EEJitManager::SetCpuInfo()
                 CPUCompileFlags.Set(InstructionSet_BMI2);
             }
         }
-
-        CPUCompileFlags.EnsureValidInstructionSetSupport();
     }
 
     DWORD maxCpuIdEx = getcpuid(0x80000000, buffer);
@@ -1503,6 +1501,7 @@ void EEJitManager::SetCpuInfo()
 #endif // TARGET_ARM64
 
     CPUCompileFlags.Set64BitInstructionSetVariants();
+    CPUCompileFlags.EnsureValidInstructionSetSupport();
 
     m_CPUCompileFlags = CPUCompileFlags;
 }
@@ -3617,9 +3616,15 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
     this->pRealCodeHeader.EnumMem();
 #endif // USE_INDIRECT_CODEHEADER
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    BOOL hasFlagByte = TRUE;
+#else
+    BOOL hasFlagByte = FALSE;
+#endif
+
     if (this->GetDebugInfo() != NULL)
     {
-        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo());
+        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo(), hasFlagByte);
     }
 }
 
@@ -6771,7 +6776,7 @@ void ReadyToRunJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemory
     if (pDebugInfo == NULL)
         return;
 
-    CompressDebugInfo::EnumMemoryRegions(flags, pDebugInfo);
+    CompressDebugInfo::EnumMemoryRegions(flags, pDebugInfo, FALSE);
 }
 #endif
 

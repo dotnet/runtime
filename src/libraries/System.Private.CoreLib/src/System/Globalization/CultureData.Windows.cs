@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Internal.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -713,6 +714,34 @@ namespace System.Globalization
 
                 return false;
             }
+        }
+
+        internal static unsafe CultureData GetCurrentRegionData()
+        {
+            Span<char> geoIso2Letters = stackalloc char[10];
+
+            int geoId = Interop.Kernel32.GetUserGeoID(Interop.Kernel32.GEOCLASS_NATION);
+            if (geoId != Interop.Kernel32.GEOID_NOT_AVAILABLE)
+            {
+                int geoIsoIdLength;
+                fixed (char* pGeoIsoId = geoIso2Letters)
+                {
+                    geoIsoIdLength = Interop.Kernel32.GetGeoInfo(geoId, Interop.Kernel32.GEO_ISO2, pGeoIsoId, geoIso2Letters.Length, 0);
+                }
+
+                if (geoIsoIdLength != 0)
+                {
+                    geoIsoIdLength -= geoIso2Letters[geoIsoIdLength - 1] == 0 ? 1 : 0; // handle null termination and exclude it.
+                    CultureData? cd = GetCultureDataForRegion(geoIso2Letters.Slice(0, geoIsoIdLength).ToString(), true);
+                    if (cd != null)
+                    {
+                        return cd;
+                    }
+                }
+            }
+
+            // Fallback to current locale data.
+            return CultureInfo.CurrentCulture._cultureData;
         }
     }
 }

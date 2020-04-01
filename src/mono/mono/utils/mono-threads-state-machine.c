@@ -832,12 +832,20 @@ retry_state_change:
 		 * cases where we would be in ASYNC_SUSPEND_REQUESTED with
 		 * no_safepoints set, since those are polling points.
 		 */
-		/* WISH: make this fatal. Unfortunately in that case, if a
-		 * thread asserts somewhere because no_safepoints was set when it
-		 * shouldn't have been, we get a second assertion here while
-		 * unwinding. */
-		if (no_safepoints)
-			g_warning ("Warning: no_safepoints = TRUE, but should be FALSE in state RUNNING with ABORT_BLOCKING");
+		if (no_safepoints) {
+			/* reset the state to no safepoints and then abort. If a
+			 * thread asserts somewhere because no_safepoints was set when it
+			 * shouldn't have been, we would get a second assertion here while
+			 * unwinding if we hadn't reset the no_safepoints flag.
+			 */
+			if (thread_state_cas (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count, FALSE), raw_state) != raw_state)
+				goto retry_state_change;
+
+			/* record the current transition, in order to grab a backtrace */
+			trace_state_change_with_func ("ABORT_BLOCKING", info, raw_state, STATE_RUNNING, FALSE, 0, func);
+
+			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE in state RUNNING with ABORT_BLOCKING");
+		}
 		trace_state_change_sigsafe ("ABORT_BLOCKING", info, raw_state, cur_state, no_safepoints, 0, func);
 		return AbortBlockingIgnore;
 
@@ -872,7 +880,7 @@ STATE_BLOCKING_SELF_SUSPENDED: This is an exit state of done blocking, can't hap
 STATE_BLOCKING_ASYNC_SUSPENDED: This is an exit state of abort blocking, can't happen here.
 */
 	default:
-		mono_fatal_with_history ("Cannot transition thread %p from %s with DONE_BLOCKING", mono_thread_info_get_tid (info), state_name (cur_state));
+		mono_fatal_with_history ("Cannot transition thread %p from %s with ABORT_BLOCKING", mono_thread_info_get_tid (info), state_name (cur_state));
 	}
 }
 
@@ -951,7 +959,7 @@ retry_state_change:
 			mono_fatal_with_history ("no_safepoints = FALSE, but should be TRUE with END_NO_SAFEPOINTS.  Unbalanced no safepointing region");
 		if (thread_state_cas (&info->thread_state, build_thread_state (cur_state, suspend_count, FALSE), raw_state) != raw_state)
 			goto retry_state_change;
-		trace_state_change_with_func ("END_NO_SAFEPOINTS", info, raw_state, cur_state, TRUE, 0, func);
+		trace_state_change_with_func ("END_NO_SAFEPOINTS", info, raw_state, cur_state, FALSE, 0, func);
 		return;
 /*
 STATE_STARTING:
