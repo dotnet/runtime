@@ -13,54 +13,67 @@ namespace System.Threading
             /// <summary>
             /// Semaphore for controlling how many threads are currently working.
             /// </summary>
-            private static readonly LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, MaxPossibleThreadCount, SemaphoreSpinCount);
-
-            /// <summary>
-            /// Maximum number of spins a thread pool worker thread performs before waiting for work
-            /// </summary>
-            private static int SemaphoreSpinCount
-            {
-                get => AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit", 70, false);
-            }
+            private static readonly LowLevelLifoSemaphore s_semaphore =
+                new LowLevelLifoSemaphore(
+                    0,
+                    MaxPossibleThreadCount,
+                    AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit", 70, false),
+                    onWait: () =>
+                    {
+                        PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
+                        if (log.IsEnabled())
+                        {
+                            log.ThreadPoolWorkerThreadWait(ThreadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
+                        }
+                    });
 
             private static void WorkerThreadStart()
             {
                 Thread.CurrentThread.SetThreadPoolWorkerThreadName();
 
+                PortableThreadPool threadPoolInstance = ThreadPoolInstance;
+
                 PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
                 if (log.IsEnabled())
                 {
-                    log.ThreadPoolWorkerThreadStart(ThreadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
+                    log.ThreadPoolWorkerThreadStart(threadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
                 }
+
+                LowLevelLock hillClimbingThreadAdjustmentLock = threadPoolInstance._hillClimbingThreadAdjustmentLock;
 
                 while (true)
                 {
                     while (WaitForRequest())
                     {
-                        if (TakeActiveRequest())
+                        bool alreadyRemovedWorkingWorker = false;
+                        while (TakeActiveRequest(threadPoolInstance))
                         {
-                            Volatile.Write(ref ThreadPoolInstance._separated.lastDequeueTime, Environment.TickCount);
-                            if (ThreadPoolWorkQueue.Dispatch())
+                            Volatile.Write(ref threadPoolInstance._separated.lastDequeueTime, Environment.TickCount);
+                            if (!ThreadPoolWorkQueue.Dispatch())
                             {
-                                // If the queue runs out of work for us, we need to update the number of working workers to reflect that we are done working for now
-                                RemoveWorkingWorker();
+                                // ShouldStopProcessingWorkNow() caused the thread to stop processing work, and it would have
+                                // already removed this working worker in the counts
+                                alreadyRemovedWorkingWorker = true;
+                                break;
                             }
                         }
-                        else
+
+                        if (!alreadyRemovedWorkingWorker)
                         {
-                            // If we woke up but couldn't find a request, we need to update the number of working workers to reflect that we are done working for now
-                            RemoveWorkingWorker();
+                            // If we woke up but couldn't find a request, or ran out of work items to process, we need to update
+                            // the number of working workers to reflect that we are done working for now
+                            RemoveWorkingWorker(threadPoolInstance);
                         }
                     }
 
-                    ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Acquire();
+                    hillClimbingThreadAdjustmentLock.Acquire();
                     try
                     {
                         // At this point, the thread's wait timed out. We are shutting down this thread.
                         // We are going to decrement the number of exisiting threads to no longer include this one
                         // and then change the max number of threads in the thread pool to reflect that we don't need as many
                         // as we had. Finally, we are going to tell hill climbing that we changed the max number of threads.
-                        ThreadCounts counts = ThreadPoolInstance._separated.counts.VolatileRead();
+                        ThreadCounts counts = threadPoolInstance._separated.counts.VolatileRead();
                         while (true)
                         {
                             // Since this thread is currently registered as an existing thread, if more work comes in meanwhile,
@@ -76,10 +89,10 @@ namespace System.Threading
                             ThreadCounts newCounts = counts;
                             newCounts.SubtractNumExistingThreads(1);
                             short newNumExistingThreads = (short)(numExistingThreads - 1);
-                            short newNumThreadsGoal = Math.Max(ThreadPoolInstance._minThreads, Math.Min(newNumExistingThreads, newCounts.NumThreadsGoal));
+                            short newNumThreadsGoal = Math.Max(threadPoolInstance._minThreads, Math.Min(newNumExistingThreads, newCounts.NumThreadsGoal));
                             newCounts.NumThreadsGoal = newNumThreadsGoal;
 
-                            ThreadCounts oldCounts = ThreadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
+                            ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
                             if (oldCounts == counts)
                             {
                                 HillClimbing.ThreadPoolHillClimber.ForceChange(newNumThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
@@ -96,7 +109,7 @@ namespace System.Threading
                     }
                     finally
                     {
-                        ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Release();
+                        hillClimbingThreadAdjustmentLock.Release();
                     }
                 }
             }
@@ -105,28 +118,19 @@ namespace System.Threading
             /// Waits for a request to work.
             /// </summary>
             /// <returns>If this thread was woken up before it timed out.</returns>
-            private static bool WaitForRequest()
-            {
-                PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
-                if (log.IsEnabled())
-                {
-                    log.ThreadPoolWorkerThreadWait(ThreadPoolInstance._separated.counts.VolatileRead().NumExistingThreads);
-                }
-
-                return s_semaphore.Wait(ThreadPoolThreadTimeoutMs);
-            }
+            private static bool WaitForRequest() => s_semaphore.Wait(ThreadPoolThreadTimeoutMs);
 
             /// <summary>
             /// Reduce the number of working workers by one, but maybe add back a worker (possibily this thread) if a thread request comes in while we are marking this thread as not working.
             /// </summary>
-            private static void RemoveWorkingWorker()
+            private static void RemoveWorkingWorker(PortableThreadPool threadPoolInstance)
             {
-                ThreadCounts currentCounts = ThreadPoolInstance._separated.counts.VolatileRead();
+                ThreadCounts currentCounts = threadPoolInstance._separated.counts.VolatileRead();
                 while (true)
                 {
                     ThreadCounts newCounts = currentCounts;
                     newCounts.SubtractNumProcessingWork(1);
-                    ThreadCounts oldCounts = ThreadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, currentCounts);
+                    ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, currentCounts);
 
                     if (oldCounts == currentCounts)
                     {
@@ -135,19 +139,34 @@ namespace System.Threading
                     currentCounts = oldCounts;
                 }
 
+                if (currentCounts.NumProcessingWork > 1)
+                {
+                    // In highly bursty cases with short bursts of work, especially in the portable thread pool implementation,
+                    // worker threads are being released and entering Dispatch very quickly, not finding much work in Dispatch,
+                    // and soon afterwards going back to Dispatch, causing extra thrashing on data and some interlocked
+                    // operations. If this is not the last thread to stop processing work, introduce a slight delay to help
+                    // other threads make more efficient progress. The spin-wait is mainly for when the sleep is not effective
+                    // due to there being no other threads to schedule.
+                    Thread.UninterruptibleSleep0();
+                    if (!Environment.IsSingleProcessor)
+                    {
+                        Thread.SpinWait(1);
+                    }
+                }
+
                 // It's possible that we decided we had thread requests just before a request came in,
                 // but reduced the worker count *after* the request came in.  In this case, we might
                 // miss the notification of a thread request.  So we wake up a thread (maybe this one!)
                 // if there is work to do.
-                if (ThreadPoolInstance._separated.numRequestedWorkers > 0)
+                if (threadPoolInstance._separated.numRequestedWorkers > 0)
                 {
-                    MaybeAddWorkingWorker();
+                    MaybeAddWorkingWorker(threadPoolInstance);
                 }
             }
 
-            internal static void MaybeAddWorkingWorker()
+            internal static void MaybeAddWorkingWorker(PortableThreadPool threadPoolInstance)
             {
-                ThreadCounts counts = ThreadPoolInstance._separated.counts.VolatileRead();
+                ThreadCounts counts = threadPoolInstance._separated.counts.VolatileRead();
                 short numExistingThreads, numProcessingWork, newNumExistingThreads, newNumProcessingWork;
                 while (true)
                 {
@@ -165,7 +184,7 @@ namespace System.Threading
                     newCounts.NumProcessingWork = newNumProcessingWork;
                     newCounts.NumExistingThreads = newNumExistingThreads;
 
-                    ThreadCounts oldCounts = ThreadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
+                    ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
 
                     if (oldCounts == counts)
                     {
@@ -191,14 +210,14 @@ namespace System.Threading
                         continue;
                     }
 
-                    counts = ThreadPoolInstance._separated.counts.VolatileRead();
+                    counts = threadPoolInstance._separated.counts.VolatileRead();
                     while (true)
                     {
                         ThreadCounts newCounts = counts;
                         newCounts.SubtractNumProcessingWork((short)toCreate);
                         newCounts.SubtractNumExistingThreads((short)toCreate);
 
-                        ThreadCounts oldCounts = ThreadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
+                        ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
                         if (oldCounts == counts)
                         {
                             break;
@@ -215,9 +234,9 @@ namespace System.Threading
             /// there are more worker threads in the thread pool than we currently want.
             /// </summary>
             /// <returns>Whether or not this thread should stop processing work even if there is still work in the queue.</returns>
-            internal static bool ShouldStopProcessingWorkNow()
+            internal static bool ShouldStopProcessingWorkNow(PortableThreadPool threadPoolInstance)
             {
-                ThreadCounts counts = ThreadPoolInstance._separated.counts.VolatileRead();
+                ThreadCounts counts = threadPoolInstance._separated.counts.VolatileRead();
                 while (true)
                 {
                     // When there are more threads processing work than the thread count goal, hill climbing must have decided
@@ -235,7 +254,7 @@ namespace System.Threading
                     ThreadCounts newCounts = counts;
                     newCounts.SubtractNumProcessingWork(1);
 
-                    ThreadCounts oldCounts = ThreadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
+                    ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
 
                     if (oldCounts == counts)
                     {
@@ -245,12 +264,12 @@ namespace System.Threading
                 }
             }
 
-            private static bool TakeActiveRequest()
+            private static bool TakeActiveRequest(PortableThreadPool threadPoolInstance)
             {
-                int count = ThreadPoolInstance._separated.numRequestedWorkers;
+                int count = threadPoolInstance._separated.numRequestedWorkers;
                 while (count > 0)
                 {
-                    int prevCount = Interlocked.CompareExchange(ref ThreadPoolInstance._separated.numRequestedWorkers, count - 1, count);
+                    int prevCount = Interlocked.CompareExchange(ref threadPoolInstance._separated.numRequestedWorkers, count - 1, count);
                     if (prevCount == count)
                     {
                         return true;

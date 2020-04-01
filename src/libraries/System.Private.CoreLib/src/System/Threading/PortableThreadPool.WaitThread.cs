@@ -275,7 +275,8 @@ namespace System.Threading
             /// </summary>
             private void ProcessRemovals()
             {
-                ThreadPoolInstance._waitThreadLock.Acquire();
+                PortableThreadPool threadPoolInstance = ThreadPoolInstance;
+                threadPoolInstance._waitThreadLock.Acquire();
                 try
                 {
                     Debug.Assert(_numPendingRemoves >= 0);
@@ -322,7 +323,7 @@ namespace System.Threading
                 }
                 finally
                 {
-                    ThreadPoolInstance._waitThreadLock.Release();
+                    threadPoolInstance._waitThreadLock.Release();
                 }
             }
 
@@ -398,7 +399,8 @@ namespace System.Threading
             {
                 bool pendingRemoval = false;
                 // TODO: Optimization: Try to unregister wait directly if it isn't being waited on.
-                ThreadPoolInstance._waitThreadLock.Acquire();
+                PortableThreadPool threadPoolInstance = ThreadPoolInstance;
+                threadPoolInstance._waitThreadLock.Acquire();
                 try
                 {
                     // If this handle is not already pending removal and hasn't already been removed
@@ -411,7 +413,7 @@ namespace System.Threading
                 }
                 finally
                 {
-                    ThreadPoolInstance._waitThreadLock.Release();
+                    threadPoolInstance._waitThreadLock.Release();
                 }
 
                 if (blocking)

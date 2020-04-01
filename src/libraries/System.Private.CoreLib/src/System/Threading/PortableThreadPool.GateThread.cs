@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
@@ -12,8 +14,6 @@ namespace System.Threading
             private const int GateThreadDelayMs = 500;
             private const int DequeueDelayThresholdMs = GateThreadDelayMs * 2;
             private const int GateThreadRunningMask = 0x4;
-
-            private static int s_runningState;
 
             private static readonly AutoResetEvent s_runGateThreadEvent = new AutoResetEvent(initialState: true);
 
@@ -32,6 +32,9 @@ namespace System.Threading
                 CpuUtilizationReader cpuUtilizationReader = default;
                 _ = cpuUtilizationReader.CurrentUtilization;
 
+                PortableThreadPool threadPoolInstance = ThreadPoolInstance;
+                LowLevelLock hillClimbingThreadAdjustmentLock = threadPoolInstance._hillClimbingThreadAdjustmentLock;
+
                 while (true)
                 {
                     s_runGateThreadEvent.WaitOne();
@@ -42,20 +45,20 @@ namespace System.Threading
                         Thread.Sleep(GateThreadDelayMs);
 
                         int cpuUtilization = cpuUtilizationReader.CurrentUtilization;
-                        ThreadPoolInstance._cpuUtilization = cpuUtilization;
+                        threadPoolInstance._cpuUtilization = cpuUtilization;
 
                         needGateThreadForRuntime = ThreadPool.PerformRuntimeSpecificGateActivities(cpuUtilization);
 
                         if (!disableStarvationDetection &&
-                            ThreadPoolInstance._separated.numRequestedWorkers > 0 &&
-                            SufficientDelaySinceLastDequeue())
+                            threadPoolInstance._separated.numRequestedWorkers > 0 &&
+                            SufficientDelaySinceLastDequeue(threadPoolInstance))
                         {
                             try
                             {
-                                ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Acquire();
-                                ThreadCounts counts = ThreadPoolInstance._separated.counts.VolatileRead();
+                                hillClimbingThreadAdjustmentLock.Acquire();
+                                ThreadCounts counts = threadPoolInstance._separated.counts.VolatileRead();
                                 // don't add a thread if we're at max or if we are already in the process of adding threads
-                                while (counts.NumExistingThreads < ThreadPoolInstance._maxThreads && counts.NumExistingThreads >= counts.NumThreadsGoal)
+                                while (counts.NumExistingThreads < threadPoolInstance._maxThreads && counts.NumExistingThreads >= counts.NumThreadsGoal)
                                 {
                                     if (debuggerBreakOnWorkStarvation)
                                     {
@@ -65,11 +68,11 @@ namespace System.Threading
                                     ThreadCounts newCounts = counts;
                                     short newNumThreadsGoal = (short)(newCounts.NumExistingThreads + 1);
                                     newCounts.NumThreadsGoal = newNumThreadsGoal;
-                                    ThreadCounts oldCounts = ThreadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
+                                    ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
                                     if (oldCounts == counts)
                                     {
                                         HillClimbing.ThreadPoolHillClimber.ForceChange(newNumThreadsGoal, HillClimbing.StateOrTransition.Starvation);
-                                        WorkerThread.MaybeAddWorkingWorker();
+                                        WorkerThread.MaybeAddWorkingWorker(threadPoolInstance);
                                         break;
                                     }
 
@@ -78,32 +81,32 @@ namespace System.Threading
                             }
                             finally
                             {
-                                ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Release();
+                                hillClimbingThreadAdjustmentLock.Release();
                             }
                         }
                     } while (
                         needGateThreadForRuntime ||
-                        ThreadPoolInstance._separated.numRequestedWorkers > 0 ||
-                        Interlocked.Decrement(ref s_runningState) > GetRunningStateForNumRuns(0));
+                        threadPoolInstance._separated.numRequestedWorkers > 0 ||
+                        Interlocked.Decrement(ref threadPoolInstance._separated.gateThreadRunningState) > GetRunningStateForNumRuns(0));
                 }
             }
 
             // called by logic to spawn new worker threads, return true if it's been too long
             // since the last dequeue operation - takes number of worker threads into account
             // in deciding "too long"
-            private static bool SufficientDelaySinceLastDequeue()
+            private static bool SufficientDelaySinceLastDequeue(PortableThreadPool threadPoolInstance)
             {
-                int delay = Environment.TickCount - Volatile.Read(ref ThreadPoolInstance._separated.lastDequeueTime);
+                int delay = Environment.TickCount - Volatile.Read(ref threadPoolInstance._separated.lastDequeueTime);
 
                 int minimumDelay;
 
-                if (ThreadPoolInstance._cpuUtilization < CpuUtilizationLow)
+                if (threadPoolInstance._cpuUtilization < CpuUtilizationLow)
                 {
                     minimumDelay = GateThreadDelayMs;
                 }
                 else
                 {
-                    ThreadCounts counts = ThreadPoolInstance._separated.counts.VolatileRead();
+                    ThreadCounts counts = threadPoolInstance._separated.counts.VolatileRead();
                     int numThreads = counts.NumThreadsGoal;
                     minimumDelay = numThreads * DequeueDelayThresholdMs;
                 }
@@ -111,28 +114,27 @@ namespace System.Threading
             }
 
             // This is called by a worker thread
-            internal static void EnsureRunning()
+            internal static void EnsureRunning(PortableThreadPool threadPoolInstance)
             {
-                int numRunsMask = Interlocked.Exchange(ref s_runningState, GetRunningStateForNumRuns(MaxRuns));
-                if ((numRunsMask & GateThreadRunningMask) == 0)
+                // The callers ensure that this speculative load is sufficient to ensure that the gate thread is activated when
+                // it is needed
+                if (threadPoolInstance._separated.gateThreadRunningState != GetRunningStateForNumRuns(MaxRuns))
                 {
-                    bool created = false;
-                    try
-                    {
-                        CreateGateThread();
-                        created = true;
-                    }
-                    finally
-                    {
-                        if (!created)
-                        {
-                            Interlocked.Exchange(ref s_runningState, 0);
-                        }
-                    }
+                    EnsureRunningSlow(threadPoolInstance);
                 }
-                else if (numRunsMask == GetRunningStateForNumRuns(0))
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            internal static void EnsureRunningSlow(PortableThreadPool threadPoolInstance)
+            {
+                int numRunsMask = Interlocked.Exchange(ref threadPoolInstance._separated.gateThreadRunningState, GetRunningStateForNumRuns(MaxRuns));
+                if (numRunsMask == GetRunningStateForNumRuns(0))
                 {
                     s_runGateThreadEvent.Set();
+                }
+                else if ((numRunsMask & GateThreadRunningMask) == 0)
+                {
+                    CreateGateThread(threadPoolInstance);
                 }
             }
 
@@ -143,16 +145,29 @@ namespace System.Threading
                 return GateThreadRunningMask | numRuns;
             }
 
-            private static void CreateGateThread()
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static void CreateGateThread(PortableThreadPool threadPoolInstance)
             {
-                Thread gateThread = new Thread(GateThreadStart);
-                gateThread.IsThreadPoolThread = true;
-                gateThread.IsBackground = true;
-                gateThread.Name = ".NET ThreadPool Gate";
-                gateThread.Start();
+                bool created = false;
+                try
+                {
+                    Thread gateThread = new Thread(GateThreadStart);
+                    gateThread.IsThreadPoolThread = true;
+                    gateThread.IsBackground = true;
+                    gateThread.Name = ".NET ThreadPool Gate";
+                    gateThread.Start();
+                    created = true;
+                }
+                finally
+                {
+                    if (!created)
+                    {
+                        Interlocked.Exchange(ref threadPoolInstance._separated.gateThreadRunningState, 0);
+                    }
+                }
             }
         }
 
-        internal static void EnsureGateThreadRunning() => GateThread.EnsureRunning();
+        internal static void EnsureGateThreadRunning() => GateThread.EnsureRunning(ThreadPoolInstance);
     }
 }

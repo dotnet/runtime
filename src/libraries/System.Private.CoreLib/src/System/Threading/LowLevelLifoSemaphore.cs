@@ -16,10 +16,11 @@ namespace System.Threading
 
         private readonly int _maximumSignalCount;
         private readonly int _spinCount;
+        private readonly Action _onWait;
 
         private const int SpinSleep0Threshold = 10;
 
-        public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount)
+        public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount, Action onWait)
         {
             Debug.Assert(initialSignalCount >= 0);
             Debug.Assert(initialSignalCount <= maximumSignalCount);
@@ -30,6 +31,7 @@ namespace System.Threading
             _separated._counts.SignalCount = (uint)initialSignalCount;
             _maximumSignalCount = maximumSignalCount;
             _spinCount = spinCount;
+            _onWait = onWait;
 
             Create(maximumSignalCount);
         }
@@ -37,6 +39,8 @@ namespace System.Threading
         public bool Wait(int timeoutMs)
         {
             Debug.Assert(timeoutMs >= -1);
+
+            int spinCount = _spinCount;
 
             // Try to acquire the semaphore or
             // a) register as a spinner if spinCount > 0 and timeoutMs > 0
@@ -53,7 +57,7 @@ namespace System.Threading
                 }
                 else if (timeoutMs != 0)
                 {
-                    if (_spinCount > 0 && newCounts.SpinnerCount < byte.MaxValue)
+                    if (spinCount > 0 && newCounts.SpinnerCount < byte.MaxValue)
                     {
                         newCounts.IncrementSpinnerCount();
                     }
@@ -85,9 +89,13 @@ namespace System.Threading
                 counts = countsBeforeUpdate;
             }
 
+#if CORECLR && TARGET_UNIX
+            // The PAL's wait subsystem is slower, spin more to compensate for the more expensive wait
+            spinCount *= 2;
+#endif
             int processorCount = Environment.ProcessorCount;
             int spinIndex = processorCount > 1 ? 0 : SpinSleep0Threshold;
-            while (spinIndex < _spinCount)
+            while (spinIndex < spinCount)
             {
                 LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, processorCount);
                 spinIndex++;
@@ -188,6 +196,8 @@ namespace System.Threading
         private bool WaitForSignal(int timeoutMs)
         {
             Debug.Assert(timeoutMs > 0 || timeoutMs == -1);
+
+            _onWait();
 
             while (true)
             {

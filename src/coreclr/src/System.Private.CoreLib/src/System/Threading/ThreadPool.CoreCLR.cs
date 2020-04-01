@@ -423,11 +423,14 @@ namespace System.Threading
         private static extern void GetAvailableThreadsNative(out int workerThreads, out int completionPortThreads);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject)
+        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
         {
             if (UsePortableThreadPool)
             {
-                return PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject);
+                return
+                    PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(
+                        threadLocalCompletionCountObject,
+                        currentTimeMs);
             }
 
             return NotifyWorkItemCompleteNative();

@@ -23,7 +23,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-    [StructLayout(LayoutKind.Sequential)] // enforce layout so that padding reduces false sharing
     internal sealed class ThreadPoolWorkQueue
     {
         internal static class WorkStealingQueueList
@@ -118,33 +117,7 @@ namespace System.Threading
                 // We're going to increment the tail; if we'll overflow, then we need to reset our counts
                 if (tail == int.MaxValue)
                 {
-                    bool lockTaken = false;
-                    try
-                    {
-                        m_foreignLock.Enter(ref lockTaken);
-
-                        if (m_tailIndex == int.MaxValue)
-                        {
-                            //
-                            // Rather than resetting to zero, we'll just mask off the bits we don't care about.
-                            // This way we don't need to rearrange the items already in the queue; they'll be found
-                            // correctly exactly where they are.  One subtlety here is that we need to make sure that
-                            // if head is currently < tail, it remains that way.  This happens to just fall out from
-                            // the bit-masking, because we only do this if tail == int.MaxValue, meaning that all
-                            // bits are set, so all of the bits we're keeping will also be set.  Thus it's impossible
-                            // for the head to end up > than the tail, since you can't set any more bits than all of
-                            // them.
-                            //
-                            m_headIndex &= m_mask;
-                            m_tailIndex = tail = m_tailIndex & m_mask;
-                            Debug.Assert(m_headIndex <= m_tailIndex);
-                        }
-                    }
-                    finally
-                    {
-                        if (lockTaken)
-                            m_foreignLock.Exit(useMemoryBarrier: true);
-                    }
+                    tail = LocalPush_HandleTailOverflow();
                 }
 
                 // When there are at least 2 elements' worth of space, we can take the fast path.
@@ -187,6 +160,41 @@ namespace System.Threading
                         if (lockTaken)
                             m_foreignLock.Exit(useMemoryBarrier: false);
                     }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private int LocalPush_HandleTailOverflow()
+            {
+                bool lockTaken = false;
+                try
+                {
+                    m_foreignLock.Enter(ref lockTaken);
+
+                    int tail = m_tailIndex;
+                    if (tail == int.MaxValue)
+                    {
+                        //
+                        // Rather than resetting to zero, we'll just mask off the bits we don't care about.
+                        // This way we don't need to rearrange the items already in the queue; they'll be found
+                        // correctly exactly where they are.  One subtlety here is that we need to make sure that
+                        // if head is currently < tail, it remains that way.  This happens to just fall out from
+                        // the bit-masking, because we only do this if tail == int.MaxValue, meaning that all
+                        // bits are set, so all of the bits we're keeping will also be set.  Thus it's impossible
+                        // for the head to end up > than the tail, since you can't set any more bits than all of
+                        // them.
+                        //
+                        m_headIndex &= m_mask;
+                        m_tailIndex = tail = m_tailIndex & m_mask;
+                        Debug.Assert(m_headIndex <= m_tailIndex);
+                    }
+
+                    return tail;
+                }
+                finally
+                {
+                    if (lockTaken)
+                        m_foreignLock.Exit(useMemoryBarrier: true);
                 }
             }
 
@@ -385,11 +393,17 @@ namespace System.Threading
         internal readonly ConcurrentQueue<IThreadPoolWorkItem>? timeSensitiveWorkQueue =
             ThreadPool.SupportsTimeSensitiveWorkItems ? new ConcurrentQueue<IThreadPoolWorkItem>() : null;
 
-        private readonly Internal.PaddingFor32 pad1;
+        [StructLayout(LayoutKind.Sequential)]
+        private struct CacheLineSeparated
+        {
+            private readonly Internal.PaddingFor32 pad1;
 
-        private volatile int numOutstandingThreadRequests;
+            public volatile int numOutstandingThreadRequests;
 
-        private readonly Internal.PaddingFor32 pad2;
+            private readonly Internal.PaddingFor32 pad2;
+        }
+
+        private CacheLineSeparated _separated;
 
         public ThreadPoolWorkQueue()
         {
@@ -436,10 +450,10 @@ namespace System.Threading
             // CoreCLR: Note that there is a separate count in the VM which has already been incremented
             // by the VM by the time we reach this point.
             //
-            int count = numOutstandingThreadRequests;
+            int count = _separated.numOutstandingThreadRequests;
             while (count < Environment.ProcessorCount)
             {
-                int prev = Interlocked.CompareExchange(ref numOutstandingThreadRequests, count + 1, count);
+                int prev = Interlocked.CompareExchange(ref _separated.numOutstandingThreadRequests, count + 1, count);
                 if (prev == count)
                 {
                     ThreadPool.RequestWorkerThread();
@@ -458,10 +472,10 @@ namespace System.Threading
             // CoreCLR: Note that there is a separate count in the VM which has already been decremented
             // by the VM by the time we reach this point.
             //
-            int count = numOutstandingThreadRequests;
+            int count = _separated.numOutstandingThreadRequests;
             while (count > 0)
             {
-                int prev = Interlocked.CompareExchange(ref numOutstandingThreadRequests, count - 1, count);
+                int prev = Interlocked.CompareExchange(ref _separated.numOutstandingThreadRequests, count - 1, count);
                 if (prev == count)
                 {
                     break;
@@ -709,11 +723,11 @@ namespace System.Threading
                     // Notify the VM that we executed this workitem.  This is also our opportunity to ask whether Hill Climbing wants
                     // us to return the thread to the pool or not.
                     //
-                    if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject))
+                    int currentTickCount = Environment.TickCount;
+                    if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTickCount))
                         return false;
 
                     // Check if the dispatch quantum has expired
-                    int currentTickCount = Environment.TickCount;
                     if ((uint)(currentTickCount - startTickCount) < DispatchQuantumMs)
                     {
                         continue;
