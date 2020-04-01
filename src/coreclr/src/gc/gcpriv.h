@@ -4013,7 +4013,9 @@ protected:
 
 #define NUM_LOH_ALIST (7)
     // bucket 0 contains sizes less than 64*1024
-#define BASE_LOH_ALIST_BITS (14)
+    // the "BITS" number here is the highest bit in 64*1024 - 1, zero-based as in BitScanReverse.
+    // see first_suitable_bucket(size_t size) for details.
+#define BASE_LOH_ALIST_BITS (15)
     PER_HEAP
     alloc_list loh_alloc_list[NUM_LOH_ALIST-1];
 
