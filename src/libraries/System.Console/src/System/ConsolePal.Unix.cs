@@ -109,7 +109,7 @@ namespace System
             }
             else
             {
-                return StdInReader;
+                return Console.EnsureInitialized(ref field, StdInReader);
             }
         }
 
