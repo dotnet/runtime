@@ -14,6 +14,13 @@ namespace System.Text.Json
     {
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowOutOfMemoryException_BufferMaximumSizeExceeded(uint capacity)
+        {
+            throw new OutOfMemoryException(SR.Format(SR.BufferMaximumSizeExceeded, capacity));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowArgumentException_DeserializeWrongType(Type type, object value)
         {
             throw new ArgumentException(SR.Format(SR.DeserializeWrongType, type, value.GetType()));
@@ -83,6 +90,13 @@ namespace System.Text.Json
             }
 
             throw ex;
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_CannotSerializeOpenGeneric(Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.CannotSerializeOpenGeneric, type));
         }
 
         [DoesNotReturn]
@@ -181,7 +195,7 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static NotSupportedException ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(
+        public static void ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(
             PropertyInfo propertyInfo,
             Type classType,
             ConstructorInfo constructorInfo)

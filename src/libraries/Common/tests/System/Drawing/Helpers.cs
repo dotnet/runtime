@@ -41,6 +41,10 @@ namespace System.Drawing
             {
                 installedVersion = new Version(GetLibgdiplusVersion());
             }
+            catch (DllNotFoundException)
+            {
+                return false;
+            }
             catch (EntryPointNotFoundException)
             {
                 return false;

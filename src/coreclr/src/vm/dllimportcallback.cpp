@@ -105,20 +105,7 @@ private:
 
 static UMEntryThunkFreeList s_thunkFreeList(DEFAULT_THUNK_FREE_LIST_THRESHOLD);
 
-#ifdef TARGET_X86
-
-#ifdef FEATURE_STUBS_AS_IL
-
-EXTERN_C void UMThunkStub(void);
-
-PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return GetEEFuncEntryPoint(UMThunkStub);
-}
-
-#else // FEATURE_STUBS_AS_IL
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
 
 EXTERN_C VOID __cdecl UMThunkStubRareDisable();
 EXTERN_C Thread* __stdcall CreateThreadBlockThrow();
@@ -767,18 +754,16 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     return pcpusl->Link(pLoaderHeap);
 }
 
-#endif // FEATURE_STUBS_AS_IL
-
-#else // TARGET_X86
+#else // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
 PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return m_pILStub;
+    return GetEEFuncEntryPoint(UMThunkStub);
 }
 
-#endif // TARGET_X86
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
 UMEntryThunkCache::UMEntryThunkCache(AppDomain *pDomain) :
     m_crst(CrstUMEntryThunkCache),
@@ -1209,20 +1194,33 @@ VOID UMThunkMarshInfo::RunTimeInit()
 
     if (pFinalILStub == NULL)
     {
-        PInvokeStaticSigInfo sigInfo;
-
-        if (pMD != NULL)
-            new (&sigInfo) PInvokeStaticSigInfo(pMD);
+        if (pMD != NULL && !pMD->IsEEImpl() &&
+            !NDirect::MarshalingRequired(pMD, GetSignature().GetRawSig(), GetModule()))
+        {
+            // Call the method directly in no-delegate case if possible. This is important to avoid JITing
+            // for stubs created via code:ICLRRuntimeHost2::CreateDelegate during coreclr startup.
+            pFinalILStub = pMD->GetMultiCallableAddrOfCode();
+        }
         else
-           new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
+        {
+            // For perf, it is important to avoid expensive initialization of
+            // PInvokeStaticSigInfo if we have NGened stub.
+            PInvokeStaticSigInfo sigInfo;
 
-        DWORD dwStubFlags = 0;
+            if (pMD != NULL)
+                new (&sigInfo) PInvokeStaticSigInfo(pMD);
+            else
+                new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
 
-        if (sigInfo.IsDelegateInterop())
-            dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+            DWORD dwStubFlags = 0;
 
-        pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
-        pFinalILStub = JitILStub(pStubMD);
+            if (sigInfo.IsDelegateInterop())
+                dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+
+            pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
+            pFinalILStub = JitILStub(pStubMD);
+
+        }
     }
 
 #if defined(TARGET_X86)
@@ -1279,6 +1277,13 @@ VOID UMThunkMarshInfo::RunTimeInit()
         // For all the other calling convention except cdecl, callee pops the stack arguments
         m_cbRetPop = cbRetPop + static_cast<UINT16>(m_cbActualArgSize);
     }
+#else // TARGET_X86
+    //
+    // m_cbActualArgSize gets the number of arg bytes for the NATIVE signature
+    //
+    m_cbActualArgSize =
+        (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : pMD->SizeOfArgStack();
+
 #endif // TARGET_X86
 
 #endif // TARGET_X86 && !FEATURE_STUBS_AS_IL

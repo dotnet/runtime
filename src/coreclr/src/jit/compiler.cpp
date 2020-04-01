@@ -8023,7 +8023,7 @@ void Compiler::PrintPerMethodLoopHoistStats()
 
 void Compiler::RecordStateAtEndOfInlining()
 {
-#if defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#if defined(DEBUG) || defined(INLINE_DATA)
 
     m_compCyclesAtEndOfInlining    = 0;
     m_compTickCountAtEndOfInlining = 0;
@@ -8034,7 +8034,7 @@ void Compiler::RecordStateAtEndOfInlining()
     }
     m_compTickCountAtEndOfInlining = GetTickCount();
 
-#endif // defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 }
 
 //------------------------------------------------------------------------
@@ -8043,7 +8043,7 @@ void Compiler::RecordStateAtEndOfInlining()
 
 void Compiler::RecordStateAtEndOfCompilation()
 {
-#if defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
+#if defined(DEBUG) || defined(INLINE_DATA)
 
     // Common portion
     m_compCycles = 0;
@@ -8057,33 +8057,7 @@ void Compiler::RecordStateAtEndOfCompilation()
 
     m_compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
 
-#endif // defined(DEBUG) || defined(INLINE_DATA) || defined(FEATURE_CLRSQM)
-
-#ifdef FEATURE_CLRSQM
-
-    // SQM only portion
-    unsigned __int64 mcycles64 = m_compCycles / ((unsigned __int64)1000000);
-    unsigned         mcycles;
-    if (mcycles64 > UINT32_MAX)
-    {
-        mcycles = UINT32_MAX;
-    }
-    else
-    {
-        mcycles = (unsigned)mcycles64;
-    }
-
-    DWORD ticksAtEnd = GetTickCount();
-    assert(ticksAtEnd >= m_compTickCountAtEndOfInlining);
-    DWORD compTicks = ticksAtEnd - m_compTickCountAtEndOfInlining;
-
-    if (mcycles >= 1000)
-    {
-        info.compCompHnd->logSQMLongJitEvent(mcycles, compTicks, info.compILCodeSize, fgBBcount, opts.MinOpts(),
-                                             info.compMethodHnd);
-    }
-
-#endif // FEATURE_CLRSQM
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 }
 
 #if FUNC_INFO_LOGGING
