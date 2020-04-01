@@ -222,7 +222,7 @@ jobs:
 
 # Android x86
 
-- ${{ if containsValue(parameters.platforms, 'Android_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'Android_x86') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
