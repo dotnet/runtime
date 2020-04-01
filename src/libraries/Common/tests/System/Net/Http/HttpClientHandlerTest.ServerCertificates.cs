@@ -410,7 +410,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void HttpClientUsesSslCertEnvironmentVariables()
         {
             // We set SSL_CERT_DIR and SSL_CERT_FILE to empty locations.
