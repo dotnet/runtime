@@ -1292,6 +1292,8 @@ AC_ARG_WITH(spectre-mitigation,             [  --with-spectre-mitigation=yes,no 
 AC_ARG_WITH(spectre-indirect-branch-choice,   [  --with-spectre-indirect-branch-choice=keep,thunk,inline,extern   Convert indirect branches to the specified kind of thunk (defaults to inline)], [], [with_spectre_indirect_branch_choice=inline])
 AC_ARG_WITH(spectre-function-return-choice, [  --with-spectre-function-return-choice=keep,thunk,inline,extern   Convert function return instructions to the specified kind of thunk (defaults to inline)], [], [with_spectre_function_return_choice=inline])
 
+
+
 dnl
 dnl Spectre compiler mitigation flag checks
 dnl
@@ -1364,8 +1366,6 @@ enable_hybrid_suspend_default=no
 INVARIANT_AOT_OPTIONS=nimt-trampolines=2000,ntrampolines=10000,nrgctx-fetch-trampolines=256,ngsharedvt-trampolines=4400,nftnptr-arg-trampolines=4000,nrgctx-trampolines=21000
 
 AOT_BUILD_ATTRS=$INVARIANT_AOT_OPTIONS
-
-MONO_LLVM_PATH_OPTION=llvm-path="`pwd`/llvm/usr/bin"
 
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS_default=yes
@@ -1617,13 +1617,6 @@ else
    with_profile4_x_default=yes
 fi
 
-if test "x$AOT_BUILD_FLAGS" != "x"; then :
-   AC_SUBST(AOT_BUILD_FLAGS)
-   AC_SUBST(AOT_RUN_FLAGS)
-   # For llvmonlycheck + fullaotcheck
-   AC_SUBST(INVARIANT_AOT_OPTIONS)
-fi
-
 AC_SUBST(TEST_PROFILE)
 
 if test "x$with_profile4_x" = "xdefault"; then
@@ -1738,6 +1731,144 @@ AC_SUBST(DEFAULT_PROFILE)
 #
 # End build profile configuration
 #
+
+dnl **************
+dnl ***  LLVM  ***
+dnl **************
+
+AC_ARG_ENABLE(llvm,[  --enable-llvm	Enable the LLVM back-end], enable_llvm=$enableval, enable_llvm=default)
+AC_ARG_ENABLE(loadedllvm,[  --enable-loadedllvm	Load the LLVM back-end dynamically], enable_llvm=$enableval && enable_loadedllvm=$enableval, enable_loadedllvm=no)
+AC_ARG_ENABLE(llvm-version-check,[  --enable-llvm-version-check Check that the LLVM matches the version expected by mono], enable_llvm_version_check=$enableval, enable_llvm_version_check=no)
+AC_ARG_ENABLE(llvm-runtime,[  --enable-llvm-runtime	Enable runtime support for llvmonly code], enable_llvm_runtime=$enableval, enable_llvm_runtime=no)
+AC_ARG_ENABLE(llvm-asserts,[  --enable-llvm-asserts Enable llvm asserts (option to LLVM in CMake)], enable_llvm_asserts=$enableval, enable_llvm_asserts=no)
+
+AC_ARG_WITH(llvm, [  --with-llvm=<llvm prefix>    Enable the LLVM back-end], enable_llvm=yes,)
+
+if test "x$enable_llvm" = "xdefault"; then
+   enable_llvm=$enable_llvm_default
+fi
+
+if test "x$enable_loadedllvm" = "xyes"; then
+   AC_MSG_WARN("Loadable LLVM is no longer supported. Enabling default LLVM support instead.")
+   enable_llvm=yes
+fi
+
+enable_llvm_msvc_only="no"
+if test "x$enable_llvm" = "xyes"; then
+	if test "x$host_win32" = "xyes"; then
+		if test "x$cross_compiling" = "xno"; then
+			case "$target" in
+			x86_64*)
+				AC_MSG_WARN("LLVM for host=Windows and target=Windows is only supported on x64 MSVC builds. Disabling LLVM for GCC build.")
+				enable_llvm_msvc_only="yes"
+				;;
+			i686*)
+				AC_MSG_ERROR("LLVM for host=Windows and target=Windows is only supported for x64 builds.")
+				;;
+			esac
+		fi
+	fi
+fi
+
+internal_llvm="no"
+if test "x$enable_llvm" = "xyes"; then
+	if test "x$with_llvm" != "x"; then
+		EXTERNAL_LLVM_CONFIG=$with_llvm/bin/llvm-config
+		if test x$host_win32 = xyes; then
+			EXTERNAL_LLVM_CONFIG=$EXTERNAL_LLVM_CONFIG.exe
+		fi
+		if test ! -x $EXTERNAL_LLVM_CONFIG; then
+			AC_MSG_ERROR([LLVM executable $EXTERNAL_LLVM_CONFIG not found.])
+		fi
+	else
+		internal_llvm=yes
+	fi
+
+	LLVM_CODEGEN_LIBS="x86codegen"
+	case "$target" in
+	arm*)
+		LLVM_CODEGEN_LIBS="armcodegen"
+		;;
+	aarch64*)
+		LLVM_CODEGEN_LIBS="aarch64codegen"
+		;;
+	powerpc*)
+		LLVM_CODEGEN_LIBS="powerpccodegen"
+		;;
+	esac
+	if test "x$host" != "x$target"; then
+		# No need for jit libs
+		LLVM_CODEGEN_LIBS=
+	fi
+
+	AC_SUBST(LLVM_CODEGEN_LIBS)
+	AC_SUBST(EXTERNAL_LLVM_CONFIG)
+
+	if test "x$host_win32" = "xyes" && test "x$cross_compiling" = "xno" &&  test "x$internal_llvm" = "xno"; then
+		EXTERNAL_LLVM_CONFIG_WIN32=$(cygpath -m $EXTERNAL_LLVM_CONFIG)
+		AC_SUBST(EXTERNAL_LLVM_CONFIG_WIN32)
+	fi
+	if test "x$enable_llvm_msvc_only" != "xyes"; then
+		AC_DEFINE(ENABLE_LLVM, 1, [Enable the LLVM back end])
+	else
+		AC_DEFINE(ENABLE_LLVM_MSVC_ONLY, 1, [Enable the LLVM back end])
+	fi
+fi # ENABLE_LLVM
+
+# AC_DEFINE necessary for correct restore behavior on Linux
+AM_CONDITIONAL(INTERNAL_LLVM, [test "x$internal_llvm" != "xno" && test "x$enable_llvm_msvc_only" != "xyes"])
+if test "x$internal_llvm" != "xno"; then
+	if test "x$enable_llvm_msvc_only" != "xyes"; then
+		AC_DEFINE(INTERNAL_LLVM, 1, [LLVM used is being build during mono build])
+	else
+		AC_DEFINE(INTERNAL_LLVM_MSVC_ONLY, 1, [LLVM used is being build during mono build])
+	fi
+fi
+
+AM_CONDITIONAL(INTERNAL_LLVM_ASSERTS, [test "x$enable_llvm_asserts" != "xno" && test "x$enable_llvm_msvc_only" != "xyes"])
+if test "x$enable_llvm_asserts" != "xno"; then
+	if test "x$enable_llvm_msvc_only" != "xyes"; then
+		AC_DEFINE(INTERNAL_LLVM_ASSERTS, 1, [Build LLVM with assertions])
+	else
+		AC_DEFINE(INTERNAL_LLVM_ASSERTS_MSVC_ONLY, 1, [Build LLVM with assertions])
+	fi
+fi
+
+AM_CONDITIONAL(ENABLE_LLVM, [test x$enable_llvm = xyes && test x$enable_llvm_msvc_only != xyes])
+
+if test "x$enable_llvm" = "xyes"; then
+	enable_llvm_runtime=yes
+fi
+
+AM_CONDITIONAL(ENABLE_LLVM_RUNTIME, [test x$enable_llvm_runtime = xyes && test x$enable_llvm_msvc_only != xyes])
+if test "x$enable_llvm_runtime" = "xyes"; then
+	if test "x$enable_llvm_msvc_only" != "xyes"; then
+		AC_DEFINE(ENABLE_LLVM_RUNTIME, 1, [Runtime support code for llvm enabled])
+	else
+		AC_DEFINE(ENABLE_LLVM_RUNTIME_MSVC_ONLY, 1, [Runtime support code for llvm enabled])
+	fi
+fi
+
+if test "x$enable_llvm" = "xyes"; then
+    if test "x$internal_llvm" != "xno" && test "x$enable_llvm_msvc_only" = "xno"; then
+        LLVM_AOT_PATH_OPTION='llvm-path='`pwd`'/llvm/usr/bin'
+    else
+        LLVM_AOT_PATH_OPTION='llvm-path='$with_llvm'/bin'
+    fi
+    INVARIANT_AOT_OPTIONS=$INVARIANT_AOT_OPTIONS','$LLVM_AOT_PATH_OPTION
+    AOT_BUILD_ATTRS=$AOT_BUILD_ATTRS','$LLVM_AOT_PATH_OPTION
+    AOT_BUILD_FLAGS=$AOT_BUILD_FLAGS','$LLVM_AOT_PATH_OPTION
+else
+    LLVM_AOT_PATH_OPTION=''
+fi
+
+if test "x$AOT_BUILD_FLAGS" != "x"; then :
+   AC_SUBST(AOT_BUILD_FLAGS)
+   AC_SUBST(AOT_RUN_FLAGS)
+   # For llvmonlycheck + fullaotcheck
+   AC_SUBST(INVARIANT_AOT_OPTIONS)
+   AC_SUBST(LLVM_AOT_PATH_OPTION)
+fi
 
 if test x$USE_NLS = xprofile_default; then
 
@@ -4227,123 +4358,6 @@ dnl **************************
 
 AC_ARG_WITH(cross-offsets, [  --with-cross-offsets=<offsets file path>    Explicit AOT cross offsets file],
     AC_DEFINE_UNQUOTED(MONO_OFFSETS_FILE, "$withval", [AOT cross offsets file]))
-
-dnl **************
-dnl ***  LLVM  ***
-dnl **************
-
-AC_ARG_ENABLE(llvm,[  --enable-llvm	Enable the LLVM back-end], enable_llvm=$enableval, enable_llvm=default)
-AC_ARG_ENABLE(loadedllvm,[  --enable-loadedllvm	Load the LLVM back-end dynamically], enable_llvm=$enableval && enable_loadedllvm=$enableval, enable_loadedllvm=no)
-AC_ARG_ENABLE(llvm-version-check,[  --enable-llvm-version-check Check that the LLVM matches the version expected by mono], enable_llvm_version_check=$enableval, enable_llvm_version_check=no)
-AC_ARG_ENABLE(llvm-runtime,[  --enable-llvm-runtime	Enable runtime support for llvmonly code], enable_llvm_runtime=$enableval, enable_llvm_runtime=no)
-AC_ARG_ENABLE(llvm-asserts,[  --enable-llvm-asserts Enable llvm asserts (option to LLVM in CMake)], enable_llvm_asserts=$enableval, enable_llvm_asserts=no)
-
-AC_ARG_WITH(llvm, [  --with-llvm=<llvm prefix>    Enable the LLVM back-end], enable_llvm=yes,)
-
-if test "x$enable_llvm" = "xdefault"; then
-   enable_llvm=$enable_llvm_default
-fi
-
-if test "x$enable_loadedllvm" = "xyes"; then
-   AC_MSG_WARN("Loadable LLVM is no longer supported. Enabling default LLVM support instead.")
-   enable_llvm=yes
-fi
-
-enable_llvm_msvc_only="no"
-if test "x$enable_llvm" = "xyes"; then
-	if test "x$host_win32" = "xyes"; then
-		if test "x$cross_compiling" = "xno"; then
-			case "$target" in
-			x86_64*)
-				AC_MSG_WARN("LLVM for host=Windows and target=Windows is only supported on x64 MSVC builds. Disabling LLVM for GCC build.")
-				enable_llvm_msvc_only="yes"
-				;;
-			i686*)
-				AC_MSG_ERROR("LLVM for host=Windows and target=Windows is only supported for x64 builds.")
-				;;
-			esac
-		fi
-	fi
-fi
-
-internal_llvm="no"
-if test "x$enable_llvm" = "xyes"; then
-	if test "x$with_llvm" != "x"; then
-		EXTERNAL_LLVM_CONFIG=$with_llvm/bin/llvm-config
-		if test x$host_win32 = xyes; then
-			EXTERNAL_LLVM_CONFIG=$EXTERNAL_LLVM_CONFIG.exe
-		fi
-		if test ! -x $EXTERNAL_LLVM_CONFIG; then
-			AC_MSG_ERROR([LLVM executable $EXTERNAL_LLVM_CONFIG not found.])
-		fi
-	else
-		internal_llvm=yes
-	fi
-
-	LLVM_CODEGEN_LIBS="x86codegen"
-	case "$target" in
-	arm*)
-		LLVM_CODEGEN_LIBS="armcodegen"
-		;;
-	aarch64*)
-		LLVM_CODEGEN_LIBS="aarch64codegen"
-		;;
-	powerpc*)
-		LLVM_CODEGEN_LIBS="powerpccodegen"
-		;;
-	esac
-	if test "x$host" != "x$target"; then
-		# No need for jit libs
-		LLVM_CODEGEN_LIBS=
-	fi
-
-	AC_SUBST(LLVM_CODEGEN_LIBS)
-	AC_SUBST(EXTERNAL_LLVM_CONFIG)
-
-	if test "x$host_win32" = "xyes" && test "x$cross_compiling" = "xno" &&  test "x$internal_llvm" = "xno"; then
-		EXTERNAL_LLVM_CONFIG_WIN32=$(cygpath -m $EXTERNAL_LLVM_CONFIG)
-		AC_SUBST(EXTERNAL_LLVM_CONFIG_WIN32)
-	fi
-	if test "x$enable_llvm_msvc_only" != "xyes"; then
-		AC_DEFINE(ENABLE_LLVM, 1, [Enable the LLVM back end])
-	else
-		AC_DEFINE(ENABLE_LLVM_MSVC_ONLY, 1, [Enable the LLVM back end])
-	fi
-fi # ENABLE_LLVM
-
-# AC_DEFINE necessary for correct restore behavior on Linux
-AM_CONDITIONAL(INTERNAL_LLVM, [test "x$internal_llvm" != "xno" && test "x$enable_llvm_msvc_only" != "xyes"])
-if test "x$internal_llvm" != "xno"; then
-	if test "x$enable_llvm_msvc_only" != "xyes"; then
-		AC_DEFINE(INTERNAL_LLVM, 1, [LLVM used is being build during mono build])
-	else
-		AC_DEFINE(INTERNAL_LLVM_MSVC_ONLY, 1, [LLVM used is being build during mono build])
-	fi
-fi
-
-AM_CONDITIONAL(INTERNAL_LLVM_ASSERTS, [test "x$enable_llvm_asserts" != "xno" && test "x$enable_llvm_msvc_only" != "xyes"])
-if test "x$enable_llvm_asserts" != "xno"; then
-	if test "x$enable_llvm_msvc_only" != "xyes"; then
-		AC_DEFINE(INTERNAL_LLVM_ASSERTS, 1, [Build LLVM with assertions])
-	else
-		AC_DEFINE(INTERNAL_LLVM_ASSERTS_MSVC_ONLY, 1, [Build LLVM with assertions])
-	fi
-fi
-
-AM_CONDITIONAL(ENABLE_LLVM, [test x$enable_llvm = xyes && test x$enable_llvm_msvc_only != xyes])
-
-if test "x$enable_llvm" = "xyes"; then
-	enable_llvm_runtime=yes
-fi
-
-AM_CONDITIONAL(ENABLE_LLVM_RUNTIME, [test x$enable_llvm_runtime = xyes && test x$enable_llvm_msvc_only != xyes])
-if test "x$enable_llvm_runtime" = "xyes"; then
-	if test "x$enable_llvm_msvc_only" != "xyes"; then
-		AC_DEFINE(ENABLE_LLVM_RUNTIME, 1, [Runtime support code for llvm enabled])
-	else
-		AC_DEFINE(ENABLE_LLVM_RUNTIME_MSVC_ONLY, 1, [Runtime support code for llvm enabled])
-	fi
-fi
 
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"
@@ -6911,12 +6925,7 @@ fi
     if test "x$AOT_BUILD_FLAGS" != "x" ; then
       echo "AOT_RUN_FLAGS=$AOT_RUN_FLAGS" >> $srcdir/$mcsdir/build/config.make
       echo "AOT_BUILD_ATTRS=$AOT_BUILD_ATTRS" >> $srcdir/$mcsdir/build/config.make
-
-      if test "x$internal_llvm" != "xno" && test "x$enable_llvm_msvc_only" = "xno"; then
-        echo "AOT_BUILD_FLAGS=$AOT_BUILD_FLAGS,$MONO_LLVM_PATH_OPTION" >> $srcdir/$mcsdir/build/config.make
-      else
-        echo "AOT_BUILD_FLAGS=$AOT_BUILD_FLAGS" >> $srcdir/$mcsdir/build/config.make
-      fi
+      echo "AOT_BUILD_FLAGS=$AOT_BUILD_FLAGS" >> $srcdir/$mcsdir/build/config.make
     fi
 
     if test "x$AOT_MODE" != "x" ; then
