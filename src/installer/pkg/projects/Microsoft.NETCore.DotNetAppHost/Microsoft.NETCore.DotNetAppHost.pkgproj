@@ -4,5 +4,5 @@
     <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildProjectName).props" Condition="'$(TargetOS)' != 'iOS'" />
+  <Import Project="$(MSBuildProjectName).props" />
 </Project>

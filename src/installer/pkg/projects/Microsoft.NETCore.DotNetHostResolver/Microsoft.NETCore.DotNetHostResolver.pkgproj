@@ -46,6 +46,6 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$(MSBuildProjectName).props" Condition="'$(TargetOS)' != 'iOS'" />
+  <Import Project="$(MSBuildProjectName).props" />
 
 </Project>
