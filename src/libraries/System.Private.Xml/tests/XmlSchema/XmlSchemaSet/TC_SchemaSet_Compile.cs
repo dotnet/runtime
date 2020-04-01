@@ -151,6 +151,7 @@ namespace System.Xml.Tests
             }
         }
 
+
         [Fact]
         public void FractionDigitsMismatch_Throws()
         {
@@ -177,6 +178,7 @@ namespace System.Xml.Tests
             Assert.Contains("fractionDigits", ex.Message);
             Assert.DoesNotContain("totalDigits", ex.Message);
         }
+
 
         [Fact]
         public void MinLengthLtBaseMinLength_Throws()
@@ -1092,5 +1094,41 @@ namespace System.Xml.Tests
             Assert.Contains("maxOccurs", ex.Message);
         }
         #endregion
+
+        [Fact]
+        public void TotalDigitsParseValue_Succeeds()
+        {
+            string schema = @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:decimal'>
+            <xs:totalDigits value='8' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:totalDigits value='8'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+";
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            bool success;
+            try
+            {
+                ss.Compile();
+                success = true;
+            }
+            catch (Exception ex)
+            {
+                success = false;
+                Assert.IsNotType<InvalidCastException>(ex);
+            }
+
+            Assert.True(success);
+        }
     }
 }
