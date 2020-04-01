@@ -5,7 +5,6 @@
   <PropertyGroup>
     <PackagePlatform>AnyCPU</PackagePlatform>
 
-    <SkipBuildOnRuntimePackOnlyOS>false</SkipBuildOnRuntimePackOnlyOS>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
     <OutputPath>$(PackageOutputPath)</OutputPath>

@@ -16,10 +16,10 @@
 
   <!--
     For mobile targets, we do not need the host, so allow depproj's to opt 
-    in in order to skip building. 
+    out and skip building. 
   -->
   <Target Name="MobileSkipBuildProps" 
-          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' and '$(TargetOS)' == 'iOS'"
+          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(TargetOS)' == 'iOS'"
           BeforeTargets="GetSkipBuildProps">
     <PropertyGroup>
       <SkipBuild>true</SkipBuild>
