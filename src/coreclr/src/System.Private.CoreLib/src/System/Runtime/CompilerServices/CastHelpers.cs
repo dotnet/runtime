@@ -104,57 +104,53 @@ namespace System.Runtime.CompilerServices
         private static CastResult TryGet(nuint source, nuint target)
         {
             const int BUCKET_SIZE = 8;
-            int[]? table = s_table;
 
-            // we use NULL as a sentinel for a rare case when a table could not be allocated
-            // because we avoid OOMs.
-            // we could use 0-element table instead, but then we would have to check the size here.
-            if (table != null)
+            // table is initialized and updated by native code that guarantees it is not null.
+            int[] table = s_table!;
+
+            int index = KeyToBucket(table, source, target);
+            for (int i = 0; i < BUCKET_SIZE;)
             {
-                int index = KeyToBucket(table, source, target);
-                for (int i = 0; i < BUCKET_SIZE;)
+                ref CastCacheEntry pEntry = ref Element(table, index);
+
+                // must read in this order: version -> entry parts -> version
+                // if version is odd or changes, the entry is inconsistent and thus ignored
+                int version = Volatile.Read(ref pEntry._version);
+                nuint entrySource = pEntry._source;
+
+                // mask the lower version bit to make it even.
+                // This way we can check if version is odd or changing in just one compare.
+                version &= ~1;
+
+                if (entrySource == source)
                 {
-                    ref CastCacheEntry pEntry = ref Element(table, index);
-
-                    // must read in this order: version -> entry parts -> version
-                    // if version is odd or changes, the entry is inconsistent and thus ignored
-                    int version = Volatile.Read(ref pEntry._version);
-                    nuint entrySource = pEntry._source;
-
-                    // mask the lower version bit to make it even.
-                    // This way we can check if version is odd or changing in just one compare.
-                    version &= ~1;
-
-                    if (entrySource == source)
+                    nuint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
+                    // target never has its lower bit set.
+                    // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
+                    entryTargetAndResult ^= target;
+                    if (entryTargetAndResult <= 1)
                     {
-                        nuint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
-                        // target never has its lower bit set.
-                        // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
-                        entryTargetAndResult ^= target;
-                        if (entryTargetAndResult <= 1)
+                        if (version != pEntry._version)
                         {
-                            if (version != pEntry._version)
-                            {
-                                // oh, so close, the entry is in inconsistent state.
-                                // it is either changing or has changed while we were reading.
-                                // treat it as a miss.
-                                break;
-                            }
-
-                            return (CastResult)entryTargetAndResult;
+                            // oh, so close, the entry is in inconsistent state.
+                            // it is either changing or has changed while we were reading.
+                            // treat it as a miss.
+                            break;
                         }
-                    }
 
-                    if (version == 0)
-                    {
-                        // the rest of the bucket is unclaimed, no point to search further
-                        break;
+                        return (CastResult)entryTargetAndResult;
                     }
-
-                    // quadratic reprobe
-                    i++;
-                    index = (index + i) & TableMask(table);
                 }
+
+                if (version == 0)
+                {
+                    // the rest of the bucket is unclaimed, no point to search further
+                    break;
+                }
+
+                // quadratic reprobe
+                i++;
+                index = (index + i) & TableMask(table);
             }
             return CastResult.MaybeCast;
         }

@@ -11,6 +11,7 @@
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 BASEARRAYREF* CastCache::s_pTableRef = NULL;
+OBJECTHANDLE CastCache::s_sentinelTable = NULL;
 DWORD CastCache::s_lastFlushSize     = INITIAL_CACHE_SIZE;
 
 BASEARRAYREF CastCache::CreateCastCache(DWORD size)
@@ -24,7 +25,7 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
     CONTRACTL_END;
 
     // size must be positive
-    _ASSERTE(size > 0);
+    _ASSERTE(size > 1);
     // size must be a power of two
     _ASSERTE((size & (size - 1)) == 0);
 
@@ -108,9 +109,9 @@ void CastCache::FlushCurrentCache()
     CONTRACTL_END;
 
     BASEARRAYREF currentTableRef = *s_pTableRef;
-    s_lastFlushSize = !currentTableRef ? INITIAL_CACHE_SIZE : CacheElementCount(currentTableRef);
+    s_lastFlushSize = max(INITIAL_CACHE_SIZE, CacheElementCount(currentTableRef));
 
-    *s_pTableRef = NULL;
+    SetObjectReference((OBJECTREF *)s_pTableRef, ObjectFromHandle(s_sentinelTable));
 }
 
 void CastCache::Initialize()
@@ -127,6 +128,18 @@ void CastCache::Initialize()
 
     GCX_COOP();
     s_pTableRef = (BASEARRAYREF*)pTableField->GetCurrentStaticAddress();
+
+    BASEARRAYREF sentinelTable = CreateCastCache(2);
+    if (!sentinelTable)
+    {
+        // no memory for 2 element cache while initializing?
+        ThrowOutOfMemory();
+    }
+
+    s_sentinelTable = CreateGlobalHandle(sentinelTable);
+
+    // initialize to the sentinel value, this should not be null.
+    SetObjectReference((OBJECTREF *)s_pTableRef, sentinelTable);
 }
 
 TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
@@ -141,56 +154,51 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
 
     BASEARRAYREF table = *s_pTableRef;
 
-    // we use NULL as a sentinel for a rare case when a table could not be allocated
-    // because we avoid OOMs.
-    // we could use 0-element table instead, but then we would have to check the size here.
-    if (table != NULL)
+    DWORD index = KeyToBucket(table, source, target);
+    for (DWORD i = 0; i < BUCKET_SIZE;)
     {
-        DWORD index = KeyToBucket(table, source, target);
-        for (DWORD i = 0; i < BUCKET_SIZE;)
+        CastCacheEntry* pEntry = &Elements(table)[index];
+
+        // must read in this order: version -> entry parts -> version
+        // if version is odd or changes, the entry is inconsistent and thus ignored
+        DWORD version1 = VolatileLoad(&pEntry->version);
+        TADDR entrySource = pEntry->source;
+
+        // mask the lower version bit to make it even.
+        // This way we can check if version is odd or changing in just one compare.
+        version1 &= ~1;
+
+        if (entrySource == source)
         {
-            CastCacheEntry* pEntry = &Elements(table)[index];
-
-            // must read in this order: version -> entry parts -> version
-            // if version is odd or changes, the entry is inconsistent and thus ignored
-            DWORD version1 = VolatileLoad(&pEntry->version);
-            TADDR entrySource = pEntry->source;
-
-            // mask the lower version bit to make it even.
-            // This way we can check if version is odd or changing in just one compare.
-            version1 &= ~1;
-
-            if (entrySource == source)
+            TADDR entryTargetAndResult = VolatileLoad(&pEntry->targetAndResult);
+            // target never has its lower bit set.
+            // a matching entryTargetAndResult would have the same bits, except for the lowest one, which is the result.
+            entryTargetAndResult ^= target;
+            if (entryTargetAndResult <= 1)
             {
-                TADDR entryTargetAndResult = VolatileLoad(&pEntry->targetAndResult);
-                // target never has its lower bit set.
-                // a matching entryTargetAndResult would have the same bits, except for the lowest one, which is the result.
-                entryTargetAndResult ^= target;
-                if (entryTargetAndResult <= 1)
+                if (version1 != pEntry->version)
                 {
-                    if (version1 != pEntry->version)
-                    {
-                        // oh, so close, the entry is in inconsistent state.
-                        // it is either changing or has changed while we were reading.
-                        // treat it as a miss.
-                        break;
-                    }
-
-                    return TypeHandle::CastResult(entryTargetAndResult);
+                    // oh, so close, the entry is in inconsistent state.
+                    // it is either changing or has changed while we were reading.
+                    // treat it as a miss.
+                    break;
                 }
-            }
 
-            if (version1 == 0)
-            {
-                // the rest of the bucket is unclaimed, no point to search further
-                break;
+                return TypeHandle::CastResult(entryTargetAndResult);
             }
-
-            // quadratic reprobe
-            i++;
-            index = (index + i) & TableMask(table);
         }
+
+        if (version1 == 0)
+        {
+            // the rest of the bucket is unclaimed, no point to search further
+            break;
+        }
+
+        // quadratic reprobe
+        i++;
+        index = (index + i) & TableMask(table);
     }
+
     return TypeHandle::MaybeCast;
 }
 
@@ -210,9 +218,11 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
     do
     {
         table = *s_pTableRef;
-        if (!table)
+        if (TableMask(table) == 1)
         {
-            // we did not allocate a table or flushed it, try replacing, but do not continue looping.
+            // 2-element table is used as a sentinel.
+            // we did not allocate a real table yet or have flushed it.
+            // try replacing the table, but do not insert anything.
             MaybeReplaceCacheWithLarger(s_lastFlushSize);
             return;
         }
@@ -267,9 +277,9 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
 
     // reread table after TryGrow.
     table = *s_pTableRef;
-    if (!table)
+    if (TableMask(table) == 1)
     {
-        // we did not allocate a table.
+        // do not insert into a sentinel.
         return;
     }
 

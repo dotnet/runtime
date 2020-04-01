@@ -199,7 +199,12 @@ private:
 // We pick 8 as the probe limit (hoping for 4 probes on average), but the number can be refined further.
     static const DWORD BUCKET_SIZE = 8;
 
+    // current cache table
     static BASEARRAYREF*  s_pTableRef;
+
+    // sentinel table that never contains elements and used for flushing the old table when we cannot allocate a new one.
+    static OBJECTHANDLE s_sentinelTable;
+
     static DWORD          s_lastFlushSize;
 
     FORCEINLINE static TypeHandle::CastResult TryGetFromCache(TADDR source, TADDR target)
