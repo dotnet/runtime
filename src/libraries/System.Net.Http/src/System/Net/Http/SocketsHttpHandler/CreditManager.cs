@@ -76,7 +76,7 @@ namespace System.Net.Http
                 }
 
                 // TODO: This is sync-over-async... don't see a good way around this.
-                return waiter.AsValueTask().GetAwaiter().GetResult();
+                return waiter.AsValueTask().AsTask().GetAwaiter().GetResult();
             }
         }
 

@@ -1400,7 +1400,12 @@ namespace System.Net.Http
             }
         }
 
-        private void Fill() => FillAsync(async: false).GetAwaiter().GetResult();
+        private void Fill()
+        {
+            ValueTask fillTask = FillAsync(async: false);
+            Debug.Assert(fillTask.IsCompleted);
+            fillTask.GetAwaiter().GetResult();
+        }
 
         // Throws IOException on EOF.  This is only called when we expect more data.
         private async ValueTask FillAsync(bool async)
