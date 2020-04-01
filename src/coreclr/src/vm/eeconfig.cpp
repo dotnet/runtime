@@ -112,7 +112,6 @@ HRESULT EEConfig::Init()
     iGCgen0size = 0;
     iGCSegmentSize = 0;
     iGCconcurrent = 0;
-    iGClarge = 0;
 #ifdef _DEBUG
     iGCLatencyMode = -1;
 #endif //_DEBUG
@@ -501,15 +500,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     // Disable concurrent GC during ngen for the rare case a GC gets triggered, causing problems
     if (IsCompilationProcess())
         iGCconcurrent = FALSE;
-
-    if (Configuration::GetKnobBooleanValue(W("System.GC.LargePages"), CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCLargePages)))
-    {
-        iGClarge = TRUE;
-    }
-    else
-    {
-        iGClarge = FALSE;
-    }
 
 #if defined(STRESS_HEAP) || defined(_DEBUG)
     iGCStress           =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCStress);
@@ -1461,3 +1451,9 @@ bool EEConfig::ShouldLogCCWRefCountChange(LPCUTF8 pszClassName, LPCUTF8 pszNames
     return false;
 }
 #endif // FEATURE_COMINTEROP
+ 
+int EEConfig::GetGCLargePages() const
+{
+    LIMITED_METHOD_CONTRACT;  
+    return Configuration::GetKnobBooleanValue(W("System.GC.LargePages"), CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCLargePages)) ? TRUE : FALSE;
+}
