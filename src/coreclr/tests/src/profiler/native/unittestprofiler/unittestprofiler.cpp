@@ -1,9 +1,16 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 #include "unittestprofiler.h"
 
-#if WIN32
+#ifdef WIN32
 #include <Windows.h>
 #else // WIN32
 #include <dlfcn.h>
+#ifdef __APPLE__ 
+#include <mach-o/dyld.h>
+#endif // __APPLE__
 #endif // WIN32
 
 UnitTestProfiler::UnitTestProfiler() :
@@ -151,13 +158,63 @@ HRESULT UnitTestProfiler::GetDispenser(IMetaDataDispenserEx **disp)
 
 #else // WIN32
 
+#ifdef __APPLE__
+bool EndsWith(const char *lhs, const char *rhs)
+{
+    size_t lhsLen = strlen(lhs);
+    size_t rhsLen = strlen(rhs);
+    if (lhsLen < rhsLen)
+    {
+        return false;
+    }
+
+    size_t lhsPos = lhsLen - rhsLen;
+    size_t rhsPos = 0;
+
+    while (rhsPos < rhsLen)
+    {
+        if (lhs[lhsPos] != rhs[rhsPos])
+        {
+            return false;
+        }
+
+        ++lhsPos;
+        ++rhsPos;
+    }
+
+    return true;
+}
+const char *GetCoreCLRPath()
+{
+    const char *coreclrName = "libcoreclr.dylib";
+    size_t count = _dyld_image_count();
+    for (size_t i = 0; i < count; ++i)
+    {
+        const char *name = _dyld_get_image_name(i);
+        if (EndsWith(name, coreclrName))
+        {
+            return name;
+        }
+    }
+
+    return coreclrName;
+}
+#endif // __APPLE__
+
 HRESULT UnitTestProfiler::GetDispenser(IMetaDataDispenserEx **disp)
 {
-    void *coreclr = dlopen("libcoreclr.so", RTLD_LAZY | RTLD_NOLOAD);
+#ifdef __APPLE__
+    const char *profilerName = GetCoreCLRPath();
+#else // __APPLE__
+    const char *profilerName = "libcoreclr.so";
+#endif // __APPLE__
+
+    void *coreclr = dlopen(profilerName, RTLD_LAZY | RTLD_NOLOAD);
     if (coreclr == NULL)
     {
         _failures++;
-        printf("Failed to find libcoreclr.so\n");
+        char *reason = dlerror();
+        printf("Failed to find %s reason=%s\n", profilerName, reason);
         return E_FAIL;
     }
 

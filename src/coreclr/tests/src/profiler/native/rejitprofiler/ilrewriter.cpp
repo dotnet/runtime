@@ -1,13 +1,11 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 #include <cstring>
 #include <corhlpr.cpp>
 #include "ilrewriter.h"
 #include "sigparse.h"
-
-#ifdef WIN32
-#define FASTCALL __fastcall
-#else // WIN32
-#define FASTCALL
-#endif // WIN32
 
 void FASTCALL UnmanagedInspectObject(void* pv)
 {

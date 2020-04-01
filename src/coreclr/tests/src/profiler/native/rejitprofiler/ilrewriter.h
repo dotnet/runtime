@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 #pragma once
 
 #include <assert.h>
@@ -5,6 +9,12 @@
 #include "cor.h"
 #include "corprof.h"
 #include "corhlpr.h"
+
+#ifdef WIN32
+#define FASTCALL __fastcall
+#else // WIN32
+#define FASTCALL
+#endif // WIN32
 
 // ILRewriter::Export intentionally does a comparison by casting a variable (delta) down
 // to an INT8, with data loss being expected and handled. This pragma is required because
@@ -134,15 +144,15 @@ static int k_rgnStackPushes[] = {
 
 #include "opcode.def"
 
-#undef Push0   
-#undef Push1   
-#undef PushI   
-#undef PushI4  
-#undef PushR4  
-#undef PushI8  
-#undef PushR8  
-#undef PushRef 
-#undef VarPush 
+#undef Push0
+#undef Push1
+#undef PushI
+#undef PushI4
+#undef PushR4
+#undef PushI8
+#undef PushR8
+#undef PushRef
+#undef VarPush
 #undef OPDEF
 };
 
@@ -188,7 +198,7 @@ public:
     ~ILRewriter();
     HRESULT Initialize();
     void InitializeTiny();
-    
+
     /////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // I M P O R T
@@ -219,20 +229,18 @@ public:
     // R E W R I T E
     //
     ////////////////////////////////////////////////////////////////////////////////////////////////
-
+#ifdef WIN32
     // Probe_XXX are the callbacks to be called from the JITed code
-#ifndef __clang__
-    static void __fastcall Probe_LDSFLD(WCHAR * pFieldName)
+    static void FASTCALL Probe_LDSFLD(WCHAR * pFieldName)
     {
         printf("LDSFLD: %S\n", pFieldName);
     }
 
-    static void __fastcall Probe_SDSFLD(WCHAR * pFieldName)
+    static void FASTCALL Probe_SDSFLD(WCHAR * pFieldName)
     {
         printf("STSFLD: %S\n", pFieldName);
     }
-#endif // __clang__
-
+#endif // WIN32
     UINT AddNewInt32Local();
     WCHAR* GetNameFromToken(mdToken tk);
     ILInstr * NewLDC(LPVOID p);

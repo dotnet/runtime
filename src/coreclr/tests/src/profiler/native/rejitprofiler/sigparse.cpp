@@ -1,5 +1,8 @@
-#include "sigparse.h"
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
+#include "sigparse.h"
 
 bool SigParser::Parse(sig_byte *pb, sig_count cbBuffer)
 {
@@ -22,19 +25,19 @@ bool SigParser::Parse(sig_byte *pb, sig_count cbBuffer)
     case SIG_METHOD_VARARG:   // vararg calling convention
             return ParseMethod(elem_type);
             break;
-            
+
     case SIG_FIELD:           // encodes a field
             return ParseField(elem_type);
             break;
-            
+
     case SIG_LOCAL_SIG:       // used for the .locals directive
             return ParseLocals(elem_type);
             break;
-            
+
     case SIG_PROPERTY:        // used to encode a property
             return ParseProperty(elem_type);
             break;
-            
+
     default:
             // unknown signature
             break;
@@ -52,7 +55,7 @@ bool SigParser::ParseByte(sig_byte *pbOut)
         pbCur++;
         return true;
     }
-    
+
     return false;
 }
 
@@ -76,13 +79,13 @@ bool SigParser::ParseMethod(sig_elem_type elem_type)
     {
         if (!ParseNumber(&gen_param_count))
                 return false;
-        
-        NotifyGenericParamCount(gen_param_count);        
+
+        NotifyGenericParamCount(gen_param_count);
     }
 
     if (!ParseNumber(&param_count))
         return false;
-    
+
     NotifyParamCount(param_count);
 
     if (!ParseRetType())
@@ -94,7 +97,7 @@ bool SigParser::ParseMethod(sig_elem_type elem_type)
     {
         if (pbCur >= pbEnd)
             return false;
-        
+
         if (*pbCur == ELEMENT_TYPE_SENTINEL)
         {
                 if (fEncounteredSentinal)
@@ -104,7 +107,7 @@ bool SigParser::ParseMethod(sig_elem_type elem_type)
                 NotifySentinal();
                 pbCur++;
         }
-        
+
         if (!ParseParam())
             return false;
     }
@@ -120,7 +123,7 @@ bool SigParser::ParseField(sig_elem_type elem_type)
     // FieldSig ::= FIELD CustomMod* Type
 
     NotifyBeginField(elem_type);
-    
+
     if (!ParseOptionalCustomMods())
         return false;
 
@@ -143,9 +146,9 @@ bool SigParser::ParseProperty(sig_elem_type elem_type)
 
     if (!ParseNumber(&param_count))
         return false;
-    
+
     NotifyParamCount(param_count);
-    
+
     if (!ParseOptionalCustomMods())
         return false;
 
@@ -163,17 +166,17 @@ bool SigParser::ParseProperty(sig_elem_type elem_type)
 
 bool SigParser::ParseLocals(sig_elem_type elem_type)
 {
-    //   LocalVarSig ::= LOCAL_SIG Count (TYPEDBYREF | ([CustomMod] [Constraint])* [BYREF] Type)+ 
+    //   LocalVarSig ::= LOCAL_SIG Count (TYPEDBYREF | ([CustomMod] [Constraint])* [BYREF] Type)+
 
     NotifyBeginLocals(elem_type);
 
     sig_count local_count;
-    
+
     if (!ParseNumber(&local_count))
         return false;
-    
+
     NotifyLocalsCount(local_count);
-    
+
     for (sig_count i = 0; i < local_count; i++)
     {
         if (!ParseLocal())
@@ -223,12 +226,12 @@ Success:
 
 
 bool SigParser::ParseOptionalCustomModsOrConstraint()
-{  
+{
     for (;;)
     {
         if (pbCur >= pbEnd)
             return true;
-        
+
         switch (*pbCur)
         {
         case ELEMENT_TYPE_CMOD_OPT:
@@ -236,7 +239,7 @@ bool SigParser::ParseOptionalCustomModsOrConstraint()
             if (!ParseCustomMod())
                 return false;
             break;
-            
+
         case ELEMENT_TYPE_PINNED:
             NotifyConstraint(*pbCur);
             pbCur++;
@@ -264,7 +267,7 @@ bool SigParser::ParseOptionalCustomMods()
         case ELEMENT_TYPE_CMOD_REQD:
             if (!ParseCustomMod())
                 return false;
-            break;       
+            break;
 
         default:
             return true;
@@ -293,7 +296,7 @@ bool SigParser::ParseCustomMod()
         NotifyCustomMod(cmod, indexType, index);
         return true;
     }
-    
+
     return false;
 }
 
@@ -309,7 +312,7 @@ bool SigParser::ParseParam()
 
     if (pbCur >= pbEnd)
         return false;
-    
+
     if (*pbCur == ELEMENT_TYPE_TYPEDBYREF)
     {
         NotifyTypedByref();
@@ -325,7 +328,7 @@ bool SigParser::ParseParam()
 
     if (!ParseType())
         return false;
-        
+
 Success:
     NotifyEndParam();
     return true;
@@ -367,7 +370,7 @@ bool SigParser::ParseRetType()
     if (!ParseType())
         return false;
 
-Success:        
+Success:
     NotifyEndRetType();
     return true;
 }
@@ -377,7 +380,7 @@ bool SigParser::ParseArrayShape()
     sig_count rank;
     sig_count numsizes;
     sig_count size;
-    
+
     // ArrayShape ::= Rank NumSizes Size* NumLoBounds LoBound*
     NotifyBeginArrayShape();
     if (!ParseNumber(&rank))
@@ -410,9 +413,9 @@ bool SigParser::ParseArrayShape()
 
         NotifyLoBound(size);
     }
-    
+
     NotifyEndArrayShape();
-    return true;    
+    return true;
 }
 
 bool SigParser::ParseType()
@@ -421,7 +424,7 @@ bool SigParser::ParseType()
     Type ::= ( BOOLEAN | CHAR | I1 | U1 | U2 | U2 | I4 | U4 | I8 | U8 | R4 | R8 | I | U |
                     | VALUETYPE TypeDefOrRefEncoded
                     | CLASS TypeDefOrRefEncoded
-                    | STRING 
+                    | STRING
                     | OBJECT
                     | PTR CustomMod* VOID
                     | PTR CustomMod* Type
@@ -450,15 +453,15 @@ bool SigParser::ParseType()
     case  ELEMENT_TYPE_BOOLEAN:
     case  ELEMENT_TYPE_CHAR:
     case  ELEMENT_TYPE_I1:
-    case  ELEMENT_TYPE_U1: 
-    case  ELEMENT_TYPE_U2: 
-    case  ELEMENT_TYPE_I2: 
-    case  ELEMENT_TYPE_I4: 
-    case  ELEMENT_TYPE_U4: 
-    case  ELEMENT_TYPE_I8: 
-    case  ELEMENT_TYPE_U8: 
-    case  ELEMENT_TYPE_R4: 
-    case  ELEMENT_TYPE_R8: 
+    case  ELEMENT_TYPE_U1:
+    case  ELEMENT_TYPE_U2:
+    case  ELEMENT_TYPE_I2:
+    case  ELEMENT_TYPE_I4:
+    case  ELEMENT_TYPE_U4:
+    case  ELEMENT_TYPE_I8:
+    case  ELEMENT_TYPE_U8:
+    case  ELEMENT_TYPE_R4:
+    case  ELEMENT_TYPE_R8:
     case  ELEMENT_TYPE_I:
     case  ELEMENT_TYPE_U:
     case  ELEMENT_TYPE_STRING:
@@ -466,7 +469,7 @@ bool SigParser::ParseType()
         // simple types
         NotifyTypeSimple(elem_type);
         break;
-        
+
     case  ELEMENT_TYPE_PTR:
         // PTR CustomMod* VOID
         // PTR CustomMod* Type
@@ -478,7 +481,7 @@ bool SigParser::ParseType()
 
         if (pbCur >= pbEnd)
             return false;
-        
+
     if (*pbCur == ELEMENT_TYPE_VOID)
         {
             pbCur++;
@@ -488,42 +491,42 @@ bool SigParser::ParseType()
 
         if (!ParseType())
             return false;
-    
-        break;
-        
-    case  ELEMENT_TYPE_CLASS: 
-        // CLASS TypeDefOrRefEncoded
-        NotifyTypeClass();
-        
-        if (!ParseTypeDefOrRefEncoded(&indexType, &index))
-            return false;
-        
-        NotifyTypeDefOrRef(indexType, index);      
+
         break;
 
-    case  ELEMENT_TYPE_VALUETYPE: 
+    case  ELEMENT_TYPE_CLASS:
+        // CLASS TypeDefOrRefEncoded
+        NotifyTypeClass();
+
+        if (!ParseTypeDefOrRefEncoded(&indexType, &index))
+            return false;
+
+        NotifyTypeDefOrRef(indexType, index);
+        break;
+
+    case  ELEMENT_TYPE_VALUETYPE:
         //VALUETYPE TypeDefOrRefEncoded
         NotifyTypeValueType();
 
         if (!ParseTypeDefOrRefEncoded(&indexType, &index))
             return false;
-        
-        NotifyTypeDefOrRef(indexType, index);      
+
+        NotifyTypeDefOrRef(indexType, index);
         break;
-                    
+
     case  ELEMENT_TYPE_FNPTR:
         // FNPTR MethodDefSig
         // FNPTR MethodRefSig
         NotifyTypeFunctionPointer();
-        
+
         if (!ParseByte(&elem_type))
             return false;
-        
+
         if (!ParseMethod(elem_type))
             return false;
-        
+
         break;
-        
+
     case  ELEMENT_TYPE_ARRAY:
         // ARRAY Type ArrayShape
         NotifyTypeArray();
@@ -559,7 +562,7 @@ bool SigParser::ParseType()
 
         if (!ParseTypeDefOrRefEncoded(&indexType, &index))
             return false;
-      
+
         if (!ParseNumber(&number))
             return false;
 
@@ -572,7 +575,7 @@ bool SigParser::ParseType()
                     return false;
             }
         }
-       
+
         break;
 
     case  ELEMENT_TYPE_VAR:
@@ -591,7 +594,7 @@ bool SigParser::ParseType()
     }
 
     NotifyEndType();
-    
+
     return true;
 }
 
@@ -616,7 +619,7 @@ bool SigParser::ParseNumber(sig_count *pOut)
     sig_byte b1 = 0, b2 = 0, b3 = 0, b4 = 0;
 
     // at least one byte in the encoding, read that
-        
+
     if (!ParseByte(&b1))
         return false;
 
@@ -648,15 +651,15 @@ bool SigParser::ParseNumber(sig_count *pOut)
 
     // must be a 4 byte encoding
 
-    if ( (b1 & 0x20) != 0)        
+    if ( (b1 & 0x20) != 0)
     {
         // 4 byte encoding has this bit clear -- error if not
         return false;
-    } 
+    }
 
     if (!ParseByte(&b3))
         return false;
-    
+
     if (!ParseByte(&b4))
         return false;
 

@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 #include "rejitprofiler.h"
 #include "ilrewriter.h"
@@ -91,12 +92,12 @@ HRESULT ReJITProfiler::Shutdown()
         _profInfo10 = nullptr;
     }
 
-    size_t expectedRejitCount = -1;
+    int expectedRejitCount = -1;
     auto it = _inlinings.find(_targetFuncId);
     if (it != _inlinings.end())
     {
         // The number of inliners are expected to ReJIT, plus the method itself
-        expectedRejitCount = (*it).second->size() + 1;
+        expectedRejitCount = (int)((*it).second->size() + 1);
     }
 
     INFO(L" rejit count=" << _rejits << L" expected rejit count=" << expectedRejitCount);
