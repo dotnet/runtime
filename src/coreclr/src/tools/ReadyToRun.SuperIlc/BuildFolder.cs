@@ -152,7 +152,7 @@ namespace ReadyToRun.SuperIlc
                 return null;
             }
 
-            if (options.Composite)
+            if (options.Composite && !(options.Framework || options.UseFramework))
             {
                 // In composite mode we copy the native runtime to the app folder and pretend that is CORE_ROOT,
                 // otherwise CoreRun picks up the original MSIL versions of framework assemblies from CORE_ROOT
