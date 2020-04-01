@@ -81,7 +81,7 @@ namespace ILCompiler
 
             if (_commandLineOptions.CompileBubbleGenerics)
             {
-                if (!_commandLineOptions.InputBubble)
+                if (!_commandLineOptions.CompositeOrInputBubble)
                 {
                     Console.WriteLine(SR.WarningIgnoringBubbleGenerics);
                     _commandLineOptions.CompileBubbleGenerics = false;
@@ -223,7 +223,7 @@ namespace ILCompiler
                         rootingModules.Add(module);
                         versionBubbleModulesHash.Add(module);
 
-                        if (!_commandLineOptions.InputBubble)
+                        if (!_commandLineOptions.CompositeOrInputBubble)
                         {
                             break;
                         }
@@ -335,9 +335,12 @@ namespace ILCompiler
                         // For non-single-method compilations add compilation roots.
                         foreach (var module in rootingModules)
                         {
-                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager, _commandLineOptions.Partial));
+                            compilationRoots.Add(new ReadyToRunRootProvider(
+                                module,
+                                profileDataManager,
+                                profileDrivenPartialNGen: _commandLineOptions.Partial));
 
-                            if (!_commandLineOptions.InputBubble)
+                            if (!_commandLineOptions.CompositeOrInputBubble)
                             {
                                 break;
                             }
