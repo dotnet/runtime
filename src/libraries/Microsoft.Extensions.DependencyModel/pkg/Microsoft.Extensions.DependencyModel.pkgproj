@@ -1,9 +1,14 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+  <PropertyGroup>
+    <!-- Since we are dropping support for TFMs less than netstandard2.0, don't harvest the stable package. -->
+    <!-- https://github.com/dotnet/runtime/issues/3425 -->
+    <HarvestStablePackage>false</HarvestStablePackage>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.Extensions.DependencyModel.csproj">
       <SupportedFramework>net461;netcoreapp2.0;uap10.0.16299;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
-</Project> 
+</Project>
