@@ -40,8 +40,8 @@ namespace bundle
 
             static bool probe(const pal::string_t& path)
             {
-                return bundle::info_t::the_app->m_deps_json.matches(path) ||
-                       bundle::info_t::the_app->m_runtimeconfig_json.matches(path);
+                return is_single_file_bundle() && 
+                       (the_app->m_deps_json.matches(path) || the_app->m_runtimeconfig_json.matches(path));
             }
 
             static const int8_t* map(const pal::string_t& path, const location_t* &location);

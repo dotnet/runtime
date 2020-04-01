@@ -192,17 +192,16 @@ bool deps_entry_t::to_bundle_path(const pal::string_t& base, pal::string_t* str)
     pal::string_t& candidate = *str;
     candidate.clear();
 
-    pal::string_t pal_relative_path = normalize_dir_separator(asset.relative_path);
-    pal::string_t bundle_path;
+    pal::string_t file_name = get_filename(normalize_dir_separator(asset.relative_path));
     pal::string_t sub_path;
     if (asset_type == asset_types::resources)
     {
-        append_resource_path(bundle_path);
-        sub_path = get_filename(pal_relative_path);
+        append_resource_path(sub_path);
+        sub_path.append(file_name);
     }
     else
     {
-        sub_path = pal_relative_path;
+        sub_path = file_name;
     }
 
     bool exists = app->locate(sub_path, candidate);

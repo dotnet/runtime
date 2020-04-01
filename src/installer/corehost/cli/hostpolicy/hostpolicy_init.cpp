@@ -129,8 +129,11 @@ bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
 
     if (input->version_lo >= offsetof(host_interface_t, app_bundle) + sizeof(input->app_bundle))
     {
-        static bundle::runner_t bundle_runner(input->app_bundle);
-        bundle::info_t::the_app = &bundle_runner;
+        if (input->app_bundle != nullptr)
+        {
+            static bundle::runner_t bundle_runner(input->app_bundle);
+            bundle::info_t::the_app = &bundle_runner;
+        }
     }
 
     return true;

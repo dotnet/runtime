@@ -68,6 +68,9 @@ namespace Microsoft.NET.HostModel.Bundle
         public bool IsOSX => OS.Equals(OSPlatform.OSX);
         public bool IsWindows => OS.Equals(OSPlatform.Windows);
 
+        public string HostFxr => IsWindows ? "hostfxr.dll" : IsLinux ? "libhostfxr.so" : "libhostfxr.dylib";
+        public string HostPolicy => IsWindows ? "hostpolicy.dll" : IsLinux ? "libhostpolicy.so" : "libhostpolicy.dylib";
+
         // The .net core 3 apphost doesn't care about semantics of FileType -- all files are extracted at startup.
         // However, the apphost checks that the FileType value is within expected bounds, so set it to the first enumeration.
         public FileType TargetSpecificFileType(FileType fileType) => (BundleVersion == 1) ? FileType.Unknown : fileType;

@@ -139,7 +139,7 @@ bool init_arguments(
         }
         else
         {
-            args.app_root = get_directory(args.managed_application);
+            args.app_root = get_directory(managed_application_path);
             args.managed_application = managed_application_path;
             if (!pal::realpath(&args.managed_application))
             {

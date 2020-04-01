@@ -57,6 +57,13 @@ namespace BundleTests.Helpers
             return new string[] { $"{appBaseName}.dll" };
         }
 
+        public static string[] GetFilesNeverExtracted(TestProjectFixture fixture)
+        {
+            string appBaseName = GetAppBaseName(fixture);
+            return new string[] { $"{appBaseName}.deps.json", $"{appBaseName}.runtimeconfig.json",
+                                  fixture.TestProject.HostFxrDll, fixture.TestProject.HostPolicyDll };
+        }
+
         public static string GetPublishPath(TestProjectFixture fixture)
         {
             return Path.Combine(fixture.TestProject.ProjectDirectory, "publish");
@@ -104,7 +111,6 @@ namespace BundleTests.Helpers
             {
                 fileSpecs.Add(new FileSpec(file, Path.GetRelativePath(sourceDir, file)));
             }
-
 
             var singleFile = bundler.GenerateBundle(fileSpecs);
 

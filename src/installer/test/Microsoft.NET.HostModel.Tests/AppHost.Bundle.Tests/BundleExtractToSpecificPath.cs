@@ -13,11 +13,6 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    // Once the static-host (AppHost, HostFxr, HostPolicy linked together) is available,
-    // this test should test with /p:IncludeNativeBinariesInSingleFile=true.
-    // This testing is currently not possible because the two native DLLs HostFxr.dll and HostPolicy.dll 
-    // must remain adjacent to AppHost (since the bundle processing is dong within these binaries).
-
     public class BundleExtractToSpecificPath : IClassFixture<BundleExtractToSpecificPath.SharedTestState>
     {
         private SharedTestState sharedTestState;
@@ -35,7 +30,7 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile);
+            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, BundleOptions.BundleNativeBinaries);
 
             // Verify expected files in the bundle directory
             var bundleDir = BundleHelper.GetBundleDir(fixture);
@@ -60,7 +55,7 @@ namespace AppHost.Bundle.Tests
 
             var extractDir = BundleHelper.GetExtractionDir(fixture, bundler);
             extractDir.Should().OnlyHaveFiles(BundleHelper.GetExtractedFiles(fixture));
-            extractDir.Should().NotHaveFile(hostName);
+            extractDir.Should().NotHaveFiles(BundleHelper.GetFilesNeverExtracted(fixture));
         }
 
         [Fact]
@@ -70,7 +65,7 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile);
+            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, BundleOptions.BundleNativeBinaries);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
@@ -121,7 +116,7 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile);
+            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, BundleOptions.BundleNativeBinaries);
 
             // Create a directory for extraction.
             var extractBaseDir = BundleHelper.GetExtractionRootDir(fixture);
@@ -180,7 +175,7 @@ namespace AppHost.Bundle.Tests
 
             public void Dispose()
             {
-                TestFixture.Dispose();
+                // TestFixture.Dispose();
             }
         }
     }
