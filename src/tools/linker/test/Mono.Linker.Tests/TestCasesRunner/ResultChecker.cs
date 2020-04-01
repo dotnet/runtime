@@ -659,7 +659,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		void VerifyRecordedReflectionPatterns (AssemblyDefinition original, TestReflectionPatternRecorder reflectionPatternRecorder)
 		{
-			foreach (var expectedSourceMethodDefinition in original.MainModule.AllDefinedTypes ().SelectMany (t => t.AllMethods ())) {
+			foreach (var expectedSourceMethodDefinition in original.MainModule.AllDefinedTypes ().SelectMany (t => t.AllMethods ()).Distinct ()) {
 				bool foundAttributesToVerify = false;
 				foreach (var attr in expectedSourceMethodDefinition.CustomAttributes) {
 					if (attr.AttributeType.Resolve ().Name == nameof (RecognizedReflectionAccessPatternAttribute)) {
