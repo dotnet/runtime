@@ -1,5 +1,4 @@
 # TODO: investigate (too many failures or stuck)
--nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignatureWinRT
 -nonamespace System.IO.Pipes.Tests
 -nonamespace System.IO.Tests
 -nonamespace System.Net
