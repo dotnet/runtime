@@ -27,8 +27,7 @@ bld/
 msbuild.log
 msbuild.err
 msbuild.wrn
-msbuild.binlog
-msbuild.ProjectImports.zip
+*.binlog
 .deps/
 .dirstamp
 .libs/
@@ -160,8 +159,6 @@ DocProject/Help/html
 project.lock.json
 project.assets.json
 *.nuget.dgspec.json
-nuget.binlog
-nuget.ProjectImports.zip
 
 # Windows Azure Build Output
 csx/
