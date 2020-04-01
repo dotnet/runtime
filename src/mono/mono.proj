@@ -61,7 +61,6 @@
       <_MonoCXXFLAGS Include="-O0" />
       <_MonoCXXFLAGS Include="-ggdb3" />
       <_MonoCXXFLAGS Include="-fno-omit-frame-pointer" />
-      <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
     </ItemGroup>
 
     <!-- Release specific options -->
@@ -71,6 +70,10 @@
 
       <_MonoCXXFLAGS Include="-O2" />
       <_MonoCXXFLAGS Include="-g" />
+    </ItemGroup>
+
+    <!-- We build LLVM bits for x64 without C++11 ABI -->
+    <ItemGroup Condition="'$(HostArch)' == 'x64' and '$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMUseCxx11Abi)' != 'true'">
       <_MonoCXXFLAGS Include="-D_GLIBCXX_USE_CXX11_ABI=0" />
     </ItemGroup>
 
