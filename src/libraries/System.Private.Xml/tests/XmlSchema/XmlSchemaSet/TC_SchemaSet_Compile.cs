@@ -612,7 +612,39 @@ namespace System.Xml.Tests
             }
             Assert.Null(exception);
         }
-
         #endregion
+
+        /// <summary>
+        /// Test for issue #30218, resource Sch_LengthGtBaseLength
+        /// </summary>
+        [Fact]
+        public void LengthGtBaseLength_Throws()
+        {
+            string schema = @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:length value='5'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:length value='6'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+";
+
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+            Assert.Contains("length", ex.Message);
+
+            // Issue 30218: invalid formatters
+            Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
+            Assert.Empty(rx.Matches(ex.Message));
+        }
     }
 }
