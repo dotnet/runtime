@@ -48,18 +48,6 @@ namespace System
             return field;
         }
 
-        private static T EnsureInitializedDisposableCore<T>([NotNull] ref T? field, Func<T> initializer) where T : class, IDisposable
-        {
-            T value = initializer();
-
-            if (Interlocked.CompareExchange(ref field, value, null) != null)
-            {
-                value.Dispose();
-            }
-
-            return field;
-        }
-
         public static TextReader In => Volatile.Read(ref s_in) ?? ConsolePal.EnsureInitializedIn(ref s_in);
 
         public static Encoding InputEncoding
