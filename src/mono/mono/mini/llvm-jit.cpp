@@ -482,9 +482,21 @@ mono_llvm_jit_init ()
 		EB.setTargetOptions (opts);
 	}
 
-	EB.setOptLevel(CodeGenOpt::Aggressive);
-	EB.setMCPU(sys::getHostCPUName());
-	EB.setMArch(llvm::Triple(llvm::sys::getDefaultTargetTriple()).getArchName());
+	EB.setOptLevel (CodeGenOpt::Aggressive);
+	EB.setMCPU (sys::getHostCPUName ());
+
+#ifdef TARGET_AMD64
+	EB.setMArch ("x86-64");
+#elif TARGET_X86
+	EB.setMArch ("x86");
+#elif TARGET_ARM64
+	EB.setMArch ("aarch64");
+#elif TARGET_ARM
+	EB.setMArch ("arm");
+#else
+	g_assert_not_reached ();
+#endif
+
 	auto TM = EB.selectTarget ();
 	assert (TM);
 
