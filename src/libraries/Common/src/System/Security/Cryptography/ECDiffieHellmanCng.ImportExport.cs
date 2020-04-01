@@ -22,10 +22,22 @@ namespace System.Security.Cryptography
                 bool includePrivateParameters = parameters.D != null;
                 bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
 
-                if (curve.IsPrime && hasPublicParameters)
+                if (curve.IsPrime)
                 {
-                    byte[] ecExplicitBlob = ECCng.GetPrimeCurveBlob(ref parameters, ecdh: true);
-                    ImportFullKeyBlob(ecExplicitBlob, includePrivateParameters);
+                    if (!hasPublicParameters && includePrivateParameters)
+                    {
+                        byte[] zero = new byte[parameters.D!.Length];
+                        ECParameters ecParamsCopy = parameters;
+                        ecParamsCopy.Q.X = zero;
+                        ecParamsCopy.Q.Y = zero;
+                        byte[] ecExplicitBlob = ECCng.GetPrimeCurveBlob(ref ecParamsCopy, ecdh: true);
+                        ImportFullKeyBlob(ecExplicitBlob, includePrivateParameters: true);
+                    }
+                    else
+                    {
+                        byte[] ecExplicitBlob = ECCng.GetPrimeCurveBlob(ref parameters, ecdh: true);
+                        ImportFullKeyBlob(ecExplicitBlob, includePrivateParameters);
+                    }
                 }
                 else if (curve.IsNamed)
                 {
@@ -43,7 +55,7 @@ namespace System.Security.Cryptography
                         ecParamsCopy.Q.X = zero;
                         ecParamsCopy.Q.Y = zero;
                         byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref ecParamsCopy, ecdh: true);
-                        ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, true);
+                        ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, includePrivateParameters: true);
                     }
                     else
                     {
