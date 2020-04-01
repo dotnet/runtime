@@ -209,7 +209,7 @@ jobs:
       archType: x64
       platform: Android_x64
       container:
-        image: ubuntu-18.04-android-20200331133105-d620eac
+        image: ubuntu-18.04-android-20200401093035-1517ea2
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -231,7 +231,7 @@ jobs:
       archType: arm
       platform: Android_arm
       container:
-        image: ubuntu-18.04-android-20200331133105-d620eac
+        image: ubuntu-18.04-android-20200401093035-1517ea2
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -253,7 +253,7 @@ jobs:
       archType: arm64
       platform: Android_arm64
       container:
-        image: ubuntu-18.04-android-20200331133105-d620eac
+        image: ubuntu-18.04-android-20200401093035-1517ea2
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
