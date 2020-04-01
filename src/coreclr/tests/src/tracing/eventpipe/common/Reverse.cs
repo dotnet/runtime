@@ -106,6 +106,7 @@ namespace Tracing.Tests.Common
                 {
                     socket.Shutdown(SocketShutdown.Both);
                 }
+                catch (Exception e) {}
                 finally
                 {
                     clientSocket.Close();

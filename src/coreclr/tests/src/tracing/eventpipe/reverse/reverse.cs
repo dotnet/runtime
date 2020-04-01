@@ -30,7 +30,7 @@ namespace Tracing.Tests.ReverseValidation
                 process.StartInfo.CreateNoWindow = true;
                 process.StartInfo.Environment.Add("DOTNET_DiagnosticsMonitorAddress", serverName);
                 process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
-                process.StartInfo.Arguments = Assembly.GetExecutingAssembly().CodeBase + " 0";
+                process.StartInfo.Arguments = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath + " 0";
                 Logger.logger.Log($"running sub-process: {process.StartInfo.FileName} {process.StartInfo.Arguments}");
                 bool fSuccess = process.Start();
                 Logger.logger.Log($"subprocess started: {fSuccess}");
@@ -96,7 +96,7 @@ namespace Tracing.Tests.ReverseValidation
             IEnumerable<MethodInfo> tests = typeof(ReverseValidation).GetMethods().Where(mi => mi.Name.StartsWith("TEST_"));
             foreach (var test in tests)
             {
-                Logger.logger.Log($"Running test: {test.Name}");
+                Logger.logger.Log($"::== Running test: {test.Name}");
                 bool result = await (Task<bool>)test.Invoke(null, new object[] {});
                 fSuccess &= result;
                 Logger.logger.Log($"Test passed: {result}");
