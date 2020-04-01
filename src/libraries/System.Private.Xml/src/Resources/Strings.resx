@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -3451,5 +3452,8 @@ Usage: dotnet {0} [--assembly &lt;assembly file path&gt;] [--type &lt;type name&
   </data>
   <data name="CompilingScriptsNotSupported" xml:space="preserve">
     <value>Compiling JScript/CSharp scripts is not supported</value>
+  </data>
+  <data name="Sch_FractionDigitsMismatch" xml:space="preserve">
+    <value>It is an error if the derived 'fractionDigits' facet value is greater than the parent 'fractionDigits' facet value.</value>
   </data>
 </root>
