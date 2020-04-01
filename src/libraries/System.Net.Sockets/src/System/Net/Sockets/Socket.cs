@@ -2088,12 +2088,23 @@ namespace System.Net.Sockets
             return UnsafeBeginConnect(remoteEP, callback, state, flowContext: true);
         }
 
-        private static bool CanUseConnectEx(SocketType socketType, EndPoint remoteEP)
-            => (socketType == SocketType.Stream) && (remoteEP.GetType() == typeof(IPEndPoint));
+        private bool CanUseConnectEx(EndPoint remoteEP)
+        {
+            Debug.Assert(remoteEP.GetType() != typeof(DnsEndPoint));
+
+            // ConnectEx supports connection-oriented sockets.
+            // The socket must be bound before calling ConnectEx.
+            //     In case of IPEndPoint, the Socket will be bound using WildcardBindForConnectIfNecessary.
+            // Unix sockets are not supported by ConnectEx.
+
+            return (_socketType == SocketType.Stream) &&
+                   (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint)) &&
+                   (remoteEP.AddressFamily != AddressFamily.Unix);
+        }
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state, bool flowContext = false)
         {
-            if (CanUseConnectEx(_socketType, remoteEP))
+            if (CanUseConnectEx(remoteEP))
             {
                 return BeginConnectEx(remoteEP, flowContext, callback, state);
             }
@@ -3812,7 +3823,7 @@ namespace System.Net.Sockets
                 SocketError socketError = SocketError.Success;
                 try
                 {
-                    if (CanUseConnectEx(_socketType, endPointSnapshot))
+                    if (CanUseConnectEx(endPointSnapshot))
                     {
                         socketError = e.DoOperationConnectEx(this, _handle);
                     }
