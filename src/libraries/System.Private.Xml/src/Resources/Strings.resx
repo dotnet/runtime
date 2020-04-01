@@ -1720,7 +1720,7 @@
     <value>Cannot load the schema from the location '{0}' - {1}</value>
   </data>
   <data name="Sch_LengthGtBaseLength" xml:space="preserve">
-    <value>It is an error if 'length' is among the members of {facets} of {base type definition} and {value} is greater than the {value} of the parent 'length'.</value>
+    <value>It is an error if 'length' is among the members of the facets of the base type definition and its value is greater than the value of the parent 'length'.</value>
   </data>
   <data name="Sch_MinLengthGtBaseMinLength" xml:space="preserve">
     <value>It is an error if the derived 'minLength' facet value is less than the parent 'minLength' facet value.</value>
