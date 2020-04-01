@@ -141,6 +141,10 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:TestScope=$2"
       shift 2
       ;;
+     -testnobuild)
+      arguments="$arguments /p:TestNoBuild=$2"
+      shift 2
+      ;;
      -coverage)
       arguments="$arguments /p:Coverage=true"
       shift 1
