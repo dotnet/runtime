@@ -6,8 +6,6 @@
     <PackagingTaskAssembly>$(PackagingTaskAssembly)Microsoft.DotNet.Build.Tasks.Packaging.dll</PackagingTaskAssembly>
   </PropertyGroup>
 
-  <Import Project="$(LibrariesProjectRoot)pkg\baseline\baseline.props" />
-
   <UsingTask TaskName="GetLastStablePackage" AssemblyFile="$(PackagingTaskAssembly)"/>
   <Target Name="AddPackageDownload">
     <ItemGroup>

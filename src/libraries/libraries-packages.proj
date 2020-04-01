@@ -12,7 +12,10 @@
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
-  <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" />
+  <Import Project="$(LibrariesProjectRoot)pkg\baseline\baseline.props" />
+
+  <!-- Calculate PackageDownload items for restore. -->
+  <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
   <!--
     Updates the package index to mark all packages we are building that can go stable as stable.
