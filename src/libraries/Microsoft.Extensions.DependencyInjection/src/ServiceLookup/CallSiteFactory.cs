@@ -247,7 +247,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 {
                     if (throwOnConstraintViolation)
                     {
-                        throw new InvalidOperationException(Resources.FormatGenericConstraintViolation(serviceType, descriptor.ImplementationType), ex);
+                        throw new InvalidOperationException(SR.Format(SR.GenericConstraintViolation, serviceType, descriptor.ImplementationType));
                     }
 
                     return null;
