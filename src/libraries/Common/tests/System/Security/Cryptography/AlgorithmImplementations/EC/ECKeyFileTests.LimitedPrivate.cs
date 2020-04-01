@@ -111,6 +111,29 @@ AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBCcwJQIBAQQgcKEsLbFoRe1W
         }
 
         [Fact]
+        public void ReadWriteNistP256ExplicitEncryptedPkcs8_LimitedPrivate()
+        {
+            ReadWriteBase64EncryptedPkcs8(
+                @"
+MIIBnTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIS4D9Fbzp0gQCAggA
+MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBBNE0X1G2z4D96fhP/t6xc1BIIB
+QLKzXdUbVqnjlzUS7HQPTmgfxQkvieRm92ot4nTbEztKelQ3M9ijA4ToTaWz4crM
+RM4VTFzSAk6c3IIYzc5aFe33r76ootud+YnkKLMtT+zrQOxhYV4vT/dVsfqPaTjk
+yBN/spLA/AAetSqqxkG3jLvh3TSx/9ymLVRp10748aNMBK7136V0lOBT9VmJLD/R
+rtJTh6Lgx8JIAJpyR7Omjb6uaf0/QInS3bWOEnTHt2kRba4GEahQ/Fw8zDwuBX9V
+U4vrY201zbeyqVRsabSaru/xQwDUHA++FmiJuY8p0T3y7u0pKtPkdGTBnYjWqcDc
+BSJFRM1hEoL4pr7fCtb4mdnEoWGIG6O7SYr92M3TAxFcYEEMSUJi7TxEAmPAKpYe
+hjy6jYfLa1BCJhvq+WbNc7zEb2MfXVhnImaG+XTqXI0c",
+                "test",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes128Cbc,
+                    HashAlgorithmName.SHA256,
+                    1234),
+                EccTestData.GetNistP256ReferenceKeyExplicit(),
+                LimitedPrivateKeySupported && SupportsExplicitCurves);
+        }
+
+        [Fact]
         public void ReadWriteBrainpoolKey1ECPrivateKey_LimitedPrivate()
         {
             ReadWriteBase64ECPrivateKey(
@@ -169,6 +192,34 @@ EBfmpBI=",
         }
 
         [Fact]
+        public void ReadWriteSect163k1Key1ExplicitECPrivateKey_LimitedPrivate()
+        {
+            ReadWriteBase64ECPrivateKey(
+                @"
+MIHBAgEBBBUDwZla366MBRjcE9/mMEuwEBfmpBKggaQwgaECAQEwJQYHKoZIzj0B
+AjAaAgIAowYJKoZIzj0BAgMDMAkCAQMCAQYCAQcwLgQVAAAAAAAAAAAAAAAAAAAA
+AAAAAAABBBUAAAAAAAAAAAAAAAAAAAAAAAAAAAEEKwQC/hPAU3u8EayqB9eT3k5t
+XlyU7ugCiQcPsF04/1gyHy6ABTbVOMzao9kCFQQAAAAAAAAAAAACAQii4MwNmfil
+7wIBAg==",
+                EccTestData.Sect163k1Key1Explicit,
+                SupportsSect163k1 && LimitedPrivateKeySupported);
+        }
+
+        [Fact]
+        public void ReadWriteSect163k1Key1ExplicitPkcs8_LimitedPrivate()
+        {
+            ReadWriteBase64Pkcs8(
+                @"
+MIHRAgEAMIGtBgcqhkjOPQIBMIGhAgEBMCUGByqGSM49AQIwGgICAKMGCSqGSM49
+AQIDAzAJAgEDAgEGAgEHMC4EFQAAAAAAAAAAAAAAAAAAAAAAAAAAAQQVAAAAAAAA
+AAAAAAAAAAAAAAAAAAABBCsEAv4TwFN7vBGsqgfXk95ObV5clO7oAokHD7BdOP9Y
+Mh8ugAU21TjM2qPZAhUEAAAAAAAAAAAAAgEIouDMDZn4pe8CAQIEHDAaAgEBBBUD
+wZla366MBRjcE9/mMEuwEBfmpBI=",
+                EccTestData.Sect163k1Key1Explicit,
+                SupportsSect163k1 && LimitedPrivateKeySupported);
+        }
+
+        [Fact]
         public void ReadWriteSect163k1Key1EncryptedPkcs8_LimitedPrivate()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -187,6 +238,27 @@ DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEENKfCUCiZgnSk3NJ1fYNsfsEQEiv
         }
 
         [Fact]
+        public void ReadWriteSect163k1Key1ExplicitEncryptedPkcs8_LimitedPrivate()
+        {
+            ReadWriteBase64EncryptedPkcs8(
+                @"
+MIIBPDBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIY8iZ0ZLe8O8CAggA
+MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBB+R0cFaFSqsTlu68p1La4yBIHg
+NU0YrkKbg2TyKi62Uh410kgwE/IHqbfoeQZl9P7MDIrah1hR9yk6DTeJE8WRI2BX
++X5cInMazbVLOIO//WTY90MKq/PE9eJ3jch1VGI2VfHh2V5u/uwJT3z1d4fXTpXc
+2iP7btbXJhougcGiOtWMQrZtNdAi4OwIgnW1f4VkIWEf0TUjiC7A74AdgMwnu04u
+d4sHylN7CUBYGVAtZ7fHwK0CsyggK/7/IoexhoaTUvzXi3xS8rEjY+5w8OcweCnr
+RVA9DXUNz5+yUlfGzgErHYGwRLaLCACU6+WAC34Kkyk=",
+                "test",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes256Cbc,
+                    HashAlgorithmName.SHA256,
+                    7),
+                EccTestData.Sect163k1Key1Explicit,
+                SupportsSect163k1 && LimitedPrivateKeySupported);
+        }
+
+        [Fact]
         public void ReadWriteSect283k1Key1ECPrivateKey_LimitedPrivate()
         {
             ReadWriteBase64ECPrivateKey(
@@ -195,6 +267,55 @@ MDICAQEEJAC08a4ef9zUsOggU8CKkIhSsmIx5sAWcPzGw+osXT/tQO3wN6AHBgUr
 gQQAEA==",
                 EccTestData.Sect283k1Key1,
                 SupportsSect283k1 && LimitedPrivateKeySupported);
+        }
+
+        [Fact]
+        public void ReadWriteC2pnb163v1ExplicitECPrivateKey_LimitedPrivate()
+        {
+            ReadWriteBase64ECPrivateKey(
+                @"
+MIHYAgEBBBUA9NJKFAcSL0RZZ74dk8AJOmU2eYaggbswgbgCAQEwJQYHKoZIzj0B
+AjAaAgIAowYJKoZIzj0BAgMDMAkCAQECAQICAQgwRQQVByVGtUNSNKQi4HiWdfQy
+yJQ13lJCBBUAyVF9BtUkDTz/OMdLILbNTW+d1NkDFQDSwPsVdghg3vHu9NaW5naH
+VhUXVAQrBAevaZiVRhA9eTKfzD10iA8zu+gDywHsIyEbWWat6h0/h/fqWEiu8LfK
+nwIVBAAAAAAAAAAAAAHmD8iCHMdNrq/BAgEC",
+                EccTestData.C2pnb163v1Key1Explicit,
+                SupportsC2pnb163v1 && LimitedPrivateKeySupported);
+        }
+
+        [Fact]
+        public void ReadWriteC2pnb163v1ExplicitPkcs8_LimitedPrivate()
+        {
+            ReadWriteBase64Pkcs8(
+                @"
+MIHoAgEAMIHEBgcqhkjOPQIBMIG4AgEBMCUGByqGSM49AQIwGgICAKMGCSqGSM49
+AQIDAzAJAgEBAgECAgEIMEUEFQclRrVDUjSkIuB4lnX0MsiUNd5SQgQVAMlRfQbV
+JA08/zjHSyC2zU1vndTZAxUA0sD7FXYIYN7x7vTWluZ2h1YVF1QEKwQHr2mYlUYQ
+PXkyn8w9dIgPM7voA8sB7CMhG1lmreodP4f36lhIrvC3yp8CFQQAAAAAAAAAAAAB
+5g/IghzHTa6vwQIBAgQcMBoCAQEEFQD00koUBxIvRFlnvh2TwAk6ZTZ5hg==",
+                EccTestData.C2pnb163v1Key1Explicit,
+                SupportsC2pnb163v1 && LimitedPrivateKeySupported);
+        }
+
+        [Fact]
+        public void ReadWriteC2pnb163v1ExplicitEncryptedPkcs8_LimitedPrivate()
+        {
+            ReadWriteBase64EncryptedPkcs8(
+                @"
+MIIBTDBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIvcAOWkixD/4CAggA
+MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBCx4zH4H0Pf9XGdJMtik+XVBIHw
+y5JKEMkohGZgjTHkXUs9hSq9JtyJzz8VcSXpid7NkRXFAtEEcO1yIs2xUVxlPER7
+4loKRPmPR9GKCeTEsoUyQH9T+X6r0nKqvuoWq5iU8w3ZGrQ8FUBsODMdCAlmfJau
+cIB+jp8kGPDQckBBp+R4i2qPYRSKzANEHegDeu9s24IQk2+B3b5uqynkVJa2z+Dp
+fyL21cPvHEx04p39oKmWh7S5M6FjHAu/9eGHQtiJ/QKisMgE1ICf+OmO6nfFhNnZ
+AerBJbccwFJfDAXP+eW3qWtaMgulL0gUYZQ7FcXH+z5CAWwdarLOCDZGqvQFtZ16",
+                "meow",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes256Cbc,
+                    HashAlgorithmName.SHA256,
+                    7),
+                EccTestData.C2pnb163v1Key1Explicit,
+                SupportsC2pnb163v1 && LimitedPrivateKeySupported);
         }
 
         [Fact]
