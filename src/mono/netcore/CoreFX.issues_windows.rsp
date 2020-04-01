@@ -1,7 +1,4 @@
 # TODO: investigate (too many failures or stuck)
--nomethod System.Threading.Tests.WaitHandleTests.SignalAndWait
--nomethod System.Threading.Tests.WaitHandleTests.WaitAll_SameNames
--nomethod System.Threading.Tests.WaitHandleTests.WaitAny_MaxHandles_STA
 -nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignatureWinRT
 -nonamespace System.IO.Pipes.Tests
 -nonamespace System.IO.Tests
