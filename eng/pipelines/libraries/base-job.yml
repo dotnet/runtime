@@ -74,6 +74,10 @@ jobs:
         - ${{ if eq(parameters.osGroup, 'iOS') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 
+        # force a value for OS when cross-building Android on Linux
+        - ${{ if eq(parameters.osGroup, 'Android') }}:
+          - _runtimeOSArg: -os ${{ parameters.osGroup }}
+
         - ${{ if ne(parameters.framework, '') }}:
           - _finalFrameworkArg: -framework ${{ parameters.framework }}
           - _extraHelixArguments: /p:BuildTargetFramework=${{ parameters.framework }}
