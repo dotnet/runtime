@@ -17,15 +17,14 @@ namespace System.Security.Cryptography
         public int ImportParameters(ECParameters parameters)
         {
             SafeEcKeyHandle key;
-            bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
 
             parameters.Validate();
 
-            if (parameters.Curve.IsPrime && hasPublicParameters)
+            if (parameters.Curve.IsPrime)
             {
                 key = ImportPrimeCurveParameters(parameters);
             }
-            else if (parameters.Curve.IsCharacteristic2 && hasPublicParameters)
+            else if (parameters.Curve.IsCharacteristic2)
             {
                 key = ImportCharacteristic2CurveParameters(parameters);
             }
@@ -127,8 +126,8 @@ namespace System.Security.Cryptography
             Debug.Assert(parameters.Curve.IsPrime);
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
                 parameters.Curve.CurveType,
-                parameters.Q.X, parameters.Q.X!.Length,
-                parameters.Q.Y, parameters.Q.Y!.Length,
+                parameters.Q.X, parameters.Q.X?.Length ?? 0,
+                parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length,
                 parameters.Curve.Prime!, parameters.Curve.Prime!.Length,
                 parameters.Curve.A!, parameters.Curve.A!.Length,
@@ -147,8 +146,8 @@ namespace System.Security.Cryptography
             Debug.Assert(parameters.Curve.IsCharacteristic2);
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
                 parameters.Curve.CurveType,
-                parameters.Q.X, parameters.Q.X!.Length,
-                parameters.Q.Y, parameters.Q.Y!.Length,
+                parameters.Q.X, parameters.Q.X?.Length ?? 0,
+                parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length,
                 parameters.Curve.Polynomial!, parameters.Curve.Polynomial!.Length,
                 parameters.Curve.A!, parameters.Curve.A!.Length,

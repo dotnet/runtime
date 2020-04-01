@@ -446,6 +446,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 
     EC_KEY* key = NULL;
     EC_POINT* G = NULL;
+    EC_POINT* pubG = NULL;
 
     BIGNUM* qxBn = NULL;
     BIGNUM* qyBn = NULL;
@@ -549,6 +550,33 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
         if (!EC_KEY_check_key(key))
             goto error;
     }
+    // If we don't have the public key but we have the private key, we can
+    // re-derive the public key from d.
+    else if (qx == NULL && qy == NULL && qxLength == 0 && qyLength == 0 &&
+             d && dLength > 0)
+    {
+        dBn = BN_bin2bn(d, dLength, NULL);
+
+        if (!dBn)
+            goto error;
+
+        if (!EC_KEY_set_private_key(key, dBn))
+            goto error;
+
+        pubG = EC_POINT_new(group);
+
+        if (!pubG)
+            goto error;
+
+        if (!EC_POINT_mul(group, pubG, dBn, NULL, NULL, NULL))
+            goto error;
+
+        if (!EC_KEY_set_public_key(key, pubG))
+            goto error;
+
+        if (!EC_KEY_check_key(key))
+            goto error;
+    }
 
     // Success
     return key;
@@ -556,7 +584,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
 error:
     if (qxBn) BN_free(qxBn);
     if (qyBn) BN_free(qyBn);
-    if (dBn) BN_free(dBn);
+    if (dBn) BN_clear_free(dBn);
     if (pBn) BN_free(pBn);
     if (aBn) BN_free(aBn);
     if (bBn) BN_free(bBn);
@@ -565,6 +593,7 @@ error:
     if (orderBn) BN_free(orderBn);
     if (cofactorBn) BN_free(cofactorBn);
     if (G) EC_POINT_free(G);
+    if (pubG) EC_POINT_free(pubG);
     if (group) EC_GROUP_free(group);
     if (key) EC_KEY_free(key);
     return NULL;

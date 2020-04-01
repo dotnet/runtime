@@ -91,7 +91,7 @@ axfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpZP40Li/hp/m47n60p8D54W
 K84zV2sxXs7LtkBoN79R9QIhAP////8AAAAA//////////+85vqtpxeehPO5ysL8
 YyVRAgEB",
                 EccTestData.GetNistP256ReferenceKeyExplicit(),
-                isSupported: false);
+                LimitedPrivateKeySupported && SupportsExplicitCurves);
         }
 
         [Fact]
@@ -107,7 +107,7 @@ AMSdNgiG5wSTamZ44ROdJreBn36QBEEEaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg
 AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBCcwJQIBAQQgcKEsLbFoRe1W
 /2jPwhpHKz8E19aFG/Y0ny19WzRSs4o=",
                 EccTestData.GetNistP256ReferenceKeyExplicit(),
-                isSupported: false);
+                LimitedPrivateKeySupported && SupportsExplicitCurves);
         }
 
         [Fact]
