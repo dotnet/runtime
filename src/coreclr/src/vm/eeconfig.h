@@ -55,12 +55,6 @@ enum ParseCtl {
 class EEConfig
 {
 public:
-    typedef enum {
-        CONFIG_SYSTEM,
-        CONFIG_APPLICATION,
-        CONFIG_SYSTEMONLY
-    } ConfigSearch;
-
     static HRESULT Setup();
 
     HRESULT Init();
@@ -516,8 +510,7 @@ public:
     // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
     //
-    static HRESULT GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LPWSTR*out, BOOL fPrependCOMPLUS = TRUE,
-                                  ConfigSearch direction = CONFIG_SYSTEM); // Note that you own the returned string!
+    static HRESULT GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LPWSTR*out, BOOL fPrependCOMPLUS = TRUE); // Note that you own the returned string!
 
     //
     // NOTE: The following function is deprecated; use the CLRConfig class instead.
@@ -525,8 +518,7 @@ public:
     //
     static DWORD GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue,
                                 DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
-                                BOOL fPrependCOMPLUS = TRUE,
-                                ConfigSearch direction = CONFIG_SYSTEM);
+                                BOOL fPrependCOMPLUS = TRUE);
 
     //
     // NOTE: The following function is deprecated; use the CLRConfig class instead.
@@ -534,8 +526,7 @@ public:
     //
     static ULONGLONG GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG defValue,
                                              DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
-                                             BOOL fPrependCOMPLUS = TRUE,
-                                             ConfigSearch direction = CONFIG_SYSTEM);
+                                             BOOL fPrependCOMPLUS = TRUE);
 
     //
     // NOTE: The following function is deprecated; use the CLRConfig class instead.
@@ -851,8 +842,7 @@ public:
 
     DWORD GetConfigDWORDInternal_DontUse_ (__in_z LPCWSTR name, DWORD defValue,    //for getting data in the constructor of EEConfig
                                     DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
-                                    BOOL fPrependCOMPLUS = TRUE,
-                                    ConfigSearch direction = CONFIG_SYSTEM);
+                                    BOOL fPrependCOMPLUS = TRUE);
 
     enum BitForMask {
         CallSite_1 = 0x0001,

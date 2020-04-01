@@ -381,7 +381,7 @@ HRESULT EEConfig::Cleanup()
 // NOTE: This function is deprecated; use the CLRConfig class instead.
 // To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
 //
-HRESULT EEConfig::GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LPWSTR *outVal, BOOL fPrependCOMPLUS, ConfigSearch direction)
+HRESULT EEConfig::GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LPWSTR *outVal, BOOL fPrependCOMPLUS)
 {
     CONTRACT(HRESULT) {
         NOTHROW;
@@ -402,7 +402,7 @@ HRESULT EEConfig::GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LP
 // NOTE: This function is deprecated; use the CLRConfig class instead.
 // To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
 //
-DWORD EEConfig::GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWORD level, BOOL fPrependCOMPLUS, ConfigSearch direction)
+DWORD EEConfig::GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWORD level, BOOL fPrependCOMPLUS)
 {
     CONTRACTL {
         NOTHROW;
@@ -421,7 +421,7 @@ DWORD EEConfig::GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWO
 //
 // Note for PAL: right now PAL does not have a _wcstoui64 API, so I am temporarily reading in all numbers as
 // a 32-bit number. When we have the _wcstoui64 API on MAC we will use that instead of wcstoul.
-ULONGLONG EEConfig::GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG defValue, DWORD level, BOOL fPrependCOMPLUS, ConfigSearch direction)
+ULONGLONG EEConfig::GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG defValue, DWORD level, BOOL fPrependCOMPLUS)
 {
     CONTRACTL {
         NOTHROW;
@@ -438,7 +438,7 @@ ULONGLONG EEConfig::GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG d
 // NOTE: This function is deprecated; use the CLRConfig class instead.
 // To use the CLRConfig class, add an entry in file:../inc/CLRConfigValues.h.
 //
-DWORD EEConfig::GetConfigDWORDInternal_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWORD level, BOOL fPrependCOMPLUS, ConfigSearch direction)
+DWORD EEConfig::GetConfigDWORDInternal_DontUse_(__in_z LPCWSTR name, DWORD defValue, DWORD level, BOOL fPrependCOMPLUS)
 {
     CONTRACTL {
         NOTHROW;
