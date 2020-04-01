@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, englishDayNames };
             yield return new object[] { new DateTimeFormatInfo(), englishDayNames };
 
-            if (!PlatformDetection.IsUbuntu || PlatformDetection.IsUbuntu1404)
+            if (!PlatformDetection.IsUbuntu)
             {
                 yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, DateTimeFormatInfoData.FrFRDayNames() };
             }
