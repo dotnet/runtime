@@ -412,11 +412,7 @@ public:
             char*    ptr             = res;
             if (sizeof(size_t) == sizeof(int64_t))
             {
-#ifdef HOST_64BIT
-                sprintf_s(ptr, remaining, "%016llX", bits);
-#else
-                sprintf_s(ptr, remaining, "%016lX", bits);
-#endif
+                sprintf_s(ptr, remaining, "%016zX", bits);
             }
             else
             {
