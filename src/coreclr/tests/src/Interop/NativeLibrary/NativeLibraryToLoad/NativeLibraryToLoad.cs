@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 public class NativeLibraryToLoad
 {
     public const string Name = "NativeLibrary";
+    public const string InvalidName = "DoesNotExist";
 
     public static string GetFileName()
     {

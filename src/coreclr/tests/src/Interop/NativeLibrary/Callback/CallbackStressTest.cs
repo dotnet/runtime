@@ -176,7 +176,7 @@ public class CallbackStressTest
         return -1;
     }
 
-    [DllImport("DoesNotExist")]
+    [DllImport(NativeLibraryToLoad.InvalidName)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     static extern int NativeSum(int arg1, int arg2);
     
