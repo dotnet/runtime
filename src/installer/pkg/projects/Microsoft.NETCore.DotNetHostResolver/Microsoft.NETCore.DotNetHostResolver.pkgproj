@@ -5,6 +5,7 @@
 
     <InstallerName>dotnet-hostfxr</InstallerName>
     <GenerateSharedFrameworkPart>true</GenerateSharedFrameworkPart>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,12 +44,6 @@
         ComponentGroupName="InstallFiles"
         DirectoryRef="DOTNETHOME" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="MobileSkipBuildProps" BeforeTargets="GetSkipBuildProps" Condition="'$(TargetOS)' == 'iOS'">
-    <PropertyGroup>
-        <SkipBuild>true</SkipBuild>
-    </PropertyGroup>
   </Target>
 
   <Import Project="$(MSBuildProjectName).props" Condition="'$(TargetOS)' != 'iOS'" />

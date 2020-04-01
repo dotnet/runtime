@@ -5,6 +5,7 @@
 
     <InstallerName>dotnet-host</InstallerName>
     <GenerateSharedFrameworkPart>true</GenerateSharedFrameworkPart>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <Target Name="SetupHostSpecificWixBuild"
@@ -45,12 +46,6 @@
       <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
       <CandleVariables Include="HostSrc" Value="$(PublishRootDir)" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="MobileSkipBuildProps" BeforeTargets="GetSkipBuildProps" Condition="'$(TargetOS)' == 'iOS'">
-    <PropertyGroup>
-        <SkipBuild>true</SkipBuild>
-    </PropertyGroup>
   </Target>
 
   <Import Condition="'$(PackageTargetRuntime)' != '' and '$(TargetOS)' != 'iOS'" Project="$(MSBuildThisFileDirectory)runtime.$(TargetOS).$(MSBuildProjectName).props" />

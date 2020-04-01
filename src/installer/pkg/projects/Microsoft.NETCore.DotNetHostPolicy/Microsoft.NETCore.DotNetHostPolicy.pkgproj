@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <VersionProp>HostPolicyVersion</VersionProp>
+    <SkipBuildOnRuntimePackOnlyOS>true</SkipBuildOnRuntimePackOnlyOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,11 +10,4 @@
   </ItemGroup>
 
   <Import Project="$(MSBuildProjectName).props" Condition="'$(TargetOS)' != 'iOS'" />
-
-  <Target Name="MobileSkipBuildProps" BeforeTargets="GetSkipBuildProps" Condition="'$(TargetOS)' == 'iOS'">
-    <PropertyGroup>
-        <SkipBuild>true</SkipBuild>
-    </PropertyGroup>
-  </Target>
-
 </Project>
