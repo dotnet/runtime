@@ -23,7 +23,9 @@ set(NATIVE_SOURCES
 )
 
 if (CLR_CMAKE_TARGET_IOS)
-    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_log.m)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_log.m
+        pal_searchpath.m)
 else ()
     set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_console.c)
 endif ()
@@ -59,7 +61,7 @@ if (GEN_SHARED_LIB)
         target_link_libraries(System.Native ${INOTIFY_LIBRARY})
     endif ()
     endif ()
-    install_library_and_symbols (System.Native)
+    install_with_stripped_symbols (System.Native PROGRAMS .)
 endif ()
 
 add_library(System.Native-Static

@@ -28,12 +28,12 @@ Please note that this builds the Priority 0 tests. To build priority 1:
 
 During development there are many instances where building an individual test is fast and necessary. All of the necessary tools to build are under `coreclr`. It is possible to use `~/runtime/dotnet.sh msbuild` as you would normally use MSBuild with a few caveats.
 
-**!! Note !! -- Passing /p:__TargetOS=[OSX|Linux] is required.**
+**!! Note !! -- Passing /p:TargetOS=[OSX|Linux] is required.**
 
 ## Building an Individual Test
 
 ```
-/path/to/runtime/dotnet.sh msbuild src/coreclr/tests/src/path-to-proj-file /p:__TargetOS=<TargetOS> /p:__BuildType=<BuildType>
+/path/to/runtime/dotnet.sh msbuild src/coreclr/tests/src/path-to-proj-file /p:TargetOS=<TargetOS> /p:Configuration=<BuildType>
 ```
 
 ## Running Tests

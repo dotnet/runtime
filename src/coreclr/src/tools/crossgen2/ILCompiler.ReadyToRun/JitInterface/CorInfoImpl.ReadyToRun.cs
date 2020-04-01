@@ -1661,9 +1661,7 @@ namespace Internal.JitInterface
             pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, methodToCall);
 
             var targetDetails = _compilation.TypeSystemContext.Target;
-            if (targetDetails.Architecture == TargetArchitecture.X86
-                && targetDetails.OperatingSystem == TargetOS.Windows
-                && targetMethod.IsNativeCallable)
+            if (targetDetails.Architecture == TargetArchitecture.X86 && targetMethod.IsNativeCallable)
             {
                 throw new RequiresRuntimeJitException("ReadyToRun: References to methods with NativeCallableAttribute not implemented");
             }

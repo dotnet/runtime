@@ -79,7 +79,7 @@ AwEH";
         }
 
         [Fact]
-        public void ReadWriteNistP256ExplicitECPrivateKey_LimitedPrivate_NotSupported()
+        public void ReadWriteNistP256ExplicitECPrivateKey_LimitedPrivate()
         {
             ReadWriteBase64ECPrivateKey(
                 @"

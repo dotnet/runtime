@@ -741,12 +741,12 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_Prefetch2, OP_SSE_PREFETCHT2},
 	{SN_PrefetchNonTemporal, OP_SSE_PREFETCHNTA},
 	{SN_Reciprocal, OP_XOP_X_X, SIMD_OP_SSE_RCPPS},
-	{SN_ReciprocalScalar, 0, SIMD_OP_SSE_RCPSS},
+	{SN_ReciprocalScalar},
 	{SN_ReciprocalSqrt, OP_XOP_X_X, SIMD_OP_SSE_RSQRTPS},
-	{SN_ReciprocalSqrtScalar, 0, SIMD_OP_SSE_RSQRTSS},
+	{SN_ReciprocalSqrtScalar},
 	{SN_Shuffle},
 	{SN_Sqrt, OP_XOP_X_X, SIMD_OP_SSE_SQRTPS},
-	{SN_SqrtScalar, 0, SIMD_OP_SSE_SQRTSS},
+	{SN_SqrtScalar},
 	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
 	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
 	{SN_StoreAlignedNonTemporal, OP_SSE_MOVNTPS, 16 /* alignment */},
@@ -829,9 +829,9 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_LoadFence, OP_XOP, SIMD_OP_SSE_LFENCE},
 	{SN_LoadHigh, OP_SSE2_MOVHPD_LOAD},
 	{SN_LoadLow, OP_SSE2_MOVLPD_LOAD},
-	{SN_LoadScalarVector128, OP_SSE_MOVSD},
+	{SN_LoadScalarVector128},
 	{SN_LoadVector128},
-	{SN_MaskMove, OP_XOP_X_X_X_I, SIMD_OP_SSE_MASKMOVDQU},
+	{SN_MaskMove, OP_SSE2_MASKMOVDQU},
 	{SN_Max},
 	{SN_MaxScalar, OP_XOP_X_X_X, SIMD_OP_SSE_MAXSD},
 	{SN_MemoryFence, OP_XOP, SIMD_OP_SSE_MFENCE},
@@ -856,7 +856,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_ShuffleHigh},
 	{SN_ShuffleLow},
 	{SN_Sqrt, OP_XOP_X_X, SIMD_OP_SSE_SQRTPD},
-	{SN_SqrtScalar, 0, SIMD_OP_SSE_SQRTSD},
+	{SN_SqrtScalar},
 	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
 	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
 	{SN_StoreAlignedNonTemporal, OP_SSE_MOVNTPS, 16 /* alignment */},
@@ -865,7 +865,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_StoreNonTemporal, OP_SSE_MOVNTPS, 1 /* alignment */},
 	{SN_StoreScalar, OP_SSE_STORES},
 	{SN_Subtract},
-	{SN_SubtractSaturate},
+	{SN_SubtractSaturate, OP_SSE2_SUBS},
 	{SN_SubtractScalar, OP_SSE2_SUBSD},
 	{SN_SumAbsoluteDifferences, OP_XOP_X_X_X, SIMD_OP_SSE_PSADBW},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
@@ -982,21 +982,32 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_SHUFFLE, args [2]->inst_c0 /*mask*/, arg0_type, fsig, args);
 		}
-		case SN_ConvertScalarToVector128Single:
-			if (fsig->params [1]->type == MONO_TYPE_I4)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I4, SIMD_OP_SSE_CVTSI2SS, 0, fsig, args);
-			else if (fsig->params [1]->type == MONO_TYPE_I8)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I8, SIMD_OP_SSE_CVTSI2SS64, 0, fsig, args);
-			else
-				g_assert_not_reached ();
-			break;
+		case SN_ConvertScalarToVector128Single: {
+			int op = 0;
+			switch (fsig->params [1]->type) {
+			case MONO_TYPE_I4: op = OP_SSE_CVTSI2SS; break;
+			case MONO_TYPE_I8: op = OP_SSE_CVTSI2SS64; break;
+			default: g_assert_not_reached (); break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, 0, fsig, args);
+		}
 		case SN_ReciprocalScalar:
 		case SN_ReciprocalSqrtScalar:
-		case SN_SqrtScalar:
+		case SN_SqrtScalar: {
+			int op = 0;
+			switch (id) {
+			case SN_ReciprocalScalar: op = OP_SSE_RCPSS; break;
+			case SN_ReciprocalSqrtScalar: op = OP_SSE_RSQRTSS; break;
+			case SN_SqrtScalar: op = OP_SSE_SQRTSS; break;
+			};
 			if (fsig->param_count == 1)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, info->instc0, arg0_type, fsig, args);
-			else
-				return NULL;
+				return emit_simd_ins (cfg, klass, op, args [0]->dreg, args[0]->dreg);
+			else if (fsig->param_count == 2)
+				return emit_simd_ins (cfg, klass, op, args [0]->dreg, args[1]->dreg);
+			else 
+				g_assert_not_reached ();
+			break;
+		}
 		case SN_LoadScalarVector128:
 			return NULL;
 		default:
@@ -1027,17 +1038,6 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		}
 		case SN_Subtract:
 			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, arg0_type == MONO_TYPE_R8 ? OP_FSUB : OP_ISUB, arg0_type, fsig, args);
-		case SN_SubtractSaturate: {
-			SimdOp op = (SimdOp)0;
-			switch (arg0_type) {
-			case MONO_TYPE_I1: op = SIMD_OP_SSE_PSUBSB; break;
-			case MONO_TYPE_I2: op = SIMD_OP_SSE_PSUBSW; break;
-			case MONO_TYPE_U1: op = SIMD_OP_SSE_PSUBUSB; break;
-			case MONO_TYPE_U2: op = SIMD_OP_SSE_PSUBUSW; break;
-			default: g_assert_not_reached (); break;
-			}
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, op, arg0_type, fsig, args);
-		}
 		case SN_Add:
 			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, arg0_type == MONO_TYPE_R8 ? OP_FADD : OP_IADD, arg0_type, fsig, args);
 		case SN_Average:
@@ -1070,12 +1070,14 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			else
 				g_assert_not_reached ();
 			break;
-		case SN_ConvertScalarToVector128Double:
-			if (fsig->params [1]->type == MONO_TYPE_I4)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I4, SIMD_OP_SSE_CVTSI2SD, 0, fsig, args);
-			else if (fsig->params [1]->type == MONO_TYPE_I8)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I8, SIMD_OP_SSE_CVTSI2SD64, 0, fsig, args);
-			return emit_simd_ins_for_sig (cfg, klass, OP_CVTSD2SD, 0, arg0_type, fsig, args);
+		case SN_ConvertScalarToVector128Double: {
+			int op = OP_SSE2_CVTSS2SD;
+			switch (fsig->params [1]->type) {
+			case MONO_TYPE_I4: op = OP_SSE2_CVTSI2SD; break;
+			case MONO_TYPE_I8: op = OP_SSE2_CVTSI2SD64; break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, 0, fsig, args);
+		}
 		case SN_ConvertScalarToVector128Int32:
 		case SN_ConvertScalarToVector128Int64:
 		case SN_ConvertScalarToVector128UInt32:
@@ -1145,7 +1147,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			break;
 		case SN_Multiply:
 			if (arg0_type == MONO_TYPE_U4)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_PMULUDQ, arg0_type, fsig, args);
+				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PMULUDQ, 0, arg0_type, fsig, args);
 			else if (arg0_type == MONO_TYPE_R8)
 				return emit_simd_ins_for_sig (cfg, klass, OP_MULPD, 0, arg0_type, fsig, args);
 			else
@@ -1250,11 +1252,28 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_ShuffleLow:
 			g_assert (fsig->param_count == 2);
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFLW, 0, arg0_type, fsig, args);
-		case SN_SqrtScalar:
+		case SN_SqrtScalar: {
 			if (fsig->param_count == 1)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, info->instc0, arg0_type, fsig, args);
-			else
-				return NULL;
+				return emit_simd_ins (cfg, klass, OP_SSE2_SQRTSD, args [0]->dreg, args[0]->dreg);
+			else if (fsig->param_count == 2)
+				return emit_simd_ins (cfg, klass, OP_SSE2_SQRTSD, args [0]->dreg, args[1]->dreg);
+			else {
+				g_assert_not_reached ();
+				break;
+			}
+		}
+		case SN_LoadScalarVector128: {
+			int op = 0;
+			switch (arg0_type) {
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4: op = OP_SSE2_MOVD; break;
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8: op = OP_SSE2_MOVQ; break;
+			case MONO_TYPE_R8: op = OP_SSE2_MOVUPD; break;
+			default: g_assert_not_reached(); break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, 0, fsig, args);
+		}
 		default:
 			return NULL;
 		}

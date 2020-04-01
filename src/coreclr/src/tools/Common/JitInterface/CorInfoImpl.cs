@@ -2921,8 +2921,7 @@ namespace Internal.JitInterface
             if (this.MethodBeingCompiled.IsNativeCallable)
             {
 #if READYTORUN
-                if (targetArchitecture == TargetArchitecture.X86
-                    && _compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
+                if (targetArchitecture == TargetArchitecture.X86)
                 {
                     throw new RequiresRuntimeJitException("ReadyToRun: Methods with NativeCallableAttribute not implemented");
                 }

@@ -20,6 +20,8 @@ namespace System.Text.Json
 
         public ConstructorDelegate? CreateObject { get; private set; }
 
+        public object? CreateObjectWithParameterizedCtor { get; set; }
+
         public ClassType ClassType { get; private set; }
 
         public JsonPropertyInfo? DataExtensionProperty { get; private set; }
@@ -159,8 +161,7 @@ namespace System.Text.Json
 
                         if (converter.ConstructorIsParameterized)
                         {
-                            converter.CreateConstructorDelegate(options);
-                            InitializeConstructorParameters(converter.ConstructorInfo);
+                            InitializeConstructorParameters(converter.ConstructorInfo!);
                         }
                     }
                     break;

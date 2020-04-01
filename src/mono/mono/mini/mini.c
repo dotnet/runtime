@@ -4171,6 +4171,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	mini_patch_llvm_jit_callees (target_domain, method, code);
 #ifndef DISABLE_JIT
 	mono_emit_jit_map (jinfo);
+	mono_emit_jit_dump (jinfo, code);
 #endif
 	mono_domain_unlock (target_domain);
 

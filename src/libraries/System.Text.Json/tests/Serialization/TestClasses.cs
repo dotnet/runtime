@@ -1853,4 +1853,9 @@ namespace System.Text.Json.Serialization.Tests
             MyData.Verify();
         }
     }
+
+    public class ClassWithType
+    {
+        public Type Type { get; set; }
+    }
 }

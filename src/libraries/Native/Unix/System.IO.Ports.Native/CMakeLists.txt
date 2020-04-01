@@ -15,5 +15,5 @@ add_library(System.IO.Ports.Native-Static
 
 set_target_properties(System.IO.Ports.Native-Static PROPERTIES OUTPUT_NAME System.IO.Ports.Native  CLEAN_DIRECT_OUTPUT 1)
 
-install_library_and_symbols (System.IO.Ports.Native)
+install_with_stripped_symbols (System.IO.Ports.Native PROGRAMS .)
 install (TARGETS System.IO.Ports.Native-Static DESTINATION .)

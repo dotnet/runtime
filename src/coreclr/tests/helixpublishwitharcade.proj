@@ -15,9 +15,9 @@
       <!-- This specifies what properties are needed to be passed down as global properties to a child project. -->
 
       <_PropertiesToPass>
-        __BuildArch=$(__BuildArch);
-        __TargetOS=$(__TargetOS);
-        __BuildType=$(__BuildType);
+        TargetArchitecture=$(TargetArchitecture);
+        TargetOS=$(TargetOS);
+        Configuration=$(Configuration);
         Creator=$(_Creator);
         HelixAccessToken=$(_HelixAccessToken);
         HelixBuild=$(_HelixBuild);
@@ -167,17 +167,17 @@
     <EnableXUnitReporter>true</EnableXUnitReporter>
     <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
     <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
-    <HelixArchitecture>$(BuildArch)</HelixArchitecture>
-    <HelixConfiguration Condition=" '$(Scenario)' == 'normal' ">$(BuildType)</HelixConfiguration>
-    <HelixConfiguration Condition=" '$(Scenario)' != 'normal' ">$(BuildType)-$(Scenario)</HelixConfiguration>
+    <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
+    <HelixConfiguration Condition=" '$(Scenario)' == 'normal' ">$(Configuration)</HelixConfiguration>
+    <HelixConfiguration Condition=" '$(Scenario)' != 'normal' ">$(Configuration)-$(Scenario)</HelixConfiguration>
     <RunCrossGen Condition=" '$(RunCrossGen)' != 'true' ">false</RunCrossGen>
     <RunCrossGen2 Condition=" '$(RunCrossGen2)' != 'true' ">false</RunCrossGen2>
     <LongRunningGCTests Condition=" '$(LongRunningGCTests)' != 'true' ">false</LongRunningGCTests>
     <GcSimulatorTests Condition=" '$(GcSimulatorTests)' != 'true' ">false</GcSimulatorTests>
     <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
-    <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
-    <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
+    <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) @ </TestRunNamePrefix>
+    <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) $(Scenario) @ </TestRunNamePrefix>
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <_XUnitParallelMode>collections</_XUnitParallelMode>

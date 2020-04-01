@@ -77,7 +77,7 @@ The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture)
 - `-framework|-f` identifies the target framework for the build. Possible values include `netcoreapp5.0` (currently the latest .NET Core version) or `net472`. (msbuild property `BuildTargetFramework`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
-- `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `ArchGroup`)
+- `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
 
 For more details on the build settings see [project-guidelines](../../../coding-guidelines/project-guidelines.md#build-pivots).
 
@@ -160,7 +160,7 @@ Under the `src` directory is a set of directories, each of which represents a pa
 
 For example the `src\libraries\System.Diagnostics.DiagnosticSource` directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly.
 
-You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup)]`.
+You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)]`.
 
 You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to
 `src\libraries\System.Diagnostics.DiagnosticSource\tests` and typing `dotnet build`.
@@ -202,7 +202,7 @@ One can build in Debug or Release mode from the root by doing `./build.sh -subse
 
 ### Building other Architectures
 
-One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh -subsetCategory libraries -arch [value]` or in a project `/p:ArchGroup=[value]` after the `dotnet build` command.
+One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh -subsetCategory libraries -arch [value]` or in a project `/p:TargetArchitecture=[value]` after the `dotnet build` command.
 
 ## Working in Visual Studio
 

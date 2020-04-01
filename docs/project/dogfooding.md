@@ -6,6 +6,29 @@ This document provides the steps necessary to consume a nightly build of
 Please note that these steps are likely to change as we're simplifying
 this experience. Make sure to consult this document often.
 
+## Obtaining nightly builds of NuGet packages
+
+If you are only looking to get fixes for an individual NuGet package, and don't need a preview version of the entire runtime, you can add the nightly build package feed to your `NuGet.config` file.  The easiest way to do this is by using the dotnet CLI:
+
+**(Recommended)** Create a local NuGet.Config file for your solution, if don't already have one.  Using a local NuGet.Config file will enable the nightly feed as a package source for projects in the current directory only.
+```
+dotnet new nugetconfig
+```
+
+Next, add the package source to NuGet.Config with the [dotnet nuget add source](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-nuget-add-source) command:
+```
+dotnet nuget add source -n dotnet5 https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet5/nuget/v3/index.json
+```
+
+Then, you will be able to add the latest prerelease version of the desired package to your project.
+
+**Example:** To add version 5.0.0-preview.1.20120.5 of the System.Data.OleDb package, use the [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) command:
+```
+dotnet add package System.Data.OleDb -v 5.0.0-preview.1.20120.5
+```
+
+To use nightly builds of the entire runtime, follow the steps given in the rest of this document instead.
+
 ## Install prerequisites
 
 1. Acquire the latest nightly .NET SDK by downloading the zip or tarball listed in https://github.com/dotnet/core-sdk#installers-and-binaries (for example, https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-win-x64.zip ) into a new folder, for instance `C:\dotnet`.
@@ -44,15 +67,10 @@ To install additional .NET Core runtimes or SDKs:
   https://aka.ms/dotnet-download
 ```
 
-4. Our nightly builds are uploaded to dotnet-blob feeds, not NuGet - so ensure the .NET Core blob feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these line:
+4. Our nightly builds are uploaded to dotnet-blob feeds, not NuGet - so ensure the .NET Core blob feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these lines:
 ```xml
 <packageSources>
-    <add key="dotnet-core" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
-    <add key="dotnet-windowsdesktop" value="https://dotnetfeed.blob.core.windows.net/dotnet-windowsdesktop/index.json" />
-    <add key="aspnet-aspnetcore" value="https://dotnetfeed.blob.core.windows.net/aspnet-aspnetcore/index.json" />
-    <add key="aspnet-aspnetcore-tooling" value="https://dotnetfeed.blob.core.windows.net/aspnet-aspnetcore-tooling/index.json" />
-    <add key="aspnet-entityframeworkcore" value="https://dotnetfeed.blob.core.windows.net/aspnet-entityframeworkcore/index.json" />
-    <add key="aspnet-extensions" value="https://dotnetfeed.blob.core.windows.net/aspnet-extensions/index.json" />
+    <add key="dotnet5" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet5/nuget/v3/index.json" />
     <add key="gRPC repository" value="https://grpc.jfrog.io/grpc/api/nuget/v3/grpc-nuget-dev" />
     ...
 </packageSources>    
@@ -226,4 +244,3 @@ windows (on Linux substitute ~/ for %HOMEPATH%) you could delete
      %HOMEPATH%\.nuget\packages\runtime.win-x64.microsoft.private.corefx.netcoreapp\4.6.0-dev.18626.1
 ```
 which should make `dotnet restore` now pick up the new copy.
-

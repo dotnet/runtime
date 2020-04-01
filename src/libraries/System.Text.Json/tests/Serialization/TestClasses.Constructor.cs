@@ -10,6 +10,11 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
+    public interface ITestClassWithParameterizedCtor : ITestClass
+    {
+        void VerifyMinimal();
+    }
+
     public class PrivateParameterlessCtor
     {
         private PrivateParameterlessCtor() { }
@@ -572,7 +577,7 @@ namespace System.Text.Json.Serialization.Tests
         public Point_3D_Struct(int x, int y, int z = 50) => (X, Y, Z) = (x, y, z);
     }
 
-    public class Person_Class : ITestClass
+    public class Person_Class : ITestClassWithParameterizedCtor
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }
@@ -616,22 +621,32 @@ namespace System.Text.Json.Serialization.Tests
             ReadOnlySinglePublicParameterizedCtor = readOnlySinglePublicParameterizedCtor;
         }
 
-        public static readonly string s_json =
-             @"{
+        public static string s_json => $"{{{s_partialJson1},{s_partialJson2}}}";
+
+        public static string s_json_flipped => $"{{{s_partialJson2},{s_partialJson1}}}";
+
+        public static string s_json_minimal => @"{""ReadOnlyPoint2D"":{""X"":1,""Y"":2}}";
+
+        private const string s_partialJson1 =
+             @"
                 ""FirstName"":""John"",
                 ""LastName"":""Doe"",
                 ""EmailAddress"":""johndoe@live.com"",
                 ""Id"":""f2c92fcc-459f-4287-90b6-a7cbd82aeb0e"",
                 ""Age"":24,
                 ""Point2D"":{""X"":1,""Y"":2},
-                ""ReadOnlyPoint2D"":{""X"":1,""Y"":2},
+                ""ReadOnlyPoint2D"":{""X"":1,""Y"":2}
+            ";
+
+        private const string s_partialJson2 =
+            @"
                 ""Point2DWithExtDataClass"":{""X"":1,""Y"":2,""b"":3},
                 ""ReadOnlyPoint2DWithExtDataClass"":{""X"":1,""Y"":2,""b"":3},
                 ""Point3DStruct"":{""X"":1,""Y"":2,""Z"":3},
                 ""ReadOnlyPoint3DStruct"":{""X"":1,""Y"":2,""Z"":3},
                 ""Point2DWithExtData"":{""X"":1,""Y"":2,""b"":3},
                 ""ReadOnlyPoint2DWithExtData"":{""X"":1,""Y"":2,""b"":3}
-            }";
+            ";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -692,6 +707,13 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(@"""X"":1", serialized);
             Assert.Contains(@"""Y"":2", serialized);
             Assert.Contains(@"""b"":3", serialized);
+        }
+
+        public void VerifyMinimal()
+        {
+            string serialized = JsonSerializer.Serialize(ReadOnlyPoint2D);
+            Assert.Contains(@"""X"":1", serialized);
+            Assert.Contains(@"""Y"":2", serialized);
         }
     }
 
@@ -895,7 +917,7 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class ClassWithConstructor_SimpleAndComplexParameters : ITestClass
+    public class ClassWithConstructor_SimpleAndComplexParameters : ITestClassWithParameterizedCtor
     {
         public byte MyByte { get; }
         public sbyte MySByte { get; set; }
@@ -986,8 +1008,11 @@ namespace System.Text.Json.Serialization.Tests
         public static ClassWithConstructor_SimpleAndComplexParameters GetInstance() =>
             JsonSerializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(s_json);
 
-        public static readonly string s_json = $"{{{s_partialJson1},{s_partialJson2}}}";
-        public static readonly string s_json_flipped = $"{{{s_partialJson2},{s_partialJson1}}}";
+        public static string s_json => $"{{{s_partialJson1},{s_partialJson2}}}";
+
+        public static string s_json_flipped => $"{{{s_partialJson2},{s_partialJson1}}}";
+
+        public static string s_json_minimal => @"{""MyDecimal"" : 3.3}";
 
         private const string s_partialJson1 =
             @"""MyByte"" : 7," +
@@ -1107,6 +1132,8 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Null(MyListOfNullString[0]);
         }
+
+        public void VerifyMinimal() => Assert.Equal(3.3m, MyDecimal);
     }
     public class Parameterless_ClassWithPrimitives
     {
@@ -1825,7 +1852,7 @@ namespace System.Text.Json.Serialization.Tests
         public string Headline { get; set; }
     }
 
-    public class Parameterized_Class_With_ComplexTuple : ITestClass
+    public class Parameterized_Class_With_ComplexTuple : ITestClassWithParameterizedCtor
     {
         public Tuple<
                 ClassWithConstructor_SimpleAndComplexParameters,
@@ -1846,7 +1873,7 @@ namespace System.Text.Json.Serialization.Tests
                 ClassWithConstructor_SimpleAndComplexParameters,
                 ClassWithConstructor_SimpleAndComplexParameters> myTuple) => MyTuple = myTuple;
 
-        private static readonly string s_inner_json = @"
+        private const string s_inner_json = @"
             {
                 ""MyByte"": 7,
                 ""MyChar"": ""a"",
@@ -1911,18 +1938,43 @@ namespace System.Text.Json.Serialization.Tests
                 ""MyStringImmutablQueueT"": [ ""Hello"" ]
               }";
 
-        public static readonly string s_json =
+        public static string s_json =>
             $@"{{
                 ""MyTuple"": {{
-                    ""Item1"":{s_inner_json},
-                    ""Item2"":{s_inner_json},
-                    ""Item3"":{s_inner_json},
-                    ""Item4"":{s_inner_json},
-                    ""Item5"":{s_inner_json},
-                    ""Item6"":{s_inner_json},
-                    ""Item7"":{s_inner_json}
+                    {s_partialJson1},
+                    {s_partialJson2}
                 }}
             }}";
+
+        public static string s_json_flipped =>
+            $@"{{
+                ""MyTuple"": {{
+                    {s_partialJson2},
+                    {s_partialJson1}
+                }}
+            }}";
+
+        public static string s_json_minimal =>
+            $@"{{
+                ""MyTuple"": {{
+                    ""Item4"":{s_inner_json}
+                }}
+            }}";
+
+        private static string s_partialJson1 =>
+            $@"
+                ""Item1"":{s_inner_json},
+                ""Item2"":{s_inner_json},
+                ""Item3"":{s_inner_json},
+                ""Item4"":{s_inner_json}
+            ";
+
+        private static string s_partialJson2 =>
+            $@"
+                ""Item5"":{s_inner_json},
+                ""Item6"":{s_inner_json},
+                ""Item7"":{s_inner_json}
+            ";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -1937,6 +1989,11 @@ namespace System.Text.Json.Serialization.Tests
             MyTuple.Item5.Verify();
             MyTuple.Item6.Verify();
             MyTuple.Item7.Verify();
+        }
+
+        public void VerifyMinimal()
+        {
+            MyTuple.Item4.Verify();
         }
     }
 

@@ -1,6 +1,5 @@
 <Project>
   <PropertyGroup>
-    <TargetOS Condition="'$(TargetOS)' == ''">$(DefaultOSGroup)</TargetOS>
     <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
 
     <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.cmd</RunScriptInputName>
