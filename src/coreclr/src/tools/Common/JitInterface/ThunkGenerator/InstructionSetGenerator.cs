@@ -21,14 +21,16 @@ namespace Thunkerator
             public string R2rName { get; }
             public string R2rNumericValue { get; }
             public string JitName { get; }
+            public string CommandLineName { get; }
 
-            public InstructionSetInfo(string architecture, string managedName, string r2rName, string r2rNumericValue, string jitName)
+            public InstructionSetInfo(string architecture, string managedName, string r2rName, string r2rNumericValue, string jitName, string commandLineName)
             {
                 Architecture = architecture;
                 ManagedName = managedName;
                 R2rName = String.IsNullOrEmpty(r2rName) ? managedName : r2rName;
                 R2rNumericValue = r2rNumericValue;
                 JitName = jitName;
+                CommandLineName = commandLineName;
             }
 
             public InstructionSetInfo(string architecture, InstructionSetInfo similarInstructionSet)
@@ -38,12 +40,15 @@ namespace Thunkerator
                 R2rName = similarInstructionSet.R2rName;
                 R2rNumericValue = similarInstructionSet.R2rNumericValue;
                 JitName = similarInstructionSet.JitName;
+                CommandLineName = similarInstructionSet.CommandLineName;
             }
 
             public string PublicName
             {
                 get
                 {
+                    if (!String.IsNullOrEmpty(CommandLineName))
+                        return CommandLineName;
                     if (!String.IsNullOrEmpty(ManagedName))
                         return ManagedName;
                     else if (!String.IsNullOrEmpty(R2rName))
@@ -152,11 +157,11 @@ namespace Thunkerator
                             _64BitVariantArchitectureJitNameSuffix[command[1]] = command[3];
                             break;
                         case "instructionset":
-                            if (command.Length != 6)
+                            if (command.Length != 7)
                                 throw new Exception("Incorrect number of args for instructionset");
                             ValidateArchitectureEncountered(command[1]);
                             _architectureJitNames[command[1]].Add(command[5]);
-                            _instructionSets.Add(new InstructionSetInfo(command[1],command[2],command[3],command[4],command[5]));
+                            _instructionSets.Add(new InstructionSetInfo(command[1],command[2],command[3],command[4],command[5],command[6]));
                             break;
                         case "instructionset64bit":
                             if (command.Length != 3)
@@ -455,7 +460,10 @@ namespace Internal.JitInterface
                 {
                     if (instructionSet.Architecture != architecture) continue;
                     if (_64BitArchitectures.Contains(architecture) && _64bitVariants[architecture].Contains(instructionSet.JitName))
+                    {
                         AddImplication(architecture, instructionSet.JitName, $"{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}");
+                        AddImplication(architecture, $"{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}", instructionSet.JitName);
+                    }
                 }
                 foreach (var implication in _implications)
                 {
@@ -538,7 +546,7 @@ namespace Internal.JitInterface
                 foreach (var instructionSet in _instructionSets)
                 {
                     if (instructionSet.Architecture != architecture) continue;
-                    bool instructionSetIsSpecifiable = !String.IsNullOrEmpty(instructionSet.R2rName);
+                    bool instructionSetIsSpecifiable = !String.IsNullOrEmpty(instructionSet.CommandLineName);
                     string name = instructionSet.PublicName;
                     string specifiable = instructionSetIsSpecifiable ? "true" : "false";
                     string instructionSetString = $"InstructionSet.{architecture}_{instructionSet.JitName}";

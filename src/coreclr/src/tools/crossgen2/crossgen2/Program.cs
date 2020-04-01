@@ -154,44 +154,48 @@ namespace ILCompiler
             // Ready to run images are built with certain instruction set baselines
             if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("Sse");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("Sse2");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("ArmBase");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("AdvSimd");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
             }
 
-            if (_commandLineOptions.InstructionSet != null && _commandLineOptions.InstructionSet.Length > 0)
+
+            if (_commandLineOptions.InstructionSet != null)
             {
+                List<string> instructionSetParams = new List<string>();
+
                 // At this time, instruction sets may only be specified with --input-bubble, as
                 // we do not yet have a stable ABI for all vector parameter/return types.
                 if (!_commandLineOptions.InputBubble)
                     throw new CommandLineException(SR.InstructionSetWithoutInputBubble);
 
                 // Normalize instruction set format to include implied +.
-                for (int i = 0; i < _commandLineOptions.InstructionSet.Length; i++)
+                string[] instructionSetParamsInput = _commandLineOptions.InstructionSet.Split(",");
+                for (int i = 0; i < instructionSetParamsInput.Length; i++)
                 {
-                    string instructionSet = _commandLineOptions.InstructionSet[i];
+                    string instructionSet = instructionSetParamsInput[i];
 
                     if (String.IsNullOrEmpty(instructionSet))
                         throw new CommandLineException(String.Format(SR.InstructionSetMustNotBe, ""));
 
-                    char lastChar = instructionSet[instructionSet.Length - 1];
-                    if ((lastChar != '+') && (lastChar != '-'))
+                    char firstChar = instructionSet[0];
+                    if ((firstChar != '+') && (firstChar != '-'))
                     {
-                        instructionSet = instructionSet + "+";
-                        _commandLineOptions.InstructionSet[i] = instructionSet;
+                        instructionSet =  "+" + instructionSet;
                     }
+                    instructionSetParams.Add(instructionSet);
                 }
 
                 Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
-                foreach (string instructionSetSpecifier in _commandLineOptions.InstructionSet)
+                foreach (string instructionSetSpecifier in instructionSetParams)
                 {
-                    string instructionSet = instructionSetSpecifier.Substring(0, instructionSetSpecifier.Length - 1);
+                    string instructionSet = instructionSetSpecifier.Substring(1, instructionSetSpecifier.Length - 1);
 
-                    bool enabled = instructionSetSpecifier[instructionSetSpecifier.Length - 1] == '+' ? true : false;
+                    bool enabled = instructionSetSpecifier[0] == '+' ? true : false;
                     if (enabled)
                     {
                         if (!instructionSetSupportBuilder.AddSupportedInstructionSet(instructionSet))
@@ -222,14 +226,14 @@ namespace ILCompiler
                 // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
                 // code.
                 // 
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Sse");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Sse2");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Sse41");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Sse42");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Aes");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Pclmulqdq");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Popcnt");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("Lzcnt");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.1");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
             }
 
             optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _, 
@@ -237,7 +241,11 @@ namespace ILCompiler
             optimisticInstructionSet.Remove(unsupportedInstructionSet);
             optimisticInstructionSet.Add(supportedInstructionSet);
 
-            var instructionSetSupport = new InstructionSetSupport(supportedInstructionSet, unsupportedInstructionSet, optimisticInstructionSet, _targetArchitecture);
+            var instructionSetSupport = new InstructionSetSupport(supportedInstructionSet,
+                                                                  unsupportedInstructionSet,
+                                                                  optimisticInstructionSet,
+                                                                  InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(_targetArchitecture),
+                                                                  _targetArchitecture);
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {

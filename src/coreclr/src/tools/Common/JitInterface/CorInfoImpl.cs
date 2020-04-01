@@ -270,7 +270,8 @@ namespace Internal.JitInterface
             bool needPerMethodInstructionSetFixup = false;
             foreach (var instructionSet in _actualInstructionSetSupported)
             {
-                if (!baselineSupport.IsInstructionSetSupported(instructionSet))
+                if (!baselineSupport.IsInstructionSetSupported(instructionSet) &&
+                    !baselineSupport.NonSpecifiableFlags.HasInstructionSet(instructionSet))
                 {
                     needPerMethodInstructionSetFixup = true;
                 }
@@ -290,7 +291,7 @@ namespace Internal.JitInterface
                 _actualInstructionSetUnsupported.ExpandInstructionSetByReverseImplication(architecture);
                 _actualInstructionSetUnsupported.Set64BitInstructionSetVariants(architecture);
 
-                InstructionSetSupport actualSupport = new InstructionSetSupport(_actualInstructionSetSupported, _actualInstructionSetUnsupported, _actualInstructionSetSupported, architecture);
+                InstructionSetSupport actualSupport = new InstructionSetSupport(_actualInstructionSetSupported, _actualInstructionSetUnsupported, architecture);
                 var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
                 ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
             }

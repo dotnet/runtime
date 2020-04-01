@@ -18,13 +18,20 @@ namespace ILCompiler
         private readonly InstructionSetFlags _optimisticInstructionSets;
         private readonly InstructionSetFlags _supportedInstructionSets;
         private readonly InstructionSetFlags _unsupportedInstructionSets;
+        private readonly InstructionSetFlags _nonSpecifiableInstructionSets;
 
-        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, TargetArchitecture architecture)
+        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, TargetArchitecture architecture) : 
+            this(supportedInstructionSets, unsupportedInstructionSets, supportedInstructionSets, default(InstructionSetFlags), architecture)
+        {
+        }
+
+        public InstructionSetSupport(InstructionSetFlags supportedInstructionSets, InstructionSetFlags unsupportedInstructionSets, InstructionSetFlags optimisticInstructionSets, InstructionSetFlags nonSpecifiableInstructionSets, TargetArchitecture architecture)
         {
             _supportedInstructionSets = supportedInstructionSets;
             _unsupportedInstructionSets = unsupportedInstructionSets;
             _optimisticInstructionSets = optimisticInstructionSets;
             _targetArchitecture = architecture;
+            _nonSpecifiableInstructionSets = nonSpecifiableInstructionSets;
         }
 
         public bool IsInstructionSetSupported(InstructionSet instructionSet)
@@ -40,6 +47,7 @@ namespace ILCompiler
         public InstructionSetFlags OptimisticFlags => _optimisticInstructionSets;
         public InstructionSetFlags SupportedFlags => _supportedInstructionSets;
         public InstructionSetFlags ExplicitlyUnsupportedFlags => _unsupportedInstructionSets;
+        public InstructionSetFlags NonSpecifiableFlags => _nonSpecifiableInstructionSets;
 
         public TargetArchitecture Architecture => _targetArchitecture;
 
@@ -112,6 +120,7 @@ namespace ILCompiler
     public class InstructionSetSupportBuilder
     {
         static Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>> s_instructionSetSupport = ComputeInstructionSetSupport();
+        static Dictionary<TargetArchitecture, InstructionSetFlags> s_nonSpecifiableInstructionSets = ComputeNonSpecifiableInstructionSetSupport();
 
         private static Dictionary<TargetArchitecture, Dictionary<string, InstructionSet>> ComputeInstructionSetSupport()
         {
@@ -122,6 +131,17 @@ namespace ILCompiler
             }
 
             return supportMatrix;
+        }
+
+        private static Dictionary<TargetArchitecture, InstructionSetFlags> ComputeNonSpecifiableInstructionSetSupport()
+        {
+            var matrix = new Dictionary<TargetArchitecture, InstructionSetFlags>();
+            foreach (TargetArchitecture arch in Enum.GetValues(typeof(TargetArchitecture)))
+            {
+                matrix[arch] = ComputeNonSpecifiableInstructionSetSupportForArch(arch);
+            }
+
+            return matrix;
         }
 
         private static Dictionary<string, InstructionSet> ComputeInstructSetSupportForArch(TargetArchitecture architecture)
@@ -135,6 +155,24 @@ namespace ILCompiler
             }
 
             return support;
+        }
+
+        private static InstructionSetFlags ComputeNonSpecifiableInstructionSetSupportForArch(TargetArchitecture architecture)
+        {
+            var support = new InstructionSetFlags();
+            foreach (var instructionSet in InstructionSetFlags.ArchitectureToValidInstructionSets(architecture))
+            {
+                // Only instruction sets with associated R2R enum values are are specifiable
+                if (!instructionSet.Specifiable)
+                    support.AddInstructionSet(instructionSet.InstructionSet);
+            }
+
+            return support;
+        }
+
+        public static InstructionSetFlags GetNonSpecifiableInstructionSetsForArch(TargetArchitecture architecture)
+        {
+            return s_nonSpecifiableInstructionSets[architecture];
         }
 
         private readonly SortedSet<string> _supportedInstructionSets = new SortedSet<string>();

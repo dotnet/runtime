@@ -25,18 +25,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Array.Sort(explicitlyUnsupportedInstructionSets);
 
             bool addDelimeter = false;
+            var r2rAlreadyEmitted = new HashSet<ReadyToRunInstructionSet>();
             foreach (var instructionSetSupported in supportedInstructionSets)
             {
                 var r2rInstructionSet = instructionSetSupported.R2RInstructionSet(instructionSetSupport.Architecture);
                 if (r2rInstructionSet == null)
                     continue;
 
-                if (addDelimeter)
-                    builder.Append('+');
-                addDelimeter = true;
-                builder.Append(r2rInstructionSet.Value.ToString());
+                if (r2rAlreadyEmitted.Add(r2rInstructionSet.Value))
+                {
+                    if (addDelimeter)
+                        builder.Append('+');
+                    addDelimeter = true;
+                    builder.Append(r2rInstructionSet.Value.ToString());
+                }
             }
+
             builder.Append(',');
+            r2rAlreadyEmitted.Clear();
 
             addDelimeter = false;
             foreach (var instructionSetUnsupported in explicitlyUnsupportedInstructionSets)
@@ -45,10 +51,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (r2rInstructionSet == null)
                     continue;
                     
-                if (addDelimeter)
-                    builder.Append('-');
-                addDelimeter = true;
-                builder.Append(r2rInstructionSet.Value.ToString());
+                if (r2rAlreadyEmitted.Add(r2rInstructionSet.Value))
+                {
+                    if (addDelimeter)
+                        builder.Append('-');
+                    addDelimeter = true;
+                    builder.Append(r2rInstructionSet.Value.ToString());
+                }
             }
 
             return builder.ToString();
