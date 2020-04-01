@@ -59,7 +59,7 @@
       <Version>4.5.0</Version>
     </LibraryPackage>
     <LibraryPackage Include="System.Data.SqlClient">
-      <Version>4.8.0</Version>
+      <Version>4.8.1</Version>
     </LibraryPackage>
 
     <!-- Service model packages -->
