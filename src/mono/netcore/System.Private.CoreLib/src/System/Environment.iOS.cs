@@ -21,7 +21,7 @@ namespace System
                 Interlocked.CompareExchange(ref s_specialFolders, new Dictionary<SpecialFolder, string>(), null);
             }
 
-            string path;
+            string? path;
             lock (s_specialFolders)
             {
                 if (!s_specialFolders.TryGetValue(folder, out path))
@@ -48,7 +48,7 @@ namespace System
                 case SpecialFolder.ApplicationData:
                     // note: at first glance that looked like a good place to return NSLibraryDirectory
                     // but it would break isolated storage for existing applications
-                    return Path.Combine(Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory), ".config");
+                    return CombineSearchPath(NSSearchPathDirectory.NSDocumentDirectory, ".config");
 
                 case SpecialFolder.Resources:
                     return Interop.Sys.SearchPath(NSSearchPathDirectory.NSLibraryDirectory); // older (8.2 and previous) would return String.Empty
@@ -64,7 +64,7 @@ namespace System
                     return Interop.Sys.SearchPath(NSSearchPathDirectory.NSPicturesDirectory);
 
                 case SpecialFolder.Templates:
-                    return Path.Combine(Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory), "Templates");
+                    return CombineSearchPath(NSSearchPathDirectory.NSDocumentDirectory, "Templates");
 
                 case SpecialFolder.MyVideos:
                     return Interop.Sys.SearchPath(NSSearchPathDirectory.NSMoviesDirectory);
@@ -73,10 +73,10 @@ namespace System
                     return "/usr/share/templates";
 
                 case SpecialFolder.Fonts:
-                    return Path.Combine(Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory), ".fonts");
+                    return CombineSearchPath(NSSearchPathDirectory.NSDocumentDirectory, ".fonts");
 
                 case SpecialFolder.Favorites:
-                    return Path.Combine(Interop.Sys.SearchPath(NSSearchPathDirectory.NSLibraryDirectory), "Favorites");
+                    return CombineSearchPath(NSSearchPathDirectory.NSLibraryDirectory, "Favorites");
 
                 case SpecialFolder.ProgramFiles:
                     return Interop.Sys.SearchPath(NSSearchPathDirectory.NSApplicationDirectory);
@@ -92,6 +92,14 @@ namespace System
 
                 default:
                     return string.Empty;
+            }
+
+            static string? CombineSearchPath(NSSearchPathDirectory searchPath, string subdirectory)
+            {
+                string? path = Interop.Sys.SearchPath(searchPath);
+                return path != null ?
+                    Path.Combine(path, subdirectory) :
+                    null;
             }
         }
     }
