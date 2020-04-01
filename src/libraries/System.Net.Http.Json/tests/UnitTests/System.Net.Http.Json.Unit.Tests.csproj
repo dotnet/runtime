@@ -6,9 +6,23 @@
     <Compile Include="TranscodingReadStreamTests.cs" />
     <Compile Include="TranscodingWriteStreamTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="..\..\src\System\Net\Http\Json\TranscodingReadStream.netcoreapp.cs">
+      <Link>ProductionCode\System\Net\Http\Json\TranscodingReadStream.netcoreapp.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Json\TranscodingWriteStream.netcoreapp.cs">
+      <Link>ProductionCode\System\Net\Http\Json\TranscodingWriteStream.netcoreapp.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
     <Compile Include="..\..\src\System\ArraySegmentExtensions.netstandard.cs">
       <Link>ProductionCode\System\ArraySegmentExtensions.netstandard.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Json\TranscodingReadStream.netstandard.cs">
+      <Link>ProductionCode\System\Net\Http\Json\TranscodingReadStream.netstandard.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Json\TranscodingWriteStream.netstandard.cs">
+      <Link>ProductionCode\System\Net\Http\Json\TranscodingWriteStream.netstandard.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

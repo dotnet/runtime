@@ -4,13 +4,10 @@
 
 // Taken from https://github.com/dotnet/aspnetcore/blob/master/src/Mvc/Mvc.Core/test/Formatters/TranscodingWriteStreamTest.cs
 
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -18,15 +15,60 @@ namespace System.Net.Http.Json.Functional.Tests
 {
     public class TranscodingWriteStreamTest
     {
-        public static TheoryData WriteAsyncInputLatin =>
+        public static TheoryData WriteInputLatin =>
             TranscodingReadStreamTest.GetLatinTextInput(TranscodingWriteStream.MaxCharBufferSize, TranscodingWriteStream.MaxByteBufferSize);
 
-        public static TheoryData WriteAsyncInputUnicode =>
+        public static TheoryData WriteInputUnicode =>
             TranscodingReadStreamTest.GetUnicodeText(TranscodingWriteStream.MaxCharBufferSize);
 
         [Theory]
-        [MemberData(nameof(WriteAsyncInputLatin))]
-        [MemberData(nameof(WriteAsyncInputUnicode))]
+        [MemberData(nameof(WriteInputLatin))]
+        [MemberData(nameof(WriteInputUnicode))]
+        public void Write_Works_WhenOutputIs_UTF32(string message)
+        {
+            Encoding targetEncoding = Encoding.UTF32;
+            WriteTest(targetEncoding, message);
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteInputLatin))]
+        [MemberData(nameof(WriteInputUnicode))]
+        public void Write_Works_WhenOutputIs_Unicode(string message)
+        {
+            Encoding targetEncoding = Encoding.Unicode;
+            WriteTest(targetEncoding, message);
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteInputLatin))]
+        public void Write_Works_WhenOutputIs_UTF7(string message)
+        {
+            Encoding targetEncoding = Encoding.UTF7;
+            WriteTest(targetEncoding, message);
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteInputLatin))]
+        public void Write_Works_WhenOutputIs_WesternEuropeanEncoding(string message)
+        {
+            // Arrange
+            Encoding targetEncoding = Encoding.GetEncoding(28591);
+            WriteTest(targetEncoding, message);
+        }
+
+
+        [Theory]
+        [MemberData(nameof(WriteInputLatin))]
+        public void Write_Works_WhenOutputIs_ASCII(string message)
+        {
+            // Arrange
+            Encoding targetEncoding = Encoding.ASCII;
+            WriteTest(targetEncoding, message);
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteInputLatin))]
+        [MemberData(nameof(WriteInputUnicode))]
         public Task WriteAsync_Works_WhenOutputIs_UTF32(string message)
         {
             Encoding targetEncoding = Encoding.UTF32;
@@ -34,8 +76,8 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(WriteAsyncInputLatin))]
-        [MemberData(nameof(WriteAsyncInputUnicode))]
+        [MemberData(nameof(WriteInputLatin))]
+        [MemberData(nameof(WriteInputUnicode))]
         public Task WriteAsync_Works_WhenOutputIs_Unicode(string message)
         {
             Encoding targetEncoding = Encoding.Unicode;
@@ -43,7 +85,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(WriteAsyncInputLatin))]
+        [MemberData(nameof(WriteInputLatin))]
         public Task WriteAsync_Works_WhenOutputIs_UTF7(string message)
         {
             Encoding targetEncoding = Encoding.UTF7;
@@ -51,7 +93,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Theory]
-        [MemberData(nameof(WriteAsyncInputLatin))]
+        [MemberData(nameof(WriteInputLatin))]
         public Task WriteAsync_Works_WhenOutputIs_WesternEuropeanEncoding(string message)
         {
             // Arrange
@@ -61,12 +103,26 @@ namespace System.Net.Http.Json.Functional.Tests
 
 
         [Theory]
-        [MemberData(nameof(WriteAsyncInputLatin))]
+        [MemberData(nameof(WriteInputLatin))]
         public Task WriteAsync_Works_WhenOutputIs_ASCII(string message)
         {
             // Arrange
             Encoding targetEncoding = Encoding.ASCII;
             return WriteAsyncTest(targetEncoding, message);
+        }
+
+        private static void WriteTest(Encoding targetEncoding, string expected)
+        {
+            byte[] encodedMessage = Encoding.UTF8.GetBytes(expected);
+            var stream = new MemoryStream();
+
+            var transcodingStream = new TranscodingWriteStream(stream, targetEncoding);
+            transcodingStream.Write(encodedMessage, 0, encodedMessage.Length);
+            transcodingStream.Flush();
+            transcodingStream.FinalWrite();
+
+            string actual = targetEncoding.GetString(stream.ToArray());
+            Assert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
 
         private static async Task WriteAsyncTest(Encoding targetEncoding, string message)

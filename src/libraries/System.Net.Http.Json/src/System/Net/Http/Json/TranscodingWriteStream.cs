@@ -12,20 +12,22 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http.Json
 {
-    internal sealed class TranscodingWriteStream : Stream
+    /// <summary>
+    /// Adds a transcode-from-UTF-8 layer to the write operations on another stream.
+    /// </summary>
+    internal sealed partial class TranscodingWriteStream : Stream
     {
         // Default size of the char buffer that will hold the passed-in bytes when decoded from UTF-8.
         // The buffer holds them and then they are encoded to the targetEncoding and written to the underlying stream.
         internal const int MaxCharBufferSize = 4096;
         // Upper bound that limits the byte buffer size to prevent an encoding that has a very poor worst-case scenario.
         internal const int MaxByteBufferSize = 4 * MaxCharBufferSize;
-        private readonly int _maxByteBufferSize;
 
         private readonly Stream _stream;
         private readonly Decoder _decoder;
         private readonly Encoder _encoder;
+        private byte[] _byteBuffer;
         private char[] _charBuffer;
-        private int _charsDecoded;
         private bool _disposed;
 
         public TranscodingWriteStream(Stream stream, Encoding targetEncoding)
@@ -37,7 +39,8 @@ namespace System.Net.Http.Json
             // Attempt to allocate a byte buffer than can tolerate the worst-case scenario for this
             // encoding. This would allow the char -> byte conversion to complete in a single call.
             // However limit the buffer size to prevent an encoding that has a very poor worst-case scenario.
-            _maxByteBufferSize = Math.Min(MaxByteBufferSize, targetEncoding.GetMaxByteCount(MaxCharBufferSize));
+            int maxByteBufferSize = Math.Min(MaxByteBufferSize, targetEncoding.GetMaxByteCount(MaxCharBufferSize));
+            _byteBuffer = ArrayPool<byte>.Shared.Rent(maxByteBufferSize);
 
             _decoder = Encoding.UTF8.GetDecoder();
             _encoder = targetEncoding.GetEncoder();
@@ -50,7 +53,7 @@ namespace System.Net.Http.Json
         public override long Position { get; set; }
 
         public override void Flush()
-            => throw new NotSupportedException();
+            => _stream.Flush();
 
         public override Task FlushAsync(CancellationToken cancellationToken)
             => _stream.FlushAsync(cancellationToken);
@@ -64,96 +67,44 @@ namespace System.Net.Http.Json
         public override void SetLength(long value)
             => throw new NotSupportedException();
 
-        public override void Write(byte[] buffer, int offset, int count)
-            => throw new NotSupportedException();
-
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-
-            if (buffer.Length - offset < count)
-            {
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            }
-
-            var bufferSegment = new ArraySegment<byte>(buffer, offset, count);
-            return WriteAsyncCore(bufferSegment, cancellationToken);
-        }
-
-        private async Task WriteAsyncCore(ArraySegment<byte> bufferSegment, CancellationToken cancellationToken)
-        {
-            bool decoderCompleted = false;
-
-            while (!decoderCompleted)
-            {
-                _decoder.Convert(bufferSegment.Array!, bufferSegment.Offset, bufferSegment.Count, _charBuffer, _charsDecoded, _charBuffer.Length - _charsDecoded,
-                    flush: false, out int bytesDecoded, out int charsDecoded, out decoderCompleted);
-
-                _charsDecoded += charsDecoded;
-                bufferSegment = bufferSegment.Slice(bytesDecoded);
-                await WriteBufferAsync(cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        private async Task WriteBufferAsync(CancellationToken cancellationToken)
-        {
-            bool encoderCompleted = false;
-            int charsWritten = 0;
-            byte[] byteBuffer = ArrayPool<byte>.Shared.Rent(_maxByteBufferSize);
-
-            while (!encoderCompleted && charsWritten < _charsDecoded)
-            {
-                _encoder.Convert(_charBuffer, charsWritten, _charsDecoded - charsWritten, byteBuffer, byteIndex: 0, byteBuffer.Length,
-                    flush: false, out int charsEncoded, out int bytesUsed, out encoderCompleted);
-
-                await _stream.WriteAsync(byteBuffer, 0, bytesUsed, cancellationToken).ConfigureAwait(false);
-                charsWritten += charsEncoded;
-            }
-
-            ArrayPool<byte>.Shared.Return(byteBuffer);
-
-            // At this point, we've written all the buffered chars to the underlying Stream.
-            _charsDecoded = 0;
-        }
-
         protected override void Dispose(bool disposing)
         {
             if (!_disposed)
             {
                 _disposed = true;
+
                 ArrayPool<char>.Shared.Return(_charBuffer);
                 _charBuffer = null!;
+
+                ArrayPool<byte>.Shared.Return(_byteBuffer);
+                _byteBuffer = null!;
             }
         }
 
-        public async Task FinalWriteAsync(CancellationToken cancellationToken)
+        public async ValueTask FinalWriteAsync(CancellationToken cancellationToken)
         {
             // Flush the encoder.
-            byte[] byteBuffer = ArrayPool<byte>.Shared.Rent(_maxByteBufferSize);
             bool encoderCompleted = false;
-
             while (!encoderCompleted)
             {
-                _encoder.Convert(Array.Empty<char>(), 0, 0, byteBuffer, 0, byteBuffer.Length,
+                _encoder.Convert(Array.Empty<char>(), 0, 0, _byteBuffer, 0, _byteBuffer.Length,
                     flush: true, out _, out int bytesUsed, out encoderCompleted);
 
-                await _stream.WriteAsync(byteBuffer, 0, bytesUsed, cancellationToken).ConfigureAwait(false);
+                await _stream.WriteAsync(_byteBuffer, 0, bytesUsed, cancellationToken).ConfigureAwait(false);
             }
+        }
 
-            ArrayPool<byte>.Shared.Return(byteBuffer);
+        public void FinalWrite()
+        {
+            // Flush the encoder.
+            bool encoderCompleted = false;
+            while (!encoderCompleted)
+            {
+                _encoder.Convert(Array.Empty<char>(), 0, 0, _byteBuffer, 0, _byteBuffer.Length,
+                    flush: true, out _, out int bytesUsed, out encoderCompleted);
+
+                _stream.Write(_byteBuffer, 0, bytesUsed);
+            }
         }
     }
 }
