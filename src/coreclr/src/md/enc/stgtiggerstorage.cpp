@@ -1001,11 +1001,7 @@ ULONG TiggerStorage::PrintSizeInfo(bool verbose)
         for (int i = 0; i < m_StgHdr.GetiStreams(); i++)
         {
             pNext = storStream->NextStream();
-#ifdef HOST_64BIT
-            printf("Stream #%d (%s) Header: %lld, Data: %lu\n",i,storStream->GetName(), (BYTE*)pNext - (BYTE*)storStream, storStream->GetSize());
-#else
-            printf("Stream #%d (%s) Header: %ld, Data: %lu\n",i,storStream->GetName(), (BYTE*)pNext - (BYTE*)storStream, storStream->GetSize());
-#endif
+            printf("Stream #%d (%s) Header: %zd, Data: %lu\n",i,storStream->GetName(), (size_t)((BYTE*)pNext - (BYTE*)storStream), storStream->GetSize());
             total += storStream->GetSize();
             storStream = pNext;
         }
