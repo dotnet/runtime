@@ -35,6 +35,18 @@ For information about the different options available, supply the argument `--he
 build -h
 ```
 
+Alternatively, you can build and install runtime using [vcpkg](https://github.com/microsoft/vcpkg/) dependency manager:
+```bat
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+./bootstrap-vcpkg.bat
+./vcpkg integrate install
+./vcpkg install nethost
+```
+
+The nethost port in vcpkg is kept up to date by microsoft team members and community contributors.
+If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
+
 On Unix like systems, arguments can be passed in with a single `-` or double hyphen `--`.
 
 The repository currently consists of different major parts: the runtimes, the libraries, and the installer.
