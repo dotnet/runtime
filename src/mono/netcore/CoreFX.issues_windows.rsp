@@ -24,7 +24,6 @@
 -nonamespace MonoTests.System.Drawing
 -nonamespace System.Reflection.Emit.Tests
 
--nomethod System.Diagnostics.Tests.CounterSampleTests.*
 -nomethod Tests.Integration.DiscoveryTests.DiscoverAddinsWithCombinedCustomExportAndMetadataAttribute
 -nomethod WindowAndCursorProps.*
 -nomethod System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
