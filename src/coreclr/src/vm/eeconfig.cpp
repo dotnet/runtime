@@ -299,11 +299,6 @@ HRESULT EEConfig::Init()
     fGDBJitEmitDebugFrame = false;
 #endif
 
-    // After initialization, register the code:#GetConfigValueCallback method with code:CLRConfig to let
-    // CLRConfig access config files. This is needed because CLRConfig lives outside the VM and can't
-    // statically link to EEConfig.
-    CLRConfig::RegisterGetConfigValueCallback(&GetConfigValueCallback);
-
     return S_OK;
 }
 
@@ -1079,28 +1074,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     fGDBJitEmitDebugFrame = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GDBJitEmitDebugFrame) != 0;
 #endif
     return hr;
-}
-
-//
-// #GetConfigValueCallback
-// Provides a way for code:CLRConfig to access configuration file values.
-//
-// static
-HRESULT EEConfig::GetConfigValueCallback(__in_z LPCWSTR pKey, __deref_out_opt LPCWSTR* pValue, BOOL systemOnly, BOOL applicationFirst)
-{
-    CONTRACT (HRESULT) {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pValue));
-        PRECONDITION(CheckPointer(pKey));
-    } CONTRACT_END;
-
-    // Ensure that both options aren't set.
-    _ASSERTE(!(systemOnly && applicationFirst));
-
-    // TODO: Eliminate this function as well.
-    RETURN E_FAIL;
 }
 
 bool EEConfig::RequireZap(LPCUTF8 assemblyName) const

@@ -512,10 +512,6 @@ public:
 
     // Helpers to read configuration
 
-    // This function exposes the config file data to CLRConfig. A pointer to this function is passed into CLRConfig on EEConfig::init.
-    // We are using BOOLs instead of ConfigSearch for direction since CLRConfig isn't always linked to EEConfig.
-    static HRESULT GetConfigValueCallback(__in_z LPCWSTR pKey, __deref_out_opt LPCWSTR* value, BOOL systemOnly, BOOL applicationFirst);
-
     //
     // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
