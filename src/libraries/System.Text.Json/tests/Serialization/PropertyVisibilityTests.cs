@@ -9,7 +9,7 @@ using System.Numerics;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static class PropertyVisibilityTests
+    public static partial class PropertyVisibilityTests
     {
         [Fact]
         public static void NoSetter()

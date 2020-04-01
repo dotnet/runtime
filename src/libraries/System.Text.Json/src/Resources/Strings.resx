@@ -512,4 +512,7 @@
   <data name="SerializeTypeInstanceNotSupported" xml:space="preserve">
     <value>Serialization and deserialization of 'System.Type' instances are not supported and should be avoided since they can lead to security issues.</value>
   </data>
+  <data name="JsonIncludeOnNonPublicInvalid" xml:space="preserve">
+    <value>The non-public property '{0}' on type '{1}' is annotated with 'JsonIncludeAttribute' which is invalid.</value>
+  </data>
 </root>

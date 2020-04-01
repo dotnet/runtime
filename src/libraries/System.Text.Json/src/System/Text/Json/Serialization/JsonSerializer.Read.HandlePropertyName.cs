@@ -38,7 +38,7 @@ namespace System.Text.Json
             if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
             {
                 JsonPropertyInfo? dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
-                if (dataExtProperty != null)
+                if (dataExtProperty != null && dataExtProperty.HasGetter && dataExtProperty.HasSetter)
                 {
                     state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
 

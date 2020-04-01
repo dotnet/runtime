@@ -95,69 +95,10 @@ namespace System.Text.Json
             {
                 case ClassType.Object:
                     {
-                        // Create the policy property.
-                        PropertyInfoForClassInfo = CreatePropertyInfoForClassInfo(type, runtimeType, converter!, options);
-
                         CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
 
-                        PropertyInfo[] properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-
-                        Dictionary<string, JsonPropertyInfo> cache = CreatePropertyCache(properties.Length);
-
-                        foreach (PropertyInfo propertyInfo in properties)
-                        {
-                            // Ignore indexers
-                            if (propertyInfo.GetIndexParameters().Length > 0)
-                            {
-                                continue;
-                            }
-
-                            // For now we only support public getters\setters
-                            if (propertyInfo.GetMethod?.IsPublic == true ||
-                                propertyInfo.SetMethod?.IsPublic == true)
-                            {
-                                JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo.PropertyType, propertyInfo, type, options);
-                                Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
-
-                                // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
-                                if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
-                                {
-                                    JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
-
-                                    if (other.ShouldDeserialize == false && other.ShouldSerialize == false)
-                                    {
-                                        // Overwrite the one just added since it has [JsonIgnore].
-                                        cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
-                                    }
-                                    else if (jsonPropertyInfo.ShouldDeserialize == true || jsonPropertyInfo.ShouldSerialize == true)
-                                    {
-                                        ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
-                                    }
-                                    // else ignore jsonPropertyInfo since it has [JsonIgnore].
-                                }
-                            }
-                        }
-
-                        JsonPropertyInfo[] cacheArray;
-                        if (DetermineExtensionDataProperty(cache))
-                        {
-                            // Remove from cache since it is handled independently.
-                            cache.Remove(DataExtensionProperty!.NameAsString!);
-
-                            cacheArray = new JsonPropertyInfo[cache.Count + 1];
-
-                            // Set the last element to the extension property.
-                            cacheArray[cache.Count] = DataExtensionProperty;
-                        }
-                        else
-                        {
-                            cacheArray = new JsonPropertyInfo[cache.Count];
-                        }
-
-                        // Set fields when finished to avoid concurrency issues.
-                        PropertyCache = cache;
-                        cache.Values.CopyTo(cacheArray, 0);
-                        PropertyCacheArray = cacheArray;
+                        HandlePublicProperties();
+                        HandleNonPublicProperties();
 
                         if (converter.ConstructorIsParameterized)
                         {
@@ -186,6 +127,90 @@ namespace System.Text.Json
                 default:
                     Debug.Fail($"Unexpected class type: {ClassType}");
                     throw new InvalidOperationException();
+            }
+        }
+
+        private void HandlePublicProperties()
+        {
+            PropertyInfo[] properties = Type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+
+            Dictionary<string, JsonPropertyInfo> cache = CreatePropertyCache(properties.Length);
+
+            foreach (PropertyInfo propertyInfo in properties)
+            {
+                // Ignore indexers
+                if (propertyInfo.GetIndexParameters().Length > 0)
+                {
+                    continue;
+                }
+
+                // For now we only support public getters\setters
+                if (propertyInfo.GetMethod?.IsPublic == true ||
+                    propertyInfo.SetMethod?.IsPublic == true)
+                {
+                    JsonPropertyInfo jsonPropertyInfo = AddProperty(
+                        propertyInfo,
+                        Type,
+                        Options);
+                    Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
+
+                    // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
+                    if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
+                    {
+                        JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
+
+                        if (other.ShouldDeserialize == false && other.ShouldSerialize == false)
+                        {
+                            // Overwrite the one just added since it has [JsonIgnore].
+                            cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
+                        }
+                        else if (jsonPropertyInfo.ShouldDeserialize == true || jsonPropertyInfo.ShouldSerialize == true)
+                        {
+                            ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
+                        }
+                        // else ignore jsonPropertyInfo since it has [JsonIgnore].
+                    }
+                }
+            }
+
+            JsonPropertyInfo[] cacheArray;
+            if (DetermineExtensionDataProperty(cache))
+            {
+                // Remove from cache since it is handled independently.
+                cache.Remove(DataExtensionProperty!.NameAsString!);
+
+                cacheArray = new JsonPropertyInfo[cache.Count + 1];
+
+                // Set the last element to the extension property.
+                cacheArray[cache.Count] = DataExtensionProperty;
+            }
+            else
+            {
+                cacheArray = new JsonPropertyInfo[cache.Count];
+            }
+
+            // Set fields when finished to avoid concurrency issues.
+            PropertyCache = cache;
+            cache.Values.CopyTo(cacheArray, 0);
+            PropertyCacheArray = cacheArray;
+        }
+
+        private void HandleNonPublicProperties()
+        {
+            PropertyInfo[] properties = Type.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic);
+
+            foreach (PropertyInfo propertyInfo in properties)
+            {
+                // Ignore indexers
+                if (propertyInfo.GetIndexParameters().Length > 0)
+                {
+                    continue;
+                }
+
+                if (JsonPropertyInfo.GetAttribute<JsonIncludeAttribute>(propertyInfo) != null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyInfo, Type);
+                }
             }
         }
 
@@ -252,52 +277,6 @@ namespace System.Text.Json
             ParameterCount = parameters.Length;
 
             PropertyCache = propertyCache;
-        }
-
-        public bool DetermineExtensionDataProperty(Dictionary<string, JsonPropertyInfo> cache)
-        {
-            JsonPropertyInfo? jsonPropertyInfo = GetPropertyWithUniqueAttribute(Type, typeof(JsonExtensionDataAttribute), cache);
-            if (jsonPropertyInfo != null)
-            {
-                Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
-                if (typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
-                    typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType))
-                {
-                    JsonConverter converter = Options.GetConverter(declaredPropertyType);
-                    Debug.Assert(converter != null);
-                }
-                else
-                {
-                    ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(Type, jsonPropertyInfo);
-                }
-
-                DataExtensionProperty = jsonPropertyInfo;
-                return true;
-            }
-
-            return false;
-        }
-
-        private static JsonPropertyInfo? GetPropertyWithUniqueAttribute(Type classType, Type attributeType, Dictionary<string, JsonPropertyInfo> cache)
-        {
-            JsonPropertyInfo? property = null;
-
-            foreach (JsonPropertyInfo jsonPropertyInfo in cache.Values)
-            {
-                Debug.Assert(jsonPropertyInfo.PropertyInfo != null);
-                Attribute? attribute = jsonPropertyInfo.PropertyInfo.GetCustomAttribute(attributeType);
-                if (attribute != null)
-                {
-                    if (property != null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(classType, attributeType);
-                    }
-
-                    property = jsonPropertyInfo;
-                }
-            }
-
-            return property;
         }
 
         private static JsonParameterInfo AddConstructorParameter(
@@ -381,6 +360,52 @@ namespace System.Text.Json
             }
 
             return converter;
+        }
+
+        public bool DetermineExtensionDataProperty(Dictionary<string, JsonPropertyInfo> cache)
+        {
+            JsonPropertyInfo? jsonPropertyInfo = GetPropertyWithUniqueAttribute(Type, typeof(JsonExtensionDataAttribute), cache);
+            if (jsonPropertyInfo != null)
+            {
+                Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
+                if (typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
+                    typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType))
+                {
+                    JsonConverter converter = Options.GetConverter(declaredPropertyType);
+                    Debug.Assert(converter != null);
+                }
+                else
+                {
+                    ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(Type, jsonPropertyInfo);
+                }
+
+                DataExtensionProperty = jsonPropertyInfo;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static JsonPropertyInfo? GetPropertyWithUniqueAttribute(Type classType, Type attributeType, Dictionary<string, JsonPropertyInfo> cache)
+        {
+            JsonPropertyInfo? property = null;
+
+            foreach (JsonPropertyInfo jsonPropertyInfo in cache.Values)
+            {
+                Debug.Assert(jsonPropertyInfo.PropertyInfo != null);
+                Attribute? attribute = jsonPropertyInfo.PropertyInfo.GetCustomAttribute(attributeType);
+                if (attribute != null)
+                {
+                    if (property != null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(classType, attributeType);
+                    }
+
+                    property = jsonPropertyInfo;
+                }
+            }
+
+            return property;
         }
     }
 }

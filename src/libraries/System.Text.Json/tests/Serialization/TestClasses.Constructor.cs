@@ -1215,18 +1215,6 @@ namespace System.Text.Json.Serialization.Tests
             throw new NotImplementedException();
         }
     }
-    public class ConverterForInt32 : JsonConverter<int>
-    {
-        public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            return 25;
-        }
-
-        public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
-        {
-            throw new NotImplementedException();
-        }
-    }
 
     public class Class_With_Ctor_With_64_Params : ITestClass
     {
@@ -2121,14 +2109,6 @@ namespace System.Text.Json.Serialization.Tests
         public override string ConvertName(string name)
         {
             return name.ToLowerInvariant();
-        }
-    }
-
-    public class SimpleSnakeCasePolicy : JsonNamingPolicy
-    {
-        public override string ConvertName(string name)
-        {
-            return string.Concat(name.Select((x, i) => i > 0 && char.IsUpper(x) ? "_" + x.ToString() : x.ToString())).ToLower();
         }
     }
 

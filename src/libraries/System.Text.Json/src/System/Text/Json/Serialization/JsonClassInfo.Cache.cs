@@ -77,13 +77,15 @@ namespace System.Text.Json
             }
         }
 
-        public static JsonPropertyInfo AddProperty(Type propertyType, PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
+        public static JsonPropertyInfo AddProperty(PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
         {
             JsonIgnoreAttribute? ignoreAttribute = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(propertyInfo);
             if (ignoreAttribute?.Condition == JsonIgnoreCondition.Always)
             {
                 return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(propertyInfo, options);
             }
+
+            Type propertyType = propertyInfo.PropertyType;
 
             JsonConverter converter = GetConverter(
                 propertyType,

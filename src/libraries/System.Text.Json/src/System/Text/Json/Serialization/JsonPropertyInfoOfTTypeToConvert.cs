@@ -38,13 +38,17 @@ namespace System.Text.Json
 
             if (propertyInfo != null)
             {
-                if (propertyInfo.GetMethod?.IsPublic == true)
+                bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
+
+                MethodInfo? getMethod = propertyInfo.GetMethod;
+                if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
                 {
                     HasGetter = true;
                     Get = options.MemberAccessorStrategy.CreatePropertyGetter<TTypeToConvert>(propertyInfo);
                 }
 
-                if (propertyInfo.SetMethod?.IsPublic == true)
+                MethodInfo? setMethod = propertyInfo.SetMethod;
+                if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
                 {
                     HasSetter = true;
                     Set = options.MemberAccessorStrategy.CreatePropertySetter<TTypeToConvert>(propertyInfo);

@@ -205,6 +205,13 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(PropertyInfo propertyInfo, Type parentType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.JsonIncludeOnNonPublicInvalid, propertyInfo.Name, parentType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotHonored(
             ReadOnlySpan<byte> propertyName,
             ref Utf8JsonReader reader,
