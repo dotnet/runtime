@@ -69,6 +69,10 @@ stages:
       runtimeFlavor: mono
       buildConfig: release
       platforms:
+      - Android_x64
+      - Android_x86
+      - Android_arm
+      - Android_arm64
       - iOS_x64
       - iOS_arm
       - iOS_arm64
@@ -116,6 +120,10 @@ stages:
       buildConfig: Release
       runtimeFlavor: mono
       platforms:
+      - Android_x64
+      - Android_x86
+      - Android_arm
+      - Android_arm64
       - iOS_x64
       - iOS_arm
       - iOS_arm64
