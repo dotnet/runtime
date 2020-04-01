@@ -98,7 +98,7 @@ namespace System.Reflection.Emit
 
             _nestedName = true;
 
-            EscapeName(name!);
+            EscapeName(name);
         }
 
         public void AddPointer()
