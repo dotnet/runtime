@@ -71,9 +71,6 @@ jobs:
             unpackFolder: $(Build.SourcesDirectory)/artifacts
             artifactName: $(librariesTestsArtifactName)
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
-
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
-          displayName: Restore
           
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - script: $(_msbuildCommand) src/libraries/restore/runtime/runtime.depproj 
@@ -82,17 +79,16 @@ jobs:
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /p:TargetArchitecture=${{ parameters.archType }}
                     /p:Configuration=${{ parameters.buildConfig }}
-                    /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideCoreclrFromLiveDrop.binlog
+                    /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
             displayName: Override $(runtimeFlavorName) from live drop
 
-        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          - script: $(_msbuildCommand) src/libraries/pretest.proj 
+          - script: $(_buildScript) -project src/libraries/pretest.proj 
                     $(_runtimeArtifactsPathArg)
                     $(_runtimeOSArg)
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /p:TargetArchitecture=${{ parameters.archType }}
                     /p:Configuration=${{ parameters.buildConfig }}
-                    /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideCoreclrFromLiveDrop_pretest.binlog
+                    /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/pretest.binlog
             displayName: Override $(runtimeFlavorName) from live drop PreTest
 
         - template: /eng/pipelines/libraries/helix.yml

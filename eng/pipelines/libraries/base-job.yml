@@ -96,10 +96,10 @@ jobs:
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
           # Download corelib dependencies for coreclr libraries and not test
-          - ${{ if and(ne(parameters.runtimeFlavor, 'mono'), eq(parameters.testScope, '')) }}:
+          - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, '')) }}:
             - _runtimeArtifactName: 'CoreLib_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
           # Download full product dependencies for mono or test
-          - ${{ if or(eq(parameters.runtimeFlavor, 'mono'), ne(parameters.testScope, '')) }}:
+          - ${{ if or(neq(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
             - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
           - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
           - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}

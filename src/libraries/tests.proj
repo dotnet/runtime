@@ -41,12 +41,17 @@
   <Import Project="$(RepositoryEngineeringDir)coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
   
+  <ItemGroup>
+    <SetupProjects Include="$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj" />
+    <SetupProjects Include="$(MSBuildThisFileDirectory)\pretest.proj" />
+  </ItemGroup>
+
   <Target Name="Build" DependsOnTargets="BuildAllProjects" />
   <Target Name="BuildAllProjects">
     <!-- These projects are required to restore the runtime and setup testhost -->
     <MSBuild Targets="Build"
-             Projects="$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj;$(MSBuildThisFileDirectory)\pretest.proj"
-             Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'"
+             Projects="@(SetupProjects)"
+             Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true' and '$(ContinuousIntegrationBuild)' == 'true'" 
              BuildInParallel="false"
              ContinueOnError="ErrorAndStop" />
     <MSBuild Targets="Build"
