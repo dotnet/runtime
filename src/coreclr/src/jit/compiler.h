@@ -8200,6 +8200,17 @@ public:
 #endif // !FEATURE_SIMD
     }
 
+    // Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many
+    // structs will fit the criteria.
+    bool structSizeMightRepresentSIMDType(size_t structSize)
+    {
+        // Do not use maxSIMDStructBytes as that api in R2R on X86 and X64 may notify the JIT
+        // about the size of a struct under the assumption that the struct size needs to be recorded.
+        // By using largestEnregisterableStructSize here, the detail of whether or not Vector256<T> is
+        // enregistered or not will not be messaged to the R2R compiler.
+        return (structSize >= minSIMDStructBytes()) && (structSize <= largestEnregisterableStructSize());
+    }
+
 #ifdef FEATURE_SIMD
     static bool vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId);
 #endif // !FEATURE_SIMD
