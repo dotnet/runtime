@@ -8204,11 +8204,15 @@ public:
     // structs will fit the criteria.
     bool structSizeMightRepresentSIMDType(size_t structSize)
     {
+#ifdef FEATURE_SIMD
         // Do not use maxSIMDStructBytes as that api in R2R on X86 and X64 may notify the JIT
         // about the size of a struct under the assumption that the struct size needs to be recorded.
         // By using largestEnregisterableStructSize here, the detail of whether or not Vector256<T> is
         // enregistered or not will not be messaged to the R2R compiler.
         return (structSize >= minSIMDStructBytes()) && (structSize <= largestEnregisterableStructSize());
+#else
+        return false;
+#endif // FEATURE_SIMD
     }
 
 #ifdef FEATURE_SIMD
