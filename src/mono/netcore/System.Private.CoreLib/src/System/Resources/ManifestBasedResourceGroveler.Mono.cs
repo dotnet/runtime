@@ -9,7 +9,7 @@ namespace System.Resources
 {
     internal partial class ManifestBasedResourceGroveler
     {
-        private static Assembly InternalGetSatelliteAssembly(Assembly mainAssembly, CultureInfo culture, Version version)
+        private static Assembly? InternalGetSatelliteAssembly(Assembly mainAssembly, CultureInfo culture, Version? version)
         {
             return ((RuntimeAssembly)mainAssembly).InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: false);
         }

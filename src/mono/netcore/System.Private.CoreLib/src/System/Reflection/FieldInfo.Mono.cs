@@ -37,14 +37,14 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern MarshalAsAttribute get_marshal_info();
 
-        internal object[] GetPseudoCustomAttributes()
+        internal object[]? GetPseudoCustomAttributes()
         {
             int count = 0;
 
             if (IsNotSerialized)
                 count++;
 
-            if (DeclaringType.IsExplicitLayout)
+            if (DeclaringType!.IsExplicitLayout)
                 count++;
 
             MarshalAsAttribute marshalAs = get_marshal_info();
@@ -66,14 +66,14 @@ namespace System.Reflection
             return attrs;
         }
 
-        internal CustomAttributeData[] GetPseudoCustomAttributesData()
+        internal CustomAttributeData[]? GetPseudoCustomAttributesData()
         {
             int count = 0;
 
             if (IsNotSerialized)
                 count++;
 
-            if (DeclaringType.IsExplicitLayout)
+            if (DeclaringType!.IsExplicitLayout)
                 count++;
 
             MarshalAsAttribute marshalAs = get_marshal_info();
@@ -86,12 +86,12 @@ namespace System.Reflection
             count = 0;
 
             if (IsNotSerialized)
-                attrsData[count++] = new CustomAttributeData((typeof(NonSerializedAttribute)).GetConstructor(Type.EmptyTypes));
+                attrsData[count++] = new CustomAttributeData((typeof(NonSerializedAttribute)).GetConstructor(Type.EmptyTypes)!);
             if (DeclaringType.IsExplicitLayout)
             {
                 var ctorArgs = new CustomAttributeTypedArgument[] { new CustomAttributeTypedArgument(typeof(int), GetFieldOffset()) };
                 attrsData[count++] = new CustomAttributeData(
-                    (typeof(FieldOffsetAttribute)).GetConstructor(new[] { typeof(int) }),
+                    (typeof(FieldOffsetAttribute)).GetConstructor(new[] { typeof(int) })!,
                     ctorArgs,
                     Array.Empty<CustomAttributeNamedArgument>());
             }
@@ -100,7 +100,7 @@ namespace System.Reflection
             {
                 var ctorArgs = new CustomAttributeTypedArgument[] { new CustomAttributeTypedArgument(typeof(UnmanagedType), marshalAs.Value) };
                 attrsData[count++] = new CustomAttributeData(
-                    (typeof(MarshalAsAttribute)).GetConstructor(new[] { typeof(UnmanagedType) }),
+                    (typeof(MarshalAsAttribute)).GetConstructor(new[] { typeof(UnmanagedType) })!,
                     ctorArgs,
                     Array.Empty<CustomAttributeNamedArgument>());//FIXME Get named params
             }

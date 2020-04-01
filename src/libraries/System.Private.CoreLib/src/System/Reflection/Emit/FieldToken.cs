@@ -14,9 +14,9 @@ namespace System.Reflection.Emit
     {
         public static readonly FieldToken Empty = default;
 
-        private readonly object _class;
+        private readonly object? _class;
 
-        internal FieldToken(int fieldToken, Type fieldClass)
+        internal FieldToken(int fieldToken, Type? fieldClass)
         {
             Token = fieldToken;
             _class = fieldClass;
