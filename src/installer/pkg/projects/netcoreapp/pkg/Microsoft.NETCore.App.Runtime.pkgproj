@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-  Don't include host resolver or host policy in iOS or Android runtime packs, because there is no
-  shared framework on those platforms.
+    Don't include host resolver or host policy in iOS or Android runtime packs, because there is no
+    shared framework on those platforms.
   -->
   <PropertyGroup>
     <ExcludeHostAssets Condition="'$(TargetOS)' == 'iOS'">true</ExcludeHostAssets>
