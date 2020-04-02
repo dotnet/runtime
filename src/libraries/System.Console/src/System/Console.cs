@@ -152,7 +152,7 @@ namespace System
                 return Volatile.Read(ref s_error) ?? EnsureInitializedError();
 
                 static TextWriter EnsureInitializedError()
-                    => EnsureInitializedDisposable(ref s_out, CreateOutputWriter(OpenStandardError()));
+                    => EnsureInitializedDisposable(ref s_error, CreateOutputWriter(OpenStandardError()));
             }
         }
 
