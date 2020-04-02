@@ -9,7 +9,6 @@
 -nonamespace System.Runtime.InteropServices.Tests
 -nonamespace System.Management.Tests
 -nonamespace System.Threading.Overlapped.Tests
--nonamespace System.ComponentModel.Composition
 -nonamespace BasicEventSourceTests
 -nonamespace System.ComponentModel.TypeConverterTests
 -nonamespace System.DirectoryServices.Protocols.Tests
@@ -24,7 +23,6 @@
 -nonamespace MonoTests.System.Drawing
 -nonamespace System.Reflection.Emit.Tests
 
--nomethod Tests.Integration.DiscoveryTests.DiscoverAddinsWithCombinedCustomExportAndMetadataAttribute
 -nomethod WindowAndCursorProps.*
 -nomethod System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
 -nomethod System.DirectoryServices.ActiveDirectory.Tests.DomainControllerTests.GetDomainController_InvalidIPV6
