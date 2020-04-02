@@ -11,14 +11,6 @@
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
   </PropertyGroup>
 
-  <!-- These projects are required to restore the runtime and setup testhost -->
-  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true' and '$(ContinuousIntegrationBuild)' == 'true'" >
-    <SetupProject Include="$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj" />
-    <SetupProject Include="$(MSBuildThisFileDirectory)pretest.proj" />
-    <!-- Restore projects and build before/after. -->
-    <ProjectReference Include="@(SetupProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
-  </ItemGroup>
-
   <ItemGroup>
     <!-- We currently only test with C# projects. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
@@ -27,14 +19,6 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj"
                       Condition="'$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
-
-  <Target Name="PrepareTestHost"
-          Condition="'@(SetupProject)' != ''"
-          BeforeTargets="Build">
-    <MSBuild Targets="Build"
-             Projects="@(SetupProjects)"
-             Properties="$(TraversalGlobalProperties)" />
-  </Target>
 
   <Target Name="GenerateCoverageReport"
           Condition="'$(Coverage)' == 'true' == 'true' and '$(SkipCoverageReport)' != 'true'"
