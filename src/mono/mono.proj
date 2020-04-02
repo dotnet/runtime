@@ -416,7 +416,7 @@
     </PropertyGroup>
 
     <!-- Linux options -->
-    <ItemGroup Condition="'$(TargetsLinux)' == true and '$(TargetsAndroid)' != 'true'">
+    <ItemGroup Condition="'$(TargetsLinux)' == true">
       <_MonoCFLAGS Include="-Wl,--build-id" />
       <_MonoCXXFLAGS Include="-Wl,--build-id" />
     </ItemGroup>
