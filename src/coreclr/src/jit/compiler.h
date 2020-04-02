@@ -8039,14 +8039,14 @@ private:
     var_types getSIMDVectorType()
     {
 #if defined(TARGET_XARCH)
-        // Fix the exact level of simd vector support by using compExactlyDependsOn on the Avx2 isa
-        compExactlyDependsOn(InstructionSet_AVX2);
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
             return TYP_SIMD32;
         }
         else
         {
+            // Verify and record that AVX2 isn't supported
+            compVerifyInstructionSetUnuseable(InstructionSet_AVX2);
             assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return TYP_SIMD16;
         }
@@ -8087,7 +8087,9 @@ private:
         else
         {
             assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
-            compExactlyDependsOn(InstructionSet_AVX2); // Record that AVX2 isn't supported
+
+            // Verify and record that AVX2 isn't supported
+            compVerifyInstructionSetUnuseable(InstructionSet_AVX2); 
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -8328,6 +8330,17 @@ private:
 #else
         return false;
 #endif
+    }
+
+    // Ensure that code will not execute if an instruction set is useable. Call only
+    // if the instruction set has previously reported as unuseable, but when
+    // that that status has not yet been recorded to the AOT compiler
+    void compVerifyInstructionSetUnuseable(CORINFO_InstructionSet isa)
+    {
+        // use compExactlyDependsOn to capture are record the use of the isa
+        bool isaUseable = compExactlyDependsOn(isa);
+        // Assert that the is unuseable. If true, this function should never be called.
+        assert(!isaUseable);
     }
 
     // Answer the question: Is a particular ISA supported?
