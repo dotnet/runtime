@@ -219,7 +219,7 @@ namespace System.Reflection.Emit
 
         private void EscapeEmbeddedAssemblyName(string name)
         {
-            bool containsReservedChar = false;
+            bool constainsReservedChar = name.Contains(']');
 
             foreach (char c in name)
             {
