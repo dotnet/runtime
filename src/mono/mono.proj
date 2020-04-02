@@ -121,8 +121,6 @@
       <_MonoAC_VARS Include="mono_cv_uscore=yes" />
 
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm64'" Include="-arch arm64" />
-      <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-arch armv7" />
-      <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-arch armv7s" />
       <_MonoCFLAGS Include="-isysroot $(XcodeDir)/Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS$(tvOSVersion).sdk" />
       <_MonoCFLAGS Include="-mtvos-version-min=$(tvOSVersionMin)" />
       <_MonoCFLAGS Include="-Wl,-application_extension" />
