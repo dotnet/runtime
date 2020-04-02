@@ -95,12 +95,12 @@ static void* map_file(const pal::string_t& path, size_t* length, int flags)
 
 void* pal::mmap_read(const string_t& path, size_t* length)
 {
-    return mmap(path, length, MAP_SHARED);
+    return map_file(path, length, MAP_SHARED);
 }
 
 void* pal::mmap_copy_on_write(const string_t& path, size_t* length)
 {
-    return mmap(path, length, MAP_PRIVATE);
+    return map_file(path, length, MAP_PRIVATE);
 }
 
 bool pal::getcwd(pal::string_t* recv)

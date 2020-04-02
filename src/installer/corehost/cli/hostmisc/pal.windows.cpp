@@ -76,7 +76,7 @@ bool pal::touch_file(const pal::string_t& path)
     return true;
 }
 
-static void* mmap(const pal::string_t& path, size_t *length, DWORD mapping_protect, DWORD view_desired_access)
+static void* map_file(const pal::string_t& path, size_t *length, DWORD mapping_protect, DWORD view_desired_access)
 {
     HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -125,12 +125,12 @@ static void* mmap(const pal::string_t& path, size_t *length, DWORD mapping_prote
 
 void* pal::mmap_read(const string_t& path, size_t* length)
 {
-    return mmap(path, length, PAGE_READONLY, FILE_MAP_READ);
+    return map_file(path, length, PAGE_READONLY, FILE_MAP_READ);
 }
 
 void* pal::mmap_copy_on_write(const string_t& path, size_t* length)
 {
-    return mmap(path, length, PAGE_WRITECOPY, FILE_MAP_READ | FILE_MAP_COPY);
+    return map_file(path, length, PAGE_WRITECOPY, FILE_MAP_READ | FILE_MAP_COPY);
 }
 
 bool pal::getcwd(pal::string_t* recv)
