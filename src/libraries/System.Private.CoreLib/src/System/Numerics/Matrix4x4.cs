@@ -2196,7 +2196,7 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            var hash = new HashCode();
+            HashCode hash = default;
 
             hash.Add(M11);
             hash.Add(M12);

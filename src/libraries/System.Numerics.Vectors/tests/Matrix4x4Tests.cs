@@ -1594,7 +1594,7 @@ namespace System.Numerics.Tests
         {
             Matrix4x4 target = GenerateIncrementalMatrixNumber();
 
-            var hash = new HashCode();
+            HashCode hash = default;
 
             hash.Add(target.M11);
             hash.Add(target.M12);
