@@ -1,4 +1,6 @@
+using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
+using System.Net.Security;
 using Xunit;
 
 namespace System.Net.Quic.Tests
@@ -10,7 +12,7 @@ namespace System.Net.Quic.Tests
             var secret =
                 KeyDerivation.DeriveClientInitialSecret(HexHelpers.FromHexString(ReferenceData.DcidHex));
 
-            return new CryptoSeal(CipherAlgorithm.AEAD_AES_128_GCM, secret);
+            return new CryptoSeal(QuicConstants.InitialCipherSuite, secret);
         }
 
         [Fact]
@@ -66,7 +68,7 @@ namespace System.Net.Quic.Tests
             var header = HexHelpers.FromHexString(ReferenceData.ClientInitialPacketHeaderHex);
             string expectedProtectedHeader = ReferenceData.ClientInitialPacketProtectedHeaderHex;
 
-            var alg = CryptoSealAlgorithm.Create(CipherAlgorithm.AEAD_AES_128_GCM, new byte[16], headerKey);
+            var alg = CryptoSealAlgorithm.Create(QuicConstants.InitialCipherSuite, new byte[16], headerKey);
 
             Span<byte> protectionMask = stackalloc byte[5];
             alg.CreateProtectionMask(payloadSample, protectionMask);

@@ -1,17 +1,19 @@
+using System.Net.Security;
+
 namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 {
     internal abstract class CryptoSealAlgorithm
     {
-        internal static CryptoSealAlgorithm Create(CipherAlgorithm alg, byte[] key, byte[] headerKey)
+        internal static CryptoSealAlgorithm Create(TlsCipherSuite alg, byte[] key, byte[] headerKey)
         {
             switch (alg)
             {
-                case CipherAlgorithm.AEAD_AES_128_GCM:
-                case CipherAlgorithm.AEAD_AES_256_GCM:
+                case TlsCipherSuite.TLS_AES_128_GCM_SHA256:
+                case TlsCipherSuite.TLS_AES_256_GCM_SHA384:
                     return new CryptoSealAesGcm(key, headerKey);
-                case CipherAlgorithm.AEAD_AES_128_CCM:
+                case TlsCipherSuite.TLS_AES_128_CCM_SHA256:
                     return new CryptoSealAesGcm(key, headerKey);
-                case CipherAlgorithm.AEAD_CHACHA20_POLY1305:
+                case TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256:
                     // TODO-RZ: Add CHACHA20_POLY1305 support
                     throw new NotSupportedException("ChaCha20_Poly1305 is not implemented in .NET");
                 default:

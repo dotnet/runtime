@@ -1,8 +1,10 @@
 using System;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
+using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 internal static partial class Interop
 {
@@ -115,6 +117,18 @@ internal static partial class Interop
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_in_init")]
         internal static extern int SslIsInInit(IntPtr ssl);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_current_cipher")]
+        internal static extern IntPtr SslGetCurrentCipher(IntPtr ssl);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_CIPHER_get_protocol_id")]
+        internal static extern ushort SslCipherGetProtocolId(IntPtr cipher);
+
+        internal static TlsCipherSuite SslGetCipherId(IntPtr ssl)
+        {
+            var cipher = SslGetCurrentCipher(ssl);
+            return (TlsCipherSuite)SslCipherGetProtocolId(cipher);
+        }
 
         static OpenSslQuic()
         {

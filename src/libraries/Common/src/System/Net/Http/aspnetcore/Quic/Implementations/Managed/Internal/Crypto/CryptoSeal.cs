@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Security;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 {
@@ -13,7 +14,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
         public int TagLength => _algorithm.TagLength;
 
-        public CryptoSeal(CipherAlgorithm alg, ReadOnlySpan<byte> secret)
+        public CryptoSeal(TlsCipherSuite alg, ReadOnlySpan<byte> secret)
         {
             IV = KeyDerivation.DeriveIv(secret);
             Key = KeyDerivation.DeriveKey(secret);

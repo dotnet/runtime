@@ -2,7 +2,9 @@
 
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 
 namespace System.Net.Quic.Implementations.Managed
@@ -136,7 +138,6 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (IsHandshakeFinishhed)
                 return SslError.None;
-
             int status = Interop.OpenSslQuic.SslDoHandshake(_ssl);
             if (status < 0)
             {
@@ -144,6 +145,11 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             return SslError.None;
+        }
+
+        internal TlsCipherSuite GetNegotiatedCipher()
+        {
+            return Interop.OpenSslQuic.SslGetCipherId(_ssl);
         }
 
         internal unsafe TransportParameters GetPeerTransportParameters(bool isServer)

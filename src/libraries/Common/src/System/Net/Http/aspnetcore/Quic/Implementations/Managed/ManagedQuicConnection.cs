@@ -130,13 +130,15 @@ namespace System.Net.Quic.Implementations.Managed
             var client = KeyDerivation.DeriveClientInitialSecret(dcid);
             var server = KeyDerivation.DeriveServerInitialSecret(dcid);
 
+            var algorithm = QuicConstants.InitialCipherSuite;
+
             if (_isServer)
             {
-                HandleSetEncryptionSecrets(EncryptionLevel.Initial, client, server);
+                SetEncryptionSecrets(EncryptionLevel.Initial, algorithm, client, server);
             }
             else
             {
-                HandleSetEncryptionSecrets(EncryptionLevel.Initial, server, client);
+                SetEncryptionSecrets(EncryptionLevel.Initial, algorithm, server, client);
             }
         }
 
@@ -539,14 +541,21 @@ namespace System.Net.Quic.Implementations.Managed
             _gcHandle.Free();
         }
 
-        internal int HandleSetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
-            ReadOnlySpan<byte> writeSecret)
+        internal void SetEncryptionSecrets(EncryptionLevel level, TlsCipherSuite algorithm,
+            ReadOnlySpan<byte> readSecret, ReadOnlySpan<byte> writeSecret)
         {
             var epoch = GetEpoch(level);
             Debug.Assert(epoch.SendCryptoSeal == null, "Protection keys already derived");
 
-            epoch.RecvCryptoSeal = new CryptoSeal(CipherAlgorithm.AEAD_AES_128_GCM, readSecret);
-            epoch.SendCryptoSeal = new CryptoSeal(CipherAlgorithm.AEAD_AES_128_GCM, writeSecret);
+            epoch.RecvCryptoSeal = new CryptoSeal(algorithm, readSecret);
+            epoch.SendCryptoSeal = new CryptoSeal(algorithm, writeSecret);
+        }
+
+        internal int HandleSetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
+            ReadOnlySpan<byte> writeSecret)
+        {
+            var alg = _tls.GetNegotiatedCipher();
+            SetEncryptionSecrets(level, alg, readSecret, writeSecret);
 
             return 1;
         }

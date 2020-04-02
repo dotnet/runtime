@@ -1,10 +1,13 @@
 using System.Diagnostics;
+using System.Net.Security;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal static class QuicConstants
     {
         internal const int MinimumClientInitialDatagramSize = 1200;
+
+        internal const TlsCipherSuite InitialCipherSuite = TlsCipherSuite.TLS_AES_128_GCM_SHA256;
     }
 
     internal static class HeaderHelpers
