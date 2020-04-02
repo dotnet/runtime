@@ -77,7 +77,7 @@ jobs:
                     $(_buildArguments)
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
-          displayName: Prepare TestHost with runtime $(runtimeFlavorName)
+            displayName: Prepare TestHost with runtime $(runtimeFlavorName)
 
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
