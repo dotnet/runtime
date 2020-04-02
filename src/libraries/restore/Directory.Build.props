@@ -7,6 +7,7 @@
     <ProjectAssetsFile>$(RestoreOutputPath)/project.assets.json</ProjectAssetsFile>
     <MSBuildProjectExtensionsPath>$(IntermediateOutputPath)</MSBuildProjectExtensionsPath>
     <SkipDeriveTargetFrameworks>true</SkipDeriveTargetFrameworks>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AdditionalBuildTargetFrameworks Condition="'$(BuildAllProjects)' == 'true'">netstandard2.0</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
   
