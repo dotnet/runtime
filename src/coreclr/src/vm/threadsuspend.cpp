@@ -6091,18 +6091,24 @@ BOOL Thread::HandledJITCase(BOOL ForTaskSwitchIn)
             // the method returns an object reference, so we know whether to protect
             // it or not.
             EECodeInfo codeInfo(ip);
-            VOID *pvHijackAddr = GetHijackAddr(this, &codeInfo);
+
+            GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+
+            if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() == NO_REVERSE_PINVOKE_FRAME)
+            {
+                VOID *pvHijackAddr = GetHijackAddr(this, &codeInfo);
 
 #ifdef FEATURE_ENABLE_GCPOLL
-            // On platforms that support both hijacking and GC polling
-            // decide whether to hijack based on a configuration value.
-            // COMPlus_GCPollType = 1 is the setting that enables hijacking
-            // in GCPOLL enabled builds.
-            EEConfig::GCPollType pollType = g_pConfig->GetGCPollType();
-            if (EEConfig::GCPOLL_TYPE_HIJACK == pollType || EEConfig::GCPOLL_TYPE_DEFAULT == pollType)
+                // On platforms that support both hijacking and GC polling
+                // decide whether to hijack based on a configuration value.
+                // COMPlus_GCPollType = 1 is the setting that enables hijacking
+                // in GCPOLL enabled builds.
+                EEConfig::GCPollType pollType = g_pConfig->GetGCPollType();
+                if (EEConfig::GCPOLL_TYPE_HIJACK == pollType || EEConfig::GCPOLL_TYPE_DEFAULT == pollType)
 #endif // FEATURE_ENABLE_GCPOLL
-            {
-                HijackThread(pvHijackAddr, &esb);
+                {
+                    HijackThread(pvHijackAddr, &esb);
+                }
             }
         }
     }
