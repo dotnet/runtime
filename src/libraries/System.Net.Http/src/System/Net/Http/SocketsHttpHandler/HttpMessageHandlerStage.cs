@@ -10,8 +10,9 @@ namespace System.Net.Http
             CancellationToken cancellationToken)
         {
             ValueTask<HttpResponseMessage> sendTask = SendAsync(request, false, cancellationToken);
-            Debug.Assert(sendTask.IsCompleted);
-            return sendTask.GetAwaiter().GetResult();
+            // At least for HTTP 1.1 we must support fully sync Send
+            Debug.Assert(request.Version.Major >= 2 || sendTask.IsCompleted);
+            return sendTask.IsCompleted ? sendTask.GetAwaiter().GetResult() : sendTask.AsTask().GetAwaiter().GetResult();
         }
 
         protected internal sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,

@@ -179,7 +179,8 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    sslStream.AuthenticateAsClient(sslOptions.TargetHost!, sslOptions.ClientCertificates, sslOptions.EnabledSslProtocols, sslOptions.CertificateRevocationCheckMode == X509RevocationMode.Online);
+                    // ToDo: [ActiveIssue("https://github.com/dotnet/runtime/issues/34638")]
+                    sslStream.AuthenticateAsClientAsync(sslOptions, cancellationToken).GetAwaiter().GetResult();
                 }
             }
             catch (Exception e)

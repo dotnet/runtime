@@ -1069,7 +1069,7 @@ namespace System.Net.Http
 
         private async ValueTask<(Socket?, Stream?, TransportContext?, HttpResponseMessage?)> ConnectAsync(HttpRequestMessage request, bool async, bool allowHttp2, CancellationToken cancellationToken)
         {
-            // If a non-infinite connect timeout has been set, create and use a new CancellationToken that'll be canceled
+            // If a non-infinite connect timeout has been set, create and use a new CancellationToken that will be canceled
             // when either the original token is canceled or a connect timeout occurs.
             CancellationTokenSource? cancellationWithConnectTimeout = null;
             if (Settings._connectTimeout != Timeout.InfiniteTimeSpan)

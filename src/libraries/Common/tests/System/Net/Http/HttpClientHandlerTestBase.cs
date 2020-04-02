@@ -133,17 +133,17 @@ namespace System.Net.Http.Functional.Tests
 
     public static class HttpClientExtensions
     {
-        public static Task<HttpResponseMessage> Send(this HttpClient client, bool async, HttpRequestMessage request)
+        public static Task<HttpResponseMessage> Send(this HttpClient client, bool async, HttpRequestMessage request, HttpCompletionOption completionOption = default, CancellationToken cancellationToken = default)
         {
             if (async)
             {
-                return client.SendAsync(request);
+                return client.SendAsync(request, completionOption, cancellationToken);
             }
             else
             {
                 // Note that the sync call must be done on a different thread because it blocks until the server replies.
                 // However, the server-side of the request handling is in many cases invoked after the client, thus deadlocking the test.
-                return Task.Run(() => client.Send(request));
+                return Task.Run(() => client.Send(request, completionOption, cancellationToken));
             }
         }
     }

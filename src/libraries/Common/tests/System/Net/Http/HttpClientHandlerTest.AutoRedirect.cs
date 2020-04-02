@@ -44,29 +44,29 @@ namespace System.Net.Http.Functional.Tests
         {
             foreach (bool value in new[] {true, false})
             {
-                yield return new object[] {300, "GET", "GET", value};
-                yield return new object[] {300, "POST", "GET", value};
-                yield return new object[] {300, "HEAD", "HEAD", value};
+                yield return new object[] {value, 300, "GET", "GET"};
+                yield return new object[] {value, 300, "POST", "GET"};
+                yield return new object[] {value, 300, "HEAD", "HEAD"};
 
-                yield return new object[] {301, "GET", "GET", value};
-                yield return new object[] {301, "POST", "GET", value};
-                yield return new object[] {301, "HEAD", "HEAD", value};
+                yield return new object[] {value, 301, "GET", "GET"};
+                yield return new object[] {value, 301, "POST", "GET"};
+                yield return new object[] {value, 301, "HEAD", "HEAD"};
 
-                yield return new object[] {302, "GET", "GET", value};
-                yield return new object[] {302, "POST", "GET", value};
-                yield return new object[] {302, "HEAD", "HEAD", value};
+                yield return new object[] {value, 302, "GET", "GET"};
+                yield return new object[] {value, 302, "POST", "GET"};
+                yield return new object[] {value, 302, "HEAD", "HEAD"};
 
-                yield return new object[] {303, "GET", "GET", value};
-                yield return new object[] {303, "POST", "GET", value};
-                yield return new object[] {303, "HEAD", "HEAD", value};
+                yield return new object[] {value, 303, "GET", "GET"};
+                yield return new object[] {value, 303, "POST", "GET"};
+                yield return new object[] {value, 303, "HEAD", "HEAD"};
 
-                yield return new object[] {307, "GET", "GET", value};
-                yield return new object[] {307, "POST", "POST", value};
-                yield return new object[] {307, "HEAD", "HEAD", value};
+                yield return new object[] {value, 307, "GET", "GET"};
+                yield return new object[] {value, 307, "POST", "POST"};
+                yield return new object[] {value, 307, "HEAD", "HEAD"};
 
-                yield return new object[] {308, "GET", "GET", value};
-                yield return new object[] {308, "POST", "POST", value};
-                yield return new object[] {308, "HEAD", "HEAD", value};
+                yield return new object[] {value, 308, "GET", "GET"};
+                yield return new object[] {value, 308, "POST", "POST"};
+                yield return new object[] {value, 308, "HEAD", "HEAD"};
             }
         }
 
@@ -101,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory, MemberData(nameof(RedirectStatusCodesOldMethodsNewMethods))]
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
-            int statusCode, string oldMethod, string newMethod, bool async)
+            bool async, int statusCode, string oldMethod, string newMethod)
         {
             if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
@@ -146,11 +146,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(300)]
-        [InlineData(301)]
-        [InlineData(302)]
-        [InlineData(303)]
-        public async Task AllowAutoRedirect_True_PostToGetDoesNotSendTE(int statusCode)
+        [InlineData(true, 300)]
+        [InlineData(true, 301)]
+        [InlineData(true, 302)]
+        [InlineData(true, 303)]
+        [InlineData(false, 300)]
+        [InlineData(false, 301)]
+        [InlineData(false, 302)]
+        [InlineData(false, 303)]
+        public async Task AllowAutoRedirect_True_PostToGetDoesNotSendTE(bool async, int statusCode)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             using (HttpClient client = CreateHttpClient(handler))
@@ -161,7 +165,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Content = new StringContent(ExpectedContent);
                     request.Headers.TransferEncodingChunked = true;
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.Send(async, request);
 
                     await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {

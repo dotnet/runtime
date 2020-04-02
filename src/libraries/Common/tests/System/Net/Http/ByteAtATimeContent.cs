@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http.Functional.Tests
@@ -22,6 +23,22 @@ namespace System.Net.Http.Functional.Tests
             _waitToSend = waitToSend;
             _startedSend = startedSend;
             _millisecondDelayBetweenBytes = millisecondDelayBetweenBytes;
+        }
+
+        protected override void SerializeToStream(Stream stream, TransportContext context,
+            CancellationToken cancellationToken)
+        {
+            _waitToSend.GetAwaiter().GetResult();
+            _startedSend.SetResult(true);
+
+            var buffer = new byte[1];
+            for (int i = 0; i < _length; i++)
+            {
+                buffer[0] = (byte)i;
+                stream.Write(buffer);
+                stream.Flush();
+                Thread.Sleep(_millisecondDelayBetweenBytes);
+            }
         }
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
