@@ -12,68 +12,78 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	{
 		public static void Main ()
 		{
-			Branch_SystemTypeValueNode ();
+			Branch_SystemTypeValueNode (0);
+			Branch_SystemTypeValueNode (1);
 			Branch_NullValueNode ();
-			Branch_MethodParameterValueNode (typeof (T1));
+			Branch_MethodParameterValueNode (typeof (C));
 			Branch_UnrecognizedPatterns ();
 		}
 
 		[Kept]
-		static Type GetType ()
-		{
-			return typeof (T1);
-		}
-
-		[Kept]
-		static int Helper1 ()
-		{
-			return 5;
-		}
-
-		[Kept]
-		static int Helper2 ()
-		{
-			return 7;
-		}
-
-		[Kept]
-		class T1
+		class A
 		{
 			[Kept]
-			internal T1 ()
-			{
-			}
-		}
-
-		class T2
-		{
+			A () { }
 		}
 
 		[Kept]
-		static void Branch_SystemTypeValueNode ()
+		class B
 		{
-			var expr = Expression.New (typeof (T1));
+			[Kept]
+			B () { }
+		}
+
+		[Kept]
+		class C { }
+
+		[Kept]
+		class D { }
+
+		class RemovedType { }
+
+		[Kept]
+		static Type GetType ()
+		{
+			return typeof (D);
+		}
+
+		[Kept]
+		static void Branch_SystemTypeValueNode (int i)
+		{
+			Type T = (Type)null;
+			switch (i) {
+				case 0:
+					T = typeof (A);
+					break;
+				case 1:
+					T = typeof (B);
+					break;
+				default:
+					break;
+			}
+
+			Expression.New (T);
 		}
 
 		[Kept]
 		static void Branch_NullValueNode ()
 		{
-			var expr = Expression.New (Helper1 () + Helper2 () == 12 ? null : typeof (T1));
+			Expression.New (5 + 7 == 12 ? null : typeof (RemovedType));
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type [] { typeof (Type) })]
 		[Kept]
 		static void Branch_MethodParameterValueNode (Type T)
 		{
-			var expr = Expression.New (T);
+			Expression.New (T);
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type [] { typeof (Type) })]
 		[Kept]
 		static void Branch_UnrecognizedPatterns ()
 		{
-			var expr = Expression.New (Type.GetType ("T1"));
-			expr = Expression.New (GetType ());
+			Expression.New (Type.GetType ("RemovedType"));
+			Expression.New (GetType ());
 		}
 	}
 }
