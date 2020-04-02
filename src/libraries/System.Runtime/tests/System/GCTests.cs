@@ -1013,7 +1013,7 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(negValue, pinned: true));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotIntMaxValueArrayIndexSupported))]
         private static void AllocateArrayTooLarge()
         {
             Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue));
