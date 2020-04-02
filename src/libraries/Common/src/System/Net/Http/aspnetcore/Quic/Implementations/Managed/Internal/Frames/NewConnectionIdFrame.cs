@@ -78,6 +78,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             StatelessResetToken = statelessResetToken;
         }
 
+        internal int GetSerializedLength()
+        {
+            return 1 +
+                   QuicPrimitives.GetVarIntLength(SequenceNumber) +
+                   QuicPrimitives.GetVarIntLength(RetirePriorTo) +
+                   QuicPrimitives.GetVarIntLength((ulong)ConnectionId.Length) +
+                   ConnectionId.Length +
+                   StatelessResetToken.Length;
+        }
+
         internal static bool Read(QuicReader reader, out NewConnectionIdFrame frame)
         {
             var type = reader.ReadFrameType();
@@ -99,6 +109,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, in NewConnectionIdFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             writer.WriteFrameType(FrameType.NewConnectionId);
 
             writer.WriteVarInt(frame.SequenceNumber);

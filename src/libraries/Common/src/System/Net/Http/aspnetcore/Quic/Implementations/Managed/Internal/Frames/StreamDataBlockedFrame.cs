@@ -24,6 +24,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             StreamDataLimit = streamDataLimit;
         }
 
+        internal int GetSerializedLength()
+        {
+            return 1 +
+                   QuicPrimitives.GetVarIntLength(StreamId) +
+                   QuicPrimitives.GetVarIntLength(StreamDataLimit);
+        }
+
         internal static bool Read(QuicReader reader, out StreamDataBlockedFrame frame)
         {
             var type = reader.ReadFrameType();
@@ -42,6 +49,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, in StreamDataBlockedFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             writer.WriteFrameType(FrameType.StreamDataBlocked);
 
             writer.WriteVarInt(frame.StreamId);

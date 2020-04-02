@@ -25,6 +25,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             Bidirectional = bidirectional;
         }
 
+        internal int GetSerializedLength()
+        {
+            return 1 +
+                   QuicPrimitives.GetVarIntLength(MaximumStreams);
+        }
+
         internal static bool Read(QuicReader reader, out MaxStreamsFrame frame)
         {
             var type = reader.ReadFrameType();
@@ -44,6 +50,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, in MaxStreamsFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             writer.WriteFrameType(frame.Bidirectional
                 ? FrameType.MaxStreamsBidirectional
                 : FrameType.MaxStreamsUnidirectional);

@@ -17,6 +17,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             DataLimit = dataLimit;
         }
 
+        internal int GetSerializedLength()
+        {
+            return 1 +
+                   QuicPrimitives.GetVarIntLength(DataLimit);
+        }
+
         internal static bool Read(QuicReader reader, out DataBlockedFrame frame)
         {
             var type = reader.ReadFrameType();
@@ -34,6 +40,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, DataBlockedFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             writer.WriteFrameType(FrameType.DataBlocked);
 
             writer.WriteVarInt(frame.DataLimit);

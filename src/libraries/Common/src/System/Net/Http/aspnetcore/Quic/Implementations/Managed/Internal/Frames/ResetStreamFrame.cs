@@ -22,6 +22,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// </summary>
         internal readonly ulong FinalSize;
 
+        internal int GetSerializedLength()
+        {
+            return 1 +
+                   QuicPrimitives.GetVarIntLength(StreamId) +
+                   QuicPrimitives.GetVarIntLength(ApplicationErrorCode) +
+                   QuicPrimitives.GetVarIntLength(FinalSize);
+        }
+
         internal ResetStreamFrame(ulong streamId, ulong applicationErrorCode, ulong finalSize)
         {
             StreamId = streamId;
@@ -48,6 +56,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, in ResetStreamFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             writer.WriteFrameType(FrameType.ResetStream);
 
             writer.WriteVarInt(frame.StreamId);

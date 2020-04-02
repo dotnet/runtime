@@ -15,6 +15,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal RetireConnectionIdFrame(ulong sequenceNumber) => SequenceNumber = sequenceNumber;
 
+        internal int GetSerializedLength()
+        {
+            return 1 +
+                   QuicPrimitives.GetVarIntLength(SequenceNumber);
+        }
+
         internal static bool Read(QuicReader reader, out RetireConnectionIdFrame frame)
         {
             var type = reader.ReadFrameType();
@@ -32,6 +38,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, RetireConnectionIdFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             writer.WriteFrameType(FrameType.RetireConnectionId);
 
             writer.WriteVarInt(frame.SequenceNumber);

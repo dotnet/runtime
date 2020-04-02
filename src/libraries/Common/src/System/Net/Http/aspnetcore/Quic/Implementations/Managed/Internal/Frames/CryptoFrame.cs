@@ -23,6 +23,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             CryptoData = cryptoData;
         }
 
+        internal int GetSerializedLength()
+        {
+            return 1 +
+                   QuicPrimitives.GetVarIntLength(Offset) +
+                   QuicPrimitives.GetVarIntLength((ulong) CryptoData.Length) +
+                   CryptoData.Length;
+        }
+
         internal static bool Read(QuicReader reader, out CryptoFrame frame)
         {
             var type = reader.ReadFrameType();
@@ -41,6 +49,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, in CryptoFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             writer.WriteFrameType(FrameType.Crypto);
 
             writer.WriteVarInt(frame.Offset);

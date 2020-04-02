@@ -17,6 +17,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             Token = token;
         }
 
+        internal int GetSerializedLength()
+        {
+            return 1 +
+                   QuicPrimitives.GetVarIntLength((ulong)Token.Length) +
+                   Token.Length;
+        }
+
         internal static bool Read(QuicReader reader, out NewTokenFrame frame)
         {
             var type = reader.ReadFrameType();
@@ -35,6 +42,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, in NewTokenFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             writer.WriteFrameType(FrameType.NewToken);
 
             writer.WriteLengthPrefixedSpan(frame.Token);

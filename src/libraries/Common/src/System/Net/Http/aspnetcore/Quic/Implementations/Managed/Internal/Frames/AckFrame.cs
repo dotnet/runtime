@@ -60,6 +60,25 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// </summary>
         internal readonly ulong CeCount;
 
+        /// <summary>
+        ///     Returns number of bytes needed to serialize this frame.
+        /// </summary>
+        internal readonly int GetSerializedLength()
+        {
+            return 1 + // type
+                   QuicPrimitives.GetVarIntLength(LargestAcknowledged) +
+                   QuicPrimitives.GetVarIntLength(AckDelay) +
+                   QuicPrimitives.GetVarIntLength(AckRangeCount) +
+                   QuicPrimitives.GetVarIntLength(FirstAckRange) +
+                   AckRangesRaw.Length +
+                   (HasEcnCounts
+                       ? QuicPrimitives.GetVarIntLength(Ect0Count) +
+                         QuicPrimitives.GetVarIntLength(Ect1Count) +
+                         QuicPrimitives.GetVarIntLength(CeCount)
+                       : 0);
+
+        }
+
         internal AckFrame(ulong largestAcknowledged, ulong ackDelay, ulong ackRangeCount, ulong firstAckRange,
             ReadOnlySpan<byte> ackRangesRaw, bool hasEcnCounts, ulong ect0Count, ulong ect1Count, ulong ceCount)
         {
@@ -124,6 +143,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, in AckFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             writer.WriteFrameType(frame.HasEcnCounts ? FrameType.AckWithEcn : FrameType.Ack);
 
             writer.WriteVarInt(frame.LargestAcknowledged);

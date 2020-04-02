@@ -38,12 +38,23 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             ReasonPhrase = reasonPhrase;
         }
 
+        public int GetSerializedLength()
+        {
+            int reasonPhraseLength = Encoding.UTF8.GetByteCount(ReasonPhrase);
+
+            return 1 +
+                   QuicPrimitives.GetVarIntLength(ErrorCode) +
+                   (IsQuicError ? QuicPrimitives.GetVarIntLength((ulong)FrameType) : 0) +
+                   QuicPrimitives.GetVarIntLength((ulong)reasonPhraseLength) +
+                   reasonPhraseLength;
+        }
+
         internal static bool Read(QuicReader reader, out ConnectionCloseFrame frame)
         {
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.ConnectionCloseApplication || type == FrameType.ConnectionCloseQuic);
 
-            FrameType frameType = FrameType.Padding;
+            FrameType frameType = default;
             if (!reader.TryReadVarInt(out ulong error) ||
                 type == FrameType.ConnectionCloseQuic && !reader.TryReadFrameType(out frameType) ||
                 !reader.TryReadVarInt(out ulong length) ||
@@ -60,6 +71,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, in ConnectionCloseFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             writer.WriteFrameType(frame.IsQuicError
                 ? FrameType.ConnectionCloseQuic
                 : FrameType.ConnectionCloseApplication);

@@ -35,6 +35,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             StreamData = streamData;
         }
 
+        internal int GetSerializedLength()
+        {
+            return 1 +
+                   QuicPrimitives.GetVarIntLength(StreamId) +
+                   (Offset > 0 ? QuicPrimitives.GetVarIntLength(Offset) : 0) +
+                   QuicPrimitives.GetVarIntLength((ulong)StreamData.Length) + // TODO-RZ: length is not mandatory
+                   StreamData.Length;
+
+
+        }
+
         internal static bool Read(QuicReader reader, out StreamFrame frame)
         {
             var type = reader.ReadFrameType();
@@ -65,6 +76,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, in StreamFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             // TODO-RZ: leave out length if this is the last frame
             var type = FrameType.Stream | FrameType.StreamLenBit;
             if (frame.Offset != 0) type |= FrameType.StreamOffBit;

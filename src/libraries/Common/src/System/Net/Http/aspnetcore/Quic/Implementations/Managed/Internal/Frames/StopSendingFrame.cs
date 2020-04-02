@@ -24,6 +24,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// </summary>
         internal readonly ulong ApplicationErrorCode;
 
+        internal int GetSerializedLength()
+        {
+            return 1 +
+                   QuicPrimitives.GetVarIntLength(StreamId) +
+                   QuicPrimitives.GetVarIntLength(ApplicationErrorCode);
+        }
+
         internal static bool Read(QuicReader reader, out StopSendingFrame frame)
         {
             var type = reader.ReadFrameType();
@@ -42,6 +49,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         internal static void Write(QuicWriter writer, in StopSendingFrame frame)
         {
+            Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
+
             writer.WriteFrameType(FrameType.StopSending);
 
             writer.WriteVarInt(frame.StreamId);
