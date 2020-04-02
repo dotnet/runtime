@@ -24,7 +24,7 @@ public class CallbackTests
                         throw new ArgumentException();
                     }
 
-                    return NativeLibrary.Load("ResolveLib", asm, null);
+                    return NativeLibrary.Load(NativeLibraryToLoad.Name, asm, null);
                 };
 
             DllImportResolver anotherResolver =
@@ -85,7 +85,7 @@ public class CallbackTests
         return 100;
     }
 
-    [DllImport("NativeLib")]
+    [DllImport(NativeLibraryToLoad.InvalidName)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     static extern int NativeSum(int arg1, int arg2);
 }

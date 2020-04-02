@@ -19,7 +19,6 @@ public class CallbackStressTest
     static int s_SEHExceptionCatchCalled = 0;
     static int s_WrongPInvokesExecuted = 0;
     static int s_PInvokesExecuted = 0;
-    
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void SetResolve()
@@ -35,7 +34,7 @@ public class CallbackStressTest
                     throw new ArgumentException();
                 }
 
-                return NativeLibrary.Load("ResolveLib", asm, null);
+                return NativeLibrary.Load(NativeLibraryToLoad.Name, asm, null);
             };
 
         NativeLibrary.SetDllImportResolver(
@@ -177,7 +176,7 @@ public class CallbackStressTest
         return -1;
     }
 
-    [DllImport("NativeLib")]
+    [DllImport(NativeLibraryToLoad.InvalidName)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     static extern int NativeSum(int arg1, int arg2);
     
