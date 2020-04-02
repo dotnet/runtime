@@ -151,7 +151,6 @@ namespace System.Xml.Tests
             }
         }
 
-
         [Fact]
         public void FractionDigitsMismatch_Throws()
         {
