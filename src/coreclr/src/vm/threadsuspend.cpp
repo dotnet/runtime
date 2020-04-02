@@ -5616,27 +5616,28 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-ReturnKind GetReturnKind(Thread *pThread, EECodeInfo *codeInfo)
+bool GetReturnAddressHijackInfo(Thread *pThread, EECodeInfo *codeInfo, void** hijackAddress)
 {
+    ReturnKind returnKind;
     GCInfoToken gcInfoToken = codeInfo->GetGCInfoToken();
-    ReturnKind returnKind = codeInfo->GetCodeManager()->GetReturnKind(gcInfoToken);
-    _ASSERTE(IsValidReturnKind(returnKind));
-    return returnKind;
-}
+    if (!codeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken, &returnKind))
+    {
+        return false;
+    }
 
-VOID * GetHijackAddr(Thread *pThread, EECodeInfo *codeInfo)
-{
-    ReturnKind returnKind = GetReturnKind(pThread, codeInfo);
+    _ASSERTE(IsValidReturnKind(returnKind));
     pThread->SetHijackReturnKind(returnKind);
 
 #ifdef TARGET_X86
     if (returnKind == RT_Float)
     {
-        return reinterpret_cast<VOID *>(OnHijackFPTripThread);
+        *hijackAddress = reinterpret_cast<VOID *>(OnHijackFPTripThread);
     }
 #endif // TARGET_X86
 
-    return reinterpret_cast<VOID *>(OnHijackTripThread);
+    *hijackAddress = reinterpret_cast<VOID *>(OnHijackTripThread);
+
+    return true;
 }
 
 #ifndef TARGET_UNIX
@@ -6092,11 +6093,10 @@ BOOL Thread::HandledJITCase(BOOL ForTaskSwitchIn)
             // it or not.
             EECodeInfo codeInfo(ip);
 
-            GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+            VOID *pvHijackAddr;
 
-            if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() == NO_REVERSE_PINVOKE_FRAME)
+            if (GetReturnAddressHijackInfo(this, &codeInfo, &pvHijackAddr))
             {
-                VOID *pvHijackAddr = GetHijackAddr(this, &codeInfo);
 
 #ifdef FEATURE_ENABLE_GCPOLL
                 // On platforms that support both hijacking and GC polling
