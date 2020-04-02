@@ -646,5 +646,311 @@ namespace System.Xml.Tests
             Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
             Assert.Empty(rx.Matches(ex.Message));
         }
+
+        #region FacetBaseFixed tests
+        public static IEnumerable<object[]> FacetBaseFixed_Throws_TestData
+        {
+            get{
+                return new List<object[]>()
+                {
+                    new object[]
+                    {  // length, derived type has larger value.
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:length value='5' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:length value='6'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // length, derived type has smaller value
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:length value='5' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:length value='4'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // minLength, derived type has larger value.
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:minLength value='5' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:minLength value='6'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // minLength, derived type has smaller value.
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:minLength value='5' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:minLength value='4'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // maxLength, derived type has larger value.
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:maxLength value='5' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:maxLength value='6'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // maxLength, derived type has larger value.
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:maxLength value='5' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:maxLength value='4'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // whiteSpace
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:string'>
+            <xs:whiteSpace value='collapse' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:whiteSpace value='replace'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // maxInclusive, derived type with larger value
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:integer'>
+            <xs:maxInclusive value='18' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:maxInclusive value='19'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // maxInclusive, derived type with smaller value
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:integer'>
+            <xs:maxInclusive value='18' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:maxInclusive value='17'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // maxExclusive, derived type has larger value
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:integer'>
+            <xs:maxExclusive value='19' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:maxExclusive value='20'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // maxExclusive, derived type has smaller value
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:integer'>
+            <xs:maxExclusive value='19' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:maxExclusive value='18'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // minExclusive, derived type has larger value
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:integer'>
+            <xs:minExclusive value='2' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:minExclusive value='3'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // minExclusive, derived type has smaller value
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:integer'>
+            <xs:minExclusive value='2' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:minExclusive value='1'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // minInclusive, derived type has larger value
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:integer'>
+            <xs:minInclusive value='3' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:minInclusive value='4'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // minInclusive, derived type has smaller value
+                        @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='foo'>
+        <xs:restriction base='xs:integer'>
+            <xs:minInclusive value='3' fixed='true'/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name='bar'>
+        <xs:restriction base='foo'>
+            <xs:minInclusive value='2'/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+"
+                    }
+                    // NOTE: the cases of totalDigits, with larger and smaller
+                    // values are not tested here as Issue 34426 was found
+                    // and will be addressed separately.
+                    // NOTE: the case of fractionDigits with a larger
+                    //   value is not tested here as Issue 34413 was found,
+                    //   and will be addressed separately.
+                    // NOTE: the case of fractionDigits with a smaller
+                    //   value is not tested here as Issue 34418 was found,
+                    //   and will be addressed separately.
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(FacetBaseFixed_Throws_TestData))]
+        public void FacetBaseFixed_Throws(string schema)
+        {
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+            Assert.Contains("fixed", ex.Message);
+
+            // Issue 30218: invalid formatters
+            Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
+            Assert.Empty(rx.Matches(ex.Message));
+
+        }
+        #endregion
     }
 }
