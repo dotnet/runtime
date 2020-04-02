@@ -1540,7 +1540,9 @@ Thread::Thread()
 
     m_currentPrepareCodeConfig = nullptr;
 
+#ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
+#endif // _DEBUG
 }
 
 //--------------------------------------------------------------------
