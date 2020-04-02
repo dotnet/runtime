@@ -1501,7 +1501,7 @@
     <value>Duplicate ID attribute.</value>
   </data>
   <data name="Sch_InvalidAllElementMax" xml:space="preserve">
-    <value>The {max occurs} of all the particles in the {particles} of an all group must be 0 or 1.</value>
+    <value>The 'maxOccurs' attribute of all the particles of an 'all' group must be 0 or 1.</value>
   </data>
   <data name="Sch_InvalidAny" xml:space="preserve">
     <value>Invalid namespace in 'any'.</value>
