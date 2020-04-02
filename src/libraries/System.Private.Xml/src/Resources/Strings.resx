@@ -1396,7 +1396,7 @@
     <value>'all' must have 'minOccurs' value of 0 or 1.</value>
   </data>
   <data name="Sch_InvalidAllMax" xml:space="preserve">
-    <value>'all' must have {max occurs}=1.</value>
+    <value>'all' must have a 'maxOccurs' value of 1.</value>
   </data>
   <data name="Sch_InvalidFacet" xml:space="preserve">
     <value>The 'value' attribute must be present in facet.</value>
