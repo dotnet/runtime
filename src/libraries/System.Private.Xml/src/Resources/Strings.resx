@@ -1510,7 +1510,7 @@
     <value>The value of the namespace attribute of the element or attribute wildcard is invalid - {0}</value>
   </data>
   <data name="Sch_InvalidExamplar" xml:space="preserve">
-    <value>Cannot be nominated as the {substitution group affiliation} of any other declaration.</value>
+    <value>Element '{0}' cannot be nominated as the 'substitutionGroup' of any other declaration.</value>
   </data>
   <data name="Sch_NoExamplar" xml:space="preserve">
     <value>Reference to undeclared substitution group affiliation.</value>
