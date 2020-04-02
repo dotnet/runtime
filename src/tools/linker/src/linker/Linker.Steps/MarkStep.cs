@@ -3690,7 +3690,7 @@ namespace Mono.Linker.Steps {
 						// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
 						//
 						case "GetConstructor" when calledMethod.DeclaringType.Name == "Type"
-						  && calledMethod.Parameters.Count >= 1
+						  && calledMethod.Parameters.Count >= 2
 						  && calledMethod.DeclaringType.Namespace == "System": {
 
 								reflectionContext.AnalyzingPattern ();
@@ -3719,6 +3719,26 @@ namespace Mono.Linker.Steps {
 								}
 							}
 							break;
+						//
+						// GetMethod (string)
+						// GetMethod (string, BindingFlags)
+						// GetMethod (string, Type[])
+						// GetMethod (string, Type[], ParameterModifier[])
+						// GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[])
+						// GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[])
+						//
+						// TODO: .NET Core extensions
+						// GetMethod (string, int, Type[])
+						// GetMethod (string, int, Type[], ParameterModifier[]?)
+						// GetMethod (string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
+						// GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
+						//
+						/*case "GetMethod" when calledMethod.DeclaringType.Name == "Type"
+						  && calledMethod.Parameters.Count >= 2
+						  && calledMethod.DeclaringType.Namespace == "System": {
+
+							}
+							break;*/
 						default:
 							if (requiresDataFlowAnalysis) {
 								reflectionContext.AnalyzingPattern ();
