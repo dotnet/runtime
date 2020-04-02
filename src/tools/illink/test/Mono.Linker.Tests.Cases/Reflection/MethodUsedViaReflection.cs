@@ -6,11 +6,15 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection {
 
 	[SetupCSharpCompilerToUse ("csc")]
-	[VerifyAllReflectionAccessPatternsAreValidated]
+	/*[VerifyAllReflectionAccessPatternsAreValidated]*/
 	public class MethodUsedViaReflection {
 		public static void Main ()
 		{
+			TestName ();
 			TestNameAndExplicitBindingFlags ();
+			TestNameAndType ();
+			TestNameWithIntAndType ();
+			TestNameWithIntAndBindingFlags ();
 			TestNullName ();
 			TestEmptyName ();
 			TestNonExistingName ();
@@ -20,11 +24,41 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
+			typeof(Type), nameof(Type.GetMethod), new Type [] { typeof (string) },
+			typeof(MethodUsedViaReflection), nameof(MethodUsedViaReflection.OnlyCalledViaReflection), new Type[0])]
+		static void TestName()
+		{
+			var method = typeof (MethodUsedViaReflection).GetMethod ("OnlyCalledViaReflection");
+			method.Invoke (null, new object [] { });
+		}
+		[Kept]
+		[RecognizedReflectionAccessPattern (
 			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (BindingFlags) },
-			typeof (MethodUsedViaReflection), nameof (MethodUsedViaReflection.OnlyCalledViaReflection), new Type [0])]
+			typeof (TestNameAndExplicitBindingClass), nameof (TestNameAndExplicitBindingClass.OnlyCalledViaReflection), new Type [0])]
 		static void TestNameAndExplicitBindingFlags ()
 		{
-			var method = typeof (MethodUsedViaReflection).GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.NonPublic);
+			var method = typeof (TestNameAndExplicitBindingClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.NonPublic);
+			method.Invoke (null, new object [] { });
+		}
+		
+		[Kept]
+		static void TestNameAndType ()
+		{
+			var method = typeof (TestNameAndTypeClass).GetMethod ("OnlyCalledViaReflection", new Type [] { typeof (int) });
+			method.Invoke (null, new object [] { });
+		}
+
+		[Kept]
+		static void TestNameWithIntAndType ()
+		{
+			var method = typeof (TestNameWithIntAndTypeClass).GetMethod ("OnlyCalledViaReflection", 1, new Type [] { typeof(int) });
+			method.Invoke (null, new object [] { });
+		}
+
+		[Kept]
+		static void TestNameWithIntAndBindingFlags ()
+		{
+			var method = typeof (TestNameWithIntAndBindingClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Static | BindingFlags.NonPublic, null, new Type [] { typeof (int) }, null);
 			method.Invoke (null, new object [] { });
 		}
 
@@ -81,20 +115,120 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		{
 			return 42;
 		}
-
+		[Kept]
 		private int OnlyCalledViaReflection (int foo)
 		{
 			return 43;
 		}
-
+		[Kept]
 		public int OnlyCalledViaReflection (int foo, int bar)
 		{
 			return 44;
 		}
-
+		[Kept]
 		public static int OnlyCalledViaReflection (int foo, int bar, int baz)
 		{
 			return 45;
+		}
+		[Kept]
+		private class TestNameAndExplicitBindingClass
+		{
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+		}
+
+		[Kept]
+		private class TestNameAndTypeClass
+		{
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			[Kept]
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+		}
+
+		[Kept]
+		private class TestNameWithIntAndTypeClass
+		{
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			[Kept]
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+		}
+
+		[Kept]
+		private class TestNameWithIntAndBindingClass
+		{
+			/*At this moment due to int parameter everything will be kept*/
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			[Kept]
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
 		}
 	}
 }
