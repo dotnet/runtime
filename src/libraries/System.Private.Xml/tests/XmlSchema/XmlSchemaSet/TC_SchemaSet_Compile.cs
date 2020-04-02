@@ -944,7 +944,7 @@ namespace System.Xml.Tests
             ss.Add(null, XmlReader.Create(new StringReader(schema)));
 
             Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
-            Assert.Contains("fixed", ex.Message);
+            Assert.Contains("fixed='true'", ex.Message);
 
             // Issue 30218: invalid formatters
             Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
