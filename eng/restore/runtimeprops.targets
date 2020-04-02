@@ -2,8 +2,6 @@
 
   <Target Name="GenerateRuntimeOSPropsFileBeforeRestore"
           DependsOnTargets="GenerateRuntimeOSPropsFile"
-          BeforeTargets="Restore">
-    <GenerateRuntimeOSPropsFile RuntimePropsFilePath="$(RuntimePropsFile)" />
-  </Target>
+          BeforeTargets="Restore" />
 
 </Project>
