@@ -32,25 +32,6 @@ jobs:
 - template: /eng/pipelines/common/checkout-job.yml
 
 #
-# Debug Corelib builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-corelib-job.yml
-    buildConfig: debug
-    platforms:
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_arm64
-    - Linux_musl_x64
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    jobParameters:
-      testGroup: outerloop
-
-#
 # Checked Corelib builds
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -58,22 +39,6 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-corelib-job.yml
     buildConfig: checked
     platformGroup: all
-    jobParameters:
-      testGroup: outerloop
-
-#
-# Release Corelib builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-corelib-job.yml
-    buildConfig: release
-    platforms:
-    - Linux_arm
-    - Linux_musl_arm64
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_x86
     jobParameters:
       testGroup: outerloop
 
