@@ -310,7 +310,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                 case TypeFlags.Enum:
-                    if (typeDesc == PrimitiveTypeProvider.GetPrimitiveType(typeDesc.Context, PrimitiveTypeCode.TypedReference))
+                    if (typeDesc.IsWellKnownType(WellKnownType.TypedReference))
                     {
                         EmitElementType(CorElementType.ELEMENT_TYPE_TYPEDBYREF);
                         return;
