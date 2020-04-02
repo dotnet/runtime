@@ -68,7 +68,8 @@ namespace System.Runtime.InteropServices
         /// If DllImportSearchPath parameter is non-null, the flags in this enumeration are used.
         /// Otherwise, the flags specified by the DefaultDllImportSearchPaths attribute on the
         /// calling assembly (if any) are used.
-        /// This LoadLibrary() method does not invoke the managed call-backs for native library resolution:
+        /// This method behaves as if DllImport was used in the specified <paramref name="assembly"/>.
+        /// It will invoke the managed call-backs for native library resolution:
         /// * The per-assembly registered callback
         /// * AssemblyLoadContext.LoadUnmanagedDll()
         /// * AssemblyLoadContext.ResolvingUnmanagedDllEvent
@@ -100,8 +101,8 @@ namespace System.Runtime.InteropServices
         /// NativeLibrary Loader: High-level API that doesn't throw.
         /// </summary>
         /// <param name="libraryName">The name of the native library to be loaded</param>
-        /// <param name="searchPath">The search path</param>
         /// <param name="assembly">The assembly loading the native library</param>
+        /// <param name="searchPath">The search path</param>
         /// <param name="handle">The out-parameter for the loaded native library handle</param>
         /// <returns>True on successful load, false otherwise</returns>
         /// <exception cref="System.ArgumentNullException">If libraryPath or assembly is null</exception>
@@ -214,7 +215,7 @@ namespace System.Runtime.InteropServices
             }
             catch (ArgumentException)
             {
-                // ConditionalWealTable throws ArgumentException if the Key already exists
+                // ConditionalWeakTable throws ArgumentException if the Key already exists
                 throw new InvalidOperationException(SR.InvalidOperation_CannotRegisterSecondResolver);
             }
         }

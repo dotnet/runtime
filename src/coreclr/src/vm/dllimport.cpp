@@ -6431,6 +6431,29 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryFromPath(LPCWSTR libraryPath, BOOL thr
     return hmod;
 }
 
+namespace
+{
+    thread_local bool t_shouldInvokeExtensionPoints = true;
+    class UseExtensionPoints
+    {
+    public:
+        UseExtensionPoints()
+        {
+            ShouldInvoke = t_shouldInvokeExtensionPoints;
+            t_shouldInvokeExtensionPoints = false;
+        }
+
+        ~UseExtensionPoints()
+        {
+            if (ShouldInvoke)
+                t_shouldInvokeExtensionPoints = true;
+        }
+
+    public:
+        bool ShouldInvoke;
+    };
+}
+
 // static
 NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryByName(LPCWSTR libraryName, Assembly *callingAssembly,
                                                  BOOL hasDllImportSearchFlags, DWORD dllImportSearchFlags,
@@ -6444,30 +6467,59 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryByName(LPCWSTR libraryName, Assembly *
     }
     CONTRACTL_END;
 
-    LoadLibErrorTracker errorTracker;
+    UseExtensionPoints useExtensionPoints;
+    bool invokeExtensionPoints = useExtensionPoints.ShouldInvoke;
 
     // First checks if a default dllImportSearchPathFlags was passed in, if so, use that value.
     // Otherwise checks if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
     // If so, use that value.
     BOOL searchAssemblyDirectory;
-    DWORD dllImportSearchPathFlags;
-
     if (hasDllImportSearchFlags)
     {
-        dllImportSearchPathFlags = dllImportSearchFlags & ~DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
         searchAssemblyDirectory = dllImportSearchFlags & DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
-
     }
     else
     {
-        GetDllImportSearchPathFlags(callingAssembly->GetManifestModule(),
-                                    &dllImportSearchPathFlags, &searchAssemblyDirectory);
+        hasDllImportSearchFlags = GetDllImportSearchPathFlags(callingAssembly->GetManifestModule(),
+                                                              &dllImportSearchFlags,
+                                                              &searchAssemblyDirectory);
+        dllImportSearchFlags |= searchAssemblyDirectory ? DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY : 0;
     }
 
-    NATIVE_LIBRARY_HANDLE hmod =
-        LoadLibraryModuleBySearch(callingAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
+    NATIVE_LIBRARY_HANDLE hmod = nullptr;
 
-    if (throwOnError && (hmod == nullptr))
+    if (invokeExtensionPoints)
+    {
+        // Resolve using the registered DllImportResolver for the assembly
+        if (!callingAssembly->IsSystem())
+        {
+            hmod = LoadLibraryModuleViaCallback(callingAssembly, libraryName, hasDllImportSearchFlags, dllImportSearchFlags);
+            if (hmod != nullptr)
+                return hmod;
+        }
+
+        // Resolve using the AssemblyLoadContext.LoadUnmanagedDll implementation
+        hmod = LoadLibraryModuleViaAssemblyLoadContext(callingAssembly, libraryName);
+        if (hmod != nullptr)
+            return hmod;
+    }
+
+    LoadLibErrorTracker errorTracker;
+    DWORD dllImportSearchPathFlags = dllImportSearchFlags & ~DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
+
+    hmod = LoadLibraryModuleBySearch(callingAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
+    if (hmod != nullptr)
+        return hmod;
+
+    if (invokeExtensionPoints)
+    {
+        // Resolve using the AssemblyLoadContext.ResolvingUnmanagedDll event
+        hmod = LoadLibraryModuleViaAssemblyLoadContextEvent(callingAssembly, libraryName);
+        if (hmod != nullptr)
+            return hmod;
+    }
+
+    if (throwOnError)
     {
         SString libraryPathSString(libraryName);
         errorTracker.Throw(libraryPathSString);
@@ -6544,11 +6596,15 @@ BOOL IsWindowsAPISet(PCWSTR wszLibName)
 #endif // !TARGET_UNIX
 
 // static
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, PCWSTR wszLibName)
+NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaAssemblyLoadContext(Assembly * pAssembly, PCWSTR wszLibName)
 {
     STANDARD_VM_CONTRACT;
     //Dynamic Pinvoke Support:
     //Check if we  need to provide the host a chance to provide the unmanaged dll
+
+    // AssemblyLoadContext is not supported in AppX mode
+    if (AppX::IsAppXProcess())
+        return NULL;
 
 #ifndef TARGET_UNIX
     if (IsWindowsAPISet(wszLibName))
@@ -6561,7 +6617,6 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD,
     NATIVE_LIBRARY_HANDLE hmod = NULL;
     AppDomain* pDomain = GetAppDomain();
     CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
-    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
 
     PEFile *pManifestFile = pAssembly->GetManifestFile();
     PTR_ICLRPrivBinder pBindingContext = pManifestFile->GetBindingContext();
@@ -6598,7 +6653,7 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD,
 #endif // FEATURE_COMINTEROP
 
     //Step 1: If the assembly was not bound using TPA,
-    //        Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnamanagedDll to give
+    //        Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll to give
     //        The custom assembly context a chance to load the unmanaged dll.
 
     GCX_COOP();
@@ -6611,7 +6666,7 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD,
     // Get the pointer to the managed assembly load context
     INT_PTR ptrManagedAssemblyLoadContext = ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
 
-    // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnamanagedDll method.
+    // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
     DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0]  = STRINGREF_TO_ARGHOLDER(pUnmanagedDllName);
@@ -6663,18 +6718,21 @@ INT_PTR GetManagedAssemblyLoadContext(Assembly* pAssembly)
 }
 
 // static
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaEvent(NDirectMethodDesc * pMD, PCWSTR wszLibName)
+NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)
 {
     STANDARD_VM_CONTRACT;
 
-    NATIVE_LIBRARY_HANDLE hmod = NULL;
-    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
-    INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
+    // AssemblyLoadContext is not supported in AppX mode
+    if (AppX::IsAppXProcess())
+        return NULL;
 
+    INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
     if (ptrManagedAssemblyLoadContext == NULL)
     {
         return NULL;
     }
+
+    NATIVE_LIBRARY_HANDLE hmod = NULL;
 
     GCX_COOP();
 
@@ -6706,23 +6764,12 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaEvent(NDirectMethodDesc * pMD
     return hmod;
 }
 
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaCallback(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
+NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaCallback(
+    Assembly * pAssembly,
+    LPCWSTR wszLibName,
+    BOOL hasDllImportSearchPathFlags,
+    DWORD dllImportSearchPathFlags)
 {
-    STANDARD_VM_CONTRACT;
-
-    if (pMD->GetModule()->IsSystem())
-    {
-        // Don't attempt to callback on Corelib itself.
-        // The LoadLibrary callback stub is managed code that requires CoreLib
-        return NULL;
-    }
-
-    DWORD dllImportSearchPathFlags;
-    BOOL searchAssemblyDirectory;
-    BOOL hasDllImportSearchPathFlags = GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
-    dllImportSearchPathFlags |= searchAssemblyDirectory ? DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY : 0;
-
-    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
     NATIVE_LIBRARY_HANDLE handle = NULL;
 
     GCX_COOP();
@@ -6749,6 +6796,26 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaCallback(NDirectMethodDesc * 
     GCPROTECT_END();
 
     return handle;
+}
+
+NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleViaCallback(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (pMD->GetModule()->IsSystem())
+    {
+        // Don't attempt to callback on Corelib itself.
+        // The LoadLibrary callback stub is managed code that requires CoreLib
+        return NULL;
+    }
+
+    DWORD dllImportSearchPathFlags;
+    BOOL searchAssemblyDirectory;
+    BOOL hasDllImportSearchPathFlags = GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
+    dllImportSearchPathFlags |= searchAssemblyDirectory ? DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY : 0;
+
+    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
+    return LoadLibraryModuleViaCallback(pAssembly, wszLibName, hasDllImportSearchPathFlags, dllImportSearchPathFlags);
 }
 
 // Try to load the module alongside the assembly where the PInvoke was declared.
@@ -7031,16 +7098,12 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLi
     }
 
     AppDomain* pDomain = GetAppDomain();
+    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
 
-    // AssemblyLoadContext is not supported in AppX mode and thus,
-    // we should not perform PInvoke resolution via it when operating in AppX mode.
-    if (!AppX::IsAppXProcess())
+    hmod = LoadLibraryModuleViaAssemblyLoadContext(pAssembly, wszLibName);
+    if (hmod != NULL)
     {
-        hmod = LoadLibraryModuleViaHost(pMD, wszLibName);
-        if (hmod != NULL)
-        {
-            return hmod.Extract();
-        }
+        return hmod.Extract();
     }
 
     hmod = pDomain->FindUnmanagedImageInCache(wszLibName);
@@ -7057,13 +7120,10 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLi
         return hmod.Extract();
     }
 
-    if (!AppX::IsAppXProcess())
+    hmod = LoadLibraryModuleViaAssemblyLoadContextEvent(pAssembly, wszLibName);
+    if (hmod != NULL)
     {
-        hmod = LoadLibraryModuleViaEvent(pMD, wszLibName);
-        if (hmod != NULL)
-        {
-            return hmod.Extract();
-        }
+        return hmod.Extract();
     }
 
     return hmod.Extract();
