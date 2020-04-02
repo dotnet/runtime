@@ -165,12 +165,12 @@ ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
         return false;
     }
 
-    uint64_t minAddr = std::min(std::min((uint64_t)m_gnuHashTableAddr,
-                                         (uint64_t)m_stringTableAddr),
-                                         (uint64_t)m_symbolTableAddr);
-    uint64_t maxAddr = std::max(std::max((uint64_t)m_gnuHashTableAddr + sizeof(GnuHashTable) + sizeof(int32_t),
-                                         (uint64_t)m_stringTableAddr + m_stringTableSize),
-                                         (uint64_t)m_symbolTableAddr);
+    uint64_t minAddr = std::min<uint64_t>(std::min<uint64_t>((uint64_t)m_gnuHashTableAddr,
+                                                             (uint64_t)m_stringTableAddr),
+                                                             (uint64_t)m_symbolTableAddr);
+    uint64_t maxAddr = std::max<uint64_t>(std::max<uint64_t>((uint64_t)m_gnuHashTableAddr + sizeof(GnuHashTable) + sizeof(int32_t),
+                                                             (uint64_t)m_stringTableAddr + m_stringTableSize),
+                                                             (uint64_t)m_symbolTableAddr);
 
     bool addLoadBias = false;
 
@@ -550,7 +550,7 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
             break;
         case PT_LOAD:
             // Calculate the load size from the PT_LOAD program headers
-            loadsize = std::max(loadsize, ph.p_vaddr + ph.p_memsz);
+            loadsize = std::max<uint64_t>(loadsize, ph.p_vaddr + ph.p_memsz);
             break;
         }
 
