@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
@@ -117,13 +118,24 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public void Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
-            RemoteExecutor.Invoke(async (useVersionString) =>
+            var logFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            File.WriteAllText(logFilePath, "");   
+
+            RemoteExecutor.Invoke(async (useVersionString, logFilePath) =>
             {
                 var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true };
                 using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
                 {
                     Environment.SetEnvironmentVariable("http_proxy", proxyServer.Uri.AbsoluteUri.ToString());
 
+                    File.AppendAllText(logFilePath, $"http_proxy: {Environment.GetEnvironmentVariable("http_proxy")}{Environment.NewLine}");
+                    File.AppendAllText(logFilePath, $"HTTPS_PROXY: {Environment.GetEnvironmentVariable("HTTPS_PROXY")}{Environment.NewLine}");
+                    File.AppendAllText(logFilePath, $"ALL_PROXY: {Environment.GetEnvironmentVariable("ALL_PROXY")}{Environment.NewLine}");
+                    File.AppendAllText(logFilePath, $"ALL_PROXY: {Environment.GetEnvironmentVariable("ALL_PROXY")}{Environment.NewLine}");
+                    File.AppendAllText(logFilePath, $"proxy type: {HttpClient.DefaultProxy.GetType()}{Environment.NewLine}");
+                    File.AppendAllText (logFilePath, $"proxy uri: {HttpClient.DefaultProxy.GetProxy(Configuration.Http.RemoteEchoServer)}{Environment.NewLine}");
+                    File.AppendAllText (logFilePath, $"is bypassed: {HttpClient.DefaultProxy.IsBypassed(Configuration.Http.RemoteEchoServer)}{Environment.NewLine}");
+                    
                     using (HttpClient client = CreateHttpClient(useVersionString))
                     using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                     {
@@ -131,8 +143,11 @@ namespace System.Net.Http.Functional.Tests
                         string body = await response.Content.ReadAsStringAsync();
                         Assert.Contains(proxyServer.ViaHeader, body);
                     }
+                    File.AppendAllText (logFilePath, $"http_proxy: {Environment.GetEnvironmentVariable("http_proxy")}{Environment.NewLine}");
                 }
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString(), logFilePath).Dispose();
+
+            _output.WriteLine(File.ReadAllText(logFilePath));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1507")]
