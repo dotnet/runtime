@@ -326,66 +326,34 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        public void Send_NullRequest_ThrowsException()
+        [Theory, MemberData(nameof(Async))]
+        public async Task Send_NullRequest_ThrowsException(bool async)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(null))))
             {
-                AssertExtensions.Throws<ArgumentNullException>("request", () => { client.Send(null); });
+                await AssertExtensions.ThrowsAsync<ArgumentNullException>("request", () => client.Send(async, null));
             }
         }
 
-        [Fact]
-        public void Send_DuplicateRequest_ThrowsException()
+        [Theory, MemberData(nameof(Async))]
+        public async Task Send_DuplicateRequest_ThrowsException(bool async)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(new HttpResponseMessage()))))
             using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()))
             {
-                (client.Send(request)).Dispose();
-                Assert.Throws<InvalidOperationException>(() => { client.Send(request); });
+                (await client.Send(async, request)).Dispose();
+                await Assert.ThrowsAsync<InvalidOperationException>(() => client.Send(async, request));
             }
         }
 
-        [Fact]
-        public async Task Send_RequestContentNotDisposed()
+        [Theory, MemberData(nameof(Async))]
+        public async Task Send_RequestContentNotDisposed(bool async)
         {
             var content = new ByteArrayContent(new byte[1]);
             using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()) { Content = content })
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult<HttpResponseMessage>(new HttpResponseMessage()))))
             {
-                client.Send(request);
-                await content.ReadAsStringAsync(); // no exception
-            }
-        }
-
-        [Fact]
-        public void SendAsync_NullRequest_ThrowsException()
-        {
-            using (var client = new HttpClient(new CustomResponseHandler((r,c) => Task.FromResult<HttpResponseMessage>(null))))
-            {
-                AssertExtensions.Throws<ArgumentNullException>("request", () => { client.SendAsync(null); });
-            }
-        }
-
-        [Fact]
-        public async Task SendAsync_DuplicateRequest_ThrowsException()
-        {
-            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
-            using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()))
-            {
-                (await client.SendAsync(request)).Dispose();
-                Assert.Throws<InvalidOperationException>(() => { client.SendAsync(request); });
-            }
-        }
-
-        [Fact]
-        public async Task SendAsync_RequestContentNotDisposed()
-        {
-            var content = new ByteArrayContent(new byte[1]);
-            using (var request = new HttpRequestMessage(HttpMethod.Get, CreateFakeUri()) { Content = content })
-            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
-            {
-                await client.SendAsync(request);
+                await client.Send(async, request);
                 await content.ReadAsStringAsync(); // no exception
             }
         }

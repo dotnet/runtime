@@ -40,31 +40,35 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static readonly object[][] RedirectStatusCodesOldMethodsNewMethods = {
-            new object[] { 300, "GET", "GET" },
-            new object[] { 300, "POST", "GET" },
-            new object[] { 300, "HEAD", "HEAD" },
+        public static IEnumerable<object[]> RedirectStatusCodesOldMethodsNewMethods()
+        {
+            foreach (bool value in new[] {true, false})
+            {
+                yield return new object[] {300, "GET", "GET", value};
+                yield return new object[] {300, "POST", "GET", value};
+                yield return new object[] {300, "HEAD", "HEAD", value};
 
-            new object[] { 301, "GET", "GET" },
-            new object[] { 301, "POST", "GET" },
-            new object[] { 301, "HEAD", "HEAD" },
+                yield return new object[] {301, "GET", "GET", value};
+                yield return new object[] {301, "POST", "GET", value};
+                yield return new object[] {301, "HEAD", "HEAD", value};
 
-            new object[] { 302, "GET", "GET" },
-            new object[] { 302, "POST", "GET" },
-            new object[] { 302, "HEAD", "HEAD" },
+                yield return new object[] {302, "GET", "GET", value};
+                yield return new object[] {302, "POST", "GET", value};
+                yield return new object[] {302, "HEAD", "HEAD", value};
 
-            new object[] { 303, "GET", "GET" },
-            new object[] { 303, "POST", "GET" },
-            new object[] { 303, "HEAD", "HEAD" },
+                yield return new object[] {303, "GET", "GET", value};
+                yield return new object[] {303, "POST", "GET", value};
+                yield return new object[] {303, "HEAD", "HEAD", value};
 
-            new object[] { 307, "GET", "GET" },
-            new object[] { 307, "POST", "POST" },
-            new object[] { 307, "HEAD", "HEAD" },
+                yield return new object[] {307, "GET", "GET", value};
+                yield return new object[] {307, "POST", "POST", value};
+                yield return new object[] {307, "HEAD", "HEAD", value};
 
-            new object[] { 308, "GET", "GET" },
-            new object[] { 308, "POST", "POST" },
-            new object[] { 308, "HEAD", "HEAD" },
-        };
+                yield return new object[] {308, "GET", "GET", value};
+                yield return new object[] {308, "POST", "POST", value};
+                yield return new object[] {308, "HEAD", "HEAD", value};
+            }
+        }
 
         public HttpClientHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
 
@@ -97,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory, MemberData(nameof(RedirectStatusCodesOldMethodsNewMethods))]
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
-            int statusCode, string oldMethod, string newMethod)
+            int statusCode, string oldMethod, string newMethod, bool async)
         {
             if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
@@ -112,7 +116,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var request = new HttpRequestMessage(new HttpMethod(oldMethod), origUrl) { Version = UseVersion };
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.Send(async, request);
 
                     await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {

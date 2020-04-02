@@ -551,8 +551,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsDomainJoinedServerAvailable))]
-        public async Task Credentials_DomainJoinedServerUsesKerberos_UseIpAddressAndHostHeader_Success()
+        [ConditionalTheory(nameof(IsDomainJoinedServerAvailable))]
+        [MemberData(nameof(Async))]
+        public async Task Credentials_DomainJoinedServerUsesKerberos_UseIpAddressAndHostHeader_Success(bool async)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
@@ -568,7 +569,7 @@ namespace System.Net.Http.Functional.Tests
                 _output.WriteLine(request.RequestUri.AbsoluteUri.ToString());
                 _output.WriteLine($"Host: {request.Headers.Host}");
 
-                using (HttpResponseMessage response = await client.SendAsync(request))
+                using (HttpResponseMessage response = await client.Send(async, request))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     string body = await response.Content.ReadAsStringAsync();

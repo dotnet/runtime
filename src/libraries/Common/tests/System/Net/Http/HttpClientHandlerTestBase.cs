@@ -69,6 +69,12 @@ namespace System.Net.Http.Functional.Tests
             };
         }
 
+        public static IEnumerable<object[]> Async()
+        {
+            yield return new object[] { true };
+            yield return new object[] { false };
+        }
+
         // For use by remote server tests
 
         public static readonly IEnumerable<object[]> RemoteServersMemberData = Configuration.Http.RemoteServersMemberData;
@@ -121,6 +127,23 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return response;
+            }
+        }
+    }
+
+    public static class HttpClientExtensions
+    {
+        public static Task<HttpResponseMessage> Send(this HttpClient client, bool async, HttpRequestMessage request)
+        {
+            if (async)
+            {
+                return client.SendAsync(request);
+            }
+            else
+            {
+                // Note that the sync call must be done on a different thread because it blocks until the server replies.
+                // However, the server-side of the request handling is in many cases invoked after the client, thus deadlocking the test.
+                return Task.Run(() => client.Send(request));
             }
         }
     }
