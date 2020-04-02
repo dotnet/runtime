@@ -23,7 +23,7 @@ namespace System
         // there's little benefit to having a large buffer.  So we use a smaller buffer size to reduce working set.
         private const int WriteBufferSize = 256;
 
-        private static readonly object SyncObject = new object();
+        private static readonly object InternalSyncObject = new object();
         private static TextReader? s_in;
         private static TextWriter? s_out, s_error;
         private static Encoding? s_inputEncoding;
@@ -38,17 +38,23 @@ namespace System
             // Interlocked.CompareExchange ensures we don't overwrite a field that was set.
             => Interlocked.CompareExchange(ref field, value, null) ?? value;
 
-        internal static T EnsureInitializedDisposable<T>([NotNull] ref T? field, T value, IDisposable disposable) where T : class
+        public static TextReader In
         {
-            if (Interlocked.CompareExchange(ref field, value, null) != null)
+            get
             {
-                disposable.Dispose();
+                return Volatile.Read(ref s_in) ?? EnsureInitializedIn();
+
+                static TextReader EnsureInitializedIn()
+                {
+                    ConsolePal.EnsureConsoleInitialized(); // May lock Console.Out
+
+                    lock (InternalSyncObject) // Ensures In and InputEncoding are synchronized.
+                    {
+                        return s_in ??= ConsolePal.GetOrCreateReader();
+                    }
+                }
             }
-
-            return field;
         }
-
-        public static TextReader In => Volatile.Read(ref s_in) ?? ConsolePal.EnsureInitializedIn(ref s_in);
 
         public static Encoding InputEncoding
         {
@@ -63,17 +69,17 @@ namespace System
             {
                 CheckNonNull(value, nameof(value));
 
-                lock (SyncObject)
+                lock (InternalSyncObject)
                 {
                     // Set the terminal console encoding.
                     ConsolePal.SetConsoleInputEncoding(value);
 
-                    Volatile.Write(ref s_inputEncoding, (Encoding)value.Clone());
+                    s_inputEncoding = (Encoding)value.Clone();
 
                     // We need to reinitialize 'Console.In' in the next call to s_in
                     // This will discard the current StreamReader, potentially
                     // losing buffered data.
-                    Volatile.Write(ref s_in, null);
+                    s_in = null;
                 }
             }
         }
@@ -91,7 +97,7 @@ namespace System
             {
                 CheckNonNull(value, nameof(value));
 
-                lock (SyncObject)
+                lock (InternalSyncObject)
                 {
                     // Set the terminal console encoding.
                     ConsolePal.SetConsoleOutputEncoding(value);
@@ -101,18 +107,16 @@ namespace System
                     // s_out reinitialize the console code page.
                     if (Volatile.Read(ref s_out) != null && !s_isOutTextWriterRedirected)
                     {
-                        s_out?.Flush();
+                        s_out!.Flush();
+                        s_out = null;
                     }
                     if (Volatile.Read(ref s_error) != null && !s_isErrorTextWriterRedirected)
                     {
-                        s_error?.Flush();
+                        s_error!.Flush();
+                        s_error = null;
                     }
 
-                    Volatile.Write(ref s_outputEncoding, (Encoding)value.Clone());
-
-                    // Reinitialize in the next call to s_out, s_error.
-                    Volatile.Write(ref s_out, null);
-                    Volatile.Write(ref s_error, null);
+                    s_outputEncoding = (Encoding)value.Clone();
                 }
             }
         }
@@ -148,9 +152,10 @@ namespace System
 
                 static TextWriter EnsureInitializedOut()
                 {
-                    Stream stream = OpenStandardOutput();
-                    TextWriter writer = CreateOutputWriter(stream);
-                    return EnsureInitializedDisposable(ref s_out, writer, stream);
+                    lock (InternalSyncObject) // Ensures Out and OutputEncoding are synchronized.
+                    {
+                        return s_out ??= CreateOutputWriter(OpenStandardOutput());
+                    }
                 }
             }
         }
@@ -163,9 +168,10 @@ namespace System
 
                 static TextWriter EnsureInitializedError()
                 {
-                    Stream stream = OpenStandardError();
-                    TextWriter writer = CreateOutputWriter(stream);
-                    return EnsureInitializedDisposable(ref s_error, writer, stream);
+                    lock (InternalSyncObject) // Ensures Error and OutputEncoding are synchronized.
+                    {
+                        return s_error ??= CreateOutputWriter(OpenStandardError());
+                    }
                 }
             }
         }
@@ -387,7 +393,7 @@ namespace System
         {
             add
             {
-                lock (SyncObject)
+                lock (InternalSyncObject)
                 {
                     s_cancelCallbacks += value;
 
@@ -401,7 +407,7 @@ namespace System
             }
             remove
             {
-                lock (SyncObject)
+                lock (InternalSyncObject)
                 {
                     s_cancelCallbacks -= value;
                     if (s_registrar != null && s_cancelCallbacks == null)

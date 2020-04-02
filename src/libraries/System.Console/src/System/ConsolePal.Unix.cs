@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -78,7 +77,7 @@ namespace System
 
                 static SyncTextReader EnsureInitializedStdInReader()
                 {
-                    EnsureInitialized();
+                    EnsureConsoleInitialized();
 
                     return Console.EnsureInitialized(
                         ref s_stdInReader,
@@ -90,7 +89,7 @@ namespace System
             }
         }
 
-        internal static TextReader EnsureInitializedIn([NotNull] ref TextReader? field)
+        internal static TextReader GetOrCreateReader()
         {
             if (Console.IsInputRedirected)
             {
@@ -104,11 +103,11 @@ namespace System
                         detectEncodingFromByteOrderMarks: false,
                         bufferSize: Console.ReadBufferSize,
                         leaveOpen: true));
-                return Console.EnsureInitializedDisposable(ref field, reader, inputStream);
+                return reader;
             }
             else
             {
-                return Console.EnsureInitialized(ref field, StdInReader);
+                return StdInReader;
             }
         }
 
@@ -149,14 +148,14 @@ namespace System
                 if (Console.IsInputRedirected)
                     return false;
 
-                EnsureInitialized();
+                EnsureConsoleInitialized();
                 return !Interop.Sys.GetSignalForBreak();
             }
             set
             {
                 if (!Console.IsInputRedirected)
                 {
-                    EnsureInitialized();
+                    EnsureConsoleInitialized();
                     if (!Interop.Sys.SetSignalForBreak(signalForBreak: !value))
                         throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
@@ -923,7 +922,7 @@ namespace System
         internal static byte s_veofCharacter;
 
         /// <summary>Ensures that the console has been initialized for use.</summary>
-        private static void EnsureInitialized()
+        internal static void EnsureConsoleInitialized()
         {
             if (!s_initialized)
             {
@@ -934,6 +933,12 @@ namespace System
         /// <summary>Ensures that the console has been initialized for use.</summary>
         private static void EnsureInitializedCore()
         {
+            if (Console.IsInputRedirected)
+            {
+                s_initialized = true;
+                return;
+            }
+
             lock (Console.Out) // ensure that writing the ANSI string and setting initialized to true are done atomically
             {
                 if (!s_initialized)
@@ -1466,7 +1471,7 @@ namespace System
 
             internal void Register()
             {
-                EnsureInitialized();
+                EnsureConsoleInitialized();
 
                 Debug.Assert(!_handlerRegistered);
                 Interop.Sys.RegisterForCtrl(c => OnBreakEvent(c));

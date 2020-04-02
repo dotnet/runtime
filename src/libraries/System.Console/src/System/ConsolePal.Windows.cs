@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -14,6 +13,10 @@ namespace System
     internal static class ConsolePal
     {
         private static IntPtr InvalidHandleValue => new IntPtr(-1);
+
+        /// <summary>Ensures that the console has been initialized for use.</summary>
+        internal static void EnsureConsoleInitialized()
+        { }
 
         private static bool IsWindows7()
         {
@@ -147,7 +150,7 @@ namespace System
             return (!Interop.Kernel32.IsGetConsoleModeCallSuccessful(handle));
         }
 
-        internal static TextReader EnsureInitializedIn([NotNull] ref TextReader? field)
+        internal static TextReader GetOrCreateReader()
         {
             Stream inputStream = OpenStandardInput();
             TextReader reader = SyncTextReader.GetSynchronizedTextReader(inputStream == Stream.Null ?
@@ -158,7 +161,7 @@ namespace System
                     detectEncodingFromByteOrderMarks: false,
                     bufferSize: Console.ReadBufferSize,
                     leaveOpen: true));
-            return Console.EnsureInitializedDisposable(ref field, reader, inputStream);
+            return reader;
         }
 
         // Use this for blocking in Console.ReadKey, which needs to protect itself in case multiple threads call it simultaneously.
