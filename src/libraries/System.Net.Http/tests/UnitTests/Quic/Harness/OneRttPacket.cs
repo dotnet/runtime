@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
+using Xunit;
 
 namespace System.Net.Quic.Tests.Harness
 {
@@ -27,7 +28,7 @@ namespace System.Net.Quic.Tests.Harness
 
         internal override void Deserialize(QuicReader reader, TestHarness context)
         {
-            ShortPacketHeader.Read(reader, context.ConnectionIdCollection, out var header);
+            Assert.True(ShortPacketHeader.Read(reader, context.ConnectionIdCollection, out var header));
 
             DestinationConnectionId = header.DestinationConnectionId.Data;
 

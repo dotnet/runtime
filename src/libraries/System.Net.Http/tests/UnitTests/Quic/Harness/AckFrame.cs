@@ -32,11 +32,6 @@ namespace System.Net.Quic.Tests.Harness
         internal ulong AckDelay;
 
         /// <summary>
-        ///     Number of ack range fields in the frame.
-        /// </summary>
-        internal ulong AckRangeCount;
-
-        /// <summary>
         ///     Number of contiguous packets preceding the <see cref="LargestAcknowledged" /> that are being acknowledged.
         /// </summary>
         internal ulong FirstAckRange;
@@ -70,12 +65,15 @@ namespace System.Net.Quic.Tests.Harness
         /// </summary>
         internal ulong CeCount;
 
+        public override string ToString() =>
+            $"{(HasEcnCounts ? nameof(FrameType.AckWithEcn) : nameof(FrameType.Ack))}[{LargestAcknowledged}]";
+
         internal override FrameType FrameType => HasEcnCounts ? FrameType.AckWithEcn : FrameType.Ack;
 
         internal override void Serialize(QuicWriter writer)
         {
             ImplFrame.Write(writer, new ImplFrame(
-                LargestAcknowledged, AckDelay, AckRangeCount, FirstAckRange, ReadOnlySpan<byte>.Empty, HasEcnCounts, Ect0Count, Ect1Count, CeCount
+                LargestAcknowledged, AckDelay, (ulong) AckRanges.Count, FirstAckRange, ReadOnlySpan<byte>.Empty, HasEcnCounts, Ect0Count, Ect1Count, CeCount
                 ));
         }
 
@@ -88,7 +86,6 @@ namespace System.Net.Quic.Tests.Harness
 
             LargestAcknowledged = frame.LargestAcknowledged;
             AckDelay = frame.AckDelay;
-            AckRangeCount = frame.AckRangeCount;
             FirstAckRange = frame.FirstAckRange;
 
             int read = 0;

@@ -2,6 +2,13 @@ using System.Buffers.Binary;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
+    internal enum PacketEpoch
+    {
+        Initial,
+        Handshake,
+        Application
+    }
+
     internal static class QuicPrimitives
     {
         internal static int WriteVarInt(Span<byte> destination, ulong value)

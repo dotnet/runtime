@@ -16,7 +16,7 @@ namespace System.Net.Quic.Tests
         private readonly QuicListenerOptions _serverOpts;
         private readonly ManagedQuicConnection _client;
         private readonly ManagedQuicConnection _server;
-        
+
         private static readonly IPEndPoint IpEndPoint = new IPEndPoint(IPAddress.Any, 1010);
 
         public HandshakeTests(ITestOutputHelper output)
@@ -68,13 +68,13 @@ namespace System.Net.Quic.Tests
             // Handshake[0]: CRYPTO[FIN], ACK[0] ->
             //
             //                                        <- Handshake[1]: ACK[0]
-            
+
             // client:
             // Initial[0]: CRYPTO[CH] ->
             {
                 var flight = SendFlight(_client, _server);
                 Assert.Equal(QuicConstants.MinimumClientInitialDatagramSize, flight.UdpDatagramSize);
-                
+
                 // client: single initial packet
                 Assert.Single(flight.Packets);
                 var initialPacket = Assert.IsType<InitialPacket>(flight.Packets[0]);
@@ -83,7 +83,7 @@ namespace System.Net.Quic.Tests
                 // only other frames allowed in first client initial are padding
                 Assert.Empty(initialPacket.Frames.Skip(1).Where(f => f.FrameType != FrameType.Padding));
             }
-            
+
             // server:
             //                                  Initial[0]: CRYPTO[SH] ACK[0]
             //                     <- Handshake[0]: CRYPTO[EE, CERT, CV, FIN]
@@ -105,19 +105,19 @@ namespace System.Net.Quic.Tests
                 Assert.Equal(4, handshakePacket.Frames.Count);
                 Assert.True(handshakePacket.Frames.All(f => f.FrameType == FrameType.Crypto));
             }
-            
+
             // client:
             // Initial[1]: ACK[0]
             // Handshake[0]: CRYPTO[FIN], ACK[0] ->
             {
                 var flight = SendFlight(_client, _server);
                 Assert.Equal(2, flight.Packets.Count);
-                
+
                 Assert.True(QuicConstants.MinimumClientInitialDatagramSize <= flight.UdpDatagramSize);
-                
+
                 var initialPacket = Assert.IsType<InitialPacket>(flight.Packets[0]);
                 Assert.Equal(1u, initialPacket.PacketNumber);
-                
+
                 // no padding frames in this packet
                 var ackFrame = Assert.Single(initialPacket.Frames.OfType<AckFrame>());
                 Assert.Equal(0u, ackFrame.LargestAcknowledged);
@@ -131,7 +131,7 @@ namespace System.Net.Quic.Tests
                 Assert.Equal(0u, ackFrame.LargestAcknowledged);
                 Assert.Equal(0u, ackFrame.FirstAckRange);
                 Assert.Empty(ackFrame.AckRanges);
-                
+
                 // after this, the TLS handshake should be complete
                 Assert.True(_server.Connected);
                 Assert.True(_client.Connected);
@@ -142,8 +142,8 @@ namespace System.Net.Quic.Tests
             //                                        <- Handshake[1]: ACK[0]
             {
                 var flight = SendFlight(_server, _client);
-                var handshakePacket = Assert.IsType<HandShakePacket>(Assert.Single(flight.Packets));
-                
+                var handshakePacket = Assert.IsType<HandShakePacket>(flight.Packets[0]);
+
                 Assert.Equal(1u, handshakePacket.PacketNumber);
                 var ackFrame = Assert.IsType<AckFrame>(Assert.Single(handshakePacket.Frames));
                 Assert.Equal(0u, ackFrame.LargestAcknowledged);

@@ -18,6 +18,8 @@ namespace System.Net.Quic.Implementations.Managed
     internal class ManagedQuicConnection : QuicConnectionProvider
     {
         private readonly Tls _tls;
+        private readonly Recovery _recovery = new Recovery();
+
         internal enum ProcessPacketResult
         {
             /// <summary>
@@ -249,6 +251,7 @@ namespace System.Net.Quic.Implementations.Managed
                     GetEpoch(GetEncryptionLevel(packetType)).AckElicited = true;
                 }
 
+                ProcessPacketResult result = ProcessPacketResult.Ok;
                 switch (frameType)
                 {
                     case FrameType.Padding:
@@ -266,6 +269,8 @@ namespace System.Net.Quic.Implementations.Managed
                     }
                     case FrameType.Ping:
                     case FrameType.Ack:
+                        result = ProcessAckFrame(reader, packetType);
+                        break;
                     case FrameType.AckWithEcn:
                     case FrameType.ResetStream:
                     case FrameType.StopSending:
@@ -293,13 +298,43 @@ namespace System.Net.Quic.Implementations.Managed
                         outboundError ??= TransportErrorCode.FrameEncodingError;
                         return ProcessPacketResult.HardError;
                 }
+
+                if (result != ProcessPacketResult.Ok)
+                    return result;
             }
 
             // do handshake to set encryption secrets (to be able to process coalesced packets
             if (handshakeWanted)
             {
-                DoHandshake();
+                _tls.DoHandshake();
             }
+
+            return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult ProcessAckFrame(QuicReader reader, PacketType packetType)
+        {
+            if (!AckFrame.Read(reader, out var frame))
+                return ProcessPacketResult.HardError;
+
+            // TODO-RZ: check validity of the frame
+            Span<PacketNumberRange> ranges =
+                stackalloc PacketNumberRange[(int) frame.AckRangeCount + 1];
+
+            ranges[0] = new PacketNumberRange(
+                frame.LargestAcknowledged - frame.FirstAckRange, frame.LargestAcknowledged);
+
+            int read = 0;
+            for (int i = 0; i < (int) frame.AckRangeCount; i++)
+            {
+                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out ulong gap);
+                read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out ulong acked);
+
+                ranges[i + 1] = new PacketNumberRange(ranges[i].Start - gap - acked - 2, ranges[i].Start - gap - 2);
+            }
+
+            // TODO-RZ: maintain current date-time throughout processing the frame
+            _recovery.OnRangeAcked(GetEpoch(packetType), ranges, TimeSpan.FromTicks((long) frame.AckDelay), DateTime.Now);
 
             return ProcessPacketResult.Ok;
         }
@@ -315,8 +350,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             int payloadLength = (int)headerData.Length;
 
-            // TODO-RZ: handle repeated receipt of first initial?
-            if (_isServer && encryptionLevel == EncryptionLevel.Initial)
+            if (_isServer && encryptionLevel == EncryptionLevel.Initial && epoch.RecvCryptoSeal == null)
             {
                 // initialize protection keys
                 // clients destination connection Id is ours source connection Id
@@ -348,7 +382,7 @@ namespace System.Net.Quic.Implementations.Managed
             var pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]);
             reader.TryReadTruncatedPacketNumber(pnLength, out uint truncatedPn);
 
-            epoch.ReceivedPacketNumbers.Add(QuicPrimitives.DecodePacketNumber(epoch.LargestTransportedPacketNumber,
+            epoch.UnackedPacketNumbers.Add(QuicPrimitives.DecodePacketNumber(epoch.LargestTransportedPacketNumber,
                 truncatedPn, pnLength));
 
             return ProcessFramesWithoutTag(reader, header.PacketType);
@@ -434,12 +468,18 @@ namespace System.Net.Quic.Implementations.Managed
             EncryptionLevel desiredLevel = _tls.GetWriteLevel();
             // if not connected, then handshake is not done yet
             // if (!Connected && desiredLevel == EncryptionLevel.Application)
-                // return EncryptionLevel.Handshake;
+            // return EncryptionLevel.Handshake;
 
             for (int i = 0; i < _epochs.Length; i++)
             {
-                if (_epochs[i].CryptoStream.HasDataToSend)
-                    return (EncryptionLevel)i;
+                var level = (EncryptionLevel)i;
+                var epoch = _epochs[i];
+
+                if (epoch.CryptoStream.NextSizeToSend > 0)
+                    return level;
+
+                if (epoch.AckElicited)
+                    return level;
             }
 
             return desiredLevel;
@@ -462,11 +502,12 @@ namespace System.Net.Quic.Implementations.Managed
 
             (uint truncatedPn, int pnLength) = epoch.GetNextPacketNumber();
 
-            int maxPacketLength = (int)(Connected
-                // Limit maximum size so that it can be always encoded using 2B varint
-                ? Math.Min((1 << 14) - 1, GetPeerTransportParameters()!.MaxPacketSize)
-                // use minimum size for packets during handshake
-                : QuicConstants.MinimumClientInitialDatagramSize);
+            int maxPacketLength = 12000;
+            // int maxPacketLength = (int)(Connected
+            //     // Limit maximum size so that it can be always encoded using 2B varint
+            //     ? Math.Min((1 << 14) - 1, GetPeerTransportParameters()!.MaxPacketSize)
+            //     // use minimum size for packets during handshake
+            //     : QuicConstants.MinimumClientInitialDatagramSize);
 
             // TODO-RZ: respect control flow limits
 
@@ -478,9 +519,12 @@ namespace System.Net.Quic.Implementations.Managed
             var payloadLengthSpan = writer.Buffer.AsSpan(writer.BytesWritten - 2 - pnLength, 2);
 
             int written = writer.BytesWritten;
+            var origBuffer = writer.Buffer;
+            writer.Reset(origBuffer.Slice(0, maxPacketLength - seal.TagLength), written);
 
-            WriteFrames(writer, packetType, level, maxPacketLength);
+            WriteFrames(writer, packetType, level);
 
+            writer.Reset(origBuffer, writer.BytesWritten);
             if (writer.BytesWritten == written)
             {
                 // no data to send
@@ -489,10 +533,14 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
+            // the frame is going to be sent, increment the next packet number
+            epoch.NextPacketNumber++;
+
             if (!_isServer && packetType == PacketType.Initial)
             {
                 // Pad client initial packets to the minimum size
-                int paddingLength = QuicConstants.MinimumClientInitialDatagramSize - seal.TagLength - writer.BytesWritten;
+                int paddingLength = QuicConstants.MinimumClientInitialDatagramSize - seal.TagLength -
+                                    writer.BytesWritten;
                 if (paddingLength > 0)
                     // zero bytes are equivalent to PADDING frames
                     writer.GetWritableSpan(paddingLength).Clear();
@@ -519,7 +567,8 @@ namespace System.Net.Quic.Implementations.Managed
                 // short header
                 // TODO-RZ: implement spin
                 // TODO-RZ: implement key update
-                ShortPacketHeader.Write(writer, new ShortPacketHeader(false, false, pnLength, DestinationConnectionId!));
+                ShortPacketHeader.Write(writer,
+                    new ShortPacketHeader(false, false, pnLength, DestinationConnectionId!));
             }
             else
             {
@@ -564,7 +613,7 @@ namespace System.Net.Quic.Implementations.Managed
 
                 written += writer.BytesWritten;
 
-                // 0-RTT packets do not have Length, so the may not be coalesced
+                // 0-RTT packets do not have Length, so they may not be coalesced
                 if (level == EncryptionLevel.Application)
                     break;
 
@@ -580,23 +629,72 @@ namespace System.Net.Quic.Implementations.Managed
             return written;
         }
 
-        // TODO-RZ: calculate crypto data offset
-        private void WriteFrames(QuicWriter writer, PacketType packetType, EncryptionLevel level, int maxPacketLength)
+        private void WriteFrames(QuicWriter writer, PacketType packetType, EncryptionLevel level)
         {
             var epoch = GetEpoch(level);
 
             // TODO-RZ other frames
+            WriteAckFrame(writer, epoch);
+            WriteCryptoFrames(writer, epoch);
+        }
 
-            while (epoch.CryptoStream.HasDataToSend)
+        private static void WriteCryptoFrames(QuicWriter writer, EpochData epoch)
+        {
+            while (epoch.CryptoStream.NextSizeToSend > 0 && epoch.CryptoStream.NextSizeToSend < writer.BytesAvailable)
             {
-                var (data, offset) = epoch.CryptoStream.GetDataToSend();
-                CryptoFrame.Write(writer, new CryptoFrame((ulong) offset, data));
+                var (data, offset) = epoch.CryptoStream.PeekDataToSend();
+                CryptoFrame frame = new CryptoFrame((ulong)offset, data);
+                if (writer.BytesAvailable < frame.GetSerializedLength())
+                {
+                    // cannot fit in this frame
+                    break;
+                }
+
+                CryptoFrame.Write(writer, frame);
+                epoch.CryptoStream.GetDataToSend();
             }
         }
 
-        internal SslError DoHandshake()
+        private static unsafe void WriteAckFrame(QuicWriter writer, EpochData epoch)
         {
-            return _tls.DoHandshake();
+            if (!epoch.AckElicited)
+            {
+                return; // no need for ack now
+            }
+
+            var ranges = epoch.UnackedPacketNumbers;
+
+            Debug.Assert(ranges.Count > 0); // implied by AckElicited
+            Debug.Assert(ranges.Count % 2 == 1); // sanity check
+
+            // TODO-RZ generate AckDelay
+            // TODO-RZ check max ack delay to avoid sending acks every packet
+            ulong ackDelay = 0ul;
+
+            ulong largest = ranges.GetMax();
+            var firstRange = ranges[^1];
+            ulong firstRangeLen = firstRange.Start - firstRange.End;
+
+            // TODO-RZ fallback to heap alloc
+            int written = 0;
+            Span<byte> ackRangesRaw = stackalloc byte[128];
+            var gapStart = largest - firstRangeLen;
+            for (int i = ranges.Count - 2; i >= 0; i--)
+            {
+                // the numbers are always encoded as one lesser, meaning sending 0 means 1
+                written += QuicPrimitives.WriteVarInt(ackRangesRaw.Slice(written),
+                    gapStart - ranges[i].End);
+                written += QuicPrimitives.WriteVarInt(ackRangesRaw.Slice(written),
+                    ranges[i].End - ranges[i].Start);
+                gapStart = ranges[i].Start - 1;
+            }
+
+            // TODO-RZ implement ECN counts
+            AckFrame.Write(writer,
+                new AckFrame(largest, ackDelay, (ulong)(ranges.Count - 1) / 2, firstRangeLen, ReadOnlySpan<byte>.Empty,
+                    false, 0, 0, 0));
+
+            epoch.AckElicited = false;
         }
 
         internal TransportParameters GetPeerTransportParameters()
@@ -604,7 +702,19 @@ namespace System.Net.Quic.Implementations.Managed
             return _tls.GetPeerTransportParameters(_isServer);
         }
 
-        private EncryptionLevel GetEncryptionLevel(PacketType packetType)
+        private static PacketEpoch GetEpoch(PacketType packetType)
+        {
+            return packetType switch
+            {
+                PacketType.Initial => PacketEpoch.Initial,
+                PacketType.ZeroRtt => PacketEpoch.Application,
+                PacketType.Handshake => PacketEpoch.Handshake,
+                PacketType.OneRtt => PacketEpoch.Application,
+                _ => throw new ArgumentOutOfRangeException(nameof(packetType), packetType, null)
+            };
+        }
+
+        private static EncryptionLevel GetEncryptionLevel(PacketType packetType)
         {
             return packetType switch
             {
