@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal static string[] GetDefaultProbeDirectories(IEnvironment environment)
         {
-            var probeDirectories = AppDomain.CurrentDomain.GetData("PROBING_DIRECTORIES");
+            var probeDirectories = environment.GetAppContextData("PROBING_DIRECTORIES");
 
             var listOfDirectories = probeDirectories as string;
 

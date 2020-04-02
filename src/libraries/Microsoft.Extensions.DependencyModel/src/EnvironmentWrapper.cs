@@ -11,14 +11,10 @@ namespace Microsoft.Extensions.DependencyModel
     {
         public static IEnvironment Default = new EnvironmentWrapper();
 
-        public string GetEnvironmentVariable(string name)
-        {
-            return Environment.GetEnvironmentVariable(name);
-        }
+        public string GetEnvironmentVariable(string name) => Environment.GetEnvironmentVariable(name);
 
-        public bool IsWindows()
-        {
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        }
+        public object GetAppContextData(string name) => AppDomain.CurrentDomain.GetData(name);
+
+        public bool IsWindows() => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
     }
 }

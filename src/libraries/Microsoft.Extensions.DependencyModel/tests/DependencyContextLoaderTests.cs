@@ -11,6 +11,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     public class DependencyContextLoaderTests
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetEntryAssembly() returns null")]
         public void LoadLoadsExtraPaths()
         {
             string appDepsPath = "appPath.deps.json";
