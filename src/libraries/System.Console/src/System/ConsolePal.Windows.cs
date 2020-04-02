@@ -157,8 +157,8 @@ namespace System
                     encoding: new ConsoleEncoding(Console.InputEncoding),
                     detectEncodingFromByteOrderMarks: false,
                     bufferSize: Console.ReadBufferSize,
-                    leaveOpen: false));
-            return Console.EnsureInitializedDisposable(ref field, reader);
+                    leaveOpen: true));
+            return Console.EnsureInitializedDisposable(ref field, reader, inputStream);
         }
 
         // Use this for blocking in Console.ReadKey, which needs to protect itself in case multiple threads call it simultaneously.

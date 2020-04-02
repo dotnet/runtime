@@ -23,7 +23,7 @@ namespace System
         // there's little benefit to having a large buffer.  So we use a smaller buffer size to reduce working set.
         private const int WriteBufferSize = 256;
 
-        private static readonly object EventSyncObject = new object(); // for synchronizing changing of Console's event handlers.
+        private static readonly object SyncObject = new object();
         private static TextReader? s_in;
         private static TextWriter? s_out, s_error;
         private static Encoding? s_inputEncoding;
@@ -38,11 +38,11 @@ namespace System
             // Interlocked.CompareExchange ensures we don't overwrite a field that was set.
             => Interlocked.CompareExchange(ref field, value, null) ?? value;
 
-        internal static T EnsureInitializedDisposable<T>([NotNull] ref T? field, T value) where T : class, IDisposable
+        internal static T EnsureInitializedDisposable<T>([NotNull] ref T? field, T value, IDisposable disposable) where T : class
         {
             if (Interlocked.CompareExchange(ref field, value, null) != null)
             {
-                value.Dispose();
+                disposable.Dispose();
             }
 
             return field;
@@ -63,15 +63,18 @@ namespace System
             {
                 CheckNonNull(value, nameof(value));
 
-                // Set the terminal console encoding.
-                ConsolePal.SetConsoleInputEncoding(value);
+                lock (SyncObject)
+                {
+                    // Set the terminal console encoding.
+                    ConsolePal.SetConsoleInputEncoding(value);
 
-                Volatile.Write(ref s_inputEncoding, (Encoding)value.Clone());
+                    Volatile.Write(ref s_inputEncoding, (Encoding)value.Clone());
 
-                // We need to reinitialize 'Console.In' in the next call to s_in
-                // This will discard the current StreamReader, potentially
-                // losing buffered data.
-                Volatile.Write(ref s_in, null);
+                    // We need to reinitialize 'Console.In' in the next call to s_in
+                    // This will discard the current StreamReader, potentially
+                    // losing buffered data.
+                    Volatile.Write(ref s_in, null);
+                }
             }
         }
 
@@ -88,26 +91,29 @@ namespace System
             {
                 CheckNonNull(value, nameof(value));
 
-                // Set the terminal console encoding.
-                ConsolePal.SetConsoleOutputEncoding(value);
-
-                // Before changing the code page we need to flush the data
-                // if Out hasn't been redirected. Also, have the next call to
-                // s_out reinitialize the console code page.
-                if (Volatile.Read(ref s_out) != null && !s_isOutTextWriterRedirected)
+                lock (SyncObject)
                 {
-                    s_out?.Flush();
-                }
-                if (Volatile.Read(ref s_error) != null && !s_isErrorTextWriterRedirected)
-                {
-                    s_error?.Flush();
-                }
+                    // Set the terminal console encoding.
+                    ConsolePal.SetConsoleOutputEncoding(value);
 
-                Volatile.Write(ref s_outputEncoding, (Encoding)value.Clone());
+                    // Before changing the code page we need to flush the data
+                    // if Out hasn't been redirected. Also, have the next call to
+                    // s_out reinitialize the console code page.
+                    if (Volatile.Read(ref s_out) != null && !s_isOutTextWriterRedirected)
+                    {
+                        s_out?.Flush();
+                    }
+                    if (Volatile.Read(ref s_error) != null && !s_isErrorTextWriterRedirected)
+                    {
+                        s_error?.Flush();
+                    }
 
-                // Reinitialize in the next call to s_out, s_error.
-                Volatile.Write(ref s_out, null);
-                Volatile.Write(ref s_error, null);
+                    Volatile.Write(ref s_outputEncoding, (Encoding)value.Clone());
+
+                    // Reinitialize in the next call to s_out, s_error.
+                    Volatile.Write(ref s_out, null);
+                    Volatile.Write(ref s_error, null);
+                }
             }
         }
 
@@ -141,7 +147,11 @@ namespace System
                 return Volatile.Read(ref s_out) ?? EnsureInitializedOut();
 
                 static TextWriter EnsureInitializedOut()
-                    => EnsureInitializedDisposable(ref s_out, CreateOutputWriter(OpenStandardOutput()));
+                {
+                    Stream stream = OpenStandardOutput();
+                    TextWriter writer = CreateOutputWriter(stream);
+                    return EnsureInitializedDisposable(ref s_out, writer, stream);
+                }
             }
         }
 
@@ -152,7 +162,11 @@ namespace System
                 return Volatile.Read(ref s_error) ?? EnsureInitializedError();
 
                 static TextWriter EnsureInitializedError()
-                    => EnsureInitializedDisposable(ref s_error, CreateOutputWriter(OpenStandardError()));
+                {
+                    Stream stream = OpenStandardError();
+                    TextWriter writer = CreateOutputWriter(stream);
+                    return EnsureInitializedDisposable(ref s_error, writer, stream);
+                }
             }
         }
 
@@ -164,7 +178,7 @@ namespace System
                     stream: outputStream,
                     encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
                     bufferSize: WriteBufferSize,
-                    leaveOpen: false)
+                    leaveOpen: true)
                 {
                     AutoFlush = true
                 });
@@ -182,9 +196,7 @@ namespace System
                 return redirected.Value;
 
                 static StrongBox<bool> EnsureInitializedInputRedirected()
-                {
-                    return EnsureInitialized(ref _isStdInRedirected, new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
-                }
+                    => EnsureInitialized(ref _isStdInRedirected, new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
             }
         }
 
@@ -196,9 +208,7 @@ namespace System
                 return redirected.Value;
 
                 static StrongBox<bool> EnsureInitializedOutputRedirected()
-                {
-                    return EnsureInitialized(ref _isStdOutRedirected, new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
-                }
+                    => EnsureInitialized(ref _isStdOutRedirected, new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
             }
         }
 
@@ -210,9 +220,7 @@ namespace System
                 return redirected.Value;
 
                 static StrongBox<bool> EnsureInitializedErrorRedirected()
-                {
-                    return EnsureInitialized(ref _isStdErrRedirected, new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
-                }
+                    => EnsureInitialized(ref _isStdErrRedirected, new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
             }
         }
 
@@ -379,7 +387,7 @@ namespace System
         {
             add
             {
-                lock (EventSyncObject)
+                lock (SyncObject)
                 {
                     s_cancelCallbacks += value;
 
@@ -393,7 +401,7 @@ namespace System
             }
             remove
             {
-                lock (EventSyncObject)
+                lock (SyncObject)
                 {
                     s_cancelCallbacks -= value;
                     if (s_registrar != null && s_cancelCallbacks == null)
