@@ -3538,6 +3538,8 @@ namespace Mono.Linker.Steps {
 												} else {
 													MarkFieldsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
 												}
+											} else if (stringParam is NullValue) {
+												reflectionContext.RecordHandledPattern ();
 											} else if (stringParam is MethodParameterValue) {
 												// TODO: Check if parameter is annotated.
 												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
@@ -3788,6 +3790,60 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
+			void MarkPropertiesFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
+			{
+				bool foundMatch = false;
+				foreach (var property in declaringType.Properties) {
+					if (property.Name != name)
+						continue;
+
+					bool markedAny = false;
+					var methodCalling = reflectionContext.MethodCalling;
+
+					// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
+					// Be conservative and mark everything for the property.
+					var getter = property.GetMethod;
+					if (getter != null && (!staticOnly || staticOnly && getter.IsStatic)) {
+						reflectionContext.RecordRecognizedPattern (getter, () => _markStep.MarkIndirectlyCalledMethod (getter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+						markedAny = true;
+					}
+
+					var setter = property.SetMethod;
+					if (setter != null && (!staticOnly || staticOnly && setter.IsStatic)) {
+						reflectionContext.RecordRecognizedPattern (setter, () => _markStep.MarkIndirectlyCalledMethod (setter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+						markedAny = true;
+					}
+
+					if (markedAny) {
+						foundMatch = true;
+						reflectionContext.RecordRecognizedPattern (property, () => _markStep.MarkProperty (property, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+					}
+				}
+
+				if (!foundMatch)
+					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve property `{name}` on type `{declaringType.FullName}`.");
+			}
+
+			void MarkFieldsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
+			{
+				bool foundMatch = false;
+				var methodCalling = reflectionContext.MethodCalling;
+				foreach (var field in declaringType.Fields) {
+					if (field.Name != name)
+						continue;
+
+					if (staticOnly && !field.IsStatic)
+						continue;
+
+					foundMatch = true;
+					reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+					break;
+				}
+
+				if (!foundMatch)
+					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve field `{name}` on type `{declaringType.FullName}`.");
+			}
+
 			string GetValueDescriptionForErrorMessage (ValueNode value)
 			{
 				switch (value) {
@@ -3866,58 +3922,6 @@ namespace Mono.Linker.Steps {
 					return "None";
 
 				return string.Join (" | ", results.Select (r => r.ToString ()));
-			}
-
-			void MarkPropertiesFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
-			{
-				bool foundMatch = false;
-				foreach (var property in declaringType.Properties) {
-					if (property.Name != name)
-						continue;
-
-					bool markedAny = false;
-
-					// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
-					// Be conservative and mark everything for the property.
-					var getter = property.GetMethod;
-					if (getter != null && (!staticOnly || staticOnly && getter.IsStatic)) {
-						reflectionContext.RecordRecognizedPattern (getter, () => _markStep.MarkIndirectlyCalledMethod (getter));
-						markedAny = true;
-					}
-
-					var setter = property.SetMethod;
-					if (setter != null && (!staticOnly || staticOnly && setter.IsStatic)) {
-						reflectionContext.RecordRecognizedPattern (setter, () => _markStep.MarkIndirectlyCalledMethod (setter));
-						markedAny = true;
-					}
-
-					if (markedAny) {
-						foundMatch = true;
-						reflectionContext.RecordRecognizedPattern (property, () => _markStep.MarkProperty (property));
-					}
-				}
-
-				if (!foundMatch)
-					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve property `{name}` on type `{declaringType.FullName}`.");
-			}
-
-			void MarkFieldsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
-			{
-				bool foundMatch = false;
-				foreach (var field in declaringType.Fields) {
-					if (field.Name != name)
-						continue;
-
-					if (staticOnly && !field.IsStatic)
-						continue;
-
-					foundMatch = true;
-					reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field));
-					break;
-				}
-
-				if (!foundMatch)
-					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve field `{name}` on type `{declaringType.FullName}`.");
 			}
 		}
 	}

@@ -30,6 +30,26 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestNonExistingName ();
 		}
 
+		[Kept]
+		static void Branch_SystemTypeValueNode_NullValueNode ()
+		{
+			Expression.Call (typeof (ExpressionCallString), null, Type.EmptyTypes);
+		}
+
+		[Kept]
+		static void Branch_NullValueNode ()
+		{
+			Expression.Call ((Type)null, "OnlyCalledViaExpression", Type.EmptyTypes);
+		}
+
+		[Kept]
+		static void Branch_MethodParameterValueNode (Type T, string s)
+		{
+			TestNonExistingTypeParameter (T);
+			TestNonExistingNameParameter (s);
+		}
+
+		#region RecognizedReflectionAccessPatterns
 		[RecognizedReflectionAccessPattern (
 			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) },
 			typeof (ExpressionCallString), nameof (A), new Type [0])]
@@ -39,7 +59,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestByName (int i)
 		{
-			string MethodName = string.Empty;
+			string MethodName = null;
 			switch (i) {
 				case 0:
 					MethodName = "A";
@@ -51,7 +71,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 					break;
 			}
 
-			Expression.Call (typeof (ExpressionCallString), MethodName, Type.EmptyTypes);
+			Expression.Call (typeof (ExpressionCallString), MethodName, null);
 		}
 
 		[RecognizedReflectionAccessPattern (
@@ -87,33 +107,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			IQueryable source = null;
 			Expression.Call (typeof (ExpressionCallString), "Count", new Type [] { source.ElementType }, source.Expression);
 		}
+		#endregion
 
-		[Kept]
-		static void Branch_SystemTypeValueNode_NullValueNode ()
-		{
-			Expression.Call (typeof (ExpressionCallString), null, Type.EmptyTypes);
-		}
-
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) })]
-		[Kept]
-		static void TestNonExistingName ()
-		{
-			Expression.Call (typeof (ExpressionCallString), "NonExisting", Type.EmptyTypes);
-		}
-
-		[Kept]
-		static void Branch_NullValueNode ()
-		{
-			Expression.Call ((Type)null, "OnlyCalledViaExpression", Type.EmptyTypes);
-		}
-
-		[Kept]
-		static Type FindType ()
-		{
-			return typeof (ExpressionCallString);
-		}
-
+		#region UnrecognizedReflectionAccessPatterns
 		[UnrecognizedReflectionAccessPattern (
 			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) })]
 		[Kept]
@@ -122,11 +118,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Expression.Call (FindType (), "OnlyCalledViaExpression", Type.EmptyTypes);
 		}
 
+		[UnrecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) })]
 		[Kept]
-		static void Branch_MethodParameterValueNode (Type T, string s)
+		static void TestNonExistingName ()
 		{
-			TestNonExistingTypeParameter (T);
-			TestNonExistingNameParameter (s);
+			Expression.Call (typeof (ExpressionCallString), "NonExisting", Type.EmptyTypes);
 		}
 
 		[UnrecognizedReflectionAccessPattern (
@@ -143,6 +140,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static void TestNonExistingNameParameter (string s)
 		{
 			Expression.Call (typeof (ExpressionCallString), s, Type.EmptyTypes);
+		}
+		#endregion
+
+		#region Helpers
+		[Kept]
+		static Type FindType ()
+		{
+			return typeof (ExpressionCallString);
 		}
 
 		[Kept]
@@ -170,5 +175,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			return default (T);
 		}
+		#endregion
 	}
 }
