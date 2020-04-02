@@ -2196,13 +2196,12 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            unchecked
-            {
-                return M11.GetHashCode() + M12.GetHashCode() + M13.GetHashCode() + M14.GetHashCode() +
-                       M21.GetHashCode() + M22.GetHashCode() + M23.GetHashCode() + M24.GetHashCode() +
-                       M31.GetHashCode() + M32.GetHashCode() + M33.GetHashCode() + M34.GetHashCode() +
-                       M41.GetHashCode() + M42.GetHashCode() + M43.GetHashCode() + M44.GetHashCode();
-            }
+            return HashCode.Combine(HashCode.Combine(
+                    M11.GetHashCode(), M12.GetHashCode(), M13.GetHashCode(), M14.GetHashCode(),
+                    M21.GetHashCode(), M22.GetHashCode(), M23.GetHashCode(), M24.GetHashCode()),
+                HashCode.Combine(
+                    M31.GetHashCode(), M32.GetHashCode(), M33.GetHashCode(), M34.GetHashCode(),
+                    M41.GetHashCode(), M42.GetHashCode(), M43.GetHashCode(), M44.GetHashCode()));
         }
     }
 }

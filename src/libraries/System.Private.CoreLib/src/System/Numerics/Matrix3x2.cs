@@ -799,9 +799,10 @@ namespace System.Numerics
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            return unchecked(M11.GetHashCode() + M12.GetHashCode() +
-                             M21.GetHashCode() + M22.GetHashCode() +
-                             M31.GetHashCode() + M32.GetHashCode());
+            return HashCode.Combine(
+                M11.GetHashCode(), M12.GetHashCode(),
+                M21.GetHashCode(), M22.GetHashCode(),
+                M31.GetHashCode(), M32.GetHashCode());
         }
     }
 }
