@@ -30,6 +30,7 @@ namespace System.Net.Quic.Tests.Harness
             switch (type)
             {
                 case FrameType.Padding:
+                    return Parse<PaddingFrame>(reader);
                 case FrameType.Ping:
                     return Parse<SimpleFrame>(reader);
                 case FrameType.Ack:

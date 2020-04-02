@@ -29,7 +29,7 @@ namespace System.Net.Quic.Tests.Harness
 
         internal ulong Length;
 
-        protected override string GetAdditionalInfo() => $": {string.Join(", ", Frames.Where(f => f.FrameType != FrameType.Padding))}";
+        protected override string GetAdditionalInfo() => $": {string.Join(", ", Frames)}";
 
         internal override void Serialize(QuicWriter writer, TestHarness context)
         {
