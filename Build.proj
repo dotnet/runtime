@@ -60,7 +60,6 @@
     </ItemGroup>
   </Target>
 
-  <!-- TODO: Remove with https://github.com/dotnet/runtime/issues/31844. -->
   <Target Name="RestoreLibrariesDepprojs"
           BeforeTargets="Restore"
           Condition="'@(LibrariesRestoreProject)' != ''">

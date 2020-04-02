@@ -59,7 +59,7 @@
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">llvm-</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)runtime-corelib-packages</DefaultMonoSubsets>
 
-    <DefaultLibrariesSubsets>native-ref-src</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>depprojs-native-ref-src</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">$(DefaultLibrariesSubsets)-pretest</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(IncludeLibrariesTestSubset)' == 'true'">$(DefaultLibrariesSubsets)-libtests</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)-packages</DefaultLibrariesSubsets>
@@ -203,7 +203,7 @@
   </ItemGroup>
 
   <!-- Libraries sets -->
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries'))">
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-depprojs-'))">
     <LibrariesRestoreProject Include="$(LibrariesProjectRoot)restore\depproj.proj">
       <AdditionalProperties Condition="'$(LibrariesConfiguration)' != ''">Configuration=$(LibrariesConfiguration)</AdditionalProperties>
     </LibrariesRestoreProject>
