@@ -8,6 +8,7 @@
 #include <cordebug.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include <algorithm>
 #include "elfreader.h"
 
 #define Elf_Ehdr   ElfW(Ehdr)
