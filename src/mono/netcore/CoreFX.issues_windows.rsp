@@ -23,9 +23,6 @@
 -nonamespace MonoTests.System.Drawing
 -nonamespace System.Reflection.Emit.Tests
 
--nomethod System.DirectoryServices.ActiveDirectory.Tests.DomainControllerTests.GetDomainController_InvalidIPV6
--nomethod System.DirectoryServices.Tests.DirectoryEntryTests.DeleteTree_NoObject_ThrowsCOMException
--nomethod System.DirectoryServices.ActiveDirectory.Tests.ForestTests.GetForest_NonNullNameAndNotRootedDomain_ThrowsActiveDirectoryObjectNotFoundException
 -nomethod System.Reflection.Internal.Tests.AbstractMemoryBlockTests.FileStream
 -nomethod System.Reflection.Internal.Tests.AbstractMemoryBlockTests.FileStreamUnix
 -nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.*
