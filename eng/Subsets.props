@@ -58,8 +58,10 @@
 
   <PropertyGroup>
     <DefaultSubsetCategories>libraries-installer-coreclr-mono</DefaultSubsetCategories>
-    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'">libraries-mono</DefaultSubsetCategories>
+    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'iOS'">libraries-installer-mono</DefaultSubsetCategories>
+    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'Android'">libraries-mono</DefaultSubsetCategories>
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
+    <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS'">depproj-pkgproj</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
     <DefaultCoreClrSubsets>runtime-linuxdac-corelib-nativecorelib-tools-packages</DefaultCoreClrSubsets>
@@ -218,7 +220,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-depproj-'))">
-    <DepprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="R2RBinaries" BuildInParallel="false" />
+    <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="R2RBinaries" BuildInParallel="false" />
+    <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="Binaries" BuildInParallel="false" />
     <ProjectToBuild Include="@(DepprojProjectToBuild)" />
   </ItemGroup>
 

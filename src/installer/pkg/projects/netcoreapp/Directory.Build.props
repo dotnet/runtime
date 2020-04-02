@@ -9,6 +9,7 @@
     <CoreCLRTargetOS Condition="'$(TargetsWindows)' == 'true'">Windows_NT</CoreCLRTargetOS>
     <CoreCLRTargetOS Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLRTargetOS>
     <CoreCLRTargetOS Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsiOS)' == 'true'">iOS</CoreCLRTargetOS>
     <CoreCLRTargetOS Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLRTargetOS>
     <LibrariesTargetOS>$(CoreCLRTargetOS)</LibrariesTargetOS>
   </PropertyGroup>

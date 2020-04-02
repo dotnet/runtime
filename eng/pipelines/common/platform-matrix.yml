@@ -315,7 +315,7 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: iOS
       archType: arm
-      platform: iOS_x64
+      platform: iOS_arm
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -335,7 +335,7 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: iOS
       archType: arm64
-      platform: iOS_x64
+      platform: iOS_arm64
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}

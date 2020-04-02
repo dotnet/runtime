@@ -190,6 +190,23 @@ stages:
       - Windows_NT_arm
       - Windows_NT_arm64
 
+    #
+    # Installer Build for platforms using Mono
+    #
+  - template: /eng/pipelines/installer/installer-matrix.yml
+    parameters:
+      jobParameters:
+        liveRuntimeBuildConfig: release
+        liveLibrariesBuildConfig: Release
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        useOfficialAllConfigurations: false
+        buildFullPlatformManifest: false
+      runtimeFlavor: mono
+      platforms:
+      - iOS_arm
+      - iOS_arm64
+      - iOS_x64
+
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml
     parameters:
