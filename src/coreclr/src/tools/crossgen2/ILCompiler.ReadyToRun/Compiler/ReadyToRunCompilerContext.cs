@@ -170,7 +170,7 @@ namespace ILCompiler
             else
             {
                 ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(type, layoutKind);
-                ComputedInstanceFieldLayout layoutFromSimilarIntrinsicVector = _fallbackAlgorithm.ComputeInstanceLayout(similarSpecifiedVector, layoutKind);
+                ComputedInstanceFieldLayout layoutFromSimilarIntrinsicVector = _vectorFallbackAlgorithm.ComputeInstanceLayout(similarSpecifiedVector, layoutKind);
 
                 // TODO, enable this code when we switch Vector<T> to follow the same calling convention as its matching similar intrinsic vector
 #if MATCHING_HARDWARE_VECTOR
