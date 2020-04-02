@@ -1768,7 +1768,7 @@
     <value>It is an error if the derived 'fractionDigits' facet value is greater than the parent 'fractionDigits' facet value.</value>
   </data>
   <data name="Sch_FacetBaseFixed" xml:space="preserve">
-    <value>Values that are declared as {fixed} in a base type can not be changed in a derived type.</value>
+    <value>Values that are declared with fixed='true' in a base type can not be changed in a derived type.</value>
   </data>
   <data name="Sch_WhiteSpaceRestriction1" xml:space="preserve">
     <value>It is an error if 'whiteSpace' is among the members of {facets} of {base type definition}, {value} is 'replace' or 'preserve', and the {value} of the parent 'whiteSpace' is 'collapse'.</value>
