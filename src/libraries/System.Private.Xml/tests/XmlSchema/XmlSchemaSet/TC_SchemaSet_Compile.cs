@@ -1006,5 +1006,37 @@ namespace System.Xml.Tests
             Assert.Contains("all", ex.Message);
             Assert.Contains("maxOccurs", ex.Message);
         }
+
+        [Fact]
+        public void InvalidExemplar_Throws()
+        {
+            string schema = @"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:complexType name = 'personType'>
+         <xs:all>
+             <xs:element name='firstname'/>
+             <xs:element name='lastname'/>
+         </xs:all>
+     </xs:complexType>
+     <xs:element name='person' type='personType' final='#all'/>
+     <xs:element name='human' type='personType' substitutionGroup='person'/>
+</xs:schema>
+";
+
+            XmlReader xr;
+            xr = XmlReader.Create(new StringReader(schema));
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, xr);
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+
+            // Issue 30218: invalid formatters
+            Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
+            Assert.Empty(rx.Matches(ex.Message));
+
+            Assert.Contains("substitutionGroup", ex.Message);
+            Assert.Contains("person", ex.Message);
+        }
     }
 }
