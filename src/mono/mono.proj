@@ -633,19 +633,7 @@
     </PropertyGroup>
 
     <!-- AOT cross-compiler specific options -->
-    <PropertyGroup Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true'">
-      <_MonoAotCrossCFLAGSOption Condition="@(_MonoAotCrossCFLAGS->Count()) &gt; 0">CFLAGS="@(_MonoAotCrossCFLAGS, ' ')"</_MonoAotCrossCFLAGSOption>
-      <_MonoAotCrossCXXFLAGSOption Condition="@(_MonoAotCrossCXXFLAGS->Count()) &gt; 0">CXXFLAGS="@(_MonoAotCrossCXXFLAGS, ' ')"</_MonoAotCrossCXXFLAGSOption>
-      <_MonoAotCrossCPPFLAGSOption Condition="@(_MonoAotCrossCPPFLAGS->Count()) &gt; 0">CPPFLAGS="@(_MonoAotCrossCPPFLAGS, ' ')"</_MonoAotCrossCPPFLAGSOption>
-      <_MonoAotCrossCXXCPPFLAGSOption Condition="@(_MonoAotCrossCXXCPPFLAGS->Count()) &gt; 0">CXXCPPFLAGS="@(_MonoAotCrossCXXCPPFLAGS, ' ')"</_MonoAotCrossCXXCPPFLAGSOption>
-      <_MonoAotCrossLDFLAGSOption Condition="@(_MonoAotCrossLDFLAGS->Count()) &gt; 0">LDFLAGS="@(_MonoAotCrossLDFLAGS, ' ')"</_MonoAotCrossLDFLAGSOption>
-      <_MonoAotCrossCCLDFLAGSOption Condition="@(_MonoAotCrossCCLDFLAGS->Count()) &gt; 0">CCLDFLAGS="@(_MonoAotCrossCCLDFLAGS, ' ')"</_MonoAotCrossCCLDFLAGSOption>
-
-      <_MonoAotCrossConfigureCommand>$(MonoProjectRoot)configure @(_MonoAotCrossConfigureParams, ' ') @(_MonoAotCrossAC_VARS, ' ') $(_MonoAotCrossCFLAGSOption) $(_MonoAotCrossCXXFLAGSOption) $(_MonoAotCrossCPPFLAGSOption) $(_MonoAotCrossCXXCPPFLAGSOption) $(_MonoAotCrossLDFLAGSOption) $(_MonoAotCrossCCLDFLAGSOption) $(_MonoCCOption) $(_MonoCXXOption) $(_MonoAROption) $(_MonoASOption) $(_MonoCPPOption) $(_MonoCXXCPPOption) $(_MonoDLLTOOLOption) $(_MonoLDOption) $(_MonoOBJDUMPOption) $(_MonoRANLIBOption) $(_MonoCMAKEOption) $(_MonoSTRIPOption)</_MonoAotCrossConfigureCommand>
-      <_MonoAotCrossOffsetsCommand>python3 $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(_MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">
+    <PropertyGroup Condition="('$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true') or ('$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true')">
       <_MonoAotCrossCFLAGSOption Condition="@(_MonoAotCrossCFLAGS->Count()) &gt; 0">CFLAGS="@(_MonoAotCrossCFLAGS, ' ')"</_MonoAotCrossCFLAGSOption>
       <_MonoAotCrossCXXFLAGSOption Condition="@(_MonoAotCrossCXXFLAGS->Count()) &gt; 0">CXXFLAGS="@(_MonoAotCrossCXXFLAGS, ' ')"</_MonoAotCrossCXXFLAGSOption>
       <_MonoAotCrossCPPFLAGSOption Condition="@(_MonoAotCrossCPPFLAGS->Count()) &gt; 0">CPPFLAGS="@(_MonoAotCrossCPPFLAGS, ' ')"</_MonoAotCrossCPPFLAGSOption>
