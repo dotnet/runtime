@@ -20,6 +20,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetApiCompatVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Run API compat against the following 1:1 assemblies but don't include them in the list that is used to generate facades -->
     <NetFxReference Include="System.DirectoryServices" />
     <NetFxReference Include="System.DirectoryServices.AccountManagement" />
