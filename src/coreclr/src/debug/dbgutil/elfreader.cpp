@@ -550,7 +550,7 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
             break;
         case PT_LOAD:
             // Calculate the load size from the PT_LOAD program headers
-            loadsize = std::max<uint64_t>(loadsize, ph.p_vaddr + ph.p_memsz);
+            loadsize = std::max<size_t>(loadsize, (size_t)(ph.p_vaddr + ph.p_memsz));
             break;
         }
 
