@@ -4,7 +4,7 @@
     <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(SkipBuildProjects)' != 'true'">
+  <ItemGroup>
     <!-- This is necessary as inside VS project references that aren't part of the sln aren't built. -->
     <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
   </ItemGroup>
@@ -54,7 +54,7 @@
   <!-- Generate launch settings support files to enable VS debugging. -->
   <Target Name="GenerateLaunchSettingsFiles"
           Condition="'$(EnableLaunchSettings)' == 'true'"
-          AfterTargets="Before">
+          AfterTargets="Build">
     <ItemGroup>
       <!-- Keep in sync with pattern for test projects in tests.proj -->
       <TestProject Include="$(LibrariesProjectRoot)*\tests\**\*.Tests.csproj" />
