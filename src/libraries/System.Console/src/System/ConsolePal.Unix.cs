@@ -97,7 +97,7 @@ namespace System
             if (Console.IsInputRedirected)
             {
                 Stream inputStream = OpenStandardInput();
-                TextReader reader = SyncTextReader.GetSynchronizedTextReader(
+                return SyncTextReader.GetSynchronizedTextReader(
                     inputStream == Stream.Null ?
                     StreamReader.Null :
                     new StreamReader(
@@ -106,7 +106,6 @@ namespace System
                         detectEncodingFromByteOrderMarks: false,
                         bufferSize: Console.ReadBufferSize,
                         leaveOpen: true));
-                return reader;
             }
             else
             {

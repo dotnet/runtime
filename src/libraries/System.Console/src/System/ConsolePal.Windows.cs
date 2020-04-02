@@ -153,7 +153,7 @@ namespace System
         internal static TextReader GetOrCreateReader()
         {
             Stream inputStream = OpenStandardInput();
-            TextReader reader = SyncTextReader.GetSynchronizedTextReader(inputStream == Stream.Null ?
+            return SyncTextReader.GetSynchronizedTextReader(inputStream == Stream.Null ?
                 StreamReader.Null :
                 new StreamReader(
                     stream: inputStream,
@@ -161,7 +161,6 @@ namespace System
                     detectEncodingFromByteOrderMarks: false,
                     bufferSize: Console.ReadBufferSize,
                     leaveOpen: true));
-            return reader;
         }
 
         // Use this for blocking in Console.ReadKey, which needs to protect itself in case multiple threads call it simultaneously.

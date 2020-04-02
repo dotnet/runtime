@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -107,14 +106,14 @@ namespace System
                     // Before changing the code page we need to flush the data
                     // if Out hasn't been redirected. Also, have the next call to
                     // s_out reinitialize the console code page.
-                    if (Volatile.Read(ref s_out) != null && !s_isOutTextWriterRedirected)
+                    if (s_out != null && !s_isOutTextWriterRedirected)
                     {
-                        s_out!.Flush();
+                        s_out.Flush();
                         s_out = null;
                     }
-                    if (Volatile.Read(ref s_error) != null && !s_isErrorTextWriterRedirected)
+                    if (s_error != null && !s_isErrorTextWriterRedirected)
                     {
-                        s_error!.Flush();
+                        s_error.Flush();
                         s_error = null;
                     }
 
@@ -492,16 +491,22 @@ namespace System
         {
             CheckNonNull(newOut, nameof(newOut));
             newOut = TextWriter.Synchronized(newOut);
-            Volatile.Write(ref s_isOutTextWriterRedirected, true);
-            Volatile.Write(ref s_out, newOut);
+            lock (InternalSyncObject)
+            {
+                s_isOutTextWriterRedirected = true;
+                s_out = newOut;
+            }
         }
 
         public static void SetError(TextWriter newError)
         {
             CheckNonNull(newError, nameof(newError));
             newError = TextWriter.Synchronized(newError);
-            Volatile.Write(ref s_isErrorTextWriterRedirected, true);
-            Volatile.Write(ref s_error, newError);
+            lock (InternalSyncObject)
+            {
+                s_isErrorTextWriterRedirected = true;
+                s_error = newError;
+            }
         }
 
         private static void CheckNonNull(object obj, string paramName)
