@@ -40,9 +40,7 @@ function(set_common_libs TargetType)
             target_link_libraries (${DOTNET_PROJECT_NAME} "pthread")
         endif()
 
-        if(CLR_CMAKE_TARGET_LINUX)
-            target_link_libraries (${DOTNET_PROJECT_NAME} "dl")
-        endif()
+        target_link_libraries (${DOTNET_PROJECT_NAME} ${CMAKE_DL_LIBS})
     endif()
 
     if (NOT ${TargetType} STREQUAL "lib-static")
