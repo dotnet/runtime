@@ -1451,9 +1451,3 @@ bool EEConfig::ShouldLogCCWRefCountChange(LPCUTF8 pszClassName, LPCUTF8 pszNames
     return false;
 }
 #endif // FEATURE_COMINTEROP
- 
-int EEConfig::GetGCLargePages() const
-{
-    LIMITED_METHOD_CONTRACT;  
-    return Configuration::GetKnobBooleanValue(W("System.GC.LargePages"), CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCLargePages)) ? TRUE : FALSE;
-}

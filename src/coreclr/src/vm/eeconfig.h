@@ -414,7 +414,6 @@ public:
 
     int     GetGCconcurrent()               const {LIMITED_METHOD_CONTRACT;  return iGCconcurrent; }
     void    SetGCconcurrent(int val)              {LIMITED_METHOD_CONTRACT;  iGCconcurrent = val;  }
-    int     GetGCLargePages()               const;
 #ifdef _DEBUG
     int     GetGCLatencyMode()              const {LIMITED_METHOD_CONTRACT;  return iGCLatencyMode; }
 #endif //_DEBUG

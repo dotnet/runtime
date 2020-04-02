@@ -1051,7 +1051,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
 
     if (strcmp(key, "GCLargePages") == 0)
     {
-        *value = !!g_pConfig->GetGCLargePages();
+        *value = Configuration::GetKnobBooleanValue(W("System.GC.LargePages"), CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCLargePages));
         return true;
     }
 
