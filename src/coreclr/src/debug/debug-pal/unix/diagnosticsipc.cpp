@@ -179,7 +179,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
         return nullptr;
     }
 
-    return new IpcStream(clientSocket, -1, ConnectionMode::CLIENT);
+    return new IpcStream(clientSocket, ConnectionMode::CLIENT);
 }
 
 int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles, uint32_t nHandles, int32_t timeoutMs, ErrorCallback callback)
@@ -254,7 +254,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
                 {
                     sockaddr_un from;
                     socklen_t fromlen = sizeof(from);
-                    const int clientSocket = ::accept(rgpIpcPollHandles[i]->pStream->_serverSocket, (sockaddr *)&from, &fromlen);
+                    const int clientSocket = ::accept(rgpIpcPollHandles[i]->pIpc->_serverSocket, (sockaddr *)&from, &fromlen);
                     if (clientSocket == -1)
                     {
                         if (callback != nullptr)
@@ -263,7 +263,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
                         delete[] pollfds;
                         return -1;
                     }
-                    rgpIpcPollHandles[i]->pStream = new IpcStream(clientSocket, rgpIpcPollHandles[i]->pIpc->_serverSocket, rgpIpcPollHandles[i]->pIpc->mode);
+                    rgpIpcPollHandles[i]->pStream = new IpcStream(clientSocket, rgpIpcPollHandles[i]->pIpc->mode);
                     rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::SIGNALED;
                 }
                 else
