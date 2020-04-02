@@ -1,7 +1,0 @@
-﻿<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
-    <TestStrongNameKeyId>MicrosoftAspNetCore</TestStrongNameKeyId>
-  </PropertyGroup>
-</Project>
