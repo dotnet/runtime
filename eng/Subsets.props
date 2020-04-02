@@ -58,9 +58,11 @@
 
   <PropertyGroup>
     <DefaultSubsetCategories>libraries-installer-coreclr-mono</DefaultSubsetCategories>
+    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'tvOS'">libraries-installer-mono</DefaultSubsetCategories>
     <DefaultSubsetCategories Condition="'$(TargetOS)' == 'iOS'">libraries-installer-mono</DefaultSubsetCategories>
     <DefaultSubsetCategories Condition="'$(TargetOS)' == 'Android'">libraries-mono</DefaultSubsetCategories>
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
+    <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'tvOS'">depproj-pkgproj</DefaultInstallerSubsets>
     <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS'">depproj-pkgproj</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
@@ -80,7 +82,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RuntimeFlavor Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'">Mono</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and $(_subsetCategory.Contains('mono')) and !$(_subsetCategory.Contains('coreclr'))">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">CoreCLR</RuntimeFlavor>
   </PropertyGroup>

@@ -133,6 +133,11 @@
         <IsNative>true</IsNative>
       </RuntimeFiles>
 
+      <MonoCrossFiles Condition="'$(TargetOS)' == 'tvOS'"
+        Include="$(MonoArtifactsPath)\cross\*.*" />
+      <MonoIncludeFiles Condition="'$(TargetOS)' == 'tvOS'"
+        Include="$(MonoArtifactsPath)\include\**\*.*" />
+
       <MonoCrossFiles Condition="'$(TargetOS)' == 'iOS'"
         Include="$(MonoArtifactsPath)\cross\*.*" />
       <MonoIncludeFiles Condition="'$(TargetOS)' == 'iOS'"
