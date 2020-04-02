@@ -46,6 +46,12 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_Dns_Success(IPAddress listenAt)
         {
+            // On some systems (like Ubuntu 16.04 and Ubuntu 18.04) "localhost" doesn't resolve to '::1'.
+            if (Array.IndexOf(Dns.GetHostAddresses("localhost"), listenAt) == -1)
+            {
+                return;
+            }
+
             int port;
             using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, listenAt, out port))
             {
