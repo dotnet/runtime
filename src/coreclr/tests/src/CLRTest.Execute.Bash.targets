@@ -371,6 +371,22 @@ ReleaseLock()
         return 3
     fi
 }
+
+# This function prints given arguments in single line,
+# arguments containing spaces (and newlines) will be enclosed in double quotes.
+# Note, this function doesn't perform escaping of double quote of other
+# special symbols.
+QuoteSpaces()
+{
+    local each nargs=$# q='"'
+    for each in "$@"; do
+        set -- "$@" "%24(set -- $each; test $# -gt 1 && cat <<< $q$*$q || cat <<< $*)"
+    done
+    shift $nargs
+    cat <<< $*
+}
+
+
 cd "$%28dirname "${BASH_SOURCE[0]}")"
 LockFile="lock"
 
