@@ -34,10 +34,6 @@ namespace System
         private static ConsoleCancelEventHandler? s_cancelCallbacks;
         private static ConsolePal.ControlCHandlerRegistrar? s_registrar;
 
-        internal static T EnsureInitialized<T>([NotNull] ref T? field, T value) where T : class
-            // Interlocked.CompareExchange ensures we don't overwrite a field that was set.
-            => Interlocked.CompareExchange(ref field, value, null) ?? value;
-
         public static TextReader In
         {
             get
@@ -60,10 +56,13 @@ namespace System
         {
             get
             {
-                return Volatile.Read(ref s_inputEncoding) ?? EnsureInitializedInputEncoding();
-
-                static Encoding EnsureInitializedInputEncoding()
-                    => EnsureInitialized(ref s_inputEncoding, ConsolePal.InputEncoding);
+                Encoding? encoding = Volatile.Read(ref s_inputEncoding);
+                if (encoding == null)
+                {
+                    encoding = ConsolePal.InputEncoding;
+                    Volatile.Write(ref s_inputEncoding, encoding);
+                }
+                return encoding;
             }
             set
             {
@@ -88,10 +87,13 @@ namespace System
         {
             get
             {
-                return Volatile.Read(ref s_outputEncoding) ?? EnsureInitializedOutputEncoding();
-
-                static Encoding EnsureInitializedOutputEncoding()
-                    => EnsureInitialized(ref s_outputEncoding, ConsolePal.OutputEncoding);
+                Encoding? encoding = Volatile.Read(ref s_outputEncoding);
+                if (encoding == null)
+                {
+                    encoding = ConsolePal.OutputEncoding;
+                    Volatile.Write(ref s_outputEncoding, encoding);
+                }
+                return encoding;
             }
             set
             {
@@ -202,7 +204,10 @@ namespace System
                 return redirected.Value;
 
                 static StrongBox<bool> EnsureInitializedInputRedirected()
-                    => EnsureInitialized(ref _isStdInRedirected, new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
+                {
+                    Volatile.Write(ref _isStdInRedirected, new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
+                    return _isStdErrRedirected!;
+                }
             }
         }
 
@@ -214,7 +219,10 @@ namespace System
                 return redirected.Value;
 
                 static StrongBox<bool> EnsureInitializedOutputRedirected()
-                    => EnsureInitialized(ref _isStdOutRedirected, new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
+                {
+                    Volatile.Write(ref _isStdOutRedirected, new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
+                    return _isStdOutRedirected!;
+                }
             }
         }
 
@@ -226,7 +234,10 @@ namespace System
                 return redirected.Value;
 
                 static StrongBox<bool> EnsureInitializedErrorRedirected()
-                    => EnsureInitialized(ref _isStdErrRedirected, new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
+                {
+                    Volatile.Write(ref _isStdErrRedirected, new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
+                    return _isStdErrRedirected!;
+                }
             }
         }
 

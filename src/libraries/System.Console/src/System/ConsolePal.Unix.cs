@@ -79,12 +79,15 @@ namespace System
                 {
                     EnsureConsoleInitialized();
 
-                    return Console.EnsureInitialized(
-                        ref s_stdInReader,
-                        SyncTextReader.GetSynchronizedTextReader(
-                            new StdInReader(
-                                encoding: Console.InputEncoding,
-                                bufferSize: InteractiveBufferSize)));
+                    SyncTextReader reader = SyncTextReader.GetSynchronizedTextReader(
+                                                new StdInReader(
+                                                    encoding: Console.InputEncoding,
+                                                    bufferSize: InteractiveBufferSize));
+
+                    // Don't overwrite a set reader.
+                    Interlocked.CompareExchange(ref s_stdInReader, reader, null);
+
+                    return s_stdInReader;
                 }
             }
         }
