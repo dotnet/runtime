@@ -10569,6 +10569,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
     }
 
+    // Mark stack-empty rare blocks to be considered for deferred compilation.
+    //
+    // Ideally these are conditionally executed blocks -- if the method is going
+    // to unconditinally throw there's not as much to be gained by deferring jitting.
+    // For now, we just screen out the entry bb.
+    //
+    // In general we might want track all the IL stack empty points so we can
+    // propagate rareness back through flow and place the uncommon patchpoints "earlier"
+    // so there are fewer overall.
+    //
+    if ((JitConfig.TC_UncommonPatchpoint() > 0) && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
+        (block != fgFirstBB) && block->isRunRarely() && (verCurrentState.esStackDepth == 0) &&
+        ((block->bbFlags & BBF_PATCHPOINT) == 0))
+    {
+        block->bbFlags |= BBF_UNCOMMON_PATCHPOINT;
+        setMethodHasUncommonPatchpoint();
+    }
+
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
     /* Walk the opcodes that comprise the basic block */

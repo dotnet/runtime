@@ -4462,6 +4462,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
     // Run an early flow graph simplification pass
+    // || jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
     if (opts.OptimizationEnabled())
     {
         auto earlyUpdateFlowGraphPhase = [this]() {
@@ -4900,7 +4901,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 //
 void Compiler::generatePatchpointInfo()
 {
-    if (!doesMethodHavePatchpoints())
+    if (!doesMethodHavePatchpoints() && !doesMethodHaveUncommonPatchpoints())
     {
         // Nothing to report
         return;

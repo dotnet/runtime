@@ -352,6 +352,10 @@ void BasicBlock::dspFlags()
     {
         printf("ppoint ");
     }
+    if (bbFlags & BBF_UNCOMMON_PATCHPOINT)
+    {
+        printf("u-ppoint ");
+    }
     if (bbFlags & BBF_RETLESS_CALL)
     {
         printf("retless ");

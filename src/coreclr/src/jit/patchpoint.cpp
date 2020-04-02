@@ -29,15 +29,18 @@
 //
 class PatchpointTransformer
 {
-    unsigned  ppCounterLclNum;
     const int HIGH_PROBABILITY = 99;
+    unsigned  ppCounterLclNum;
     Compiler* compiler;
 
 public:
-    PatchpointTransformer(Compiler* compiler) : compiler(compiler)
+    PatchpointTransformer(Compiler* compiler) : ppCounterLclNum(BAD_VAR_NUM), compiler(compiler)
     {
-        ppCounterLclNum                            = compiler->lvaGrabTemp(true DEBUGARG("patchpoint counter"));
-        compiler->lvaTable[ppCounterLclNum].lvType = TYP_INT;
+        if (compiler->doesMethodHavePatchpoints())
+        {
+            ppCounterLclNum                            = compiler->lvaGrabTemp(true DEBUGARG("patchpoint counter"));
+            compiler->lvaTable[ppCounterLclNum].lvType = TYP_INT;
+        }
     }
 
     //------------------------------------------------------------------------
@@ -54,7 +57,11 @@ public:
         }
 
         BasicBlock* block = compiler->fgFirstBB;
-        TransformEntry(block);
+
+        if (compiler->doesMethodHavePatchpoints())
+        {
+            TransformEntry(block);
+        }
 
         int count = 0;
         for (block = block->bbNext; block != nullptr; block = block->bbNext)
@@ -72,9 +79,22 @@ public:
                     continue;
                 }
 
-                JITDUMP("Patchpoint: instrumenting " FMT_BB "\n", block->bbNum);
+                JITDUMP("Patchpoint: loop patchpoint in " FMT_BB "\n", block->bbNum);
                 assert(block != compiler->fgFirstBB);
                 TransformBlock(block);
+                count++;
+            }
+            else if (block->bbFlags & BBF_UNCOMMON_PATCHPOINT)
+            {
+                if (compiler->ehGetBlockHndDsc(block) != nullptr)
+                {
+                    JITDUMP("Patchpoint: skipping uncommon patchpoint for " FMT_BB " as it is in a handler\n",
+                            block->bbNum);
+                    continue;
+                }
+
+                JITDUMP("Patchpoint: uncommon patchpoint in " FMT_BB "\n", block->bbNum);
+                TransformUncommon(block);
                 count++;
             }
         }
@@ -185,6 +205,41 @@ private:
 
         compiler->fgNewStmtNearEnd(block, ppCounterAsg);
     }
+
+    //------------------------------------------------------------------------
+    // TransformUncommon: expand current block to include uncommon patchpoint logic.
+    //
+    //  S;
+    //
+    //  ==>
+    //
+    //  call JIT_UNCOMMON_PATHCPOINT (ilOffset)
+    //
+    void TransformUncommon(BasicBlock* block)
+    {
+        // Capture the IL offset
+        IL_OFFSET ilOffset = block->bbCodeOffs;
+        assert(ilOffset != BAD_IL_OFFSET);
+
+        // Remove all statements from the block.
+        for (Statement* stmt : block->Statements())
+        {
+            compiler->fgRemoveStmt(block, stmt);
+        }
+
+        // Update flow
+        block->bbJumpKind = BBJ_THROW;
+        block->bbJumpDest = nullptr;
+
+        // Add helper call
+        //
+        // call UncommonPPHelper(ilOffset)
+        GenTree*          ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
+        GenTreeCall::Use* helperArgs   = compiler->gtNewCallArgs(ilOffsetNode);
+        GenTreeCall* helperCall = compiler->gtNewHelperCallNode(CORINFO_HELP_UNCOMMON_PATCHPOINT, TYP_VOID, helperArgs);
+
+        compiler->fgNewStmtAtEnd(block, helperCall);
+    }
 };
 
 //------------------------------------------------------------------------
@@ -200,7 +255,7 @@ private:
 //
 PhaseStatus Compiler::fgTransformPatchpoints()
 {
-    if (!doesMethodHavePatchpoints())
+    if (!doesMethodHavePatchpoints() && !doesMethodHaveUncommonPatchpoints())
     {
         JITDUMP("\n -- no patchpoints to transform\n");
         return PhaseStatus::MODIFIED_NOTHING;

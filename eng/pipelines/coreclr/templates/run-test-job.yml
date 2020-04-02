@@ -417,6 +417,7 @@ jobs:
           scenarios:
           - jitosr
           - jitosr_stress
+          - jitosr_uncommon
           - jitguardeddevirtualization
           - jitehwritethru
           - jitobjectstackallocation

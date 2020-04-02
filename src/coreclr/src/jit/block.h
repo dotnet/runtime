@@ -446,6 +446,7 @@ struct BasicBlock : private LIR::Range
 #define BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY 0x800000000 // Block is dominated by exceptional entry.
 #define BBF_BACKWARD_JUMP_TARGET          0x1000000000 // Block is a target of a backward jump
 #define BBF_PATCHPOINT                    0x2000000000 // Block is a patchpoint
+#define BBF_UNCOMMON_PATCHPOINT           0x4000000000 // Block is an uncommon patchpoint
 
 // clang-format on
 

@@ -634,6 +634,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+    CORINFO_HELP_UNCOMMON_PATCHPOINT,       // Notify runtime that code has reached a part of the method that wasn't originally jitted.
 
     CORINFO_HELP_COUNT,
 };
