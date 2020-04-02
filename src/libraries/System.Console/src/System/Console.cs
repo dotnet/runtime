@@ -38,11 +38,11 @@ namespace System
             // Interlocked.CompareExchange ensures we don't overwrite a field that was set.
             => Interlocked.CompareExchange(ref field, value, null) ?? value;
 
-        internal static T EnsureInitializedDisposable<T>([NotNull] ref T? field, T value, IDisposable disposable) where T : class
+        internal static T EnsureInitializedDisposable<T>([NotNull] ref T? field, T value) where T : class, IDisposable
         {
             if (Interlocked.CompareExchange(ref field, value, null) != null)
             {
-                disposable.Dispose();
+                value.Dispose();
             }
 
             return field;
@@ -141,11 +141,7 @@ namespace System
                 return Volatile.Read(ref s_out) ?? EnsureInitializedOut();
 
                 static TextWriter EnsureInitializedOut()
-                {
-                    Stream stream = OpenStandardOutput();
-                    TextWriter writer = CreateOutputWriter(stream);
-                    return EnsureInitializedDisposable(ref s_out, writer, stream);
-                }
+                    => EnsureInitializedDisposable(ref s_out, CreateOutputWriter(OpenStandardOutput()));
             }
         }
 
@@ -156,11 +152,7 @@ namespace System
                 return Volatile.Read(ref s_error) ?? EnsureInitializedError();
 
                 static TextWriter EnsureInitializedError()
-                {
-                    Stream stream = OpenStandardError();
-                    TextWriter writer = CreateOutputWriter(stream);
-                    return EnsureInitializedDisposable(ref s_error, writer, stream);
-                }
+                    => EnsureInitializedDisposable(ref s_out, CreateOutputWriter(OpenStandardError()));
             }
         }
 
@@ -172,7 +164,7 @@ namespace System
                     stream: outputStream,
                     encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
                     bufferSize: WriteBufferSize,
-                    leaveOpen: true)
+                    leaveOpen: false)
                 {
                     AutoFlush = true
                 });

@@ -103,9 +103,8 @@ namespace System
                         encoding: Console.InputEncoding,
                         detectEncodingFromByteOrderMarks: false,
                         bufferSize: Console.ReadBufferSize,
-                        leaveOpen: true)
-                        );
-                return Console.EnsureInitializedDisposable(ref field, reader, inputStream);
+                        leaveOpen: false));
+                return Console.EnsureInitializedDisposable(ref field, reader);
             }
             else
             {
