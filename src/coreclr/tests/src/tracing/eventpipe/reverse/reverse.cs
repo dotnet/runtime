@@ -5,21 +5,40 @@
 using System;
 using System.Diagnostics.Tracing;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Reflection.Emit;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Tracing.Tests.Common;
+using System.Threading;
+using System.IO;
+using Microsoft.Diagnostics.Tracing;
 
 namespace Tracing.Tests.ReverseValidation
 {
     public class ReverseValidation
     {
-        public static async Task RunSubprocess(string serverName, Func<Task> beforeExecution = null, Func<Task> duringExecution = null, Func<Task> afterExecution = null)
+        // The runtime will do an exponential falloff by a factor of 2 starting at 250ms
+        // We can time tests out after waiting AT MOST 61,750 ms which should contain 7 attempts to connect
+        private static int _maxPollTimeMS = /* 250 + 500 + 1000 + 2000 + 4000 + 8000 + 16000 + 30000 = */ 61_750;
+
+        private static async Task<T> WaitTillTimeout<T>(Task<T> task, TimeSpan timeout)
+        {
+            using var cts = new CancellationTokenSource();
+            var completedTask = await Task.WhenAny(task, Task.Delay(timeout, cts.Token));
+            if (completedTask == task)
+            {
+                cts.Cancel();
+                return await task;
+            }
+            else
+            {
+                throw new TimeoutException("Task timed out");
+            }
+        }
+
+        public static async Task RunSubprocess(string serverName, Func<Task> beforeExecution = null, Func<int, Task> duringExecution = null, Func<Task> afterExecution = null)
         {
             using (var process = new Process())
             {
@@ -35,8 +54,9 @@ namespace Tracing.Tests.ReverseValidation
                 bool fSuccess = process.Start();
                 Logger.logger.Log($"subprocess started: {fSuccess}");
 
+                await Task.Delay(250);
                 if (duringExecution != null)
-                    await duringExecution();
+                    await duringExecution(process.Id);
 
                 process.Kill();
 
@@ -44,21 +64,22 @@ namespace Tracing.Tests.ReverseValidation
                     await afterExecution();
             }
         }
+
         public static async Task<bool> TEST_RuntimeIsResilientToServerClosing()
         {
             string serverName = ReverseServer.MakeServerAddress();
             Logger.logger.Log($"Server name is '{serverName}'");
             await RunSubprocess(
                 serverName: serverName,
-                duringExecution: async () =>
+                duringExecution: async (_) =>
                 {
-                    var ad1 = await ReverseServer.CreateServerAndReceiveAdvertisement(serverName);
+                    var ad1 = await WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
                     Logger.logger.Log(ad1.ToString());
-                    var ad2 = await ReverseServer.CreateServerAndReceiveAdvertisement(serverName);
+                    var ad2 = await WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
                     Logger.logger.Log(ad2.ToString());
-                    var ad3 = await ReverseServer.CreateServerAndReceiveAdvertisement(serverName);
+                    var ad3 = await WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
                     Logger.logger.Log(ad3.ToString());
-                    var ad4 = await ReverseServer.CreateServerAndReceiveAdvertisement(serverName);
+                    var ad4 = await WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
                     Logger.logger.Log(ad4.ToString());
                 }
             );
@@ -73,9 +94,9 @@ namespace Tracing.Tests.ReverseValidation
             Logger.logger.Log($"Server name is `{serverName}`");
             await RunSubprocess(
                 serverName: serverName,
-                duringExecution: async () => 
+                duringExecution: async (_) => 
                 {
-                    IpcAdvertise advertise = await advertiseTask;
+                    IpcAdvertise advertise = await WaitTillTimeout(advertiseTask, TimeSpan.FromMilliseconds(_maxPollTimeMS));
                     Logger.logger.Log(advertise.ToString());
                 }
             );
@@ -83,6 +104,130 @@ namespace Tracing.Tests.ReverseValidation
             return true;
         }
 
+
+        public static async Task<bool> TEST_CanConnectServerAndClientAtSameTime()
+        {
+            string serverName = ReverseServer.MakeServerAddress();
+            Logger.logger.Log($"Server name is '{serverName}'");
+            var server = new ReverseServer(serverName);
+            await RunSubprocess(
+                serverName: serverName,
+                duringExecution: async (int pid) =>
+                {
+                    Task reverseTask = Task.Run(async () => 
+                    {
+                        Logger.logger.Log($"Waiting for reverse connection");
+                        Stream reverseStream = await server.AcceptAsync();
+                        Logger.logger.Log("Got reverse connection");
+                        IpcAdvertise advertise = IpcAdvertise.Parse(reverseStream);
+                        Logger.logger.Log(advertise.ToString());
+                    });
+
+                    Task regularTask = Task.Run(async () => 
+                    {
+                        var config = new SessionConfiguration(
+                            circularBufferSizeMB: 1000,
+                            format: EventPipeSerializationFormat.NetTrace,
+                            providers: new List<Provider> { 
+                                new Provider("Microsoft-DotNETCore-SampleProfiler")
+                            });
+                        Logger.logger.Log("Starting EventPipeSession over standard connection");
+                        using Stream stream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
+                        Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
+                        using var source = new EventPipeEventSource(stream);
+                        Task readerTask = Task.Run(() => source.Process());
+                        await Task.Delay(500);
+                        Logger.logger.Log("Stopping EventPipeSession over standard connection");
+                        EventPipeClient.StopTracing(pid, sessionId);
+                        await readerTask;
+                        Logger.logger.Log("Stopped EventPipeSession over standard connection");
+                    });
+
+                    await Task.WhenAll(reverseTask, regularTask);
+                }
+            );
+
+            server.Shutdown();
+
+            return true;
+        }
+
+        public static async Task<bool> TEST_ReverseConnectionCanRecycleWhileTracing()
+        {
+            string serverName = ReverseServer.MakeServerAddress();
+            Logger.logger.Log($"Server name is '{serverName}'");
+            await RunSubprocess(
+                serverName: serverName,
+                duringExecution: async (int pid) =>
+                {
+                    Task regularTask = Task.Run(async () => 
+                    {
+                        var config = new SessionConfiguration(
+                            circularBufferSizeMB: 1000,
+                            format: EventPipeSerializationFormat.NetTrace,
+                            providers: new List<Provider> { 
+                                new Provider("Microsoft-DotNETCore-SampleProfiler")
+                            });
+                        Logger.logger.Log("Starting EventPipeSession over standard connection");
+                        using Stream stream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
+                        Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
+                        using var source = new EventPipeEventSource(stream);
+                        Task readerTask = Task.Run(() => source.Process());
+                        await Task.Delay(500);
+                        Logger.logger.Log("Stopping EventPipeSession over standard connection");
+                        EventPipeClient.StopTracing(pid, sessionId);
+                        await readerTask;
+                        Logger.logger.Log("Stopped EventPipeSession over standard connection");
+                    });
+
+                    Task reverseTask = Task.Run(async () => 
+                    {
+                        var ad1 = await WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
+                        Logger.logger.Log(ad1.ToString());
+                        var ad2 = await WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
+                        Logger.logger.Log(ad2.ToString());
+                        var ad3 = await WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
+                        Logger.logger.Log(ad3.ToString());
+                        var ad4 = await WaitTillTimeout(ReverseServer.CreateServerAndReceiveAdvertisement(serverName), TimeSpan.FromMilliseconds(_maxPollTimeMS));
+                        Logger.logger.Log(ad4.ToString());
+                    });
+
+                    await Task.WhenAll(reverseTask, regularTask);
+                }
+            );
+
+            return true;
+        }
+
+        public static async Task<bool> TEST_StandardConnectionStillWorksIfReverseConnectionIsBroken()
+        {
+            string serverName = ReverseServer.MakeServerAddress();
+            Logger.logger.Log($"Server name is '{serverName}'");
+            await RunSubprocess(
+                serverName: serverName,
+                duringExecution: async (int pid) =>
+                {
+                    var config = new SessionConfiguration(
+                        circularBufferSizeMB: 1000,
+                        format: EventPipeSerializationFormat.NetTrace,
+                        providers: new List<Provider> { 
+                            new Provider("Microsoft-DotNETCore-SampleProfiler")
+                        });
+                    Logger.logger.Log("Starting EventPipeSession over standard connection");
+                    using Stream stream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
+                    Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
+                    using var source = new EventPipeEventSource(stream);
+                    Task readerTask = Task.Run(() => source.Process());
+                    await Task.Delay(500);
+                    Logger.logger.Log("Stopping EventPipeSession over standard connection");
+                    EventPipeClient.StopTracing(pid, sessionId);
+                    await readerTask;
+                    Logger.logger.Log("Stopped EventPipeSession over standard connection");
+                }
+            );
+
+            return true;
+        }
 
         public static async Task<int> Main(string[] args)
         {
@@ -97,9 +242,19 @@ namespace Tracing.Tests.ReverseValidation
             foreach (var test in tests)
             {
                 Logger.logger.Log($"::== Running test: {test.Name}");
-                bool result = await (Task<bool>)test.Invoke(null, new object[] {});
+                bool result = true;
+                try
+                {
+                    result = await (Task<bool>)test.Invoke(null, new object[] {});
+                }
+                catch (Exception e)
+                {
+                    result = false;
+                    Logger.logger.Log(e.ToString());
+                }
                 fSuccess &= result;
                 Logger.logger.Log($"Test passed: {result}");
+                Logger.logger.Log($"");
 
             }
             return fSuccess ? 100 : -1;
