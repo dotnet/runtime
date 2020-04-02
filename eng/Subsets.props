@@ -248,6 +248,8 @@
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-depproj-'))">
     <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="R2RBinaries" />
     <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="Binaries" />
+    <!-- Disable netstandard infra for now and discuss if we should delete it: https://github.com/dotnet/runtime/issues/2294-->
+    <DepprojProjectToBuild Remove="$(InstallerProjectRoot)pkg\projects\netstandard\src\netstandard.depproj" />
     <InstallerProject Include="@(DepprojProjectToBuild)" />
   </ItemGroup>
 
