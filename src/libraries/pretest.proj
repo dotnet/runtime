@@ -5,15 +5,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Explicitly include the runtime.depproj project here to correctly set up the testhost. -->
+    <ProjectReference Include="restore\runtime\runtime.depproj" />
     <!-- This is necessary as inside VS project references that aren't part of the sln aren't built. -->
     <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
   </ItemGroup>
 
   <!-- Microsoft.XmlSerializer.Generator should not be marked as a platform item and be copy-local instead. -->
   <Target Name="CollectSharedFrameworkRuntimeFiles"
-          Condition="'$(PlatformManifestFile)' != ''"
-          BeforeTargets="GenerateFileVersionProps">
-    <ItemGroup Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(PlatformManifestFile)' != '' and '$(BuildingNETCoreAppVertical)' == 'true'">
+    <ItemGroup>
       <_manualSharedFrameworkRuntimeFiles Include="System.Security.Cryptography.Native.OpenSsl.so" />
       <_manualSharedFrameworkRuntimeFiles Include="System.Security.Cryptography.Native.Apple.dylib" />
       <_manualSharedFrameworkRuntimeFiles Include="System.Security.Cryptography.Native.OpenSsl.dylib" />
@@ -27,8 +28,9 @@
 
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateFileVersionProps"
+          DependsOnTargets="CollectSharedFrameworkRuntimeFiles"
           Condition="'$(PlatformManifestFile)' != '' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
-          BeforeTargets="Build">
+          AfterTargets="Build">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
                               PackageId="Microsoft.NETCore.App"
                               PackageVersion="$(ProductVersion)"
@@ -45,7 +47,7 @@
   <UsingTask TaskName="GenerateTestSharedFrameworkDepsFile" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateTestSharedFrameworkDepsFile"
           Condition="'$(BinplaceTestSharedFramework)' == 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'"
-          BeforeTargets="Build">
+          AfterTargets="Build">
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
                                          RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
                                          TargetRuntimeIdentifier="$(PackageRID)" />
