@@ -81,8 +81,6 @@
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
-    <!-- Default any assembly not specifying a key to use the Open Key -->
-    <StrongNameKeyId>Open</StrongNameKeyId>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -168,6 +166,8 @@
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
 
+    <!-- Default any assembly not specifying a key to use the Open Key -->
+    <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
 
