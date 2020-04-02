@@ -119,6 +119,27 @@ jobs:
       - eng/pipelines/libraries/*
 
 #
+# Build CoreLib release
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-corelib-job.yml
+    buildConfig: release
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_musl_x64
+    - Linux_musl_arm64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    - Windows_NT_arm
+    - Windows_NT_arm64
+    jobParameters:
+      testGroup: innerloop
+
+#
 # Build CoreCLR checked
 # Only when CoreCLR is changed
 #

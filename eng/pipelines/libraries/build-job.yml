@@ -37,6 +37,7 @@ jobs:
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       isOfficialAllConfigurations: ${{ parameters.isOfficialAllConfigurations }}
       liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
@@ -49,7 +50,11 @@ jobs:
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         dependsOn:
         - ${{ if ne(parameters.osGroup, 'WebAssembly') }}:
-          - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+          # Use corelib dependencies for coreclr and non test builds
+          - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, '')) }}:
+            - ${{ format('coreclr_corelib_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+          - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
+            - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, 'linux', parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
 
