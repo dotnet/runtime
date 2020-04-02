@@ -6,6 +6,10 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'"> 
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\System.Utf8String.Experimental\tests\System.Utf8String.Experimental.Tests.csproj" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(EnableCoverageSupport)' == 'true'">
     <CoverageReportInputPath>$(ArtifactsBinDir)*.Tests/**/coverage.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
