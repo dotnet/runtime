@@ -76,10 +76,11 @@ void info_t::init_config(const pal::string_t& app_path)
     m_runtimeconfig_json = config_t(runtimeconfig_json_name, &m_header.runtimeconfig_json_location());
 }
 
-const int8_t* info_t::config_t::map(const pal::string_t& path, const location_t* &location)
+int8_t* info_t::config_t::map(const pal::string_t& path, const location_t* &location)
 {
-    const bundle::info_t* app = bundle::info_t::the_app;
+    assert(is_single_file_bundle());
 
+    const bundle::info_t* app = bundle::info_t::the_app;
     if (app->m_deps_json.matches(path))
     {
         location = app->m_deps_json.m_location;
@@ -101,8 +102,9 @@ const int8_t* info_t::config_t::map(const pal::string_t& path, const location_t*
     //   Therefore, mapping only portions of the bundle will involve align-down/round-up calculations, and associated offset adjustments.
     //   We choose the simpler approach of rounding to the whole file
     // * There is no performance limitation due to a larger sized mapping, since we actually only read the pages with relevant contents.
+    // * Files that are too large to be mapped (ex: that exhaust 32-bit virtual address space) are not supported. 
 
-    const int8_t* addr = (const int8_t*)pal::mmap_read(app->m_bundle_path);
+    int8_t* addr = (int8_t*)pal::mmap_read(app->m_bundle_path);
     if (addr == nullptr)
     {
         trace::error(_X("Failure processing application bundle."));

@@ -401,13 +401,13 @@ bool runtime_config_t::ensure_parsed()
         trace::verbose(_X("Did not successfully parse the runtimeconfig.dev.json"));
     }
 
-    json_parser_t json;
     if (!bundle::info_t::config_t::probe(m_path) && !pal::file_exists(m_path))
     {
         // Not existing is not an error.
         return true;
     }
 
+    json_parser_t json;
     if (!json.parse_file(m_path))
     {
         return false;

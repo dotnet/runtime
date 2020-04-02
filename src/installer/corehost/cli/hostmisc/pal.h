@@ -257,6 +257,7 @@ namespace pal
     }
 
     void* mmap_read(const string_t& path, size_t* length = nullptr);
+    void* mmap_copy_on_write(const string_t& path, size_t* length = nullptr);
 
     bool touch_file(const string_t& path);
     bool realpath(string_t* path, bool skip_error_logging = false);

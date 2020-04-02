@@ -34,12 +34,7 @@ class json_parser_t {
         document_t m_document;
 
         void realloc_buffer(size_t size);
-#ifdef _WIN32
-        void parse_json(const char* data);
-#else // _WIN32
-        void parse_json(char* data);
-#endif // _WIN32
-        bool validate_json(const char* data, int64_t size, const pal::string_t& context);
+        bool parse_json(char* data, int64_t size, const pal::string_t& context);
 };
 
 #endif // __JSON_PARSER_H__

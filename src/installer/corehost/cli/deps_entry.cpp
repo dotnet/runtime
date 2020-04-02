@@ -25,11 +25,7 @@ void deps_entry_t::append_resource_path(pal::string_t& base) const
 {
     assert(asset_type == asset_types::resources);
 
-    pal::string_t pal_relative_path = asset.relative_path;
-    if (_X('/') != DIR_SEPARATOR)
-    {
-        replace_char(&pal_relative_path, _X('/'), DIR_SEPARATOR);
-    }
+    pal::string_t pal_relative_path = normalize_dir_separator(asset.relative_path);
 
     // Resources are represented as "lib/<netstandrd_ver>/<ietf-code>/<ResourceAssemblyName.dll>" in the deps.json.
     // The <ietf-code> is the "directory" in the pal_relative_path below, so extract it.

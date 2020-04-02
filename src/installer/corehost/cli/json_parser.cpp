@@ -76,9 +76,9 @@ void json_parser_t::realloc_buffer(size_t size)
     m_json[size] = '\0';
 }
 
-#ifdef _WIN32
-void json_parser_t::parse_json(const char* data)
+bool json_parser_t::parse_json(char* data, int64_t size, const pal::string_t& context)
 {
+#ifdef _WIN32
     // Can't use in-situ parsing on Windows, as JSON data is encoded in
     // UTF-8 and the host expects wide strings.  m_document will store
     // data in UTF-16 (with pal::char_t as the character type), but it
@@ -86,16 +86,10 @@ void json_parser_t::parse_json(const char* data)
     constexpr auto flags = rapidjson::ParseFlag::kParseStopWhenDoneFlag
         | rapidjson::ParseFlag::kParseCommentsFlag;
     m_document.Parse<flags, rapidjson::UTF8<>>(data);
-}
 #else // _WIN32
-void json_parser_t::parse_json(char* data)
-{
     m_document.ParseInsitu<rapidjson::ParseFlag::kParseCommentsFlag>(data);
-}
 #endif // _WIN32
 
-bool json_parser_t::validate_json(const char* data, int64_t size, const pal::string_t& context)
-{
     if (m_document.HasParseError())
     {
         int line, column;
@@ -135,8 +129,7 @@ bool json_parser_t::parse_stream(pal::istream_t& stream,
     realloc_buffer(stream_size - current_pos);
     stream.read(m_json.data(), stream_size - current_pos);
 
-    parse_json(m_json.data());
-    return validate_json(m_json.data(), m_json.size(), context);
+    return parse_json(m_json.data(), m_json.size(), context);
 }
 
 bool json_parser_t::parse_file(const pal::string_t& path)
@@ -147,24 +140,11 @@ bool json_parser_t::parse_file(const pal::string_t& path)
     if (bundle::info_t::is_single_file_bundle())
     {
         const bundle::location_t *location = nullptr;
-        const char* data = (const char*) bundle::info_t::config_t::map(path, location);
+        char* data = (char*) bundle::info_t::config_t::map(path, location);
 
         if (data != nullptr)
         {
-#ifdef _WIN32 // _WIN32
-            // Windows doesn't use in-situ parsing. Therefore, pass the memory mapped data directly.
-            // The parser will then copy/convert the data appropriately.
-            parse_json(data);
-            bool result = validate_json(data, location->size, path);
-#else //  _WIN32
-            // On Linux, copy the input data, since m_document.ParseInsitu
-            // requires a mutable data input.
-            realloc_buffer(location->size);
-            memcpy(m_json.data(), data, location->size);
-            parse_json(m_json.data());
-            bool result = validate_json(m_json.data(), location->size, path);
-#endif // _WIN32
-
+            bool result = parse_json(data, location->size, path);
             bundle::info_t::config_t::unmap((const int8_t*)data, location);
             return result;
         }

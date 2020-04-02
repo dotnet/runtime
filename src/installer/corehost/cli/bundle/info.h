@@ -19,7 +19,8 @@ namespace bundle
     {
         struct config_t
         {
-            config_t() {}
+            config_t()
+            : m_location(nullptr) {}
 
             config_t(const config_t& config)
             {
@@ -44,13 +45,13 @@ namespace bundle
                        (the_app->m_deps_json.matches(path) || the_app->m_runtimeconfig_json.matches(path));
             }
 
-            static const int8_t* map(const pal::string_t& path, const location_t* &location);
+            static int8_t* map(const pal::string_t& path, const location_t* &location);
             static void unmap(const int8_t* addr, const location_t* location);
 
         private:
             pal::string_t m_path;
             const location_t *m_location;
-        } json_info;
+        };
 
         static StatusCode process_bundle(const pal::char_t* bundle_path, const pal::char_t *app_path, int64_t header_offset);
         static bool is_single_file_bundle() { return the_app != nullptr; }

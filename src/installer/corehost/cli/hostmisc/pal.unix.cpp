@@ -58,7 +58,7 @@ bool pal::touch_file(const pal::string_t& path)
     return true;
 }
 
-void* pal::mmap_read(const string_t& path, size_t* length)
+static void* map_file(const pal::string_t& path, size_t* length, int flags)
 {
     int fd = open(path.c_str(), O_RDONLY);
     if (fd == -1)
@@ -81,17 +81,26 @@ void* pal::mmap_read(const string_t& path, size_t* length)
         *length = size;
     }
 
-    void* address = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
+    void* address = mmap(nullptr, size, PROT_READ, flags, fd, 0);
 
-    if (address == nullptr)
+    if (address == MAP_FAILED)
     {
         trace::error(_X("Failed to map file. mmap(%s) failed with error %d"), path.c_str(), errno);
-        close(fd);
-        return nullptr;
+        address = nullptr;
     }
 
     close(fd);
     return address;
+}
+
+void* pal::mmap_read(const string_t& path, size_t* length)
+{
+    return mmap(path, length, MAP_SHARED);
+}
+
+void* pal::mmap_copy_on_write(const string_t& path, size_t* length)
+{
+    return mmap(path, length, MAP_PRIVATE);
 }
 
 bool pal::getcwd(pal::string_t* recv)
