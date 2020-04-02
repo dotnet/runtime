@@ -71,7 +71,7 @@ jobs:
             unpackFolder: $(Build.SourcesDirectory)/artifacts
             artifactName: $(librariesTestsArtifactName)
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
-          
+
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - script: $(_msbuildCommand) src/libraries/restore/runtime/runtime.depproj 
                     $(_runtimeArtifactsPathArg)
@@ -82,14 +82,15 @@ jobs:
                     /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
             displayName: Override $(runtimeFlavorName) from live drop
 
-          - script: $(_buildScript) -project src/libraries/pretest.proj 
+          - script: $(_buildScript) -projects $(Build.SourcesDirectory)/src/libraries/pretest.proj 
                     $(_runtimeArtifactsPathArg)
                     $(_runtimeOSArg)
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /p:TargetArchitecture=${{ parameters.archType }}
                     /p:Configuration=${{ parameters.buildConfig }}
+                    /p:SkipBuildProjects=true
                     /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/pretest.binlog
-            displayName: Override $(runtimeFlavorName) from live drop PreTest
+            displayName: Build PreTest to Generate Deps Json File
 
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
