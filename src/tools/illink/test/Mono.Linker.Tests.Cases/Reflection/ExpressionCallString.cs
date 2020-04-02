@@ -22,19 +22,60 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void Branch_SystemTypeValueNode_KnownStringValue ()
 		{
-			TestByName ();
+			TestByName (0);
+			TestByName (1);
+			TestByType (0);
+			TestByType (1);
 			TestByNameWithParameters ();
 			TestNonExistingName ();
 		}
 
 		[RecognizedReflectionAccessPattern (
 			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) },
-			typeof (ExpressionCallString), nameof (OnlyCalledViaExpression), new Type [0])]
+			typeof (ExpressionCallString), nameof (A), new Type [0])]
+		[RecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) },
+			typeof (ExpressionCallString), nameof (B), new Type [0])]
 		[Kept]
-		static void TestByName ()
+		static void TestByName (int i)
 		{
-			var expr = Expression.Call (typeof (ExpressionCallString), "OnlyCalledViaExpression", Type.EmptyTypes);
-			Console.WriteLine (expr.Method);
+			string MethodName = string.Empty;
+			switch (i) {
+				case 0:
+					MethodName = "A";
+					break;
+				case 1:
+					MethodName = "B";
+					break;
+				default:
+					break;
+			}
+
+			Expression.Call (typeof (ExpressionCallString), MethodName, Type.EmptyTypes);
+		}
+
+		[RecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) },
+			typeof (C), "Foo", new Type [0])]
+		[RecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) },
+			typeof (D), "Foo", new Type [0])]
+		[Kept]
+		static void TestByType (int i)
+		{
+			Type T = (Type)null;
+			switch (i) {
+				case 0:
+					T = typeof (C);
+					break;
+				case 1:
+					T = typeof (D);
+					break;
+				default:
+					break;
+			}
+
+			Expression.Call (T, "Foo", Type.EmptyTypes);
 		}
 
 		[RecognizedReflectionAccessPattern (
@@ -44,13 +85,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static void TestByNameWithParameters ()
 		{
 			IQueryable source = null;
-			var e2 = Expression.Call (typeof (ExpressionCallString), "Count", new Type [] { source.ElementType }, source.Expression);
+			Expression.Call (typeof (ExpressionCallString), "Count", new Type [] { source.ElementType }, source.Expression);
 		}
 
 		[Kept]
 		static void Branch_SystemTypeValueNode_NullValueNode ()
 		{
-			var expr = Expression.Call (typeof (ExpressionCallString), null, Type.EmptyTypes);
+			Expression.Call (typeof (ExpressionCallString), null, Type.EmptyTypes);
 		}
 
 		[UnrecognizedReflectionAccessPattern (
@@ -58,13 +99,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestNonExistingName ()
 		{
-			var expr = Expression.Call (typeof (ExpressionCallString), "NonExisting", Type.EmptyTypes);
+			Expression.Call (typeof (ExpressionCallString), "NonExisting", Type.EmptyTypes);
 		}
 
 		[Kept]
 		static void Branch_NullValueNode ()
 		{
-			var expr = Expression.Call ((Type)null, "OnlyCalledViaExpression", Type.EmptyTypes);
+			Expression.Call ((Type)null, "OnlyCalledViaExpression", Type.EmptyTypes);
 		}
 
 		[Kept]
@@ -78,7 +119,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void Branch_UnrecognizedPatterns ()
 		{
-			var expr = Expression.Call (FindType (), "OnlyCalledViaExpression", Type.EmptyTypes);
+			Expression.Call (FindType (), "OnlyCalledViaExpression", Type.EmptyTypes);
 		}
 
 		[Kept]
@@ -93,7 +134,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestNonExistingTypeParameter (Type T)
 		{
-			var expr = Expression.Call (T, "Foo", Type.EmptyTypes);
+			Expression.Call (T, "Foo", Type.EmptyTypes);
 		}
 
 		[UnrecognizedReflectionAccessPattern (
@@ -101,19 +142,27 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestNonExistingNameParameter (string s)
 		{
-			var expr = Expression.Call (typeof (ExpressionCallString), s, Type.EmptyTypes);
+			Expression.Call (typeof (ExpressionCallString), s, Type.EmptyTypes);
 		}
 
 		[Kept]
-		private static int OnlyCalledViaExpression ()
+		static void A () { }
+
+		[Kept]
+		static void B () { }
+
+		[Kept]
+		class C
 		{
-			return 42;
+			[Kept]
+			static void Foo () { }
 		}
 
 		[Kept]
-		private static int OnlyCalledViaExpression<T> (T arg)
+		class D
 		{
-			return 2;
+			[Kept]
+			static void Foo () { }
 		}
 
 		[Kept]

@@ -37,6 +37,32 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			private int TestName1 { [Kept] get; }
 
 			[Kept]
+			[KeptBackingField]
+			private int TestName2 { [Kept] get; }
+
+			private int TestName3 { get; }
+
+			private int TestName4 { get; }
+
+			private int TestName5 { get; }
+
+			[Kept]
+			class A
+			{
+				[Kept]
+				[KeptBackingField]
+				static int Foo { [Kept] get; }
+			}
+
+			[Kept]
+			class B
+			{
+				[Kept]
+				[KeptBackingField]
+				static int Foo { [Kept] get; }
+			}
+
+			[Kept]
 			private string UnknownString ()
 			{
 				return "unknownstring";
@@ -45,7 +71,46 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public void Branch_SystemTypeValueNode_KnownStringValue_NonStatic ()
 			{
-				var expr = Expression.Property (Expression.Parameter (typeof (int), "somename"), typeof (Foo), "TestName1");
+				TestPropertyName (0);
+				TestPropertyName (1);
+				TestType (0);
+				TestType (1);
+			}
+
+			[Kept]
+			static void TestPropertyName (int i)
+			{
+				string PropertyName = string.Empty;
+				switch (i) {
+					case 0:
+						PropertyName = "TestName1";
+						break;
+					case 1:
+						PropertyName = "TestName2";
+						break;
+					default:
+						break;
+				}
+
+				Expression.Property (Expression.Parameter (typeof (int), "somename"), typeof (Foo), PropertyName);
+			}
+
+			[Kept]
+			static void TestType (int i)
+			{
+				Type T = (Type)null;
+				switch (i) {
+					case 0:
+						T = typeof (A);
+						break;
+					case 1:
+						T = typeof (B);
+						break;
+					default:
+						break;
+				}
+
+				Expression.Property (null, T, "Foo");
 			}
 
 			[Kept]
@@ -68,7 +133,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public void Branch_NullValueNode ()
 			{
-				var expr = Expression.Property (null, UnknownString () == "unknownstring" ? null : typeof (Foo), "TestName1");
+				var expr = Expression.Property (null, (Type)null, "TestName3");
 			}
 
 			[UnrecognizedReflectionAccessPattern (
@@ -76,7 +141,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public void Branch_MethodParameterValueNode (Type T, string s)
 			{
-				var expr = Expression.Property (null, T, "TestName1");
+				var expr = Expression.Property (null, T, "TestName4");
 				expr = Expression.Property (null, typeof (Foo), s);
 			}
 
@@ -85,7 +150,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public void Branch_UnrecognizedPatterns ()
 			{
-				var expr = Expression.Property (null, Type.GetType ("Foo"), "TestName1");
+				var expr = Expression.Property (null, Type.GetType ("Foo"), "TestName5");
 			}
 		}
 	}

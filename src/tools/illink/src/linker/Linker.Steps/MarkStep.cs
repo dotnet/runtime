@@ -3484,6 +3484,7 @@ namespace Mono.Linker.Steps {
 						// static Call (Type, String, Type[], Expression[])
 						//
 						case "Call" when calledMethod.DeclaringType.Name == "Expression"
+							&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
 							&& calledMethod.Parameters.Count == 4
 							&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type": {
 
@@ -3498,7 +3499,7 @@ namespace Mono.Linker.Steps {
 												reflectionContext.RecordHandledPattern ();
 											} else if (stringParam is MethodParameterValue) {
 												// TODO: Check if parameter is annotated.
-												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
+												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
 											} else {
 												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
 											}
@@ -3520,6 +3521,7 @@ namespace Mono.Linker.Steps {
 						// static Property (Expression, Type, String)
 						//
 						case var fieldOrProperty when ((fieldOrProperty == "Field" || fieldOrProperty == "Property")
+							&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
 							&& calledMethod.DeclaringType.Name == "Expression"
 							&& calledMethod.Parameters.Count == 3
 							&& calledMethod.Parameters [1].ParameterType.FullName == "System.Type"): {
@@ -3528,7 +3530,6 @@ namespace Mono.Linker.Steps {
 
 								foreach (var value in methodParams [1].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
-										// systemTypeValue.TypeRepresented is `declaringType`
 										foreach (var stringParam in methodParams [2].UniqueValues ()) {
 											if (stringParam is KnownStringValue stringValue) {
 												bool staticOnly = methodParams [0].Kind == ValueNodeKind.Null;
@@ -3560,6 +3561,7 @@ namespace Mono.Linker.Steps {
 						// static New (Type)
 						//
 						case "New" when calledMethod.DeclaringType.Name == "Expression"
+							&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
 							&& calledMethod.Parameters.Count == 1
 							&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type": {
 
