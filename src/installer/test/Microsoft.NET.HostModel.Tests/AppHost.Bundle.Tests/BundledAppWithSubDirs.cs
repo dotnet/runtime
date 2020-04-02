@@ -103,9 +103,9 @@ namespace AppHost.Bundle.Tests
 
             public void Dispose()
             {
-                // TestFrameworkDependentFixture.Dispose();
-                // TestSelfContainedFixture.Dispose();
-                // TestAppWithEmptyFileFixture.Dispose();
+                TestFrameworkDependentFixture.Dispose();
+                TestSelfContainedFixture.Dispose();
+                TestAppWithEmptyFileFixture.Dispose();
             }
         }
     }
