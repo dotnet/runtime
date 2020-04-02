@@ -5,6 +5,21 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace Microsoft.DotNet.PlatformAbstractions
+{
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is System.HashCode.")]
+    public partial struct HashCodeCombiner
+    {
+        private int _dummyPrimitive;
+        public int CombinedHash { get { throw null; } }
+        public void Add(int i) { }
+        public void Add(object o) { }
+        public void Add(string s) { }
+        public void Add<TValue>(TValue value, System.Collections.Generic.IEqualityComparer<TValue> comparer) { }
+        public static Microsoft.DotNet.PlatformAbstractions.HashCodeCombiner Start() { throw null; }
+    }
+}
 namespace Microsoft.Extensions.DependencyModel
 {
     public partial class CompilationLibrary : Microsoft.Extensions.DependencyModel.Library
