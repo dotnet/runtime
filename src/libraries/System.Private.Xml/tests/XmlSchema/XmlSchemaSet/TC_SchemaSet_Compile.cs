@@ -952,5 +952,31 @@ namespace System.Xml.Tests
 
         }
         #endregion
+
+        [Fact]
+        public void InvalidAllMax_Throws()
+        {
+            string schema = @"<?xml version='1.0' encoding='utf-8' ?>
+<xs:schema elementFormDefault='qualified'
+           xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:complexType name='person'>
+        <xs:all maxOccurs='2'>
+            <xs:element name='firstname'/>
+            <xs:element name='lastname'/>
+        </xs:all>
+    </xs:complexType>
+</xs:schema>
+";
+            XmlReader xr;
+            xr = XmlReader.Create(new StringReader(schema));
+            XmlSchemaSet ss = new XmlSchemaSet();
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Add(null, xr));
+            Assert.Contains("all", ex.Message);
+
+            // Issue 30218: invalid formatters
+            Regex rx = new Regex(@"\{.*[a-zA-Z ]+.*\}");
+            Assert.Empty(rx.Matches(ex.Message));
+        }
     }
 }
