@@ -57,7 +57,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
 				PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
 
-				CreateAssemblyChecker (original, linked).Verify ();
+				if (!original.MainModule.GetType (linkResult.TestCase.ReconstructedFullTypeName).CustomAttributes
+					.Any (attr => attr.AttributeType.Name == nameof (SkipKeptItemsValidationAttribute))) {
+					CreateAssemblyChecker (original, linked).Verify ();
+				}
 
 				VerifyLinkingOfOtherAssemblies (original);
 
