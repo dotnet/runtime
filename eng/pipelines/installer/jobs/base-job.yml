@@ -127,6 +127,24 @@ jobs:
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
 
+  - ${{ if eq(parameters.osGroup, 'iOS') }}:
+
+    - name: CommonMSBuildArgs
+      value: >-
+        /p:PortableBuild=true
+        /p:SkipTests=$(SkipTests)
+
+    - name: BaseJobBuildCommand
+      value: >-
+        $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
+        -configuration $(_BuildConfig)
+        -os ${{ parameters.osGroup }}
+        -arch ${{ parameters.archType }}
+        /p:StripSymbols=true
+        $(LiveOverridePathArgs)
+        $(CommonMSBuildArgs)
+        $(OfficialBuildArg)
+
   - ${{ if eq(parameters.osGroup, 'Linux') }}:
 
     # Preserve the NuGet authentication env vars into the Docker container.
@@ -170,9 +188,6 @@ jobs:
     - name: _PortableBuild
       value: ${{ eq(parameters.osSubgroup, '') }}
 
-    - name: _DisableCrossgen
-      value: false
-
     - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
       # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)
@@ -185,7 +200,6 @@ jobs:
       value: >-
         --restore --build --ci --test
         /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
-        /p:DisableCrossgen=$(_DisableCrossgen)
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
         $(LiveOverridePathArgs)
