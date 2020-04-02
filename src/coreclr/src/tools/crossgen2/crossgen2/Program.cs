@@ -295,6 +295,7 @@ namespace ILCompiler
                         compilationGroup = new SingleMethodCompilationModuleGroup(
                             typeSystemContext,
                             _commandLineOptions.Composite,
+                            _commandLineOptions.InputBubble,
                             inputModules,
                             versionBubbleModules,
                             _commandLineOptions.CompileBubbleGenerics,
@@ -307,6 +308,7 @@ namespace ILCompiler
                         compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
                             typeSystemContext,
                             _commandLineOptions.Composite,
+                            _commandLineOptions.InputBubble,
                             inputModules,
                             versionBubbleModules,
                             _commandLineOptions.CompileBubbleGenerics);
