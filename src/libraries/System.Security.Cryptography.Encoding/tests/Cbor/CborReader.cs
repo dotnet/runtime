@@ -32,8 +32,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         DoublePrecisionFloat,
         SpecialValue,
         Finished,
-        FormatError,
-        EndOfData,
+
+        FormatError_IndefiniteStringWithInvalidDataItems,
+        FormatError_NoValueAfterTag,
+        FormatError_IncompleteCborMap,
+        FormatError_EndOfData,
+        FormatError_InvalidBreakByte,
     }
 
     internal partial class CborReader
@@ -81,7 +85,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (_buffer.IsEmpty)
             {
-                return CborReaderState.EndOfData;
+                return CborReaderState.FormatError_EndOfData;
             }
 
             var initialByte = new CborInitialByte(_buffer.Span[0]);
@@ -91,7 +95,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 if (_isTagContext)
                 {
                     // indefinite-length collection has ended without providing value for tag
-                    return CborReaderState.FormatError;
+                    return CborReaderState.FormatError_NoValueAfterTag;
                 }
 
                 if (_remainingDataItems == null)
@@ -104,14 +108,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         CborMajorType.ByteString => CborReaderState.EndByteString,
                         CborMajorType.TextString => CborReaderState.EndTextString,
                         CborMajorType.Array => CborReaderState.EndArray,
-                        CborMajorType.Map when !_isEvenNumberOfDataItemsRead => CborReaderState.FormatError,
+                        CborMajorType.Map when !_isEvenNumberOfDataItemsRead => CborReaderState.FormatError_IncompleteCborMap,
                         CborMajorType.Map => CborReaderState.EndMap,
                         _ => throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack."),
                     };
                 }
                 else
                 {
-                    return CborReaderState.FormatError;
+                    return CborReaderState.FormatError_InvalidBreakByte;
                 }
             }
 
@@ -129,7 +133,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         // indefinite length string contexts can only contain data items of same major type
                         if (initialByte.MajorType != parentType)
                         {
-                            return CborReaderState.FormatError;
+                            return CborReaderState.FormatError_IndefiniteStringWithInvalidDataItems;
                         }
 
                         break;
@@ -148,7 +152,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 CborMajorType.Map => CborReaderState.StartMap,
                 CborMajorType.Tag => CborReaderState.Tag,
                 CborMajorType.Special => MapSpecialValueTagToReaderState(initialByte.AdditionalInfo),
-                _ => CborReaderState.FormatError,
+                _ => throw new Exception("CborReader internal error. Invalid major type."),
             };
 
             static CborReaderState MapSpecialValueTagToReaderState (CborAdditionalInfo value)

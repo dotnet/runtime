@@ -532,7 +532,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             reader.ReadStartByteStringIndefiniteLength();
             reader.ReadByteString();
 
-            Assert.Equal(CborReaderState.FormatError, reader.Peek());
+            Assert.Equal(CborReaderState.FormatError_IndefiniteStringWithInvalidDataItems, reader.Peek());
             // throws FormatException even if it's the right major type we're trying to read
             Assert.Throws<FormatException>(() => reader.ReadInt64());
         }
@@ -546,7 +546,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             reader.ReadStartTextStringIndefiniteLength();
             reader.ReadTextString();
 
-            Assert.Equal(CborReaderState.FormatError, reader.Peek());
+            Assert.Equal(CborReaderState.FormatError_IndefiniteStringWithInvalidDataItems, reader.Peek());
             // throws FormatException even if it's the right major type we're trying to read
             Assert.Throws<FormatException>(() => reader.ReadInt64());
         }
