@@ -12,11 +12,11 @@ git pull upstream master & git push origin master
 build -subsetCategory coreclr-libraries -runtimeConfiguration Release
 :: The above you may only perform once in a day, or when you pull down significant new changes.
 
-:: Switch to working on a given library (RegularExpressions in this case)
-cd src\libraries\System.Text.RegularExpressions
-
 :: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
 build -vs System.Text.RegularExpressions
+
+:: Switch to working on a given library (RegularExpressions in this case)
+cd src\libraries\System.Text.RegularExpressions
 
 :: Change to test directory
 cd tests
