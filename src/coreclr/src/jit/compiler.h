@@ -8089,7 +8089,7 @@ private:
             assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
 
             // Verify and record that AVX2 isn't supported
-            compVerifyInstructionSetUnuseable(InstructionSet_AVX2); 
+            compVerifyInstructionSetUnuseable(InstructionSet_AVX2);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
