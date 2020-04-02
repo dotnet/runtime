@@ -359,7 +359,7 @@ Initialize(
         gPID = getpid();
         gSID = getsid(gPID);
 
-        // Initialize the TLS lookaside cache
+        // Initialize the thread local storage  
         if (FALSE == TLSInitialize())
         {
             palError = ERROR_PALINIT_TLS;
