@@ -185,6 +185,7 @@
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-tools-'))">
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj" />
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj" />
+    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\dotnet-pgo\dotnet-pgo.csproj" />
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\ReadyToRun.SuperIlc\ReadyToRun.SuperIlc.csproj" />
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\crossgen2\crossgen2\crossgen2.csproj" BuildInParallel="false" />
     <ProjectToBuild Include="@(CoreClrManagedToolsProjectToBuild)" />
