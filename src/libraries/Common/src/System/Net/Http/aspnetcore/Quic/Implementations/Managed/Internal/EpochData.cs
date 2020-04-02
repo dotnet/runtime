@@ -1,33 +1,10 @@
 #nullable enable
 
-using System.Collections.Generic;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
+using System.Runtime.CompilerServices;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
-    internal class CryptoStream
-    {
-        private int offset;
-        private List<byte[]> data = new List<byte[]>();
-        internal void Add(ReadOnlySpan<byte> data)
-        {
-            this.data.Add(data.ToArray());
-        }
-
-        internal (byte[] data, int streamOffset) GetDataToSend()
-        {
-            var data = this.data[0];
-            this.data.RemoveAt(0);
-
-            var streamOffset = offset;
-            offset += data.Length;
-
-            return (data, streamOffset);
-        }
-
-        internal bool HasDataToSend => data.Count > 0;
-    }
-
     /// <summary>
     ///     Class for aggregating all connection data for a single epoch.
     /// </summary>
@@ -41,7 +18,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Timestamp when packet with <see cref="LargestTransportedPacketNumber"/> was received.
         /// </summary>
-        internal ulong LargestTransportedPacketTimestamp { get; set; }
+        internal DateTime LargestTransportedPacketTimestamp { get; set; }
 
         /// <summary>
         ///     Number for the next packet to be send with.
@@ -49,9 +26,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal ulong NextPacketNumber { get; set; }
 
         /// <summary>
-        ///     All packet numbers received.
+        ///     Received packet numbers which an ack frame needs to be sent to the peer.
         /// </summary>
-        internal RangeSet ReceivedPacketNumbers { get; } = new RangeSet();
+        internal RangeSet UnackedPacketNumbers { get; } = new RangeSet();
+
+        /// <summary>
+        ///     Set of all received packet numbers.
+        /// </summary>
+        internal PacketNumberWindow ReceivedPacketNumbers { get; } = new PacketNumberWindow();
 
         /// <summary>
         ///     Flag that next time packets for sending are requested, an ack frame should be added, because an ack eliciting frame was received meanwhile.
@@ -73,6 +55,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// </summary>
         internal CryptoStream CryptoStream { get; set; } = new CryptoStream();
 
+        /// <summary>
+        ///     Gets packet number and it's minimum safe encoding length for the next packet sent.
+        /// </summary>
+        /// <returns>Truncated packet number and it's length.</returns>
         internal (uint truncatedPn, int pnLength) GetNextPacketNumber()
         {
             int pnLength = QuicPrimitives.GetPacketNumberByteCount(LargestTransportedPacketNumber, NextPacketNumber);
