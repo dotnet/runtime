@@ -25,7 +25,11 @@ namespace System.Reflection.Emit
         private List<int> _stack = new List<int>();
         private int _stackIdx;
 
-        public void OpenGenericArguments()
+        private TypeNameBuilder()
+        {
+        }
+
+        private void OpenGenericArguments()
         {
             _instNesting++;
             _firstInstArg = true;
@@ -36,7 +40,7 @@ namespace System.Reflection.Emit
                 Append('[');
         }
 
-        public void CloseGenericArguments()
+        private void CloseGenericArguments()
         {
             Debug.Assert(_instNesting != 0);
 
@@ -55,7 +59,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void OpenGenericArgument()
+        private void OpenGenericArgument()
         {
             Debug.Assert(_instNesting != 0);
 
@@ -74,7 +78,7 @@ namespace System.Reflection.Emit
             PushOpenGenericArgument();
         }
 
-        public void CloseGenericArgument()
+        private void CloseGenericArgument()
         {
             Debug.Assert(_instNesting != 0);
 
@@ -89,7 +93,7 @@ namespace System.Reflection.Emit
             PopOpenGenericArgument();
         }
 
-        public void AddName(string name)
+        private void AddName(string name)
         {
             Debug.Assert(name != null);
 
@@ -101,25 +105,9 @@ namespace System.Reflection.Emit
             EscapeName(name);
         }
 
-        public void AddPointer()
+        private void AddArray(int rank)
         {
-            Append('*');
-        }
-
-        public void AddByRef()
-        {
-            Append('&');
-        }
-
-        public void AddSzArray()
-        {
-            Append("[]");
-        }
-
-        public void AddArray(int rank)
-        {
-            if (rank <= 0)
-                throw new ArgumentOutOfRangeException();
+            Debug.Assert(rank > 0);
 
             if (rank == 1)
             {
@@ -139,7 +127,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void AddAssemblySpec(string assemblySpec)
+        private void AddAssemblySpec(string assemblySpec)
         {
             if (assemblySpec != null && !assemblySpec.Equals(""))
             {
@@ -219,18 +207,7 @@ namespace System.Reflection.Emit
 
         private void EscapeEmbeddedAssemblyName(string name)
         {
-            bool constainsReservedChar = name.Contains(']');
-
-            foreach (char c in name)
-            {
-                if (c == ']')
-                {
-                    containsReservedChar = true;
-                    break;
-                }
-            }
-
-            if (containsReservedChar)
+            if (name.Contains(']'))
             {
                 foreach (char c in name)
                 {
@@ -311,11 +288,11 @@ namespace System.Reflection.Emit
             AddElementType(type.GetElementType()!);
 
             if (type.IsPointer)
-                AddPointer();
+                Append('*');
             else if (type.IsByRef)
-                AddByRef();
+                Append('&');
             else if (type.IsSZArray)
-                AddSzArray();
+                Append("[]");
             else if (type.IsArray)
                 AddArray(type.GetArrayRank());
         }
