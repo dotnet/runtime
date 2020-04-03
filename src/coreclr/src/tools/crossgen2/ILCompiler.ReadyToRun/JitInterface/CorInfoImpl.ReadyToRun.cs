@@ -2061,7 +2061,7 @@ namespace Internal.JitInterface
                 }
 
                 // Valuetypes with non-versionable attribute are candidates for fixed layout. Reject the rest.
-                return type is MetadataType metadataType && metadataType.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
+                return type is MetadataType metadataType && metadataType.IsNonVersionable();
             }
 
             return true;

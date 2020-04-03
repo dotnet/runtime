@@ -44,6 +44,8 @@ namespace ILCompiler
 
         public string[] CodegenOptions { get; set; }
 
+        public bool CompositeOrInputBubble => Composite || InputBubble;
+
         public static Command RootCommand()
         {
             // For some reason, arity caps at 255 by default

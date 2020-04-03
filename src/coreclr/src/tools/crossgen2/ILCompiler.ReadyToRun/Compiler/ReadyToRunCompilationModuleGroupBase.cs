@@ -153,8 +153,7 @@ namespace ILCompiler
             // (because otherwise we may not be able to encode its tokens)
             // and if the callee is either in the same version bubble or is marked as non-versionable.
             bool canInline = VersionsWithMethodBody(callerMethod) &&
-                (VersionsWithMethodBody(calleeMethod) ||
-                    calleeMethod.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute"));
+                (VersionsWithMethodBody(calleeMethod) || calleeMethod.IsNonVersionable());
 
             return canInline;
         }
