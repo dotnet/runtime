@@ -37,11 +37,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     break;
 
                 case CborReaderState.ByteString:
-                    SkipByteString();
+                    SkipString(type: CborMajorType.ByteString);
                     break;
 
                 case CborReaderState.TextString:
-                    SkipTextString();
+                    SkipString(type: CborMajorType.TextString);
                     break;
 
                 case CborReaderState.StartByteString:
