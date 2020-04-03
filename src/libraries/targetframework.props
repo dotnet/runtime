@@ -37,7 +37,6 @@
     <When Condition="'$(TargetFrameworkSuffix)' == 'tvOS'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
-        <TargetsiOS>true</TargetsiOS>
         <TargetstvOS>true</TargetstvOS>
         <PackageTargetRuntime>tvos</PackageTargetRuntime>
       </PropertyGroup>
