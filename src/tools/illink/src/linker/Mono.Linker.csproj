@@ -2,17 +2,14 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Mono</RootNamespace>
-    <Configurations>Debug;Release</Configurations>
-    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoBuild)' == ''">
-    <AssemblyName>illink</AssemblyName>
-    <Description>IL Linker</Description>
     <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
-    <!-- Ensure that this netcore TFM matches that in LinkTask.cs's ILLinkPath. -->
-    <TargetFrameworks>netcoreapp3.0;net471</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <!-- Nuget issues a warning about missing <reference> items in the generated nuspec,
+         used for packages.config which we do not support. -->
+    <NoWarn>$(NoWarn);NU5131</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoBuild)' != ''">
@@ -20,7 +17,7 @@
     <AssemblyTitle>Mono.Linker</AssemblyTitle>
     <Description>Mono CIL Linker</Description>
     <Copyright>(C) 2006, Jb Evain</Copyright>
-    <TargetFrameworks>net471</TargetFrameworks>
+    <TargetFramework>net471</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -39,10 +36,6 @@
     <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" />
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\Mono.Cecil.csproj" />
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(MonoBuild)' == ''">
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="All" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(MonoBuild)' != ''">
