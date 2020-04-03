@@ -142,7 +142,8 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         string body = await response.Content.ReadAsStringAsync();
-                        Assert.Contains(proxyServer.ViaHeader, body);
+                        File.AppendAllText(logFilePath, body);
+                        Assert.Contains("proxyServer.ViaHeader", body);
                     }
                     File.AppendAllText (logFilePath, $"http_proxy: {Environment.GetEnvironmentVariable("http_proxy")}{Environment.NewLine}");
                 }
