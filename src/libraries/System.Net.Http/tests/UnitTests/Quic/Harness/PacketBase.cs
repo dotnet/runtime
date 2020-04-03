@@ -70,9 +70,9 @@ namespace System.Net.Quic.Tests.Harness
 
         protected void SerializePayloadWithFrames(QuicWriter writer, TestHarness context, IEnumerable<FrameBase> frames)
         {
-            var seal = context.GetRecvSeal(PacketType);
+            var seal = context.GetSenderEpoch(PacketType).SendCryptoSeal;
 
-            // TODO-RZ: This is copied from ManagedQuicConnection
+            // this more or less duplicates code inside ManagedQuicConnection
 
             int pnOffset = writer.BytesWritten;
 
@@ -93,13 +93,14 @@ namespace System.Net.Quic.Tests.Harness
                     writer.GetWritableSpan(paddingLength).Clear();
             }
 
+            // reserve space for AEAD integrity tag
+            writer.GetWritableSpan(seal.TagLength);
             int payloadLength = writer.BytesWritten - pnOffset;
 
             // fill in the payload length retrospectively
             if (PacketType != PacketType.OneRtt)
             {
-                // TODO-RZ: this is ugly
-                BinaryPrimitives.WriteUInt16BigEndian(payloadLengthSpan, (ushort)(payloadLength | 0x4000));
+                QuicPrimitives.WriteVarInt(payloadLengthSpan, (ulong) payloadLength, 2);
             }
 
             seal.EncryptPacket(writer.Buffer, pnOffset, payloadLength, (uint) PacketNumber);
@@ -107,6 +108,7 @@ namespace System.Net.Quic.Tests.Harness
 
         protected (int pnLength, ulong packetNumber) DeserializePayloadWithFrames(QuicReader reader, TestHarness harness, List<FrameBase> frames, PacketType packetType, int payloadLength)
         {
+            // this more or less duplicates code inside ManagedQuicConnection
             int pnOffset = reader.BytesRead;
 
             // first, strip packet protection.

@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
+using System.Numerics;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
@@ -11,15 +13,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
     internal static class QuicPrimitives
     {
-        internal static int WriteVarInt(Span<byte> destination, ulong value)
+        private static bool TryWriteVarInt(Span<byte> destination, ulong value, int length)
         {
-            int log = GetVarIntLengthLogarithm(value);
-            int bytes = 1 << log;
+            Debug.Assert(GetVarIntLength(value) <= (uint) length && length > 0);
 
-            // prefix with log length
-            value |= (ulong) log << (bytes * 8 - 2);
+            int log = BitOperations.Log2((uint) length);
 
-            switch (bytes)
+            value |= (ulong)log << (length * 8 - 2);
+
+            if (destination.Length < length)
+            {
+                return false;
+            }
+
+            switch (length)
             {
                 case 1:
                     destination[0] = (byte)value;
@@ -37,7 +44,27 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     throw new InvalidOperationException("Unreachable");
             }
 
-            return bytes;
+            return true;
+        }
+
+        internal static void WriteVarInt(Span<byte> destination, ulong value, int length)
+        {
+            if (!TryWriteVarInt(destination, value, length))
+            {
+                throw new InvalidOperationException("Buffer too small");
+            }
+        }
+
+        internal static int WriteVarInt(Span<byte> destination, ulong value)
+        {
+            int length = GetVarIntLength(value);
+
+            if (TryWriteVarInt(destination, value, length))
+            {
+                return length;
+            }
+
+            return 0;
         }
 
         internal static int ReadVarInt(ReadOnlySpan<byte> source, out ulong result)

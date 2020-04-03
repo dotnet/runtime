@@ -386,8 +386,7 @@ namespace System.Net.Quic.Implementations.Managed
             // fill in the payload length retrospectively
             if (packetType != PacketType.OneRtt)
             {
-                // TODO-RZ: this is ugly
-                BinaryPrimitives.WriteUInt16BigEndian(payloadLengthSpan, (ushort)(payloadLength | 0x4000));
+                QuicPrimitives.WriteVarInt(payloadLengthSpan, (ulong) payloadLength, 2);
             }
 
             seal.EncryptPacket(writer.Buffer, pnOffset, payloadLength, truncatedPn);
