@@ -6646,6 +6646,11 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         if (executionState.m_ppvRetAddrPtr == NULL)
             return;
 
+        void *pvHijackAddr;
+        if (!GetReturnAddressHijackInfo(pThread, &codeInfo, &pvHijackAddr))
+        {
+            return;
+        }
 
         // Calling this turns off the GC_TRIGGERS/THROWS/INJECT_FAULT contract in LoadTypeHandle.
         // We should not trigger any loads for unresolved types.
@@ -6656,7 +6661,6 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
-        void *pvHijackAddr = GetHijackAddr(pThread, &codeInfo);
         pThread->HijackThread(pvHijackAddr, &executionState);
     }
 }
