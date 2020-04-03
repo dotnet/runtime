@@ -411,7 +411,7 @@ jobs:
     - Android_x86
     - Android_arm
     - Android_arm64
-    - iOS_arm
+    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_arm64
     - iOS_x64
     jobParameters:
@@ -427,7 +427,7 @@ jobs:
     - Android_x86
     - Android_arm
     - Android_arm64
-    - iOS_arm
+    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_arm64
     - iOS_x64
     jobParameters:
@@ -524,7 +524,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
       - iOS_x64
-      - iOS_arm
+      # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
       - iOS_arm64
     jobParameters:
       liveRuntimeBuildConfig: release
