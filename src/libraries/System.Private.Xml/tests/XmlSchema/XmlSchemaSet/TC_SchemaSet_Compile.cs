@@ -1038,5 +1038,52 @@ namespace System.Xml.Tests
             Assert.Contains("substitutionGroup", ex.Message);
             Assert.Contains("person", ex.Message);
         }
+
+        [Fact]
+        public void GroupBaseRestNotEmptiable_Throws()
+        {
+            string schema = @"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:simpleType name='component'>
+        <xs:restriction base='xs:integer'>
+            <xs:minInclusive value='0'/>
+            <xs:maxInclusive value='255'/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name='alienColor'>
+        <xs:sequence>
+            <xs:element name='red' type='component' minOccurs='1' maxOccurs='1'/>
+            <xs:element name='green' type='component' minOccurs='1' maxOccurs='1'/>
+            <xs:element name='blue' type='component' minOccurs='1' maxOccurs='1'/>
+            <xs:element name='ultraviolet' type='component' minOccurs='1' maxOccurs='1'/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name='humanColor'>
+        <xs:complexContent>
+            <xs:restriction base='alienColor'>
+                <xs:sequence>
+                    <xs:element name='red' type='component' minOccurs='1' maxOccurs='1'/>
+                    <xs:element name='green' type='component' minOccurs='1' maxOccurs='1'/>
+                    <xs:element name='blue' type='component' minOccurs='1' maxOccurs='1'/>
+                </xs:sequence>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>
+";
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+
+            // Issue 30218: invalid formatters
+            Regex rx = new Regex(@"\{[a-zA-Z ]+[^\}]*\}");
+            Assert.Empty(rx.Matches(ex.Message));
+
+            Assert.Contains("particle", ex.Message);
+        }
     }
 }
