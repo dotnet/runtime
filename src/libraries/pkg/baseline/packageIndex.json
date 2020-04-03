@@ -1376,6 +1376,15 @@
       "BaselineVersion": "1.6.1",
       "InboxOn": {}
     },
+    "Newtonsoft.Json": {
+      "StableVersions": [
+        "9.0.1"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "9.0.0.0": "9.0.1"
+      }
+    },
     "PresentationBuildTasks": {
       "InboxOn": {
         "net45": "4.0.0.0"
