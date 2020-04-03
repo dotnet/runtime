@@ -106,7 +106,7 @@ inline void FATAL_GC_ERROR()
 
 #define CARD_BUNDLE         //enable card bundle feature.(requires WRITE_WATCH)
 
-#define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
+// #define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
 
 // If this is defined we use a map for segments in order to find the heap for
 // a segment fast. But it does use more memory as we have to cover the whole
@@ -664,10 +664,11 @@ typedef DPTR(class CFinalize)                  PTR_CFinalize;
 #endif // FEATURE_PREMORTEM_FINALIZATION
 
 //-------------------------------------
-//generation free list. It is an array of free lists bucketed by size, starting at sizes lower than first_bucket_size
+//generation free list. It is an array of free lists bucketed by size, starting at sizes lower than (1 << first_bucket_bits)
 //and doubling each time. The last bucket (index == num_buckets) is for largest sizes with no limit
 
-#define MAX_BUCKET_COUNT (13)//Max number of buckets for the small generations.
+#define MAX_SOH_BUCKET_COUNT (13)//Max number of buckets for the SOH generations.
+#define MAX_BUCKET_COUNT (20)//Max number of buckets.
 class alloc_list
 {
     uint8_t* head;
@@ -693,32 +694,62 @@ public:
 
 class allocator
 {
-    size_t num_buckets;
-    size_t frst_bucket_size;
+    int first_bucket_bits;
+    unsigned int num_buckets;
     alloc_list first_bucket;
     alloc_list* buckets;
     alloc_list& alloc_list_of (unsigned int bn);
     size_t& alloc_list_damage_count_of (unsigned int bn);
 
 public:
-    allocator (unsigned int num_b, size_t fbs, alloc_list* b);
+    allocator (unsigned int num_b, int fbb, alloc_list* b);
+
     allocator()
     {
         num_buckets = 1;
-        frst_bucket_size = SIZE_T_MAX;
+        first_bucket_bits = sizeof(size_t) * 8 - 1;
     }
-    unsigned int number_of_buckets() {return (unsigned int)num_buckets;}
 
-    size_t first_bucket_size() {return frst_bucket_size;}
+    unsigned int number_of_buckets()
+    {
+        return num_buckets;
+    }
+
+    // skip buckets that cannot possibly fit "size" and return the next one
+    // there is always such bucket since the last one fits everything
+    unsigned int first_suitable_bucket(size_t size)
+    {
+        // sizes taking first_bucket_bits or less are mapped to bucket 0
+        // others are mapped to buckets 0, 1, 2 respectively
+        size = (size >> first_bucket_bits) | 1;
+
+        DWORD highest_set_bit_index;
+    #ifdef HOST_64BIT
+        BitScanReverse64(&highest_set_bit_index, size);
+    #else
+        BitScanReverse(&highest_set_bit_index, size);
+    #endif
+
+        return min ((unsigned int)highest_set_bit_index, num_buckets - 1);
+    }
+
+    size_t first_bucket_size()
+    {
+        return ((size_t)1 << (first_bucket_bits + 1));
+    }
+
     uint8_t*& alloc_list_head_of (unsigned int bn)
     {
         return alloc_list_of (bn).alloc_list_head();
     }
+
     uint8_t*& alloc_list_tail_of (unsigned int bn)
     {
         return alloc_list_of (bn).alloc_list_tail();
     }
+
     void clear();
+
     BOOL discard_if_no_fit_p()
     {
         return (num_buckets == 1);
@@ -749,7 +780,6 @@ public:
     void unlink_item (unsigned int bucket_number, uint8_t* item, uint8_t* previous_item, BOOL use_undo_p);
     void thread_item (uint8_t* item, size_t size);
     void thread_item_front (uint8_t* itme, size_t size);
-    void thread_free_item (uint8_t* free_item, uint8_t*& head, uint8_t*& tail);
     void copy_to_alloc_list (alloc_list* toalist);
     void copy_from_alloc_list (alloc_list* fromalist);
     void commit_alloc_list_changes();
@@ -3982,26 +4012,27 @@ protected:
 #endif //SYNCHRONIZATION_STATS
 
 #define NUM_LOH_ALIST (7)
-#define BASE_LOH_ALIST (64*1024)
+    // bucket 0 contains sizes less than 64*1024
+    // the "BITS" number here is the highest bit in 64*1024 - 1, zero-based as in BitScanReverse.
+    // see first_suitable_bucket(size_t size) for details.
+#define BASE_LOH_ALIST_BITS (15)
     PER_HEAP
     alloc_list loh_alloc_list[NUM_LOH_ALIST-1];
 
 #define NUM_GEN2_ALIST (12)
 #ifdef HOST_64BIT
-#define BASE_GEN2_ALIST (1*256)
+    // bucket 0 contains sizes less than 256
+#define BASE_GEN2_ALIST_BITS (7)
 #else
-#define BASE_GEN2_ALIST (1*128)
+    // bucket 0 contains sizes less than 128
+#define BASE_GEN2_ALIST_BITS (6)
 #endif // HOST_64BIT
     PER_HEAP
     alloc_list gen2_alloc_list[NUM_GEN2_ALIST-1];
 
-// TODO: tuning https://github.com/dotnet/runtime/issues/13739
-#define NUM_POH_ALIST (12)
-#ifdef BIT64
-#define BASE_POH_ALIST (1*256)
-#else
-#define BASE_POH_ALIST (1*128)
-#endif // BIT64
+#define NUM_POH_ALIST (19)
+    // bucket 0 contains sizes less than 256
+#define BASE_POH_ALIST_BITS (7)
     PER_HEAP
     alloc_list poh_alloc_list[NUM_POH_ALIST-1];
 

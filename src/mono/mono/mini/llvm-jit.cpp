@@ -33,7 +33,12 @@
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/Transforms/Scalar.h"
+
+#if LLVM_API_VERSION >= 800
+#include "llvm/CodeGen/BuiltinGCs.h"
+#else
 #include "llvm/CodeGen/GCs.h"
+#endif
 
 #include <cstdlib>
 
@@ -48,6 +53,17 @@ extern cl::opt<std::string> MonoEHFrameSymbol;
 void
 mono_llvm_set_unhandled_exception_handler (void)
 {
+}
+
+// noop function that merely ensures that certain symbols are not eliminated
+// from the resulting binary.
+static void
+link_gc () {
+#if LLVM_API_VERSION >= 800
+	llvm::linkAllBuiltinGCs();
+#else
+	llvm::linkCoreCLRGC(); // Mono uses built-in "coreclr" GCStrategy
+#endif
 }
 
 template <typename T>
@@ -304,7 +320,6 @@ public:
 		initializeInstCombine(registry);
 		initializeTarget(registry);
 		initializeLoopIdiomRecognizeLegacyPassPass(registry);
-		linkCoreCLRGC(); // Mono uses built-in "coreclr" GCStrategy
 
 		// FIXME: find optimal mono specific order of passes
 		// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
@@ -445,6 +460,8 @@ mono_llvm_jit_init ()
 {
 	if (jit != nullptr) return;
 
+	link_gc ();
+
 	mono_native_tls_alloc (&current_cfg_tls_id, NULL);
 
 	InitializeNativeTarget ();
@@ -465,8 +482,21 @@ mono_llvm_jit_init ()
 		EB.setTargetOptions (opts);
 	}
 
-	EB.setOptLevel(CodeGenOpt::Aggressive);
-	EB.setMCPU(sys::getHostCPUName());
+	EB.setOptLevel (CodeGenOpt::Aggressive);
+	EB.setMCPU (sys::getHostCPUName ());
+
+#ifdef TARGET_AMD64
+	EB.setMArch ("x86-64");
+#elif TARGET_X86
+	EB.setMArch ("x86");
+#elif TARGET_ARM64
+	EB.setMArch ("aarch64");
+#elif TARGET_ARM
+	EB.setMArch ("arm");
+#else
+	g_assert_not_reached ();
+#endif
+
 	auto TM = EB.selectTarget ();
 	assert (TM);
 

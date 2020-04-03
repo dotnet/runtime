@@ -91,7 +91,9 @@ endif ()
 
 if(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DTARGET_ANDROID)
-    include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
+    if(CROSS_ROOTFS)
+        include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
+    endif()
 endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
@@ -147,7 +149,6 @@ endif ()
 
 if(CLR_CMAKE_TARGET_FREEBSD)
     add_definitions(-D_BSD_SOURCE) # required for getline
-    add_link_options(-fuse-ld=lld)
 endif(CLR_CMAKE_TARGET_FREEBSD)
 
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
@@ -173,12 +174,6 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_definitions(-DTARGET_UNIX)
 endif(CLR_CMAKE_TARGET_UNIX)
 
-function(install_library_and_symbols targetName)
-    install_symbols(${targetName} .)
-    set(install_source_file $<TARGET_FILE:${targetName}>)
-    install(PROGRAMS ${install_source_file} DESTINATION .)
-endfunction()
-
 include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
@@ -195,17 +190,21 @@ endif()
 
 add_subdirectory(System.Native)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    # skip for now
+elseif(CLR_CMAKE_TARGET_IOS)
     add_subdirectory(System.Net.Security.Native)
-
-if (NOT CLR_CMAKE_TARGET_IOS)
-    # TODO: reenable for iOS
+    #add_subdirectory(System.Globalization.Native) # TODO: reenable
+    # System.Security.Cryptography.Native is intentionally disabled on iOS
+    # it is only used for interacting with OpenSSL which isn't useful there
+elseif(CLR_CMAKE_TARGET_ANDROID AND NOT CROSS_ROOTFS)
     add_subdirectory(System.Globalization.Native)
-
-    # disable System.Security.Cryptography.Native build on iOS,
-    # only used for interacting with OpenSSL which isn't useful there
+    #add_subdirectory(System.Net.Security.Native) # TODO: reenable
+    #add_subdirectory(System.Security.Cryptography.Native) # TODO: reenable
+else()
+    add_subdirectory(System.Globalization.Native)
+    add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
-endif()
 endif()
 
 if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)

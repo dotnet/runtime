@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Http
         {
             if (PrimaryHandler == null)
             {
-                var message = Resources.FormatHttpMessageHandlerBuilder_PrimaryHandlerIsNull(nameof(PrimaryHandler));
+                var message = SR.Format(SR.HttpMessageHandlerBuilder_PrimaryHandlerIsNull, nameof(PrimaryHandler));
                 throw new InvalidOperationException(message);
             }
             

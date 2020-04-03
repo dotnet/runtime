@@ -930,6 +930,9 @@ public:
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                    bool fMustConvert);
 
+    void notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, 
+                                   bool supportEnabled);
+
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
                                CORINFO_CONST_LOOKUP *  pResult,             /* OUT */
                                CORINFO_ACCESS_FLAGS    accessFlags = CORINFO_ACCESS_ANY);
@@ -1034,9 +1037,6 @@ public:
     int doAssert(const char* szFile, int iLine, const char* szExpr);
 
     void reportFatalError(CorJitResult result);
-
-    void logSQMLongJitEvent(unsigned mcycles, unsigned msec, unsigned ilSize, unsigned numBasicBlocks, bool minOpts,
-                            CORINFO_METHOD_HANDLE methodHnd);
 
     HRESULT allocMethodBlockCounts (
             UINT32                count,           // the count of <ILOffset, ExecutionCount> tuples

@@ -58,16 +58,16 @@
   <String Id="FilesInUseDontCloseRadioButton">&amp;Ne pas fermer les applications. Un redémarrage sera nécessaire.</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Annuler</String>
-  <String Id="WelcomeHeaderMessage">Runtime .NET Core</String>
-  <String Id="WelcomeDescription">.NET Core est une plateforme de développement qui vous permet de générer des applications en ligne de commande, des microservices et des sites web modernes. Il s'agit d'un framework open source, multiplateforme et pris en charge par Microsoft. Nous espérons que vous l'apprécierez !</String>
-  <String Id="LearnMoreTitle">En savoir plus sur .NET Core</String>
+  <String Id="WelcomeHeaderMessage">Runtime .NET</String>
+  <String Id="WelcomeDescription">.NET est une plateforme de développement qui vous permet de générer des applications en ligne de commande, des microservices et des sites web modernes. Il s'agit d'un framework open source, multiplateforme et pris en charge par Microsoft. Nous espérons que vous l'apprécierez !</String>
+  <String Id="LearnMoreTitle">En savoir plus sur .NET</String>
   <String Id="SuccessInstallLocation">L'élément suivant a été installé sur [DOTNETHOME]</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
   <String Id="ResourcesHeader">Ressources</String>
   <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;Documentation&lt;/A&gt;</String>
   <String Id="RelaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;Notes de publication&lt;/A&gt;</String>
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Tutoriels&lt;/A&gt;</String>
-  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Télémétrie .NET Core&lt;/A&gt;</String>
+  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Télémétrie .NET&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Déclaration de confidentialité&lt;/A&gt;</String>
   <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;CLUF de la bibliothèque .NET&lt;/A&gt;</String>
   

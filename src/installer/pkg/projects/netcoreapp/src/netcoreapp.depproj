@@ -57,15 +57,24 @@
 
   <Target Name="GetDependencyVersionFiles" />
 
-  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
+  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
     <ItemGroup>
-      <CoreCLRFiles>
+      <RuntimeFiles>
         <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
-      </CoreCLRFiles>
+      </RuntimeFiles>
 
-      <CoreCLRFiles Condition="'%(FileName)' == 'crossgen'">
+      <RuntimeFiles Condition="'%(FileName)' == 'crossgen'">
         <TargetPath>tools</TargetPath>
-      </CoreCLRFiles>
+      </RuntimeFiles>
+
+      <RuntimeFiles Condition="'$(TargetOS)' == 'iOS'"
+        Include="@(MonoCrossFiles)">
+        <TargetPath>runtimes/$(PackageRID)/native/cross</TargetPath>
+      </RuntimeFiles>
+      <RuntimeFiles Condition="'$(TargetOS)' == 'iOS'"
+        Include="@(MonoIncludeFiles)">
+        <TargetPath>runtimes/$(PackageRID)/native/include/%(RecursiveDir)</TargetPath>
+      </RuntimeFiles>
 
       <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
         <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
@@ -79,7 +88,7 @@
       <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
       </CoreCLRCrossTargetFiles>
-      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles);@(CoreCLRCrossTargetFiles)" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles);@(CoreCLRCrossTargetFiles);" />
     </ItemGroup>
   </Target>
 

@@ -60,7 +60,7 @@ bool pal::touch_file(const pal::string_t& path)
 
 void* pal::map_file_readonly(const pal::string_t& path, size_t& length)
 {
-    int fd = open(path.c_str(), O_RDONLY, (S_IRUSR | S_IRGRP | S_IROTH));
+    int fd = open(path.c_str(), O_RDONLY);
     if (fd == -1)
     {
         trace::error(_X("Failed to map file. open(%s) failed with error %d"), path.c_str(), errno);

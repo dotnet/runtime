@@ -19,7 +19,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new DateTimeFormatInfo(), englishMonthNames };
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, englishMonthNames };
 
-            if (!PlatformDetection.IsUbuntu || PlatformDetection.IsUbuntu1404)
+            if (!PlatformDetection.IsUbuntu)
             {
                 yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, new string[] { "", "janvier", "f\u00E9vrier", "mars", "avril", "mai", "juin", "juillet", "ao\u00FBt", "septembre", "octobre", "novembre", "d\u00E9cembre", "" } };
             }

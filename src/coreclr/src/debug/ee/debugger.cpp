@@ -16506,19 +16506,14 @@ void* DebuggerHeapExecutableMemoryAllocator::Allocate(DWORD numberOfBytes)
     return ChangePageUsage(pageToAllocateOn, chunkToUse, ChangePageUsageAction::ALLOCATE);
 }
 
-int DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
+void DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
 {
     ASSERT(addr != NULL);
 
     CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);
 
     DebuggerHeapExecutableMemoryPage *pageToFreeIn = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->data.startOfPage;
-
-    if (pageToFreeIn == NULL)
-    {
-        ASSERT(!"Couldn't locate page in which to free!");
-        return -1;
-    }
+    _ASSERTE(pageToFreeIn != NULL);
 
     int chunkNum = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->data.chunkNumber;
 
@@ -16526,8 +16521,6 @@ int DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
     ASSERT(((uint64_t)addr - (uint64_t)pageToFreeIn) % 64 == 0);
 
     ChangePageUsage(pageToFreeIn, chunkNum, ChangePageUsageAction::FREE);
-
-    return 0;
 }
 
 DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewPage()
@@ -16620,7 +16613,7 @@ void DebuggerHeap::Destroy()
         m_hHeap = NULL;
     }
 #endif
-#ifdef TARGET_UNIX
+#ifndef HOST_WINDOWS
     if (m_execMemAllocator != NULL)
     {
         delete m_execMemAllocator;
@@ -16660,10 +16653,6 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
         return S_OK;
     }
 
-#ifndef HEAP_CREATE_ENABLE_EXECUTE
-#define HEAP_CREATE_ENABLE_EXECUTE      0x00040000      // winnt create heap with executable pages
-#endif
-
     // Create a standard, grow-able, thread-safe heap.
     DWORD dwFlags = ((fExecutable == TRUE)? HEAP_CREATE_ENABLE_EXECUTE : 0);
     m_hHeap = ::HeapCreate(dwFlags, 0, 0);
@@ -16673,7 +16662,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
     }
 #endif
 
-#ifdef TARGET_UNIX
+#ifndef HOST_WINDOWS
     m_execMemAllocator = new (nothrow) DebuggerHeapExecutableMemoryAllocator();
     ASSERT(m_execMemAllocator != NULL);
     if (m_execMemAllocator == NULL)
@@ -16763,32 +16752,25 @@ void *DebuggerHeap::Alloc(DWORD size)
     ret = ::HeapAlloc(m_hHeap, HEAP_ZERO_MEMORY, size);
 #else // USE_INTEROPSAFE_HEAP
 
-    bool allocateOnHeap = true;
-    HANDLE hExecutableHeap = NULL;
+#ifdef HOST_WINDOWS
+    HANDLE hExecutableHeap  = ClrGetProcessExecutableHeap();
 
-#ifdef TARGET_UNIX
+    if (hExecutableHeap == NULL)
+    {
+        return NULL;
+    }
+
+    ret = ::HeapAlloc(hExecutableHeap, 0, size);
+#else // HOST_WINDOWS
     if (m_fExecutable)
     {
-        allocateOnHeap = false;
         ret = m_execMemAllocator->Allocate(size);
     }
     else
     {
-        hExecutableHeap  = ClrGetProcessHeap();
+        ret = malloc(size);
     }
-#else // TARGET_UNIX
-    hExecutableHeap  = ClrGetProcessExecutableHeap();
-#endif
-
-    if (allocateOnHeap)
-    {
-        if (hExecutableHeap == NULL)
-        {
-            return NULL;
-        }
-
-        ret = ClrHeapAlloc(hExecutableHeap, NULL, S_SIZE_T(size));
-    }
+#endif // HOST_WINDOWS
 
 #endif // USE_INTEROPSAFE_HEAP
 
@@ -16819,7 +16801,7 @@ void *DebuggerHeap::Realloc(void *pMem, DWORD newSize, DWORD oldSize)
     _ASSERTE(newSize != 0);
     _ASSERTE(oldSize != 0);
 
-#if defined(USE_INTEROPSAFE_HEAP) && !defined(USE_INTEROPSAFE_CANARY) && !defined(TARGET_UNIX)
+#if defined(USE_INTEROPSAFE_HEAP) && !defined(USE_INTEROPSAFE_CANARY) && defined(HOST_WINDOWS)
     // No canaries in this case.
     // Call into realloc.
     void *ret;
@@ -16872,23 +16854,20 @@ void DebuggerHeap::Free(void *pMem)
 #else
     if (pMem != NULL)
     {
-#ifndef TARGET_UNIX
+#ifdef HOST_WINDOWS
         HANDLE hProcessExecutableHeap  = ClrGetProcessExecutableHeap();
         _ASSERTE(hProcessExecutableHeap != NULL);
-        ClrHeapFree(hProcessExecutableHeap, NULL, pMem);
-#else // !TARGET_UNIX
-        if(!m_fExecutable)
+        ::HeapFree(hProcessExecutableHeap, NULL, pMem);
+#else // HOST_WINDOWS
+        if (m_fExecutable)
         {
-            HANDLE hProcessHeap  = ClrGetProcessHeap();
-            _ASSERTE(hProcessHeap != NULL);
-            ClrHeapFree(hProcessHeap, NULL, pMem);
+            m_execMemAllocator->Free(pMem);
         }
         else
         {
-            INDEBUG(int ret =) m_execMemAllocator->Free(pMem);
-            _ASSERTE(ret == 0);
+            free(pMem);
         }
-#endif // !TARGET_UNIX
+#endif // HOST_WINDOWS
     }
 #endif
 }

@@ -63,7 +63,54 @@ static int FindICULibs()
     return TRUE;
 }
 
-#else // !TARGET_WINDOWS && !TARGET_OSX
+#elif defined(TARGET_ANDROID)
+
+// support ICU versions from 50-255
+#define MinICUVersion 50
+#define MaxICUVersion 255
+#define MaxICUVersionStringLength 4
+
+static int FindSymbolVersion(char* symbolName, char* symbolVersion)
+{
+    for (int i = MinICUVersion; i <= MaxICUVersion; i++)
+    {
+        sprintf(symbolVersion, "_%d", i);
+        sprintf(symbolName, "u_strlen%s", symbolVersion);
+        if (dlsym(libicuuc, symbolName) != NULL)
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+static int FindICULibs(char* symbolName, char* symbolVersion)
+{
+    libicui18n = dlopen("libicui18n.so", RTLD_LAZY);
+
+    if (libicui18n == NULL)
+    {
+        return FALSE;
+    }
+
+    libicuuc = dlopen("libicuuc.so", RTLD_LAZY);
+
+    if (libicuuc == NULL)
+    {
+        return FALSE;
+    }
+
+    if (!FindSymbolVersion(symbolName, symbolVersion))
+    {
+        fprintf(stderr, "Cannot determine ICU version.");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+#else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID
 
 #define VERSION_PREFIX_NONE ""
 #define VERSION_PREFIX_SUSE "suse"
@@ -74,12 +121,12 @@ static int FindICULibs()
 // Version ranges to search for each of the three version components
 // The rationale for major version range is that we support versions higher or
 // equal to the version we are built against and less or equal to that version
-// plus 20 to give us enough headspace. The ICU seems to version about twice
+// plus 30 to give us enough headspace. The ICU seems to version about twice
 // a year.
 // On some platforms (mainly Alpine Linux) we want to make our minimum version
 // an earlier version than what we build that we know we support.
 #define MinICUVersion  50
-#define MaxICUVersion  (U_ICU_VERSION_MAJOR_NUM + 20)
+#define MaxICUVersion  (U_ICU_VERSION_MAJOR_NUM + 30)
 #define MinMinorICUVersion  1
 #define MaxMinorICUVersion  5
 #define MinSubICUVersion 1
@@ -197,14 +244,8 @@ static int FindLibWithMajorVersion(const char* versionPrefix, char* symbolName, 
     // ICU packaging documentation (http://userguide.icu-project.org/packaging)
     // describes applications link against the major (e.g. libicuuc.so.54).
 
-    // Select the version of ICU present at build time.
-    if (OpenICULibraries(MinICUVersion, -1, -1, versionPrefix, symbolName, symbolVersion))
-    {
-        return TRUE;
-    }
-
     // Select the highest supported version of ICU present on the local machine
-    for (int i = MaxICUVersion; i > MinICUVersion; i--)
+    for (int i = MaxICUVersion; i >= MinICUVersion; i--)
     {
         if (OpenICULibraries(i, -1, -1, versionPrefix, symbolName, symbolVersion))
         {
@@ -299,6 +340,12 @@ int32_t GlobalizationNative_LoadICU()
     char symbolName[128];
     char symbolVersion[MaxICUVersionStringLength + 1] = "";
 
+#if defined(TARGET_ANDROID)
+    if (!FindICULibs(symbolName, symbolVersion))
+    {
+        return FALSE;
+    }
+#else
     if (!FindICULibs(VERSION_PREFIX_NONE, symbolName, symbolVersion))
     {
         if (!FindICULibs(VERSION_PREFIX_SUSE, symbolName, symbolVersion))
@@ -306,6 +353,7 @@ int32_t GlobalizationNative_LoadICU()
             return FALSE;
         }
     }
+#endif
 
     // Get pointers to all the ICU functions that are needed
 #define PER_FUNCTION_BLOCK(fn, lib) \

@@ -8,14 +8,14 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public class ConstructorTests_StringTValue : ConstructorTests
+    public class ConstructorTests_String : ConstructorTests
     {
-        public ConstructorTests_StringTValue() : base(DeserializationWrapper.StringTValueSerializer) { }
+        public ConstructorTests_String() : base(DeserializationWrapper.StringDeserializer) { }
     }
 
-    public class ConstructorTests_StreamTValue : ConstructorTests
+    public class ConstructorTests_Stream : ConstructorTests
     {
-        public ConstructorTests_StreamTValue() : base(DeserializationWrapper.StreamTValueSerializer) { }
+        public ConstructorTests_Stream() : base(DeserializationWrapper.StreamDeserializer) { }
     }
 
     public abstract partial class ConstructorTests
@@ -301,7 +301,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => Serializer.Deserialize<ClassWrapper_For_Int_Point_3D_String>(@"{""MyPoint3DStruct"":null,""MyString"":""1""}"));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33928")]
         [Fact]
         public void OtherPropertiesAreSet()
         {
@@ -340,20 +339,19 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void IgnoreNullValues_DontSetNull_ToConstructorArguments_ThatCantBeNull()
         {
-            // Default is to throw JsonException when null applied to types that can't be null.
+            // Throw JsonException when null applied to types that can't be null.
             Assert.Throws<JsonException>(() => Serializer.Deserialize<NullArgTester>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}"));
             Assert.Throws<JsonException>(() => Serializer.Deserialize<NullArgTester>(@"{""Point3DStruct"":null}"));
             Assert.Throws<JsonException>(() => Serializer.Deserialize<NullArgTester>(@"{""Int"":null}"));
             Assert.Throws<JsonException>(() => Serializer.Deserialize<NullArgTester>(@"{""ImmutableArray"":null}"));
 
-            // Set arguments to default values when IgnoreNullValues is on.
+            // Throw even when IgnoreNullValues is true for symmetry with property deserialization,
+            // until https://github.com/dotnet/runtime/issues/30795 is addressed.
             var options = new JsonSerializerOptions { IgnoreNullValues = true };
-            var obj = Serializer.Deserialize<NullArgTester>(@"{""Int"":null,""Point3DStruct"":null,""ImmutableArray"":null}", options);
-            Assert.Equal(0, obj.Point3DStruct.X);
-            Assert.Equal(0, obj.Point3DStruct.Y);
-            Assert.Equal(0, obj.Point3DStruct.Z);
-            Assert.True(obj.ImmutableArray.IsDefault);
-            Assert.Equal(50, obj.Int);
+            Assert.Throws<JsonException>(() => Serializer.Deserialize<NullArgTester>(@"{""Point3DStruct"":null,""Int"":null,""ImmutableArray"":null}", options));
+            Assert.Throws<JsonException>(() => Serializer.Deserialize<NullArgTester>(@"{""Point3DStruct"":null}", options));
+            Assert.Throws<JsonException>(() => Serializer.Deserialize<NullArgTester>(@"{""Int"":null}", options));
+            Assert.Throws<JsonException>(() => Serializer.Deserialize<NullArgTester>(@"{""ImmutableArray"":null}", options));
         }
 
         [Fact]

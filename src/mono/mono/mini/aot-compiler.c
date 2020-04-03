@@ -8068,7 +8068,7 @@ parse_cpu_features (const gchar *attr)
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	// e.g.:
-	// `mattr=+sse3` = +sse,+sse2,+pclmul,+aes,+sse3
+	// `mattr=+sse3` = +sse,+sse2,+sse3
 	// `mattr=-sse3` = -sse3,-ssse3,-sse4.1,-sse4.2,-popcnt,-avx,-avx2,-fma
 	if (!strcmp (attr + prefix, "sse"))
 		feature = MONO_CPU_X86_SSE_COMBINED;

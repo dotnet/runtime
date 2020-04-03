@@ -4,9 +4,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft.Extensions.Configuration.Json.cs" />
-    <Reference Include="Microsoft.Extensions.Configuration"  />
-    <Reference Include="Microsoft.Extensions.Configuration.FileExtensions"  />
-    <Reference Include="System.Text.Json"  />
-    <Reference Include="System.Threading.Tasks.Extensions"  />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Configuration\ref\Microsoft.Extensions.Configuration.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Configuration.Abstractions\ref\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Configuration.FileExtensions\ref\Microsoft.Extensions.Configuration.FileExtensions.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.FileProviders.Abstractions\ref\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
+    <ProjectReference Include="..\..\System.Text.Json\ref\System.Text.Json.csproj" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 </Project>

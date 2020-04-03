@@ -166,7 +166,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
         trace::println();
         trace::println(_X("Options:"));
         trace::println(_X("  -h|--help         Display help."));
-        trace::println(_X("  --info            Display .NET Core information."));
+        trace::println(_X("  --info            Display .NET information."));
         trace::println(_X("  --list-sdks       Display the installed SDKs."));
         trace::println(_X("  --list-runtimes   Display the installed runtimes."));
         trace::println();
@@ -193,7 +193,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
     if (!pal::load_library(&fxr_path, &fxr))
     {
         trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, fxr_path.c_str());
-        trace::error(_X("  - Installing .NET Core prerequisites might help resolve this problem."));
+        trace::error(_X("  - Installing .NET prerequisites might help resolve this problem."));
         trace::error(_X("     %s"), DOTNET_CORE_INSTALL_PREREQUISITES_URL);
         return StatusCode::CoreHostLibLoadFailure;
     }
@@ -221,7 +221,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
             if (trace::get_error_writer() != nullptr && rc == static_cast<int>(StatusCode::FrameworkMissingFailure) && !set_error_writer_fn)
             {
                 pal::string_t url = get_download_url();
-                trace::error(_X("  _ To run this application, you need to install a newer version of .NET Core."));
+                trace::error(_X("  _ To run this application, you need to install a newer version of .NET."));
                 trace::error(_X(""));
                 trace::error(_X("  - %s"), url.c_str());
             }
