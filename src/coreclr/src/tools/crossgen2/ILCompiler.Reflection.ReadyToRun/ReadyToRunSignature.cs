@@ -839,6 +839,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                     // TODO
                     break;
 
+                case ReadyToRunFixupKind.Check_InstructionSetSupport:
+                    builder.Append("CHECK_InstructionSetSupport");
+                    uint countOfInstructionSets = ReadUIntAndEmitInlineSignatureBinary(builder);
+                    for (uint i = 0; i < countOfInstructionSets; i++)
+                    {
+                        uint instructionSetEncoded = ReadUIntAndEmitInlineSignatureBinary(builder);
+                        ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
+                        bool supported = (instructionSetEncoded & 1) == 1;
+                        builder.Append($" {instructionSet}{(supported ? "+" : "-")}");
+                    }
+                    break;
 
                 case ReadyToRunFixupKind.DelegateCtor:
                     ParseMethod(builder);
