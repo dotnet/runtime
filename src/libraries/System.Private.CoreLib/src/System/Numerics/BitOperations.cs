@@ -296,6 +296,11 @@ namespace System.Numerics
                 return (int)Bmi1.TrailingZeroCount(value);
             }
 
+            if (ArmBase.IsSupported)
+            {
+                return (int)ArmBase.LeadingZeroCount(ArmBase.ReverseElementBits(value));
+            }
+
             // Unguarded fallback contract is 0->0
             if (value == 0)
             {
@@ -334,6 +339,10 @@ namespace System.Numerics
                 return (int)Bmi1.X64.TrailingZeroCount(value);
             }
 
+            if (ArmBase.Arm64.IsSupported)
+            {
+                return (int)ArmBase.Arm64.LeadingZeroCount(ArmBase.Arm64.ReverseElementBits(value));
+            }
             uint lo = (uint)value;
 
             if (lo == 0)
