@@ -38,10 +38,12 @@
     <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
     <TargetsiOS Condition="'$(TargetOS)' == 'iOS'">true</TargetsiOS>
+    <TargetstvOS Condition="'$(TargetOS)' == 'tvOS'">true</TargetstvOS>
     <TargetsiOSSimulator Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetsiOSSimulator>
+    <TargetstvOSSimulator Condition="'$(TargetstvOS)' == 'true' and '$(Platform)' == 'x64'">true</TargetstvOSSimulator>
     <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
     <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 
   <PropertyGroup>
