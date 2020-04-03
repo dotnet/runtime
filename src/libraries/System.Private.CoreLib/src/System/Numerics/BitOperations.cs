@@ -5,6 +5,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 
 #if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
@@ -61,6 +62,11 @@ namespace System.Numerics
                 return (int)Lzcnt.LeadingZeroCount(value);
             }
 
+            if (ArmBase.IsSupported)
+            {
+                return (int)ArmBase.LeadingZeroCount(value);
+            }
+
             // Unguarded fallback contract is 0->31
             if (value == 0)
             {
@@ -83,6 +89,11 @@ namespace System.Numerics
             {
                 // LZCNT contract is 0->64
                 return (int)Lzcnt.X64.LeadingZeroCount(value);
+            }
+
+            if (ArmBase.Arm64.IsSupported)
+            {
+                return (int)ArmBase.Arm64.LeadingZeroCount(value);
             }
 
             uint hi = (uint)(value >> 32);
