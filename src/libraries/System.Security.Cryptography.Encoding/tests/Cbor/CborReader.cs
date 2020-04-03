@@ -32,8 +32,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         DoublePrecisionFloat,
         SpecialValue,
         Finished,
-        FormatError,
         EndOfData,
+        FormatError,
     }
 
     internal partial class CborReader
@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 CborMajorType.Map => CborReaderState.StartMap,
                 CborMajorType.Tag => CborReaderState.Tag,
                 CborMajorType.Special => MapSpecialValueTagToReaderState(initialByte.AdditionalInfo),
-                _ => CborReaderState.FormatError,
+                _ => throw new Exception("CborReader internal error. Invalid major type."),
             };
 
             static CborReaderState MapSpecialValueTagToReaderState (CborAdditionalInfo value)

@@ -56,7 +56,7 @@ jobs:
           - ${{ if or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
             - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-          - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, 'linux', parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
+          - ${{ format('coreclr_corelib_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, 'linux', parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
 
       variables:
         - _skipTestRestoreArg: /p:SkipTestRestore=true
