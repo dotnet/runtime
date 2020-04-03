@@ -182,6 +182,9 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult ReceiveCommon(QuicReader reader, in LongPacketHeader header,
             in SharedPacketData headerData)
         {
+            //TODO-RZ: Version negotiation
+            //TODO-RZ: Check connection id length (beware that length is unbounded in initial packets)
+
             int pnOffset = reader.BytesRead;
             var epoch = GetEpoch(GetEncryptionLevel(header.PacketType));
             int payloadLength = (int)headerData.Length;
@@ -268,13 +271,14 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ProcessPacketResult ReceiveLongHeaderPackets(QuicReader reader, in LongPacketHeader header)
         {
-            //TODO-RZ check header contents based on the type (connection id length)
-
             var type = header.PacketType;
+
+            // TODO-RZ: Check that connection IDs match and have correct length (not too long)
 
             switch (type)
             {
                 case PacketType.Initial:
+                    // TODO-RZ: server must not send Token (Protocol violation)
                 case PacketType.Handshake:
                 case PacketType.ZeroRtt:
                     if (!SharedPacketData.Read(reader, header.FirstByte, out var headerData))
@@ -282,8 +286,8 @@ namespace System.Net.Quic.Implementations.Managed
                         return ProcessPacketResult.DropPacket;
                     }
 
-                    // total length of the packet is known
-                    // TODO-RZ: check bounds
+                    // total length of the packet is known and checked during header parsing.
+                    // Adjust the buffer to the range belonging to the current packet.
                     reader.Reset(reader.Buffer.Slice(0, reader.BytesRead + (int)headerData.Length), reader.BytesRead);
 
                     return ReceiveCommon(reader, header, headerData);
@@ -302,15 +306,15 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult ReceiveOne(QuicReader reader)
         {
             byte first = reader.PeekUInt8();
-            // TODO-RZ: check fixed bit, drop too small packets etc.
 
             ProcessPacketResult result;
             if (HeaderHelpers.IsLongHeader(first))
             {
-                // TODO-RZ: check encryption keys availability
-                if (!LongPacketHeader.Read(reader, out var header))
+                if (!LongPacketHeader.Read(reader, out var header) ||
+                    // clients SHOULD ignore fixed bit when receiving version negotiation
+                    !header.FixedBit && _isServer && header.PacketType == PacketType.VersionNegotiation)
                 {
-                    return ProcessPacketResult.ConnectionClose;
+                    return ProcessPacketResult.DropPacket;
                 }
 
                 result = ReceiveLongHeaderPackets(reader, header);
@@ -318,9 +322,10 @@ namespace System.Net.Quic.Implementations.Managed
 
             else
             {
-                if (!ShortPacketHeader.Read(reader, _localConnectionIdCollection, out var header))
+                if (!ShortPacketHeader.Read(reader, _localConnectionIdCollection, out var header) ||
+                    !header.FixedBit)
                 {
-                    return ProcessPacketResult.ConnectionClose;
+                    return ProcessPacketResult.DropPacket;
                 }
 
                 result = Receive1Rtt(reader, header);
@@ -368,8 +373,15 @@ namespace System.Net.Quic.Implementations.Managed
             var seal = epoch.SendCryptoSeal!;
 
             (uint truncatedPn, int pnLength) = epoch.GetNextPacketNumber();
+            WritePacketHeader(writer, packetType, pnLength);
 
-            int maxPacketLength = 12000;
+            // for non 1-RTT packets, we reserved 2 bytes which we will overwrite once total payload length is known
+            var payloadLengthSpan = writer.Buffer.AsSpan(writer.BytesWritten - 2, 2);
+
+            int pnOffset = writer.BytesWritten;
+            writer.WriteTruncatedPacketNumber(pnLength, truncatedPn);
+
+            int maxPacketLength = Math.Min(12000, writer.Buffer.Count);
             // int maxPacketLength = (int)(Connected
             //     // Limit maximum size so that it can be always encoded using 2B varint
             //     ? Math.Min((1 << 14) - 1, GetPeerTransportParameters()!.MaxPacketSize)
@@ -377,19 +389,9 @@ namespace System.Net.Quic.Implementations.Managed
             //     : QuicConstants.MinimumClientInitialDatagramSize);
 
             // TODO-RZ: respect control flow limits
-
-            WritePacketHeader(writer, packetType, pnLength);
-
-            int pnOffset = writer.BytesWritten;
-            writer.WriteTruncatedPacketNumber(pnLength, truncatedPn);
-
-            // for non 1-RTT packets, we reserved 2 bytes which we will overwrite once total payload length is known
-            var payloadLengthSpan = writer.Buffer.AsSpan(writer.BytesWritten - 2 - pnLength, 2);
-
             int written = writer.BytesWritten;
             var origBuffer = writer.Buffer;
 
-            // TODO-RZ: check bounds of the provided buffer
             writer.Reset(origBuffer.Slice(0, maxPacketLength - seal.TagLength), written);
 
             WriteFrames(writer, packetType, level);
@@ -408,7 +410,8 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (!_isServer && packetType == PacketType.Initial)
             {
-                // TODO-RZ: It would be more efficient to add padding to the last packet sent when coalescing packets.
+                // TODO-RZ: It would be more efficient to add padding only to the last packet sent when coalescing packets.
+
                 // Pad client initial packets to the minimum size
                 int paddingLength = QuicConstants.MinimumClientInitialDatagramSize - seal.TagLength -
                                     writer.BytesWritten;

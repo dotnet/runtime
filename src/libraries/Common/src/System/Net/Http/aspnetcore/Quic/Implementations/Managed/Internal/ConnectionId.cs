@@ -6,7 +6,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal class ConnectionId : IEquatable<ConnectionId>
     {
-        // TODO-RZ: remove seed
         private static Random _random = new Random(41);
 
         public static ConnectionId Random(int length)

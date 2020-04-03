@@ -79,7 +79,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
             var header = buffer.Slice(0, pnOffset + pnLength);
 
             // read the actual packet number
-            // TODO-RZ: Do this in an endian-aware way
             ulong packetNumber = 0;
             for (int i = 0; i < pnLength; ++i)
             {

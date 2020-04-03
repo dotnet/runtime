@@ -58,14 +58,22 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal bool TryReadUInt24(out uint result)
         {
-            // TODO-RZ: implement this platform endianness aware way
-            throw new NotImplementedException("24bit int not implemented");
+            if (BytesLeft < 3)
+            {
+                result = 0;
+                return false;
+            }
+
+            result = ReadUInt24();
+            return true;
         }
 
         internal uint ReadUInt24()
         {
-            // TODO-RZ: implement this platform endianness aware way
-            throw new NotImplementedException("24bit int not implemented");
+            var source = ReadSpan(3);
+            return (uint) ((source[0] << 16) |
+                           (source[1] << 8) |
+                           source[0]);
         }
 
         internal bool TryReadUInt32(out uint result)

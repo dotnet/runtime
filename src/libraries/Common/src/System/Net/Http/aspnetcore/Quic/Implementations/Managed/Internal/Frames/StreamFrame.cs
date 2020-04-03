@@ -60,8 +60,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             ulong offset = 0;
             if (!reader.TryReadVarInt(out ulong streamId) ||
                 hasOffset && !reader.TryReadVarInt(out offset) ||
-                // TODO-RZ: is zero length allowed here?
-                hasLength && !reader.TryReadVarInt(out length) && length == 0 ||
+                hasLength && !reader.TryReadVarInt(out length) ||
                 // Read to end if length not set
                 !reader.TryReadSpan(hasLength ? (int)length : reader.BytesLeft,
                     out var data))

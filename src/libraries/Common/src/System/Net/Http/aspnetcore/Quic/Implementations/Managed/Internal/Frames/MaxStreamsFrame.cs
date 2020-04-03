@@ -36,9 +36,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             var type = reader.ReadFrameType();
             Debug.Assert(type == FrameType.MaxStreamsBidirectional || type == FrameType.MaxStreamsUnidirectional);
 
-            if (!reader.TryReadVarInt(out ulong maxStreams) ||
-                // TODO-RZ is it really possible to send such a number?
-                maxStreams > 1ul << 62)
+            if (!reader.TryReadVarInt(out ulong maxStreams))
             {
                 frame = default;
                 return false;

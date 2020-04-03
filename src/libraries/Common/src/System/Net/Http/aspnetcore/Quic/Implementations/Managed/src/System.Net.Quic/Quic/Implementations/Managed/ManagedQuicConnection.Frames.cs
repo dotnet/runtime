@@ -160,7 +160,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             inboundError = new QuicError((TransportErrorCode)frame.ErrorCode, frame.FrameType, frame.ReasonPhrase,
                 frame.IsQuicError);
-            return ProcessPacketResult.ConnectionClose; //TODO-RZ:
+            return ProcessPacketResult.ConnectionClose; //TODO-RZ: Draining/closing state management
         }
 
         private ProcessPacketResult ProcessAckFrame(QuicReader reader, PacketType packetType)
@@ -168,7 +168,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (!AckFrame.Read(reader, out var frame))
                 return ProcessPacketResult.ConnectionClose;
 
-            // TODO-RZ: check validity of the frame
+            // TODO-RZ: check ackDelay
             Span<PacketNumberRange> ranges =
                 stackalloc PacketNumberRange[(int)frame.AckRangeCount + 1];
 
@@ -268,9 +268,13 @@ namespace System.Net.Quic.Implementations.Managed
             var firstRange = ranges[^1];
             ulong firstRangeLen = firstRange.Start - firstRange.End;
 
-            // TODO-RZ fallback to heap alloc
             int written = 0;
-            Span<byte> ackRangesRaw = stackalloc byte[128];
+            int lengthEstimate = ranges.Count * 2 * 4;
+
+            Span<byte> ackRangesRaw = lengthEstimate <= 512
+                ? stackalloc byte[lengthEstimate]
+                : new byte[lengthEstimate];
+
             ulong gapStart = largest - firstRangeLen;
             for (int i = ranges.Count - 2; i >= 0; i--)
             {

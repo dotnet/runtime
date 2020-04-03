@@ -21,7 +21,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
         internal override void CreateProtectionMask(ReadOnlySpan<byte> payloadSample, Span<byte> mask)
         {
-            // TODO-RZ: use AES-ECB implementation with allocation-less interface
+            // TODO-RZ: use AES-ECB implementation with allocation-free interface
             var arr = _aesEcb.TransformFinalBlock(payloadSample.ToArray(), 0, payloadSample.Length);
             arr.AsSpan(0, 5).CopyTo(mask);
         }

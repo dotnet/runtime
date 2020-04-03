@@ -48,8 +48,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal void WriteUInt24(uint value)
         {
-            // TODO-RZ: implement this platform endianness aware way
-            throw new NotImplementedException("24bit int not implemented");
+            var destination = GetWritableSpan(3);
+            destination[0] = (byte)(value >> 16);
+            destination[1] = (byte)(value >> 8);
+            destination[2] = (byte)(value);
         }
 
         internal void WriteUInt32(uint value)
