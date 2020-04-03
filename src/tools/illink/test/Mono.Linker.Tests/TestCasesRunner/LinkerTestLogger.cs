@@ -10,14 +10,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			public string Message;
 		}
 
-		public List<MessageRecord> Messages { get; private set; } = new List<MessageRecord>();
+		public List<MessageRecord> Messages { get; private set; } = new List<MessageRecord> ();
 
-		public void LogMessage(MessageImportance importance, string message, params object[] values)
+		public void LogMessage (MessageImportance importance, string message, params object [] values)
 		{
-			Messages.Add(new MessageRecord
-			{
+			Messages.Add (new MessageRecord {
 				Importance = importance,
-				Message = string.Format(message, values)
+				Message = string.Format (message, values)
+			});
+		}
+
+		public void LogMessage (MessageContainer msBuildMessage)
+		{
+			Messages.Add (new MessageRecord {
+				Message = msBuildMessage.ToString ()
 			});
 		}
 	}
