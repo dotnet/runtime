@@ -180,7 +180,7 @@ jobs:
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # FreeBSD
-- ${{ if containsValue(parameters.platforms, 'FreeBSD') }}:
+- ${{ if containsValue(parameters.platforms, 'FreeBSD_x64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
