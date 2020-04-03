@@ -921,6 +921,7 @@ namespace System.Reflection.Emit
                     types[i] = ResolveUserType(types[i]);
         }
 
+        [return: NotNullIfNotNull("t")]
         internal static Type? ResolveUserType(Type? t)
         {
             if (t != null && ((t.GetType().Assembly != typeof(int).Assembly) || (t is TypeDelegator)))

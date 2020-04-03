@@ -94,12 +94,12 @@ namespace System
                     return string.Empty;
             }
 
-            static string? CombineSearchPath(NSSearchPathDirectory searchPath, string subdirectory)
+            static string CombineSearchPath(NSSearchPathDirectory searchPath, string subdirectory)
             {
                 string? path = Interop.Sys.SearchPath(searchPath);
                 return path != null ?
                     Path.Combine(path, subdirectory) :
-                    null;
+                    string.Empty;
             }
         }
     }

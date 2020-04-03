@@ -42,7 +42,7 @@ namespace System.Reflection.Emit
 
 #pragma warning disable 169, 414
         private FieldAttributes attrs;
-        private Type? type;
+        private Type type;
         private string name;
         private object? def_value;
         private int offset;
@@ -91,7 +91,7 @@ namespace System.Reflection.Emit
 
         public override Type FieldType
         {
-            get { return type!; }
+            get { return type; }
         }
 
         public override string Name
