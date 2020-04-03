@@ -3,7 +3,7 @@
 
   <ItemGroup>
     <ProjectReference Include="netcoreapp/netcoreapp.depproj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
-    <ProjectReference Include="netstandard/netstandard.depproj" />
+    <ProjectReference Include="netstandard/external.netstandard.depproj" />
     <ProjectReference Include="netfx/netfx.depproj" />
     <ProjectReference Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>

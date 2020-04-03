@@ -1,8 +1,4 @@
 <Project TreatAsLocalProperty="AdditionalBuildTargetFrameworks">
-  <PropertyGroup>
-    <OutDirName>external.$(MSBuildProjectName)</OutDirName>
-  </PropertyGroup>
-
   <Import Project="..\Directory.Build.props" />
 
   <PropertyGroup>
