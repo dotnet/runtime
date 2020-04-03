@@ -24,8 +24,6 @@
 -nonamespace System.Reflection.Emit.Tests
 
 -nomethod System.Security.Cryptography.X509Certificates.Tests.FindTests.*
--nomethod OverlappedTests.PackPosTest1
--nomethod OverlappedTests.PackPosTest
 -nomethod ThreadPoolBoundHandleTests.*
 -nomethod System.Threading.Tests.EventWaitHandleTests.*
 -nomethod System.Threading.Tests.MutexTests.*
