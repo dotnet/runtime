@@ -13,6 +13,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			var e2 = Expression.Field (null, typeof (ExpressionFieldString), "TestOnlyStatic2");
 
 			var e3 = Expression.Field (Expression.Parameter (typeof(int), "somename"), typeof (ExpressionFieldString), "TestName1");
+
+			Expression.Field (null, typeof (ADerived), "_protectedFieldOnBase");
+			Expression.Field (null, typeof (ADerived), "_publicFieldOnBase");
 		}
 
 		[Kept]
@@ -22,5 +25,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		private int TestName1;
+	}
+
+	[Kept]
+	class ABase
+	{
+		// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
+		protected static bool _protectedFieldOnBase;
+
+		// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
+		public static bool _publicFieldOnBase;
+	}
+
+	[Kept]
+	[KeptBaseType (typeof (ABase))]
+	class ADerived : ABase
+	{
 	}
 }
