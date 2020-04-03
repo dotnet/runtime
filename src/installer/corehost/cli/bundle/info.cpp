@@ -97,7 +97,7 @@ int8_t* info_t::config_t::map(const pal::string_t& path, const location_t* &loca
     // When necessary to map the deps.json or runtimeconfig.json files, we map the whole single-file bundle,
     // and return the address at the appropriate offset.
     // This is because:
-    // * The host is the only code that is currently running, and attempting to map the bundle at this time
+    // * The host is the only code that is currently running and trying to map the bundle.
     // * Files can only be memory mapped at page-aligned offsets, and in whole page units.
     //   Therefore, mapping only portions of the bundle will involve align-down/round-up calculations, and associated offset adjustments.
     //   We choose the simpler approach of rounding to the whole file

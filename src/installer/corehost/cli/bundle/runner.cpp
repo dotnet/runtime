@@ -69,9 +69,6 @@ bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_pa
     bool needs_extraction = entry->needs_extraction();
     pal::string_t file_base = entry->needs_extraction() ? app->extraction_path() : app->base_path();
 
-    // Reserve space for the path below
-    full_path.reserve(file_base.length() + relative_path.length() + 3);
-
     full_path.assign(file_base);
     append_path(&full_path, relative_path.c_str());
 

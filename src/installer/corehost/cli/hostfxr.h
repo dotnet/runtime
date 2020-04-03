@@ -37,7 +37,7 @@ typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_main_startupinfo_fn)(
     const char_t *host_path,
     const char_t *dotnet_root,
     const char_t *app_path);
-typedef int32_t(HOSTFXR_CALLTYPE* hostfxr_main_bundle_startup_info_fn)(
+typedef int32_t(HOSTFXR_CALLTYPE* hostfxr_main_bundle_startupinfo_fn)(
     const int argc,
     const char_t** argv,
     const char_t* host_path,

@@ -25,9 +25,9 @@ namespace
     }
 }
 
-SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startup_info(const int argc, const pal::char_t* argv[], const pal::char_t* host_path, const pal::char_t* dotnet_root, const pal::char_t* app_path, int64_t bundle_header_offset)
+SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startupinfo(const int argc, const pal::char_t* argv[], const pal::char_t* host_path, const pal::char_t* dotnet_root, const pal::char_t* app_path, int64_t bundle_header_offset)
 {
-    trace_hostfxr_entry_point(_X("hostfxr_main_bundle_startup_info"));
+    trace_hostfxr_entry_point(_X("hostfxr_main_bundle_startupinfo"));
 
     StatusCode bundleStatus = bundle::info_t::process_bundle(host_path, app_path, bundle_header_offset);
     if (bundleStatus != StatusCode::Success)
