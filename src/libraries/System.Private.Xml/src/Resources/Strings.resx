@@ -1636,7 +1636,7 @@
     <value>The derived particle cannot have more members than the base particle - All:All,Sequence:Sequence -- Recurse Rule 2 / Choice:Choice -- RecurseLax.</value>
   </data>
   <data name="Sch_GroupBaseRestNotEmptiable" xml:space="preserve">
-    <value>All particles in the {particles} of the base particle which are not mapped to by any particle in the {particles} of the derived particle should be emptiable - All:All,Sequence:Sequence -- Recurse Rule 2 / Choice:Choice -- RecurseLax.</value>
+    <value>All particles in the particles of the base particle which are not mapped to by any particle in the particles of the derived particle should be emptiable - All:All,Sequence:Sequence -- Recurse Rule 2 / Choice:Choice -- RecurseLax.</value>
   </data>
   <data name="Sch_SeqFromAll" xml:space="preserve">
     <value>The derived sequence particle at ({0}, {1}) is not a valid restriction of the base all particle at ({2}, {3}) according to Sequence:All -- RecurseUnordered.</value>
