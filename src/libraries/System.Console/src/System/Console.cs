@@ -58,8 +58,10 @@ namespace System
                 Encoding? encoding = Volatile.Read(ref s_inputEncoding);
                 if (encoding == null)
                 {
-                    encoding = ConsolePal.InputEncoding;
-                    Volatile.Write(ref s_inputEncoding, encoding);
+                    lock (InternalSyncObject)
+                    {
+                        encoding = s_inputEncoding ??= ConsolePal.InputEncoding;
+                    }
                 }
                 return encoding;
             }
@@ -89,8 +91,10 @@ namespace System
                 Encoding? encoding = Volatile.Read(ref s_outputEncoding);
                 if (encoding == null)
                 {
-                    encoding = ConsolePal.OutputEncoding;
-                    Volatile.Write(ref s_outputEncoding, encoding);
+                    lock (InternalSyncObject)
+                    {
+                        encoding = s_outputEncoding ??= ConsolePal.OutputEncoding;
+                    }
                 }
                 return encoding;
             }
