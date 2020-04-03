@@ -21,6 +21,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Foo.Branch_NullValueNode ();
 			Foo.Branch_MethodParameterValueNode (typeof (Foo), "Foo");
 			Foo.Branch_UnrecognizedPatterns ();
+			// TODO
+			Expression.Property(null, typeof(ADerived), "ProtectedPropertyOnBase");
+			Expression.Property(null, typeof(ADerived), "PublicPropertyOnBase");
 		}
 
 		[KeptMember (".ctor()")]
@@ -183,6 +186,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				return "unknownstring";
 			}
 			#endregion
+		}
+
+		[Kept]
+		class ABase
+		{
+			// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
+			protected bool ProtectedPropertyOnBase { get; }
+
+			// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
+			public bool PublicPropertyOnBase { get; }
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (ABase))]
+		class ADerived : ABase
+		{
 		}
 	}
 }

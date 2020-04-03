@@ -17,6 +17,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Branch_NullValueNode ();
 			Branch_MethodParameterValueNode (typeof (ExpressionCallString), "Foo");
 			Branch_UnrecognizedPatterns ();
+			// TODO
+			TestPublicOnBase();
+			TestProtectedOnBase();
 		}
 
 		[Kept]
@@ -28,6 +31,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestByType (1);
 			TestByNameWithParameters ();
 			TestNonExistingName ();
+			TestNullType ();
+			TestDataFlowType ();
 		}
 
 		[Kept]
@@ -145,6 +150,18 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		#region Helpers
 		[Kept]
+		static void TestPublicOnBase ()
+		{
+			Expression.Call (typeof (ADerived), "PublicOnBase", Type.EmptyTypes);
+		}
+
+		[Kept]
+		static void TestProtectedOnBase ()
+		{
+			Expression.Call (typeof (ADerived), "ProtectedOnBase", Type.EmptyTypes);
+		}
+
+		[Kept]
 		static Type FindType ()
 		{
 			return typeof (ExpressionCallString);
@@ -175,6 +192,25 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			return default (T);
 		}
-		#endregion
+
+		[Kept]
+		class ABase
+		{
+			// [Kept] : TODO - should be kept: https://github.com/mono/linker/issues/1042
+			public static void PublicOnBase ()
+			{
+			}
+
+			// [Kept] : TODO - should be kept: https://github.com/mono/linker/issues/1042
+			protected static void ProtectedOnBase ()
+			{
+			}
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (ABase))]
+		class ADerived : ABase
+		{
+		}
 	}
 }

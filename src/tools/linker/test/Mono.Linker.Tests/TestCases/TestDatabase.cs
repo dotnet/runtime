@@ -162,9 +162,15 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("Tracing");
 		}
 
-		public static IEnumerable<TestCaseData> DataFlowTests ()
+
+		public static IEnumerable<TestCaseData> DataFlowTests()
 		{
-			return NUnitCasesBySuiteName ("DataFlow");
+			return NUnitCasesBySuiteName("DataFlow");
+		}
+
+		public static IEnumerable<TestCaseData> LoggingTests ()
+		{
+			return NUnitCasesBySuiteName ("Logging");
 		}
 
 		public static TestCaseCollector CreateCollector ()
