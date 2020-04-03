@@ -69,10 +69,12 @@ namespace System.Runtime.InteropServices
         /// Otherwise, the flags specified by the DefaultDllImportSearchPaths attribute on the
         /// calling assembly (if any) are used.
         /// This method behaves as if DllImport was used in the specified <paramref name="assembly"/>.
-        /// It will invoke the managed call-backs for native library resolution:
+        /// It will invoke the managed extension points for native library resolution:
         /// * The per-assembly registered callback
         /// * AssemblyLoadContext.LoadUnmanagedDll()
         /// * AssemblyLoadContext.ResolvingUnmanagedDllEvent
+        /// If this method is called from within one of the managed extension points, the extension
+        /// points will not be recursively called again.
         /// </summary>
         /// <param name="libraryName">The name of the native library to be loaded</param>
         /// <param name="assembly">The assembly loading the native library</param>
@@ -99,6 +101,18 @@ namespace System.Runtime.InteropServices
 
         /// <summary>
         /// NativeLibrary Loader: High-level API that doesn't throw.
+        /// Given a library name, this function searches specific paths based on the
+        /// runtime configuration, input parameters, and attributes of the calling assembly.
+        /// If DllImportSearchPath parameter is non-null, the flags in this enumeration are used.
+        /// Otherwise, the flags specified by the DefaultDllImportSearchPaths attribute on the
+        /// calling assembly (if any) are used.
+        /// This method behaves as if DllImport was used in the specified <paramref name="assembly"/>.
+        /// It will invoke the managed extension points for native library resolution:
+        /// * The per-assembly registered callback
+        /// * AssemblyLoadContext.LoadUnmanagedDll()
+        /// * AssemblyLoadContext.ResolvingUnmanagedDllEvent
+        /// If this method is called from within one of the managed extension points, the extension
+        /// points will not be recursively called again.
         /// </summary>
         /// <param name="libraryName">The name of the native library to be loaded</param>
         /// <param name="assembly">The assembly loading the native library</param>

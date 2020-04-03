@@ -6975,6 +6975,11 @@ namespace
         return LoadLibraryModuleBySearch(pAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
     }
 
+    // This thread local and UseExtensionPoints class are used to guard against infinite recursion.
+    // The managed APIs (NativeLibarary.Load/TryLoad) that invoke managed extension points can also
+    // be called from within the extension points themselves. This class tracks whether or not the
+    // runtime is in a state where it should invoke those extension points (i.e. whether or not it
+    // is already in a load triggered by the managed APIs.
     thread_local bool t_shouldInvokeExtensionPoints = true;
     class UseExtensionPoints
     {
