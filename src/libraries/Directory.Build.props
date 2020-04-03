@@ -14,6 +14,7 @@
   <PropertyGroup>
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
+    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and ($(MSBuildProjectFullPath.Contains('\ref\')) or $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly> 
     <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
     <RuntimePropsFile>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'tmp', '$(Configuration)', 'RuntimeOS.props'))</RuntimePropsFile>
     <RuntimeGraph>$(LibrariesProjectRoot)\OSGroups.json</RuntimeGraph>
@@ -160,6 +161,16 @@
 
   <!-- Import packaging props -->
   <Import Project="$(RepositoryEngineeringDir)packaging.props" />
+  
+  <PropertyGroup>
+    <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
+    <!-- Assembly bin directory where implementation and ref output are placed -->
+    <AssemblyBinDirOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(MSBuildProjectName)'))</AssemblyBinDirOutputPath>  
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath Condition="'$(IsReferenceAssembly)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'ref'))</BaseIntermediateOutputPath>
+    <BaseOutputPath Condition="'$(IsReferenceAssembly)' == 'true'">$([MSBuild]::NormalizeDirectory('$(AssemblyBinDirOutputPath)', 'ref'))</BaseOutputPath>    
+  </PropertyGroup>
+  
   <Import Project="$(MSBuildThisDirectory)targetframework.props" Condition="'$(DesignTimeBuild)' != 'true'" />
 
   <PropertyGroup>
@@ -265,21 +276,16 @@
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
 
-    <!-- interop is not available on NETStandard1.0 -->
-    <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFramework)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
 
-    <!-- setting the output paths -->
-    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)\</OutputPath>
-    <OutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseOutputPath)$(TargetFramework)-$(Configuration)\</OutputPath>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)references.props" />
 
   <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
-  <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" />
+  <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" Condition="'$(IsReferenceAssembly)' == 'true'" />
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
