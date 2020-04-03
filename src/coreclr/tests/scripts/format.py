@@ -101,6 +101,11 @@ def main(argv):
 
     coreclr = args.coreclr.replace('/', os.sep)
 
+    print('alloc.cpp version:')
+    proc = subprocess.Popen(["git", "log", "-n", "1", os.path.join(coreclr, "src", "jit", "alloc.cpp")])
+    output,error = proc.communicate()
+    errorcode = proc.returncode
+
     platform = args.os
     arch = args.arch
 
@@ -178,6 +183,11 @@ def main(argv):
             print("Jitutils not built!")
             return -1
 
+        print('clang-tidy version')
+        proc = subprocess.Popen(["clang-tidy", "--version", "-n", "1", os.path.join(coreclr, "src", "jit", "alloc.cpp")], env=my_env)
+        output,error = proc.communicate()
+        errorcode = proc.returncode
+
         jitformat = jitutilsBin
 
         if platform == 'Linux' or platform == 'OSX':
@@ -186,8 +196,10 @@ def main(argv):
             jitformat = os.path.join(jitformat,"jit-format.bat")
         errorMessage = ""
 
-        builds = ["Checked", "Debug", "Release"]
-        projects = ["dll", "standalone", "crossgen"]
+        #builds = ["Checked", "Debug", "Release"]
+        builds = ["Checked"]
+        #projects = ["dll", "standalone", "crossgen"]
+        projects = ["standalone"]
 
         for build in builds:
             for project in projects:
