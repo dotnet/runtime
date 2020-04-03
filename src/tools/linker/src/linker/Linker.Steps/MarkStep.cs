@@ -3688,8 +3688,18 @@ namespace Mono.Linker.Steps {
 								for (int parameterIndex = 0; parameterIndex < methodParams.Count; parameterIndex ++) {
 									var requiredMemberKinds = _flowAnnotations.GetParameterAnnotation (calledMethodDefinition, parameterIndex);
 									if (requiredMemberKinds != 0) {
-										var targetParameter = calledMethodDefinition.Parameters [parameterIndex - (calledMethodDefinition.HasImplicitThis () ? 1 : 0)];
-										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, methodParams [parameterIndex], targetParameter);
+										IMetadataTokenProvider targetContext;
+										if (calledMethodDefinition.HasImplicitThis ()) {
+											if (parameterIndex == 0)
+												targetContext = calledMethodDefinition;
+											else
+												targetContext = calledMethodDefinition.Parameters [parameterIndex - 1];
+										}
+										else {
+											targetContext = calledMethodDefinition.Parameters [parameterIndex];
+										}
+
+										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, methodParams [parameterIndex], targetContext);
 									}
 								}
 
@@ -3995,12 +4005,20 @@ namespace Mono.Linker.Steps {
 				switch (value) {
 					case MethodParameterValue methodParameterValue: {
 							if (methodParameterValue.SourceContext is MethodDefinition method) {
-								int declaredParameterIndex = methodParameterValue.ParameterIndex - (method.HasImplicitThis () ? 1 : 0);
+								int declaredParameterIndex;
+								if (method.HasImplicitThis ()) {
+									if (methodParameterValue.ParameterIndex == 0)
+										return GetMetadataTokenDescriptionForErrorMessage (method);
+
+									declaredParameterIndex = methodParameterValue.ParameterIndex - 1;
+								} else
+									declaredParameterIndex = methodParameterValue.ParameterIndex;
+
 								if (declaredParameterIndex >= 0 && declaredParameterIndex < method.Parameters.Count)
 									return GetMetadataTokenDescriptionForErrorMessage (method.Parameters [declaredParameterIndex]);
 							}
 
-							return $"method prameter #{methodParameterValue.ParameterIndex}";
+							return $"parameter #{methodParameterValue.ParameterIndex} of method '{methodParameterValue.SourceContext}'";
 						}
 
 					case MethodReturnValue methodReturnValue: {
@@ -4025,7 +4043,9 @@ namespace Mono.Linker.Steps {
 					case ParameterDefinition parameterDefinition: return $"parameter '{parameterDefinition.Name}' of method '{parameterDefinition.Method}'";
 					case MethodReturnType methodReturnType: return $"return value of method '{methodReturnType.Method}'";
 					case FieldDefinition fieldDefinition: return $"field '{fieldDefinition}'";
-					default: return targetContext.ToString ();
+					// MethodDefinition is used to represent the "this" parameter as we don't support annotations on the method itself.
+					case MethodDefinition methodDefinition: return $"implicit 'this' parameter of method '{methodDefinition}'";
+					default: return $"'{targetContext}'";
 				};
 			}
 

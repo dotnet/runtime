@@ -1,5 +1,4 @@
 ﻿using Mono.Cecil;
-using System;
 using System.Diagnostics;
 
 namespace Mono.Linker.Dataflow
@@ -24,6 +23,12 @@ namespace Mono.Linker.Dataflow
 		public DynamicallyAccessedMemberKinds GetReturnParameterAnnotation (MethodDefinition method)
 		{
 			return Get (method.MethodReturnType);
+		}
+
+		public DynamicallyAccessedMemberKinds GetThisParameterAnnotation (MethodDefinition method)
+		{
+			// We take the annotation from the attribute on the method itself for "this"
+			return Get (method);
 		}
 
 		static bool IsDynamicallyAccessedMembersAttribute (CustomAttribute attribute)
