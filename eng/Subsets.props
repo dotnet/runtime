@@ -255,6 +255,8 @@
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-pkgproj-'))">
     <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" />
+    <!-- Disable netstandard infra for now and discuss if we should delete it: https://github.com/dotnet/runtime/issues/2294-->
+    <PkgprojProjectToBuild Remove="$(InstallerProjectRoot)pkg\projects\netstandard\pkg\NETStandard.Library.Ref.pkgproj" />
     <InstallerProject Include="@(PkgprojProjectToBuild)" />
   </ItemGroup>
 
