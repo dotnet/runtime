@@ -1654,7 +1654,7 @@
     <value>The group ref to 'all' is not the root particle, or it is being used as an extension.</value>
   </data>
   <data name="Sch_AllRefMinMax" xml:space="preserve">
-    <value>The group ref to 'all' must have {min occurs}= 0 or 1 and {max occurs}=1.</value>
+    <value>The group ref to 'all' must have 'minOccurs' = 0 or 1 and 'maxOccurs' = 1.</value>
   </data>
   <data name="Sch_NotAllAlone" xml:space="preserve">
     <value>'all' is not the only particle in a group, or is being used as an extension.</value>
