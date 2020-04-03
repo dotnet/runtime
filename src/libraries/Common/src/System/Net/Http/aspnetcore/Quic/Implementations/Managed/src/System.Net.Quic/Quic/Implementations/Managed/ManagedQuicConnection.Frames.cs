@@ -271,7 +271,7 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ fallback to heap alloc
             int written = 0;
             Span<byte> ackRangesRaw = stackalloc byte[128];
-            var gapStart = largest - firstRangeLen;
+            ulong gapStart = largest - firstRangeLen;
             for (int i = ranges.Count - 2; i >= 0; i--)
             {
                 // the numbers are always encoded as one lesser, meaning sending 0 means 1

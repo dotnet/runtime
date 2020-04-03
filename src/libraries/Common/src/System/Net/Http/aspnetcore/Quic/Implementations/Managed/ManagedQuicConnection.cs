@@ -48,7 +48,10 @@ namespace System.Net.Quic.Implementations.Managed
 
         private QuicVersion version = QuicVersion.Draft27;
 
-        private ConnectionIdCollection _connectionIdCollection = new ConnectionIdCollection();
+        /// <summary>
+        ///     Collection of local connection ids used by this endpoint.
+        /// </summary>
+        private ConnectionIdCollection _localConnectionIdCollection = new ConnectionIdCollection();
 
         private ConnectionId? _scid;
 
@@ -118,7 +121,7 @@ namespace System.Net.Quic.Implementations.Managed
             // init random connection ids for the client
             _scid = ConnectionId.Random(20);
             _dcid = ConnectionId.Random(20);
-            _connectionIdCollection.Add(_dcid.Data);
+            _localConnectionIdCollection.Add(_scid.Data);
 
             // derive also clients initial secrets.
             DeriveInitialProtectionKeys(_dcid.Data);
@@ -158,7 +161,12 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ProcessPacketResult Receive1Rtt(QuicReader reader, in ShortPacketHeader header)
         {
-            throw new NotImplementedException();
+            int pnOffset = reader.BytesRead;
+            PacketType packetType = PacketType.OneRtt;
+            var epoch = GetEpoch(EncryptionLevel.Application);
+            int payloadLength = reader.BytesLeft;
+
+            return ReceiveProtectedFrames(reader, epoch, pnOffset, payloadLength, packetType);
         }
 
         private ProcessPacketResult ReceiveRetry(QuicReader reader, in LongPacketHeader header)
@@ -175,26 +183,23 @@ namespace System.Net.Quic.Implementations.Managed
             in SharedPacketData headerData)
         {
             int pnOffset = reader.BytesRead;
-
-            // first, strip packet protection.
-            var encryptionLevel = GetEncryptionLevel(header.PacketType);
-            var epoch = GetEpoch(encryptionLevel);
-
+            var epoch = GetEpoch(GetEncryptionLevel(header.PacketType));
             int payloadLength = (int)headerData.Length;
+            PacketType packetType = header.PacketType;
 
-            if (_isServer && encryptionLevel == EncryptionLevel.Initial && epoch.RecvCryptoSeal == null)
+            if (_isServer && packetType == PacketType.Initial)
             {
-                // initialize protection keys
-                // clients destination connection Id is ours source connection Id
-                _scid = new ConnectionId(header.DestinationConnectionId.ToArray());
-                _dcid = new ConnectionId(header.SourceConnectionId.ToArray());
-                _connectionIdCollection.Add(_dcid.Data);
+                if (epoch.RecvCryptoSeal == null)
+                {
+                    // initialize protection keys
+                    // clients destination connection Id is ours source connection Id
+                    _scid = new ConnectionId(header.DestinationConnectionId.ToArray());
+                    _dcid = new ConnectionId(header.SourceConnectionId.ToArray());
 
-                DeriveInitialProtectionKeys(_scid.Data);
-            }
+                    _localConnectionIdCollection.Add(_scid.Data);
+                    DeriveInitialProtectionKeys(_scid.Data);
+                }
 
-            if (_isServer && encryptionLevel == EncryptionLevel.Initial)
-            {
                 // check UDP datagram size, by now the reader's buffer end is aligned with the UDP datagram end.
                 if (reader.Buffer.Offset + reader.Buffer.Count < QuicConstants.MinimumClientInitialDatagramSize)
                 {
@@ -203,6 +208,12 @@ namespace System.Net.Quic.Implementations.Managed
                 }
             }
 
+            return ReceiveProtectedFrames(reader, epoch, pnOffset, payloadLength, packetType);
+        }
+
+        private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, EpochData epoch, int pnOffset, int payloadLength,
+            PacketType packetType)
+        {
             if (epoch.RecvCryptoSeal == null)
             {
                 // Decryption keys are not available yet, drop the packet for now
@@ -213,7 +224,7 @@ namespace System.Net.Quic.Implementations.Managed
             var seal = epoch.RecvCryptoSeal!;
 
             if (!seal.DecryptPacket(reader.Buffer, pnOffset, payloadLength,
-                epoch.LargestTransportedPacketNumber))
+                epoch.LargestReceivedPacketNumber))
             {
                 // decryption failed, drop the packet.
                 reader.Advance(payloadLength);
@@ -221,13 +232,27 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             // TODO-RZ: read in a better way
-            var pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]);
+            int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer[0]);
             reader.TryReadTruncatedPacketNumber(pnLength, out uint truncatedPn);
 
-            epoch.UnackedPacketNumbers.Add(QuicPrimitives.DecodePacketNumber(epoch.LargestTransportedPacketNumber,
-                truncatedPn, pnLength));
+            ulong packetNumber = QuicPrimitives.DecodePacketNumber(epoch.LargestReceivedPacketNumber,
+                truncatedPn, pnLength);
 
-            return ProcessFramesWithoutTag(reader, header.PacketType);
+            // if (epoch.ReceivedPacketNumbers.Contains(packetNumber))
+            // {
+            // return ProcessPacketResult.Ok; // already processed;
+            // }
+
+            if (epoch.LargestReceivedPacketNumber < packetNumber)
+            {
+                epoch.LargestReceivedPacketNumber = packetNumber;
+                epoch.LargestReceivedPacketTimestamp = DateTime.Now; //TODO-RZ: pass time externally
+            }
+
+            epoch.UnackedPacketNumbers.Add(packetNumber);
+            epoch.ReceivedPacketNumbers.Add(packetNumber);
+
+            return ProcessFramesWithoutTag(reader, packetType);
         }
 
         private ProcessPacketResult ProcessFramesWithoutTag(QuicReader reader, PacketType packetType)
@@ -293,7 +318,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             else
             {
-                if (!ShortPacketHeader.Read(reader, _connectionIdCollection, out var header))
+                if (!ShortPacketHeader.Read(reader, _localConnectionIdCollection, out var header))
                 {
                     return ProcessPacketResult.ConnectionClose;
                 }
@@ -358,10 +383,13 @@ namespace System.Net.Quic.Implementations.Managed
             int pnOffset = writer.BytesWritten;
             writer.WriteTruncatedPacketNumber(pnLength, truncatedPn);
 
+            // for non 1-RTT packets, we reserved 2 bytes which we will overwrite once total payload length is known
             var payloadLengthSpan = writer.Buffer.AsSpan(writer.BytesWritten - 2 - pnLength, 2);
 
             int written = writer.BytesWritten;
             var origBuffer = writer.Buffer;
+
+            // TODO-RZ: check bounds of the provided buffer
             writer.Reset(origBuffer.Slice(0, maxPacketLength - seal.TagLength), written);
 
             WriteFrames(writer, packetType, level);
@@ -380,6 +408,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (!_isServer && packetType == PacketType.Initial)
             {
+                // TODO-RZ: It would be more efficient to add padding to the last packet sent when coalescing packets.
                 // Pad client initial packets to the minimum size
                 int paddingLength = QuicConstants.MinimumClientInitialDatagramSize - seal.TagLength -
                                     writer.BytesWritten;
@@ -405,7 +434,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (packetType == PacketType.OneRtt)
             {
-                // short header
+                // 1-RTT packets are the only ones using short header
                 // TODO-RZ: implement spin
                 // TODO-RZ: implement key update
                 ShortPacketHeader.Write(writer,

@@ -11,14 +11,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     internal class EpochData
     {
         /// <summary>
-        ///     Largest packet number received by the peer.
+        ///     Largest packet number received from the peer.
         /// </summary>
-        internal ulong LargestTransportedPacketNumber { get; set; }
+        internal ulong LargestReceivedPacketNumber { get; set; }
 
         /// <summary>
-        ///     Timestamp when packet with <see cref="LargestTransportedPacketNumber"/> was received.
+        ///     Timestamp when packet with <see cref="LargestReceivedPacketNumber"/> was received.
         /// </summary>
-        internal DateTime LargestTransportedPacketTimestamp { get; set; }
+        internal DateTime LargestReceivedPacketTimestamp { get; set; }
 
         /// <summary>
         ///     Number for the next packet to be send with.
@@ -61,7 +61,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <returns>Truncated packet number and it's length.</returns>
         internal (uint truncatedPn, int pnLength) GetNextPacketNumber()
         {
-            int pnLength = QuicPrimitives.GetPacketNumberByteCount(LargestTransportedPacketNumber, NextPacketNumber);
+            int pnLength = QuicPrimitives.GetPacketNumberByteCount(LargestReceivedPacketNumber, NextPacketNumber);
             return ((uint) NextPacketNumber, pnLength);
         }
     }
