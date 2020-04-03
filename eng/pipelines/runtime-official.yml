@@ -70,7 +70,7 @@ stages:
       buildConfig: release
       platforms:
       - iOS_x64
-      - iOS_arm
+      # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
       - iOS_arm64
       - OSX_x64
       - Linux_x64
@@ -117,7 +117,7 @@ stages:
       runtimeFlavor: mono
       platforms:
       - iOS_x64
-      - iOS_arm
+      # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
       - iOS_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
