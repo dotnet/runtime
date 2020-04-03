@@ -519,6 +519,106 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
 #endif // TARGET_UNIX
 }
 
+#ifdef TARGET_WINDOWS
+
+// This function checks to see if GetLogicalProcessorInformation API is supported.
+// On success, this function allocates a SLPI array, sets nEntries to number
+// of elements in the SLPI array and returns a pointer to the SLPI array after filling it with information.
+//
+// Note: If successful, IsGLPISupported allocates memory for the SLPI array and expects the caller to
+// free the memory once the caller is done using the information in the SLPI array.
+//
+// If the API is not supported or any failure, returns NULL
+//
+SYSTEM_LOGICAL_PROCESSOR_INFORMATION *IsGLPISupported( PDWORD nEntries )
+{
+    DWORD cbslpi = 0;
+    DWORD dwNumElements = 0;
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION *pslpi = NULL;
+
+    // We setup the first call to GetLogicalProcessorInformation to fail so that we can obtain
+    // the size of the buffer required to allocate for the SLPI array that is returned
+
+    if (!GetLogicalProcessorInformation(pslpi, &cbslpi) &&
+    GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+    {
+        // If we fail with anything other than an ERROR_INSUFFICIENT_BUFFER here, we punt with failure.
+        return NULL;
+    }
+
+    _ASSERTE(cbslpi);
+
+    // compute the number of SLPI entries required to hold the information returned from GLPI
+
+    dwNumElements = cbslpi / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+
+    // allocate a buffer in the free heap to hold an array of SLPI entries from GLPI, number of elements in the array is dwNumElements
+
+    pslpi = new (nothrow) SYSTEM_LOGICAL_PROCESSOR_INFORMATION[ dwNumElements ];
+
+    if(pslpi == NULL)
+    {
+        // the memory allocation failed
+        return NULL;
+    }
+
+    // Make call to GetLogicalProcessorInformation. Returns array of SLPI structures
+
+    if (!GetLogicalProcessorInformation(pslpi, &cbslpi))
+    {
+        // GetLogicalProcessorInformation failed
+        delete[] pslpi ; //Allocation was fine but the API call itself failed and so we are releasing the memory before the return NULL.
+        return NULL ;
+    }
+
+    // GetLogicalProcessorInformation successful, set nEntries to number of entries in the SLPI array
+    *nEntries  = dwNumElements;
+
+    return pslpi;    // return pointer to SLPI array
+}
+
+// This function returns the size of highest level cache on the physical chip.   If it cannot
+// determine the cachesize this function returns 0.
+size_t GetLogicalProcessorCacheSizeFromOS()
+{
+    size_t cache_size = 0;
+    DWORD nEntries = 0;
+
+    // Try to use GetLogicalProcessorInformation API and get a valid pointer to the SLPI array if successful.  Returns NULL
+    // if API not present or on failure.
+
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION *pslpi = IsGLPISupported(&nEntries) ;
+
+    if (pslpi == NULL)
+    {
+        // GetLogicalProcessorInformation not supported or failed.
+        goto Exit;
+    }
+
+    // Crack the information. Iterate through all the SLPI array entries for all processors in system.
+    // Will return the greatest of all the processor cache sizes or zero
+    {
+        size_t last_cache_size = 0;
+
+        for (DWORD i=0; i < nEntries; i++)
+        {
+            if (pslpi[i].Relationship == RelationCache)
+            {
+                last_cache_size = max(last_cache_size, pslpi[i].Cache.Size);
+            }
+        }
+        cache_size = last_cache_size;
+    }
+
+Exit:
+    if(pslpi)
+        delete[] pslpi;  // release the memory allocated for the SLPI array.
+
+    return cache_size;
+}
+
+#endif // TARGET_WINDOWS
+
 // Get size of the largest cache on the processor die
 // Parameters:
 //  trueSize - true to return true cache size, false to return scaled up size based on
@@ -529,7 +629,27 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return ::GetCacheSizePerLogicalCpu(trueSize);
+    static volatile size_t s_maxSize;
+    static volatile size_t s_maxTrueSize;
+
+    size_t size = trueSize ? s_maxTrueSize : s_maxSize;
+    if (size != 0)
+        return size;
+
+    size_t maxSize, maxTrueSize;
+
+    maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
+
+#if defined(TARGET_ARM64)
+    // Bigger gen0 size helps arm64 targets
+    maxSize = maxTrueSize * 3;
+#endif
+
+    s_maxSize = maxSize;
+    s_maxTrueSize = maxTrueSize;
+
+    //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
+    return trueSize ? maxTrueSize : maxSize;
 }
 
 // Sets the calling thread's affinity to only run on the processor specified
