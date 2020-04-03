@@ -4,8 +4,8 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 #if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
@@ -64,7 +64,7 @@ namespace System.Numerics
 
             if (ArmBase.IsSupported)
             {
-                return (int)ArmBase.LeadingZeroCount(value);
+                return ArmBase.LeadingZeroCount(value);
             }
 
             // Unguarded fallback contract is 0->31
@@ -93,7 +93,7 @@ namespace System.Numerics
 
             if (ArmBase.Arm64.IsSupported)
             {
-                return (int)ArmBase.Arm64.LeadingZeroCount(value);
+                return ArmBase.Arm64.LeadingZeroCount(value);
             }
 
             uint hi = (uint)(value >> 32);
@@ -136,7 +136,7 @@ namespace System.Numerics
 
             if (ArmBase.IsSupported)
             {
-                return 31 - (int)ArmBase.LeadingZeroCount(value);
+                return 31 - ArmBase.LeadingZeroCount(value);
             }
 
             // Fallback contract is 0->0
@@ -166,7 +166,7 @@ namespace System.Numerics
 
             if (ArmBase.Arm64.IsSupported)
             {
-                return 63 - (int)ArmBase.Arm64.LeadingZeroCount(value);
+                return 63 - ArmBase.Arm64.LeadingZeroCount(value);
             }
 
             uint hi = (uint)(value >> 32);
@@ -298,7 +298,7 @@ namespace System.Numerics
 
             if (ArmBase.IsSupported)
             {
-                return (int)ArmBase.LeadingZeroCount(ArmBase.ReverseElementBits(value));
+                return ArmBase.LeadingZeroCount(ArmBase.ReverseElementBits(value));
             }
 
             // Unguarded fallback contract is 0->0
@@ -341,7 +341,7 @@ namespace System.Numerics
 
             if (ArmBase.Arm64.IsSupported)
             {
-                return (int)ArmBase.Arm64.LeadingZeroCount(ArmBase.Arm64.ReverseElementBits(value));
+                return ArmBase.Arm64.LeadingZeroCount(ArmBase.Arm64.ReverseElementBits(value));
             }
             uint lo = (uint)value;
 
