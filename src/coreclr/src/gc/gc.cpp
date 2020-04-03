@@ -24989,11 +24989,6 @@ bool gc_heap::frozen_object_p (Object* obj)
 }
 #endif // FEATURE_BASICFREEZE
 
-#ifdef FEATURE_REDHAWK
-// TODO: this was added on RH, we have not done perf runs to see if this is the right
-// thing to do for other versions of the CLR.
-inline
-#endif // FEATURE_REDHAWK
 void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 {
     uint8_t* old_address = *pold_address;
