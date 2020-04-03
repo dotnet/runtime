@@ -13,7 +13,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             do
             {
                 SkipNextNode(ref depth);
-
             } while (depth > 0);
         }
 
