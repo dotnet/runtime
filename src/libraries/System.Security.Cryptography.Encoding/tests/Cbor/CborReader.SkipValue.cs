@@ -8,62 +8,87 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     {
         public void SkipValue()
         {
-            CborReaderState state = Peek();
+            int depth = 0;
+
+            do
+            {
+                SkipNextNode(ref depth);
+
+            } while (depth > 0);
+        }
+
+        private void SkipNextNode(ref int depth)
+        {
+            CborReaderState state;
+
+            // peek, skipping any tags we might encounter
+            while ((state = Peek()) == CborReaderState.Tag)
+            {
+                ReadTag();
+            }
 
             switch (state)
             {
-                case CborReaderState.UnsignedInteger: ReadUInt64(); break;
-                case CborReaderState.NegativeInteger: ReadCborNegativeIntegerEncoding(); break;
+                case CborReaderState.UnsignedInteger:
+                    ReadUInt64();
+                    break;
+
+                case CborReaderState.NegativeInteger:
+                    ReadCborNegativeIntegerEncoding();
+                    break;
 
                 // TOCONSIDER: avoid allocating strings when skipping string values
-                case CborReaderState.ByteString: ReadByteString(); break;
-                case CborReaderState.TextString: ReadTextString(); break;
+                case CborReaderState.ByteString:
+                    ReadByteString();
+                    break;
+
+                case CborReaderState.TextString:
+                    ReadTextString();
+                    break;
 
                 case CborReaderState.StartByteString:
                     ReadStartByteStringIndefiniteLength();
-                    while (Peek() != CborReaderState.EndByteString)
-                    {
-                        ReadByteString();
-                    }
+                    depth++;
+                    break;
+
+                case CborReaderState.EndByteString:
+                    ValidatePop(state, depth);
                     ReadEndByteStringIndefiniteLength();
+                    depth--;
                     break;
 
                 case CborReaderState.StartTextString:
                     ReadStartTextStringIndefiniteLength();
-                    while (Peek() != CborReaderState.EndTextString)
-                    {
-                        ReadTextString();
-                    }
+                    depth++;
+                    break;
+
+                case CborReaderState.EndTextString:
+                    ValidatePop(state, depth);
                     ReadEndTextStringIndefiniteLength();
+                    depth--;
                     break;
 
                 case CborReaderState.StartArray:
-                    ulong? arrayLength = ReadStartArray();
-                    if (arrayLength != null)
-                    {
-                        SkipDefiniteLengthCollectionElements(arrayLength.Value);
-                    }
-                    else
-                    {
-                        SkipIndefiniteLengthCollectionElements(breakState: CborReaderState.EndArray);
-                    }
+                    ReadStartArray();
+                    depth++;
+                    break;
+
+                case CborReaderState.EndArray:
+                    ValidatePop(state, depth);
                     ReadEndArray();
+                    depth--;
                     break;
 
                 case CborReaderState.StartMap:
-                    ulong? mapLength = ReadStartMap();
-                    if (mapLength != null)
-                    {
-                        SkipDefiniteLengthCollectionElements(checked(2 * mapLength.Value));
-                    }
-                    else
-                    {
-                        SkipIndefiniteLengthCollectionElements(breakState: CborReaderState.EndMap);
-                    }
-                    ReadEndMap();
+                    ReadStartMap();
+                    depth++;
                     break;
 
-                case CborReaderState.Tag: ReadTag(); SkipValue(); break;
+                case CborReaderState.EndMap:
+                    ValidatePop(state, depth);
+                    ReadEndMap();
+                    depth--;
+                    break;
 
                 case CborReaderState.HalfPrecisionFloat:
                 case CborReaderState.SinglePrecisionFloat:
@@ -71,9 +96,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     ReadDouble();
                     break;
 
-                case CborReaderState.Null: ReadNull(); break;
-                case CborReaderState.Boolean: ReadBoolean(); break;
-                case CborReaderState.SpecialValue: ReadSpecialValue(); break;
+                case CborReaderState.Null:
+                case CborReaderState.Boolean:
+                case CborReaderState.SpecialValue:
+                    ReadSpecialValue();
+                    break;
 
                 case CborReaderState.EndOfData:
                     throw new FormatException("Unexpected end of buffer.");
@@ -81,25 +108,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     throw new FormatException("Invalid CBOR format.");
 
                 default:
-                    throw new InvalidOperationException($"CBOR reader state {state} is not a value.");
+                    throw new InvalidOperationException($"Unexpected CBOR reader state {state}.");
             }
 
-            void SkipDefiniteLengthCollectionElements(ulong length)
+            // guards against cases where the caller attempts to skip when reader is not positioned at the start of a value
+            static void ValidatePop(CborReaderState state, int depth)
             {
-                for (ulong i = 0; i < length; i++)
+                if (depth == 0)
                 {
-                    SkipValue();
-                }
-            }
-
-            void SkipIndefiniteLengthCollectionElements(CborReaderState breakState)
-            {
-                while(Peek() != breakState)
-                {
-                    SkipValue();
+                    throw new InvalidOperationException($"Reader state {state} is not at start of a data item.");
                 }
             }
         }
-
     }
 }
