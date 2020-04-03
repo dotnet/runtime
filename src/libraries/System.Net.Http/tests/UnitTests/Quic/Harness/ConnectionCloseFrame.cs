@@ -15,7 +15,7 @@ namespace System.Net.Quic.Tests.Harness
         ///     Error code which indicates the reason for closing this connection. If <see cref="IsQuicError" /> is true, then the
         ///     value is one of the <see cref="TransportErrorCode" />. Otherwise it is the application defined error.
         /// </summary>
-        internal ulong ErrorCode;
+        internal TransportErrorCode ErrorCode;
 
         /// <summary>
         ///     If true, the error reported comes from the QUIC layer, otherwise from the application layer.
@@ -33,12 +33,14 @@ namespace System.Net.Quic.Tests.Harness
         /// </summary>
         internal string ReasonPhrase;
 
+        protected override string GetAdditionalInfo() => $"[{ErrorCode}: {(IsQuicError ? ErrorFrameType + ", " : "")}{ReasonPhrase}]";
+
         internal override FrameType FrameType =>
             IsQuicError ? FrameType.ConnectionCloseQuic : FrameType.ConnectionCloseApplication;
 
         internal override void Serialize(QuicWriter writer)
         {
-            ImplFrame.Write(writer, new ImplFrame(ErrorCode, IsQuicError, ErrorFrameType, ReasonPhrase));
+            ImplFrame.Write(writer, new ImplFrame((ulong) ErrorCode, IsQuicError, ErrorFrameType, ReasonPhrase));
         }
 
         internal override bool Deserialize(QuicReader reader)
@@ -46,7 +48,7 @@ namespace System.Net.Quic.Tests.Harness
             if (!ImplFrame.Read(reader, out var frame))
                 return false;
 
-            ErrorCode = frame.ErrorCode;
+            ErrorCode = (TransportErrorCode)frame.ErrorCode;
             IsQuicError = frame.IsQuicError;
             ErrorFrameType = frame.FrameType;
             ReasonPhrase = frame.ReasonPhrase;

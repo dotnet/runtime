@@ -84,15 +84,6 @@ namespace System.Net.Quic.Tests.Harness
                 frame.Serialize(writer);
             }
 
-            if (PacketType == PacketType.Initial)
-            {
-                // Pad initial packets to the minimum size
-                int paddingLength = QuicConstants.MinimumClientInitialDatagramSize - seal.TagLength - writer.BytesWritten;
-                if (paddingLength > 0)
-                    // zero bytes are equivalent to PADDING frames
-                    writer.GetWritableSpan(paddingLength).Clear();
-            }
-
             // reserve space for AEAD integrity tag
             writer.GetWritableSpan(seal.TagLength);
             int payloadLength = writer.BytesWritten - pnOffset;

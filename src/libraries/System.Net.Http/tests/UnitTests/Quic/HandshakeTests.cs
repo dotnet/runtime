@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
@@ -35,22 +36,75 @@ namespace System.Net.Quic.Tests
             _server = new ManagedQuicConnection(_serverOpts);
         }
 
-        private PacketFlight SendFlight(ManagedQuicConnection from, ManagedQuicConnection to)
+        private PacketFlight GetFlightToSend(ManagedQuicConnection from)
+        {
+            int written = from.SendData(buffer, out _);
+            var copy = buffer.AsSpan(0, written).ToArray();
+            var packets = PacketBase.ParseMany(copy, written, new TestHarness(from));
+
+            return new PacketFlight(packets, written);
+        }
+
+        private void SendFlight(ManagedQuicConnection source,
+            ManagedQuicConnection destination, IEnumerable<PacketBase> packets)
+        {
+            QuicWriter writer = new QuicWriter(new ArraySegment<byte>(buffer));
+            TestHarness testHarness = new TestHarness(source);
+
+            output.WriteLine(source == _client ? "\nClient:" : "\nServer:");
+            foreach (PacketBase packet in packets)
+            {
+                output.WriteLine(packet.ToString());
+                packet.Serialize(writer,testHarness);
+                writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
+            }
+
+            destination.ReceiveData(buffer, writer.Buffer.Offset + writer.BytesWritten, IpEndPoint);
+        }
+
+        private void SendPacket(ManagedQuicConnection source, ManagedQuicConnection destination, PacketBase packet)
+        {
+            SendFlight(source, destination, new []{packet});
+        }
+
+        private PacketFlight SendFlight(ManagedQuicConnection source, ManagedQuicConnection destination)
         {
             // make a copy of the buffer, because decryption happens in-place
-            var written = from.SendData(buffer, out _);
+            int written = source.SendData(buffer, out _);
             var copy = buffer.AsSpan(0, written).ToArray();
 
-            output.WriteLine(from == _client ? "\nClient:" : "\nServer:");
-            var packets = PacketBase.ParseMany(copy, written, new TestHarness(from));
+            output.WriteLine(source == _client ? "\nClient:" : "\nServer:");
+            var packets = PacketBase.ParseMany(copy, written, new TestHarness(source));
             foreach (var packet in packets)
             {
                 output.WriteLine(packet.ToString());
             }
 
-            to.ReceiveData(buffer, written, IpEndPoint);
+            destination.ReceiveData(buffer, written, IpEndPoint);
 
             return new PacketFlight(packets, written);
+        }
+
+        [Fact]
+        public void SendsConnectionCloseOnSmallClientInitial()
+        {
+            var flight = GetFlightToSend(_client);
+
+            // remove all padding, leading to a very short client initial packet.
+            var initial = Assert.IsType<InitialPacket>(flight.Packets[0]);
+            initial.Frames.RemoveAll(f => f.FrameType == FrameType.Padding);
+            SendFlight(_client, _server, flight.Packets);
+
+            var response = SendFlight(_server, _client);
+            initial = Assert.IsType<InitialPacket>(response.Packets[0]);
+
+            // there should be a single frame only
+            var closeFrame = Assert.IsType<ConnectionCloseFrame>(Assert.Single(initial.Frames));
+
+            Assert.Equal(TransportErrorCode.ProtocolViolation, closeFrame.ErrorCode);
+            Assert.True(closeFrame.IsQuicError);
+            Assert.Equal(FrameType.Padding, closeFrame.ErrorFrameType); // 0x00
+            Assert.Equal(QuicErrors.InitialPacketTooShort, closeFrame.ReasonPhrase);
         }
 
         [Fact]

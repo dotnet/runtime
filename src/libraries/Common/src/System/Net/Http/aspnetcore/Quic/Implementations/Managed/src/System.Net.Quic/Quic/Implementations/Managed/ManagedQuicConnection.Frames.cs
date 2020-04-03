@@ -78,8 +78,7 @@ namespace System.Net.Quic.Implementations.Managed
 
                 if (!IsFrameAllowed(frameType, packetType))
                 {
-                    outboundError ??= TransportErrorCode.ProtocolViolation;
-                    return ProcessPacketResult.HardError;
+                    return CloseConnection(TransportErrorCode.ProtocolViolation, frameType, "Frame type not allowed");
                 }
 
                 if (IsAckEliciting(frameType))
@@ -120,18 +119,29 @@ namespace System.Net.Quic.Implementations.Managed
                     case FrameType.RetireConnectionId:
                     case FrameType.PathChallenge:
                     case FrameType.PathResponse:
+                        throw new NotImplementedException();
                     case FrameType.ConnectionCloseQuic:
                     case FrameType.ConnectionCloseApplication:
+                        result = ProcessConnectionClose(reader);
+                        break;
                     case FrameType.HandshakeDone:
                         throw new NotImplementedException();
                     default:
                         // unknown frame type
-                        outboundError ??= TransportErrorCode.FrameEncodingError;
-                        return ProcessPacketResult.HardError;
+                        return CloseConnection(TransportErrorCode.FrameEncodingError, null, "Unknown frame type");
                 }
 
-                if (result != ProcessPacketResult.Ok)
-                    return result;
+                switch (result)
+                {
+                    case ProcessPacketResult.Ok:
+                        continue;
+                    case ProcessPacketResult.ConnectionClose when outboundError == null:
+                        outboundError = new QuicError(TransportErrorCode.FrameEncodingError, frameType,
+                            "Unable to deserialize");
+                        break;
+                }
+
+                return result;
             }
 
             // do handshake to set encryption secrets (to be able to process coalesced packets
@@ -143,10 +153,20 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
+        private ProcessPacketResult ProcessConnectionClose(QuicReader reader)
+        {
+            if (!ConnectionCloseFrame.Read(reader, out var frame))
+                return ProcessPacketResult.ConnectionClose;
+
+            inboundError = new QuicError((TransportErrorCode)frame.ErrorCode, frame.FrameType, frame.ReasonPhrase,
+                frame.IsQuicError);
+            return ProcessPacketResult.ConnectionClose; //TODO-RZ:
+        }
+
         private ProcessPacketResult ProcessAckFrame(QuicReader reader, PacketType packetType)
         {
             if (!AckFrame.Read(reader, out var frame))
-                return ProcessPacketResult.HardError;
+                return ProcessPacketResult.ConnectionClose;
 
             // TODO-RZ: check validity of the frame
             Span<PacketNumberRange> ranges =
@@ -161,6 +181,13 @@ namespace System.Net.Quic.Implementations.Managed
                 read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out ulong gap);
                 read += QuicPrimitives.ReadVarInt(frame.AckRangesRaw.Slice(read), out ulong acked);
 
+                if (ranges[i].Start < gap + acked)
+                {
+                    return CloseConnection(TransportErrorCode.FrameEncodingError,
+                        frame.HasEcnCounts ? FrameType.AckWithEcn : FrameType.Ack,
+                        "Negative PN acked");
+                }
+
                 ranges[i + 1] = new PacketNumberRange(ranges[i].Start - gap - acked - 2, ranges[i].Start - gap - 2);
             }
 
@@ -173,7 +200,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType)
         {
-            if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.HardError;
+            if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.ConnectionClose;
             // TODO-RZ: Utilize the offset
             _tls.OnDataReceived(GetEncryptionLevel(packetType), crypto.CryptoData);
 
@@ -185,8 +212,23 @@ namespace System.Net.Quic.Implementations.Managed
             var epoch = GetEpoch(level);
 
             // TODO-RZ other frames
+            if (outboundError != null)
+            {
+                WriteConnectionCloseFrame(writer, outboundError!);
+                return;
+            }
+
             WriteAckFrame(writer, epoch);
             WriteCryptoFrames(writer, epoch);
+        }
+
+        private static void WriteConnectionCloseFrame(QuicWriter writer, QuicError error)
+        {
+            ConnectionCloseFrame.Write(writer,
+                new ConnectionCloseFrame((ulong)error.ErrorCode,
+                    error.IsQuicError,
+                    error.FrameType ?? FrameType.Padding, // use 0x00 (same as padding) when frame type unknown
+                    error.ReasonPhrase));
         }
 
         private static void WriteCryptoFrames(QuicWriter writer, EpochData epoch)

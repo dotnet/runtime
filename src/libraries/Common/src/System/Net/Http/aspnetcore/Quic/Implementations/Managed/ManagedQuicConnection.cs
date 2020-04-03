@@ -1,6 +1,5 @@
 #nullable enable
 
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
@@ -28,12 +27,12 @@ namespace System.Net.Quic.Implementations.Managed
             /// <summary>
             ///     Packet is discarded. E.g. because it could not be decrypted (yet).
             /// </summary>
-            SoftError,
+            DropPacket,
 
             /// <summary>
             ///     Packet is valid but violates the protocol, the connection should be closed.
             /// </summary>
-            HardError,
+            ConnectionClose,
         }
 
         private readonly QuicClientConnectionOptions? _clientOpts;
@@ -65,12 +64,12 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Error to send in next packet in a CONNECTION_CLOSE frame.
         /// </summary>
-        private TransportErrorCode? outboundError;
+        private QuicError? outboundError;
 
         /// <summary>
         ///     Error received via CONNECTION_CLOSE frame to be reported to the user.
         /// </summary>
-        // private TransportErrorCode? inboundError;
+        private QuicError? inboundError;
 
         public ConnectionId? SourceConnectionId => _scid;
 
@@ -194,11 +193,21 @@ namespace System.Net.Quic.Implementations.Managed
                 DeriveInitialProtectionKeys(_scid.Data);
             }
 
+            if (_isServer && encryptionLevel == EncryptionLevel.Initial)
+            {
+                // check UDP datagram size, by now the reader's buffer end is aligned with the UDP datagram end.
+                if (reader.Buffer.Offset + reader.Buffer.Count < QuicConstants.MinimumClientInitialDatagramSize)
+                {
+                    return CloseConnection(TransportErrorCode.ProtocolViolation, null,
+                        QuicErrors.InitialPacketTooShort);
+                }
+            }
+
             if (epoch.RecvCryptoSeal == null)
             {
                 // Decryption keys are not available yet, drop the packet for now
                 // TODO-RZ: consider buffering the packet
-                return ProcessPacketResult.SoftError;
+                return ProcessPacketResult.DropPacket;
             }
 
             var seal = epoch.RecvCryptoSeal!;
@@ -208,7 +217,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 // decryption failed, drop the packet.
                 reader.Advance(payloadLength);
-                return ProcessPacketResult.SoftError;
+                return ProcessPacketResult.DropPacket;
             }
 
             // TODO-RZ: read in a better way
@@ -245,7 +254,7 @@ namespace System.Net.Quic.Implementations.Managed
                 case PacketType.ZeroRtt:
                     if (!SharedPacketData.Read(reader, header.FirstByte, out var headerData))
                     {
-                        return ProcessPacketResult.HardError;
+                        return ProcessPacketResult.DropPacket;
                     }
 
                     // total length of the packet is known
@@ -276,7 +285,7 @@ namespace System.Net.Quic.Implementations.Managed
                 // TODO-RZ: check encryption keys availability
                 if (!LongPacketHeader.Read(reader, out var header))
                 {
-                    return ProcessPacketResult.HardError;
+                    return ProcessPacketResult.ConnectionClose;
                 }
 
                 result = ReceiveLongHeaderPackets(reader, header);
@@ -286,7 +295,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 if (!ShortPacketHeader.Read(reader, _connectionIdCollection, out var header))
                 {
-                    return ProcessPacketResult.HardError;
+                    return ProcessPacketResult.ConnectionClose;
                 }
 
                 result = Receive1Rtt(reader, header);
@@ -504,7 +513,13 @@ namespace System.Net.Quic.Implementations.Managed
             };
         }
 
-        #region Public API implementation
+        private ProcessPacketResult CloseConnection(TransportErrorCode errorCode, FrameType? frameType, string? reason)
+        {
+            outboundError = new QuicError(errorCode, frameType, reason);
+            return ProcessPacketResult.ConnectionClose;
+        }
+
+        #region Public API
 
         internal override bool Connected => _tls.IsHandshakeFinishhed;
 

@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Diagnostics;
 using System.Text;
 
@@ -28,9 +30,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
         /// <summary>
         ///     Human readable explanation why the connection was closed.
         /// </summary>
-        internal readonly string ReasonPhrase;
+        internal readonly string? ReasonPhrase;
 
-        public ConnectionCloseFrame(ulong errorCode, bool isQuicError, FrameType frameType, string reasonPhrase)
+        public ConnectionCloseFrame(ulong errorCode, bool isQuicError, FrameType frameType, string? reasonPhrase)
         {
             ErrorCode = errorCode;
             IsQuicError = isQuicError;
@@ -40,7 +42,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
 
         public int GetSerializedLength()
         {
-            int reasonPhraseLength = Encoding.UTF8.GetByteCount(ReasonPhrase);
+            int reasonPhraseLength = Encoding.UTF8.GetByteCount(ReasonPhrase ?? string.Empty);
 
             return 1 +
                    QuicPrimitives.GetVarIntLength(ErrorCode) +
@@ -81,9 +83,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             if (frame.IsQuicError)
                 writer.WriteFrameType(frame.FrameType);
 
-            int length = Encoding.UTF8.GetByteCount(frame.ReasonPhrase);
+            int length = Encoding.UTF8.GetByteCount(frame.ReasonPhrase ?? string.Empty);
             writer.WriteVarInt((ulong)length);
-            Encoding.UTF8.GetBytes(frame.ReasonPhrase, writer.GetWritableSpan(length));
+            if (length > 0)
+                Encoding.UTF8.GetBytes(frame.ReasonPhrase, writer.GetWritableSpan(length));
         }
     }
 }

@@ -3,6 +3,11 @@ using System.Net.Security;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
+    internal static class QuicErrors
+    {
+        internal static readonly string InitialPacketTooShort = "Initial packet too short";
+    }
+
     internal static class QuicConstants
     {
         internal const int MinimumClientInitialDatagramSize = 1200;
