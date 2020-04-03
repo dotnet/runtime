@@ -25,7 +25,6 @@
 
 -nomethod System.Reflection.Internal.Tests.AbstractMemoryBlockTests.FileStream
 -nomethod System.Reflection.Internal.Tests.AbstractMemoryBlockTests.FileStreamUnix
--nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.*
 -nomethod System.Reflection.Tests.AssemblyNameTests.GetAssemblyName_LockedFile
 -nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.*
 -nomethod System.Resources.Tests.ResourceManagerTests.*
