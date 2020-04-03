@@ -17,6 +17,11 @@
         "Unix"
         ]
       },
+    "tvOS": {
+      "#import": [
+        "Unix"
+        ]
+      },
     "iOS": {
       "#import": [
         "Unix"
