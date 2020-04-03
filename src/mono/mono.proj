@@ -119,6 +119,15 @@
       <_MonoAC_VARS Include="ac_cv_func_shm_open_working_with_mmap=no" />
       <_MonoAC_VARS Include="mono_cv_sizeof_sunpath=104" />
       <_MonoAC_VARS Include="mono_cv_uscore=yes" />
+      <_MonoAC_VARS Include="ac_cv_func_system=no" />
+      <_MonoAC_VARS Include="ac_cv_func_pthread_kill=no" />
+      <_MonoAC_VARS Include="ac_cv_func_kill=no" />
+      <_MonoAC_VARS Include="ac_cv_func_sigaction=no" />
+      <_MonoAC_VARS Include="ac_cv_func_fork=no" />
+      <_MonoAC_VARS Include="ac_cv_func_execv=no" />
+      <_MonoAC_VARS Include="ac_cv_func_execve=no" />
+      <_MonoAC_VARS Include="ac_cv_func_execvp=no" />
+      <_MonoAC_VARS Include="ac_cv_func_signal=no" />
 
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm64'" Include="-arch arm64" />
       <_MonoCFLAGS Include="-isysroot $(XcodeDir)/Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS$(tvOSVersion).sdk" />
@@ -234,6 +243,14 @@
       <_MonoAC_VARS Include="ac_cv_func_utimensat=no" />
       <_MonoAC_VARS Include="ac_cv_func_shm_open_working_with_mmap=no" />
       <_MonoAC_VARS Include="mono_cv_uscore=yes" />
+      <_MonoAC_VARS Include="ac_cv_func_pthread_kill=no" />
+      <_MonoAC_VARS Include="ac_cv_func_kill=no" />
+      <_MonoAC_VARS Include="ac_cv_func_sigaction=no" />
+      <_MonoAC_VARS Include="ac_cv_func_fork=no" />
+      <_MonoAC_VARS Include="ac_cv_func_execv=no" />
+      <_MonoAC_VARS Include="ac_cv_func_execve=no" />
+      <_MonoAC_VARS Include="ac_cv_func_execvp=no" />
+      <_MonoAC_VARS Include="ac_cv_func_signal=no" />
 
       <_MonoCFLAGS Include="-arch x86_64" />
       <_MonoCFLAGS Include="-m64" />
