@@ -23,8 +23,6 @@
 -nonamespace MonoTests.System.Drawing
 -nonamespace System.Reflection.Emit.Tests
 
--nomethod System.Reflection.Internal.Tests.AbstractMemoryBlockTests.FileStream
--nomethod System.Reflection.Internal.Tests.AbstractMemoryBlockTests.FileStreamUnix
 -nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.*
 -nomethod System.Resources.Tests.ResourceManagerTests.*
 -nomethod MonoTests.System.Runtime.Caching.HostFileChangeMonitorTest.*
