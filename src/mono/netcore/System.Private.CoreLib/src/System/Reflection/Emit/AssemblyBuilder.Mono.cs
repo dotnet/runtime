@@ -30,7 +30,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 using System.IO;
 using System.Globalization;
@@ -58,7 +57,7 @@ namespace System.Reflection.Emit
 
         private static bool IsBoundedVector(Type type)
         {
-            ArrayType at = type as ArrayType;
+            ArrayType? at = type as ArrayType;
             if (at != null)
                 return at.GetEffectiveRank() == 1;
             return type.ToString().EndsWith("[*]", StringComparison.Ordinal); /*Super uggly hack, SR doesn't allow one to query for it */
@@ -73,7 +72,7 @@ namespace System.Reflection.Emit
             {
                 if (!b.HasElementType)
                     return false;
-                if (!TypeEquals(a.GetElementType(), b.GetElementType()))
+                if (!TypeEquals(a.GetElementType()!, b.GetElementType()!))
                     return false;
                 if (a.IsArray)
                 {
@@ -138,9 +137,9 @@ namespace System.Reflection.Emit
             return a == b;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            GenericInstanceKey other = obj as GenericInstanceKey;
+            GenericInstanceKey? other = obj as GenericInstanceKey;
             if (other == null)
                 return false;
             if (gtd != other.gtd)
@@ -168,7 +167,7 @@ namespace System.Reflection.Emit
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public sealed partial class AssemblyBuilder : Assembly
+    public sealed class AssemblyBuilder : Assembly
     {
         //
         // AssemblyBuilder inherits from Assembly, but the runtime thinks its layout inherits from RuntimeAssembly
@@ -177,43 +176,43 @@ namespace System.Reflection.Emit
 #pragma warning disable 649
         internal IntPtr _mono_assembly;
 #pragma warning restore 649
-        private object _evidence;
+        private object? _evidence;
         #endregion
 
 #pragma warning disable 169, 414, 649
         #region Sync with object-internals.h
         private UIntPtr dynamic_assembly; /* GC-tracked */
-        private MethodInfo entry_point;
+        private MethodInfo? entry_point;
         private ModuleBuilder[] modules;
-        private string name;
-        private string dir;
-        private CustomAttributeBuilder[] cattrs;
-        private object resources;
-        private byte[] public_key;
-        private string version;
-        private string culture;
+        private string? name;
+        private string? dir;
+        private CustomAttributeBuilder[]? cattrs;
+        private object? resources;
+        private byte[]? public_key;
+        private string? version;
+        private string? culture;
         private uint algid;
         private uint flags;
         private PEFileKinds pekind = PEFileKinds.Dll;
         private bool delay_sign;
         private uint access;
-        private Module[] loaded_modules;
-        private object win32_resources;
-        private object permissions_minimum;
-        private object permissions_optional;
-        private object permissions_refused;
+        private Module[]? loaded_modules;
+        private object? win32_resources;
+        private object? permissions_minimum;
+        private object? permissions_optional;
+        private object? permissions_refused;
         private PortableExecutableKinds peKind;
         private ImageFileMachine machine;
         private bool corlib_internal;
-        private Type[] type_forwarders;
-        private byte[] pktoken;
+        private Type[]? type_forwarders;
+        private byte[]? pktoken;
         #endregion
 #pragma warning restore 169, 414, 649
 
         private AssemblyName aname;
-        private string assemblyName;
+        private string? assemblyName;
         private bool created;
-        private string versioninfo_culture;
+        private string? versioninfo_culture;
         private ModuleBuilder manifest_module;
         private bool manifest_module_used;
 
@@ -224,7 +223,7 @@ namespace System.Reflection.Emit
         private static extern void UpdateNativeCustomAttributes(AssemblyBuilder ab);
 
         [PreserveDependency("RuntimeResolve", "System.Reflection.Emit.ModuleBuilder")]
-        internal AssemblyBuilder(AssemblyName n, string directory, AssemblyBuilderAccess access, bool corlib_internal)
+        internal AssemblyBuilder(AssemblyName n, string? directory, AssemblyBuilderAccess access, bool corlib_internal)
         {
             aname = (AssemblyName)n.Clone();
 
@@ -245,7 +244,7 @@ namespace System.Reflection.Emit
                 culture = n.CultureInfo.Name;
                 versioninfo_culture = n.CultureInfo.Name;
             }
-            Version v = n.Version;
+            Version? v = n.Version;
             if (v != null)
             {
                 version = v.ToString();
@@ -258,12 +257,12 @@ namespace System.Reflection.Emit
             modules = new ModuleBuilder[] { manifest_module };
         }
 
-        public override string CodeBase
+        public override string? CodeBase
         {
             get { throw not_supported(); }
         }
 
-        public override MethodInfo EntryPoint
+        public override MethodInfo? EntryPoint
         {
             get
             {
@@ -292,7 +291,7 @@ namespace System.Reflection.Emit
             return new AssemblyBuilder(name, null, access, false);
         }
 
-        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder> assemblyAttributes)
+        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             AssemblyBuilder ab = DefineDynamicAssembly(name, access);
             if (assemblyAttributes != null)
@@ -324,7 +323,7 @@ namespace System.Reflection.Emit
             return manifest_module;
         }
 
-        public ModuleBuilder GetDynamicModule(string name)
+        public ModuleBuilder? GetDynamicModule(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -353,7 +352,7 @@ namespace System.Reflection.Emit
             throw not_supported();
         }
 
-        public override ManifestResourceInfo GetManifestResourceInfo(string resourceName)
+        public override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
         {
             throw not_supported();
         }
@@ -363,11 +362,11 @@ namespace System.Reflection.Emit
             throw not_supported();
         }
 
-        public override Stream GetManifestResourceStream(string name)
+        public override Stream? GetManifestResourceStream(string name)
         {
             throw not_supported();
         }
-        public override Stream GetManifestResourceStream(Type type, string name)
+        public override Stream? GetManifestResourceStream(Type type, string name)
         {
             throw not_supported();
         }
@@ -380,7 +379,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal string AssemblyDir
+        internal string? AssemblyDir
         {
             get
             {
@@ -483,7 +482,7 @@ namespace System.Reflection.Emit
             return new TypeBuilderInstantiation(gtd, typeArguments);
         }
 
-        public override Type GetType(string name, bool throwOnError, bool ignoreCase)
+        public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             if (name == null)
                 throw new ArgumentNullException(name);
@@ -500,7 +499,7 @@ namespace System.Reflection.Emit
             return res;
         }
 
-        public override Module GetModule(string name)
+        public override Module? GetModule(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -556,7 +555,7 @@ namespace System.Reflection.Emit
 
         //FIXME MS has issues loading satelite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version version)
+        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
             throw new NotImplementedException();
 #if FALSE
@@ -586,7 +585,7 @@ namespace System.Reflection.Emit
             get { return true; }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return base.Equals(obj);
         }
@@ -594,15 +593,6 @@ namespace System.Reflection.Emit
         public override int GetHashCode()
         {
             return base.GetHashCode();
-        }
-
-        public override string ToString()
-        {
-            if (assemblyName != null)
-                return assemblyName;
-
-            assemblyName = FullName;
-            return assemblyName;
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
@@ -625,7 +615,7 @@ namespace System.Reflection.Emit
             return CustomAttributeData.GetCustomAttributes(this);
         }
 
-        public override string FullName
+        public override string? FullName
         {
             get
             {
