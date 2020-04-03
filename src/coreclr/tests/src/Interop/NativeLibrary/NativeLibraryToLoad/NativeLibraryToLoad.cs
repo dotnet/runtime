@@ -33,3 +33,11 @@ public class NativeLibraryToLoad
         return Path.Combine(directory, GetFileName());
     }
 }
+
+public class FakeNativeLibrary
+{
+    public const string Name = "FakeNativeLibrary";
+
+    private static Random rand = new Random();
+    public static readonly IntPtr Handle = new IntPtr(rand.Next());
+}
