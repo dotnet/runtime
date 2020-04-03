@@ -14,6 +14,16 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal partial class ManagedQuicConnection : QuicConnectionProvider
     {
+        private class Context
+        {
+            public Context(DateTime now)
+            {
+                Now = now;
+            }
+
+            internal DateTime Now { get; }
+        }
+
         private readonly Tls _tls;
         private readonly Recovery _recovery = new Recovery();
 
@@ -125,6 +135,9 @@ namespace System.Net.Quic.Implementations.Managed
 
             // derive also clients initial secrets.
             DeriveInitialProtectionKeys(_dcid.Data);
+
+            // generate first Crypto frames
+            _tls.DoHandshake();
         }
 
         private void DeriveInitialProtectionKeys(byte[] dcid)
@@ -144,14 +157,15 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        internal void ReceiveData(byte[] buffer, int count, IPEndPoint sender)
+        internal void ReceiveData(byte[] buffer, int count, IPEndPoint sender, DateTime now)
         {
             var segment = new ArraySegment<byte>(buffer, 0, count);
             var reader = new QuicReader(segment);
+            var context = new Context(now);
 
             while (reader.BytesLeft > 0)
             {
-                var status = ReceiveOne(reader);
+                var status = ReceiveOne(reader, context);
 
                 // Receive will adjust the buffer length once it is known
                 segment = segment.Slice(reader.Buffer.Count);
@@ -159,28 +173,28 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private ProcessPacketResult Receive1Rtt(QuicReader reader, in ShortPacketHeader header)
+        private ProcessPacketResult Receive1Rtt(QuicReader reader, in ShortPacketHeader header, Context context)
         {
             int pnOffset = reader.BytesRead;
             PacketType packetType = PacketType.OneRtt;
             var epoch = GetEpoch(EncryptionLevel.Application);
             int payloadLength = reader.BytesLeft;
 
-            return ReceiveProtectedFrames(reader, epoch, pnOffset, payloadLength, packetType);
+            return ReceiveProtectedFrames(reader, epoch, pnOffset, payloadLength, packetType, context);
         }
 
-        private ProcessPacketResult ReceiveRetry(QuicReader reader, in LongPacketHeader header)
+        private ProcessPacketResult ReceiveRetry(QuicReader reader, in LongPacketHeader header, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private ProcessPacketResult ReceiveVersionNegotiation(QuicReader reader, in LongPacketHeader header)
+        private ProcessPacketResult ReceiveVersionNegotiation(QuicReader reader, in LongPacketHeader header, Context context)
         {
             throw new NotImplementedException();
         }
 
         private ProcessPacketResult ReceiveCommon(QuicReader reader, in LongPacketHeader header,
-            in SharedPacketData headerData)
+            in SharedPacketData headerData, Context context)
         {
             //TODO-RZ: Version negotiation
             //TODO-RZ: Check connection id length (beware that length is unbounded in initial packets)
@@ -211,11 +225,12 @@ namespace System.Net.Quic.Implementations.Managed
                 }
             }
 
-            return ReceiveProtectedFrames(reader, epoch, pnOffset, payloadLength, packetType);
+            return ReceiveProtectedFrames(reader, epoch, pnOffset, payloadLength, packetType, context);
         }
 
-        private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, EpochData epoch, int pnOffset, int payloadLength,
-            PacketType packetType)
+        private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, EpochData epoch, int pnOffset,
+            int payloadLength,
+            PacketType packetType, Context context)
         {
             if (epoch.RecvCryptoSeal == null)
             {
@@ -255,21 +270,22 @@ namespace System.Net.Quic.Implementations.Managed
             epoch.UnackedPacketNumbers.Add(packetNumber);
             epoch.ReceivedPacketNumbers.Add(packetNumber);
 
-            return ProcessFramesWithoutTag(reader, packetType);
+            return ProcessFramesWithoutTag(reader, packetType, context);
         }
 
-        private ProcessPacketResult ProcessFramesWithoutTag(QuicReader reader, PacketType packetType)
+        private ProcessPacketResult ProcessFramesWithoutTag(QuicReader reader, PacketType packetType, Context context)
         {
             // HACK: we do not want to try processing the AEAD integrity tag as if it were frames.
             var originalSegment = reader.Buffer;
             var tagLength = GetEpoch(GetEncryptionLevel(packetType)).RecvCryptoSeal!.TagLength;
             reader.Reset(reader.Buffer.Slice(reader.BytesRead, reader.BytesLeft - tagLength));
-            var retval = ProcessFrames(reader, packetType);
+            var retval = ProcessFrames(reader, packetType, context);
             reader.Reset(originalSegment);
             return retval;
         }
 
-        private ProcessPacketResult ReceiveLongHeaderPackets(QuicReader reader, in LongPacketHeader header)
+        private ProcessPacketResult ReceiveLongHeaderPackets(QuicReader reader, in LongPacketHeader header,
+            Context context)
         {
             var type = header.PacketType;
 
@@ -281,7 +297,8 @@ namespace System.Net.Quic.Implementations.Managed
                     // TODO-RZ: server must not send Token (Protocol violation)
                 case PacketType.Handshake:
                 case PacketType.ZeroRtt:
-                    if (!SharedPacketData.Read(reader, header.FirstByte, out var headerData))
+                    if (!SharedPacketData.Read(reader, header.FirstByte, out var headerData) ||
+                        headerData.Length > (ulong) reader.BytesLeft)
                     {
                         return ProcessPacketResult.DropPacket;
                     }
@@ -290,11 +307,11 @@ namespace System.Net.Quic.Implementations.Managed
                     // Adjust the buffer to the range belonging to the current packet.
                     reader.Reset(reader.Buffer.Slice(0, reader.BytesRead + (int)headerData.Length), reader.BytesRead);
 
-                    return ReceiveCommon(reader, header, headerData);
+                    return ReceiveCommon(reader, header, headerData, context);
                 case PacketType.Retry:
-                    return ReceiveRetry(reader, header);
+                    return ReceiveRetry(reader, header, context);
                 case PacketType.VersionNegotiation:
-                    return ReceiveVersionNegotiation(reader, header);
+                    return ReceiveVersionNegotiation(reader, header, context);
                 case PacketType.OneRtt:
                     // this type is handled elsewhere
                     throw new InvalidOperationException("Unreachable");
@@ -303,7 +320,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private ProcessPacketResult ReceiveOne(QuicReader reader)
+        private ProcessPacketResult ReceiveOne(QuicReader reader, Context context)
         {
             byte first = reader.PeekUInt8();
 
@@ -317,7 +334,7 @@ namespace System.Net.Quic.Implementations.Managed
                     return ProcessPacketResult.DropPacket;
                 }
 
-                result = ReceiveLongHeaderPackets(reader, header);
+                result = ReceiveLongHeaderPackets(reader, header, context);
             }
 
             else
@@ -328,7 +345,7 @@ namespace System.Net.Quic.Implementations.Managed
                     return ProcessPacketResult.DropPacket;
                 }
 
-                result = Receive1Rtt(reader, header);
+                result = Receive1Rtt(reader, header, context);
             }
 
             return result;
@@ -337,7 +354,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal EncryptionLevel GetWriteLevel()
         {
             // TODO-RZ: handle resend and packet loss of earlier levels
-            EncryptionLevel desiredLevel = _tls.GetWriteLevel();
+            EncryptionLevel desiredLevel = _tls.WriteLevel;
             // if not connected, then handshake is not done yet
             // if (!Connected && desiredLevel == EncryptionLevel.Application)
             // return EncryptionLevel.Handshake;
@@ -357,7 +374,7 @@ namespace System.Net.Quic.Implementations.Managed
             return desiredLevel;
         }
 
-        internal void SendOne(QuicWriter writer, IPEndPoint? receiver, EncryptionLevel level)
+        private void SendOne(QuicWriter writer, IPEndPoint? receiver, EncryptionLevel level, Context context)
         {
             // TODO-RZ: process lost packets
             var packetType = level switch
@@ -394,7 +411,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             writer.Reset(origBuffer.Slice(0, maxPacketLength - seal.TagLength), written);
 
-            WriteFrames(writer, packetType, level);
+            WriteFrames(writer, packetType, level, context);
 
             writer.Reset(origBuffer, writer.BytesWritten);
             if (writer.BytesWritten == written)
@@ -460,17 +477,16 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        internal int SendData(byte[] targetBuffer, out IPEndPoint? receiver)
+        internal int SendData(byte[] targetBuffer, out IPEndPoint? receiver, DateTime now)
         {
             receiver = default;
+            var context = new Context(now);
 
             if (_isServer && GetEpoch(EncryptionLevel.Initial).RecvCryptoSeal == null)
             {
                 // if initial secrets have not been derived yet, we have nothing to send
                 return 0;
             }
-
-            _tls.DoHandshake();
 
             var writer = new QuicWriter(targetBuffer);
 
@@ -480,7 +496,7 @@ namespace System.Net.Quic.Implementations.Managed
                 var level = GetWriteLevel();
 
                 // TODO-RZ get client address
-                SendOne(writer, null, level);
+                SendOne(writer, null, level, context);
                 if (writer.BytesWritten == 0)
                     break;
 

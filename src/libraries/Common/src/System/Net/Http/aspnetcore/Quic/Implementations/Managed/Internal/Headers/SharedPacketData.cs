@@ -48,7 +48,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 
             ReadOnlySpan<byte> token = ReadOnlySpan<byte>.Empty;
             if (type == PacketType.Initial && !reader.TryReadLengthPrefixedSpan(out token) ||
-                !reader.TryReadVarInt(out ulong length) || length > (ulong) reader.BytesLeft)
+                !reader.TryReadVarInt(out ulong length))
             {
                 data = default;
                 return false;

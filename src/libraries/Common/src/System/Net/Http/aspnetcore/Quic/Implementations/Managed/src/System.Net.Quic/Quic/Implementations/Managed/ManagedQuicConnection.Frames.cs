@@ -68,7 +68,7 @@ namespace System.Net.Quic.Implementations.Managed
             };
         }
 
-        private ProcessPacketResult ProcessFrames(QuicReader reader, PacketType packetType)
+        private ProcessPacketResult ProcessFrames(QuicReader reader, PacketType packetType, Context context)
         {
             bool handshakeWanted = false;
 
@@ -95,11 +95,11 @@ namespace System.Net.Quic.Implementations.Managed
                         break;
                     case FrameType.Crypto:
                         handshakeWanted = true;
-                        result = ProcessCryptoFrame(reader, packetType);
+                        result = ProcessCryptoFrame(reader, packetType, context);
                         break;
                     case FrameType.Ping:
                     case FrameType.Ack:
-                        result = ProcessAckFrame(reader, packetType);
+                        result = ProcessAckFrame(reader, packetType, context);
                         break;
                     case FrameType.AckWithEcn:
                     case FrameType.ResetStream:
@@ -163,7 +163,7 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.ConnectionClose; //TODO-RZ: Draining/closing state management
         }
 
-        private ProcessPacketResult ProcessAckFrame(QuicReader reader, PacketType packetType)
+        private ProcessPacketResult ProcessAckFrame(QuicReader reader, PacketType packetType, Context context)
         {
             if (!AckFrame.Read(reader, out var frame))
                 return ProcessPacketResult.ConnectionClose;
@@ -191,14 +191,13 @@ namespace System.Net.Quic.Implementations.Managed
                 ranges[i + 1] = new PacketNumberRange(ranges[i].Start - gap - acked - 2, ranges[i].Start - gap - 2);
             }
 
-            // TODO-RZ: maintain current date-time throughout processing the frame
             _recovery.OnRangeAcked(GetEpoch(packetType), ranges, TimeSpan.FromTicks((long)frame.AckDelay),
-                DateTime.Now);
+                context.Now);
 
             return ProcessPacketResult.Ok;
         }
 
-        private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType)
+        private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType, Context context)
         {
             if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.ConnectionClose;
             // TODO-RZ: Utilize the offset
@@ -207,7 +206,7 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.Ok;
         }
 
-        private void WriteFrames(QuicWriter writer, PacketType packetType, EncryptionLevel level)
+        private void WriteFrames(QuicWriter writer, PacketType packetType, EncryptionLevel level, Context context)
         {
             var epoch = GetEpoch(level);
 
@@ -218,7 +217,7 @@ namespace System.Net.Quic.Implementations.Managed
                 return;
             }
 
-            WriteAckFrame(writer, epoch);
+            WriteAckFrame(writer, epoch, context);
             WriteCryptoFrames(writer, epoch);
         }
 
@@ -248,7 +247,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private static unsafe void WriteAckFrame(QuicWriter writer, EpochData epoch)
+        private static unsafe void WriteAckFrame(QuicWriter writer, EpochData epoch, Context context)
         {
             if (!epoch.AckElicited)
             {
@@ -260,9 +259,8 @@ namespace System.Net.Quic.Implementations.Managed
             Debug.Assert(ranges.Count > 0); // implied by AckElicited
             Debug.Assert(ranges.Count % 2 == 1); // sanity check
 
-            // TODO-RZ generate AckDelay
             // TODO-RZ check max ack delay to avoid sending acks every packet
-            ulong ackDelay = 0ul;
+            ulong ackDelay = (ulong) (context.Now - epoch.LargestReceivedPacketTimestamp).Ticks;
 
             ulong largest = ranges.GetMax();
             var firstRange = ranges[^1];

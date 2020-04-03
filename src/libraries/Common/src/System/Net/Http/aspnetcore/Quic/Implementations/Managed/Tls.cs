@@ -2,7 +2,6 @@
 
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
-using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -53,6 +52,7 @@ namespace System.Net.Quic.Implementations.Managed
         private static ref OpenSslQuicMethods.NativeCallbacks Callbacks => ref _callbacks;
 
         internal bool IsHandshakeFinishhed => Interop.OpenSslQuic.SslIsInInit(_ssl) == 0;
+        public EncryptionLevel WriteLevel { get; private set; }
 
         public void Dispose()
         {
@@ -129,16 +129,13 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        internal EncryptionLevel GetWriteLevel()
-        {
-            return ToManagedEncryptionLevel(Interop.OpenSslQuic.SslQuicWriteLevel(_ssl));
-        }
-
         internal SslError DoHandshake()
         {
             if (IsHandshakeFinishhed)
                 return SslError.None;
             int status = Interop.OpenSslQuic.SslDoHandshake(_ssl);
+            WriteLevel = ToManagedEncryptionLevel(Interop.OpenSslQuic.SslQuicWriteLevel(_ssl));
+
             if (status < 0)
             {
                 return (SslError)Interop.OpenSslQuic.SslGetError(_ssl, status);

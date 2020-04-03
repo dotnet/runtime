@@ -38,7 +38,7 @@ namespace System.Net.Quic.Tests
 
         private PacketFlight GetFlightToSend(ManagedQuicConnection from)
         {
-            int written = from.SendData(buffer, out _);
+            int written = from.SendData(buffer, out _, DateTime.Now);
             var copy = buffer.AsSpan(0, written).ToArray();
             var packets = PacketBase.ParseMany(copy, written, new TestHarness(from));
 
@@ -59,7 +59,7 @@ namespace System.Net.Quic.Tests
                 writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
             }
 
-            destination.ReceiveData(buffer, writer.Buffer.Offset + writer.BytesWritten, IpEndPoint);
+            destination.ReceiveData(buffer, writer.Buffer.Offset + writer.BytesWritten, IpEndPoint, DateTime.Now);
         }
 
         private void SendPacket(ManagedQuicConnection source, ManagedQuicConnection destination, PacketBase packet)
@@ -70,7 +70,7 @@ namespace System.Net.Quic.Tests
         private PacketFlight SendFlight(ManagedQuicConnection source, ManagedQuicConnection destination)
         {
             // make a copy of the buffer, because decryption happens in-place
-            int written = source.SendData(buffer, out _);
+            int written = source.SendData(buffer, out _, DateTime.Now);
             var copy = buffer.AsSpan(0, written).ToArray();
 
             output.WriteLine(source == _client ? "\nClient:" : "\nServer:");
@@ -80,7 +80,7 @@ namespace System.Net.Quic.Tests
                 output.WriteLine(packet.ToString());
             }
 
-            destination.ReceiveData(buffer, written, IpEndPoint);
+            destination.ReceiveData(buffer, written, IpEndPoint, DateTime.Now);
 
             return new PacketFlight(packets, written);
         }

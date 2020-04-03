@@ -53,7 +53,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Stream of outbound messages to be carried in CRYPTO frames.
         /// </summary>
-        internal CryptoStream CryptoStream { get; set; } = new CryptoStream();
+        internal CryptoStream CryptoStream { get; } = new CryptoStream();
 
         /// <summary>
         ///     Gets packet number and it's minimum safe encoding length for the next packet sent.
