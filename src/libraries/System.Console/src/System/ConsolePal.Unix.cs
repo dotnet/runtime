@@ -73,9 +73,9 @@ namespace System
         {
             get
             {
-                return Volatile.Read(ref s_stdInReader) ?? EnsureInitializedStdInReader();
+                return Volatile.Read(ref s_stdInReader) ?? EnsureInitialized();
 
-                static SyncTextReader EnsureInitializedStdInReader()
+                static SyncTextReader EnsureInitialized()
                 {
                     EnsureConsoleInitialized();
 

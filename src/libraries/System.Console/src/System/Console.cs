@@ -37,9 +37,9 @@ namespace System
         {
             get
             {
-                return Volatile.Read(ref s_in) ?? EnsureInitializedIn();
+                return Volatile.Read(ref s_in) ?? EnsureInitialized();
 
-                static TextReader EnsureInitializedIn()
+                static TextReader EnsureInitialized()
                 {
                     ConsolePal.EnsureConsoleInitialized(); // May lock Console.Out
 
@@ -149,9 +149,9 @@ namespace System
         {
             get
             {
-                return Volatile.Read(ref s_out) ?? EnsureInitializedOut();
+                return Volatile.Read(ref s_out) ?? EnsureInitialized();
 
-                static TextWriter EnsureInitializedOut()
+                static TextWriter EnsureInitialized()
                 {
                     lock (InternalSyncObject) // Ensures Out and OutputEncoding are synchronized.
                     {
@@ -165,9 +165,9 @@ namespace System
         {
             get
             {
-                return Volatile.Read(ref s_error) ?? EnsureInitializedError();
+                return Volatile.Read(ref s_error) ?? EnsureInitialized();
 
-                static TextWriter EnsureInitializedError()
+                static TextWriter EnsureInitialized()
                 {
                     lock (InternalSyncObject) // Ensures Error and OutputEncoding are synchronized.
                     {
@@ -199,10 +199,10 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = Volatile.Read(ref _isStdInRedirected) ?? EnsureInitializedInputRedirected();
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdInRedirected) ?? EnsureInitialized();
                 return redirected.Value;
 
-                static StrongBox<bool> EnsureInitializedInputRedirected()
+                static StrongBox<bool> EnsureInitialized()
                 {
                     Volatile.Write(ref _isStdInRedirected, new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
                     return _isStdErrRedirected!;
@@ -214,10 +214,10 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = Volatile.Read(ref _isStdOutRedirected) ?? EnsureInitializedOutputRedirected();
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdOutRedirected) ?? EnsureInitialized();
                 return redirected.Value;
 
-                static StrongBox<bool> EnsureInitializedOutputRedirected()
+                static StrongBox<bool> EnsureInitialized()
                 {
                     Volatile.Write(ref _isStdOutRedirected, new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
                     return _isStdOutRedirected!;
@@ -229,10 +229,10 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = Volatile.Read(ref _isStdErrRedirected) ?? EnsureInitializedErrorRedirected();
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdErrRedirected) ?? EnsureInitialized();
                 return redirected.Value;
 
-                static StrongBox<bool> EnsureInitializedErrorRedirected()
+                static StrongBox<bool> EnsureInitialized()
                 {
                     Volatile.Write(ref _isStdErrRedirected, new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
                     return _isStdErrRedirected!;
