@@ -115,6 +115,12 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static int Log2(uint value)
         {
+            // Enforce conventional contract 0->0 (Log(0) is undefined)
+            if (value == 0)
+            {
+                return 0;
+            }
+
             // value    lzcnt   actual  expected
             // ..0000   32      0        0 (by convention, guard clause)
             // ..0001   31      31-31    0
@@ -124,14 +130,13 @@ namespace System.Numerics
             // 1000..    0      31-0    31
             if (Lzcnt.IsSupported)
             {
-                // Enforce conventional contract 0->0 (Log(0) is undefined)
-                if (value == 0)
-                {
-                    return 0;
-                }
-
                 // LZCNT contract is 0->32
                 return 31 - (int)Lzcnt.LeadingZeroCount(value);
+            }
+
+            if (ArmBase.IsSupported)
+            {
+                return 31 - (int)ArmBase.LeadingZeroCount(value);
             }
 
             // Fallback contract is 0->0
@@ -147,16 +152,21 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static int Log2(ulong value)
         {
+            // Enforce conventional contract 0->0 (Log(0) is undefined)
+            if (value == 0)
+            {
+                return 0;
+            }
+
             if (Lzcnt.X64.IsSupported)
             {
-                // Enforce conventional contract 0->0 (Log(0) is undefined)
-                if (value == 0)
-                {
-                    return 0;
-                }
-
                 // LZCNT contract is 0->64
                 return 63 - (int)Lzcnt.X64.LeadingZeroCount(value);
+            }
+
+            if (ArmBase.Arm64.IsSupported)
+            {
+                return 63 - (int)ArmBase.Arm64.LeadingZeroCount(value);
             }
 
             uint hi = (uint)(value >> 32);
