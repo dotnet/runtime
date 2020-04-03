@@ -264,6 +264,7 @@ jobs:
     - Linux_arm
     - Linux_arm64
     - Linux_musl_x64
+    - WebAssembly_wasm
     # - Linux_musl_arm64
     - Windows_NT_x64
     # - Windows_NT_x86

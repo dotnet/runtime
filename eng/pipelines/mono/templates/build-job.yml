@@ -71,6 +71,13 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'Android') }}:
       - name: osOverride
         value: -os Android
+    - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+      - name: EMSDK_PATH
+        value: $(Build.BinariesDirectory)/emsdk
+      - name: archType
+        value: wasm
+      - name: osOverride
+        value: '-os WebAssembly'
     - ${{ parameters.variables }}
 
     steps:
@@ -86,6 +93,16 @@ jobs:
       # Necessary to install python
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
+
+    - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+      - script: |
+          set -v
+          EMSCRIPTEN_VERSION=1.39.9
+          git clone https://github.com/emscripten-core/emsdk.git $(EMSDK_PATH)
+          cd $(EMSDK_PATH)
+          ./emsdk install ${EMSCRIPTEN_VERSION}-upstream
+          ./emsdk activate --embedded ${EMSCRIPTEN_VERSION}-upstream
+        displayName: Install Emscripten
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
