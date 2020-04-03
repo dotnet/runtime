@@ -1336,11 +1336,11 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(JsonGuidTestData.ValidGuidTests), MemberType = typeof(JsonGuidTestData))]
         public static void TryGetGuid_HasValueSequence_RetrievesGuid(string testString, string expectedString)
         {
-            TryGetGuid_HasValueSequence_RetrievesGuid(testString, expectedString, isFinalBlock: true);
-            TryGetGuid_HasValueSequence_RetrievesGuid(testString, expectedString, isFinalBlock: false);
+            TryGetGuid_HasValueSequence_RetrievesGuid_Helper(testString, expectedString, isFinalBlock: true);
+            TryGetGuid_HasValueSequence_RetrievesGuid_Helper(testString, expectedString, isFinalBlock: false);
         }
 
-        private static void TryGetGuid_HasValueSequence_RetrievesGuid(string testString, string expectedString, bool isFinalBlock)
+        private static void TryGetGuid_HasValueSequence_RetrievesGuid_Helper(string testString, string expectedString, bool isFinalBlock)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
             ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
@@ -1379,11 +1379,11 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(JsonGuidTestData.InvalidGuidTests), MemberType = typeof(JsonGuidTestData))]
         public static void TryGetGuid_HasValueSequence_False(string testString)
         {
-            TryGetGuid_HasValueSequence_False(testString, isFinalBlock: true);
-            TryGetGuid_HasValueSequence_False(testString, isFinalBlock: false);
+            TryGetGuid_HasValueSequence_False_Helper(testString, isFinalBlock: true);
+            TryGetGuid_HasValueSequence_False_Helper(testString, isFinalBlock: false);
         }
 
-        private static void TryGetGuid_HasValueSequence_False(string testString, bool isFinalBlock)
+        private static void TryGetGuid_HasValueSequence_False_Helper(string testString, bool isFinalBlock)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
             ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
