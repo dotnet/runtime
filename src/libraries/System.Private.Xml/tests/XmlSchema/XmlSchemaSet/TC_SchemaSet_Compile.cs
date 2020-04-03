@@ -1085,5 +1085,73 @@ namespace System.Xml.Tests
 
             Assert.Contains("particle", ex.Message);
         }
+
+        #region test throwing of XmlSchemaException with message Sch_AllRefMinMax
+        public static IEnumerable<object[]> AllRefMinMax_Throws_TestData
+        {
+            get
+            {
+                return new List<object[]>()
+                {
+                    new object[]
+                    {  // invalid value for minOccurs and maxOccurs
+@"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:group name='foods'>
+        <xs:all>
+            <xs:element name='bacon' type='xs:integer'/>
+            <xs:element name='eggs' type='xs:integer'/>
+            <xs:element name='coffee' type='xs:integer'/>
+        </xs:all>
+    </xs:group>
+
+    <xs:complexType name='breakfast'>
+        <xs:group ref='foods' minOccurs='2' maxOccurs='2'/>
+    </xs:complexType>
+</xs:schema>
+"
+                    },
+                    new object[]
+                    {  // maxOccurs too large
+@"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema elementFormDefault='qualified'
+            xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+    <xs:group name='foods'>
+        <xs:all>
+            <xs:element name='bacon' type='xs:integer'/>
+            <xs:element name='eggs' type='xs:integer'/>
+            <xs:element name='coffee' type='xs:integer'/>
+        </xs:all>
+    </xs:group>
+
+    <xs:complexType name='breakfast'>
+        <xs:group ref='foods' maxOccurs='2'/>
+    </xs:complexType>
+</xs:schema>
+"
+                    }
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AllRefMinMax_Throws_TestData))]
+        public void AllRefMinMax_Throws(string schema)
+        {
+            XmlSchemaSet ss = new XmlSchemaSet();
+            ss.Add(null, XmlReader.Create(new StringReader(schema)));
+
+            Exception ex = Assert.Throws<XmlSchemaException>(() => ss.Compile());
+
+            // Issue 30218: invalid formatters
+            Regex rx = new Regex(@"\{[a-zA-Z ]+[^\}]*\}");
+            Assert.Empty(rx.Matches(ex.Message));
+
+            Assert.Contains("all", ex.Message);
+            Assert.Contains("minOccurs", ex.Message);
+            Assert.Contains("maxOccurs", ex.Message);
+        }
+        #endregion
     }
 }
