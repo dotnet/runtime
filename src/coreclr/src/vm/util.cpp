@@ -1604,7 +1604,7 @@ static size_t GetCacheSizeFromCpuId()
 
         DWORD maxCpuId = getcpuid(0, buffer);
 
-        if (memcmp(buffer + 4, "GenuineIntel", 12) == 0)
+        if (memcmp(buffer + 4, "Genu" "ntel" "ineI" /* intentionally swapped */, 12) == 0)
         {
             /*
             //The following lines are commented because the OS API  on Windows 2003 SP1 is not returning the Cache Relation information on x86.
@@ -1648,7 +1648,7 @@ static size_t GetCacheSizeFromCpuId()
                 }
             }
         }
-        else if (memcmp(buffer + 4, "AuthenticAMD", 12) == 0)
+        else if (memcmp(buffer + 4, "Auth" "cAMD" "enti" /* intentionally swapped */, 12) == 0)
         {
             if (getcpuid(0x80000000, buffer) >= 0x80000006)
             {
