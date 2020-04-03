@@ -87,6 +87,23 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Throws<DecoderFallbackException>(() => reader.SkipValue());
         }
 
+        [Theory]
+        [InlineData(50_000)]
+        public static void SkipValue_ExtremelyNestedValues_ShouldNotStackOverflow(int depth)
+        {
+            // Construct a valid CBOR encoding with extreme nesting:
+            // defines a tower of `depth` nested singleton arrays,
+            // with the innermost array containing zero.
+            byte[] encoding = new byte[depth + 1];
+            encoding.AsSpan(0, depth).Fill(0x81); // array of length 1
+            encoding[depth] = 0;
+
+            var reader = new CborReader(encoding);
+
+            reader.SkipValue();
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+        }
+
         public static IEnumerable<object[]> SampleValues =>
             new string[]
             {
