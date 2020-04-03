@@ -1150,6 +1150,17 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 srcCount += BuildDelayFreeUses(op3);
                 break;
 
+            case NI_AdvSimd_ExtractAndNarrowHigh:
+
+                assert((numArgs == 2) && (op2 != nullptr));
+
+                buildUses = false;
+
+                tgtPrefUse = BuildUse(op1);
+                srcCount += 1;
+                srcCount += BuildDelayFreeUses(op2);
+                break;
+
             default:
                 assert((intrinsicId > NI_HW_INTRINSIC_START) && (intrinsicId < NI_HW_INTRINSIC_END));
                 break;

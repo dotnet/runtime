@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -256,23 +257,26 @@ namespace System
             return new GCMemoryInfo(highMemoryLoadThresholdBytes, memoryLoadBytes, totalAvailableMemoryBytes, heapSizeBytes, fragmentedBytes);
         }
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern Array AllocPinnedArray(Type t, int length);
+
         public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
         {
-            if (pinned)
-                throw new NotImplementedException();
-
             // Mono only does explicit zeroning if the array is to big for the nursery, but less than 1 Mb - 4 kb.
             // If it is bigger than that, we grab memoroy directly from the OS which comes pre-zeroed.
             // Experimentation shows that if we just skip the zeroing in this case, we do not save a measurable
             // amount of time. So we just allocate the normal way here.
             // Revist if we change LOS implementation.
-            return new T[length];
+            return AllocateArray<T>(length, pinned);
         }
 
         public static T[] AllocateArray<T>(int length, bool pinned = false)
         {
-            if (pinned)
-                throw new NotImplementedException();
+            if (pinned) {
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                return Unsafe.As<T[]>(AllocPinnedArray(typeof(T[]), length));
+            }
 
             return new T[length];
         }
