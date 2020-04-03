@@ -12,20 +12,13 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal sealed class LargeObjectWithParameterizedConstructorConverter<T> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
     {
-        private JsonClassInfo.ParameterizedConstructorDelegate<T>? _createObject;
-
-        internal override void CreateConstructorDelegate(JsonSerializerOptions options)
-        {
-            _createObject = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo)!;
-        }
-
         protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
             bool success = jsonParameterInfo.ReadJson(ref state, ref reader, out object? arg0);
 
             if (success)
             {
-                ((object[])state.Current.CtorArgumentState!.Arguments!)[jsonParameterInfo.Position] = arg0!;
+                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg0!;
             }
 
             return success;
@@ -33,15 +26,17 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override object CreateObject(ref ReadStackFrame frame)
         {
-            object[] arguments = (object[])frame.CtorArgumentState!.Arguments!;
+            object[] arguments = (object[])frame.CtorArgumentState!.Arguments;
 
-            if (_createObject == null)
+            var createObject = (JsonClassInfo.ParameterizedConstructorDelegate<T>?)frame.JsonClassInfo.CreateObjectWithParameterizedCtor;
+
+            if (createObject == null)
             {
                 // This means this constructor has more than 64 parameters.
-                ThrowHelper.ThrowNotSupportedException_ConstructorMaxOf64Parameters(ConstructorInfo, TypeToConvert);
+                ThrowHelper.ThrowNotSupportedException_ConstructorMaxOf64Parameters(ConstructorInfo!, TypeToConvert);
             }
 
-            object obj = _createObject(arguments)!;
+            object obj = createObject(arguments);
 
             ArrayPool<object>.Shared.Return(arguments, clearArray: true);
             return obj;
@@ -49,8 +44,15 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
-            object[] arguments = ArrayPool<object>.Shared.Rent(state.Current.JsonClassInfo.ParameterCount);
-            foreach (JsonParameterInfo jsonParameterInfo in state.Current.JsonClassInfo.ParameterCache!.Values)
+            JsonClassInfo classInfo = state.Current.JsonClassInfo;
+
+            if (classInfo.CreateObjectWithParameterizedCtor == null)
+            {
+                classInfo.CreateObjectWithParameterizedCtor = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo!);
+            }
+
+            object[] arguments = ArrayPool<object>.Shared.Rent(classInfo.ParameterCount);
+            foreach (JsonParameterInfo jsonParameterInfo in classInfo.ParameterCache!.Values)
             {
                 if (jsonParameterInfo.ShouldDeserialize)
                 {
