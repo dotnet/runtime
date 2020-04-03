@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -358,6 +359,16 @@ namespace System
                     CultureInfo.CurrentCulture.CompareInfo.IsSuffix(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool EndsWithOrdinalIgnoreCase(this ReadOnlySpan<char> span, ReadOnlySpan<char> value)
+        {
+            return value.Length <= span.Length
+                && CompareInfo.EqualsOrdinalIgnoreCase(
+                    ref Unsafe.Add(ref MemoryMarshal.GetReference(span), span.Length - value.Length),
+                    ref MemoryMarshal.GetReference(value),
+                    value.Length);
+        }
+
         /// <summary>
         /// Determines whether the beginning of the <paramref name="span"/> matches the specified <paramref name="value"/> when compared using the specified <paramref name="comparisonType"/> option.
         /// </summary>
@@ -389,6 +400,13 @@ namespace System
             return (comparisonType >= StringComparison.InvariantCulture) ?
                 CompareInfo.Invariant.IsPrefix(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType)) :
                     CultureInfo.CurrentCulture.CompareInfo.IsPrefix(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool StartsWithOrdinalIgnoreCase(this ReadOnlySpan<char> span, ReadOnlySpan<char> value)
+        {
+            return value.Length <= span.Length
+                && CompareInfo.EqualsOrdinalIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), value.Length);
         }
 
         /// <summary>

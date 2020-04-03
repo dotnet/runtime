@@ -400,7 +400,6 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            Debug.Assert(!source.IsEmpty);
             Debug.Assert(!prefix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
@@ -523,6 +522,106 @@ namespace System.Globalization
             }
 
             return new SortKey(this, source, options, keyData);
+        }
+
+        private unsafe int GetSortKeyCore(ReadOnlySpan<char> source, Span<byte> sortKey, CompareOptions options)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+            // LCMapStringEx doesn't allow cchDest = 0 unless we're trying to query
+            // the total number of bytes necessary.
+
+            if (sortKey.IsEmpty)
+            {
+                throw new ArgumentException(
+                    paramName: nameof(sortKey),
+                    message: SR.Argument_CannotBeEmptySpan);
+            }
+
+            uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
+
+            // LCMapStringEx doesn't support passing cchSrc = 0, so if given an empty span
+            // we'll instead normalize to a null-terminated empty string and pass -1 as
+            // the length to indicate that the implicit null terminator should be used.
+
+            int sourceLength = source.Length;
+            if (sourceLength == 0)
+            {
+                source = string.Empty;
+                sourceLength = -1;
+            }
+
+            int actualSortKeyLength;
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (byte* pSortKey = &MemoryMarshal.GetReference(sortKey))
+            {
+                Debug.Assert(pSource != null);
+                Debug.Assert(pSortKey != null);
+                actualSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                                     flags,
+                                                                     pSource, sourceLength,
+                                                                     pSortKey, sortKey.Length,
+                                                                     null, null, _sortHandle);
+            }
+
+            if (actualSortKeyLength <= 0)
+            {
+                Debug.Assert(actualSortKeyLength == 0, "LCMapStringEx should never return a negative value.");
+
+                // This could fail for a variety of reasons, including NLS being unable
+                // to allocate a temporary buffer large enough to hold intermediate state,
+                // or the destination buffer being too small.
+
+                throw new ArgumentException(SR.Arg_ExternalException);
+            }
+
+            Debug.Assert(actualSortKeyLength <= sortKey.Length);
+            return actualSortKeyLength;
+        }
+
+        private unsafe int GetSortKeyLengthCore(ReadOnlySpan<char> source, CompareOptions options)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+            uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
+
+            // LCMapStringEx doesn't support passing cchSrc = 0, so if given an empty span
+            // we'll instead normalize to a null-terminated empty string and pass -1 as
+            // the length to indicate that the implicit null terminator should be used.
+
+            int sourceLength = source.Length;
+            if (sourceLength == 0)
+            {
+                source = string.Empty;
+                sourceLength = -1;
+            }
+
+            int sortKeyLength;
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            {
+                Debug.Assert(pSource != null);
+                sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                               flags,
+                                                               pSource, sourceLength,
+                                                               null, 0,
+                                                               null, null, _sortHandle);
+            }
+
+            if (sortKeyLength <= 0)
+            {
+                Debug.Assert(sortKeyLength == 0, "LCMapStringEx should never return a negative value.");
+
+                // This could fail for a variety of reasons, including NLS being unable
+                // to allocate a temporary buffer large enough to hold intermediate state.
+
+                throw new ArgumentException(SR.Arg_ExternalException);
+            }
+
+            return sortKeyLength;
         }
 
         private static unsafe bool IsSortable(char* text, int length)

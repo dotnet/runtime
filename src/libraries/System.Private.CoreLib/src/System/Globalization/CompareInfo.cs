@@ -157,6 +157,32 @@ namespace System.Globalization
             }
         }
 
+        /// <summary>
+        /// Indicates whether a specified Unicode string is sortable.
+        /// </summary>
+        /// <param name="text">A string of zero or more Unicode characters.</param>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="text"/> is non-empty and contains
+        /// only sortable Unicode characters; otherwise, <see langword="false"/>.
+        /// </returns>
+        public static unsafe bool IsSortable(ReadOnlySpan<char> text)
+        {
+            if (text.Length == 0)
+            {
+                return false;
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return true;
+            }
+
+            fixed (char* pChar = text)
+            {
+                return IsSortable(pChar, text.Length);
+            }
+        }
+
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
         {
@@ -452,6 +478,69 @@ namespace System.Globalization
         }
 
         /// <summary>
+        /// Compares two strings.
+        /// </summary>
+        /// <param name="string1">The first string to compare.</param>
+        /// <param name="string2">The second string to compare.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> to use during the comparison.</param>
+        /// <returns>
+        /// Zero if <paramref name="string1"/> and <paramref name="string2"/> are equal;
+        /// or a negative value if <paramref name="string1"/> sorts before <paramref name="string2"/>;
+        /// or a positive value if <paramref name="string1"/> sorts after <paramref name="string2"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported combination of flags.
+        /// </exception>
+        public int Compare(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options = CompareOptions.None)
+        {
+            if ((options & ValidCompareMaskOffFlags) == 0)
+            {
+                // Common case: caller is attempting to perform linguistic comparison.
+                // Pass the flags down to NLS or ICU unless we're running in invariant
+                // mode, at which point we normalize the flags to Orginal[IgnoreCase].
+
+                if (!GlobalizationMode.Invariant)
+                {
+                    return CompareString(string1, string2, options);
+                }
+                else if ((options & CompareOptions.IgnoreCase) == 0)
+                {
+                    goto ReturnOrdinal;
+                }
+                else
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
+            }
+            else
+            {
+                // Less common case: caller is attempting to perform non-linguistic comparison,
+                // or an invalid combination of flags was supplied.
+
+                if (options == CompareOptions.Ordinal)
+                {
+                    goto ReturnOrdinal;
+                }
+                else if (options == CompareOptions.OrdinalIgnoreCase)
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        paramName: nameof(options),
+                        message: SR.Argument_InvalidFlag);
+                }
+            }
+
+        ReturnOrdinal:
+            return string1.SequenceCompareTo(string2);
+
+        ReturnOrdinalIgnoreCase:
+            return CompareOrdinalIgnoreCase(string1, string2);
+        }
+
+        /// <summary>
         /// CompareOrdinalIgnoreCase compare two string ordinally with ignoring the case.
         /// it assumes the strings are Ascii string till we hit non Ascii character in strA or strB and then we continue the comparison by
         /// calling the OS.
@@ -728,6 +817,77 @@ namespace System.Globalization
             return StartsWith(source, prefix, options);
         }
 
+        /// <summary>
+        /// Determines whether a string starts with a specific prefix.
+        /// </summary>
+        /// <param name="source">The string to search within.</param>
+        /// <param name="prefix">The prefix to attempt to match at the start of <paramref name="source"/>.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> to use during the match.</param>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="prefix"/> occurs at the start of <paramref name="source"/>;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported combination of flags.
+        /// </exception>
+        public bool IsPrefixNew(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options = CompareOptions.None)
+        {
+            // The empty string is trivially a prefix of every other string. For compat with
+            // earlier versions of the Framework we'll early-exit here before validating the
+            // 'options' argument.
+
+            if (prefix.IsEmpty)
+            {
+                return true;
+            }
+
+            if ((options & ValidIndexMaskOffFlags) == 0)
+            {
+                // Common case: caller is attempting to perform a linguistic search.
+                // Pass the flags down to NLS or ICU unless we're running in invariant
+                // mode, at which point we normalize the flags to Orginal[IgnoreCase].
+
+                if (!GlobalizationMode.Invariant)
+                {
+                    return StartsWith(source, prefix, options);
+                }
+                else if ((options & CompareOptions.IgnoreCase) == 0)
+                {
+                    goto ReturnOrdinal;
+                }
+                else
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
+            }
+            else
+            {
+                // Less common case: caller is attempting to perform non-linguistic comparison,
+                // or an invalid combination of flags was supplied.
+
+                if (options == CompareOptions.Ordinal)
+                {
+                    goto ReturnOrdinal;
+                }
+                else if (options == CompareOptions.OrdinalIgnoreCase)
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        paramName: nameof(options),
+                        message: SR.Argument_InvalidFlag);
+                }
+            }
+
+        ReturnOrdinal:
+            return source.StartsWith(prefix);
+
+        ReturnOrdinalIgnoreCase:
+            return source.StartsWithOrdinalIgnoreCase(prefix);
+        }
+
         public bool IsPrefix(string source, string prefix)
         {
             return IsPrefix(source, prefix, 0);
@@ -789,6 +949,77 @@ namespace System.Globalization
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             return EndsWith(source, suffix, options);
+        }
+
+        /// <summary>
+        /// Determines whether a string ends with a specific suffix.
+        /// </summary>
+        /// <param name="source">The string to search within.</param>
+        /// <param name="suffix">The suffix to attempt to match at the end of <paramref name="source"/>.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> to use during the match.</param>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="suffix"/> occurs at the end of <paramref name="source"/>;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported combination of flags.
+        /// </exception>
+        public bool IsSuffixNew(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options = CompareOptions.None)
+        {
+            // The empty string is trivially a suffix of every other string. For compat with
+            // earlier versions of the Framework we'll early-exit here before validating the
+            // 'options' argument.
+
+            if (suffix.IsEmpty)
+            {
+                return true;
+            }
+
+            if ((options & ValidIndexMaskOffFlags) == 0)
+            {
+                // Common case: caller is attempting to perform a linguistic search.
+                // Pass the flags down to NLS or ICU unless we're running in invariant
+                // mode, at which point we normalize the flags to Orginal[IgnoreCase].
+
+                if (!GlobalizationMode.Invariant)
+                {
+                    return EndsWith(source, suffix, options);
+                }
+                else if ((options & CompareOptions.IgnoreCase) == 0)
+                {
+                    goto ReturnOrdinal;
+                }
+                else
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
+            }
+            else
+            {
+                // Less common case: caller is attempting to perform non-linguistic comparison,
+                // or an invalid combination of flags was supplied.
+
+                if (options == CompareOptions.Ordinal)
+                {
+                    goto ReturnOrdinal;
+                }
+                else if (options == CompareOptions.OrdinalIgnoreCase)
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        paramName: nameof(options),
+                        message: SR.Argument_InvalidFlag);
+                }
+            }
+
+        ReturnOrdinal:
+            return source.EndsWith(suffix);
+
+        ReturnOrdinalIgnoreCase:
+            return source.EndsWithOrdinalIgnoreCase(suffix);
         }
 
         public bool IsSuffix(string source, string suffix)
@@ -966,6 +1197,75 @@ namespace System.Globalization
             return IndexOf(source, value, startIndex, count, options, null);
         }
 
+        /// <summary>
+        /// Searches for the first occurrence of a substring within a source string.
+        /// </summary>
+        /// <param name="source">The string to search within.</param>
+        /// <param name="value">The substring to locate within <paramref name="source"/>.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> to use during the search.</param>
+        /// <returns>
+        /// The zero-based index into <paramref name="source"/> where the substring <paramref name="value"/>
+        /// first appears; or -1 if <paramref name="value"/> cannot be found within <paramref name="source"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported combination of flags.
+        /// </exception>
+        public unsafe int IndexOfNew(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options = CompareOptions.None)
+        {
+            if ((options & ValidIndexMaskOffFlags) == 0)
+            {
+                // Common case: caller is attempting to perform a linguistic search.
+                // Pass the flags down to NLS or ICU unless we're running in invariant
+                // mode, at which point we normalize the flags to Orginal[IgnoreCase].
+
+                if (!GlobalizationMode.Invariant)
+                {
+                    if (value.IsEmpty)
+                    {
+                        return 0; // Empty target string trivially occurs at index 0 of every search space.
+                    }
+                    else
+                    {
+                        return IndexOfCore(source, value, options, null /* matchLengthPtr */, fromBeginning: true);
+                    }
+                }
+                else if ((options & CompareOptions.IgnoreCase) == 0)
+                {
+                    goto ReturnOrdinal;
+                }
+                else
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
+            }
+            else
+            {
+                // Less common case: caller is attempting to perform non-linguistic comparison,
+                // or an invalid combination of flags was supplied.
+
+                if (options == CompareOptions.Ordinal)
+                {
+                    goto ReturnOrdinal;
+                }
+                else if (options == CompareOptions.OrdinalIgnoreCase)
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        paramName: nameof(options),
+                        message: SR.Argument_InvalidFlag);
+                }
+            }
+
+        ReturnOrdinal:
+            return source.IndexOf(value);
+
+        ReturnOrdinalIgnoreCase:
+            return IndexOfOrdinalIgnoreCaseNew(source, value, fromBeginning: true);
+        }
+
         internal int IndexOfOrdinalIgnoreCase(ReadOnlySpan<char> source, ReadOnlySpan<char> value)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -973,6 +1273,33 @@ namespace System.Globalization
             Debug.Assert(!value.IsEmpty);
 
             return IndexOfOrdinalCore(source, value, ignoreCase: true, fromBeginning: true);
+        }
+
+        internal static int IndexOfOrdinalIgnoreCaseNew(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool fromBeginning)
+        {
+            if (value.IsEmpty)
+            {
+                // Empty target string trivially appears at all indexes of all search spaces.
+
+                return (fromBeginning) ? 0 : source.Length;
+            }
+
+            if (value.Length > source.Length)
+            {
+                // A non-linguistic search compares chars directly against one another, so large
+                // target strings can never be found inside small search spaces.
+
+                return -1;
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantIndexOf(source, value, ignoreCase: true, fromBeginning);
+            }
+            else
+            {
+                return IndexOfOrdinalCore(source, value, ignoreCase: true, fromBeginning);
+            }
         }
 
         internal int LastIndexOfOrdinal(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase)
@@ -1360,6 +1687,75 @@ namespace System.Globalization
             return LastIndexOfCore(source, value, startIndex, count, options);
         }
 
+        /// <summary>
+        /// Searches for the last occurrence of a substring within a source string.
+        /// </summary>
+        /// <param name="source">The string to search within.</param>
+        /// <param name="value">The substring to locate within <paramref name="source"/>.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> to use during the search.</param>
+        /// <returns>
+        /// The zero-based index into <paramref name="source"/> where the substring <paramref name="value"/>
+        /// last appears; or -1 if <paramref name="value"/> cannot be found within <paramref name="source"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported combination of flags.
+        /// </exception>
+        public unsafe int LastIndexOfNew(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options = CompareOptions.None)
+        {
+            if ((options & ValidIndexMaskOffFlags) == 0)
+            {
+                // Common case: caller is attempting to perform a linguistic search.
+                // Pass the flags down to NLS or ICU unless we're running in invariant
+                // mode, at which point we normalize the flags to Orginal[IgnoreCase].
+
+                if (!GlobalizationMode.Invariant)
+                {
+                    if (value.IsEmpty)
+                    {
+                        return source.Length; // Empty target string trivially occurs at the last index of every search space.
+                    }
+                    else
+                    {
+                        return IndexOfCore(source, value, options, null /* matchLengthPtr */, fromBeginning: false);
+                    }
+                }
+                else if ((options & CompareOptions.IgnoreCase) == 0)
+                {
+                    goto ReturnOrdinal;
+                }
+                else
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
+            }
+            else
+            {
+                // Less common case: caller is attempting to perform non-linguistic comparison,
+                // or an invalid combination of flags was supplied.
+
+                if (options == CompareOptions.Ordinal)
+                {
+                    goto ReturnOrdinal;
+                }
+                else if (options == CompareOptions.OrdinalIgnoreCase)
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        paramName: nameof(options),
+                        message: SR.Argument_InvalidFlag);
+                }
+            }
+
+        ReturnOrdinal:
+            return source.LastIndexOf(value);
+
+        ReturnOrdinalIgnoreCase:
+            return IndexOfOrdinalIgnoreCaseNew(source, value, fromBeginning: false);
+        }
+
         private static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             Debug.Assert(!string.IsNullOrEmpty(source));
@@ -1409,6 +1805,68 @@ namespace System.Globalization
             }
 
             return CreateSortKey(source, CompareOptions.None);
+        }
+
+        /// <summary>
+        /// Computes a sort key over the specified input.
+        /// </summary>
+        /// <param name="source">The text over which to compute the sort key.</param>
+        /// <param name="sortKey">The buffer into which to write the resulting sort key.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> used for computing the sort key.</param>
+        /// <returns>The number of bytes written to <paramref name="sortKey"/>.</returns>
+        /// <remarks>
+        /// Use <see cref="GetSortKeyLength"/> to query the required size of <paramref name="sortKey"/>.
+        /// It is acceptable to provide a larger-than-necessary output buffer to this method.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="sortKey"/> is too small to contain the resulting sort key;
+        /// or <paramref name="options"/> contains an unsupported flag;
+        /// or <paramref name="source"/> cannot be processed using the desired <see cref="CompareOptions"/>
+        /// under the current <see cref="CompareInfo"/>.
+        /// </exception>
+        public int GetSortKey(ReadOnlySpan<char> source, Span<byte> sortKey, CompareOptions options = CompareOptions.None)
+        {
+            if ((options & ValidCompareMaskOffFlags) != 0)
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidFlag, ExceptionArgument.options);
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return GetSortKeyInvariant(source, sortKey, options);
+            }
+            else
+            {
+                return GetSortKeyCore(source, sortKey, options);
+            }
+        }
+
+        /// <summary>
+        /// Returns the length (in bytes) of the sort key that would be produced from the specified input.
+        /// </summary>
+        /// <param name="source">The text over which to compute the sort key.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> used for computing the sort key.</param>
+        /// <returns>The length (in bytes) of the sort key.</returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported flag;
+        /// or <paramref name="source"/> cannot be processed using the desired <see cref="CompareOptions"/>
+        /// under the current <see cref="CompareInfo"/>.
+        /// </exception>
+        public int GetSortKeyLength(ReadOnlySpan<char> source, CompareOptions options = CompareOptions.None)
+        {
+            if ((options & ValidCompareMaskOffFlags) != 0)
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidFlag, ExceptionArgument.options);
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return GetSortKeyLengthInvariant(source, options);
+            }
+            else
+            {
+                return GetSortKeyLengthCore(source, options);
+            }
         }
 
         public override bool Equals(object? value)
