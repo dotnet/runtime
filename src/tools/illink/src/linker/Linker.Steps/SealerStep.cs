@@ -122,7 +122,7 @@ namespace Mono.Linker.Steps
 			method.IsFinal = true;
 		}
 
-		bool IsAnyMarked (List<OverrideInformation> list)
+		bool IsAnyMarked (IEnumerable<OverrideInformation> list)
 		{
 			if (list == null)
 				return false;
