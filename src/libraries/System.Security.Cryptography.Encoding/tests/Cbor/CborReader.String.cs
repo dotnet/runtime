@@ -57,6 +57,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return true;
         }
 
+        // SkipValue() helper method, reads a byte string without allocating/copying to a buffer
+        // NB this only handles definite-length chunks
+        private void SkipByteString()
+        {
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
+            int length = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
+            EnsureBuffer(1 + additionalBytes + length);
+            AdvanceBuffer(1 + additionalBytes + length);
+            AdvanceDataItemCounters();
+        }
+
         // Implements major type 3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public string ReadTextString()
         {
@@ -101,6 +112,22 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             AdvanceDataItemCounters();
             charsWritten = charLength;
             return true;
+        }
+
+        // SkipValue() helper method, reads a text string without allocating/copying to a buffer
+        // NB this only handles definite-length chunks
+        private void SkipTextString()
+        {
+            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
+            int byteLength = checked((int)ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes));
+            EnsureBuffer(1 + additionalBytes + byteLength);
+
+            // force decoding errors if binary is not valid utf8
+            ReadOnlySpan<byte> encodedSlice = _buffer.Span.Slice(1 + additionalBytes, byteLength);
+            s_utf8Encoding.GetCharCount(encodedSlice);
+
+            AdvanceBuffer(1 + additionalBytes + byteLength);
+            AdvanceDataItemCounters();
         }
 
         public void ReadStartTextStringIndefiniteLength()

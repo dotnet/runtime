@@ -37,13 +37,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     ReadCborNegativeIntegerEncoding();
                     break;
 
-                // TOCONSIDER: avoid allocating strings when skipping string values
                 case CborReaderState.ByteString:
-                    ReadByteString();
+                    SkipByteString();
                     break;
 
                 case CborReaderState.TextString:
-                    ReadTextString();
+                    SkipTextString();
                     break;
 
                 case CborReaderState.StartByteString:

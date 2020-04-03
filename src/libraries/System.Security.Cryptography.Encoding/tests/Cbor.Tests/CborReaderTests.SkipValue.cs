@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -73,6 +74,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
 
             Assert.Throws<FormatException>(() => reader.SkipValue());
+        }
+
+        [Theory]
+        [InlineData("61ff")]
+        [InlineData("62f090")]
+        public static void SkipValue_InvalidUtf8_ShouldDecoderFallbackException(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            Assert.Throws<DecoderFallbackException>(() => reader.SkipValue());
         }
 
         public static IEnumerable<object[]> SampleValues =>
