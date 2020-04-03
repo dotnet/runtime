@@ -2823,9 +2823,6 @@ namespace Mono.Linker.Steps {
 					// System.Reflection.RuntimeReflectionExtensions
 					//
 					case "RuntimeReflectionExtensions" when methodCalledType.Namespace == "System.Reflection":
-						Instruction second_argument;
-						TypeDefinition declaringType;
-
 						switch (methodCalled.Name) {
 							//
 							// static GetRuntimeField (this Type type, string name)
@@ -3492,16 +3489,12 @@ namespace Mono.Linker.Steps {
 								foreach (var value in methodParams [0].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
 										foreach (var stringParam in methodParams [1].UniqueValues ()) {
-											if (stringParam is KnownStringValue stringValue) {
+											// TODO: Change this as needed after deciding whether or not we are to keep
+											// all methods on a type that was accessed via reflection.
+											if (stringParam is KnownStringValue stringValue)
 												MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-											} else if (stringParam is NullValue) {
-												reflectionContext.RecordHandledPattern ();
-											} else if (stringParam is MethodParameterValue) {
-												// TODO: Check if parameter is annotated.
+											else
 												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
-											} else {
-												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
-											}
 										}
 									} else if (value == NullValue.Instance) {
 										reflectionContext.RecordHandledPattern ();
@@ -3532,16 +3525,12 @@ namespace Mono.Linker.Steps {
 										foreach (var stringParam in methodParams [2].UniqueValues ()) {
 											if (stringParam is KnownStringValue stringValue) {
 												bool staticOnly = methodParams [0].Kind == ValueNodeKind.Null;
-												if (calledMethod.Name [0] == 'P') {
+												// TODO: Change this as needed after deciding if we are to keep all fields/properties on a type
+												// that is accessed via reflection. For now, let's only keep the field/property that is retrieved.
+												if (calledMethod.Name [0] == 'P')
 													MarkPropertiesFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
-												} else {
+												else
 													MarkFieldsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
-												}
-											} else if (stringParam is NullValue) {
-												reflectionContext.RecordHandledPattern ();
-											} else if (stringParam is MethodParameterValue) {
-												// TODO: Check if parameter is annotated.
-												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
 											} else {
 												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
 											}
@@ -3569,16 +3558,11 @@ namespace Mono.Linker.Steps {
 
 								reflectionContext.AnalyzingPattern();
 
-								foreach (var value in methodParams[0].UniqueValues())
-								{
+								foreach (var value in methodParams [0].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue)
-									{
-										MarkMethodsFromReflectionCall(ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", BindingFlags.Instance, parametersCount: 0);
-									}
+										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", BindingFlags.Instance, parametersCount: 0);
 									else
-									{
-										RequireDynamicallyAccessedMembers(ref reflectionContext, DynamicallyAccessedMemberKinds.DefaultConstructor, value, calledMethod.Parameters[0]);
-									}
+										RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.DefaultConstructor, value, calledMethod.Parameters [0]);
 								}
 							}
 							break;
