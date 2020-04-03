@@ -121,6 +121,7 @@ namespace System.Net.Http.Functional.Tests
             var logFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             File.WriteAllText(logFilePath, "");   
 
+            try{
             RemoteExecutor.Invoke(async (useVersionString, logFilePath) =>
             {
                 var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true };
@@ -146,8 +147,13 @@ namespace System.Net.Http.Functional.Tests
                     File.AppendAllText (logFilePath, $"http_proxy: {Environment.GetEnvironmentVariable("http_proxy")}{Environment.NewLine}");
                 }
             }, UseVersion.ToString(), logFilePath).Dispose();
-
+            }
+            catch {
+                throw;
+            }
+            finally{
             _output.WriteLine(File.ReadAllText(logFilePath));
+            }
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1507")]
