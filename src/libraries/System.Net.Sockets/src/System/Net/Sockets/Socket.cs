@@ -2090,11 +2090,17 @@ namespace System.Net.Sockets
 
         private bool CanUseConnectEx(EndPoint remoteEP)
         {
+            Debug.Assert(remoteEP.GetType() != typeof(DnsEndPoint));
+
+            // ConnectEx supports connection-oriented sockets.
+            // The socket must be bound before calling ConnectEx.
+            //     In case of IPEndPoint, the Socket will be bound using WildcardBindForConnectIfNecessary.
+            // Unix sockets are not supported by ConnectEx.
+
             return (_socketType == SocketType.Stream) &&
-                (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint));
+                   (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint)) &&
+                   (remoteEP.AddressFamily != AddressFamily.Unix);
         }
-
-
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state, bool flowContext = false)
         {
@@ -3817,7 +3823,15 @@ namespace System.Net.Sockets
                 SocketError socketError = SocketError.Success;
                 try
                 {
-                    socketError = e.DoOperationConnect(this, _handle);
+                    if (CanUseConnectEx(endPointSnapshot))
+                    {
+                        socketError = e.DoOperationConnectEx(this, _handle);
+                    }
+                    else
+                    {
+                        // For connectionless protocols, Connect is not an I/O call.
+                        socketError = e.DoOperationConnect(this, _handle);
+                    }
                 }
                 catch
                 {
