@@ -8034,7 +8034,7 @@ private:
     // AVX: vector2f, 3f and 4f are all considered sub register SIMD types.
     bool isSubRegisterSIMDType(GenTreeSIMD* simdNode)
     {
-#if TARGET_XARCH
+#ifdef TARGET_XARCH
         if (simdNode->gtSIMDSize < 16)
             return true;
         if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
