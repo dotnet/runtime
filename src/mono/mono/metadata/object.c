@@ -6514,12 +6514,10 @@ mono_array_new_specific (MonoVTable *vtable, uintptr_t n)
 	return arr;
 }
 
-MonoArray*
-mono_array_new_specific_checked (MonoVTable *vtable, uintptr_t n, MonoError *error)
+static MonoArray*
+mono_array_new_specific_internal (MonoVTable *vtable, uintptr_t n, gboolean pinned, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoObject *o;
+	MonoArray *o;
 	uintptr_t byte_len;
 
 	error_init (error);
@@ -6533,15 +6531,45 @@ mono_array_new_specific_checked (MonoVTable *vtable, uintptr_t n, MonoError *err
 		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", MONO_ARRAY_MAX_SIZE);
 		return NULL;
 	}
-	o = (MonoObject *)mono_gc_alloc_vector (vtable, byte_len, n);
+	if (pinned)
+		o = mono_gc_alloc_pinned_vector (vtable, byte_len, n);
+	else
+		o = mono_gc_alloc_vector (vtable, byte_len, n);
 
 	if (G_UNLIKELY (!o)) {
 		mono_error_set_out_of_memory (error, "Could not allocate %" G_GSIZE_FORMAT "d bytes", (gsize) byte_len);
 		return NULL;
 	}
 
-	return (MonoArray*)o;
+	return o;
 }
+
+MonoArray*
+mono_array_new_specific_checked (MonoVTable *vtable, uintptr_t n, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	return mono_array_new_specific_internal (vtable, n, FALSE, error);
+}
+
+#ifdef ENABLE_NETCORE
+MonoArrayHandle
+ves_icall_System_GC_AllocPinnedArray (MonoReflectionTypeHandle array_type, gint32 length, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	MonoClass *klass = mono_class_from_mono_type_internal (MONO_HANDLE_GETVAL (array_type, type));
+	MonoVTable *vtable = mono_class_vtable_checked (mono_domain_get (), klass, error);
+	goto_if_nok (error, fail);
+
+	MonoArray *arr = mono_array_new_specific_internal (vtable, length, TRUE, error);
+	goto_if_nok (error, fail);
+
+	return MONO_HANDLE_NEW (MonoArray, arr);
+fail:
+	return MONO_HANDLE_NEW (MonoArray, NULL);
+}
+#endif
 
 
 MonoArrayHandle

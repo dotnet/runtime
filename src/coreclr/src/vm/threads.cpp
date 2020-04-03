@@ -1539,6 +1539,10 @@ Thread::Thread()
     m_DeserializationTracker = NULL;
 
     m_currentPrepareCodeConfig = nullptr;
+
+#ifdef _DEBUG
+    memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
+#endif // _DEBUG
 }
 
 //--------------------------------------------------------------------

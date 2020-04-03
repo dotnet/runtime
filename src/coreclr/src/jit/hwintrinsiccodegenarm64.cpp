@@ -293,6 +293,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
                 break;
 
+            case NI_AdvSimd_ExtractAndNarrowHigh:
+                if (targetReg != op1Reg)
+                {
+                    GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
+                }
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                break;
+
             case NI_AdvSimd_FusedMultiplyAddScalar:
             case NI_AdvSimd_FusedMultiplyAddNegatedScalar:
             case NI_AdvSimd_FusedMultiplySubtractNegatedScalar:

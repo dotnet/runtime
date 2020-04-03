@@ -48,10 +48,10 @@ Below table shows the combined area owners on this repository:
 | area-Tracing-mono | @lambdageek | |
 | area-Performance-mono | @SamMonoRT | |
 | **System namespaces** | | |
-| area-System.Buffers | @tannergooding @JeremyKuhne | |
+| area-System.Buffers | @tannergooding | |
 | area-System.CodeDom | @buyaa-n @krwq | |
 | area-System.Collections | @eiriktsarpalis @layomia | </ul>Excluded:<ul><li>System.Array -> System.Runtime</li></ul> |
-| area-System.ComponentModel | @JeremyKuhne @safern | |
+| area-System.ComponentModel | @safern | |
 | area-System.ComponentModel.Composition | @maryamariyan @ViktorHofer | |
 | area-System.ComponentModel.DataAnnotations | @lajones @ajcvickers | |
 | area-System.Composition | @maryamariyan @ViktorHofer | |
@@ -63,10 +63,10 @@ Below table shows the combined area owners on this repository:
 | area-System.Diagnostics.Process | @adamsitnik @eiriktsarpalis | |
 | area-System.Diagnostics.Tracing | @noahfalk @tommcdon @tarekgh @Anipik | Packages:<ul><li>System.Diagnostics.DiagnosticSource</li><li>System.Diagnostics.PerformanceCounter - [@Anipik](https://github.com/Anipik)</li><li>System.Diagnostics.Tracing</li><li>System.Diagnostics.TraceSource - [@Anipik](https://github.com/Anipik)</li></ul><br/> |
 | area-System.DirectoryServices | @tquerec @josephisenhour | |
-| area-System.Drawing | @JeremyKuhne @safern | |
+| area-System.Drawing | @safern | |
 | area-System.Dynamic.Runtime | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
 | area-System.Globalization | @safern @tarekgh @krwq | |
-| area-System.IO | @JeremyKuhne @carlossanlop @jozkee | |
+| area-System.IO | @carlossanlop @jozkee | |
 | area-System.IO.Compression | @carlossanlop @ericstj | <ul><li>Also includes System.IO.Packaging</li></ul> |
 | area-System.IO.Pipelines | @davidfowl @halter73 @jkotalik @anurse | |
 | area-System.Linq | @eiriktsarpalis @adamsitnik | |
