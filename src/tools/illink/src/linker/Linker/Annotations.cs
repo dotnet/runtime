@@ -55,7 +55,7 @@ namespace Mono.Linker {
 		protected readonly Dictionary<TypeDefinition, List<TypeDefinition>> class_type_base_hierarchy = new Dictionary<TypeDefinition, List<TypeDefinition>> ();
 		protected readonly Dictionary<TypeDefinition, List<TypeDefinition>> derived_interfaces = new Dictionary<TypeDefinition, List<TypeDefinition>>();
 
-		protected readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
+		readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 		protected readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
 		protected readonly HashSet<CustomAttribute> marked_attributes = new HashSet<CustomAttribute> ();
 		readonly HashSet<TypeDefinition> marked_types_with_cctor = new HashSet<TypeDefinition> ();
@@ -310,21 +310,18 @@ namespace Mono.Linker {
 
 		public void AddOverride (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation matchingInterfaceImplementation = null)
 		{
-			var methods = GetOverrides (@base);
-			if (methods == null) {
+			if (!override_methods.TryGetValue (@base, out List<OverrideInformation> methods)) {
 				methods = new List<OverrideInformation> ();
-				override_methods [@base] = methods;
+				override_methods.Add (@base, methods);
 			}
 
 			methods.Add (new OverrideInformation (@base, @override, matchingInterfaceImplementation));
 		}
 
-		public List<OverrideInformation> GetOverrides (MethodDefinition method)
+		public IEnumerable<OverrideInformation> GetOverrides (MethodDefinition method)
 		{
-			if (override_methods.TryGetValue (method, out List<OverrideInformation> overrides))
-				return overrides;
-
-			return null;
+			override_methods.TryGetValue (method, out List<OverrideInformation> overrides);
+			return overrides;
 		}
 
 		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base)
@@ -399,14 +396,25 @@ namespace Mono.Linker {
 			symbolReader.Dispose ();
 		}
 
-		public Dictionary<IMetadataTokenProvider, object> GetCustomAnnotations (object key)
+		public object GetCustomAnnotation (object key, IMetadataTokenProvider item)
 		{
-			if (custom_annotations.TryGetValue (key, out Dictionary<IMetadataTokenProvider, object> slots))
-				return slots;
+			if (!custom_annotations.TryGetValue (key, out Dictionary<IMetadataTokenProvider, object> slots))
+				return null;
 
-			slots = new Dictionary<IMetadataTokenProvider, object> ();
-			custom_annotations.Add (key, slots);
-			return slots;
+			if (!slots.TryGetValue (item, out object value))
+				return null;
+
+			return value;
+		}
+
+		public void SetCustomAnnotation (object key, IMetadataTokenProvider item, object value)
+		{
+			if (!custom_annotations.TryGetValue (key, out Dictionary<IMetadataTokenProvider, object> slots)) {
+				slots = new Dictionary<IMetadataTokenProvider, object> ();
+				custom_annotations.Add (key, slots);
+			}
+
+			slots [item] = value;
 		}
 
 		public bool HasPreservedStaticCtor (TypeDefinition type)

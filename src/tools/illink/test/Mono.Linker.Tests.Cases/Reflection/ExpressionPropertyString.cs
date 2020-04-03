@@ -18,6 +18,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			var e2 = Expression.Property (null, typeof (Foo), "TestOnlyStatic2");
 
 			var e3 = Expression.Property (Expression.Parameter (typeof(int), "somename"), typeof (Foo), "TestName1");
+
+			Expression.Property (null, typeof (ADerived), "ProtectedPropertyOnBase");
+			Expression.Property (null, typeof (ADerived), "PublicPropertyOnBase");
 		}
 
 		[KeptMember (".ctor()")]
@@ -32,6 +35,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptBackingField]
 			private int TestName1 { [Kept] get; }
+		}
+
+		[Kept]
+		class ABase
+		{
+			// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
+			protected bool ProtectedPropertyOnBase { get; }
+
+			// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
+			public bool PublicPropertyOnBase { get; }
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (ABase))]
+		class ADerived : ABase
+		{
 		}
 	}
 }
