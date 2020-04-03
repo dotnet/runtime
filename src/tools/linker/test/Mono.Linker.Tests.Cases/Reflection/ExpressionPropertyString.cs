@@ -55,6 +55,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				var expr = Expression.Property (null, typeof (Foo), "TestOnlyStatic1");
 			}
 
+			[UnrecognizedReflectionAccessPattern ( // Expression.Property (Expression, Type, null);
+				typeof (Expression), nameof (Expression.Property), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 			[RecognizedReflectionAccessPattern (
 				typeof (Expression), nameof (Expression.Property), new Type [] { typeof (Expression), typeof (Type), typeof (string) },
 				typeof (Foo), nameof (TestName2))]

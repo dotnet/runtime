@@ -31,8 +31,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestByType (1);
 			TestByNameWithParameters ();
 			TestNonExistingName ();
-			TestNullType ();
-			TestDataFlowType ();
 		}
 
 		[Kept]
@@ -55,6 +53,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		#region RecognizedReflectionAccessPatterns
+		[UnrecognizedReflectionAccessPattern ( // Expression.Call (Type, null, Type []);
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) })]
 		[RecognizedReflectionAccessPattern (
 			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) },
 			typeof (ExpressionCallString), nameof (A), new Type [0])]
@@ -212,5 +212,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class ADerived : ABase
 		{
 		}
+		#endregion
 	}
 }
