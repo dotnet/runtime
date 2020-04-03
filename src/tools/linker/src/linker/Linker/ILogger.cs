@@ -11,5 +11,6 @@ namespace Mono.Linker
 	public interface ILogger
 	{
 		void LogMessage (MessageImportance importance, string message, params object[] values);
+		void LogMessage (MessageContainer message);
 	}
 }

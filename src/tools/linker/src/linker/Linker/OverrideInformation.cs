@@ -4,16 +4,16 @@ using Mono.Cecil;
 namespace Mono.Linker {
 	[DebuggerDisplay ("{Override}")]
 	public class OverrideInformation {
-		public readonly MethodDefinition Base;
-		public readonly MethodDefinition Override;
-		public readonly InterfaceImplementation MatchingInterfaceImplementation;
-
 		public OverrideInformation (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation matchingInterfaceImplementation = null)
 		{
 			Base = @base;
 			Override = @override;
 			MatchingInterfaceImplementation = matchingInterfaceImplementation;
 		}
+
+		public MethodDefinition Base { get; }
+		public MethodDefinition Override { get; }
+		public InterfaceImplementation MatchingInterfaceImplementation { get; }
 
 		public bool IsOverrideOfInterfaceMember
 		{
