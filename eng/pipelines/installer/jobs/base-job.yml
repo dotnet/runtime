@@ -164,10 +164,6 @@ jobs:
           -e ROOTFS_DIR=${{ parameters.crossrootfsDir }}
           ${{ parameters.container }}
 
-    - ${{ if eq(parameters.name, 'FreeBSD_x64') }}:
-      - name: RunArguments
-        value: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
-
     - name: BuildScript
       value: ./installer.sh
     - name: MSBuildScript
