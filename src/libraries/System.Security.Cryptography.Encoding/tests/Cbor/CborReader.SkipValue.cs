@@ -75,12 +75,10 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 case CborReaderState.Boolean: ReadBoolean(); break;
                 case CborReaderState.SpecialValue: ReadSpecialValue(); break;
 
-                case CborReaderState.FormatError_IndefiniteStringWithInvalidDataItems:
-                case CborReaderState.FormatError_NoValueAfterTag:
-                case CborReaderState.FormatError_IncompleteCborMap:
-                case CborReaderState.FormatError_EndOfData:
-                case CborReaderState.FormatError_InvalidBreakByte:
-                    throw new FormatException($"CBOR format error {state}.");
+                case CborReaderState.EndOfData:
+                    throw new FormatException("Unexpected end of buffer.");
+                case CborReaderState.FormatError:
+                    throw new FormatException("Invalid CBOR format.");
 
                 default:
                     throw new InvalidOperationException($"CBOR reader state {state} is not a value.");

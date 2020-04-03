@@ -206,7 +206,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
             reader.ReadTag();
-            Assert.Equal(CborReaderState.FormatError_EndOfData, reader.Peek());
+            Assert.Equal(CborReaderState.EndOfData, reader.Peek());
         }
 
         [Theory]
@@ -251,7 +251,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             reader.ReadStartArray();
             reader.ReadTag();
-            Assert.Equal(CborReaderState.FormatError_NoValueAfterTag, reader.Peek());
+            Assert.Equal(CborReaderState.FormatError, reader.Peek());
             Assert.Throws<FormatException>(() => reader.ReadEndArray());
         }
 

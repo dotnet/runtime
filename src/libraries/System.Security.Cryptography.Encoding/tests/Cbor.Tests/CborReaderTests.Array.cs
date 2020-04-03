@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64();
             }
 
-            Assert.Equal(CborReaderState.FormatError_EndOfData, reader.Peek());
+            Assert.Equal(CborReaderState.EndOfData, reader.Peek());
         }
 
         [Theory]

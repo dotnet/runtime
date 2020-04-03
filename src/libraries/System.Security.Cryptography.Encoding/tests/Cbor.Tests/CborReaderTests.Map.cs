@@ -220,7 +220,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64();
             }
 
-            Assert.Equal(CborReaderState.FormatError_EndOfData, reader.Peek());
+            Assert.Equal(CborReaderState.EndOfData, reader.Peek());
         }
 
         [Theory]
@@ -255,7 +255,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64();
             }
 
-            Assert.Equal(CborReaderState.FormatError_IncompleteCborMap, reader.Peek()); // don't want this to fail
+            Assert.Equal(CborReaderState.FormatError, reader.Peek()); // don't want this to fail
             Assert.Throws<FormatException>(() => reader.ReadEndMap());
         }
 

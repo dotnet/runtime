@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void Peek_EmptyBuffer_ShouldReturnEof()
         {
             var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
-            Assert.Equal(CborReaderState.FormatError_EndOfData, reader.Peek());
+            Assert.Equal(CborReaderState.EndOfData, reader.Peek());
         }
 
         [Fact]
