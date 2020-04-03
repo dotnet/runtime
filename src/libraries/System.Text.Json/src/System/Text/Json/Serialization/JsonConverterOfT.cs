@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization
             // In the future, this will be check for !IsSealed (and excluding value types).
             CanBePolymorphic = TypeToConvert == typeof(object);
             IsValueType = TypeToConvert.IsValueType;
-            HandleNullValue = ShouldHandleNullValue;
+            HandleNull = IsValueType;
             IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
             CanUseDirectReadOrWrite = !CanBePolymorphic && IsInternalConverter && ClassType == ClassType.Value;
         }
@@ -54,10 +54,14 @@ namespace System.Text.Json.Serialization
 
         internal override Type? ElementType => null;
 
-        // Allow a converter that can't be null to return a null value representation, such as JsonElement or Nullable<>.
-        // In other cases, this will likely cause an JsonException in the converter.
-        // Do not call this directly; it is cached in HandleNullValue.
-        internal virtual bool ShouldHandleNullValue => IsValueType;
+        /// <summary>
+        /// Indicates whether <see langword="null"/> should be passed to the converter on serialization,
+        /// and whether <see cref="JsonTokenType.Null"/> should be passed on deserialization.
+        /// </summary>
+        /// <remarks>
+        /// The default value is <see langword="true"/> for converters for value types, and <see langword="false"/> for converters for reference types.
+        /// </remarks>
+        public virtual bool HandleNull { get; }
 
         /// <summary>
         /// Is the converter built-in.
@@ -81,7 +85,7 @@ namespace System.Text.Json.Serialization
         // Provide a default implementation for value converters.
         internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
-            value = Read(ref reader, typeToConvert, options);
+            value = Read(ref reader, typeToConvert, options)!;
             return true;
         }
 
@@ -95,6 +99,7 @@ namespace System.Text.Json.Serialization
         /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>The value that was converted.</returns>
+        [return: MaybeNull]
         public abstract T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
         internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T value)
@@ -105,7 +110,7 @@ namespace System.Text.Json.Serialization
                 Debug.Assert(!state.IsContinuation);
 
                 // For perf and converter simplicity, handle null here instead of forwarding to the converter.
-                if (reader.TokenType == JsonTokenType.Null && !HandleNullValue)
+                if (reader.TokenType == JsonTokenType.Null && !HandleNull)
                 {
                     value = default!;
                     return true;
@@ -115,7 +120,7 @@ namespace System.Text.Json.Serialization
                 // For performance, only perform validation on internal converters on debug builds.
                 if (IsInternalConverter)
                 {
-                    value = Read(ref reader, typeToConvert, options);
+                    value = Read(ref reader, typeToConvert, options)!;
                 }
                 else
 #endif
@@ -124,7 +129,7 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    value = Read(ref reader, typeToConvert, options);
+                    value = Read(ref reader, typeToConvert, options)!;
                     VerifyRead(
                         originalPropertyTokenType,
                         originalPropertyDepth,
@@ -147,7 +152,7 @@ namespace System.Text.Json.Serialization
             // For performance, only perform validation on internal converters on debug builds.
             if (IsInternalConverter)
             {
-                if (reader.TokenType == JsonTokenType.Null && !HandleNullValue && !wasContinuation)
+                if (reader.TokenType == JsonTokenType.Null && !HandleNull && !wasContinuation)
                 {
                     // For perf and converter simplicity, handle null here instead of forwarding to the converter.
                     value = default!;
@@ -164,7 +169,7 @@ namespace System.Text.Json.Serialization
                 if (!wasContinuation)
                 {
                     // For perf and converter simplicity, handle null here instead of forwarding to the converter.
-                    if (reader.TokenType == JsonTokenType.Null && !HandleNullValue)
+                    if (reader.TokenType == JsonTokenType.Null && !HandleNull)
                     {
                         value = default!;
                         state.Pop(true);
@@ -178,7 +183,7 @@ namespace System.Text.Json.Serialization
                     state.Current.OriginalDepth = reader.CurrentDepth;
                 }
 
-                success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
+                success = OnTryRead(ref reader, typeToConvert, options, ref state, out value!);
                 if (success)
                 {
                     if (state.IsContinuation)
@@ -213,7 +218,20 @@ namespace System.Text.Json.Serialization
             {
                 if (value == null)
                 {
-                    writer.WriteNullValue();
+                    if (!HandleNull)
+                    {
+                        writer.WriteNullValue();
+                    }
+                    else
+                    {
+                        Debug.Assert(ClassType == ClassType.Value);
+                        Debug.Assert(!state.IsContinuation);
+
+                        int originalPropertyDepth = writer.CurrentDepth;
+                        Write(writer, value, options);
+                        VerifyWrite(originalPropertyDepth, writer);
+                    }
+
                     return true;
                 }
 
@@ -238,9 +256,9 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                // We do not pass null values to converters unless HandleNullValue is true. Null values for properties were
+                // We do not pass null values to converters unless HandleNull is true. Null values for properties were
                 // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
-                if (value == null && !HandleNullValue)
+                if (value == null && !HandleNull)
                 {
                     writer.WriteNullValue();
                     return true;

@@ -103,7 +103,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         // Read the value and add.
                         reader.ReadWithVerify();
-                        TValue element = elementConverter.Read(ref reader, typeof(TValue), options);
+                        TValue element = elementConverter.Read(ref reader, typeof(TValue), options)!;
                         Add(element, options, ref state);
                     }
                 }

@@ -102,7 +102,25 @@ namespace System.Text.Json
             {
                 if (!IgnoreNullValues)
                 {
-                    writer.WriteNull(EscapedName.Value);
+                    if (!Converter.HandleNull)
+                    {
+                        writer.WriteNull(EscapedName.Value);
+                    }
+                    else
+                    {
+                        if (state.Current.PropertyState < StackFramePropertyState.Name)
+                        {
+                            state.Current.PropertyState = StackFramePropertyState.Name;
+                            writer.WritePropertyName(EscapedName.Value);
+                        }
+
+                        int originalDepth = writer.CurrentDepth;
+                        Converter.Write(writer, value, Options);
+                        if (originalDepth != writer.CurrentDepth)
+                        {
+                            ThrowHelper.ThrowJsonException_SerializationConverterWrite(Converter);
+                        }
+                    }
                 }
 
                 success = true;
@@ -142,7 +160,7 @@ namespace System.Text.Json
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !Converter.HandleNullValue && !state.IsContinuation)
+            if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
             {
                 if (!IgnoreNullValues)
                 {
@@ -158,7 +176,7 @@ namespace System.Text.Json
                 if (Converter.CanUseDirectReadOrWrite)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
-                    T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
+                    T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options)!;
                     if (!IgnoreNullValues || (!isNullToken && fastvalue != null))
                     {
                         Set!(obj, fastvalue);
@@ -186,7 +204,7 @@ namespace System.Text.Json
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !Converter.HandleNullValue && !state.IsContinuation)
+            if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
             {
                 value = default(T)!;
                 success = true;

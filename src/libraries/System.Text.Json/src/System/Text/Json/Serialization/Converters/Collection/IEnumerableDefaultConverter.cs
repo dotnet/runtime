@@ -66,7 +66,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
 
                         // Obtain the CLR value from the JSON and apply to the object.
-                        TElement element = elementConverter.Read(ref reader, elementConverter.TypeToConvert, options);
+                        TElement element = elementConverter.Read(ref reader, elementConverter.TypeToConvert, options)!;
                         Add(element, ref state);
                     }
                 }

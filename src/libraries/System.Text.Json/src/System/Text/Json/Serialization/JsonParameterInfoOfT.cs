@@ -53,9 +53,9 @@ namespace System.Text.Json
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
 
-            if (isNullToken && !_converter.HandleNullValue && !state.IsContinuation)
+            if (isNullToken && !_converter.HandleNull && !state.IsContinuation)
             {
-                // Don't have to check for IgnoreNullValue option here because we set the default value (likely null) regardless
+                // Don't have to check for IgnoreNullValue option here because we set the default value regardless.
                 value = DefaultValue;
                 return true;
             }
@@ -82,8 +82,9 @@ namespace System.Text.Json
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
 
-            if (isNullToken && !_converter.HandleNullValue && !state.IsContinuation)
+            if (isNullToken && !_converter.HandleNull && !state.IsContinuation)
             {
+                // Don't have to check for IgnoreNullValue option here because we set the default value regardless.
                 value = TypedDefaultValue;
                 return true;
             }
@@ -92,7 +93,7 @@ namespace System.Text.Json
                 // Optimize for internal converters by avoiding the extra call to TryRead.
                 if (_converter.CanUseDirectReadOrWrite)
                 {
-                    value = _converter.Read(ref reader, _runtimePropertyType, Options);
+                    value = _converter.Read(ref reader, _runtimePropertyType, Options)!;
                     return true;
                 }
                 else
