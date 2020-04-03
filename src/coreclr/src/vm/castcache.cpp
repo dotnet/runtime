@@ -63,16 +63,17 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
         }
     }
 
-    TableMask(table) = size - 1;
+    DWORD* tableData = TableData(table);
+    TableMask(tableData) = size - 1;
 
     // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
     DWORD bitCnt;
 #if HOST_64BIT
     BitScanReverse64(&bitCnt, size - 1);
-    HashShift(table) = (BYTE)(63 - bitCnt);
+    HashShift(tableData) = (BYTE)(63 - bitCnt);
 #else
     BitScanReverse(&bitCnt, size - 1);
-    HashShift(table) = (BYTE)(31 - bitCnt);
+    HashShift(tableData) = (BYTE)(31 - bitCnt);
 #endif
 
     return table;
@@ -108,8 +109,8 @@ void CastCache::FlushCurrentCache()
     }
     CONTRACTL_END;
 
-    BASEARRAYREF currentTableRef = *s_pTableRef;
-    s_lastFlushSize = max(INITIAL_CACHE_SIZE, CacheElementCount(currentTableRef));
+    DWORD* tableData = TableData(*s_pTableRef);
+    s_lastFlushSize = max(INITIAL_CACHE_SIZE, CacheElementCount(tableData));
 
     SetObjectReference((OBJECTREF *)s_pTableRef, ObjectFromHandle(s_sentinelTable));
 }
@@ -152,12 +153,12 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
     }
     CONTRACTL_END;
 
-    BASEARRAYREF table = *s_pTableRef;
+    DWORD* tableData = TableData(*s_pTableRef);
 
-    DWORD index = KeyToBucket(table, source, target);
+    DWORD index = KeyToBucket(tableData, source, target);
     for (DWORD i = 0; i < BUCKET_SIZE;)
     {
-        CastCacheEntry* pEntry = &Elements(table)[index];
+        CastCacheEntry* pEntry = &Elements(tableData)[index];
 
         // must read in this order: version -> entry parts -> version
         // if version is odd or changes, the entry is inconsistent and thus ignored
@@ -196,7 +197,7 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
 
         // quadratic reprobe
         i++;
-        index = (index + i) & TableMask(table);
+        index = (index + i) & TableMask(tableData);
     }
 
     return TypeHandle::MaybeCast;
@@ -213,12 +214,12 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
     CONTRACTL_END;
 
     DWORD bucket;
-    BASEARRAYREF table;
+    DWORD* tableData;
 
     do
     {
-        table = *s_pTableRef;
-        if (TableMask(table) == 1)
+        tableData = TableData(*s_pTableRef);
+        if (TableMask(tableData) == 1)
         {
             // 2-element table is used as a sentinel.
             // we did not allocate a real table yet or have flushed it.
@@ -227,9 +228,9 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
             return;
         }
 
-        bucket = KeyToBucket(table, source, target);
+        bucket = KeyToBucket(tableData, source, target);
         DWORD index = bucket;
-        CastCacheEntry* pEntry = &Elements(table)[index];
+        CastCacheEntry* pEntry = &Elements(tableData)[index];
 
         for (DWORD i = 0; i < BUCKET_SIZE;)
         {
@@ -269,15 +270,15 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
             // quadratic reprobe
             i++;
             index += i;
-            pEntry = &Elements(table)[index & TableMask(table)];
+            pEntry = &Elements(tableData)[index & TableMask(tableData)];
         }
 
         // bucket is full.
-    } while (TryGrow(table));
+    } while (TryGrow(tableData));
 
-    // reread table after TryGrow.
-    table = *s_pTableRef;
-    if (TableMask(table) == 1)
+    // reread tableData after TryGrow.
+    tableData = TableData(*s_pTableRef);
+    if (TableMask(tableData) == 1)
     {
         // do not insert into a sentinel.
         return;
@@ -285,12 +286,12 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
 
     // pick a victim somewhat randomly within a bucket
     // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
-    DWORD victimDistance = VictimCounter(table)++ & (BUCKET_SIZE - 1);
+    DWORD victimDistance = VictimCounter(tableData)++ & (BUCKET_SIZE - 1);
     // position the victim in a quadratic reprobe bucket
     DWORD victim = (victimDistance * victimDistance + victimDistance) / 2;
 
     {
-        CastCacheEntry* pEntry = &Elements(table)[(bucket + victim) & TableMask(table)];
+        CastCacheEntry* pEntry = &Elements(tableData)[(bucket + victim) & TableMask(tableData)];
 
         DWORD version = pEntry->version;
         if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))

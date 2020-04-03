@@ -46,13 +46,13 @@ namespace System.Runtime.CompilerServices
         };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int KeyToBucket(int[] table, nuint source, nuint target)
+        private static int KeyToBucket(ref int tableData, nuint source, nuint target)
         {
             // upper bits of addresses do not vary much, so to reduce loss due to cancelling out,
             // we do `rotl(source, <half-size>) ^ target` for mixing inputs.
             // then we use fibonacci hashing to reduce the value to desired size.
 
-            int hashShift = HashShift(table);
+            int hashShift = HashShift(ref tableData);
 #if TARGET_64BIT
             ulong hash = (((ulong)source << 32) | ((ulong)source >> 32)) ^ (ulong)target;
             return (int)((hash * 11400714819323198485ul) >> hashShift);
@@ -63,31 +63,31 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref int AuxData(int[] table)
+        private static ref int TableData(int[] table)
         {
             // element 0 is used for embedded aux data
             return ref MemoryMarshal.GetArrayDataReference(table);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref CastCacheEntry Element(int[] table, int index)
+        private static ref CastCacheEntry Element(ref int tableData, int index)
         {
             // element 0 is used for embedded aux data, skip it
-            return ref Unsafe.Add(ref Unsafe.As<int, CastCacheEntry>(ref AuxData(table)), index + 1);
+            return ref Unsafe.Add(ref Unsafe.As<int, CastCacheEntry>(ref tableData), index + 1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int HashShift(ref int tableData)
+        {
+            return tableData;
         }
 
         // TableMask is "size - 1"
         // we need that more often that we need size
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int TableMask(int[] table)
+        private static int TableMask(ref int tableData)
         {
-            return AuxData(table);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int HashShift(int[] table)
-        {
-            return Unsafe.Add(ref AuxData(table), 1);
+            return Unsafe.Add(ref tableData, 1);
         }
 
         private enum CastResult
@@ -106,12 +106,12 @@ namespace System.Runtime.CompilerServices
             const int BUCKET_SIZE = 8;
 
             // table is initialized and updated by native code that guarantees it is not null.
-            int[] table = s_table!;
+            ref int tableData = ref TableData(s_table!);
 
-            int index = KeyToBucket(table, source, target);
+            int index = KeyToBucket(ref tableData, source, target);
             for (int i = 0; i < BUCKET_SIZE;)
             {
-                ref CastCacheEntry pEntry = ref Element(table, index);
+                ref CastCacheEntry pEntry = ref Element(ref tableData, index);
 
                 // must read in this order: version -> entry parts -> version
                 // if version is odd or changes, the entry is inconsistent and thus ignored
@@ -150,7 +150,7 @@ namespace System.Runtime.CompilerServices
 
                 // quadratic reprobe
                 i++;
-                index = (index + i) & TableMask(table);
+                index = (index + i) & TableMask(ref tableData);
             }
             return CastResult.MaybeCast;
         }
