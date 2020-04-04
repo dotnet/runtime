@@ -104,7 +104,7 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             SqlInt32 x;
             SqlInt32 y;
