@@ -186,6 +186,7 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAnyAsync<ArgumentOutOfRangeException>(() => Task.Factory.FromAsync(Dns.BeginGetHostEntry, Dns.EndGetHostEntry, hostNameOrAddress, null));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34317")]
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
