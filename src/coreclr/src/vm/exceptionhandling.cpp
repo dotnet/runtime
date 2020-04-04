@@ -1264,6 +1264,7 @@ lExit: ;
 
     if ((ExceptionContinueSearch == returnDisposition))
     {
+#ifdef USE_GC_INFO_DECODER
         if (dwExceptionFlags & EXCEPTION_UNWINDING)
         {
             EECodeInfo codeInfo(pDispatcherContext->ControlPc);
@@ -1279,6 +1280,7 @@ lExit: ;
                 }
             }
         }
+#endif // USE_GC_INFO_DECODER
 
         GCX_PREEMP_NO_DTOR();
     }
@@ -4681,6 +4683,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             controlPc = Thread::VirtualUnwindLeafCallFrame(frameContext);
         }
 
+#ifdef USE_GC_INFO_DECODER
         GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
 
         if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
@@ -4694,6 +4697,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             TerminateProcess(GetCurrentProcess(), 1);
             UNREACHABLE();
         }
+#endif // USE_GC_INFO_DECODER
 
         // Check whether we are crossing managed-to-native boundary
         while (!ExecutionManager::IsManagedCode(controlPc))
