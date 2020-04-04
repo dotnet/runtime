@@ -1,9 +1,9 @@
 C# Coding Style
 ===============
 
-For C++ files (*.cpp and *.h), we use clang-format (version 3.6+) to ensure code styling. After changing any Cpp or H file and before merging, src/Native/format-code.sh must be run. This script will ensure that all native code files adhere to the coding style guidelines. For script files (*.sh, *.ps1 and *.cmd), see the [Scripting Guide](scripting-guide.md).
+For C++ files (*.cpp and *.h), we use clang-format (version 3.6+) to ensure code styling. After changing any Cpp or H file and before merging, src/Native/format-code.sh must be run. This script will ensure that all native code files adhere to the coding style guidelines.
 
-For other types of files (xml, bat, sh, etc), our current best guidance is consistency. When editing files, keep new code and changes consistent with the style in the files. For new files, it should conform to the style for that component. If there is a completely new component, anything that is reasonably broadly accepted is fine.
+For other types of files (xml, bat, sh, etc), our current best guidance is consistency. When editing files, keep new code and changes consistent with the style in the files. For new files, it should conform to the style for that component. If there is a completely new component, anything that is reasonably broadly accepted is fine. For script files, please refer to the scripting blog for [tips](https://devblogs.microsoft.com/scripting/tag/powertip) and [best practices](https://devblogs.microsoft.com/scripting/tag/best-practices).
 
 The general rule we follow is "use Visual Studio defaults".
 
