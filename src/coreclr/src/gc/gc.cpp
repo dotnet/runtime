@@ -5043,11 +5043,16 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
 #ifdef MULTIPLE_HEAPS
         heap_segment_heap (res) = hp;
 #endif //MULTIPLE_HEAPS
-        res->flags |= gen_number == poh_generation ?
+        res->flags |= (gen_number == poh_generation) ?
                                         heap_segment_flags_poh :
                                         heap_segment_flags_loh;
 
-        FIRE_EVENT(GCCreateSegment_V1, heap_segment_mem(res), (size_t)(heap_segment_reserved (res) - heap_segment_mem(res)), gc_etw_segment_large_object_heap);
+        FIRE_EVENT(GCCreateSegment_V1,
+            heap_segment_mem(res),
+            (size_t)(heap_segment_reserved (res) - heap_segment_mem(res)),
+            (gen_number == poh_generation) ?
+                gc_etw_segment_pinned_object_heap :
+                gc_etw_segment_large_object_heap);
 
         GCToEEInterface::DiagUpdateGenerationBounds();
 
