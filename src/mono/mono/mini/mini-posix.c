@@ -70,6 +70,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/mono-state.h>
+#include <mono/utils/mono-time.h>
 #include <mono/mini/debugger-state-machine.h>
 
 #include "mini.h"
@@ -545,22 +546,6 @@ clock_cleanup (void)
 		g_error ("%s: mach_port_deallocate () returned %d", __func__, ret);
 }
 
-static guint64
-clock_get_time_ns (void)
-{
-	kern_return_t ret;
-	mach_timespec_t mach_ts;
-
-	do {
-		ret = clock_get_time (sampling_clock_service, &mach_ts);
-	} while (ret == KERN_ABORTED);
-
-	if (ret != KERN_SUCCESS)
-		g_error ("%s: clock_get_time () returned %d", __func__, ret);
-
-	return ((guint64) mach_ts.tv_sec * 1000000000) + (guint64) mach_ts.tv_nsec;
-}
-
 static void
 clock_sleep_ns_abs (guint64 ns_abs)
 {
@@ -618,17 +603,6 @@ clock_cleanup (void)
 {
 }
 
-static guint64
-clock_get_time_ns (void)
-{
-	struct timespec ts;
-
-	if (clock_gettime (sampling_posix_clock, &ts) == -1)
-		g_error ("%s: clock_gettime () returned -1, errno = %d", __func__, errno);
-
-	return ((guint64) ts.tv_sec * 1000000000) + (guint64) ts.tv_nsec;
-}
-
 static void
 clock_sleep_ns_abs (guint64 ns_abs)
 {
@@ -675,7 +649,7 @@ clock_sleep_ns_abs (guint64 ns_abs)
 	 * nanoseconds).
 	 */
 	do {
-		diff = (gint64) ns_abs - (gint64) clock_get_time_ns ();
+		diff = (gint64) ns_abs - (gint64) mono_clock_get_time_ns ();
 
 		if (diff <= 0)
 			break;
@@ -745,7 +719,7 @@ init:
 
 	clock_init (mode);
 
-	for (guint64 sleep = clock_get_time_ns (); mono_atomic_load_i32 (&sampling_thread_running); clock_sleep_ns_abs (sleep)) {
+	for (guint64 sleep = mono_clock_get_time_ns (); mono_atomic_load_i32 (&sampling_thread_running); clock_sleep_ns_abs (sleep)) {
 		uint32_t freq;
 		MonoProfilerSampleMode new_mode;
 

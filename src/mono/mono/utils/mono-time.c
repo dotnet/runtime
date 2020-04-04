@@ -229,3 +229,39 @@ mono_100ns_datetime_from_timeval (struct timeval tv)
 
 #endif
 
+#ifdef HOST_DARWIN
+
+static clock_serv_t sampling_clock_service;
+
+guint64
+mono_clock_get_time_ns (void)
+{
+	kern_return_t ret;
+	mach_timespec_t mach_ts;
+
+	do {
+		ret = clock_get_time (sampling_clock_service, &mach_ts);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
+		g_error ("%s: clock_get_time () returned %d", __func__, ret);
+
+	return ((guint64) mach_ts.tv_sec * 1000000000) + (guint64) mach_ts.tv_nsec;
+}
+
+#else
+
+static clockid_t sampling_posix_clock;
+
+guint64
+mono_clock_get_time_ns (void)
+{
+	struct timespec ts;
+
+	if (clock_gettime (sampling_posix_clock, &ts) == -1)
+		g_error ("%s: clock_gettime () returned -1, errno = %d", __func__, errno);
+
+	return ((guint64) ts.tv_sec * 1000000000) + (guint64) ts.tv_nsec;
+}
+
+#endif

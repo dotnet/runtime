@@ -29,6 +29,8 @@ gint64 mono_100ns_datetime (void);
 gint64 mono_100ns_datetime_from_timeval (struct timeval tv);
 #endif
 
+guint64 mono_clock_get_time_ns (void);
+
 /* Stopwatch class for internal runtime use */
 typedef struct {
 	gint64 start, stop;
