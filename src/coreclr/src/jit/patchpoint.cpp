@@ -38,8 +38,6 @@ public:
     {
         if (compiler->doesMethodHavePatchpoints())
         {
-            ppCounterLclNum                            = compiler->lvaGrabTemp(true DEBUGARG("patchpoint counter"));
-            compiler->lvaTable[ppCounterLclNum].lvType = TYP_INT;
         }
     }
 
@@ -56,15 +54,9 @@ public:
             compiler->fgEnsureFirstBBisScratch();
         }
 
-        BasicBlock* block = compiler->fgFirstBB;
-
-        if (compiler->doesMethodHavePatchpoints())
-        {
-            TransformEntry(block);
-        }
-
         int count = 0;
-        for (block = block->bbNext; block != nullptr; block = block->bbNext)
+
+        for (BasicBlock* block = compiler->fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {
@@ -139,6 +131,16 @@ private:
     //
     void TransformBlock(BasicBlock* block)
     {
+        // If we haven't allocated the counter temp yet, set it up
+        if (ppCounterLclNum == BAD_VAR_NUM)
+        {
+            ppCounterLclNum                            = compiler->lvaGrabTemp(true DEBUGARG("patchpoint counter"));
+            compiler->lvaTable[ppCounterLclNum].lvType = TYP_INT;
+
+            // and initialize in the entry block
+            TransformEntry(compiler->fgFirstBB);
+        }
+
         // Capture the IL offset
         IL_OFFSET ilOffset = block->bbCodeOffs;
         assert(ilOffset != BAD_IL_OFFSET);
