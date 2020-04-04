@@ -30,7 +30,7 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             string singleFile;
-            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile, BundleOptions.BundleNativeBinaries);
+            Bundler bundler = BundleHelper.BundleApp(fixture, out singleFile);
 
             // Verify expected files in the bundle directory
             var bundleDir = BundleHelper.GetBundleDir(fixture);
@@ -54,7 +54,7 @@ namespace AppHost.Bundle.Tests
                 .HaveStdOutContaining("Hello World");
 
             var extractDir = BundleHelper.GetExtractionDir(fixture, bundler);
-            extractDir.Should().OnlyHaveFiles(BundleHelper.GetExtractedFiles(fixture));
+            extractDir.Should().HaveFiles(BundleHelper.GetExtractedFiles(fixture));
             extractDir.Should().NotHaveFiles(BundleHelper.GetFilesNeverExtracted(fixture));
         }
 

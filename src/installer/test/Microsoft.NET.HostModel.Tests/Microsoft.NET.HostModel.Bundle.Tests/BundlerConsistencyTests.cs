@@ -137,10 +137,10 @@ namespace Microsoft.NET.HostModel.Tests
         public void TestBundlingNativeBinaries(BundleOptions options)
         {
             var fixture = sharedTestState.TestFixture.Copy();
-            var hostfxr = Path.GetFileName(fixture.TestProject.HostFxrDll);
+            var coreclr = Path.GetFileName(fixture.TestProject.CoreClrDll);
             var bundler = BundleHelper.Bundle(fixture, options);
 
-            bundler.BundleManifest.Contains($"{hostfxr}").Should().Be(options.HasFlag(BundleOptions.BundleNativeBinaries));
+            bundler.BundleManifest.Contains($"{coreclr}").Should().Be(options.HasFlag(BundleOptions.BundleNativeBinaries));
         }
 
         [Fact]

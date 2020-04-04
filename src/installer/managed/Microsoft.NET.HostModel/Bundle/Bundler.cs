@@ -100,11 +100,7 @@ namespace Microsoft.NET.HostModel.Bundle
                     return false;
 
                 case FileType.NativeBinary:
-                    // Don't bundle hostfxr and hostpolicy because the bundle handling code is actually within these libraries.
-                    // Until a statically-linked apphost is available, these libraries will live next to the single-file app.
-                    return !Options.HasFlag(BundleOptions.BundleNativeBinaries) ||
-                           relativePath.Equals(Target.HostFxr) ||
-                           relativePath.Equals(Target.HostPolicy);
+                    return !Options.HasFlag(BundleOptions.BundleNativeBinaries) || Target.ShouldExclude(relativePath);
 
                 case FileType.Symbols:
                     return !Options.HasFlag(BundleOptions.BundleSymbolFiles);

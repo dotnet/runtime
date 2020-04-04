@@ -60,8 +60,10 @@ namespace BundleTests.Helpers
         public static string[] GetFilesNeverExtracted(TestProjectFixture fixture)
         {
             string appBaseName = GetAppBaseName(fixture);
-            return new string[] { $"{appBaseName}.deps.json", $"{appBaseName}.runtimeconfig.json",
-                                  fixture.TestProject.HostFxrDll, fixture.TestProject.HostPolicyDll };
+            return new string[] { $"{appBaseName}.deps.json",
+                                  $"{appBaseName}.runtimeconfig.json",
+                                  Path.GetFileName(fixture.TestProject.HostFxrDll),
+                                  Path.GetFileName(fixture.TestProject.HostPolicyDll) };
         }
 
         public static string GetPublishPath(TestProjectFixture fixture)
@@ -137,7 +139,7 @@ namespace BundleTests.Helpers
         // which may not (yet) be available in the SDK.
         public static Bundler BundleApp(TestProjectFixture fixture,
                                         out string singleFile,
-                                        BundleOptions options = BundleOptions.None,
+                                        BundleOptions options = BundleOptions.BundleNativeBinaries,
                                         Version targetFrameworkVersion = null,
                                         bool copyExcludedFiles = true)
         {
@@ -151,8 +153,11 @@ namespace BundleTests.Helpers
             return bundler;
         }
 
+        // The defaut option for Bundling apps is BundleOptions.BundleNativeBinaries
+        // Until CoreCLR runtime can learn how to process assemblies from the bundle.
+        // This is because CoreCLR expects System.Private.Corelib.dll to be beside CoreCLR.dll
         public static string BundleApp(TestProjectFixture fixture,
-                                       BundleOptions options = BundleOptions.None,
+                                       BundleOptions options = BundleOptions.BundleNativeBinaries,
                                        Version targetFrameworkVersion = null)
         {
             string singleFile;
@@ -163,9 +168,8 @@ namespace BundleTests.Helpers
         public static Bundler Bundle(TestProjectFixture fixture, BundleOptions options = BundleOptions.None)
         {
             string singleFile;
-            return BundleApp(fixture, out singleFile, copyExcludedFiles:false);
+            return BundleApp(fixture, out singleFile, options, copyExcludedFiles:false);
         }
-
 
         public static void AddLongNameContentToAppWithSubDirs(TestProjectFixture fixture)
         {
