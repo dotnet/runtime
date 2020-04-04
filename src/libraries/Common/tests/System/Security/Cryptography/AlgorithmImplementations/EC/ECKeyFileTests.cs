@@ -16,6 +16,7 @@ namespace System.Security.Cryptography.Tests
         protected abstract void ImportECPrivateKey(T key, ReadOnlySpan<byte> source, out int bytesRead);
         protected abstract void ImportParameters(T key, ECParameters ecParameters);
         protected abstract ECParameters ExportParameters(T key, bool includePrivate);
+        protected abstract void Exercise(T key);
 
         public static bool SupportsBrainpool { get; } = IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
         public static bool SupportsSect163k1 { get; } = IsCurveSupported(EccTestData.Sect163k1Key1.Curve.Oid);

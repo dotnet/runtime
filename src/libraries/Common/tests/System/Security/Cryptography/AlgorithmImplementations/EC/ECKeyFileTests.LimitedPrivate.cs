@@ -11,6 +11,35 @@ namespace System.Security.Cryptography.Tests
     public abstract partial class ECKeyFileTests<T>
     {
         private static bool LimitedPrivateKeySupported { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.LimitedPrivateKeySupported;
+        private const int NTE_PERM = unchecked((int)0x80090010);
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void ReadWriteNistP256_PreservesKeyUsage_Explicit_LimitedPrivate()
+        {
+            if (!LimitedPrivateKeySupported || !SupportsExplicitCurves)
+            {
+                return;
+            }
+
+            // This key has a keyUsage set to 0b00000000 (no key usages are valid).
+            // Since the CNG PKCS8 import will re-write these keys with Q=(0,0)
+            // in the PrivateKeyInfo, we want to make sure that the Attributes
+            // are kept.
+            const string base64 = @"
+MIIBQgIBADCCAQMGByqGSM49AgEwgfcCAQEwLAYHKoZIzj0BAQIhAP////8AAAAB
+AAAAAAAAAAAAAAAA////////////////MFsEIP////8AAAABAAAAAAAAAAAAAAAA
+///////////////8BCBaxjXYqjqT57PrvVV2mIa8ZR0GsMxTsPY7zjw+J9JgSwMV
+AMSdNgiG5wSTamZ44ROdJreBn36QBEEEaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg
+9KE5RdiYwpZP40Li/hp/m47n60p8D54WK84zV2sxXs7LtkBoN79R9QIhAP////8A
+AAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBBCcwJQIBAQQgcKEsLbFoRe1W
+/2jPwhpHKz8E19aFG/Y0ny19WzRSs4qgDTALBgNVHQ8xBAMCAAA=";
+
+            T key = CreateKey();
+            key.ImportPkcs8PrivateKey(Convert.FromBase64String(base64), out _);
+            CryptographicException ex = Assert.ThrowsAny<CryptographicException>(() => Exercise(key));
+            Assert.Equal(NTE_PERM, ex.HResult);
+        }
 
         [Fact]
         public void ReadWriteNistP521Pkcs8_LimitedPrivate()
