@@ -63,7 +63,7 @@ jobs:
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, ''), eq(parameters.archType, 'arm')) }}:
           - _runtimeOSArg: /p:RuntimeOS=ubuntu.16.04
 
-        # force a value for OS when cross-building iOD, Android, WebAssembly or  FreeBSD on Linux
+        # force a value for OS when cross-building iOS, Android, WebAssembly or FreeBSD on Linux
         - ${{ if in(parameters.osGroup, 'WebAssembly', 'iOS', 'Android', 'FreeBSD') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 

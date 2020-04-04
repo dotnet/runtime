@@ -190,15 +190,9 @@ jobs:
       platform: FreeBSD_x64
       container:
         image: ubuntu-18.04-cross-freebsd-11-20200403161435-3d73ec8
-        registry: mcr
       jobParameters:
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        managedTestBuildOsGroup: FreeBSD
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Android x64
