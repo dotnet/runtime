@@ -70,13 +70,13 @@
     <MicrosoftDotNetRemoteExecutorVersion>5.0.0-beta.20171.1</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>5.0.0-beta.20171.1</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppVersion>5.0.0-alpha.1.20080.9</MicrosoftNETCoreAppVersion>
-    <MicrosoftNETCoreDotNetHostVersion>5.0.0-alpha.1.20080.9</MicrosoftNETCoreDotNetHostVersion>
-    <MicrosoftNETCoreDotNetHostPolicyVersion>5.0.0-alpha.1.20080.9</MicrosoftNETCoreDotNetHostPolicyVersion>
+    <MicrosoftNETCoreAppVersion>5.0.0-preview.4.20202.18</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreDotNetHostVersion>5.0.0-preview.4.20202.18</MicrosoftNETCoreDotNetHostVersion>
+    <MicrosoftNETCoreDotNetHostPolicyVersion>5.0.0-preview.4.20202.18</MicrosoftNETCoreDotNetHostPolicyVersion>
     <MicrosoftExtensionsDependencyModelVersion>2.1.0</MicrosoftExtensionsDependencyModelVersion>
     <MicrosoftDotNetPlatformAbstractionsVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsVersion>
     <!-- CoreClr dependencies -->
-    <MicrosoftNETCoreILAsmVersion>5.0.0-alpha1.19563.3</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion>5.0.0-preview.4.20202.18</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNETSdkILVersion>5.0.0-alpha.1.20076.2</MicrosoftNETSdkILVersion>
     <!-- Libraries dependencies -->
     <runtimenativeSystemIOPortsVersion>5.0.0-alpha.1.19563.3</runtimenativeSystemIOPortsVersion>
