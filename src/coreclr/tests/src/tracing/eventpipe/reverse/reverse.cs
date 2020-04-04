@@ -55,10 +55,20 @@ namespace Tracing.Tests.ReverseValidation
                 Logger.logger.Log($"subprocess started: {fSuccess}");
 
                 await Task.Delay(250);
-                if (duringExecution != null)
-                    await duringExecution(process.Id);
+                try
+                {
+                    if (duringExecution != null)
+                        await duringExecution(process.Id);
+                }
+                catch (Exception e)
+                {
+                    throw e;
+                }
+                finally
+                {
+                    process.Kill();
+                }
 
-                process.Kill();
 
                 if (afterExecution != null)
                     await afterExecution();
@@ -233,7 +243,7 @@ namespace Tracing.Tests.ReverseValidation
         {
             if (args.Length >= 1)
             {
-                await Task.Delay(-1); // will be killed in test
+                await Task.Delay(TimeSpan.FromMinutes(10)); // will be killed in test
                 return 1;
             }
 
