@@ -71,7 +71,7 @@
       <_PackageReports Include="$(PackageReportDir)*.json" />
     </ItemGroup>
 
-    <Message Condition="'@(_PackageReports)' != ''" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
+    <Message Condition="'@(_PackageReports)' != '' and Exists('$(ArtifactsDir)packages')" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
   </Target>
 
   <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
