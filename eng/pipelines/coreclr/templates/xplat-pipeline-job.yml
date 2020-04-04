@@ -122,7 +122,7 @@ jobs:
     - name: osArg
       value: ''
 
-    - ${{ if eq(parameters.osGroup, 'FreeBSD') }}
+    - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
       - name: osArg
         value: -os FreeBSD
 
