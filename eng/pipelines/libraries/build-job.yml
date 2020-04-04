@@ -104,17 +104,30 @@ jobs:
           displayName: Build
 
         - ${{ if eq(parameters.runTests, false) }}:
-          - task: CopyFiles@2
-            displayName: Prepare ref folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref
+          - ${{ if ne(parameters.isOfficialBuild, true) }}:            
+            - task: CopyFiles@2
+              displayName: Prepare testhost folder to publish
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
+                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
 
-          - task: CopyFiles@2
-            displayName: Prepare runtime folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
+            - task: CopyFiles@2
+              displayName: Prepare artifacts toolset folder to publish
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/toolset
+                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/toolset
+
+            - task: CopyFiles@2
+              displayName: Prepare runtime folder to publish
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
+                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
+
+            - task: CopyFiles@2
+              displayName: Prepare ref folder to publish
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref
+                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref
 
           - task: CopyFiles@2
             displayName: Prepare shared framework ref assemblies to publish
@@ -139,19 +152,6 @@ jobs:
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/native
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/native
-
-          - task: CopyFiles@2
-            displayName: Prepare testhost folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
-            condition: ne(variables['_skipTestHostCopy'], 'true')
-
-          - task: CopyFiles@2
-            displayName: Prepare artifacts toolset folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/toolset
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/toolset
 
           - task: CopyFiles@2
             displayName: Prepare artifacts packages folder to publish

@@ -83,7 +83,6 @@ jobs:
           - _extraHelixArguments: /p:BuildAllConfigurations=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
-          - _skipTestHostCopy: true
           - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
 
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:

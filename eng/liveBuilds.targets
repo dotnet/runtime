@@ -144,7 +144,7 @@
 
   <Target Name="EnsureLocalArtifactsExist">
     <Error Condition="!Exists('$(LibrariesSharedFrameworkRefArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesSharedFrameworkRefArtifactsPath)" />
-    <Error Condition="!Exists('$(LibrariesAllRefArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesAllRefArtifactsPath)" />
+    <Error Condition="'$(IncludeOOBLibraries)' == 'true' and !Exists('$(LibrariesAllRefArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesAllRefArtifactsPath)" />
   </Target>
 
   <!--
@@ -154,7 +154,7 @@
   <Target Name="EnsureLocalOSGroupConfigurationArchitectureSpecificArtifactsExist"
           Condition="'$(LibrariesTargetOSConfigurationArchitecture)' != '*'">
     <Error Condition="!Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesSharedFrameworkBinArtifactsPath)" />
-    <Error Condition="!Exists('$(LibrariesAllBinArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesAllBinArtifactsPath)" />
+    <Error Condition="'$(IncludeOOBLibraries)' == 'true' and !Exists('$(LibrariesAllBinArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesAllBinArtifactsPath)" />
     <Error Condition="!Exists('$(LibrariesNativeArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesNativeArtifactsPath)" />
   </Target>
 
