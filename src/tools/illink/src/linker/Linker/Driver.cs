@@ -353,7 +353,18 @@ namespace Mono.Linker {
 
 							continue;
 
-						case "--version":
+						case "--dataflow-json":
+							if (arguments.Count < 1) {
+								ErrorMissingArgument (token);
+								return false;
+							}
+
+							if (!GetStringParam (token, l => context.AddDataflowAnnotationsFile (l)))
+								return false;
+
+							continue;
+
+							case "--version":
 							Version ();
 							return true;
 
@@ -911,6 +922,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("  --strip-security          Remove metadata and code related to Code Access Security. Defaults to true");
 			Console.WriteLine ("  --substitutions FILE      Configuration file with field or methods substitution rules");
 			Console.WriteLine ("  --used-attrs-only         Attribute usage is removed if the attribute type is not used. Defaults to false");
+			Console.WriteLine ("  --dataflow-json FILE      Configuration file with field or methods dataflow annotations");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Analyzer");

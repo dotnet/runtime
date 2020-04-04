@@ -138,7 +138,7 @@ namespace Mono.Linker.Steps {
 		};
 #endif
 
-		readonly FlowAnnotations _flowAnnotations;
+		FlowAnnotations _flowAnnotations;
 
 		public MarkStep ()
 		{
@@ -148,8 +148,6 @@ namespace Mono.Linker.Steps {
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo)> ();
 			_typesWithInterfaces = new List<TypeDefinition> ();
 			_unreachableBodies = new List<MethodBody> ();
-
-			_flowAnnotations = new FlowAnnotations (new AttributeFlowAnnotationSource (), _context);
 		}
 
 		public AnnotationStore Annotations => _context.Annotations;
@@ -158,6 +156,16 @@ namespace Mono.Linker.Steps {
 		public virtual void Process (LinkContext context)
 		{
 			_context = context;
+
+			IFlowAnnotationSource annotationSource = new AttributeFlowAnnotationSource ();
+			if (_context.DataflowAnnotations != null && _context.DataflowAnnotations.Count > 0) {
+				annotationSource = new AggregateFlowAnnotationSource (
+					_context.DataflowAnnotations.Select (s => new JsonFlowAnnotationSource (_context, s))
+					.Append (annotationSource));
+			}
+
+			_flowAnnotations = new FlowAnnotations (annotationSource, _context);
+
 
 			Initialize ();
 			Process ();

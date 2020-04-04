@@ -1,0 +1,21 @@
+{
+  "test": {
+    "Mono.Linker.Tests.Cases.DataFlow" : {
+      "JsonAnnotations": {
+
+        "_typeWithDefaultConstructor": "DefaultConstructor",
+
+        "TwoAnnotatedParameters(System.Type,System.Type)": {
+          "type": "DefaultConstructor",
+          "type2": "PublicConstructors"
+        },
+
+        "ReturnConstructorsFailure(System.Type)": {
+          "return": "DefaultConstructor"
+        },
+
+        "PropertyWithDefaultConstructor": "DefaultConstructor"
+      }
+    }
+  }
+}
