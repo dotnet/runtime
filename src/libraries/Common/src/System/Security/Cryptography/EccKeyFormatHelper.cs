@@ -6,6 +6,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 
@@ -97,7 +98,14 @@ namespace System.Security.Cryptography
             out ECParameters ret)
         {
             ECPrivateKey key = ECPrivateKey.Decode(keyData, AsnEncodingRules.BER);
+            FromECPrivateKey(key, algId, out ret);
+        }
 
+        internal static void FromECPrivateKey(
+            ECPrivateKey key,
+            in AlgorithmIdentifierAsn algId,
+            out ECParameters ret)
+        {
             ValidateParameters(key.Parameters, algId);
 
             if (key.Version != 1)
@@ -468,7 +476,7 @@ namespace System.Security.Cryptography
             writer.PopSequence();
         }
 
-        internal static AsnWriter WritePkcs8PrivateKey(ECParameters ecParameters)
+        internal static AsnWriter WritePkcs8PrivateKey(ECParameters ecParameters, AttributeAsn[]? attributes = null)
         {
             ecParameters.Validate();
 
@@ -480,9 +488,29 @@ namespace System.Security.Cryptography
             // Don't need the domain parameters because they're contained in the algId.
             using (AsnWriter ecPrivateKey = WriteEcPrivateKey(ecParameters, includeDomainParameters: false))
             using (AsnWriter algorithmIdentifier = WriteAlgorithmIdentifier(ecParameters))
+            using (AsnWriter? attributeWriter = WritePrivateKeyInfoAttributes(attributes))
             {
-                return KeyFormatHelper.WritePkcs8(algorithmIdentifier, ecPrivateKey);
+                return KeyFormatHelper.WritePkcs8(algorithmIdentifier, ecPrivateKey, attributeWriter);
             }
+        }
+
+        [return: NotNullIfNotNull("attributes")]
+        private static AsnWriter? WritePrivateKeyInfoAttributes(AttributeAsn[]? attributes)
+        {
+            if (attributes == null)
+                return null;
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 0);
+            writer.PushSetOf(tag);
+
+            for (int i = 0; i < attributes.Length; i++)
+            {
+                attributes[i].Encode(writer);
+            }
+
+            writer.PopSetOf(tag);
+            return writer;
         }
 
         private static void WriteEcParameters(ECParameters ecParameters, AsnWriter writer)
