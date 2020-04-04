@@ -147,6 +147,7 @@ namespace System.Net.Quic.Implementations.Managed
             // do handshake to set encryption secrets (to be able to process coalesced packets
             if (handshakeWanted)
             {
+                // TODO-RZ: Deliver buffered data.
                 _tls.DoHandshake();
             }
 
@@ -200,8 +201,19 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType, Context context)
         {
             if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.ConnectionClose;
+
+            var stream = GetEpoch(GetEncryptionLevel(packetType)).CryptoInboundBuffer;
+            // don't buffer if not needed
+            if (stream.BytesRead == crypto.Offset)
+            {
+                stream.Skip((ulong)crypto.CryptoData.Length);
+                _tls.OnDataReceived(GetEncryptionLevel(packetType), crypto.CryptoData);
+            }
+            else
+            {
+                stream.Receive(crypto.Offset, crypto.CryptoData);
+            }
             // TODO-RZ: Utilize the offset
-            _tls.OnDataReceived(GetEncryptionLevel(packetType), crypto.CryptoData);
 
             return ProcessPacketResult.Ok;
         }
@@ -232,19 +244,17 @@ namespace System.Net.Quic.Implementations.Managed
 
         private static void WriteCryptoFrames(QuicWriter writer, EpochData epoch)
         {
-            while (epoch.CryptoStream.NextSizeToSend > 0 && epoch.CryptoStream.NextSizeToSend < writer.BytesAvailable)
-            {
-                var (data, offset) = epoch.CryptoStream.PeekDataToSend();
-                CryptoFrame frame = new CryptoFrame((ulong)offset, data);
-                if (writer.BytesAvailable < frame.GetSerializedLength())
-                {
-                    // cannot fit in this frame
-                    break;
-                }
+            if (!epoch.CryptoOutboundStream.HasPendingData)
+                return;
 
-                CryptoFrame.Write(writer, frame);
-                epoch.CryptoStream.GetDataToSend();
-            }
+            (ulong offset, ulong count) = epoch.CryptoOutboundStream.GetNextPendingRange();
+
+            // assume 2 * 2 bytes for offset and length and 1 B for type
+            count = Math.Min(count, (ulong) writer.BytesAvailable - 5);
+
+            epoch.CryptoOutboundStream.CheckOut(CryptoFrame.ReservePayloadBuffer(writer, offset, count));
+
+            // TODO-RZ: note somewhere the sent range for ACK purposes
         }
 
         private static unsafe void WriteAckFrame(QuicWriter writer, EpochData epoch, Context context)

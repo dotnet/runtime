@@ -156,7 +156,6 @@ namespace System.Net.Quic.Tests
 
                 var handshakePacket = Assert.IsType<HandShakePacket>(flight.Packets[1]);
                 Assert.Equal(0u, handshakePacket.PacketNumber);
-                Assert.Equal(4, handshakePacket.Frames.Count);
                 Assert.True(handshakePacket.Frames.All(f => f.FrameType == FrameType.Crypto));
             }
 

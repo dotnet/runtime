@@ -364,7 +364,7 @@ namespace System.Net.Quic.Implementations.Managed
                 var level = (EncryptionLevel)i;
                 var epoch = _epochs[i];
 
-                if (epoch.CryptoStream.NextSizeToSend > 0)
+                if (epoch.CryptoOutboundStream.HasPendingData)
                     return level;
 
                 if (epoch.AckElicited)
@@ -624,7 +624,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal int HandleAddHandshakeData(EncryptionLevel level, ReadOnlySpan<byte> data)
         {
-            GetEpoch(level).CryptoStream.Add(data);
+            GetEpoch(level).CryptoOutboundStream.Enqueue(data);
             return 1;
         }
 

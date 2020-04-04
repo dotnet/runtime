@@ -51,9 +51,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal CryptoSeal? RecvCryptoSeal { get; set; }
 
         /// <summary>
-        ///     Stream of outbound messages to be carried in CRYPTO frames.
+        ///     Outbound messages to be carried in CRYPTO frames.
         /// </summary>
-        internal CryptoStream CryptoStream { get; } = new CryptoStream();
+        internal OutboundBuffer CryptoOutboundStream { get; } = new OutboundBuffer();
+
+        /// <summary>
+        ///     Inbound messages from CRYPTO frames.
+        /// </summary>
+        internal InboundBuffer CryptoInboundBuffer { get; } = new InboundBuffer();
 
         /// <summary>
         ///     Gets packet number and it's minimum safe encoding length for the next packet sent.

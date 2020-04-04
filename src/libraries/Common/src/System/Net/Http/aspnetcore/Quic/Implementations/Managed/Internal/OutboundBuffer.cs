@@ -145,12 +145,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             int toRemove = _chunks.FindIndex(c => c.StreamOffset + c.Length > processed);
             if (toRemove == -1)
             {
-                _chunks.Clear();
+                toRemove = _chunks.Count;
             }
-            else
+
+            for (int i = 0; i < toRemove; i++)
             {
-                _chunks.RemoveRange(0,toRemove);
+                ArrayPool<byte>.Shared.Return(_chunks[i].Buffer);
             }
+
+            _chunks.RemoveRange(0,toRemove);
         }
     }
 }

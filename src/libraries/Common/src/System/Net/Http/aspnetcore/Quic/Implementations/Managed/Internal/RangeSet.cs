@@ -274,11 +274,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _ranges.RemoveRange(index, removeCount);
         }
 
+        /// <summary>
+        ///     Gets minimal value in the set.
+        /// </summary>
         internal ulong GetMin()
         {
             return _ranges[0].Start;
         }
 
+        /// <summary>
+        ///     Gets maximal value in the set.
+        /// </summary>
         internal ulong GetMax()
         {
             return _ranges[^1].End;
@@ -286,6 +292,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal Range this[int index] => _ranges[index];
 
+        /// <summary>
+        ///     Returns number of contiguous ranges.
+        /// </summary>
         internal int Count => _ranges.Count;
 
         public IEnumerator<Range> GetEnumerator() => _ranges.GetEnumerator();

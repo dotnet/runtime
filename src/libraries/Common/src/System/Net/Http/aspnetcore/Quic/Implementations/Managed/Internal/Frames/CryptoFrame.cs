@@ -47,14 +47,20 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             return true;
         }
 
+        internal static Span<byte> ReservePayloadBuffer(QuicWriter writer, ulong offset, ulong length)
+        {
+            writer.WriteFrameType(FrameType.Crypto);
+
+            writer.WriteVarInt(offset);
+            writer.WriteVarInt(length);
+            return writer.GetWritableSpan((int) length);
+        }
+
         internal static void Write(QuicWriter writer, in CryptoFrame frame)
         {
             Debug.Assert(writer.BytesAvailable >= frame.GetSerializedLength());
 
-            writer.WriteFrameType(FrameType.Crypto);
-
-            writer.WriteVarInt(frame.Offset);
-            writer.WriteLengthPrefixedSpan(frame.CryptoData);
+            frame.CryptoData.CopyTo(ReservePayloadBuffer(writer, frame.Offset, (ulong)frame.CryptoData.Length));
         }
     }
 }
