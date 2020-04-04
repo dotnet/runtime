@@ -37,7 +37,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 return Start <= value && value <= End;
             }
 
-            internal bool IsSubset(ulong start, ulong end)
+            internal bool IsSubsetOf(ulong start, ulong end)
             {
                 Debug.Assert(start <= end);
                 return start <= Start && End <= end;
@@ -50,6 +50,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             public override string ToString() => $"[{Start}..{End}]";
+
+            public void Deconstruct(out ulong start, out ulong end)
+            {
+                start = Start;
+                end = End;
+            }
         }
 
         internal RangeSet()
@@ -115,7 +121,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     break;
                 }
 
-                if (range.IsSubset(start, end))
+                if (range.IsSubsetOf(start, end))
                 {
                     // subset of new range, we can remove this range
                     removeCount++;
@@ -150,7 +156,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <returns>Index of the last range started before the value or -1 if no such range exists.</returns>
         private int IndexOfPrevious(ulong value)
         {
-            if (_ranges[0].Start > value)
+            if (_ranges.Count == 0 || _ranges[0].Start > value)
                 return -1;
 
             // do binary search
@@ -189,8 +195,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             Debug.Assert(start <= end);
 
             // empty set does not intersect with anything
-            if (_ranges.Count == 0) return false;
-            return _ranges[IndexOfPrevious(start)].Includes(start, end);
+            int index = IndexOfPrevious(start);
+            return index >= 0 && _ranges[index].Includes(start, end);
         }
 
         /// <summary>
@@ -218,19 +224,28 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 var range = _ranges[index];
                 Debug.Assert(range.Start <= start);
-                if (range.IsSubset(start, end))
+                if (range.Start == start)
                 {
-                    // remove completely
-                    removeCount++;
+                    if (range.End <= end)
+                    {
+                        // remove completely
+                        removeCount++;
+                    }
+                    else
+                    {
+                        // shorten from the left, and we are done
+                        range.Start = end + 1;
+                        return;
+                    }
                 }
                 else if (end < range.End)
                 {
-                    // split the range
+                    // split the range and we are done
                     _ranges.Insert(index, new Range(end + 1, range.End));
                     range.End = start - 1;
                     return;
                 }
-                else // reduce the range if needed and keep it
+                else // shorten the range from the right
                 {
                     range.End = Math.Min(range.End, start - 1);
                     index++;
