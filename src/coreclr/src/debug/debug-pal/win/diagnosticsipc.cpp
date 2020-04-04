@@ -214,24 +214,44 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
         }
         else
         {
-            // check for data by doing an asynchronous 0 byte read.
-            // This will signal if the pipe closes (hangup) or the server
-            // sends new data
+            bool fSuccess = false;
             DWORD dwDummy = 0;
-            bool fSuccess = ::ReadFile(
-                rgpIpcPollHandles[i]->pStream->_hPipe,      // handle
-                nullptr,                                    // null buffer
-                0,                                          // read 0 bytes
-                &dwDummy,                                   // dummy variable
-                &rgpIpcPollHandles[i]->pStream->_oOverlap); // overlap object to use
-            if (!fSuccess && ::GetLastError() == ERROR_IO_PENDING)
-                pHandles[i] = rgpIpcPollHandles[i]->pStream->_oOverlap.hEvent;
+            if (!rgpIpcPollHandles[i]->pStream->_isTestReading)
+            {
+                // check for data by doing an asynchronous 0 byte read.
+                // This will signal if the pipe closes (hangup) or the server
+                // sends new data
+                fSuccess = ::ReadFile(
+                    rgpIpcPollHandles[i]->pStream->_hPipe,      // handle
+                    nullptr,                                    // null buffer
+                    0,                                          // read 0 bytes
+                    &dwDummy,                                   // dummy variable
+                    &rgpIpcPollHandles[i]->pStream->_oOverlap); // overlap object to use
+                rgpIpcPollHandles[i]->pStream->_isTestReading = true;
+                if (!fSuccess)
+                {
+                    DWORD error = ::GetLastError();
+                    switch (error)
+                    {
+                        case ERROR_IO_PENDING:
+                            pHandles[i] = rgpIpcPollHandles[i]->pStream->_oOverlap.hEvent;
+                            break;
+                        case ERROR_PIPE_NOT_CONNECTED:
+                            // hangup
+                            rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::HANGUP;
+                            delete[] pHandles;
+                            return -1;
+                        default:
+                            if (callback != nullptr)
+                                callback("0 byte async read on client connection failed", error);
+                            delete[] pHandles;
+                            return -1;
+                    }
+                }
+            }
             else
             {
-                if (callback != nullptr)
-                    callback("0 byte async read on client connection failed", -1);
-                delete[] pHandles;
-                return -1;
+                pHandles[i] = rgpIpcPollHandles[i]->pStream->_oOverlap.hEvent;
             }
         }
     }

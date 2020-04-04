@@ -129,6 +129,7 @@ private:
 #else
     HANDLE _hPipe = INVALID_HANDLE_VALUE;
     OVERLAPPED _oOverlap = {};
+    BOOL _isTestReading = false; // used to check whether we are already doing a 0-byte read to test for data
     IpcStream(HANDLE hPipe, DiagnosticsIpc::ConnectionMode mode = DiagnosticsIpc::ConnectionMode::SERVER);
 #endif /* TARGET_UNIX */
 
