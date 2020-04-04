@@ -129,7 +129,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), true)]
         [InlineData(typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), typeof(FieldInfoTests), nameof(FieldInfoTests.s_intField), false)]
-        public void Equals(Type type1, string name1, Type type2, string name2, bool expected)
+        public void EqualsTest(Type type1, string name1, Type type2, string name2, bool expected)
         {
             FieldInfo fieldInfo1 = GetField(type1, name1);
             FieldInfo fieldInfo2 = GetField(type2, name2);

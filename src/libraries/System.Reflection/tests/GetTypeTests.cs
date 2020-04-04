@@ -87,7 +87,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(GetType_TestData))]
-        public void GetType(string typeName, Type expectedResult)
+        public void GetTypeTest(string typeName, Type expectedResult)
         {
             Assembly a = typeof(GetTypeTests).GetTypeInfo().Assembly;
             Module m = a.ManifestModule;
