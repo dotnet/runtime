@@ -153,7 +153,7 @@ namespace System.Numerics
             }
 
             // BSR returns the answer we're looking for directly.
-            // However BSR is much slower than TZCNT on AMD processors, so we leave it as a fallback only.
+            // However BSR is much slower than LZCNT on AMD processors, so we leave it as a fallback only.
             if (X86Base.IsSupported)
             {
                 return (int)X86Base.BitScanReverse(value);
