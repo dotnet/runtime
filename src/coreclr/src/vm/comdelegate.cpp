@@ -1132,7 +1132,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     GCPROTECT_END();
 }
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#if defined(TARGET_X86)
 // Marshals a managed method to an unmanaged callback provided the
 // managed method is static and it's parameters require no marshalling.
 PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
@@ -1189,7 +1189,7 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
     _ASSERTE(pCode != NULL);
     return pCode;
 }
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#endif // defined(TARGET_X86)
 
 // Marshals a delegate to a unmanaged callback.
 LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
