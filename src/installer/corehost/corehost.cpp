@@ -77,6 +77,12 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     return true;
 }
 
+#elif !defined(FEATURE_LIBHOST)
+#define CURHOST_TYPE    _X("dotnet")
+#define CUREXE_PKG_VER  HOST_PKG_VER
+#define CURHOST_EXE
+#endif
+
 void need_newer_framework_error()
 {
     pal::string_t url = get_download_url();
@@ -84,12 +90,6 @@ void need_newer_framework_error()
     trace::error(_X(""));
     trace::error(_X("  - %s"), url.c_str());
 }
-
-#elif !defined(FEATURE_LIBHOST)
-#define CURHOST_TYPE    _X("dotnet")
-#define CUREXE_PKG_VER  HOST_PKG_VER
-#define CURHOST_EXE
-#endif
 
 #if defined(CURHOST_EXE)
 
