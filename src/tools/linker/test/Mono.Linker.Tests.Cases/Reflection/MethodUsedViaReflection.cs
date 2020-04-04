@@ -14,19 +14,23 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			TestNameAndExplicitBindingFlags ();
 			TestNameAndType ();
 			TestNameWithIntAndType ();
+			TestNameBindingFlagsAndParameterModifier ();
+			TestNameBindingFlagsCallingConventionParameterModifier ();
 			TestNameWithIntAndBindingFlags ();
+			TestNameWithIntBindingFlagsCallingConventionParameter ();
 			TestNullName ();
 			TestEmptyName ();
 			TestNonExistingName ();
 			TestNullType ();
 			TestDataFlowType ();
+			TestIfElse (1);
 		}
 
 		[Kept]
 		[RecognizedReflectionAccessPattern (
-			typeof(Type), nameof(Type.GetMethod), new Type [] { typeof (string) },
-			typeof(MethodUsedViaReflection), nameof(MethodUsedViaReflection.OnlyCalledViaReflection), new Type[0])]
-		static void TestName()
+			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string) },
+			typeof (MethodUsedViaReflection), nameof (MethodUsedViaReflection.OnlyCalledViaReflection), new Type [0])]
+		static void TestName ()
 		{
 			var method = typeof (MethodUsedViaReflection).GetMethod ("OnlyCalledViaReflection");
 			method.Invoke (null, new object [] { });
@@ -40,7 +44,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			var method = typeof (TestNameAndExplicitBindingClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.Static | BindingFlags.NonPublic);
 			method.Invoke (null, new object [] { });
 		}
-		
+
 		[Kept]
 		static void TestNameAndType ()
 		{
@@ -51,14 +55,57 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		[Kept]
 		static void TestNameWithIntAndType ()
 		{
-			var method = typeof (TestNameWithIntAndTypeClass).GetMethod ("OnlyCalledViaReflection", 1, new Type [] { typeof(int) });
+			var method = typeof (TestNameWithIntAndTypeClass).GetMethod ("OnlyCalledViaReflection", 1, new Type [] { typeof (int) });
 			method.Invoke (null, new object [] { });
+		}
+
+		[Kept]
+		static void TestNameBindingFlagsAndParameterModifier()
+		{
+			var method = typeof (TestNameBindingFlagsAndParameterClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.Public, null, new Type [] { }, null);
+			method.Invoke (null, new object [] { });
+		}
+
+		[Kept]
+		static void TestNameBindingFlagsCallingConventionParameterModifier()
+		{
+			var method = typeof (TestNameBindingFlagsCallingConventionParameterClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.NonPublic, null, CallingConventions.Standard, new Type [] { }, null);
 		}
 
 		[Kept]
 		static void TestNameWithIntAndBindingFlags ()
 		{
-			var method = typeof (TestNameWithIntAndBindingClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Static | BindingFlags.NonPublic, null, new Type [] { typeof (int) }, null);
+			var method = typeof (TestNameWithIntAndBindingClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Public, null, new Type [] { }, null);
+			method.Invoke (null, new object [] { });
+		}
+
+		[Kept]
+		static void TestNameWithIntBindingFlagsCallingConventionParameter()
+		{
+			var method = typeof (TestNameWithIntBindingFlagsCallingConventionParameterClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Static | BindingFlags.NonPublic, null, CallingConventions.Any, new Type [] { }, null);
+			method.Invoke (null, new object [] { });
+		}
+
+		[Kept]
+		static void TestIfElse(int i)
+		{
+			Type myType;
+			if (i == 1) {
+				myType = typeof(IfClass);
+			} else if (i == 2) {
+				myType = typeof (ElseIfClass);	
+			} else {
+				myType = typeof (ElseClass);
+			}
+			string mystring;
+			if (i == 1) {
+				mystring = "OnlyCalledViaReflection";
+			} else if (i == 2) {
+				mystring = "ElseIfCall";
+			} else {
+				mystring = null;
+			}
+			var method = myType.GetMethod (mystring, 1, BindingFlags.Static, null, new Type [] { typeof (int) }, null);
 			method.Invoke (null, new object [] { });
 		}
 
@@ -204,17 +251,14 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 				return 45;
 			}
 		}
-
 		[Kept]
-		private class TestNameWithIntAndBindingClass
+		private class TestNameBindingFlagsAndParameterClass
 		{
-			/*At this moment due to int parameter everything will be kept*/
-			[Kept]
 			private static int OnlyCalledViaReflection ()
 			{
 				return 42;
 			}
-			[Kept]
+			
 			private int OnlyCalledViaReflection (int foo)
 			{
 				return 43;
@@ -228,6 +272,129 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
 			{
 				return 45;
+			}
+		}
+		[Kept]
+		private class TestNameBindingFlagsCallingConventionParameterClass
+		{
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			[Kept]
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+		}
+
+		[Kept]
+		private class TestNameWithIntAndBindingClass
+		{
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+		}
+
+		[Kept]
+		private class TestNameWithIntBindingFlagsCallingConventionParameterClass
+		{
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+		}
+
+		[Kept]
+		private class IfClass
+		{
+			[Kept]
+			public static int OnlyCalledViaReflection()
+			{
+				return 42;
+			}
+			
+			private static int OnlyCalledViaReflection(int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public static int ElseIfCall()
+			{
+				return 44;
+			}
+		}
+		private class ElseIfClass
+		{
+			[Kept]
+			public static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+
+			private static int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public static int ElseIfCall ()
+			{
+				return 44;
+			}
+		}
+		private class ElseClass
+		{
+			[Kept]
+			public static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+
+			private static int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public static int ElseIfCall ()
+			{
+				return 44;
 			}
 		}
 	}

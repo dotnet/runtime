@@ -3690,7 +3690,7 @@ namespace Mono.Linker.Steps {
 						// GetConstructor (BindingFlags, Binder, CallingConventions, Type[], ParameterModifier [])
 						//
 						case "GetConstructor" when calledMethod.DeclaringType.Name == "Type"
-						  && calledMethod.Parameters.Count >= 2
+						  && calledMethod.Parameters.Count >= 1
 						  && calledMethod.DeclaringType.Namespace == "System": {
 
 								reflectionContext.AnalyzingPattern ();
@@ -3724,21 +3724,50 @@ namespace Mono.Linker.Steps {
 						// GetMethod (string, BindingFlags)
 						// GetMethod (string, Type[])
 						// GetMethod (string, Type[], ParameterModifier[])
-						// GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[])
-						// GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[])
-						//
-						// TODO: .NET Core extensions
+						// GetMethod (string, BindingFlags, Binder, Type[], ParameterModifier[]) 6
+						// GetMethod (string, BindingFlags, Binder, CallingConventions, Type[], ParameterModifier[]) 7
 						// GetMethod (string, int, Type[])
 						// GetMethod (string, int, Type[], ParameterModifier[]?)
 						// GetMethod (string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
 						// GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
 						//
-						/*case "GetMethod" when calledMethod.DeclaringType.Name == "Type"
-						  && calledMethod.Parameters.Count >= 2
+						case "GetMethod" when calledMethod.DeclaringType.Name == "Type"
+						  && calledMethod.Parameters.Count >= 1
 						  && calledMethod.DeclaringType.Namespace == "System": {
+								reflectionContext.AnalyzingPattern ();
+								BindingFlags bindingFlags = BindingFlags.Default;
+								if (calledMethod.Parameters.Count > 1 && calledMethod.Parameters [1].ParameterType.Name == "BindingFlags") {
+									bindingFlags |= (BindingFlags)methodParams [2].AsConstInt ();
+								}
+								else if(calledMethod.Parameters.Count > 2 && calledMethod.Parameters[2].ParameterType.Name == "BindingFlags") {
+									bindingFlags |= (BindingFlags)methodParams [3].AsConstInt ();
+								}
 
+								foreach (var value in methodParams [0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										foreach (var stringParam in methodParams [1].UniqueValues ()) {
+											if (stringParam is KnownStringValue stringValue) {
+												MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, bindingFlags);
+											} else if (stringParam is NullValue) {
+												reflectionContext.RecordHandledPattern ();
+											} else if (stringParam is MethodParameterValue) {
+												// TODO: Check if parameter is annotated.
+												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+											} else {
+												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+											}
+										}
+									} else if (value == NullValue.Instance) {
+										reflectionContext.RecordHandledPattern ();
+									} else if (value is MethodParameterValue) {
+										// TODO: Check if parameter is annotated.
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+									} else {
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+									}
+								}
 							}
-							break;*/
+							break;
 						default:
 							if (requiresDataFlowAnalysis) {
 								reflectionContext.AnalyzingPattern ();

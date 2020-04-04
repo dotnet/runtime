@@ -73,13 +73,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestIfElse (bool decision)
 		{
+			Type myType;
 			if (decision) {
-				var constructor = typeof (IfElseConstructor).GetConstructor (BindingFlags.Public, GetNullValue ("some argument", 2, 3), new Type [] { }, new ParameterModifier [] { });
-				constructor.Invoke (null, new object [] { });
+				myType = typeof (IfConstructor);
 			} else {
-				var constructor = typeof (IfElseConstructor).GetConstructor (BindingFlags.NonPublic, GetNullValue ("some argument", 2, 3), new Type [] { }, new ParameterModifier [] { });
-				constructor.Invoke (null, new object [] { });
+				myType = typeof (ElseConstructor);
 			}
+			var constructor = myType.GetConstructor (BindingFlags.Public, null, new Type [] { }, null);
+			constructor.Invoke (null, new object [] { });
 		}
 
 		[Kept]
@@ -151,26 +152,44 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		private class IfElseConstructor
+		private class IfConstructor
 		{
 			[Kept]
-			public IfElseConstructor ()
+			public IfConstructor ()
 			{ }
 
 			[Kept]
-			public IfElseConstructor (int foo)
+			public IfConstructor (int foo)
+			{ }
+
+			private IfConstructor (string foo)
+			{ }
+
+			protected IfConstructor (int foo, int bar)
+			{ }
+
+			internal IfConstructor (int foo, string bar)
+			{ }
+		}
+
+		[Kept]
+		private class ElseConstructor
+		{
+			[Kept]
+			public ElseConstructor ()
 			{ }
 
 			[Kept]
-			private IfElseConstructor (string foo)
+			public ElseConstructor (int foo)
 			{ }
 
-			[Kept]
-			protected IfElseConstructor (int foo, int bar)
+			private ElseConstructor (string foo)
 			{ }
 
-			[Kept]
-			internal IfElseConstructor (int foo, string bar)
+			protected ElseConstructor (int foo, int bar)
+			{ }
+
+			internal ElseConstructor (int foo, string bar)
 			{ }
 		}
 	}
