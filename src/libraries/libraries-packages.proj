@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
-  <Import Project="$(LibrariesProjectRoot)pkg\baseline\baseline.props" />
+  <Import Project="$(PkgDir)baseline\baseline.props" />
 
   <!-- Calculate PackageDownload items for restore. -->
   <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" Condition="'$(MSBuildRestoreSessionId)' != ''" />
@@ -24,6 +24,7 @@
     ones that might do this. After we ship a stable set of packages this target should be ran and the
     changes to the package index should be commited to the repo.
   -->
+  <UsingTask TaskName="UpdatePackageIndex" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll"/>
   <Target Name="UpdatePackageIndexWithStableVersions"
           BeforeTargets="Build"
           Condition="'$(DotNetFinalVersionKind)' == 'release'">
