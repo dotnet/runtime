@@ -101,6 +101,7 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\Int32Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\Int64Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonElementConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonDocumentConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\KeyValuePairConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\KeyValuePairConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\NullableConverter.cs" />
