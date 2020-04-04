@@ -7,7 +7,8 @@ steps:
       displayName: Install dotnet ${{ parameters.dotnetVersion }}
       inputs:
         packageType: sdk
-        useGlobalJson: true
+        # Pin to the latest released 5.0 version: https://github.com/dotnet/runtime/issues/34546
+        version: 5.0.0-preview.2
         installationPath: $(Agent.TempDirectory)/_dotnet
 
   - task: NuGetAuthenticate@0
