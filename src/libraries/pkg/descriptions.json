@@ -89,6 +89,13 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.DependencyModel",
+    "Description": "Abstractions for reading `.deps` files.",
+    "CommonTypes": [
+        "Microsoft.Extensions.DependencyModel.DependencyContext"
+    ]
+  },
+  {
     "Name": "Microsoft.Extensions.DependencyInjection.Abstractions",
     "Description": "Abstractions for dependency injection.",
     "CommonTypes": [

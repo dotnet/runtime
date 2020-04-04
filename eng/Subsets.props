@@ -24,7 +24,7 @@
 
       ./build.sh /p:Subset=CoreHost-Managed
 
-        This builds the CoreHost and also the Managed (e.g. Microsoft.Extensions.DependencyModel)
+        This builds the CoreHost and also the Managed (e.g. Microsoft.DotNet.PlatformAbstractions)
         projects. A '-' is the delimiter between multiple subsets to build.
 
       ./build.sh -test /p:Subset=Test
@@ -107,7 +107,7 @@
     <!-- Installer -->
     <SubsetName Include="All" Category="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
     <SubsetName Include="CoreHost" Category="Installer" Description="The .NET Core hosts." />
-    <SubsetName Include="Managed" Category="Installer" Description="The managed .NET hosting projects. This includes PlatformAbstractions, DependencyModel, and HostModel." />
+    <SubsetName Include="Managed" Category="Installer" Description="The managed .NET hosting projects. This includes PlatformAbstractions and HostModel." />
     <SubsetName Include="DepProj" Category="Installer" Description="The dependency projects. These gather shared framework files and run crossgen on them to turn them into ready-to-run (R2R) assemblies for the current platform." />
     <SubsetName Include="PkgProj" Category="Installer" Description="The packaging projects. These produce NETCoreApp assets: NuGet packages, installers, zips, and Linux packages." />
     <SubsetName Include="Bundle" Category="Installer" Description="The shared framework bundle installer projects. Produces .exe installers for Windows." />
@@ -249,7 +249,6 @@
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.ComHost.Tests\Microsoft.NET.HostModel.ComHost.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\HostActivation.Tests\HostActivation.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.Extensions.DependencyModel.Tests\Microsoft.Extensions.DependencyModel.Tests.csproj" />
     <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="false" />
   </ItemGroup>
 
