@@ -114,39 +114,59 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        class TestOutput: ITestOutputHelper
+        {
+            Action<string> _writer;
+
+            public TestOutput(Action<string> writer) {
+                _writer = writer;
+            }
+            public void WriteLine(string message) {
+                lock(this)
+                _writer(message + Environment.NewLine);
+            }
+
+            public void WriteLine(string format, params object[] args){
+                lock(this)
+                _writer(string.Format(format, args) + Environment.NewLine);
+            }
+
+        }
+
         [OuterLoop("Uses external server")]
         [ConditionalFact]
         public void Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
             var logFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            File.WriteAllText(logFilePath, "");   
+            File.WriteAllText(logFilePath, "");
 
             try{
             RemoteExecutor.Invoke(async (useVersionString, logFilePath) =>
             {
-                var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true };
+                TestOutput output = new TestOutput((message)=>File.AppendAllText(logFilePath,message));
+                var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true, Output = output };
                 using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
                 {
                     Environment.SetEnvironmentVariable("http_proxy", proxyServer.Uri.AbsoluteUri.ToString());
 
-                    File.AppendAllText(logFilePath, $"http_proxy: {Environment.GetEnvironmentVariable("http_proxy")}{Environment.NewLine}");
-                    File.AppendAllText(logFilePath, $"HTTP_PROXY: {Environment.GetEnvironmentVariable("HTTP_PROXY")}{Environment.NewLine}");
-                    File.AppendAllText(logFilePath, $"HTTPS_PROXY: {Environment.GetEnvironmentVariable("HTTPS_PROXY")}{Environment.NewLine}");
-                    File.AppendAllText(logFilePath, $"ALL_PROXY: {Environment.GetEnvironmentVariable("ALL_PROXY")}{Environment.NewLine}");
-                    File.AppendAllText(logFilePath, $"NO_PROXY: {Environment.GetEnvironmentVariable("NO_PROXY")}{Environment.NewLine}");
-                    File.AppendAllText(logFilePath, $"proxy type: {HttpClient.DefaultProxy.GetType()}{Environment.NewLine}");
-                    File.AppendAllText (logFilePath, $"proxy uri: {HttpClient.DefaultProxy.GetProxy(Configuration.Http.RemoteEchoServer)}{Environment.NewLine}");
-                    File.AppendAllText (logFilePath, $"is bypassed: {HttpClient.DefaultProxy.IsBypassed(Configuration.Http.RemoteEchoServer)}{Environment.NewLine}");
+                    output.WriteLine($"http_proxy: {Environment.GetEnvironmentVariable("http_proxy")}");
+                    output.WriteLine($"HTTP_PROXY: {Environment.GetEnvironmentVariable("HTTP_PROXY")}");
+                    output.WriteLine($"HTTPS_PROXY: {Environment.GetEnvironmentVariable("HTTPS_PROXY")}");
+                    output.WriteLine($"ALL_PROXY: {Environment.GetEnvironmentVariable("ALL_PROXY")}");
+                    output.WriteLine($"NO_PROXY: {Environment.GetEnvironmentVariable("NO_PROXY")}");
+                    output.WriteLine($"proxy type: {HttpClient.DefaultProxy.GetType()}");
+                    output.WriteLine($"proxy uri: {HttpClient.DefaultProxy.GetProxy(Configuration.Http.RemoteEchoServer)}");
+                    output.WriteLine($"is bypassed: {HttpClient.DefaultProxy.IsBypassed(Configuration.Http.RemoteEchoServer)}");
                     
                     using (HttpClient client = CreateHttpClient(useVersionString))
                     using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         string body = await response.Content.ReadAsStringAsync();
-                        File.AppendAllText(logFilePath, body);
+                        output.WriteLine(body);
                         Assert.Contains(proxyServer.ViaHeader, body);
                     }
-                    File.AppendAllText (logFilePath, $"http_proxy: {Environment.GetEnvironmentVariable("http_proxy")}{Environment.NewLine}");
+                    output.WriteLine($"http_proxy: {Environment.GetEnvironmentVariable("http_proxy")}");
                 }
             }, UseVersion.ToString(), logFilePath).Dispose();
             }
