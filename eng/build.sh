@@ -20,7 +20,7 @@ usage()
   echo "  --subset                   Build a subset, print available subsets with -subset help"
   echo "  --subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
   echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, iOS or Android"
-  echo "  --arch                     Build platform: x86, x64, arm or arm64"
+  echo "  --arch                     Build platform: x86, x64, arm, armel or arm64"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
   echo "  --librariesConfiguration   Libraries build configuration: Debug or Release"

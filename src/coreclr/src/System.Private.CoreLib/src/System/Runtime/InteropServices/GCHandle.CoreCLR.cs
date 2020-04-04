@@ -20,9 +20,9 @@ namespace System.Runtime.InteropServices
 #if DEBUG
         // The runtime performs additional checks in debug builds
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object InternalGet(IntPtr handle);
+        internal static extern object? InternalGet(IntPtr handle);
 #else
-        internal static unsafe object InternalGet(IntPtr handle) =>
+        internal static unsafe object? InternalGet(IntPtr handle) =>
             Unsafe.As<IntPtr, object>(ref *(IntPtr*)handle);
 #endif
 

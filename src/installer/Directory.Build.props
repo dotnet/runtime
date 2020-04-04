@@ -94,6 +94,7 @@
     <OutputRid Condition="'$(TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'iOS'">ios-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -127,6 +128,7 @@
 
   <PropertyGroup>
     <DisableCrossgen>false</DisableCrossgen>
+    <DisableCrossgen Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableCrossgen>
     <!-- Disable cross-gen on FreeBSD for now. This can be revisited when we have full support. -->
     <DisableCrossgen Condition="'$(TargetOS)'=='FreeBSD'">true</DisableCrossgen>
     <OutputVersionBadge>$(AssetOutputPath)sharedfx_$(OutputRid)_$(Configuration)_version_badge.svg</OutputVersionBadge>
@@ -162,6 +164,7 @@
   <PropertyGroup>
     <TargetsWindows>false</TargetsWindows>
     <TargetsOSX>false</TargetsOSX>
+    <TargetsiOS>false</TargetsiOS>
     <TargetsLinux>false</TargetsLinux>
     <TargetsUnix>false</TargetsUnix>
     <TargetsUbuntu>false</TargetsUbuntu>
@@ -183,6 +186,12 @@
     <When Condition="$(OutputRid.StartsWith('osx'))">
       <PropertyGroup>
         <TargetsOSX>true</TargetsOSX>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(OutputRid.StartsWith('ios'))">
+      <PropertyGroup>
+        <TargetsiOS>true</TargetsiOS>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
@@ -319,7 +328,7 @@
     <LibPrefix Condition="'$(TargetOS)' != 'Windows_NT'">lib</LibPrefix>
     <LibSuffix>.so</LibSuffix>
     <LibSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.dll</LibSuffix>
-    <LibSuffix Condition="'$(TargetOS)' == 'OSX'">.dylib</LibSuffix>
+    <LibSuffix Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS'">.dylib</LibSuffix>
     <StaticLibPrefix>lib</StaticLibPrefix>
     <StaticLibSuffix>.a</StaticLibSuffix>
     <StaticLibSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.lib</StaticLibSuffix>
@@ -329,7 +338,7 @@
     <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
     <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
     <!-- OSX doesn't have crossgen symbols, yet -->
-    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX'"></CrossGenSymbolExtension>
+    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS'"></CrossGenSymbolExtension>
   </PropertyGroup>
 
 </Project>

@@ -17,7 +17,7 @@
     "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.20171.1",
     "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.20171.1",
     "FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
-    "Microsoft.NET.Sdk.IL": "5.0.0-alpha.1.20076.2",
+    "Microsoft.NET.Sdk.IL": "5.0.0-preview.4.20202.18",
     "Microsoft.Build.NoTargets": "1.0.53",
     "Microsoft.Build.Traversal": "2.0.2"
   }

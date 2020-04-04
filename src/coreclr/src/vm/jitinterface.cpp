@@ -13240,6 +13240,12 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
 
 #endif // FEATURE_READYTORUN
 
+bool IsInstructionSetSupported(CORJIT_FLAGS jitFlags, ReadyToRunInstructionSet r2rInstructionSet)
+{
+    CORINFO_InstructionSet instructionSet = InstructionSetFromR2RInstructionSet(r2rInstructionSet);
+    return jitFlags.IsSet(instructionSet);
+}
+
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
                           SIZE_T *entry)
@@ -13712,6 +13718,25 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             if (dwExpectedOffset != dwOffset)
                 return FALSE;
 
+            result = 1;
+        }
+        break;
+
+    case ENCODE_CHECK_INSTRUCTION_SET_SUPPORT:
+        {
+            DWORD dwInstructionSetCount = CorSigUncompressData(pBlob);
+            CORJIT_FLAGS corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+
+            for (DWORD dwinstructionSetIndex = 0; dwinstructionSetIndex < dwInstructionSetCount; dwinstructionSetIndex++)
+            {
+                DWORD instructionSetEncoded = CorSigUncompressData(pBlob);
+                bool mustInstructionSetBeSupported = !!(instructionSetEncoded & 1);
+                ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
+                if (IsInstructionSetSupported(corjitFlags, instructionSet) != mustInstructionSetBeSupported)
+                {
+                    return FALSE;
+                }
+            }
             result = 1;
         }
         break;

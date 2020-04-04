@@ -12,6 +12,11 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+// no-op for iOS and tvOS.
+// watchOS is not supported yet.
+#define MONO_ENTER_GC_UNSAFE
+#define MONO_EXIT_GC_UNSAFE
+
 static os_log_t stdout_log;
 
 static char *bundle_path;
@@ -279,7 +284,9 @@ mono_ios_runtime_init (void)
 
 #if DEVICE
     // device runtimes are configured to use lazy gc thread creation
+    MONO_ENTER_GC_UNSAFE;
     mono_gc_init_finalizer_thread ();
+    MONO_EXIT_GC_UNSAFE;
 #endif
 
     MonoAssembly *assembly = load_assembly (executable, NULL);

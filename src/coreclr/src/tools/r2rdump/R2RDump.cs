@@ -12,6 +12,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 using ILCompiler.Reflection.ReadyToRun;
 
@@ -215,7 +216,7 @@ namespace R2RDump
 
             if (_options.Out != null)
             {
-                _writer = new StreamWriter(_options.Out.FullName);
+                _writer = new StreamWriter(_options.Out.FullName, append: false, encoding: new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false));
             }
             else
             {

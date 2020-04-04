@@ -123,7 +123,7 @@
             <Issue>Unix does not support tailcall helper</Issue>
         </ExcludeList>
     </ItemGroup>
- 
+
     <!-- All Unix targets  on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true' and '$(RuntimeFlavor)' == 'coreclr' ">
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/1514/InterlockExchange/*">
@@ -289,6 +289,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
             <Issue>Unix arm32 does not support tailcall helper</Issue>
         </ExcludeList>
+         <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
+             <Issue>TraceEvent can't parse unaligned floats on arm32</Issue>
+         </ExcludeList>
     </ItemGroup>
 
     <!-- Arm64 All OS -->
@@ -442,7 +445,7 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/NativeCallingManaged/NativeCallingManaged/*">
             <Issue>https://github.com/dotnet/runtime/issues/12299</Issue>
-        </ExcludeList>        
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b88793/b88793/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
@@ -593,7 +596,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i10/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
-        
+
     </ItemGroup>
 
     <!-- Windows arm64 specific excludes -->

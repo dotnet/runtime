@@ -24,7 +24,7 @@
 
       ./build.sh /p:Subset=CoreHost-Managed
 
-        This builds the CoreHost and also the Managed (e.g. Microsoft.Extensions.DependencyModel)
+        This builds the CoreHost and also the Managed (e.g. Microsoft.DotNet.PlatformAbstractions)
         projects. A '-' is the delimiter between multiple subsets to build.
 
       ./build.sh -test /p:Subset=Test
@@ -58,8 +58,10 @@
 
   <PropertyGroup>
     <DefaultSubsetCategories>libraries-installer-coreclr-mono</DefaultSubsetCategories>
-    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'">libraries-mono</DefaultSubsetCategories>
+    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'iOS'">libraries-installer-mono</DefaultSubsetCategories>
+    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'Android'">libraries-mono</DefaultSubsetCategories>
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
+    <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS'">depproj-pkgproj</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
     <DefaultCoreClrSubsets>runtime-linuxdac-corelib-nativecorelib-tools-packages</DefaultCoreClrSubsets>
@@ -105,7 +107,7 @@
     <!-- Installer -->
     <SubsetName Include="All" Category="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
     <SubsetName Include="CoreHost" Category="Installer" Description="The .NET Core hosts." />
-    <SubsetName Include="Managed" Category="Installer" Description="The managed .NET hosting projects. This includes PlatformAbstractions, DependencyModel, and HostModel." />
+    <SubsetName Include="Managed" Category="Installer" Description="The managed .NET hosting projects. This includes PlatformAbstractions and HostModel." />
     <SubsetName Include="DepProj" Category="Installer" Description="The dependency projects. These gather shared framework files and run crossgen on them to turn them into ready-to-run (R2R) assemblies for the current platform." />
     <SubsetName Include="PkgProj" Category="Installer" Description="The packaging projects. These produce NETCoreApp assets: NuGet packages, installers, zips, and Linux packages." />
     <SubsetName Include="Bundle" Category="Installer" Description="The shared framework bundle installer projects. Produces .exe installers for Windows." />
@@ -183,6 +185,7 @@
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-tools-'))">
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj" />
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj" />
+    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\dotnet-pgo\dotnet-pgo.csproj" />
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\ReadyToRun.SuperIlc\ReadyToRun.SuperIlc.csproj" />
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\crossgen2\crossgen2\crossgen2.csproj" BuildInParallel="false" />
     <ProjectToBuild Include="@(CoreClrManagedToolsProjectToBuild)" />
@@ -218,7 +221,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-depproj-'))">
-    <DepprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="R2RBinaries" BuildInParallel="false" />
+    <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="R2RBinaries" BuildInParallel="false" />
+    <DepprojProjectToBuild Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="Binaries" BuildInParallel="false" />
     <ProjectToBuild Include="@(DepprojProjectToBuild)" />
   </ItemGroup>
 
@@ -245,7 +249,6 @@
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.ComHost.Tests\Microsoft.NET.HostModel.ComHost.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\HostActivation.Tests\HostActivation.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
-    <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.Extensions.DependencyModel.Tests\Microsoft.Extensions.DependencyModel.Tests.csproj" />
     <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="false" />
   </ItemGroup>
 

@@ -66,6 +66,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         continue;
                     }
 
+                    if (!factory.CompilationModuleGroup.VersionsWithMethodBody(inlinee))
+                    {
+                        // We cannot record inlining info across version bubble as cross-bubble assemblies
+                        // are not guaranteed to preserve token values. Only non-versionable methods may be
+                        // inlined across the version bubble.
+                        Debug.Assert(inlinee.IsNonVersionable());
+                        continue;
+                    }
+
                     if (!inlineeToInliners.TryGetValue(ecmaInlineeDefinition, out HashSet<EcmaMethod> inliners))
                     {
                         inliners = new HashSet<EcmaMethod>();
