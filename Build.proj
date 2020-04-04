@@ -9,6 +9,8 @@
     <ProjectReference Include="@(MonoProject)" />
     <ProjectReference Include="@(LibrariesProject)" />
     <ProjectReference Include="@(InstallerProject)" />
+    <!-- Exclude installer depproj from static graph restore. We restore them below. -->
+    <ProjectReference Remove="@(DepprojProjectToBuild)" Condition="'$(MSBuildRestoreSessionId)' == ''" />
   </ItemGroup>
 
   <!-- Custom arcade target which isn't available in Microsoft.Build.Traversal. -->
@@ -60,10 +62,10 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="RestoreLibrariesDepprojs"
+  <Target Name="RestoreDepprojs"
           BeforeTargets="Restore"
-          Condition="'@(LibrariesRestoreProject)' != ''">
-    <MSBuild Projects="@(LibrariesRestoreProject)"
+          Condition="'@(LibrariesRestoreProject)' != '' or '@(DepprojProjectToBuild)' != ''">
+    <MSBuild Projects="@(LibrariesRestoreProject);@(DepprojProjectToBuild)"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());RestoreUseStaticGraphEvaluation=false"
              Targets="Restore" />
   </Target>
