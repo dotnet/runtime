@@ -20,13 +20,13 @@ namespace System.Net.Quic.Tests
         [Fact]
         public void AddMany()
         {
-            _rangeSet.Add(0);
             _rangeSet.Add(3);
+            _rangeSet.Add(0);
             _rangeSet.Add(6);
 
             Assert.Equal(3, _rangeSet.Count);
-            Assert.Equal(0u , _rangeSet.GetMin());
-            Assert.Equal(6u , _rangeSet.GetMax());
+            Assert.Equal(0u, _rangeSet.GetMin());
+            Assert.Equal(6u, _rangeSet.GetMax());
         }
 
         [Theory]
@@ -48,7 +48,7 @@ namespace System.Net.Quic.Tests
         [Theory]
         [InlineData(2, 4)]
         [InlineData(4, 2)]
-        public void InsertNonContiguousAbove(ulong first, ulong second)
+        public void InsertNonContiguous(ulong first, ulong second)
         {
             _rangeSet.Add(first);
             _rangeSet.Add(second);
@@ -65,8 +65,24 @@ namespace System.Net.Quic.Tests
             _rangeSet.Add(0, 5);
 
             Assert.Equal(1, _rangeSet.Count);
-            Assert.Equal(0u , _rangeSet.GetMin());
-            Assert.Equal(5u , _rangeSet.GetMax());
+            Assert.Equal(0u, _rangeSet.GetMin());
+            Assert.Equal(5u, _rangeSet.GetMax());
+        }
+
+        [Fact]
+        public void ExpandRangeInMiddle()
+        {
+            _rangeSet.Add(1, 2);
+            _rangeSet.Add(5, 9);
+            _rangeSet.Add(14, 15);
+
+            // enlarge middle range
+            _rangeSet.Add(4, 10);
+
+            Assert.Equal(3, _rangeSet.Count);
+            Assert.True(_rangeSet.Includes(4, 10));
+            Assert.False(_rangeSet.Contains(3));
+            Assert.False(_rangeSet.Includes(11, 11));
         }
 
         [Theory]
@@ -82,8 +98,61 @@ namespace System.Net.Quic.Tests
             _rangeSet.Add(start, end);
 
             Assert.Equal(1, _rangeSet.Count);
-            Assert.Equal(1u , _rangeSet.GetMin());
-            Assert.Equal(6u , _rangeSet.GetMax());
+            Assert.Equal(1u, _rangeSet.GetMin());
+            Assert.Equal(6u, _rangeSet.GetMax());
+        }
+
+        [Fact]
+        public void Includes()
+        {
+            _rangeSet.Add(1, 3);
+            _rangeSet.Add(5, 6);
+
+            Assert.True(_rangeSet.Includes(2, 2));
+            Assert.True(_rangeSet.Includes(1, 3));
+            Assert.True(_rangeSet.Includes(5, 6));
+
+            Assert.False(_rangeSet.Includes(1, 6));
+        }
+
+        [Fact]
+        public void RemoveEntireRange()
+        {
+            _rangeSet.Add(1, 5);
+            _rangeSet.Add(7, 9);
+            _rangeSet.Add(11, 15);
+            _rangeSet.Add(20, 21);
+
+            _rangeSet.Remove(7, 9);
+            _rangeSet.Remove(19, 22);
+
+            Assert.Equal(2, _rangeSet.Count);
+            Assert.Equal(1u, _rangeSet.GetMin());
+            Assert.Equal(15u, _rangeSet.GetMax());
+        }
+
+        [Fact]
+        public void RemoveSplitsRange()
+        {
+            _rangeSet.Add(1, 5);
+
+            _rangeSet.Remove(3);
+
+            Assert.Equal(2, _rangeSet.Count);
+        }
+
+        [Theory]
+        [InlineData(1, 4)]
+        [InlineData(11, 15)]
+        public void RemoveNonExistingAfter(ulong start, ulong end)
+        {
+            _rangeSet.Add(5, 10);
+
+            _rangeSet.Remove(start, end);
+
+            var range = Assert.Single(_rangeSet);
+            Assert.Equal(5u, range.Start);
+            Assert.Equal(10u, range.End);
         }
     }
 }
