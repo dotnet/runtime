@@ -224,12 +224,12 @@
     <LibrariesProject Include="$(LibrariesProjectRoot)pretest.proj"  />
   </ItemGroup>
 
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-libtests-'))">
-    <LibrariesProject Include="$(LibrariesProjectRoot)tests.proj" Test="true" />
-  </ItemGroup>
-
   <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-packages-'))">
     <LibrariesProject Include="$(LibrariesProjectRoot)libraries-packages.proj" Pack="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('-libtests-'))">
+    <LibrariesProject Include="$(LibrariesProjectRoot)tests.proj" Test="true" />
   </ItemGroup>
 
   <!-- Installer sets -->
