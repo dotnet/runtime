@@ -36,9 +36,6 @@ typedef void* MonoEERef;
 void
 mono_llvm_jit_init (void);
 
-void
-mono_llvm_jit_set_tls_cfg (MonoCompile *cfg);
-
 MonoEERef
 mono_llvm_create_ee (LLVMExecutionEngineRef *ee);
 
@@ -46,7 +43,7 @@ void
 mono_llvm_dispose_ee (MonoEERef *mono_ee);
 
 gpointer
-mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame);
+mono_llvm_compile_method (MonoEERef mono_ee, MonoCompile *cfg, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame);
 
 void
 mono_llvm_set_unhandled_exception_handler (void);

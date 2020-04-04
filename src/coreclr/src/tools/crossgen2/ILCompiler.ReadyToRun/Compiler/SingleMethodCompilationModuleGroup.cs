@@ -20,12 +20,14 @@ namespace ILCompiler
         public SingleMethodCompilationModuleGroup(
             TypeSystemContext context,
             bool isCompositeBuildMode,
+            bool isInputBubble,
             IEnumerable<EcmaModule> compilationModuleSet,
             IEnumerable<ModuleDesc> versionBubbleModuleSet,
             bool compileGenericDependenciesFromVersionBubbleModuleSet,
             MethodDesc method) :
                 base(context,
                      isCompositeBuildMode,
+                     isInputBubble,
                      compilationModuleSet,
                      versionBubbleModuleSet,
                      compileGenericDependenciesFromVersionBubbleModuleSet)

@@ -12,17 +12,19 @@
     <!-- build the transport package which includes product and symbols in addition to standard packages -->
     <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">true</CreatePackedPackage>
 
+    <!-- indicates that lib prefix is not added to library names for Unix-like operating systems -->
+    <SkipLibraryPrefixFromUnix>true</SkipLibraryPrefixFromUnix>
+
     <!-- Distro rid is passed as runtimeos-arch-->
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
-    <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(__BuildOS)' == 'OSX'">osx.10.12-x64</_parseDistroRid>
-    <_distroRidIndex>$(_parseDistroRid.IndexOfAny("-"))</_distroRidIndex>
+    <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(TargetOS)' == 'OSX'">osx.10.12-x64</_parseDistroRid>
+    <_distroRidIndex>$(_parseDistroRid.LastIndexOfAny("-"))</_distroRidIndex>
     <_archRidIndex>$([MSBuild]::Add($(_distroRidIndex), 1))</_archRidIndex>
     <OSRid Condition="'$(OSRid)' == '' and '$(_distroRidIndex)' != '-1'">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
     <OSRid Condition="'$(OSRid)' == ''">win10</OSRid>
 
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(_archRidIndex)' != '0'">$(_parseDistroRid.SubString($(_archRidIndex)))</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(Platform)' != ''">$(Platform)</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == ''">$(BuildArch)</ArchGroup>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_archRidIndex)' != '0'">$(_parseDistroRid.SubString($(_archRidIndex)))</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(Platform)' != ''">$(Platform)</TargetArchitecture>
 
     <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
 
@@ -43,7 +45,7 @@
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'osx'">OSX</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'android'">Android</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'win'">Windows_NT</_derivedPackageTargetOSGroup>
-    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(__BuildOS)' != ''">$(__BuildOS)</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(TargetOS)' != ''">$(TargetOS)</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == ''">Linux</_derivedPackageTargetOSGroup>
 
     <_isSupportedOSGroup Condition="!$(SupportedPackageOSGroups.Contains(';$(_derivedPackageTargetOSGroup);'))">false</_isSupportedOSGroup>
@@ -77,69 +79,59 @@
     <When Condition="'$(_runtimeOSFamily)' == 'win'">
       <PropertyGroup>
         <!-- Note: Windows builds are always portable (-PortableBuild=false is ignored) -->
-        <PackageRID>win-$(ArchGroup)</PackageRID>
+        <PackageRID>win-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'osx'">
       <PropertyGroup>
-        <PackageRID>osx.10.12-$(ArchGroup)</PackageRID>
+        <PackageRID>osx.10.12-$(TargetArchitecture)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
-        <PackageRID Condition="'$(PortableBuild)' == 'true'">osx-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">osx-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'freebsd'">
       <PropertyGroup>
-        <PackageRID>freebsd.11-$(ArchGroup)</PackageRID>
+        <PackageRID>freebsd.11-$(TargetArchitecture)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
-        <PackageRID Condition="'$(PortableBuild)' == 'true'">freebsd-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">freebsd-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'android'">
       <PropertyGroup>
-        <PackageRID>android.21-$(ArchGroup)</PackageRID>
+        <PackageRID>android.21-$(TargetArchitecture)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
-        <PackageRID Condition="'$(PortableBuild)' == '1'">android-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == '1'">android-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'rhel'">
       <PropertyGroup>
-        <PackageRID>$(OSRid)-$(ArchGroup)</PackageRID>
+        <PackageRID>$(OSRid)-$(TargetArchitecture)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
-        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(TargetArchitecture)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'alpine'">
+      <PropertyGroup>
+        <PackageRID>$(OSRid)-$(TargetArchitecture)</PackageRID>
+        <!-- Set the platform part of the RID if we are doing a portable build -->
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-musl-$(TargetArchitecture)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(RuntimeOS)' == 'linux-musl'">
+      <PropertyGroup>
+        <PackageRID>$(RuntimeOS)-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </When>
     <Otherwise>
       <PropertyGroup>
-        <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
+        <PackageRID>$(RuntimeOS)-$(TargetArchitecture)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
-        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </Otherwise>
   </Choose>
 
-  <!-- Determine per-platform native binary extensions. -->
-  <Choose>
-    <When Condition="'$(_runtimeOSFamily)' == 'win'" />
-    <When Condition="'$(_runtimeOSFamily)' == 'osx'">
-      <PropertyGroup>
-        <LibraryFileExtension>.dylib</LibraryFileExtension>
-        <SymbolFileExtension>.dwarf</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(_runtimeOSFamily)' == 'android'">
-      <PropertyGroup>
-        <LibraryFileExtension>.so</LibraryFileExtension>
-        <!--symbols included in .so, like Linux, but can be generated externally and if so, uses .debug ext-->
-        <SymbolFileExtension>.debug</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <LibraryFileExtension>.so</LibraryFileExtension>
-        <SymbolFileExtension>.dbg</SymbolFileExtension>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
+  <Import Project="$(RepoRoot)eng\native\naming.props" />
 
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Linux;'))">
     <OfficialBuildRID Include="linux-x64" />
@@ -185,8 +177,8 @@
     <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
     <BuildRID Include="$(PackageRID)"
               Condition="'$(_isSupportedOSGroup)' == 'true'">
-      <Platform Condition="'$(ArchGroup)' == 'x64'">amd64</Platform>
-      <Platform Condition="'$(ArchGroup)' != 'x64'">$(ArchGroup)</Platform>
+      <Platform Condition="'$(TargetArchitecture)' == 'x64'">amd64</Platform>
+      <Platform Condition="'$(TargetArchitecture)' != 'x64'">$(TargetArchitecture)</Platform>
     </BuildRID>
   </ItemGroup>
 

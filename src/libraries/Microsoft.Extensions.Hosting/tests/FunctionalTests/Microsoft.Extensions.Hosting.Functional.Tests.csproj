@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="testroot\**\*" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\Common\TestLoggerBuilder.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs">
+      <Link>TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\LogLevelAttribute.cs">
+      <Link>tests\DI.Common\Common\src\LogLevelAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\LogValuesAssert.cs">
+      <Link>tests\DI.Common\Common\src\LogValuesAssert.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\XunitLoggerFactoryExtensions.cs">
+      <Link>tests\DI.Common\Common\src\XunitLoggerFactoryExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging\tests\DI.Common\Common\src\XunitLoggerProvider.cs">
+      <Link>tests\DI.Common\Common\src\XunitLoggerProvider.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TestApp\Microsoft.Extensions.Hosting.TestApp.csproj" />
+  </ItemGroup>
+
+</Project>

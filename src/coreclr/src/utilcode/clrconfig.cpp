@@ -19,12 +19,6 @@
 #endif
 
 //
-// Initialize the EEConfig::GetConfiguration function pointer to NULL. If EEConfig isn't init'ed, this will
-// stay NULL and CLRConfig will ignore config files.
-//
-CLRConfig::GetConfigValueFunction CLRConfig::s_GetConfigValueCallback = NULL;
-
-//
 // Creating structs using the macro table in CLRConfigValues.h
 //
 
@@ -127,39 +121,6 @@ BOOL CLRConfig::IsConfigEnabled(const ConfigDWORDInfo & info)
     }
 
     //
-    // Check config files through EEConfig.
-    //
-    if(CheckLookupOption(info, IgnoreConfigFiles) == FALSE && // Check that we aren't ignoring config files.
-        s_GetConfigValueCallback != NULL)// Check that GetConfigValueCallback function has been registered.
-    {
-        LPCWSTR pvalue;
-
-        // EEConfig lookup options.
-        BOOL systemOnly = CheckLookupOption(info, ConfigFile_SystemOnly) ? TRUE : FALSE;
-        BOOL applicationFirst = CheckLookupOption(info, ConfigFile_ApplicationFirst) ? TRUE : FALSE;
-
-        if(SUCCEEDED(s_GetConfigValueCallback(info.name, &pvalue, systemOnly, applicationFirst)) && pvalue != NULL)
-        {
-            WCHAR * end;
-            errno = 0;
-            result = wcstoul(pvalue, &end, 0);
-
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno == ERANGE || end == pvalue)
-            {
-                if(pvalue[0]!=0)
-                    return TRUE;
-
-                result = info.defaultValue;
-            }
-
-            if(result>0)
-                return TRUE;
-        }
-    }
-
-    //
     // If we are favoring config files and we don't have a result from EEConfig, we check REGUTIL here.
     //
     if(CheckLookupOption(info, FavorConfigFile) == TRUE)
@@ -243,41 +204,6 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, bool acceptExplici
             {
                 *isDefault = false;
                 return resultMaybe;
-            }
-        }
-    }
-
-    //
-    // Check config files through EEConfig.
-    //
-    if (CheckLookupOption(info, IgnoreConfigFiles) == FALSE && // Check that we aren't ignoring config files.
-        s_GetConfigValueCallback != NULL)// Check that GetConfigValueCallback function has been registered.
-    {
-        LPCWSTR pvalue;
-
-        // EEConfig lookup options.
-        BOOL systemOnly = CheckLookupOption(info, ConfigFile_SystemOnly) ? TRUE : FALSE;
-        BOOL applicationFirst = CheckLookupOption(info, ConfigFile_ApplicationFirst) ? TRUE : FALSE;
-
-        if (SUCCEEDED(s_GetConfigValueCallback(info.name, &pvalue, systemOnly, applicationFirst)) && pvalue != NULL)
-        {
-            WCHAR * end;
-            errno = 0;
-            DWORD resultMaybe = wcstoul(pvalue, &end, 0);
-
-            // errno is ERANGE if the number is out of range, and end is set to pvalue if
-            // no valid conversion exists.
-            if (errno != ERANGE && end != pvalue)
-            {
-                *isDefault = false;
-                return resultMaybe;
-            }
-            else
-            {
-                // If an invalid value is defined we treat it as the default value.
-                // i.e. we don't look further.
-                *isDefault = true;
-                return info.defaultValue;
             }
         }
     }
@@ -402,31 +328,6 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, __deref_out_z L
     }
 
     //
-    // Check config files through EEConfig.
-    //
-    if(result == NULL && // Check that we don't have a value from REGUTIL
-        CheckLookupOption(info, IgnoreConfigFiles) == FALSE && // Check that we aren't ignoring config files.
-        s_GetConfigValueCallback != NULL) // Check that GetConfigValueCallback function has been registered.
-    {
-        LPCWSTR pResult;
-
-        // EEConfig lookup options.
-        BOOL systemOnly = CheckLookupOption(info, ConfigFile_SystemOnly) ? TRUE : FALSE;
-        BOOL applicationFirst = CheckLookupOption(info, ConfigFile_ApplicationFirst) ? TRUE : FALSE;
-
-        if(SUCCEEDED(s_GetConfigValueCallback(info.name, &pResult, systemOnly, applicationFirst)) && pResult != NULL)
-        {
-            size_t len = wcslen(pResult) + 1;
-            result = new (nothrow) WCHAR[len];
-            if (result == NULL)
-            {
-                RETURN E_OUTOFMEMORY;
-            }
-            wcscpy_s(result, len, pResult);
-        }
-    }
-
-    //
     // If we are favoring config files and we don't have a result from EEConfig, we check REGUTIL here.
     //
     if(result==NULL &&
@@ -469,18 +370,6 @@ BOOL CLRConfig::IsConfigOptionSpecified(LPCWSTR name)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    // Check config files
-    {
-        LPCWSTR result = NULL;
-
-        if (s_GetConfigValueCallback != NULL &&
-            SUCCEEDED(s_GetConfigValueCallback(name, &result, FALSE, FALSE)) &&
-            result != NULL)
-        {
-            return TRUE;
-        }
-    }
 
     // Check REGUTIL, both with and without the COMPlus_ prefix
     {
@@ -587,16 +476,6 @@ void CLRConfig::FreeConfigString(__in_z LPWSTR str)
     LIMITED_METHOD_CONTRACT;
 
     delete [] str;
-}
-
-//
-// Register EEConfig's GetConfigValueCallback function so CLRConfig can look in config files.
-//
-//static
-void CLRConfig::RegisterGetConfigValueCallback(GetConfigValueFunction func)
-{
-    LIMITED_METHOD_CONTRACT;
-    s_GetConfigValueCallback = func;
 }
 
 //

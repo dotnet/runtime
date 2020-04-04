@@ -1,4 +1,3 @@
-#nullable disable
 //
 // System.Reflection.Emit/ConstructorOnTypeBuilderInst.cs
 //
@@ -15,10 +14,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -29,199 +28,228 @@
 //
 
 #if MONO_FEATURE_SRE
-using System;
 using System.Globalization;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-	/*
-	 * This class represents a ctor of an instantiation of a generic type builder.
-	 */
-	[StructLayout (LayoutKind.Sequential)]
-	internal class ConstructorOnTypeBuilderInst : ConstructorInfo
-	{
-		#region Keep in sync with object-internals.h
-		internal TypeBuilderInstantiation instantiation;
-		internal ConstructorInfo cb;
-		#endregion
+    /*
+     * This class represents a ctor of an instantiation of a generic type builder.
+     */
+    [StructLayout(LayoutKind.Sequential)]
+    internal class ConstructorOnTypeBuilderInst : ConstructorInfo
+    {
+        #region Keep in sync with object-internals.h
+        internal TypeBuilderInstantiation instantiation;
+        internal ConstructorInfo cb;
+        #endregion
 
-		public ConstructorOnTypeBuilderInst (TypeBuilderInstantiation instantiation, ConstructorInfo cb)
-		{
-			this.instantiation = instantiation;
-			this.cb = cb;
-		}
+        public ConstructorOnTypeBuilderInst(TypeBuilderInstantiation instantiation, ConstructorInfo cb)
+        {
+            this.instantiation = instantiation;
+            this.cb = cb;
+        }
 
-		//
-		// MemberInfo members
-		//
-		
-		public override Type DeclaringType {
-			get {
-				return instantiation;
-			}
-		}
+        //
+        // MemberInfo members
+        //
 
-		public override string Name {
-			get {
-				return cb.Name;
-			}
-		}
+        public override Type DeclaringType
+        {
+            get
+            {
+                return instantiation;
+            }
+        }
 
-		public override Type ReflectedType {
-			get {
-				return instantiation;
-			}
-		}
+        public override string Name
+        {
+            get
+            {
+                return cb.Name;
+            }
+        }
 
-		public override Module Module {
-			get {
-				return cb.Module;
-			}
-		}
+        public override Type ReflectedType
+        {
+            get
+            {
+                return instantiation;
+            }
+        }
 
-		public override bool IsDefined (Type attributeType, bool inherit)
-		{
-			return cb.IsDefined (attributeType, inherit);
-		}
+        public override Module Module
+        {
+            get
+            {
+                return cb.Module;
+            }
+        }
 
-		public override object [] GetCustomAttributes (bool inherit)
-		{
-			return cb.GetCustomAttributes (inherit);
-		}
+        public override bool IsDefined(Type attributeType, bool inherit)
+        {
+            return cb.IsDefined(attributeType, inherit);
+        }
 
-		public override object [] GetCustomAttributes (Type attributeType, bool inherit)
-		{
-			return cb.GetCustomAttributes (attributeType, inherit);
-		}
+        public override object[] GetCustomAttributes(bool inherit)
+        {
+            return cb.GetCustomAttributes(inherit);
+        }
 
-		//
-		// MethodBase members
-		//
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            return cb.GetCustomAttributes(attributeType, inherit);
+        }
 
-		public override MethodImplAttributes GetMethodImplementationFlags ()
-		{
-			return cb.GetMethodImplementationFlags ();
-		}
+        //
+        // MethodBase members
+        //
 
-		public override ParameterInfo[] GetParameters ()
-		{
-			/*FIXME, maybe the right thing to do when the type is creates is to retrieve from the inflated type*/
-			if (!instantiation.IsCreated)
-				throw new NotSupportedException ();
+        public override MethodImplAttributes GetMethodImplementationFlags()
+        {
+            return cb.GetMethodImplementationFlags();
+        }
 
-			return GetParametersInternal ();
-		}
+        public override ParameterInfo[] GetParameters()
+        {
+            /*FIXME, maybe the right thing to do when the type is creates is to retrieve from the inflated type*/
+            if (!instantiation.IsCreated)
+                throw new NotSupportedException();
 
-		internal override ParameterInfo[] GetParametersInternal ()
-		{
-			ParameterInfo [] res;
-			if (cb is ConstructorBuilder) {
-				ConstructorBuilder cbuilder = (ConstructorBuilder)cb;
-				res = new ParameterInfo [cbuilder.parameters.Length];
-				for (int i = 0; i < cbuilder.parameters.Length; i++) {
-					Type type = instantiation.InflateType (cbuilder.parameters [i]);
-					res [i] = RuntimeParameterInfo.New (cbuilder.pinfo?[i], type, this, i + 1);
-				}
-			} else {
-				ParameterInfo[] parms = cb.GetParameters ();
-				res = new ParameterInfo [parms.Length];
-				for (int i = 0; i < parms.Length; i++) {
-					Type type = instantiation.InflateType (parms [i].ParameterType);
-					res [i] = RuntimeParameterInfo.New (parms [i], type, this, i + 1);
-				}
-			}
-			return res;
-		}
+            return GetParametersInternal();
+        }
 
-		internal override Type[] GetParameterTypes () {
-			if (cb is ConstructorBuilder) {
-				return (cb as ConstructorBuilder).parameters;
-			} else {
-				ParameterInfo[] parms = cb.GetParameters ();
-				var res = new Type [parms.Length];
-				for (int i = 0; i < parms.Length; i++) {
-					res [i] = parms [i].ParameterType;
-				}
-				return res;
-			}
-		}
+        internal override ParameterInfo[] GetParametersInternal()
+        {
+            ParameterInfo[] res;
+            if (cb is ConstructorBuilder cbuilder)
+            {
+                res = new ParameterInfo[cbuilder.parameters!.Length];
+                for (int i = 0; i < cbuilder.parameters.Length; i++)
+                {
+                    Type? type = instantiation.InflateType(cbuilder.parameters[i]);
+                    res[i] = RuntimeParameterInfo.New(cbuilder.pinfo?[i], type, this, i + 1);
+                }
+            }
+            else
+            {
+                ParameterInfo[] parms = cb.GetParameters();
+                res = new ParameterInfo[parms.Length];
+                for (int i = 0; i < parms.Length; i++)
+                {
+                    Type? type = instantiation.InflateType(parms[i].ParameterType);
+                    res[i] = RuntimeParameterInfo.New(parms[i], type, this, i + 1);
+                }
+            }
+            return res;
+        }
 
-		// Called from the runtime to return the corresponding finished ConstructorInfo object
-		internal ConstructorInfo RuntimeResolve () {
-			var type = instantiation.InternalResolve ();
-			return type.GetConstructor (cb);
-		}
+        internal override Type[] GetParameterTypes()
+        {
+            if (cb is ConstructorBuilder builder)
+            {
+                return builder.parameters!;
+            }
+            else
+            {
+                ParameterInfo[] parms = cb.GetParameters();
+                var res = new Type[parms.Length];
+                for (int i = 0; i < parms.Length; i++)
+                {
+                    res[i] = parms[i].ParameterType;
+                }
+                return res;
+            }
+        }
 
-		public override int MetadataToken {
-			get {
-				return base.MetadataToken;
-			}
-		}
+        // Called from the runtime to return the corresponding finished ConstructorInfo object
+        internal ConstructorInfo RuntimeResolve()
+        {
+            Type type = instantiation.InternalResolve();
+            return type.GetConstructor(cb);
+        }
 
-		internal override int GetParametersCount ()
-		{
-			return cb.GetParametersCount ();
-		}
+        public override int MetadataToken
+        {
+            get
+            {
+                return base.MetadataToken;
+            }
+        }
 
-		public override Object Invoke (Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
-		{
-			return cb.Invoke (obj, invokeAttr, binder, parameters,
-				culture);
-		}
+        internal override int GetParametersCount()
+        {
+            return cb.GetParametersCount();
+        }
 
-		public override RuntimeMethodHandle MethodHandle {
-			get {
-				return cb.MethodHandle;
-			}
-		}
+        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
+        {
+            return cb.Invoke(obj, invokeAttr, binder, parameters, culture);
+        }
 
-		public override MethodAttributes Attributes {
-			get {
-				return cb.Attributes;
-			}
-		}
+        public override RuntimeMethodHandle MethodHandle
+        {
+            get
+            {
+                return cb.MethodHandle;
+            }
+        }
 
-		public override CallingConventions CallingConvention {
-			get {
-				return cb.CallingConvention;
-			}
-		}
+        public override MethodAttributes Attributes
+        {
+            get
+            {
+                return cb.Attributes;
+            }
+        }
 
-		public override Type [] GetGenericArguments ()
-		{
-			return cb.GetGenericArguments ();
-		}
+        public override CallingConventions CallingConvention
+        {
+            get
+            {
+                return cb.CallingConvention;
+            }
+        }
 
-		public override bool ContainsGenericParameters {
-			get {
-				return false;
-			}
-		}
+        public override Type[] GetGenericArguments()
+        {
+            return cb.GetGenericArguments();
+        }
 
-		public override bool IsGenericMethodDefinition {
-			get {
-				return false;
-			}
-		}
+        public override bool ContainsGenericParameters
+        {
+            get
+            {
+                return false;
+            }
+        }
 
-		public override bool IsGenericMethod {
-			get {
-				return false;
-			}
-		}
+        public override bool IsGenericMethodDefinition
+        {
+            get
+            {
+                return false;
+            }
+        }
 
-		//
-		// MethodBase members
-		//
+        public override bool IsGenericMethod
+        {
+            get
+            {
+                return false;
+            }
+        }
 
-		public override object Invoke (BindingFlags invokeAttr, Binder binder, object[] parameters,
-									   CultureInfo culture)
-		{
-			throw new InvalidOperationException ();
-		}
-	}
+        //
+        // MethodBase members
+        //
+
+        public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters,
+                                       CultureInfo? culture)
+        {
+            throw new InvalidOperationException();
+        }
+    }
 }
 
 #endif

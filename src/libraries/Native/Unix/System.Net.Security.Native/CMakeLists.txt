@@ -36,13 +36,11 @@ add_library(System.Net.Security.Native-Static
     ${NATIVEGSS_SOURCES}
 )
 
-# Disable the "lib" prefix and override default name
-set_target_properties(System.Net.Security.Native-Static PROPERTIES PREFIX "")
 set_target_properties(System.Net.Security.Native-Static PROPERTIES OUTPUT_NAME System.Net.Security.Native CLEAN_DIRECT_OUTPUT 1)
 
 target_link_libraries(System.Net.Security.Native
     ${LIBGSS}
 )
 
-install_library_and_symbols (System.Net.Security.Native)
+install_with_stripped_symbols (System.Net.Security.Native PROGRAMS .)
 install (TARGETS System.Net.Security.Native-Static DESTINATION .)

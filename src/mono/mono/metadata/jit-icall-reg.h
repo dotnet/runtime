@@ -130,9 +130,6 @@ MONO_JIT_ICALL (cominterop_set_ccw_object_domain) \
 MONO_JIT_ICALL (cominterop_type_from_handle) \
 MONO_JIT_ICALL (g_free) \
 MONO_JIT_ICALL (interp_to_native_trampoline)	\
-MONO_JIT_ICALL (mini_llvm_init_gshared_method_mrgctx) \
-MONO_JIT_ICALL (mini_llvm_init_gshared_method_this) \
-MONO_JIT_ICALL (mini_llvm_init_gshared_method_vtable) \
 MONO_JIT_ICALL (mini_llvm_init_method) \
 MONO_JIT_ICALL (mini_llvmonly_init_delegate) \
 MONO_JIT_ICALL (mini_llvmonly_init_delegate_virtual) \
@@ -142,7 +139,7 @@ MONO_JIT_ICALL (mini_llvmonly_resolve_generic_virtual_iface_call) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_iface_call_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_throw_nullref_exception) \
-MONO_JIT_ICALL (mini_llvmonly_throw_missing_method_exception) \
+MONO_JIT_ICALL (mini_llvmonly_throw_aot_failed_exception) \
 MONO_JIT_ICALL (mono_amd64_resume_unwind)	\
 MONO_JIT_ICALL (mono_amd64_start_gsharedvt_call)	\
 MONO_JIT_ICALL (mono_amd64_throw_corlib_exception)	\

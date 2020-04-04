@@ -16,7 +16,6 @@
 #include "cor.h"
 #include "util.hpp"
 #include "clsload.hpp"
-#include "codeman.h"
 #include "class.h"
 #include "siginfo.hpp"
 #include "methodimpl.h"
@@ -24,7 +23,6 @@
 #include <stddef.h>
 #include "eeconfig.h"
 #include "precode.h"
-#include "codeversion.h"
 
 #ifndef FEATURE_PREJIT
 #include "fixuppointer.h"
@@ -44,7 +42,6 @@ class DynamicMethodDesc;
 class ReJitManager;
 class CodeVersionManager;
 class PrepareCodeConfig;
-class CallCounter;
 
 typedef DPTR(FCallMethodDesc)        PTR_FCallMethodDesc;
 typedef DPTR(ArrayMethodDesc)        PTR_ArrayMethodDesc;
@@ -509,9 +506,6 @@ public:
 
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager* GetCodeVersionManager();
-#endif
-#ifdef FEATURE_TIERED_COMPILATION
-    CallCounter* GetCallCounter();
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -1346,7 +1340,7 @@ private:
     PCODE GetEntryPointToBackpatch_Locked()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
         // At the moment this is the only case, see MayHaveEntryPointSlotsToBackpatch()
@@ -1359,7 +1353,7 @@ private:
     void SetEntryPointToBackpatch_Locked(PCODE entryPoint)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
         _ASSERTE(entryPoint != NULL);
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
@@ -1792,7 +1786,7 @@ public:
     //
     PCODE DoBackpatch(MethodTable * pMT, MethodTable * pDispatchingMT, BOOL fFullBackPatch);
 
-    PCODE DoPrestub(MethodTable *pDispatchingMT);
+    PCODE DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode = CallerGCMode::Unknown);
 
     VOID GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
     VOID GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
@@ -2004,7 +1998,7 @@ public:
 
 #ifndef DACCESS_COMPILE
 public:
-    PCODE PrepareInitialCode();
+    PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
 
 private:
@@ -2044,10 +2038,15 @@ public:
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    virtual unsigned GetILOffset() const { return 0; }
+#endif
     BOOL ProfilerRejectedPrecompiledCode();
     BOOL ReadyToRunRejectedPrecompiledCode();
     void SetProfilerRejectedPrecompiledCode();
     void SetReadyToRunRejectedPrecompiledCode();
+    CallerGCMode GetCallerGCMode();
+    void SetCallerGCMode(CallerGCMode mode);
 
 #ifdef FEATURE_CODE_VERSIONING
 public:
@@ -2104,6 +2103,7 @@ public:
         Optimized,
         QuickJitted,
         OptimizedTier1,
+        OptimizedTier1OSR,
 
         Count
     };
@@ -2169,6 +2169,7 @@ protected:
     BOOL m_mayUsePrecompiledCode;
     BOOL m_ProfilerRejectedPrecompiledCode;
     BOOL m_ReadyToRunRejectedPrecompiledCode;
+    CallerGCMode m_callerGCMode;
 
 #ifdef FEATURE_CODE_VERSIONING
 private:
@@ -2199,7 +2200,6 @@ public:
     VersionedPrepareCodeConfig(NativeCodeVersion codeVersion);
     HRESULT FinishConfiguration();
     virtual PCODE IsJitCancellationRequested();
-    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
 private:
@@ -2618,6 +2618,7 @@ protected:
         nomdMulticastStub         = 0x1000,
         nomdUnboxingILStub        = 0x2000,
         nomdWrapperDelegateStub   = 0x4000,
+        nomdNativeCallableStub    = 0x8000,
 
         nomdILStub          = 0x00010000,
         nomdLCGMethod       = 0x00020000,
@@ -2710,6 +2711,7 @@ public:
     }
 
     bool IsReverseStub()     { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdReverseStub));  }
+    bool IsNativeCallableStub() { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdNativeCallableStub)); }
     bool IsCALLIStub()       { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdCALLIStub));    }
     bool IsDelegateStub()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateStub)); }
     bool IsCLRToCOMStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsDelegateStub() && !IsStructMarshalStub()); }
@@ -3145,9 +3147,10 @@ public:
     //
     LPVOID FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const;
 
+#ifdef TARGET_WINDOWS
 private:
     FARPROC FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName) const;
-
+#endif
 public:
 
     void SetStackArgumentSize(WORD cbDstBuffer, CorPinvokeMap unmgdCallConv)

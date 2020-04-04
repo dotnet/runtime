@@ -745,114 +745,6 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
 
 NESTED_END TheUMEntryPrestub, _TEXT
 
-//
-// x12 = UMEntryThunk*
-//
-NESTED_ENTRY UMThunkStub, _TEXT, UnhandledExceptionHandlerUnix
-
-    // Save arguments and return address
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -112 // 72 for regArgs, 8 for x19 & 8 for x12
-    // save callee saved reg x19. x19 is used in the method to store thread*
-    PROLOG_SAVE_REG x19, 96
-
-    SAVE_ARGUMENT_REGISTERS sp, 16
-
-#define UMThunkStub_HiddenArg 88 // offset of saved UMEntryThunk *
-#define UMThunkStub_StackArgs 112 // offset of original stack args (total size of UMThunkStub frame)
-
-    // save UMEntryThunk*
-    str x12, [sp, #UMThunkStub_HiddenArg]
-
-    // assuming GetThread does not clobber FP Args
-    bl C_FUNC(GetThread)
-    cbz x0, LOCAL_LABEL(UMThunkStub_DoThreadSetup)
-
-LOCAL_LABEL(UMThunkStub_HaveThread):
-    mov x19, x0  // x19 = Thread *
-
-    mov x9, 1
-    // m_fPreemptiveGCDisabled is 4 byte field so using 32-bit variant
-    str w9, [x19, #Thread__m_fPreemptiveGCDisabled]
-
-    PREPARE_EXTERNAL_VAR g_TrapReturningThreads, x2
-    ldr x3, [x2]
-    // assuming x0 contains Thread* before jumping to UMThunkStub_DoTrapReturningThreads
-    cbnz x3, LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads)
-
-LOCAL_LABEL(UMThunkStub_InCooperativeMode):
-    ldr x12, [fp, #UMThunkStub_HiddenArg] // x12 = UMEntryThunk*
-    ldr x3, [x12, #UMEntryThunk__m_pUMThunkMarshInfo] // x3 = m_pUMThunkMarshInfo
-
-    // m_cbActualArgSize is UINT32 and hence occupies 4 bytes
-    ldr w2, [x3, #UMThunkMarshInfo__m_cbActualArgSize] // w2 = Stack arg bytes
-    cbz w2, LOCAL_LABEL(UMThunkStub_RegArgumentsSetup)
-
-    // extend to 64-bits
-    uxtw x2, w2
-
-    // Source pointer
-    add x0, fp, #UMThunkStub_StackArgs
-
-    // move source pointer to end of Stack Args
-    add x0, x0, x2
-
-    // Count of stack slot pairs to copy (divide by 16)
-    lsr x1, x2, #4
-
-    // Is there an extra stack slot (can happen when stack arg bytes not multiple of 16)
-    and x2, x2, #8
-
-    // If yes then start source pointer from 16 byte aligned stack slot
-    add x0, x0, x2
-
-    // increment stack slot pair count by 1 if x2 is not zero
-    add x1, x1, x2, LSR #3
-
-LOCAL_LABEL(UMThunkStub_StackLoop):
-    ldp x4, x5, [x0, #-16]! // pre-Index
-    stp x4, x5, [sp, #-16]! // pre-Index
-    subs x1, x1, #1
-    bne LOCAL_LABEL(UMThunkStub_StackLoop)
-
-LOCAL_LABEL(UMThunkStub_RegArgumentsSetup):
-    ldr x16, [x3, #UMThunkMarshInfo__m_pILStub]
-
-    RESTORE_ARGUMENT_REGISTERS fp, 16
-
-    blr x16
-
-LOCAL_LABEL(UMThunkStub_PostCall):
-    mov x4, 0
-    // m_fPreemptiveGCDisabled is 4 byte field so using 32-bit variant
-    str w4, [x19, #Thread__m_fPreemptiveGCDisabled]
-
-    EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG x19, 96
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 112
-
-    EPILOG_RETURN
-
-LOCAL_LABEL(UMThunkStub_DoThreadSetup):
-    sub sp, sp, #SIZEOF__FloatArgumentRegisters
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 0
-    bl C_FUNC(CreateThreadBlockThrow)
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 0
-    add sp, sp, #SIZEOF__FloatArgumentRegisters
-    b LOCAL_LABEL(UMThunkStub_HaveThread)
-
-LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads):
-    sub sp, sp, #SIZEOF__FloatArgumentRegisters
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 0
-    // x0 already contains Thread* pThread
-    // UMEntryThunk* pUMEntry
-    ldr x1, [fp, #UMThunkStub_HiddenArg]
-    bl C_FUNC(UMThunkStubRareDisableWorker)
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 0
-    add sp, sp, #SIZEOF__FloatArgumentRegisters
-    b LOCAL_LABEL(UMThunkStub_InCooperativeMode)
-
-NESTED_END UMThunkStub, _TEXT
-
 #ifdef FEATURE_HIJACK
 // ------------------------------------------------------------------
 // Hijack function for functions which return a scalar type or a struct (value type)
@@ -1282,102 +1174,19 @@ LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
     ret lr
 LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
 
-// ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)
-LEAF_ENTRY JIT_Stelem_Ref, _TEXT
-    // We retain arguments as they were passed and use x0 == array x1 == idx x2 == val
-
-    // check for null array
-    cbz     x0, LOCAL_LABEL(ThrowNullReferenceException)
-
-    // idx bounds check
-    ldr     x3,[x0,#ArrayBase__m_NumComponents]
-    cmp     x3, x1
-    bls     LOCAL_LABEL(ThrowIndexOutOfRangeException)
-
-    // fast path to null assignment (doesn't need any write-barriers)
-    cbz     x2, LOCAL_LABEL(AssigningNull)
-
-    // Verify the array-type and val-type matches before writing
-    ldr     x12, [x0] // x12 = array MT
-    ldr     x3, [x2] // x3 = val->GetMethodTable()
-    ldr     x12, [x12, #MethodTable__m_ElementType] // array->GetArrayElementTypeHandle()
-    cmp     x3, x12
-    beq     C_FUNC(JIT_Stelem_DoWrite)
-
-    // Types didnt match but allow writing into an array of objects
-    PREPARE_EXTERNAL_VAR g_pObjectClass, x3
-    ldr     x3, [x3]  // x3 = *g_pObjectClass
-    cmp     x3, x12   // array type matches with Object*
-    beq     C_FUNC(JIT_Stelem_DoWrite)
-
-    // array type and val type do not exactly match. Raise frame and do detailed match
-    b       C_FUNC(JIT_Stelem_Ref_NotExactMatch)
-
-LOCAL_LABEL(AssigningNull):
-    // Assigning null doesn't need write barrier
-    add     x0, x0, x1, LSL #3           // x0 = x0 + (x1 x 8) = array->m_array[idx]
-    str     x2, [x0, #PtrArray__m_Array] // array->m_array[idx] = val
-    ret
-
-LOCAL_LABEL(ThrowNullReferenceException):
-    // Tail call JIT_InternalThrow(NullReferenceException)
-    ldr     x0, =CORINFO_NullReferenceException_ASM
-    b       C_FUNC(JIT_InternalThrow)
-
-LOCAL_LABEL(ThrowIndexOutOfRangeException):
-    // Tail call JIT_InternalThrow(NullReferenceException)
-    ldr     x0, =CORINFO_IndexOutOfRangeException_ASM
-    b       C_FUNC(JIT_InternalThrow)
-
-LEAF_END JIT_Stelem_Ref, _TEXT
 
 // ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref_NotExactMatch(PtrArray* array,
-//                                                       unsigned idx, Object* val)
-//   x12 = array->GetArrayElementTypeHandle()
-//
-NESTED_ENTRY JIT_Stelem_Ref_NotExactMatch, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -48
-    // Spill callee saved registers
-    PROLOG_SAVE_REG_PAIR   x0, x1, 16
-    PROLOG_SAVE_REG        x2, 32
+// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
+LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
 
-    // allow in case val can be casted to array element type
-    // call ObjIsInstanceOfCached(val, array->GetArrayElementTypeHandle())
-    mov     x1, x12 // array->GetArrayElementTypeHandle()
-    mov     x0, x2
-    bl      C_FUNC(ObjIsInstanceOfCached)
-    cmp     x0, TypeHandle_CanCast
-    beq     LOCAL_LABEL(DoWrite)             // ObjIsInstance returned TypeHandle::CanCast
-
-    // check via raising frame
-LOCAL_LABEL(NeedFrame):
-    add     x1, sp, #16             // x1 = &array
-    add     x0, sp, #32             // x0 = &val
-
-    bl      C_FUNC(ArrayStoreCheck) // ArrayStoreCheck(&val, &array)
-
-LOCAL_LABEL(DoWrite):
-    EPILOG_RESTORE_REG_PAIR           x0, x1, 16
-    EPILOG_RESTORE_REG                x2, 32
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   48
-    b C_FUNC(JIT_Stelem_DoWrite)
-NESTED_END JIT_Stelem_Ref_NotExactMatch, _TEXT
-
-// ------------------------------------------------------------------
-// __declspec(naked) void F_CALL_CONV JIT_Stelem_DoWrite(PtrArray* array, unsigned idx, Object* val)
-LEAF_ENTRY  JIT_Stelem_DoWrite, _TEXT
-
-    // Setup args for JIT_WriteBarrier. x14 = &array->m_array[idx] x15 = val
-    add     x14, x0, #PtrArray__m_Array // x14 = &array->m_array
-    add     x14, x14, x1, LSL #3
-    mov     x15, x2                     // x15 = val
+    // Setup args for JIT_WriteBarrier. x14 = dst ; x15 = val
+    mov     x14, x0                     // x14 = dst
+    mov     x15, x1                     // x15 = val
 
     // Branch to the write barrier (which is already correctly overwritten with
     // single or multi-proc code based on the current CPU
     b       C_FUNC(JIT_WriteBarrier)
-LEAF_END JIT_Stelem_DoWrite, _TEXT
+LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 #ifdef PROFILING_SUPPORTED
 
@@ -1432,3 +1241,19 @@ GenerateProfileHelper ProfileLeave, PROFILE_LEAVE
 GenerateProfileHelper ProfileTailcall, PROFILE_TAILCALL
 
 #endif
+
+#ifdef FEATURE_TIERED_COMPILATION
+
+NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add     x0, sp, #__PWTB_TransitionBlock // TransitionBlock *
+    mov     x1, x10 // stub-identifying token
+    bl      C_FUNC(OnCallCountThresholdReached)
+    mov     x9, x0
+
+    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+    EPILOG_BRANCH_REG x9
+NESTED_END OnCallCountThresholdReachedStub, _TEXT
+
+#endif // FEATURE_TIERED_COMPILATION

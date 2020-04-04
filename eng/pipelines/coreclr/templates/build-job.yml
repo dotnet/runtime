@@ -1,20 +1,20 @@
 parameters:
-  buildConfig: ''
   archType: ''
+  buildConfig: ''
+  compilerName: 'clang'
+  condition: true
+  container: ''
+  crossrootfsDir: ''
+  isOfficialBuild: false
   osGroup: ''
   osSubgroup: ''
   platform: ''
-  container: ''
-  testGroup: ''
-  crossrootfsDir: ''
-  timeoutInMinutes: ''
-  signBinaries: false
-  publishToBlobFeed: false
-  stagedBuild: false
-  variables: {}
   pool: ''
-  isOfficialBuild: false
-  condition: true
+  signBinaries: false
+  stagedBuild: false
+  testGroup: ''
+  timeoutInMinutes: ''
+  variables: {}
 
 ### Product build
 jobs:
@@ -33,8 +33,12 @@ jobs:
     condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters
-    name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('CoreCLR Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    ${{ if eq(parameters.compilerName, 'gcc') }}:
+      name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    ${{ if eq(parameters.compilerName, 'clang') }}:
+      name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('CoreCLR Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -50,28 +54,29 @@ jobs:
       value: ${{ parameters.osGroup }}
     - name: osSubgroup
       value: ${{ parameters.osSubgroup }}
-    - name: stripSymbolsArg
+    - name: compilerArg
       value: ''
-    # Strip symbols only on the release build
-    - ${{ if eq(parameters.buildConfig, 'Release') }}:
-      - name: stripSymbolsArg
-        value: '-stripsymbols'
-    - name: clangArg
-      value: ''
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - name: clangArg
+    - name: publishLogsArtifactPrefix
+      value: 'BuildLogs_CoreCLR'
+    - ${{ if eq(parameters.compilerName, 'gcc') }}:
+      - name: compilerArg
+        value: '-gcc'
+      - name: publishLogsArtifactPrefix
+        value: 'BuildLogs_CoreCLR_GCC'
+    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), eq(parameters.compilerName, 'clang')) }}:
+      - name: compilerArg
         value: '-clang9'
       # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
       - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
-        - name: clangArg
+        - name: compilerArg
           value: '-clang6.0'
       # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
-        - name: clangArg
+        - name: compilerArg
           value: ''
       # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
       - ${{ if eq(parameters.osGroup, 'OSX') }}:
-        - name: clangArg
+        - name: compilerArg
           value: ''
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       # Variables used to publish packages to blob feed
@@ -86,7 +91,7 @@ jobs:
       value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
-        value: '-officialbuildid=$(Build.BuildNumber)'
+        value: '/p:OfficialBuildId=$(Build.BuildNumber)'
     - name: enforcePgoArg
       value: ''
     # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
@@ -119,21 +124,29 @@ jobs:
         parameters:
           installDotnet: true
 
-    # Build
+    # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
-        displayName: Build product
+      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) $(officialBuildIdArg)
+        displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(enforcePgoArg)
-        displayName: Build product
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
+        displayName: Build CoreCLR Runtime
+
+    - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(parameters.archType, 'x86')) }}:
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)
+        displayName: Build Cross OS Linux DAC for Windows
+
+    # Build CoreCLR Managed Components
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib-nativecorelib-tools-packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
+      displayName: Build managed product components and packages
 
     # Build native test components
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg) skipgeneratelayout
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(compilerArg) skipgeneratelayout
       displayName: Build native test components
 
     # Sign on Windows
     - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true')) }}:
-      - powershell: eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:BuildOS=$(osGroup) /p:BuildArch=$(archType) /p:BuildType=$(_BuildConfig) /p:DotNetSignType=$env:_SignType -projects $(Build.SourcesDirectory)\eng\empty.csproj
+      - powershell: eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:Configuration=$(_BuildConfig) /p:DotNetSignType=$env:_SignType -projects $(Build.SourcesDirectory)\eng\empty.csproj
         displayName: Sign Binaries
 
       - task: PublishPipelineArtifact@1
@@ -144,27 +157,29 @@ jobs:
         continueOnError: true
         condition: always()
 
-    # Publish product output directory for consumption by tests.
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-        rootFolder: $(buildProductRootFolderPath)
-        includeRootFolder: false
-        archiveType: $(archiveType)
-        tarCompression: $(tarCompression)
-        archiveExtension: $(archiveExtension)
-        artifactName: $(buildProductArtifactName)
-        displayName: 'product build'
+    # We only test on clang binaries.
+    - ${{ if eq(parameters.compilerName, 'clang') }}:
+      # Publish product output directory for consumption by tests.
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(buildProductRootFolderPath)
+          includeRootFolder: false
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          archiveExtension: $(archiveExtension)
+          artifactName: $(buildProductArtifactName)
+          displayName: 'product build'
 
-    # Publish test native components for consumption by test execution.
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-        rootFolder: $(nativeTestArtifactRootFolderPath)
-        includeRootFolder: false
-        archiveType: $(archiveType)
-        tarCompression: $(tarCompression)
-        archiveExtension: $(archiveExtension)
-        artifactName: $(nativeTestArtifactName)
-        displayName: 'native test components'
+      # Publish test native components for consumption by test execution.
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(nativeTestArtifactRootFolderPath)
+          includeRootFolder: false
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          archiveExtension: $(archiveExtension)
+          artifactName: $(nativeTestArtifactName)
+          displayName: 'native test components'
 
     # Get key vault secrets for publishing
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -174,40 +189,17 @@ jobs:
           KeyVaultName: EngKeyVault
           SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
 
-    # Build packages
-    - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossArg) $(officialBuildIdArg) -ci --configuration $(_BuildConfig)
-      displayName: Build packages
-
     # Save packages using the prepare-signed-artifacts format.
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
         parameters:
           name: ${{ parameters.platform }}
 
-    # Publish official build
-    - ${{ if eq(parameters.publishToBlobFeed, 'true') }}:
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)/artifacts/log/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
-          displayName: Publish packages to blob feed
-          env:
-            # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
-            NUGET_PACKAGES: $(Build.SourcesDirectory)/.packages
-            ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
-              # Arcade uses this SDK instead of trying to restore one.
-              DotNetCoreSdkDir: /usr/local/dotnet
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        # TODO: pass publish feed url and access token in from the internal pipeline
-        - powershell: eng\common\build.ps1 -ci -restore -publish -configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)\artifacts\log\publish-pkgs.binlog" -projects $(Build.SourcesDirectory)\eng\empty.csproj
-          displayName: Publish packages to blob feed
-          env:
-            # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
-            NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages
-
     # Publish Logs
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: '$(publishLogsArtifactPrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

@@ -70,6 +70,21 @@ private:
 
     // Generates SSE41 code for the given tree as a round operation
     void genSSE41RoundOp(GenTreeOp* treeNode);
+
+    instruction simdAlignedMovIns()
+    {
+        // We use movaps when non-VEX because it is a smaller instruction;
+        // however the VEX version vmovaps would be used which is the same size as vmovdqa;
+        // also vmovdqa has more available CPU ports on older processors so we switch to that
+        return compiler->canUseVexEncoding() ? INS_movdqa : INS_movaps;
+    }
+    instruction simdUnalignedMovIns()
+    {
+        // We use movups when non-VEX because it is a smaller instruction;
+        // however the VEX version vmovups would be used which is the same size as vmovdqu;
+        // but vmovdqu has more available CPU ports on older processors so we switch to that
+        return compiler->canUseVexEncoding() ? INS_movdqu : INS_movups;
+    }
 #endif // defined(TARGET_XARCH)
 
     void genPrepForCompiler();
@@ -963,6 +978,7 @@ protected:
     void genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
+    void genSIMDIntrinsicUnOpWithImm(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode);
@@ -1519,9 +1535,10 @@ public:
     }
 
 protected:
-    virtual void DoPhase() override
+    virtual PhaseStatus DoPhase() override
     {
         (codeGen->*action)();
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
 private:

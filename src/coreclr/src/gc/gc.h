@@ -261,8 +261,6 @@ public:
 
     virtual ~IGCHeapInternal() {}
 
-private:
-    virtual Object* AllocAlign8Common (void* hp, alloc_context* acontext, size_t size, uint32_t flags) = 0;
 public:
     virtual int GetNumberOfHeaps () = 0;
     virtual int GetHomeHeapNumber () = 0;

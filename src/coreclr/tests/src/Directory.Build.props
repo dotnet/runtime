@@ -24,13 +24,13 @@
 
   <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
-    <BaseOutputPath>$(RootRepoDir)\artifacts\tests\coreclr</BaseOutputPath>
+    <BaseOutputPath>$(RepoRoot)\artifacts\tests\coreclr</BaseOutputPath>
     <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>
     <BaseOutputPathWithConfig>$(BaseOutputPath)\$(OSPlatformConfig)\</BaseOutputPathWithConfig>
     <BinDir>$(BaseOutputPathWithConfig)</BinDir>
-    <BaseIntermediateOutputPath>$(RootRepoDir)\artifacts\tests\coreclr\obj\$(OSPlatformConfig)\Managed\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(RepoRoot)\artifacts\tests\coreclr\obj\$(OSPlatformConfig)\Managed\</BaseIntermediateOutputPath>
     <BaseIntermediateOutputPath Condition="'$(__ManagedTestIntermediatesDir)' != ''">$(__ManagedTestIntermediatesDir)\</BaseIntermediateOutputPath>
-    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\..\coreclr\obj\$(BuildOS).$(Platform).$(Configuration)\Native\))</__NativeTestIntermediatesDir>
+    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\..\coreclr\obj\$(TargetOS).$(TargetArchitecture).$(Configuration)\Native\))</__NativeTestIntermediatesDir>
     <BuildProjectRelativeDir>$(MSBuildProjectName)\</BuildProjectRelativeDir>
     <BuildProjectRelativeDir Condition="'$(MSBuildProjectDirectory.Contains($(TestSourceDir)))'">$([System.String]::Copy('$(MSBuildProjectDirectory)').Replace($(TestSourceDir),''))\$(MSBuildProjectName)</BuildProjectRelativeDir>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)\</IntermediateOutputPath>
@@ -55,56 +55,42 @@
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
-  <!-- Expose the target OS in a more convenient fashion -->
-  <PropertyGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(OSPlatformConfig.StartsWith('Windows'))">Windows_NT</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(OSPlatformConfig.StartsWith('Linux'))">Linux</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(OSPlatformConfig.StartsWith('OSX'))">OSX</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(OSPlatformConfig.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'==''">AnyOS</OSGroup>
-  </PropertyGroup>
-
-  <!-- Setup properties per OSGroup -->
+  <!-- Setup properties per TargetOS -->
   <Choose>
-    <When Condition="'$(OSGroup)'=='AnyOS'">
+    <When Condition="'$(TargetOS)'=='AnyOS'">
       <PropertyGroup>
       </PropertyGroup>
     </When>
-    <When Condition="'$(OSGroup)'=='Windows_NT'">
+    <When Condition="'$(TargetOS)'=='Windows_NT'">
       <PropertyGroup>
         <!-- Since cross compilation of test builds on Windows is possible, the
              TargetsWindows property may already be set. Only set the property if
              it is not already defined -->
         <TargetsWindows Condition="'$(TargetsWindows)' == ''" >true</TargetsWindows>
-        <TestNugetRuntimeId>win-$(__BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>win-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <When Condition="'$(OSGroup)'=='Linux'">
+    <When Condition="'$(TargetOS)'=='Linux'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsLinux>true</TargetsLinux>
-        <TestNugetRuntimeId>ubuntu.14.04-$(__BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <When Condition="'$(OSGroup)'=='OSX'">
+    <When Condition="'$(TargetOS)'=='OSX'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
-        <TestNugetRuntimeId>osx.10.12-$(__BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>osx.10.12-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <When Condition="'$(OSGroup)'=='FreeBSD'">
+    <When Condition="'$(TargetOS)'=='FreeBSD'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsFreeBSD>true</TargetsFreeBSD>
-        <TestNugetRuntimeId>ubuntu.14.04-$(__BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <Otherwise>
-      <PropertyGroup>
-        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown OSGroup [$(OSGroup)] specificed in your project.</ConfigurationErrorMsg>
-      </PropertyGroup>
-    </Otherwise>
   </Choose>
 
   <PropertyGroup>
@@ -123,7 +109,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
+    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'OSX'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
   </PropertyGroup>

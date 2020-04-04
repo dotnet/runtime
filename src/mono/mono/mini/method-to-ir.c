@@ -1367,8 +1367,19 @@ mono_create_rgctx_var (MonoCompile *cfg)
 	if (!cfg->rgctx_var) {
 		cfg->rgctx_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		/* force the var to be stack allocated */
-		cfg->rgctx_var->flags |= MONO_INST_VOLATILE;
+		if (!cfg->llvm_only)
+			cfg->rgctx_var->flags |= MONO_INST_VOLATILE;
 	}
+}
+
+static MonoInst *
+mono_get_mrgctx_var (MonoCompile *cfg)
+{
+	g_assert (cfg->gshared);
+
+	mono_create_rgctx_var (cfg);
+
+	return cfg->rgctx_var;
 }
 
 static MonoInst *
@@ -1376,6 +1387,7 @@ mono_get_vtable_var (MonoCompile *cfg)
 {
 	g_assert (cfg->gshared);
 
+	/* The mrgctx and the vtable are stored in the same var */
 	mono_create_rgctx_var (cfg);
 
 	return cfg->rgctx_var;
@@ -2467,17 +2479,27 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 			g_assert (method->is_inflated && mono_method_get_context (method)->method_inst);
 		}
 
-		mrgctx_loc = mono_get_vtable_var (cfg);
-		EMIT_NEW_TEMPLOAD (cfg, mrgctx_var, mrgctx_loc->inst_c0);
-
+		if (cfg->llvm_only) {
+			mrgctx_var = mono_get_mrgctx_var (cfg);
+		} else {
+			/* Volatile */
+			mrgctx_loc = mono_get_mrgctx_var (cfg);
+			g_assert (mrgctx_loc->flags & MONO_INST_VOLATILE);
+			EMIT_NEW_TEMPLOAD (cfg, mrgctx_var, mrgctx_loc->inst_c0);
+		}
 		return mrgctx_var;
 	} else if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass)) {
 		MonoInst *vtable_loc, *vtable_var;
 
 		g_assert (!this_ins);
 
-		vtable_loc = mono_get_vtable_var (cfg);
-		EMIT_NEW_TEMPLOAD (cfg, vtable_var, vtable_loc->inst_c0);
+		if (cfg->llvm_only) {
+			vtable_var = mono_get_vtable_var (cfg);
+		} else {
+			vtable_loc = mono_get_vtable_var (cfg);
+			g_assert (vtable_loc->flags & MONO_INST_VOLATILE);
+			EMIT_NEW_TEMPLOAD (cfg, vtable_var, vtable_loc->inst_c0);
+		}
 
 		if (method->is_inflated && mono_method_get_context (method)->method_inst) {
 			MonoInst *mrgctx_var = vtable_var;
@@ -7332,6 +7354,49 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_TYPELOAD (cmethod->klass);
 			}
 
+			/* Inlining */
+			if ((cfg->opt & MONO_OPT_INLINE) && !inst_tailcall &&
+				(!virtual_ || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) &&
+			    mono_method_check_inlining (cfg, cmethod)) {
+				int costs;
+				gboolean always = FALSE;
+
+				if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+					/* Prevent inlining of methods that call wrappers */
+					INLINE_FAILURE ("wrapper call");
+					// FIXME? Does this write to cmethod impact tailcall_supported? Probably not.
+					// Neither pinvoke or icall are likely to be tailcalled.
+					cmethod = mono_marshal_get_native_wrapper (cmethod, TRUE, FALSE);
+					always = TRUE;
+				}
+
+				costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, always);
+				if (costs) {
+					cfg->real_offset += 5;
+
+					if (!MONO_TYPE_IS_VOID (fsig->ret))
+						/* *sp is already set by inline_method */
+						ins = *sp;
+
+					inline_costs += costs;
+					// FIXME This is missed if the inlinee contains tail calls that
+					// would work, but not once inlined into caller.
+					// This matchingness could be a factor in inlining.
+					// i.e. Do not inline if it hurts tailcall, do inline
+					// if it helps and/or or is neutral, and helps performance
+					// using usual heuristics.
+					// Note that inlining will expose multiple tailcall opportunities
+					// so the tradeoff is not obvious. If we can tailcall anything
+					// like desktop, then this factor mostly falls away, except
+					// that inlining can affect tailcall performance due to
+					// signature match/mismatch.
+					if (inst_tailcall) // FIXME
+						mono_tailcall_print ("missed tailcall inline %s -> %s\n", method->name, cmethod->name);
+					goto call_end;
+				}
+			}
+
 			check_method_sharing (cfg, cmethod, &pass_vtable, &pass_mrgctx);
 
 			if (cfg->gshared) {
@@ -7539,49 +7604,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto call_end;
 			}
 			CHECK_CFG_ERROR;
-			
-			/* Inlining */
-			if ((cfg->opt & MONO_OPT_INLINE) &&
-				(!virtual_ || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) &&
-			    mono_method_check_inlining (cfg, cmethod)) {
-				int costs;
-				gboolean always = FALSE;
-
-				if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-					/* Prevent inlining of methods that call wrappers */
-					INLINE_FAILURE ("wrapper call");
-					// FIXME? Does this write to cmethod impact tailcall_supported? Probably not.
-					// Neither pinvoke or icall are likely to be tailcalled.
-					cmethod = mono_marshal_get_native_wrapper (cmethod, TRUE, FALSE);
-					always = TRUE;
-				}
-
-				costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, always);
-				if (costs) {
-					cfg->real_offset += 5;
-
-					if (!MONO_TYPE_IS_VOID (fsig->ret))
-						/* *sp is already set by inline_method */
-						ins = *sp;
-
-					inline_costs += costs;
-					// FIXME This is missed if the inlinee contains tail calls that
-					// would work, but not once inlined into caller.
-					// This matchingness could be a factor in inlining.
-					// i.e. Do not inline if it hurts tailcall, do inline
-					// if it helps and/or or is neutral, and helps performance
-					// using usual heuristics.
-					// Note that inlining will expose multiple tailcall opportunities
-					// so the tradeoff is not obvious. If we can tailcall anything
-					// like desktop, then this factor mostly falls away, except
-					// that inlining can affect tailcall performance due to
-					// signature match/mismatch.
-					if (inst_tailcall) // FIXME
-						mono_tailcall_print ("missed tailcall inline %s -> %s\n", method->name, cmethod->name);
-					goto call_end;
-				}
-			}
 
 			/* Tail recursion elimination */
 			if (((cfg->opt & MONO_OPT_TAILCALL) || inst_tailcall) && il_op == MONO_CEE_CALL && cmethod == method && next_ip < end && next_ip [0] == CEE_RET && !vtable_arg) {
@@ -9015,6 +9037,100 @@ calli_end:
 					ins->type = STACK_I4;
 					*sp++ = ins;
 					break;
+				}
+			}
+			
+			guint32 isinst_tk = 0;
+			if ((ip = il_read_op_and_token (next_ip, end, CEE_ISINST, MONO_CEE_ISINST, &isinst_tk)) &&
+				ip_in_bb (cfg, cfg->cbb, ip)) {
+				MonoClass *isinst_class = mini_get_class (method, isinst_tk, generic_context);
+				if (!mono_class_is_nullable (klass) && !mono_class_is_nullable (isinst_class) &&
+					!mini_is_gsharedvt_variable_klass (klass) && !mini_is_gsharedvt_variable_klass (isinst_class) &&
+					!mono_class_is_open_constructed_type (m_class_get_byval_arg (klass)) &&
+					!mono_class_is_open_constructed_type (m_class_get_byval_arg (isinst_class))) {
+
+					// Optimize
+					// 
+					//    box
+					//    isinst [Type]
+					//    brfalse/brtrue
+					//    
+					// to
+					// 
+					//    ldc.i4.0 (or 1)
+					//    brfalse/brtrue
+					//
+					guchar* br_ip = NULL;
+					if ((br_ip = il_read_brtrue (ip, end, &target)) || (br_ip = il_read_brtrue_s (ip, end, &target)) ||
+						(br_ip = il_read_brfalse (ip, end, &target)) || (br_ip = il_read_brfalse_s (ip, end, &target))) {
+
+						gboolean isinst = mono_class_is_assignable_from_internal (isinst_class, klass);
+						next_ip = ip;
+						il_op = (MonoOpcodeEnum) (isinst ? CEE_LDC_I4_1 : CEE_LDC_I4_0);
+						EMIT_NEW_ICONST (cfg, ins, isinst ? 1 : 0);
+						ins->type = STACK_I4;
+						*sp++ = ins;
+						break;
+					}
+
+					// Optimize
+					// 
+					//    box
+					//    isinst [Type]
+					//    ldnull
+					//    ceq/cgt.un
+					//    
+					// to
+					// 
+					//    ldc.i4.0 (or 1)
+					//
+					guchar* ldnull_ip = NULL;
+					if ((ldnull_ip = il_read_op (ip, end, CEE_LDNULL, MONO_CEE_LDNULL)) && ip_in_bb (cfg, cfg->cbb, ldnull_ip)) {
+						gboolean is_eq = FALSE, is_neq = FALSE;
+						if ((ip = il_read_op (ldnull_ip, end, CEE_PREFIX1, MONO_CEE_CEQ)))
+							is_eq = TRUE;
+						else if ((ip = il_read_op (ldnull_ip, end, CEE_PREFIX1, MONO_CEE_CGT_UN)))
+							is_neq = TRUE;
+
+						if ((is_eq || is_neq) && ip_in_bb (cfg, cfg->cbb, ip) && 
+							!mono_class_is_nullable (klass) && !mini_is_gsharedvt_klass (klass)) {
+							gboolean isinst = mono_class_is_assignable_from_internal (isinst_class, klass);
+							next_ip = ip;
+							if (is_eq)
+								isinst = !isinst;
+							il_op = (MonoOpcodeEnum) (isinst ? CEE_LDC_I4_1 : CEE_LDC_I4_0);
+							EMIT_NEW_ICONST (cfg, ins, isinst ? 1 : 0);
+							ins->type = STACK_I4;
+							*sp++ = ins;
+							break;
+						}
+					}
+
+					// Optimize
+					// 
+					//    box
+					//    isinst [Type]
+					//    unbox.any
+					//    
+					// to
+					// 
+					//    nop
+					//
+					guchar* unbox_ip = NULL;
+					guint32 unbox_token = 0;
+					if ((unbox_ip = il_read_unbox_any (ip, end, &unbox_token)) && ip_in_bb (cfg, cfg->cbb, unbox_ip)) {
+						MonoClass *unbox_klass = mini_get_class (method, unbox_token, generic_context);
+						CHECK_TYPELOAD (unbox_klass);
+						if (!mono_class_is_nullable (unbox_klass) &&
+							!mini_is_gsharedvt_klass (unbox_klass) &&
+							klass == isinst_class &&
+							klass == unbox_klass)
+						{
+							*sp++ = val;
+							next_ip = unbox_ip;
+							break;
+						}
+					}
 				}
 			}
 #endif

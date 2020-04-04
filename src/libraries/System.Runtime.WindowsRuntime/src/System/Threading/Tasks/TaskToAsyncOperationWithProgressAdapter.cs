@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
@@ -33,12 +34,11 @@ namespace System.Threading.Tasks
         //}
 
 
-        internal TaskToAsyncOperationWithProgressAdapter(TResult synchronousResult)
+        internal TaskToAsyncOperationWithProgressAdapter([AllowNull] TResult synchronousResult)
 
             : base(synchronousResult)
         {
         }
-
 
         public virtual TResult GetResults()
         {

@@ -13,9 +13,7 @@ add_library(System.IO.Ports.Native-Static
     pal_serial.c
 )
 
-# Disable the "lib" prefix and override default name
-set_target_properties(System.IO.Ports.Native-Static PROPERTIES PREFIX "")
 set_target_properties(System.IO.Ports.Native-Static PROPERTIES OUTPUT_NAME System.IO.Ports.Native  CLEAN_DIRECT_OUTPUT 1)
 
-install_library_and_symbols (System.IO.Ports.Native)
+install_with_stripped_symbols (System.IO.Ports.Native PROGRAMS .)
 install (TARGETS System.IO.Ports.Native-Static DESTINATION .)

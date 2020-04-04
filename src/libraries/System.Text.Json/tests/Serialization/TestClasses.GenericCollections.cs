@@ -196,6 +196,16 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class GenericIEnumerableWrapperPrivateConstructor<T> : GenericIEnumerableWrapper<T>
+    {
+        private GenericIEnumerableWrapperPrivateConstructor() { }
+    }
+
+    public class GenericIEnumerableWrapperInternalConstructor<T> : GenericIEnumerableWrapper<T>
+    {
+        internal GenericIEnumerableWrapperInternalConstructor() { }
+    }
+
     public class StringICollectionWrapper : ICollection<string>
     {
         private readonly List<string> _list = new List<string>();
@@ -372,6 +382,16 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class GenericIListWrapperPrivateConstructor<T> : GenericIListWrapper<T>
+    {
+        private GenericIListWrapperPrivateConstructor() { }
+    }
+
+    public class GenericIListWrapperInternalConstructor<T> : GenericIListWrapper<T>
+    {
+        internal GenericIListWrapperInternalConstructor() { }
+    }
+
     public class GenericICollectionWrapper<T> : ICollection<T>
     {
         private readonly List<T> _list = new List<T>();
@@ -414,6 +434,16 @@ namespace System.Text.Json.Serialization.Tests
         {
             return ((ICollection<T>)_list).GetEnumerator();
         }
+    }
+
+    public class GenericICollectionWrapperPrivateConstructor<T> : GenericICollectionWrapper<T>
+    {
+        private GenericICollectionWrapperPrivateConstructor() { }
+    }
+
+    public class GenericICollectionWrapperInternalConstructor<T> : GenericICollectionWrapper<T>
+    {
+        internal GenericICollectionWrapperInternalConstructor() { }
     }
 
     public class StringIReadOnlyCollectionWrapper : IReadOnlyCollection<string>
@@ -714,6 +744,16 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class GenericISetWrapperPrivateConstructor<T> : GenericISetWrapper<T>
+    {
+        private GenericISetWrapperPrivateConstructor() { }
+    }
+
+    public class GenericISetWrapperInternalConstructor<T> : GenericISetWrapper<T>
+    {
+        internal GenericISetWrapperInternalConstructor() { }
+    }
+
     public class StringToStringIDictionaryWrapper : IDictionary<string, string>
     {
         private Dictionary<string, string> _dictionary = new Dictionary<string, string>();
@@ -860,6 +900,18 @@ namespace System.Text.Json.Serialization.Tests
             return ((IDictionary<TKey, TValue>)_dict).GetEnumerator();
         }
     }
+
+    public class GenericIDictionaryWrapperPrivateConstructor<TKey, TValue> : GenericIDictionaryWrapper<TKey, TValue>
+    {
+        private GenericIDictionaryWrapperPrivateConstructor() { }
+    }
+
+    public class GenericIDictionaryWrapperInternalConstructor<TKey, TValue> : GenericIDictionaryWrapper<TKey, TValue>
+    {
+        internal GenericIDictionaryWrapperInternalConstructor() { }
+    }
+
+    public class GenericIDictonaryWrapperThreeGenericParameters<TKey, TValue, TUnused> : GenericIDictionaryWrapper<TKey, TValue> { }
 
     public class ReadOnlyStringToStringIDictionaryWrapper : StringToStringIDictionaryWrapper
     {
@@ -1053,6 +1105,16 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class StringToStringIReadOnlyDictionaryWrapperPrivateConstructor : StringToStringIReadOnlyDictionaryWrapper
+    {
+        private StringToStringIReadOnlyDictionaryWrapperPrivateConstructor() { }
+    }
+
+    public class StringToStringIReadOnlyDictionaryWrapperInternalConstructor : StringToStringIReadOnlyDictionaryWrapper
+    {
+        internal StringToStringIReadOnlyDictionaryWrapperInternalConstructor() { }
+    }
+
     public class StringListWrapper : List<string> { }
 
     class MyMyList<T> : GenericListWrapper<T>
@@ -1064,6 +1126,16 @@ namespace System.Text.Json.Serialization.Tests
     }
 
     public class GenericListWrapper<T> : List<T> { }
+
+    public class GenericListWrapperPrivateConstructor<T> : GenericListWrapper<T>
+    {
+        private GenericListWrapperPrivateConstructor() { }
+    }
+
+    public class GenericListWrapperInternalConstructor<T> : GenericListWrapper<T>
+    {
+        internal GenericListWrapperInternalConstructor() { }
+    }
 
     public class StringStackWrapper : Stack<string>
     {
@@ -1093,6 +1165,16 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class GenericStackWrapperPrivateConstructor<T> : GenericStackWrapper<T>
+    {
+        private GenericStackWrapperPrivateConstructor() { }
+    }
+
+    public class GenericStackWrapperInternalConstructor<T> : GenericStackWrapper<T>
+    {
+        internal GenericStackWrapperInternalConstructor() { }
+    }
+
     public class StringQueueWrapper : Queue<string>
     {
         public StringQueueWrapper() { }
@@ -1119,6 +1201,16 @@ namespace System.Text.Json.Serialization.Tests
                 Enqueue(item);
             }
         }
+    }
+
+    public class GenericQueueWrapperPrivateConstructor<T> : GenericQueueWrapper<T>
+    {
+        private GenericQueueWrapperPrivateConstructor() { }
+    }
+
+    public class GenericQueueWrapperInternalConstructor<T> : GenericQueueWrapper<T>
+    {
+        internal GenericQueueWrapperInternalConstructor() { }
     }
 
     public class StringHashSetWrapper : HashSet<string>
@@ -1233,6 +1325,16 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class StringToGenericDictionaryWrapperPrivateConstructor<T> : StringToGenericDictionaryWrapper<T>
+    {
+        private StringToGenericDictionaryWrapperPrivateConstructor() { }
+    }
+
+    public class StringToGenericDictionaryWrapperInternalConstructor<T> : StringToGenericDictionaryWrapper<T>
+    {
+        internal StringToGenericDictionaryWrapperInternalConstructor() { }
+    }
+
     public class StringToStringSortedDictionaryWrapper : SortedDictionary<string, string>
     {
         public StringToStringSortedDictionaryWrapper() { }
@@ -1247,17 +1349,57 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class StringToGenericSortedDictionary<T> : SortedDictionary<string, T>
+    public class HashSetWithBackingCollection : ICollection<string>
     {
-        public StringToGenericSortedDictionary() { }
+        private readonly ICollection<string> _inner;
 
-        // For populating test data only. We cannot assume actual input will have this method.
-        public StringToGenericSortedDictionary(IList<KeyValuePair<string, T>> items)
+        public HashSetWithBackingCollection()
         {
-            foreach (KeyValuePair<string, T> item in items)
-            {
-                Add(item.Key, item.Value);
-            }
+            _inner = new HashSet<string>();
+        }
+
+        public HashSetWithBackingCollection(IEnumerable<string> values)
+        {
+            _inner = new HashSet<string>(values);
+        }
+
+        public int Count => _inner.Count;
+
+        public bool IsReadOnly => _inner.IsReadOnly;
+
+        public void Add(string item)
+        {
+            _inner.Add(item);
+        }
+
+        public void Clear()
+        {
+            _inner.Clear();
+        }
+
+        public bool Contains(string item)
+        {
+            return _inner.Contains(item);
+        }
+
+        public void CopyTo(string[] array, int arrayIndex)
+        {
+            _inner.CopyTo(array, arrayIndex);
+        }
+
+        public IEnumerator<string> GetEnumerator()
+        {
+            return _inner.GetEnumerator();
+        }
+
+        public bool Remove(string item)
+        {
+            return _inner.Remove(item);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return _inner.GetEnumerator();
         }
     }
 }

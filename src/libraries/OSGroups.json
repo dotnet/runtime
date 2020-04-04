@@ -17,6 +17,16 @@
         "Unix"
         ]
       },
+    "iOS": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "Android": {
+      "#import": [
+        "Linux"
+        ]
+      },
     "FreeBSD": {
       "#import": [
         "Unix"

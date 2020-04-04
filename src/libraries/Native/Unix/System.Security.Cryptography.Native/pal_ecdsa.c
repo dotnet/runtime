@@ -13,7 +13,7 @@ CryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint8_t* sig, int32
         return 0;
     }
 
-    unsigned int unsignedSigLength = Int32ToUint32(*siglen);
+    unsigned int unsignedSigLength = 0;
     int ret = ECDSA_sign(0, dgst, dgstlen, sig, &unsignedSigLength, key);
     *siglen = Uint32ToInt32(unsignedSigLength);
     return ret;

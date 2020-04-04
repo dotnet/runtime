@@ -47,6 +47,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [SkipOnCoreClr("Takes too long on Checked", RuntimeConfiguration.Checked)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(BasicObjectsRoundtrip_MemberData))]
         public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)
         {
@@ -183,6 +184,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void RoundtripManyObjectsInOneStream()
         {
             object[][] objects = SerializableObjects_MemberData().ToArray();

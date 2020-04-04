@@ -161,70 +161,81 @@ namespace Internal.Runtime.InteropServices
 
             Type classType = FindClassType(cxt.ClassId, cxt.AssemblyPath, cxt.AssemblyName, cxt.TypeName);
 
-            // Retrieve all the methods.
-            MethodInfo[] methods = classType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-
+            Type? currentType = classType;
             bool calledFunction = false;
 
-            // Go through all the methods and check for the custom attribute.
-            foreach (MethodInfo method in methods)
+            // Walk up the inheritance hierarchy. The first register/unregister function found is called; any additional functions on base types are ignored.
+            while (currentType != null && !calledFunction)
             {
-                // Check to see if the method has the custom attribute.
-                if (method.GetCustomAttributes(regFuncAttrType!, inherit: true).Length == 0)
+                // Retrieve all the methods.
+                MethodInfo[] methods = currentType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+
+                // Go through all the methods and check for the custom attribute.
+                foreach (MethodInfo method in methods)
                 {
-                    continue;
+                    // Check to see if the method has the custom attribute.
+                    if (method.GetCustomAttributes(regFuncAttrType!, inherit: true).Length == 0)
+                    {
+                        continue;
+                    }
+
+                    // Check to see if the method is static before we call it.
+                    if (!method.IsStatic)
+                    {
+                        string msg = register ? SR.InvalidOperation_NonStaticComRegFunction : SR.InvalidOperation_NonStaticComUnRegFunction;
+                        throw new InvalidOperationException(SR.Format(msg));
+                    }
+
+                    // Finally validate signature
+                    ParameterInfo[] methParams = method.GetParameters();
+                    if (method.ReturnType != typeof(void)
+                        || methParams == null
+                        || methParams.Length != 1
+                        || (methParams[0].ParameterType != typeof(string) && methParams[0].ParameterType != typeof(Type)))
+                    {
+                        string msg = register ? SR.InvalidOperation_InvalidComRegFunctionSig : SR.InvalidOperation_InvalidComUnRegFunctionSig;
+                        throw new InvalidOperationException(SR.Format(msg));
+                    }
+
+                    if (calledFunction)
+                    {
+                        string msg = register ? SR.InvalidOperation_MultipleComRegFunctions : SR.InvalidOperation_MultipleComUnRegFunctions;
+                        throw new InvalidOperationException(SR.Format(msg));
+                    }
+
+                    // The function is valid so set up the arguments to call it.
+                    var objs = new object[1];
+                    if (methParams[0].ParameterType == typeof(string))
+                    {
+                        // We are dealing with the string overload of the function - provide the registry key - see comhost.dll implementation
+                        objs[0] = $"HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\CLSID\\{cxt.ClassId.ToString("B")}";
+                    }
+                    else
+                    {
+                        // We are dealing with the type overload of the function.
+                        objs[0] = classType;
+                    }
+
+                    // Invoke the COM register function.
+                    method.Invoke(null, objs);
+                    calledFunction = true;
                 }
 
-                // Check to see if the method is static before we call it.
-                if (!method.IsStatic)
-                {
-                    string msg = register ? SR.InvalidOperation_NonStaticComRegFunction : SR.InvalidOperation_NonStaticComUnRegFunction;
-                    throw new InvalidOperationException(SR.Format(msg));
-                }
-
-                // Finally validate signature
-                ParameterInfo[] methParams = method.GetParameters();
-                if (method.ReturnType != typeof(void)
-                    || methParams == null
-                    || methParams.Length != 1
-                    || (methParams[0].ParameterType != typeof(string) && methParams[0].ParameterType != typeof(Type)))
-                {
-                    string msg = register ? SR.InvalidOperation_InvalidComRegFunctionSig : SR.InvalidOperation_InvalidComUnRegFunctionSig;
-                    throw new InvalidOperationException(SR.Format(msg));
-                }
-
-                if (calledFunction)
-                {
-                    string msg = register ? SR.InvalidOperation_MultipleComRegFunctions : SR.InvalidOperation_MultipleComUnRegFunctions;
-                    throw new InvalidOperationException(SR.Format(msg));
-                }
-
-                // The function is valid so set up the arguments to call it.
-                var objs = new object[1];
-                if (methParams[0].ParameterType == typeof(string))
-                {
-                    // We are dealing with the string overload of the function - provide the registry key - see comhost.dll implementation
-                    objs[0] = $"HKEY_LOCAL_MACHINE\\SOFTWARE\\Classes\\CLSID\\{cxt.ClassId.ToString("B")}";
-                }
-                else
-                {
-                    // We are dealing with the type overload of the function.
-                    objs[0] = classType;
-                }
-
-                // Invoke the COM register function.
-                method.Invoke(null, objs);
-                calledFunction = true;
+                // Go through all the base types
+                currentType = currentType.BaseType;
             }
         }
 
         /// <summary>
         /// Internal entry point for unmanaged COM activation API from native code
         /// </summary>
-        /// <param name="cxtInt">Reference to a <see cref="ComActivationContextInternal"/> instance</param>
+        /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [CLSCompliant(false)]
-        public static unsafe int GetClassFactoryForTypeInternal(ref ComActivationContextInternal cxtInt)
+        [NativeCallable]
+        public static unsafe int GetClassFactoryForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
+            ref ComActivationContextInternal cxtInt = ref *pCxtInt;
+
             if (IsLoggingEnabled())
             {
                 Log(
@@ -255,10 +266,13 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         /// <summary>
         /// Internal entry point for registering a managed COM server API from native code
         /// </summary>
-        /// <param name="cxtInt">Reference to a <see cref="ComActivationContextInternal"/> instance</param>
+        /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
         [CLSCompliant(false)]
-        public static unsafe int RegisterClassForTypeInternal(ref ComActivationContextInternal cxtInt)
+        [NativeCallable]
+        public static unsafe int RegisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
+            ref ComActivationContextInternal cxtInt = ref *pCxtInt;
+
             if (IsLoggingEnabled())
             {
                 Log(
@@ -294,8 +308,11 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
         /// Internal entry point for unregistering a managed COM server API from native code
         /// </summary>
         [CLSCompliant(false)]
-        public static unsafe int UnregisterClassForTypeInternal(ref ComActivationContextInternal cxtInt)
+        [NativeCallable]
+        public static unsafe int UnregisterClassForTypeInternal(ComActivationContextInternal* pCxtInt)
         {
+            ref ComActivationContextInternal cxtInt = ref *pCxtInt;
+
             if (IsLoggingEnabled())
             {
                 Log(
@@ -514,9 +531,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 
             public void GetLicInfo(ref LICINFO licInfo)
             {
-                bool runtimeKeyAvail;
-                bool licVerified;
-                _licenseProxy.GetLicInfo(_classType, out runtimeKeyAvail, out licVerified);
+                _licenseProxy.GetLicInfo(_classType, out bool runtimeKeyAvail, out bool licVerified);
 
                 // The LICINFO is a struct with a DWORD size field and two BOOL fields. Each BOOL
                 // is typedef'd from a DWORD, therefore the size is manually computed as below.

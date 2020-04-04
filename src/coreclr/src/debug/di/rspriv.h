@@ -10608,18 +10608,16 @@ private:
 #endif
 
     HRESULT EnableSSAfterBP();
-    bool GetEEThreadCantStopHelper();
 
     HRESULT GetTlsSlot(DWORD slot, REMOTE_PTR *pValue);
     HRESULT SetTlsSlot(DWORD slot, REMOTE_PTR value);
-    REMOTE_PTR GetPreDefTlsSlot(SIZE_T slot, bool * pRead);
+    REMOTE_PTR GetPreDefTlsSlot(SIZE_T slot);
 
     void * m_pPatchSkipAddress;
 
     UINT m_continueCountCached;
 
     DWORD_PTR GetEEThreadValue();
-    REMOTE_PTR GetEETlsDataBlock();
     HRESULT GetClrModuleTlsDataAddress(REMOTE_PTR* pAddress);
 
 public:

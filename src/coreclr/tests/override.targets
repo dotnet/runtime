@@ -14,7 +14,7 @@
   >
 
     <ItemGroup>
-      <ReferencePath Include="$(RootRepoDir)\artifacts\bin\coreclr\$(BuildOS).$(BuildArch).$(BuildType)\System.Private.CoreLib.dll" />
+      <ReferencePath Include="$(RepoRoot)\artifacts\bin\coreclr\$(TargetOS).$(TargetArchitecture).$(Configuration)\System.Private.CoreLib.dll" />
     </ItemGroup>
   </Target>
 

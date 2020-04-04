@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,8 +12,8 @@ namespace System.IO
     /// <summary>Provides an in-memory stream composed of non-contiguous chunks.</summary>
     internal sealed class ChunkedMemoryStream : Stream
     {
-        private MemoryChunk _headChunk;
-        private MemoryChunk _currentChunk;
+        private MemoryChunk? _headChunk;
+        private MemoryChunk? _currentChunk;
 
         private const int InitialChunkDefaultSize = 1024;
         private const int MaxChunkSize = 1024 * InitialChunkDefaultSize;
@@ -24,7 +25,7 @@ namespace System.IO
         {
             byte[] result = new byte[_totalLength];
             int offset = 0;
-            for (MemoryChunk chunk = _headChunk; chunk != null; chunk = chunk._next)
+            for (MemoryChunk? chunk = _headChunk; chunk != null; chunk = chunk._next)
             {
                 Debug.Assert(chunk._next == null || chunk._freeOffset == chunk._buffer.Length);
                 Buffer.BlockCopy(chunk._buffer, 0, result, offset, chunk._freeOffset);
@@ -109,7 +110,7 @@ namespace System.IO
         {
             internal readonly byte[] _buffer;
             internal int _freeOffset;
-            internal MemoryChunk _next;
+            internal MemoryChunk? _next;
 
             internal MemoryChunk(int bufferSize) { _buffer = new byte[bufferSize]; }
         }

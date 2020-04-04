@@ -40,7 +40,7 @@ namespace System.IO
                                                                                                 where TKey : class
                                                                                                 where TValue : class
         {
-            TValue valueInMap;
+            TValue? valueInMap;
 
             Debug.Assert(key != null);
 
@@ -50,7 +50,7 @@ namespace System.IO
 
             if (valueMayBeWrappedInBufferedStream)
             {
-                BufferedStream bufferedValueInMap = valueInMap as BufferedStream;
+                BufferedStream? bufferedValueInMap = valueInMap as BufferedStream;
                 Debug.Assert(object.ReferenceEquals(value, valueInMap)
                                 || (bufferedValueInMap != null && object.ReferenceEquals(value, bufferedValueInMap.UnderlyingStream)));
             }
@@ -67,7 +67,7 @@ namespace System.IO
             Debug.Assert(!string.IsNullOrWhiteSpace(methodName));
 
             int currentBufferSize = 0;
-            BufferedStream bufferedAdapter = adapter as BufferedStream;
+            BufferedStream? bufferedAdapter = adapter as BufferedStream;
             if (bufferedAdapter != null)
                 currentBufferSize = bufferedAdapter.BufferSize;
 
@@ -142,10 +142,10 @@ namespace System.IO
 
             // We currently do capability-based adapter selection for WinRt->NetFx, but not vice versa (time constraints).
             // Once we added the reverse direction, we will be able replce this entire section with just a few lines.
-            NetFxToWinRtStreamAdapter sAdptr = windowsRuntimeStream as NetFxToWinRtStreamAdapter;
+            NetFxToWinRtStreamAdapter? sAdptr = windowsRuntimeStream as NetFxToWinRtStreamAdapter;
             if (sAdptr != null)
             {
-                Stream wrappedNetFxStream = sAdptr.GetManagedStream();
+                Stream? wrappedNetFxStream = sAdptr.GetManagedStream();
                 if (wrappedNetFxStream == null)
                     throw new ObjectDisposedException(nameof(windowsRuntimeStream), SR.ObjectDisposed_CannotPerformOperation);
 
@@ -159,7 +159,7 @@ namespace System.IO
 
             // We have a real WinRT stream.
 
-            Stream adapter;
+            Stream? adapter;
             bool adapterExists = s_winRtToNetFxAdapterMap.TryGetValue(windowsRuntimeStream, out adapter);
 
             // There is already an adapter:
@@ -215,11 +215,11 @@ namespace System.IO
             if (forceBufferSize)
                 EnsureAdapterBufferSize(adapter, bufferSize, invokedMethodName);
 
-            WinRtToNetFxStreamAdapter actualAdapter = adapter as WinRtToNetFxStreamAdapter;
+            WinRtToNetFxStreamAdapter? actualAdapter = adapter as WinRtToNetFxStreamAdapter;
             if (actualAdapter == null)
                 actualAdapter = ((BufferedStream)adapter).UnderlyingStream as WinRtToNetFxStreamAdapter;
 
-            actualAdapter.SetWonInitializationRace();
+            actualAdapter!.SetWonInitializationRace();
 
             return adapter;
         }
@@ -240,7 +240,7 @@ namespace System.IO
 
             object adapter = AsWindowsRuntimeStreamInternal(stream);
 
-            IInputStream winRtStream = adapter as IInputStream;
+            IInputStream? winRtStream = adapter as IInputStream;
             Debug.Assert(winRtStream != null);
 
             return winRtStream;
@@ -258,7 +258,7 @@ namespace System.IO
 
             object adapter = AsWindowsRuntimeStreamInternal(stream);
 
-            IOutputStream winRtStream = adapter as IOutputStream;
+            IOutputStream? winRtStream = adapter as IOutputStream;
             Debug.Assert(winRtStream != null);
 
             return winRtStream;
@@ -276,7 +276,7 @@ namespace System.IO
 
             object adapter = AsWindowsRuntimeStreamInternal(stream);
 
-            IRandomAccessStream winRtStream = adapter as IRandomAccessStream;
+            IRandomAccessStream? winRtStream = adapter as IRandomAccessStream;
             Debug.Assert(winRtStream != null);
 
             return winRtStream;
@@ -287,10 +287,10 @@ namespace System.IO
         {
             // Check to see if the managed stream is actually a wrapper of a WinRT stream:
             // (This can be either an adapter directly, or an adapter wrapped in a BufferedStream.)
-            WinRtToNetFxStreamAdapter sAdptr = stream as WinRtToNetFxStreamAdapter;
+            WinRtToNetFxStreamAdapter? sAdptr = stream as WinRtToNetFxStreamAdapter;
             if (sAdptr == null)
             {
-                BufferedStream buffAdptr = stream as BufferedStream;
+                BufferedStream? buffAdptr = stream as BufferedStream;
                 if (buffAdptr != null)
                     sAdptr = buffAdptr.UnderlyingStream as WinRtToNetFxStreamAdapter;
             }
@@ -299,7 +299,7 @@ namespace System.IO
             // In that case we do not need to put the wrapper into the map.
             if (sAdptr != null)
             {
-                object wrappedWinRtStream = sAdptr.GetWindowsRuntimeStream<object>();
+                object? wrappedWinRtStream = sAdptr.GetWindowsRuntimeStream<object>();
                 if (wrappedWinRtStream == null)
                     throw new ObjectDisposedException(nameof(stream), SR.ObjectDisposed_CannotPerformOperation);
 
@@ -312,12 +312,12 @@ namespace System.IO
             // We have a real managed Stream.
 
             // See if the managed stream already has an adapter:
-            NetFxToWinRtStreamAdapter adapter;
+            NetFxToWinRtStreamAdapter? adapter;
             bool adapterExists = s_netFxToWinRtAdapterMap.TryGetValue(stream, out adapter);
 
             // There is already an adapter:
             if (adapterExists)
-                return adapter;
+                return adapter!;
 
             // We do not have an adapter for this managed stream yet and we need to create one.
             // Do that in a thread-safe manner in a separate method such that we only have to pay for the compiler allocating

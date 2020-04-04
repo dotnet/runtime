@@ -1,0 +1,32 @@
+<Project>
+  <Import Project="Directory.Build.props" />
+  <Import Project="Directory.Build.targets" />
+
+  <Target Name="Build">
+    <ItemGroup>
+      <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
+      <_CoreClrBuildArg Include="$(CMakeArgs)" />
+      <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
+      <_CoreClrBuildArg Include="$(Compiler)" />
+      <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
+      <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
+      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows))" Include="-os $(TargetOS)" />
+
+      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and '$(Configuration)' == 'Release'" Include="-enforcepgo" />
+      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CrossDac)' != ''" Include="-$(CrossDac)dac" />
+      <_CoreClrBuildArg Condition="'$(OfficialBuildId)' != ''" Include="/p:OfficialBuildId=$(OfficialBuildId)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.cmd</_CoreClrBuildScript>
+      <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build-runtime.sh</_CoreClrBuildScript>
+    </PropertyGroup>
+
+    <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" IgnoreStandardErrorWarningFormat="true" />
+  </Target>
+
+  <Target Name="Restore" />
+  <Target Name="Test" />
+  <Target Name="Pack" />
+</Project>

@@ -41,199 +41,6 @@ public:
 };
 #endif
 
-typedef struct _ConfigStringKeyValuePair
-{
-    WCHAR * key;
-    WCHAR * value;
-
-    _ConfigStringKeyValuePair()
-    {
-        key = NULL;
-        value = NULL;
-    }
-
-    WCHAR * GetKey()
-    {
-        return key;
-    }
-} ConfigStringKeyValuePair;
-
-typedef WStringSHash<ConfigStringKeyValuePair> ConfigStringHashtable;
-
-class ConfigList;
-
-//
-// Holds a pointer to a hashtable that is populated with data from config files.
-// Also acts as a node for a circular doubly-linked list.
-//
-class ConfigSource
-{
-    friend class ConfigList;
-public:
-    ConfigSource();
-    ~ConfigSource();
-
-    ConfigStringHashtable* Table();
-
-    //
-    // Connect this node into the list that prev is in.
-    //
-    void Add(ConfigSource* prev);
-
-    ConfigSource* Next()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pNext;
-    }
-
-    ConfigSource* Previous()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pPrev;
-    }
-
-
-private:
-    ConfigStringHashtable m_Table;
-    ConfigSource *m_pNext;
-    ConfigSource *m_pPrev;
-};
-
-//
-// Wrapper around the ConfigSource circular doubly-linked list.
-//
-class ConfigList
-{
-public:
-    //
-    // Iterator  for traversing through a ConfigList.
-    //
-    class ConfigIter
-    {
-    public:
-        ConfigIter(ConfigList* pList)
-        {
-            CONTRACTL {
-                NOTHROW;
-                GC_NOTRIGGER;
-                // MODE_ANY;
-                FORBID_FAULT;
-            } CONTRACTL_END;
-
-            pEnd = &(pList->m_pElement);
-            pCurrent = pEnd;
-        }
-
-        //
-        // TODO: Check if iterating through the list once skips an element.
-        // Returns the next node. If the next node is the head, returns null.
-        // Note that iteration can be resumed by calling next again.
-        //
-        ConfigStringHashtable* Next()
-        {
-            CONTRACT (ConfigStringHashtable*) {
-                NOTHROW;
-                GC_NOTRIGGER;
-                // MODE_ANY;
-                FORBID_FAULT;
-                POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-            } CONTRACT_END;
-
-            pCurrent = pCurrent->Next();;
-            if(pCurrent == pEnd)
-                RETURN NULL;
-            else
-                RETURN pCurrent->Table();
-        }
-
-        ConfigStringHashtable* Previous()
-        {
-            CONTRACT (ConfigStringHashtable*) {
-                NOTHROW;
-                GC_NOTRIGGER;
-                FORBID_FAULT;
-                // MODE_ANY;
-                POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-            } CONTRACT_END;
-
-            pCurrent = pCurrent->Previous();
-            if(pCurrent == pEnd)
-                RETURN NULL;
-            else
-                RETURN pCurrent->Table();
-        }
-
-    private:
-        ConfigSource* pEnd;
-        ConfigSource* pCurrent;
-    };
-
-    ConfigStringHashtable* Add()
-    {
-        CONTRACT (ConfigStringHashtable*) {
-            NOTHROW;
-            GC_NOTRIGGER;
-            // MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        } CONTRACT_END;
-
-        ConfigSource* pEntry = new (nothrow) ConfigSource();
-
-        if (pEntry == NULL)
-            RETURN NULL;
-
-        pEntry->Add(&m_pElement);
-        RETURN pEntry->Table();
-    }
-
-    ConfigStringHashtable* Append()
-    {
-        CONTRACT (ConfigStringHashtable*) {
-            NOTHROW;
-            GC_NOTRIGGER;
-            // MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        } CONTRACT_END;
-
-        ConfigSource* pEntry = new (nothrow) ConfigSource();
-        if (pEntry == NULL)
-            RETURN NULL;
-
-        pEntry->Add(m_pElement.Previous());
-        RETURN pEntry->Table();
-    }
-
-    void Append(ConfigSource * pEntry)
-    {
-        LIMITED_METHOD_CONTRACT;
-        PRECONDITION(CheckPointer(pEntry));
-
-        pEntry->Add(m_pElement.Previous());
-    }
-
-    ~ConfigList()
-    {
-        CONTRACTL {
-            NOTHROW;
-            GC_NOTRIGGER;
-            // MODE_ANY;
-            FORBID_FAULT;
-        } CONTRACTL_END;
-
-        ConfigSource* pNext = m_pElement.Next();
-        while(pNext != &m_pElement) {
-            ConfigSource *last = pNext;
-            pNext = pNext->m_pNext;
-            delete last;
-        }
-    }
-
-friend class ConfigIter;
-
-private:
-    ConfigSource m_pElement;
-};
-
 enum { OPT_BLENDED,
     OPT_SIZE,
     OPT_SPEED,
@@ -248,12 +55,6 @@ enum ParseCtl {
 class EEConfig
 {
 public:
-    typedef enum {
-        CONFIG_SYSTEM,
-        CONFIG_APPLICATION,
-        CONFIG_SYSTEMONLY
-    } ConfigSearch;
-
     static HRESULT Setup();
 
     HRESULT Init();
@@ -284,8 +85,21 @@ public:
     bool          TieredCompilation_QuickJit() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJit; }
     bool          TieredCompilation_QuickJitForLoops() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJitForLoops; }
     bool          TieredCompilation_CallCounting()  const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_CallCounting; }
-    DWORD         TieredCompilation_CallCountThreshold() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountThreshold; }
+    UINT16        TieredCompilation_CallCountThreshold() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountThreshold; }
     DWORD         TieredCompilation_CallCountingDelayMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountingDelayMs; }
+    bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
+    DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    // OSR Config
+    DWORD         OSR_CounterBump() const { LIMITED_METHOD_CONTRACT; return dwOSR_CounterBump; }
+    DWORD         OSR_HitLimit() const { LIMITED_METHOD_CONTRACT; return dwOSR_HitLimit; }
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT) && defined(_DEBUG)
+    DWORD         OSR_LowId() const { LIMITED_METHOD_CONTRACT; return dwOSR_LowId; }
+    DWORD         OSR_HighId() const { LIMITED_METHOD_CONTRACT; return dwOSR_HighId; }
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -332,8 +146,6 @@ public:
 
 #ifdef _DEBUG
     bool GenDebuggableCode(void)                    const {LIMITED_METHOD_CONTRACT;  return fDebuggable; }
-    bool IsStressOn(void)                           const {LIMITED_METHOD_CONTRACT;  return fStressOn; }
-    int GetAPIThreadStressCount(void)               const {LIMITED_METHOD_CONTRACT;  return apiThreadStressCount; }
 
     bool ShouldExposeExceptionsInCOMToConsole()     const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 1) != 0; }
     bool ShouldExposeExceptionsInCOMToMsgBox()      const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 2) != 0; }
@@ -694,16 +506,11 @@ public:
 
     // Helpers to read configuration
 
-    // This function exposes the config file data to CLRConfig. A pointer to this function is passed into CLRConfig on EEConfig::init.
-    // We are using BOOLs instead of ConfigSearch for direction since CLRConfig isn't always linked to EEConfig.
-    static HRESULT GetConfigValueCallback(__in_z LPCWSTR pKey, __deref_out_opt LPCWSTR* value, BOOL systemOnly, BOOL applicationFirst);
-
     //
     // NOTE: The following function is deprecated; use the CLRConfig class instead.
     // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
     //
-    static HRESULT GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LPWSTR*out, BOOL fPrependCOMPLUS = TRUE,
-                                  ConfigSearch direction = CONFIG_SYSTEM); // Note that you own the returned string!
+    static HRESULT GetConfigString_DontUse_(__in_z LPCWSTR name, __deref_out_z LPWSTR*out, BOOL fPrependCOMPLUS = TRUE); // Note that you own the returned string!
 
     //
     // NOTE: The following function is deprecated; use the CLRConfig class instead.
@@ -711,8 +518,7 @@ public:
     //
     static DWORD GetConfigDWORD_DontUse_(__in_z LPCWSTR name, DWORD defValue,
                                 DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
-                                BOOL fPrependCOMPLUS = TRUE,
-                                ConfigSearch direction = CONFIG_SYSTEM);
+                                BOOL fPrependCOMPLUS = TRUE);
 
     //
     // NOTE: The following function is deprecated; use the CLRConfig class instead.
@@ -720,16 +526,7 @@ public:
     //
     static ULONGLONG GetConfigULONGLONG_DontUse_(__in_z LPCWSTR name, ULONGLONG defValue,
                                              DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
-                                             BOOL fPrependCOMPLUS = TRUE,
-                                             ConfigSearch direction = CONFIG_SYSTEM);
-    //
-    // NOTE: The following function is deprecated; use the CLRConfig class instead.
-    // To access a configuration value through CLRConfig, add an entry in file:../inc/CLRConfigValues.h.
-    //
-    static DWORD GetConfigDWORDFavoringConfigFile_DontUse_(__in_z LPCWSTR name, DWORD defValue,
-                                                  DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
-                                                  BOOL fPrependCOMPLUS = TRUE,
-                                                  ConfigSearch direction = CONFIG_SYSTEM);
+                                             BOOL fPrependCOMPLUS = TRUE);
 
     //
     // NOTE: The following function is deprecated; use the CLRConfig class instead.
@@ -818,8 +615,6 @@ private: //----------------------------------------------------------------
     static bool IsInMethList(MethodNamesList* list, MethodDesc* pMD);
 
     bool fDebuggable;
-    bool fStressOn;
-    int apiThreadStressCount;
 
     MethodNamesList* pPrestubHalt;      // list of methods on which to break when hit prestub
     MethodNamesList* pPrestubGC;        // list of methods on which to cause a GC when hit prestub
@@ -998,9 +793,6 @@ private: //----------------------------------------------------------------
 
 #endif // _DEBUG
 
-    // New configuration
-    ConfigList  m_Configuration;
-
 #ifdef _DEBUG
     DWORD dwNgenForceFailureMask;
     DWORD dwNgenForceFailureCount;
@@ -1019,8 +811,20 @@ private: //----------------------------------------------------------------
     bool fTieredCompilation_QuickJit;
     bool fTieredCompilation_QuickJitForLoops;
     bool fTieredCompilation_CallCounting;
-    DWORD tieredCompilation_CallCountThreshold;
+    bool fTieredCompilation_UseCallCountingStubs;
+    UINT16 tieredCompilation_CallCountThreshold;
     DWORD tieredCompilation_CallCountingDelayMs;
+    DWORD tieredCompilation_DeleteCallCountingStubsAfter;
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT)
+    DWORD dwOSR_HitLimit;
+    DWORD dwOSR_CounterBump;
+#endif
+
+#if defined(FEATURE_ON_STACK_REPLACEMENT) && defined(_DEBUG)
+    DWORD dwOSR_LowId;
+    DWORD dwOSR_HighId;
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -1036,12 +840,9 @@ private: //----------------------------------------------------------------
 #endif
 public:
 
-    HRESULT GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch direction, __deref_out_opt LPCWSTR* value);
-
     DWORD GetConfigDWORDInternal_DontUse_ (__in_z LPCWSTR name, DWORD defValue,    //for getting data in the constructor of EEConfig
                                     DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,
-                                    BOOL fPrependCOMPLUS = TRUE,
-                                    ConfigSearch direction = CONFIG_SYSTEM);
+                                    BOOL fPrependCOMPLUS = TRUE);
 
     enum BitForMask {
         CallSite_1 = 0x0001,
@@ -1120,10 +921,6 @@ public:
         }                                                               \
     } while(0)
 
-    // STRESS_ASSERT is meant to be temperary additions to the code base that stop the
-    // runtime quickly when running stress
-#define STRESS_ASSERT(cond)   do { if (!(cond) && g_pConfig->IsStressOn())  DebugBreak();    } while(0)
-
 #define FILE_FORMAT_CHECK_MSG(_condition, _message)                     \
     do {                                                                \
         if (g_pConfig != NULL && g_pConfig->fAssertOnBadImageFormat())  \
@@ -1136,7 +933,6 @@ public:
 
 #else
 
-#define STRESS_ASSERT(cond)
 #define BAD_FORMAT_NOTHROW_ASSERT(str)
 
 #define FILE_FORMAT_CHECK_MSG(_condition, _message)

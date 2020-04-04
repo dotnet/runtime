@@ -913,8 +913,6 @@ namespace System.Runtime.InteropServices
             return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
         }
 
-        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o) => throw new PlatformNotSupportedException();
-
         public static unsafe void ZeroFreeBSTR(IntPtr s)
         {
             if (s == IntPtr.Zero)

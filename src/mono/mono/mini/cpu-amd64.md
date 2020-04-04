@@ -170,8 +170,8 @@ call_reg: dest:a src1:i len:32 clob:c
 call_membase: dest:a src1:b len:32 clob:c
 iconst: dest:i len:10
 i8const: dest:i len:10
-r4const: dest:f len:14
-r8const: dest:f len:9
+r4const: dest:f len:17
+r8const: dest:f len:12
 store_membase_imm: dest:b len:15
 store_membase_reg: dest:b src1:i len:9
 storei8_membase_reg: dest:b src1:i len:9

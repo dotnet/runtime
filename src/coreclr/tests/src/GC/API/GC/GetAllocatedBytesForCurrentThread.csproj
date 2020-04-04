@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <HeapVerifyIncompatible Condition="'$(Platform)' == 'arm'">true</HeapVerifyIncompatible>
+    <HeapVerifyIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</HeapVerifyIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->

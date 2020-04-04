@@ -47,13 +47,6 @@ typedef enum {
 } MonoWrapperType;
 
 typedef enum {
-	MONO_TYPE_NAME_FORMAT_IL,
-	MONO_TYPE_NAME_FORMAT_REFLECTION,
-	MONO_TYPE_NAME_FORMAT_FULL_NAME,
-	MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED
-} MonoTypeNameFormat;
-
-typedef enum {
 	MONO_REMOTING_TARGET_UNKNOWN,
 	MONO_REMOTING_TARGET_APPDOMAIN,
 	MONO_REMOTING_TARGET_COMINTEROP
@@ -1151,9 +1144,6 @@ char*
 mono_identifier_escape_type_name_chars (const char* identifier);
 
 char*
-mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format);
-
-char*
 mono_type_get_full_name (MonoClass *klass);
 
 char *
@@ -1392,11 +1382,11 @@ mono_class_get_marshal_info (MonoClass *klass);
 void
 mono_class_set_marshal_info (MonoClass *klass, MonoMarshalType *marshal_info);
 
-guint32
+MonoGCHandle
 mono_class_get_ref_info_handle (MonoClass *klass);
 
-guint32
-mono_class_set_ref_info_handle (MonoClass *klass, guint32 value);
+MonoGCHandle
+mono_class_set_ref_info_handle (MonoClass *klass, gpointer value);
 
 MonoErrorBoxed*
 mono_class_get_exception_data (MonoClass *klass);

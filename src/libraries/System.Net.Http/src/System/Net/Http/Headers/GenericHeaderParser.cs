@@ -9,7 +9,7 @@ namespace System.Net.Http.Headers
 {
     internal sealed class GenericHeaderParser : BaseHeaderParser
     {
-        private delegate int GetParsedValueLengthDelegate(string value, int startIndex, out object parsedValue);
+        private delegate int GetParsedValueLengthDelegate(string value, int startIndex, out object? parsedValue);
 
         #region Parser instances
 
@@ -41,9 +41,9 @@ namespace System.Net.Http.Headers
         #endregion
 
         private readonly GetParsedValueLengthDelegate _getParsedValueLength;
-        private readonly IEqualityComparer _comparer;
+        private readonly IEqualityComparer? _comparer;
 
-        public override IEqualityComparer Comparer
+        public override IEqualityComparer? Comparer
         {
             get { return _comparer; }
         }
@@ -54,7 +54,7 @@ namespace System.Net.Http.Headers
         }
 
         private GenericHeaderParser(bool supportsMultipleValues, GetParsedValueLengthDelegate getParsedValueLength,
-            IEqualityComparer comparer)
+            IEqualityComparer? comparer)
             : base(supportsMultipleValues)
         {
             Debug.Assert(getParsedValueLength != null);
@@ -63,38 +63,35 @@ namespace System.Net.Http.Headers
             _comparer = comparer;
         }
 
-        protected override int GetParsedValueLength(string value, int startIndex, object storeValue,
-            out object parsedValue)
+        protected override int GetParsedValueLength(string value, int startIndex, object? storeValue,
+            out object? parsedValue)
         {
             return _getParsedValueLength(value, startIndex, out parsedValue);
         }
 
         #region Parse methods
 
-        private static int ParseNameValue(string value, int startIndex, out object parsedValue)
+        private static int ParseNameValue(string value, int startIndex, out object? parsedValue)
         {
-            NameValueHeaderValue temp = null;
-            int resultLength = NameValueHeaderValue.GetNameValueLength(value, startIndex, out temp);
+            int resultLength = NameValueHeaderValue.GetNameValueLength(value, startIndex, out NameValueHeaderValue? temp);
 
             parsedValue = temp;
             return resultLength;
         }
 
-        private static int ParseProduct(string value, int startIndex, out object parsedValue)
+        private static int ParseProduct(string value, int startIndex, out object? parsedValue)
         {
-            ProductHeaderValue temp = null;
-            int resultLength = ProductHeaderValue.GetProductLength(value, startIndex, out temp);
+            int resultLength = ProductHeaderValue.GetProductLength(value, startIndex, out ProductHeaderValue? temp);
 
             parsedValue = temp;
             return resultLength;
         }
 
-        private static int ParseSingleEntityTag(string value, int startIndex, out object parsedValue)
+        private static int ParseSingleEntityTag(string value, int startIndex, out object? parsedValue)
         {
-            EntityTagHeaderValue temp = null;
             parsedValue = null;
 
-            int resultLength = EntityTagHeaderValue.GetEntityTagLength(value, startIndex, out temp);
+            int resultLength = EntityTagHeaderValue.GetEntityTagLength(value, startIndex, out EntityTagHeaderValue? temp);
 
             // If we don't allow '*' ("Any") as valid ETag value, return false (e.g. 'ETag' header)
             if (temp == EntityTagHeaderValue.Any)
@@ -110,16 +107,15 @@ namespace System.Net.Http.Headers
         // the value must either be '*' or a list of ETag values. It's not allowed to have both '*' and a list of
         // ETag values. We're not that strict: We allow both '*' and ETag values in a list. If the server sends such
         // an invalid list, we want to be able to represent it using the corresponding header property.
-        private static int ParseMultipleEntityTags(string value, int startIndex, out object parsedValue)
+        private static int ParseMultipleEntityTags(string value, int startIndex, out object? parsedValue)
         {
-            EntityTagHeaderValue temp = null;
-            int resultLength = EntityTagHeaderValue.GetEntityTagLength(value, startIndex, out temp);
+            int resultLength = EntityTagHeaderValue.GetEntityTagLength(value, startIndex, out EntityTagHeaderValue? temp);
 
             parsedValue = temp;
             return resultLength;
         }
 
-        private static int ParseMailAddress(string value, int startIndex, out object parsedValue)
+        private static int ParseMailAddress(string value, int startIndex, out object? parsedValue)
         {
             parsedValue = null;
 
@@ -139,10 +135,9 @@ namespace System.Net.Http.Headers
             return result.Length;
         }
 
-        private static int ParseHost(string value, int startIndex, out object parsedValue)
+        private static int ParseHost(string value, int startIndex, out object? parsedValue)
         {
-            string host = null;
-            int hostLength = HttpRuleParser.GetHostLength(value, startIndex, false, out host);
+            int hostLength = HttpRuleParser.GetHostLength(value, startIndex, false, out string? host);
 
             parsedValue = host;
             return hostLength;

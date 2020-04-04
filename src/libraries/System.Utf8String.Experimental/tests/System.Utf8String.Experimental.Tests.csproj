@@ -1,11 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludePartialFacadeTests>true</IncludePartialFacadeTests>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <RootNamespace>System</RootNamespace>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Must reference the Utf8String reference assembly, which is normally excluded from unit test projects. -->
@@ -38,5 +37,14 @@
     <Compile Include="System\Utf8StringTests.Searching.cs" />
     <Compile Include="Xunit\SpanAssert.cs" />
     <Compile Include="System\Utf8TestUtilities.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="System\MemoryTests.netcoreapp.cs" />
+    <Compile Include="System\ReflectionTests.netcoreapp.cs" />
+    <Compile Include="System\Utf8ExtensionsTests.netcoreapp.cs" />
+    <Compile Include="System\Utf8StringTests.Ctor.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetsNetFx)' == 'true'">
+    <Compile Include="System\MemoryTests.netfx.cs" />
   </ItemGroup>
 </Project>

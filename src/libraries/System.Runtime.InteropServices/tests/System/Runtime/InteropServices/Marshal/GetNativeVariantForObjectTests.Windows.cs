@@ -80,21 +80,14 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new UnknownWrapper(autoDispatch), autoDispatch, VarEnum.VT_UNKNOWN };
             yield return new object[] { new UnknownWrapper(autoDual), autoDual, VarEnum.VT_UNKNOWN };
 
-            if (!PlatformDetection.IsNetCore)
-            {
-                yield return new object[] { new DispatchWrapper(empty), empty, VarEnum.VT_DISPATCH };
-                yield return new object[] { new DispatchWrapper(dual), dual, VarEnum.VT_DISPATCH };
-                yield return new object[] { new DispatchWrapper(iUnknown), iUnknown, VarEnum.VT_DISPATCH };
-                yield return new object[] { new DispatchWrapper(iDispatch), iDispatch, VarEnum.VT_DISPATCH };
-                yield return new object[] { new DispatchWrapper(iInspectable), iInspectable, VarEnum.VT_DISPATCH };
-                yield return new object[] { new DispatchWrapper(nonDual), nonDual, VarEnum.VT_DISPATCH };
-                yield return new object[] { new DispatchWrapper(autoDispatch), autoDispatch, VarEnum.VT_DISPATCH };
-                yield return new object[] { new DispatchWrapper(autoDual), autoDual, VarEnum.VT_DISPATCH };
-            }
-            else
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => new DispatchWrapper(10));
-            }
+            yield return new object[] { new DispatchWrapper(empty), empty, VarEnum.VT_DISPATCH };
+            yield return new object[] { new DispatchWrapper(dual), dual, VarEnum.VT_DISPATCH };
+            yield return new object[] { new DispatchWrapper(iUnknown), iUnknown, VarEnum.VT_DISPATCH };
+            yield return new object[] { new DispatchWrapper(iDispatch), iDispatch, VarEnum.VT_DISPATCH };
+            yield return new object[] { new DispatchWrapper(iInspectable), iInspectable, VarEnum.VT_DISPATCH };
+            yield return new object[] { new DispatchWrapper(nonDual), nonDual, VarEnum.VT_DISPATCH };
+            yield return new object[] { new DispatchWrapper(autoDispatch), autoDispatch, VarEnum.VT_DISPATCH };
+            yield return new object[] { new DispatchWrapper(autoDual), autoDual, VarEnum.VT_DISPATCH };
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]

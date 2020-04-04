@@ -10,41 +10,30 @@
 
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
-    <BuildArch>$(__BuildArch)</BuildArch>
-    <BuildArch Condition="'$(__BuildArch)'==''">x64</BuildArch>
-    <BuildArch Condition="'$(__BuildArch)' == 'amd64'">x64</BuildArch>
+    <!-- TODO: Cleanup use of __BuildArch and __BuildType in the CI scripts -->
 
-    <BuildType>$(__BuildType)</BuildType>
-    <BuildType Condition="'$(__BuildType)'==''">Debug</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'debug'">Debug</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'release'">Release</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'checked'">Checked</BuildType>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(__BuildArch)</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
 
-    <BuildOS>$(__BuildOS)</BuildOS>
-    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</BuildOS>
-    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</BuildOS>
-    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</BuildOS>
+    <Configuration Condition="'$(Configuration)'==''">$(__BuildType)</Configuration>
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+    <Configuration Condition="'$(Configuration)' == 'debug'">Debug</Configuration>
+    <Configuration Condition="'$(Configuration)' == 'release'">Release</Configuration>
+    <Configuration Condition="'$(Configuration)' == 'checked'">Checked</Configuration>
 
-    <!-- TODO: converge on one property for BuildOS and __BuildOS (and similar), and remove these extra lines. -->
-    <__BuildOS>$(BuildOS)</__BuildOS>
-    <__BuildArch>$(BuildArch)</__BuildArch>
+    <Platform Condition="'$(Platform)' == ''">$(TargetArchitecture)</Platform>
 
-    <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
-    <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
-
-    <PlatformConfigPathPart>$(BuildOS).$(BuildArch).$(BuildType)</PlatformConfigPathPart>
+    <PlatformConfigPathPart>$(TargetOS).$(TargetArchitecture).$(Configuration)</PlatformConfigPathPart>
   </PropertyGroup>
 
   <!-- Common properties -->
   <PropertyGroup>
-    <RootRepoDir>$(MSBuildThisFileDirectory)..\..\</RootRepoDir>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
 
-    <BaseIntermediateOutputPath>$(RootRepoDir)artifacts\obj\coreclr\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(RepoRoot)artifacts\obj\coreclr\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
 
     <SourceDir>$(ProjectDir)src\</SourceDir>
-    <RootBinDir>$(RootRepoDir)artifacts\</RootBinDir>
-    <BinDir>$(RootBinDir)bin\coreclr\$(PlatformConfigPathPart)\</BinDir>
+    <BinDir>$(ArtifactsDir)bin\coreclr\$(PlatformConfigPathPart)\</BinDir>
 
     <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
          fails to write packages to it if the path contains the forward slash.
@@ -59,17 +48,15 @@
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
-
-    <PreReleaseLabel>preview8</PreReleaseLabel>
   </PropertyGroup>
 
   <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
-    <TargetsFreeBSD Condition="'$(BuildOS)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <TargetsLinux Condition="'$(BuildOS)' == 'Linux'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(BuildOS)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(BuildOS)' == 'OSX'">true</TargetsOSX>
-    <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsLinux Condition="'$(TargetOS)' == 'Linux'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
+    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
 
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
 
@@ -77,34 +64,14 @@
     <DistroRid Condition="'$(TargetsLinux)' == 'true'">$(__DistroRid)</DistroRid>
 
     <!-- Folder for cross target components -->
-    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm64'">x64</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <LangVersion>8.0</LangVersion>
-    <UseSharedCompilation>true</UseSharedCompilation>
+    <CrossTargetComponentFolder Condition="'$(TargetArchitecture)' == 'arm64'">x64</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(TargetArchitecture)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(TargetArchitecture)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
   </PropertyGroup>
 
   <!-- Set the kind of PDB to Portable -->
   <PropertyGroup>
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
-  </PropertyGroup>
-
-  <!-- Common properties -->
-  <PropertyGroup>
-
-    <!-- This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging -->
-    <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">coreclr</GitHubRepositoryName>
-
-    <!-- Default to portable build if not explicitly set -->
-    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
-
-    <!-- If true, indicates that this is not an officially supported release -->
-    <!-- It is important to flip this to false in official release branches -->
-    <!-- Keep it in sync with PRERELEASE in clrdefinitions.cmake -->
-    <IsPrerelease>true</IsPrerelease>
   </PropertyGroup>
 
   <!-- Output paths -->

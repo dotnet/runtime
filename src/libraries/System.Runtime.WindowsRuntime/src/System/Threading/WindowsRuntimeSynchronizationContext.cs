@@ -113,12 +113,12 @@ namespace System.Threading
             _dispatcher = dispatcher;
         }
 
-        public override void Post(SendOrPostCallback d, object state)
+        public override void Post(SendOrPostCallback d, object? state)
         {
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
 
-            var ignored = _dispatcher.RunAsync(CoreDispatcherPriority.Normal, new Invoker(d, state).Invoke);
+            _ = _dispatcher.RunAsync(CoreDispatcherPriority.Normal, new Invoker(d, state).Invoke);
         }
 
         public override SynchronizationContext CreateCopy()
@@ -135,7 +135,7 @@ namespace System.Threading
             _dispatcherQueue = dispatcherQueue;
         }
 
-        public override void Post(SendOrPostCallback d, object state)
+        public override void Post(SendOrPostCallback d, object? state)
         {
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
@@ -143,7 +143,7 @@ namespace System.Threading
             // We explicitly choose to ignore the return value here. This enqueue operation might fail if the
             // dispatcher queue was shut down before we got here. In that case, we choose to just move on and
             // pretend nothing happened.
-            var ignored = _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, new Invoker(d, state).Invoke);
+            _ = _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, new Invoker(d, state).Invoke);
         }
 
         public override SynchronizationContext CreateCopy()
@@ -158,13 +158,13 @@ namespace System.Threading
 
         protected class Invoker
         {
-            private readonly ExecutionContext _executionContext;
+            private readonly ExecutionContext? _executionContext;
             private readonly SendOrPostCallback _callback;
-            private readonly object _state;
+            private readonly object? _state;
 
             private static readonly ContextCallback s_contextCallback = new ContextCallback(InvokeInContext);
 
-            public Invoker(SendOrPostCallback callback, object state)
+            public Invoker(SendOrPostCallback callback, object? state)
             {
                 _executionContext = ExecutionContext.Capture();
                 _callback = callback;
@@ -179,9 +179,9 @@ namespace System.Threading
                     ExecutionContext.Run(_executionContext, s_contextCallback, this);
             }
 
-            private static void InvokeInContext(object thisObj)
+            private static void InvokeInContext(object? thisObj)
             {
-                ((Invoker)thisObj).InvokeCore();
+                ((Invoker)thisObj!).InvokeCore();
             }
 
             private void InvokeCore()
@@ -203,7 +203,7 @@ namespace System.Threading
                         if (!ExceptionSupport.ReportUnhandledError(ex))
                         {
                             var edi = ExceptionDispatchInfo.Capture(ex);
-                            ThreadPool.QueueUserWorkItem(o => ((ExceptionDispatchInfo)o).Throw(), edi);
+                            ThreadPool.QueueUserWorkItem(o => ((ExceptionDispatchInfo)o!).Throw(), edi);
                         }
                     }
                 }
@@ -212,7 +212,7 @@ namespace System.Threading
 
         #endregion class WinRTSynchronizationContext.Invoker
 
-        public override void Send(SendOrPostCallback d, object state)
+        public override void Send(SendOrPostCallback d, object? state)
         {
             throw new NotSupportedException(SR.InvalidOperation_SendNotSupportedOnWindowsRTSynchronizationContext);
         }

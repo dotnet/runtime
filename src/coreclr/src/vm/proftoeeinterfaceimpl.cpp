@@ -2513,7 +2513,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
             PCODE pCodeStart = NULL;
             CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
             {
-                CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+                CodeVersionManager::LockHolder codeVersioningLockHolder;
 
                 ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc, reJitId);
 
@@ -4988,7 +4988,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             ILCodeVersion ilCodeVersion = NULL;
             {
-                CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+                CodeVersionManager::LockHolder codeVersioningLockHolder;
 
                 pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
@@ -6527,7 +6527,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
 
         ILCodeVersion ilCodeVersion = NULL;
         {
-            CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
 
             ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
@@ -7741,7 +7741,7 @@ HRESULT ProfToEEInterfaceImpl::ProfilerEbpWalker(
 
     // Remember that we're walking the stack.  This holder will reinstate the original
     // value of the stackwalker flag (from the thread type mask) in its destructor.
-    ClrFlsValueSwitch _threadStackWalking(TlsIdx_StackWalkerWalkingThread, pThreadToSnapshot);
+    StackWalkerWalkingThreadHolder threadStackWalking(pThreadToSnapshot);
 
     // This flag remembers if we reported a managed frame since the last unmanaged block
     // we reported. It's used to avoid reporting two unmanaged blocks in a row.
@@ -9870,18 +9870,9 @@ HRESULT ProfToEEInterfaceImpl::InitializeCurrentThread()
             LL_INFO10,
             "**PROF: InitializeCurrentThread.\n"));
 
-    HRESULT hr = S_OK;
+    SetupTLSForThread(GetThread());
 
-    EX_TRY
-    {
-        CExecutionEngine::SetupTLSForThread(GetThread());
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (FAILED(hr))
-        return hr;
-
-     return S_OK;
+    return S_OK;
 }
 
 struct InternalProfilerModuleEnum : public ProfilerModuleEnum

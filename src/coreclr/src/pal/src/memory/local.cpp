@@ -26,29 +26,6 @@ Revision History:
 
 SET_DEFAULT_DEBUG_CHANNEL(MEM);
 
-static
-int
-AllocFlagsToHeapAllocFlags (IN  UINT  AllocFlags,
-                       OUT PUINT pHeapallocFlags)
-{
-    int success = 1;
-    UINT newFlags = 0, flags = AllocFlags;
-    if (flags & LMEM_ZEROINIT) {
-        newFlags |= HEAP_ZERO_MEMORY;
-        flags &= ~LMEM_ZEROINIT;
-    }
-    if (flags != 0) {
-        ASSERT("Invalid parameter AllocFlags=0x%x\n", AllocFlags);
-        SetLastError(ERROR_INVALID_PARAMETER);
-        success = 0;
-    }
-    if (success) {
-        *pHeapallocFlags = newFlags;
-    }
-    return success;
-}
-
-
 
 /*++
 Function:
@@ -66,11 +43,26 @@ LocalAlloc(
     PERF_ENTRY(LocalAlloc);
     ENTRY("LocalAlloc (uFlags=%#x, uBytes=%u)\n", uFlags, uBytes);
 
-    if (!AllocFlagsToHeapAllocFlags (uFlags, &uFlags)) {
+    if ((uFlags & ~LMEM_ZEROINIT) != 0)
+    {
+        ASSERT("Invalid parameter AllocFlags=0x%x\n", uFlags);
+        SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
 
-    lpRetVal = HeapAlloc( GetProcessHeap(), uFlags, uBytes );
+    lpRetVal = PAL_malloc(uBytes);
+
+    if (lpRetVal == NULL)
+    {
+        ERROR("Not enough memory\n");
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        goto done;
+    }
+
+    if ((uFlags & LMEM_ZEROINIT) != 0)
+    {
+        memset(lpRetVal, 0, uBytes);
+    }
 
 done:
     LOGEXIT( "LocalAlloc returning %p.\n", lpRetVal );
@@ -95,15 +87,28 @@ LocalReAlloc(
     PERF_ENTRY(LocalReAlloc);
     ENTRY("LocalReAlloc (hMem=%p, uBytes=%u, uFlags=%#x)\n", hMem, uBytes, uFlags);
 
-    if (uFlags != LMEM_MOVEABLE) {
+    if (uFlags != LMEM_MOVEABLE)
+    {
         // Currently valid iff uFlags is LMEM_MOVEABLE
         ASSERT("Invalid parameter uFlags=0x%x\n", uFlags);
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
-    uFlags = 0;
 
-    lpRetVal = HeapReAlloc(GetProcessHeap(), uFlags, hMem, uBytes);
+    if (uBytes == 0)
+    {
+        // PAL's realloc behaves like free for a requested size of zero bytes. Force a nonzero size to get a valid pointer.	
+        uBytes = 1;
+    }
+
+    lpRetVal = PAL_realloc(hMem, uBytes);
+
+    if (lpRetVal == NULL)
+    {
+        ERROR("Not enough memory\n");
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        goto done;
+    }
 
 done:
     LOGEXIT("LocalReAlloc returning %p.\n", lpRetVal);
@@ -126,14 +131,8 @@ LocalFree(
     PERF_ENTRY(LocalFree);
     ENTRY("LocalFree (hmem=%p)\n", hMem);
 
-    if ( hMem )
-    {
-        bRetVal = HeapFree( GetProcessHeap(), 0, hMem );
-    }
-    else
-    {
-        bRetVal = TRUE;
-    }
+    free(hMem);
+    bRetVal = TRUE;
 
     LOGEXIT( "LocalFree returning %p.\n", bRetVal == TRUE ? (HLOCAL)NULL : hMem );
     PERF_EXIT(LocalFree);

@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent);net461;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+    <Reference Include="System.Diagnostics.EventLog" /> 
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Extensions\Logging\NullExternalScopeProvider.cs">
+      <Link>Common\src\Extensions\Logging\NullExternalScopeProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\Logging\NullScope.cs">
+      <Link>Common\src\Extensions\Logging\NullScope.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <Reference Include="Microsoft.Extensions.Logging" />
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <Reference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+</Project>

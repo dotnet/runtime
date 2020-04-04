@@ -18,8 +18,9 @@ namespace System
         // do it in a way that failures don't cascade.
         //
 
-        public static bool IsNetCore => RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
+        public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
 
@@ -32,6 +33,7 @@ namespace System
         public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess);
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
+        public static bool IsNotWindows => !IsWindows;
 
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
@@ -112,7 +114,7 @@ namespace System
         public static bool SupportsClientAlpn => SupportsAlpn || (IsOSX && PlatformDetection.OSXVersion > new Version(10, 12));
 
         // OpenSSL 1.1.1 and above.
-        public static bool SupportsTls13 => !IsWindows && !IsOSX && (OpenSslVersion.CompareTo(new Version(1,1,1)) >= 0);
+        public static bool SupportsTls13 => GetTls13Support();
 
         private static Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
@@ -200,6 +202,52 @@ namespace System
             }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
+        }
+
+        private static bool GetTls13Support()
+        {
+            if (IsWindows)
+            {
+                if (!IsWindows10Version2004OrGreater)
+                {
+                    return false;
+                }
+
+                string clientKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client";
+                string serverKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server";
+
+                object client, server;
+                try
+                {
+                    client = Registry.GetValue(clientKey, "Enabled", null);
+                    server = Registry.GetValue(serverKey, "Enabled", null);
+                    if (client is int c && server is int s)
+                    {
+                        return c == 1 && s == 1;
+                    }
+                }
+                catch { };
+                // assume no if key is missing or on error.
+                return false;
+            }
+            else if (IsOSX)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
+                return false;
+            }
+            else
+            {
+                // Covers Linux and FreeBSD
+                return OpenSslVersion >= new Version(1,1,1);
+            }
+        }
+
+        private static bool GetIsRunningOnMonoInterpreter()
+        {
+            // This is a temporary solution because mono does not support interpreter detection
+            // within the runtime.
+            var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
+            return (val != null && val.Contains("--interpreter"));
         }
     }
 }

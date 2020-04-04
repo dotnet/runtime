@@ -50,6 +50,34 @@ namespace System.Threading.Tests
             // currently we don't expose this.. but it was verified manually
         }
 
+        [Fact]
+        public static async Task Cancel_WaitAsync_ContinuationInvokedAsynchronously()
+        {
+            await Task.Run(async () => // escape xunit's SynchronizationContext
+            {
+                var cts = new CancellationTokenSource();
+                var tl = new ThreadLocal<object>();
+
+                var sentinel = new object();
+
+                var sem = new SemaphoreSlim(0);
+                Task continuation = sem.WaitAsync(cts.Token).ContinueWith(prev =>
+                {
+                    Assert.Equal(TaskStatus.Canceled, prev.Status);
+                    Assert.NotSame(sentinel, tl.Value);
+                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+                Assert.Equal(TaskStatus.WaitingForActivation, continuation.Status);
+                Assert.Equal(0, sem.CurrentCount);
+
+                tl.Value = sentinel;
+                cts.Cancel();
+                tl.Value = null;
+
+                await continuation;
+            });
+        }
+
         private static void EnsureOperationCanceledExceptionThrown(Action action, CancellationToken token)
         {
             OperationCanceledException operationCanceledEx =

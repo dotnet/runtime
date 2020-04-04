@@ -637,9 +637,9 @@ def call_msbuild(args):
     if g_verbose:
         command += ["/verbosity:diag"]
 
-    command += ["/p:__BuildOS=%s" % args.host_os,
-                "/p:__BuildArch=%s" % args.arch,
-                "/p:__BuildType=%s" % args.build_type,
+    command += ["/p:TargetOS=%s" % args.host_os,
+                "/p:TargetArchitecture=%s" % args.arch,
+                "/p:Configuration=%s" % args.build_type,
                 "/p:__LogsDir=%s" % args.logs_dir]
 
     print(" ".join(command))
@@ -1250,7 +1250,7 @@ if sys.version_info.major < 3:
         return unicode(s, "utf-8")
 else:
     def to_unicode(s):
-        return str(s, "utf-8")
+        return s
 
 def find_test_from_name(host_os, test_location, test_name):
     """ Given a test's name return the location on disk

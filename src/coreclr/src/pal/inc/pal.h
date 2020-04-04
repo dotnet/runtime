@@ -135,7 +135,7 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 
 /******************* Compiler-specific glue *******************************/
 #ifndef THROW_DECL
-#if defined(_MSC_VER) || defined(__llvm__) || !defined(__cplusplus)
+#if defined(_MSC_VER) || !defined(__cplusplus)
 #define THROW_DECL
 #else
 #define THROW_DECL throw()
@@ -2733,61 +2733,6 @@ VirtualQuery(
 #define CopyMemory memcpy
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-PALIMPORT
-HANDLE
-PALAPI
-GetProcessHeap();
-
-#define HEAP_ZERO_MEMORY 0x00000008
-
-PALIMPORT
-HANDLE
-PALAPI
-HeapCreate(
-         IN DWORD flOptions,
-         IN SIZE_T dwInitialSize,
-         IN SIZE_T dwMaximumSize);
-
-PALIMPORT
-LPVOID
-PALAPI
-HeapAlloc(
-      IN HANDLE hHeap,
-      IN DWORD dwFlags,
-      IN SIZE_T dwBytes);
-
-PALIMPORT
-LPVOID
-PALAPI
-HeapReAlloc(
-    IN HANDLE hHeap,
-    IN DWORD dwFlags,
-    IN LPVOID lpMem,
-    IN SIZE_T dwBytes
-    );
-
-PALIMPORT
-BOOL
-PALAPI
-HeapFree(
-     IN HANDLE hHeap,
-     IN DWORD dwFlags,
-     IN LPVOID lpMem);
-
-typedef enum _HEAP_INFORMATION_CLASS {
-    HeapCompatibilityInformation,
-    HeapEnableTerminationOnCorruption
-} HEAP_INFORMATION_CLASS;
-
-PALIMPORT
-BOOL
-PALAPI
-HeapSetInformation(
-        IN OPTIONAL HANDLE HeapHandle,
-        IN HEAP_INFORMATION_CLASS HeapInformationClass,
-        IN PVOID HeapInformation,
-        IN SIZE_T HeapInformationLength);
 
 #define LMEM_FIXED          0x0000
 #define LMEM_MOVEABLE       0x0002

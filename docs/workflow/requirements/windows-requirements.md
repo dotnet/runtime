@@ -10,11 +10,11 @@ You must install several components to build the dotnet/runtime repository. Thes
 
 ## Enable Long Paths
 
-The runtime repository requires long paths to be enabled. Follow the instructions provided here to modify the registry to opt into that feature: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#enable-long-paths-in-windows-10-version-1607-and-later.
+The runtime repository requires long paths to be enabled. Follow [the instructions provided here](https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#enable-long-paths-in-windows-10-version-1607-and-later) to enable that feature.
 
-If using msysgit (aka Git for Windows) you might need to also configure long paths there. Using an admin terminal simply type:
-```powershell
-PS> git config --system core.longpaths true
+If using Git for Windows you might need to also configure long paths there. Using an admin terminal simply type:
+```cmd
+git config --system core.longpaths true
 ```
 
 ## Visual Studio
@@ -22,17 +22,17 @@ PS> git config --system core.longpaths true
 - Install [Visual Studio 2019](https://visualstudio.microsoft.com/downloads/). The Community version is completely free.
 
 Visual Studio 2019 installation process:
-* It's recommended to use 'Workloads' installation approach. The following are the minimum requirements:
-  * .NET Desktop Development with all default components.
-  * Desktop Development with C++ with all default components.
-* To build for Arm32 or Arm64, Make sure that you have the Windows 10 SDK installed (or selected to be installed as part of VS installation). To explicitly install Windows SDK, download it from here: [Windows SDK for Windows 10](https://developer.microsoft.com/en-us/windows/downloads).
-  * In addition, ensure you install the ARM tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM build tools (v14.23)".
-  * Also, ensure you install the ARM64 tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM64 build tools (v14.23)".
-* To build the tests, you will need some additional components:
-  * Windows 10 SDK component version 10.0.18362 or newer. This component is installed by default as a part of 'Desktop Development with C++' workload.
-  * C++/CLI support for v142 build tools (14.23)
+- It's recommended to use 'Workloads' installation approach. The following are the minimum requirements:
+  - .NET Desktop Development with all default components.
+  - Desktop Development with C++ with all default components.
+- To build for Arm32 or Arm64, make sure that you have the right architecture specific compilers installed:
+  - In addition, ensure you install the ARM tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM build tools (v14.23)".
+  - Also, ensure you install the ARM64 tools. In the "Individual components" window, in the "Compilers, build tools, and runtimes" section, check the box for "MSVC v142 - VS 2019 C++ ARM64 build tools (v14.23)".
+- To build the tests, you will need some additional components:
+  - Windows 10 SDK component version 10.0.18362 or newer. This component is installed by default as a part of 'Desktop Development with C++' workload.
+  - C++/CLI support for v142 build tools (14.23)
 
-A `.vsconfig` file is included in the root of the dotnet/runtime repository that includes all components needed to build the dotnet/runtime repository.
+A `.vsconfig` file is included in the root of the dotnet/runtime repository that includes all components needed to build the dotnet/runtime repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/en-us/visualstudio/install/import-export-installation-configurations?view=vs-2019#import-a-configuration) to install all necessary components.
 
 The dotnet/runtime repository requires at least Visual Studio 2019 16.3.
 
@@ -62,14 +62,14 @@ The dotnet/runtime repository requires at least Git 2.22.0.
 
 ## PowerShell
 
-- Ensure that it is accessible via the PATH environment variable. Typically this is `%SYSTEMROOT%\System32\WindowsPowerShell\v1.0\` and its automatically set upon Windows installation.
+- Ensure that `powershell.exe` is accessible via the PATH environment variable. Typically this is `%SYSTEMROOT%\System32\WindowsPowerShell\v1.0\` and its automatically set upon Windows installation.
 - Powershell version must be 3.0 or higher. Use `$PSVersionTable.PSVersion` to determine the engine version.
 
-## DotNet Core SDK
+## .NET SDK
 
-While not strictly needed to build or test the .NET Core repository, having the .NET Core SDK installed lets you use the dotnet.exe command to run .NET Core applications in the 'normal' way.   We use this in the
-[Using Your Build](../testing/using-your-build.md) instructions.  Visual Studio should have
-installed the .NET Core SDK, but in case it did not you can get it from the [Installing the .NET Core SDK](https://dotnet.microsoft.com/download) page.
+While not strictly needed to build or test this repository, having the .NET SDK installed lets you use the dotnet.exe command to run .NET applications in the 'normal' way.
+We use this in the [Using Your Build](../testing/using-your-build.md) instructions.
+Visual Studio should have installed the .NET SDK, but in case it did not you can get it from the [Installing the .NET SDK](https://dotnet.microsoft.com/download) page.
 
 ## Adding to the default PATH variable
 
@@ -77,8 +77,7 @@ The commands above need to be on your command lookup path.   Some installers wil
 
 You can, of course, add a directory to the PATH environment variable with the syntax `set PATH=%PATH%;DIRECTORY_TO_ADD_TO_PATH`.
 
-However, the change above will only last until the command windows close.   You can make your change to
-the PATH variable persistent by going to  Control Panel -> System And Security -> System -> Advanced system settings -> Environment Variables,
-and select the 'Path' variable in the 'System variables' (if you want to change it for all users) or 'User variables' (if you only want
-to change it for the current user).  Simply edit the PATH variable's value and add the directory (with a semicolon separator).
-
+However, the change above will only last until the command windows close.
+You can make your change to the PATH variable persistent by going to  Control Panel -> System And Security -> System -> Advanced system settings -> Environment Variables,
+and select the 'Path' variable in the 'System variables' (if you want to change it for all users) or 'User variables' (if you only want to change it for the current user).
+Simply edit the PATH variable's value and add the directory (with a semicolon separator).

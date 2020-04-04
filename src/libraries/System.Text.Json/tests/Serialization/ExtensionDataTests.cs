@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using Xunit;
@@ -689,6 +690,114 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, object> MyOverflow { get; set; }
 
             public Dictionary<string, object> ActualDictionary { get; set; }
+        }
+
+        [Fact]
+        public static void DeserializeIntoImmutableDictionaryProperty()
+        {
+            // baseline
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutable>(@"{}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutableJsonElement>(@"{}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructor>(@"{}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructorJsonElement>(@"{}");
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutable>("{\"hello\":\"world\"}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutableJsonElement>("{\"hello\":\"world\"}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructor>("{\"hello\":\"world\"}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructorJsonElement>("{\"hello\":\"world\"}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyCustomIImmutable>("{\"hello\":\"world\"}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyCustomIImmutableJsonElement>("{\"hello\":\"world\"}"));
+        }
+
+        [Fact]
+        public static void SerializeIntoImmutableDictionaryProperty()
+        {
+            // attempt to serialize a null immutable dictionary
+            string expectedJson = "{}";
+            var obj = new ClassWithExtensionPropertyAsImmutable();
+            var json = JsonSerializer.Serialize(obj);
+            Assert.Equal(expectedJson, json);
+
+            // attempt to serialize an empty immutable dictionary
+            expectedJson = "{}";
+            obj = new ClassWithExtensionPropertyAsImmutable();
+            obj.MyOverflow = ImmutableDictionary<string, object>.Empty;
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal(expectedJson, json);
+
+            // attempt to serialize a populated immutable dictionary
+            expectedJson = "{\"hello\":\"world\"}";
+            obj = new ClassWithExtensionPropertyAsImmutable();
+            var dictionaryStringObject = new Dictionary<string, object> { { "hello", "world" } };
+            obj.MyOverflow = ImmutableDictionary.CreateRange(dictionaryStringObject);
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal(expectedJson, json);
+        }
+
+        private class ClassWithExtensionPropertyAsImmutable
+        {
+            [JsonExtensionData]
+            public ImmutableDictionary<string, object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyAsImmutableJsonElement
+        {
+            [JsonExtensionData]
+            public ImmutableDictionary<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyPrivateConstructor
+        {
+            [JsonExtensionData]
+            public GenericIDictionaryWrapperPrivateConstructor<string, object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyPrivateConstructorJsonElement
+        {
+            [JsonExtensionData]
+            public GenericIDictionaryWrapperPrivateConstructor<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyCustomIImmutable
+        {
+            [JsonExtensionData]
+            public GenericIImmutableDictionaryWrapper<string, object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyCustomIImmutableJsonElement
+        {
+            [JsonExtensionData]
+            public GenericIImmutableDictionaryWrapper<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithExtensionPropertyNoGenericParameters))]
+        [InlineData(typeof(ClassWithExtensionPropertyOneGenericParameter))]
+        [InlineData(typeof(ClassWithExtensionPropertyThreeGenericParameters))]
+        public static void DeserializeIntoGenericDictionaryParameterCount(Type type)
+        {
+            object obj = JsonSerializer.Deserialize("{\"hello\":\"world\"}", type);
+
+            IDictionary<string, object> extData = (IDictionary<string, object>)type.GetProperty("MyOverflow").GetValue(obj)!;
+            Assert.Equal("world", ((JsonElement)extData["hello"]).GetString());
+        }
+
+        private class ClassWithExtensionPropertyNoGenericParameters
+        {
+            [JsonExtensionData]
+            public StringToObjectIDictionaryWrapper MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyOneGenericParameter
+        {
+            [JsonExtensionData]
+            public StringToGenericIDictionaryWrapper<object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyThreeGenericParameters
+        {
+            [JsonExtensionData]
+            public GenericIDictonaryWrapperThreeGenericParameters<string, object, string> MyOverflow { get; set; }
         }
 
         [Fact]

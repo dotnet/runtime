@@ -231,6 +231,7 @@ namespace System.Diagnostics.Tests
             Assert.True(await tcs.Task);
 
             Assert.True(p.WaitForExit(0));
+            p.WaitForExit(); // wait for event handlers to complete
         }
 
         [Theory]
@@ -441,6 +442,7 @@ namespace System.Diagnostics.Tests
             }
 
             Assert.True(p.WaitForExit(timeout), "Process has not exited");
+            p.WaitForExit(); // wait for event handlers to complete
             Assert.Equal(RemotelyInvokable.SuccessExitCode, p.ExitCode);
         }
 

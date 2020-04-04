@@ -1201,7 +1201,7 @@ public:
     ~DebuggerHeapExecutableMemoryAllocator();
 
     void* Allocate(DWORD numberOfBytes);
-    int Free(void* addr);
+    void Free(void* addr);
 
 private:
     enum class ChangePageUsageAction {ALLOCATE, FREE};
@@ -1249,7 +1249,9 @@ protected:
     BOOL m_fExecutable;
 
 private:
+#ifndef HOST_WINDOWS
     DebuggerHeapExecutableMemoryAllocator *m_execMemAllocator;
+#endif
 };
 
 class DebuggerJitInfo;
@@ -2539,7 +2541,6 @@ public:
     HRESULT UpdateAppDomainEntryInIPC (AppDomain *pAppDomain);
 
     void SendCreateAppDomainEvent(AppDomain * pAppDomain);
-    void SendExitAppDomainEvent (AppDomain *pAppDomain);
 
     // Notify the debugger that an assembly has been loaded
     void LoadAssembly(DomainAssembly * pDomainAssembly);

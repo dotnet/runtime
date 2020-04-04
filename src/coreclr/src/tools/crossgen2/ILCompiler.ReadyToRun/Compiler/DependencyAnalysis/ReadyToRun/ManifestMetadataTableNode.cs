@@ -74,27 +74,32 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _moduleIdToAssemblyNameMap = new Dictionary<int, AssemblyName>();
             _signatureEmitters = new List<ISignatureEmitter>();
             _nodeFactory = nodeFactory;
+            _nextModuleId = 1;
 
             if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
             {
                 MetadataReader mdReader = _nodeFactory.CompilationModuleGroup.CompilationModuleSet.Single().MetadataReader;
-                _assemblyRefCount = mdReader.GetTableRowCount(TableIndex.AssemblyRef);
-                for (int assemblyRefIndex = 1; assemblyRefIndex <= _assemblyRefCount; assemblyRefIndex++)
-                {
-                    AssemblyReferenceHandle assemblyRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
-                    AssemblyReference assemblyRef = mdReader.GetAssemblyReference(assemblyRefHandle);
-                    string assemblyName = mdReader.GetString(assemblyRef.Name);
-                    _assemblyRefToModuleIdMap[assemblyName] = assemblyRefIndex;
-                }
-            }
+                _assemblyRefCount = mdReader.GetTableRowCount(TableIndex.AssemblyRef) + 1;
 
-            // AssemblyRefCount + 1 corresponds to ROWID 0 in the manifest metadata
-            _nextModuleId = _assemblyRefCount + 2;
+                if (!_nodeFactory.CompilationModuleGroup.IsInputBubble)
+                {
+                    for (int assemblyRefIndex = 1; assemblyRefIndex < _assemblyRefCount; assemblyRefIndex++)
+                    {
+                        AssemblyReferenceHandle assemblyRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
+                        AssemblyReference assemblyRef = mdReader.GetAssemblyReference(assemblyRefHandle);
+                        string assemblyName = mdReader.GetString(assemblyRef.Name);
+                        _assemblyRefToModuleIdMap[assemblyName] = assemblyRefIndex;
+                    }
+                }
+
+                // AssemblyRefCount + 1 corresponds to ROWID 0 in the manifest metadata
+                _nextModuleId += _assemblyRefCount;
+            }
 
             if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
             {
                 // Fill in entries for all input modules right away to make sure they have parallel indices
-                int nextExpectedId = 2;
+                int nextExpectedId = 1;
                 foreach (EcmaModule inputModule in _nodeFactory.CompilationModuleGroup.CompilationModuleSet)
                 {
                     int acquiredId = ModuleToIndexInternal(inputModule);
@@ -134,7 +139,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _assemblyRefToModuleIdMap.Add(assemblyName.Name, assemblyRefIndex);
             }
 
-            if ((assemblyRefIndex >= _assemblyRefCount + 2) && !_moduleIdToAssemblyNameMap.ContainsKey(assemblyRefIndex))
+            if (assemblyRefIndex >= _assemblyRefCount && !_moduleIdToAssemblyNameMap.ContainsKey(assemblyRefIndex))
             {
                 if (_emissionCompleted)
                 {

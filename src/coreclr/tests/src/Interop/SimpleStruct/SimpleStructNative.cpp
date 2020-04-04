@@ -5,16 +5,16 @@
 #include <xplatform.h>
 
 typedef void *voidPtr;
- 
-typedef struct { int a; 
+
+typedef struct { int a;
 bool b;
 char* str;} Sstr;
 
-typedef struct { int a; 
+typedef struct { int a;
 bool b;
 double c;} Sstr_simple;
 
-typedef struct { 
+typedef struct {
 	int a;
 	int extra; //padding needs to be added here as we have added 8 byte offset.
 	union
@@ -26,7 +26,7 @@ typedef struct {
 }ExplStruct;
 
 extern "C"
-DLL_EXPORT BOOL __cdecl CdeclSimpleStructByRef(Sstr *p) 
+DLL_EXPORT BOOL __cdecl CdeclSimpleStructByRef(Sstr *p)
 {
   p->a = 100;
   p->b=1;
@@ -105,3 +105,16 @@ DLL_EXPORT voidPtr STDMETHODCALLTYPE GetFptr(int i)
 	}
 	return (voidPtr) &CdeclSimpleStruct;
 }
+
+struct AutoStruct
+{
+    int i;
+    double d;
+};
+
+extern "C" DLL_EXPORT void Invalid(AutoStruct s)
+{
+
+}
+
+extern "C" DLL_EXPORT AutoStruct InvalidReturn();

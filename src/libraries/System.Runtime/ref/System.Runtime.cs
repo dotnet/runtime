@@ -2029,6 +2029,8 @@ namespace System
     {
         public static int MaxGeneration { get { throw null; } }
         public static void AddMemoryPressure(long bytesAllocated) { }
+        public static T[] AllocateArray<T>(int length, bool pinned = false) { throw null; }
+        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false) { throw null; }
         public static void CancelFullGCNotification() { }
         public static void Collect() { }
         public static void Collect(int generation) { }
@@ -2898,7 +2900,9 @@ namespace System
         public ObsoleteAttribute(string? message) { }
         public ObsoleteAttribute(string? message, bool error) { }
         public bool IsError { get { throw null; } }
+        public string? DiagnosticId { get { throw null; } set { } }
         public string? Message { get { throw null; } }
+        public string? UrlFormat { get { throw null; } set { } }
     }
     public sealed partial class OperatingSystem : System.ICloneable, System.Runtime.Serialization.ISerializable
     {
@@ -3129,15 +3133,10 @@ namespace System
         public bool Equals(System.SByte obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.SByte Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.SByte Parse(string s) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.SByte Parse(string s, System.Globalization.NumberStyles style) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.SByte Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.SByte Parse(string s, System.IFormatProvider? provider) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
@@ -3159,13 +3158,9 @@ namespace System
         public string ToString(string? format) { throw null; }
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.SByte result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.SByte result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.SByte result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, out System.SByte result) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Struct, Inherited=false)]
@@ -4192,7 +4187,6 @@ namespace System
         public override bool Equals(object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Type GetTargetType(System.TypedReference value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.TypedReference MakeTypedReference(object target, System.Reflection.FieldInfo[] flds) { throw null; }
         public static void SetTypedReference(System.TypedReference target, object? value) { }
         public static System.RuntimeTypeHandle TargetTypeToken(System.TypedReference value) { throw null; }
@@ -4233,15 +4227,10 @@ namespace System
         public bool Equals(System.UInt16 obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt16 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt16 Parse(string s) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt16 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt16 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt16 Parse(string s, System.IFormatProvider? provider) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
@@ -4263,13 +4252,9 @@ namespace System
         public string ToString(string? format) { throw null; }
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt16 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.UInt16 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt16 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, out System.UInt16 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
@@ -4284,15 +4269,10 @@ namespace System
         public bool Equals(System.UInt32 obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt32 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt32 Parse(string s) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt32 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt32 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt32 Parse(string s, System.IFormatProvider? provider) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
@@ -4314,13 +4294,9 @@ namespace System
         public string ToString(string? format) { throw null; }
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt32 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.UInt32 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt32 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, out System.UInt32 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
@@ -4335,15 +4311,10 @@ namespace System
         public bool Equals(System.UInt64 obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt64 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt64 Parse(string s) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt64 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt64 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt64 Parse(string s, System.IFormatProvider? provider) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
@@ -4365,13 +4336,9 @@ namespace System
         public string ToString(string? format) { throw null; }
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt64 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.UInt64 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt64 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, out System.UInt64 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
@@ -5180,6 +5147,16 @@ namespace System.Collections.Generic
         void CopyTo(T[] array, int arrayIndex);
         bool Remove(T item);
     }
+    public partial interface IReadOnlySet<T> : IReadOnlyCollection<T>
+    {
+        bool Contains(T item);
+        bool IsProperSubsetOf(IEnumerable<T> other);
+        bool IsProperSupersetOf(IEnumerable<T> other);
+        bool IsSubsetOf(IEnumerable<T> other);
+        bool IsSupersetOf(IEnumerable<T> other);
+        bool Overlaps(IEnumerable<T> other);
+        bool SetEquals(IEnumerable<T> other);
+    }
     public partial interface IComparer<in T>
     {
         int Compare([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
@@ -5640,6 +5617,21 @@ namespace System.Diagnostics.CodeAnalysis
     {
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+    public sealed class MemberNotNullAttribute : System.Attribute
+    {
+        public MemberNotNullAttribute(string member) { }
+        public MemberNotNullAttribute(params string[] members) { }
+        public string[] Members { get { throw null; } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
+    public sealed class MemberNotNullWhenAttribute : System.Attribute
+    {
+        public MemberNotNullWhenAttribute(bool returnValue, string member) { }
+        public MemberNotNullWhenAttribute(bool returnValue, params string[] members) { }
+        public bool ReturnValue { get { throw null; } }
+        public string[] Members { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
     [System.Diagnostics.ConditionalAttribute("CODE_ANALYSIS")]
@@ -7888,9 +7880,9 @@ namespace System.Reflection
     }
     public partial class ManifestResourceInfo
     {
-        public ManifestResourceInfo(System.Reflection.Assembly containingAssembly, string containingFileName, System.Reflection.ResourceLocation resourceLocation) { }
-        public virtual string FileName { get { throw null; } }
-        public virtual System.Reflection.Assembly ReferencedAssembly { get { throw null; } }
+        public ManifestResourceInfo(System.Reflection.Assembly? containingAssembly, string? containingFileName, System.Reflection.ResourceLocation resourceLocation) { }
+        public virtual string? FileName { get { throw null; } }
+        public virtual System.Reflection.Assembly? ReferencedAssembly { get { throw null; } }
         public virtual System.Reflection.ResourceLocation ResourceLocation { get { throw null; } }
     }
     public delegate bool MemberFilter(System.Reflection.MemberInfo m, object? filterCriteria);
@@ -8581,7 +8573,7 @@ namespace System.Runtime
     public static partial class ProfileOptimization
     {
         public static void SetProfileRoot(string directoryPath) { }
-        public static void StartProfile(string profile) { }
+        public static void StartProfile(string? profile) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class TargetedPatchingOptOutAttribute : System.Attribute
@@ -9013,6 +9005,7 @@ namespace System.Runtime.CompilerServices
     public static partial class RuntimeHelpers
     {
         public static int OffsetToStringData { get { throw null; } }
+        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
         public static void ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers.TryCode code, System.Runtime.CompilerServices.RuntimeHelpers.CleanupCode backoutCode, object? userData) { }

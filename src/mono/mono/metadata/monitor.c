@@ -337,7 +337,7 @@ mono_locks_dump (gboolean include_untaken)
 					to_recycle++;
 			} else {
 				if (!monitor_is_on_freelist ((MonoThreadsSync *)mon->data)) {
-					MonoObject *holder = (MonoObject *)mono_gchandle_get_target_internal ((guint32)(gsize)mon->data);
+					MonoObject *holder = (MonoObject *)mono_gchandle_get_target_internal ((MonoGCHandle)mon->data);
 					if (mon_status_get_owner (mon->status)) {
 						g_print ("Lock %p in object %p held by thread %d, nest level: %d\n",
 							mon, holder, mon_status_get_owner (mon->status), mon->nest);
@@ -399,7 +399,7 @@ mon_new (gsize id)
 		new_ = NULL;
 		for (marray = monitor_allocated; marray; marray = marray->next) {
 			for (i = 0; i < marray->num_monitors; ++i) {
-				if (mono_gchandle_get_target_internal ((guint32)(gsize)marray->monitors [i].data) == NULL) {
+				if (mono_gchandle_get_target_internal ((MonoGCHandle)marray->monitors [i].data) == NULL) {
 					new_ = &marray->monitors [i];
 					if (new_->wait_list) {
 						/* Orphaned events left by aborted threads */
@@ -409,7 +409,7 @@ mon_new (gsize id)
 							new_->wait_list = g_slist_remove (new_->wait_list, new_->wait_list->data);
 						}
 					}
-					mono_gchandle_free_internal ((guint32)(gsize)new_->data);
+					mono_gchandle_free_internal ((MonoGCHandle)new_->data);
 					new_->data = monitor_freelist;
 					monitor_freelist = new_;
 				}
@@ -466,7 +466,7 @@ alloc_mon (MonoObject *obj, gint32 id)
 
 	mono_monitor_allocator_lock ();
 	mon = mon_new (id);
-	mon->data = (void *)(size_t)mono_gchandle_new_weakref_internal (obj, TRUE);
+	mon->data = mono_gchandle_new_weakref_internal (obj, TRUE);
 	mono_monitor_allocator_unlock ();
 
 	return mon;
@@ -476,7 +476,7 @@ static void
 discard_mon (MonoThreadsSync *mon)
 {
 	mono_monitor_allocator_lock ();
-	mono_gchandle_free_internal ((guint32)(gsize)mon->data);
+	mono_gchandle_free_internal ((MonoGCHandle)mon->data);
 	mon_finalize (mon);
 	mono_monitor_allocator_unlock ();
 }
@@ -1132,7 +1132,7 @@ mono_monitor_exit (MonoObject *obj)
 	MONO_EXTERNAL_ONLY_VOID (mono_monitor_exit_internal (obj));
 }
 
-guint32
+MonoGCHandle
 mono_monitor_get_object_monitor_gchandle (MonoObject *object)
 {
 	LockWord lw;
@@ -1141,9 +1141,9 @@ mono_monitor_get_object_monitor_gchandle (MonoObject *object)
 
 	if (lock_word_is_inflated (lw)) {
 		MonoThreadsSync *mon = lock_word_get_inflated_lock (lw);
-		return (guint32)(gsize)mon->data;
+		return (MonoGCHandle)mon->data;
 	}
-	return 0;
+	return NULL;
 }
 
 /*
@@ -1409,6 +1409,13 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 		mono_error_set_pending_exception (error);
 		return FALSE;
 	}
+
+#ifdef DISABLE_THREADS
+	if (ms == MONO_INFINITE_WAIT) {
+		mono_error_set_synchronization_lock (error, "Cannot wait on monitors on this runtime.");
+		return FALSE;
+	}
+#endif
 	
 	LOCK_DEBUG (g_message ("%s: (%d) queuing handle %p", __func__, id, event));
 

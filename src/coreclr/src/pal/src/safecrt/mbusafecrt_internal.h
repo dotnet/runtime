@@ -18,6 +18,8 @@
 #ifndef MBUSAFECRT_INTERNAL_H
 #define MBUSAFECRT_INTERNAL_H
 
+#define PAL_IMPLEMENTATION
+
 #include "pal_mstypes.h"
 
 #ifndef DLLEXPORT

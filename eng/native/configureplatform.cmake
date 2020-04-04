@@ -1,4 +1,9 @@
 include(CheckPIESupported)
+include(${CMAKE_CURRENT_LIST_DIR}/functions.cmake)
+
+# If set, indicates that this is not an officially supported release
+# Keep in sync with IsPrerelease in Directory.Build.props
+set(PRERELEASE 1)
 
 #----------------------------------------
 # Detect and set platform variable names
@@ -35,7 +40,7 @@ if(CLR_CMAKE_HOST_OS STREQUAL Linux)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
             set(CLR_CMAKE_HOST_UNIX_ARM 1)
             set(CLR_CMAKE_HOST_UNIX_ARMV7L 1)
-        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
+        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL arm OR CMAKE_SYSTEM_PROCESSOR STREQUAL armv7-a)
             set(CLR_CMAKE_HOST_UNIX_ARM 1)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
             set(CLR_CMAKE_HOST_UNIX_ARM64 1)
@@ -53,10 +58,12 @@ if(CLR_CMAKE_HOST_OS STREQUAL Linux)
         set(LINUX_ID_FILE "${CMAKE_SYSROOT}${LINUX_ID_FILE}")
     endif()
 
-    execute_process(
-        COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
-        OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(EXISTS ${LINUX_ID_FILE})
+        execute_process(
+            COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
+            OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif()
 
     if(DEFINED CLR_CMAKE_LINUX_ID)
         if(CLR_CMAKE_LINUX_ID STREQUAL tizen)
@@ -65,9 +72,6 @@ if(CLR_CMAKE_HOST_OS STREQUAL Linux)
         elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
             set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
             set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
-        elseif(CLR_CMAKE_LINUX_ID STREQUAL android)
-            set(CLR_CMAKE_HOST_ANDROID 1)
-            set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
         endif()
     endif(DEFINED CLR_CMAKE_LINUX_ID)
 endif(CLR_CMAKE_HOST_OS STREQUAL Linux)
@@ -75,9 +79,40 @@ endif(CLR_CMAKE_HOST_OS STREQUAL Linux)
 if(CLR_CMAKE_HOST_OS STREQUAL Darwin)
     set(CLR_CMAKE_HOST_UNIX 1)
     set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-    set(CLR_CMAKE_HOST_DARWIN 1)
+    set(CLR_CMAKE_HOST_OSX 1)
     set(CMAKE_ASM_COMPILE_OBJECT "${CMAKE_C_COMPILER} <FLAGS> <DEFINES> <INCLUDES> -o <OBJECT> -c <SOURCE>")
 endif(CLR_CMAKE_HOST_OS STREQUAL Darwin)
+
+if(CLR_CMAKE_HOST_OS STREQUAL iOS)
+    set(CLR_CMAKE_HOST_UNIX 1)
+    set(CLR_CMAKE_HOST_IOS 1)
+    if(CMAKE_OSX_ARCHITECTURES MATCHES "x86_64")
+        set(CLR_CMAKE_HOST_UNIX_AMD64 1)
+    elseif(CMAKE_OSX_ARCHITECTURES MATCHES "armv7")
+        set(CLR_CMAKE_HOST_UNIX_ARM 1)
+    elseif(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+        set(CLR_CMAKE_HOST_UNIX_ARM64 1)
+    else()
+        clr_unknown_arch()
+    endif()
+endif(CLR_CMAKE_HOST_OS STREQUAL iOS)
+
+if(CLR_CMAKE_HOST_OS STREQUAL Android)
+    set(CLR_CMAKE_HOST_UNIX 1)
+    set(CLR_CMAKE_HOST_LINUX 1)
+    set(CLR_CMAKE_HOST_ANDROID 1)
+    if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+        set(CLR_CMAKE_HOST_UNIX_AMD64 1)
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7-a)
+        set(CLR_CMAKE_HOST_UNIX_ARM 1)
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+        set(CLR_CMAKE_HOST_UNIX_ARM64 1)
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
+        set(CLR_CMAKE_HOST_UNIX_X86 1)
+    else()
+        clr_unknown_arch()
+    endif()
+endif(CLR_CMAKE_HOST_OS STREQUAL Android)
 
 if(CLR_CMAKE_HOST_OS STREQUAL FreeBSD)
     set(CLR_CMAKE_HOST_UNIX 1)
@@ -218,16 +253,21 @@ if(CLR_CMAKE_TARGET_OS STREQUAL alpine)
     set(CLR_CMAKE_TARGET_ALPINE_LINUX 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL alpine)
 
-if(CLR_CMAKE_TARGET_OS STREQUAL android)
+if(CLR_CMAKE_TARGET_OS STREQUAL Android)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_LINUX 1)
     set(CLR_CMAKE_TARGET_ANDROID 1)
-endif(CLR_CMAKE_TARGET_OS STREQUAL android)
+endif(CLR_CMAKE_TARGET_OS STREQUAL Android)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL Darwin)
     set(CLR_CMAKE_TARGET_UNIX 1)
-    set(CLR_CMAKE_TARGET_DARWIN 1)
+    set(CLR_CMAKE_TARGET_OSX 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL Darwin)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL iOS)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_IOS 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL iOS)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL FreeBSD)
     set(CLR_CMAKE_TARGET_UNIX 1)
@@ -287,6 +327,7 @@ else()
 endif()
 
 if(NOT CLR_CMAKE_HOST_ARCH_WASM)
+if(NOT CLR_CMAKE_TARGET_ANDROID) # Android requires PIC and CMake handles this so we don't need the check
     # All code we build should be compiled as position independent
     get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
     if("CXX" IN_LIST languages)
@@ -300,4 +341,5 @@ if(NOT CLR_CMAKE_HOST_ARCH_WASM)
                   "PIE link options will not be passed to linker.")
     endif()
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif(NOT CLR_CMAKE_TARGET_ANDROID)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)

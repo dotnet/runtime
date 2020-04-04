@@ -2176,12 +2176,12 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 			MonoMList *list = (MonoMList*)mono_ex->dynamic_methods;
 
 			for (l = *dynamic_methods; l; l = l->next) {
-				guint32 dis_link;
+				MonoGCHandle dis_link;
 				MonoDomain *domain = mono_domain_get ();
 
 				if (domain->method_to_dyn_method) {
 					mono_domain_lock (domain);
-					dis_link = (guint32)(size_t)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
+					dis_link = (MonoGCHandle)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
 					mono_domain_unlock (domain);
 					if (dis_link) {
 						MonoObject *o = mono_gchandle_get_target_internal (dis_link);
@@ -2815,7 +2815,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		}
 
 		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && ftnptr_eh_callback) {
-			guint32 handle = mono_gchandle_new_internal (obj, FALSE);
+			MonoGCHandle handle = mono_gchandle_new_internal (obj, FALSE);
 			MONO_STACKDATA (stackptr);
 
 			mono_threads_enter_gc_safe_region_unbalanced_internal (&stackptr);
@@ -3144,7 +3144,7 @@ mono_setup_altstack (MonoJitTlsData *tls)
 
 	if (!disable_stack_guard) {
 		tls->stack_ovf_guard_base = staddr + mono_pagesize ();
-		tls->stack_ovf_guard_size = ALIGN_TO (8 * 4096, mono_pagesize ());
+		tls->stack_ovf_guard_size = ALIGN_TO (MONO_STACK_OVERFLOW_GUARD_SIZE, mono_pagesize ());
 
 		g_assert ((guint8*)&sa >= (guint8*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size);
 
@@ -3201,6 +3201,21 @@ mono_free_altstack (MonoJitTlsData *tls)
 		mono_vfree (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MEM_ACCOUNT_EXCEPTIONS);
 	else
 		mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_READ|MONO_MMAP_WRITE);
+}
+
+#elif G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) && defined(HOST_WIN32)
+void
+mono_setup_altstack (MonoJitTlsData *tls)
+{
+	// Alt stack is not supported on Windows, but we can use this point to at least
+	// reserve a stack guarantee of available stack memory when handling stack overflow.
+	ULONG new_stack_guarantee = (ULONG)ALIGN_TO (MONO_STACK_OVERFLOW_GUARD_SIZE, ((gssize)mono_pagesize ()));
+	SetThreadStackGuarantee (&new_stack_guarantee);
+}
+
+void
+mono_free_altstack (MonoJitTlsData *tls)
+{
 }
 
 #else /* !MONO_ARCH_SIGSEGV_ON_ALTSTACK */

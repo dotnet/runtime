@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-//
-
 using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -66,7 +62,7 @@ namespace Windows.UI.Xaml
             return ToString(CultureInfo.InvariantCulture);
         }
 
-        internal string ToString(CultureInfo cultureInfo)
+        internal string ToString(CultureInfo? cultureInfo)
         {
             char listSeparator = TokenizerHelper.GetNumericListSeparator(cultureInfo);
 
@@ -86,13 +82,13 @@ namespace Windows.UI.Xaml
             return sb.ToString();
         }
 
-        internal string InternalToString(double l, CultureInfo cultureInfo)
+        internal string InternalToString(double l, CultureInfo? cultureInfo)
         {
             if (double.IsNaN(l)) return "Auto";
             return Convert.ToString(l, cultureInfo);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is CornerRadius)
             {

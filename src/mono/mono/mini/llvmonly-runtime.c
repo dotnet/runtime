@@ -790,46 +790,11 @@ init_llvmonly_method (MonoAotModule *amodule, guint32 method_index, MonoClass *i
 
 /* Called from generated code to initialize a method */
 void
-mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, guint32 method_index)
+mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, guint32 method_index, MonoVTable *vtable)
 {
 	MonoAotModule *amodule = (MonoAotModule *)aot_module;
 
-	init_llvmonly_method (amodule, method_index, NULL);
-}
-
-/* Same for gshared methods with a this pointer */
-void
-mini_llvm_init_gshared_method_this (MonoAotFileInfo *info, gpointer aot_module, guint32 method_index, MonoObject *this_obj)
-{
-	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-	MonoClass *klass;
-
-	// FIXME:
-	g_assert (this_obj);
-	klass = this_obj->vtable->klass;
-
-	init_llvmonly_method (amodule, method_index, klass);
-}
-
-/* Same for gshared methods with an mrgctx arg */
-void
-mini_llvm_init_gshared_method_mrgctx (MonoAotFileInfo *info, gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx)
-{
-	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-
-	init_llvmonly_method (amodule, method_index, rgctx->class_vtable->klass);
-}
-
-/* Same for gshared methods with a vtable arg */
-void
-mini_llvm_init_gshared_method_vtable (MonoAotFileInfo *info, gpointer aot_module, guint32 method_index, MonoVTable *vtable)
-{
-	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-	MonoClass *klass;
-
-	klass = vtable->klass;
-
-	init_llvmonly_method (amodule, method_index, klass);
+	init_llvmonly_method (amodule, method_index, vtable ? vtable->klass : NULL);
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE (nullref, "System", "NullReferenceException")
@@ -844,14 +809,11 @@ mini_llvmonly_throw_nullref_exception (void)
 	mono_llvm_throw_corlib_exception (ex_token_index);
 }
 
-static GENERATE_GET_CLASS_WITH_CACHE (missing_method, "System", "MissingMethodException")
-
 void
-mini_llvmonly_throw_missing_method_exception (void)
+mini_llvmonly_throw_aot_failed_exception (const char *name)
 {
-	MonoClass *klass = mono_class_get_missing_method_class ();
-
-	guint32 ex_token_index = m_class_get_type_token (klass) - MONO_TOKEN_TYPE_DEF;
-
-	mono_llvm_throw_corlib_exception (ex_token_index);
+	char *msg = g_strdup_printf ("AOT Compilation failed for method '%s'.", name);
+	MonoException *ex = mono_get_exception_execution_engine (msg);
+	g_free (msg);
+	mono_llvm_throw_exception ((MonoObject*)ex);
 }

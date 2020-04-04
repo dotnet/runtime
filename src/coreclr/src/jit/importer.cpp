@@ -1532,7 +1532,8 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 // Notes:
 //    Normalizing the type involves examining the struct type to determine if it should
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
-//    for full enregistration, e.g. TYP_SIMD16.
+//    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
+//    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
 
 var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseType)
 {
@@ -1550,7 +1551,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
         {
             unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
-            if ((originalSize >= minSIMDStructBytes()) && (originalSize <= maxSIMDStructBytes()))
+            if (structSizeMightRepresentSIMDType(originalSize))
             {
                 unsigned int sizeBytes;
                 var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
@@ -4132,7 +4133,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_MathF_FusedMultiplyAdd:
             {
 #ifdef TARGET_XARCH
-                if (compSupports(InstructionSet_FMA))
+                if (compExactlyDependsOn(InstructionSet_FMA))
                 {
                     assert(varTypeIsFloating(callType));
 
@@ -7333,8 +7334,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool                   exactContextNeedsRuntimeLookup = false;
     bool                   canTailCall                    = true;
     const char*            szCanTailCallFailReason        = nullptr;
-    int                    tailCall                       = prefixFlags & PREFIX_TAILCALL;
-    bool                   readonlyCall                   = (prefixFlags & PREFIX_READONLY) != 0;
+    const int              tailCallFlags                  = (prefixFlags & PREFIX_TAILCALL);
+    const bool             isReadonlyCall                 = (prefixFlags & PREFIX_READONLY) != 0;
 
     CORINFO_RESOLVED_TOKEN* ldftnToken = nullptr;
 
@@ -7344,10 +7345,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // Also, popping arguments in a varargs function is more work and NYI
     // If we have a security object, we have to keep our frame around for callers
     // to see any imperative security.
+    // Reverse P/Invokes need a call to CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
+    // at the end, so tailcalls should be disabled.
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
         canTailCall             = false;
         szCanTailCallFailReason = "Caller is synchronized";
+    }
+    else if (opts.IsReversePInvoke())
+    {
+        canTailCall             = false;
+        szCanTailCallFailReason = "Caller is Reverse P/Invoke";
     }
 #if !FEATURE_FIXED_OUT_ARGS
     else if (info.compIsVarArgs)
@@ -7523,10 +7531,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         bool isSpecialIntrinsic = false;
         if ((mflags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0)
         {
-            const bool isTail = canTailCall && (tailCall != 0);
+            const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
-            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, readonlyCall, isTail,
-                                pConstrainedResolvedToken, callInfo->thisTransform, &intrinsicID, &isSpecialIntrinsic);
+            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
+                                isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &intrinsicID,
+                                &isSpecialIntrinsic);
 
             if (compDonotInline())
             {
@@ -7628,7 +7637,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     // it may cause registered args to be spilled. Simply spill it.
 
                     unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall with runtime lookup"));
-                    impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_ALL);
+                    impAssignTempGen(lclNum, stubAddr, (unsigned)CHECK_SPILL_NONE);
                     stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                     // Create the actual call node
@@ -8147,7 +8156,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 return TYP_UNDEF;
             }
 
-            if ((clsFlags & CORINFO_FLG_ARRAY) && readonlyCall)
+            if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
             {
                 // We indicate "readonly" to the Address operation by using a null
                 // instParam.
@@ -8270,10 +8279,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             // See if we can devirtualize.
 
-            bool       explicitTailCall       = (tailCall & PREFIX_TAILCALL_EXPLICIT) != 0;
+            const bool isExplicitTailCall     = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
             const bool isLateDevirtualization = false;
             impDevirtualizeCall(call->AsCall(), &callInfo->hMethod, &callInfo->methodFlags, &callInfo->contextHandle,
-                                &exactContextHnd, isLateDevirtualization, explicitTailCall);
+                                &exactContextHnd, isLateDevirtualization, isExplicitTailCall);
         }
 
         if (impIsThis(obj))
@@ -8362,8 +8371,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
 DONE:
 
-    if (tailCall)
+    // Final importer checks for calls flagged as tail calls.
+    //
+    if (tailCallFlags != 0)
     {
+        const bool isExplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
+        const bool isImplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_IMPLICIT) != 0;
+
+        // Exactly one of these should be true.
+        assert(isExplicitTailCall != isImplicitTailCall);
+
         // This check cannot be performed for implicit tail calls for the reason
         // that impIsImplicitTailCallCandidate() is not checking whether return
         // types are compatible before marking a call node with PREFIX_TAILCALL_IMPLICIT.
@@ -8378,7 +8395,7 @@ DONE:
         //
         // For implicit tail calls, we perform this check after return types are
         // known to be compatible.
-        if ((tailCall & PREFIX_TAILCALL_EXPLICIT) && (verCurrentState.esStackDepth != 0))
+        if (isExplicitTailCall && (verCurrentState.esStackDepth != 0))
         {
             BADCODE("Stack should be empty after tailcall");
         }
@@ -8396,7 +8413,7 @@ DONE:
         }
 
         // Stack empty check for implicit tail calls.
-        if (canTailCall && (tailCall & PREFIX_TAILCALL_IMPLICIT) && (verCurrentState.esStackDepth != 0))
+        if (canTailCall && isImplicitTailCall && (verCurrentState.esStackDepth != 0))
         {
 #ifdef TARGET_AMD64
             // JIT64 Compatibility:  Opportunistic tail call stack mismatch throws a VerificationException
@@ -8409,39 +8426,29 @@ DONE:
 
         // assert(compCurBB is not a catch, finally or filter block);
         // assert(compCurBB is not a try block protected by a finally block);
+        assert(!isExplicitTailCall || compCurBB->bbJumpKind == BBJ_RETURN);
 
-        // Check for permission to tailcall
-        bool explicitTailCall = (tailCall & PREFIX_TAILCALL_EXPLICIT) != 0;
-
-        assert(!explicitTailCall || compCurBB->bbJumpKind == BBJ_RETURN);
-
+        // Ask VM for permission to tailcall
         if (canTailCall)
         {
             // True virtual or indirect calls, shouldn't pass in a callee handle.
             CORINFO_METHOD_HANDLE exactCalleeHnd =
                 ((call->AsCall()->gtCallType != CT_USER_FUNC) || call->AsCall()->IsVirtual()) ? nullptr : methHnd;
 
-            if (info.compCompHnd->canTailCall(info.compMethodHnd, methHnd, exactCalleeHnd, explicitTailCall))
+            if (info.compCompHnd->canTailCall(info.compMethodHnd, methHnd, exactCalleeHnd, isExplicitTailCall))
             {
-                if (explicitTailCall)
+                if (isExplicitTailCall)
                 {
                     // In case of explicit tail calls, mark it so that it is not considered
                     // for in-lining.
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_EXPLICIT_TAILCALL;
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("\nGTF_CALL_M_EXPLICIT_TAILCALL bit set for call ");
-                        printTreeID(call);
-                        printf("\n");
-                    }
-#endif
+                    JITDUMP("\nGTF_CALL_M_EXPLICIT_TAILCALL set for call [%06u]\n", dspTreeID(call));
                 }
                 else
                 {
 #if FEATURE_TAILCALL_OPT
                     // Must be an implicit tail call.
-                    assert((tailCall & PREFIX_TAILCALL_IMPLICIT) != 0);
+                    assert(isImplicitTailCall);
 
                     // It is possible that a call node is both an inline candidate and marked
                     // for opportunistic tail calling.  In-lining happens before morhphing of
@@ -8450,14 +8457,7 @@ DONE:
                     // transformed into a tail call after performing additional checks.
 
                     call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("\nGTF_CALL_M_IMPLICIT_TAILCALL bit set for call ");
-                        printTreeID(call);
-                        printf("\n");
-                    }
-#endif
+                    JITDUMP("\nGTF_CALL_M_IMPLICIT_TAILCALL set for call [%06u]\n", dspTreeID(call));
 
 #else //! FEATURE_TAILCALL_OPT
                     NYI("Implicit tail call prefix on a target which doesn't support opportunistic tail calls");
@@ -8469,43 +8469,57 @@ DONE:
             }
             else
             {
+                // canTailCall reported its reasons already
                 canTailCall = false;
-// canTailCall reported its reasons already
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\ninfo.compCompHnd->canTailCall returned false for call ");
-                    printTreeID(call);
-                    printf("\n");
-                }
-#endif
+                JITDUMP("\ninfo.compCompHnd->canTailCall returned false for call [%06u]\n", dspTreeID(call));
             }
         }
         else
         {
             // If this assert fires it means that canTailCall was set to false without setting a reason!
             assert(szCanTailCallFailReason != nullptr);
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nRejecting %splicit tail call for call ", explicitTailCall ? "ex" : "im");
-                printTreeID(call);
-                printf(": %s\n", szCanTailCallFailReason);
-            }
-#endif
-            info.compCompHnd->reportTailCallDecision(info.compMethodHnd, methHnd, explicitTailCall, TAILCALL_FAIL,
+            JITDUMP("\nRejecting %splicit tail call for  [%06u]\n", isExplicitTailCall ? "ex" : "im", dspTreeID(call),
+                    szCanTailCallFailReason);
+            info.compCompHnd->reportTailCallDecision(info.compMethodHnd, methHnd, isExplicitTailCall, TAILCALL_FAIL,
                                                      szCanTailCallFailReason);
         }
     }
 
     // A tail recursive call is a potential loop from the current block to the start of the method.
-    if (canTailCall && gtIsRecursiveCall(methHnd))
+    if ((tailCallFlags != 0) && canTailCall && gtIsRecursiveCall(methHnd))
     {
+        assert(verCurrentState.esStackDepth == 0);
+        BasicBlock* loopHead = nullptr;
+        if (opts.IsOSR())
+        {
+            // We might not have been planning on importing the method
+            // entry block, but now we must.
+
+            // We should have remembered the real method entry block.
+            assert(fgEntryBB != nullptr);
+
+            JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
+                    fgEntryBB->bbNum);
+            impImportBlockPending(fgEntryBB);
+
+            // Note there is no explicit flow to this block yet,
+            // make sure it stays around until we actually try
+            // the optimization.
+            fgEntryBB->bbFlags |= BBF_DONT_REMOVE;
+
+            loopHead = fgEntryBB;
+        }
+        else
+        {
+            // For normal jitting we'll branch back to the firstBB; this
+            // should already be imported.
+            loopHead = fgFirstBB;
+        }
+
         JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
                 " as having a backward branch.\n",
-                fgFirstBB->bbNum, compCurBB->bbNum);
-        fgMarkBackwardJump(fgFirstBB, compCurBB);
+                loopHead->bbNum, compCurBB->bbNum);
+        fgMarkBackwardJump(loopHead, compCurBB);
     }
 
     // Note: we assume that small return types are already normalized by the managed callee
@@ -8588,7 +8602,7 @@ DONE_CALL:
 
         // The CEE_READONLY prefix modifies the verification semantics of an Address
         // operation on an array type.
-        if ((clsFlags & CORINFO_FLG_ARRAY) && readonlyCall && tiRetVal.IsByRef())
+        if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall && tiRetVal.IsByRef())
         {
             tiRetVal.SetIsReadonlyByRef();
         }
@@ -9098,14 +9112,11 @@ REDO_RETURN_NODE:
     {
         GenTree* op1 = op->AsObj()->Addr();
 
-        // We will fold away OBJ/ADDR
-        // except for OBJ/ADDR/INDEX
-        //     as the array type influences the array element's offset
-        //     Later in this method we change op->gtType to info.compRetNativeType
-        //     This is not correct when op is a GT_INDEX as the starting offset
-        //     for the array elements 'elemOffs' is different for an array of
-        //     TYP_REF than an array of TYP_STRUCT (which simply wraps a TYP_REF)
-        //     Also refer to the GTF_INX_REFARR_LAYOUT flag
+        // We will fold away OBJ/ADDR, except for OBJ/ADDR/INDEX
+        //
+        // In the latter case the OBJ type may have a different type
+        // than the array element type, and we need to preserve the
+        // array element type for now.
         //
         if ((op1->gtOper == GT_ADDR) && (op1->AsOp()->gtOp1->gtOper != GT_INDEX))
         {
@@ -10528,6 +10539,35 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     impBeginTreeList();
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+    // Are there any places in the method where we might add a patchpoint?
+    if (compHasBackwardJump)
+    {
+        // Are patchpoints enabled?
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
+        {
+            // We don't inline at Tier0, if we do, we may need rethink our approach.
+            // Could probably support inlines that don't introduce flow.
+            assert(!compIsForInlining());
+
+            // Is the start of this block a suitable patchpoint?
+            // Current strategy is blocks that are stack-empty and backwards branch targets
+            if (block->bbFlags & BBF_BACKWARD_JUMP_TARGET && (verCurrentState.esStackDepth == 0))
+            {
+                block->bbFlags |= BBF_PATCHPOINT;
+                setMethodHasPatchpoint();
+            }
+        }
+    }
+    else
+    {
+        // Should not see backward branch targets w/o backwards branches
+        assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
+    }
+
+#endif // FEATURE_ON_STACK_REPLACEMENT
+
     /* Walk the opcodes that comprise the basic block */
 
     const BYTE* codeAddr = info.compCode + block->bbCodeOffs;
@@ -11445,6 +11485,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     /* CEE_JMP does not make sense in some "protected" regions. */
 
                     BADCODE("Jmp not allowed in protected region");
+                }
+
+                if (opts.IsReversePInvoke())
+                {
+                    BADCODE("Jmp not allowed in reverse P/Invoke");
                 }
 
                 if (verCurrentState.esStackDepth != 0)
@@ -16752,10 +16797,13 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
                     assert(HBtab->HasFaultHandler());
                 }
             }
+        }
 
-            /* Recursively process the handler block */
-            BasicBlock* hndBegBB = HBtab->ebdHndBeg;
+        // Recursively process the handler block, if we haven't already done so.
+        BasicBlock* hndBegBB = HBtab->ebdHndBeg;
 
+        if (((hndBegBB->bbFlags & BBF_IMPORTED) == 0) && (impGetPendingBlockMember(hndBegBB) == 0))
+        {
             //  Construct the proper verification stack state
             //   either empty or one that contains just
             //   the Exception Object that we are dealing with
@@ -16791,18 +16839,22 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
             // Queue up the handler for importing
             //
             impImportBlockPending(hndBegBB);
+        }
 
-            if (HBtab->HasFilter())
+        // Process the filter block, if we haven't already done so.
+        if (HBtab->HasFilter())
+        {
+            /* @VERIFICATION : Ideally the end of filter state should get
+               propagated to the catch handler, this is an incompleteness,
+               but is not a security/compliance issue, since the only
+               interesting state is the 'thisInit' state.
+            */
+
+            BasicBlock* filterBB = HBtab->ebdFilter;
+
+            if (((filterBB->bbFlags & BBF_IMPORTED) == 0) && (impGetPendingBlockMember(filterBB) == 0))
             {
-                /* @VERIFICATION : Ideally the end of filter state should get
-                   propagated to the catch handler, this is an incompleteness,
-                   but is not a security/compliance issue, since the only
-                   interesting state is the 'thisInit' state.
-                   */
-
                 verCurrentState.esStackDepth = 0;
-
-                BasicBlock* filterBB = HBtab->ebdFilter;
 
                 // push catch arg the stack, spill to a temp if necessary
                 // Note: can update HBtab->ebdFilter!
@@ -16812,7 +16864,9 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
                 impImportBlockPending(filterBB);
             }
         }
-        else if (verTrackObjCtorInitState && HBtab->HasFaultHandler())
+
+        // This seems redundant ....??
+        if (verTrackObjCtorInitState && HBtab->HasFaultHandler())
         {
             /* Recursively process the handler block */
 
@@ -17879,7 +17933,7 @@ void Compiler::impSpillCliqueSetMember(SpillCliqueDir predOrSucc, BasicBlock* bl
  *  basic flowgraph has already been constructed and is passed in.
  */
 
-void Compiler::impImport(BasicBlock* method)
+void Compiler::impImport()
 {
 #ifdef DEBUG
     if (verbose)
@@ -17941,21 +17995,45 @@ void Compiler::impImport(BasicBlock* method)
 
     impPendingList = impPendingFree = nullptr;
 
-    /* Add the entry-point to the worker-list */
+    // Skip leading internal blocks.
+    // These can arise from needing a leading scratch BB, from EH normalization, and from OSR entry redirects.
+    //
+    // We expect a linear flow to the first non-internal block. But not necessarily straght-line flow.
+    BasicBlock* entryBlock = fgFirstBB;
 
-    // Skip leading internal blocks. There can be one as a leading scratch BB, and more
-    // from EH normalization.
-    // NOTE: It might be possible to always just put fgFirstBB on the pending list, and let everything else just fall
-    // out.
-    for (; method->bbFlags & BBF_INTERNAL; method = method->bbNext)
+    while (entryBlock->bbFlags & BBF_INTERNAL)
     {
-        // Treat these as imported.
-        assert(method->bbJumpKind == BBJ_NONE); // We assume all the leading ones are fallthrough.
-        JITDUMP("Marking leading BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", method->bbNum);
-        method->bbFlags |= BBF_IMPORTED;
+        JITDUMP("Marking leading BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", entryBlock->bbNum);
+        entryBlock->bbFlags |= BBF_IMPORTED;
+
+        if (entryBlock->bbJumpKind == BBJ_NONE)
+        {
+            entryBlock = entryBlock->bbNext;
+        }
+        else if (entryBlock->bbJumpKind == BBJ_ALWAYS)
+        {
+            // Only expected for OSR
+            assert(opts.IsOSR());
+            entryBlock = entryBlock->bbJumpDest;
+        }
+        else
+        {
+            assert(!"unexpected bbJumpKind in entry sequence");
+        }
     }
 
-    impImportBlockPending(method);
+    // Note for OSR we'd like to be able to verify this block must be
+    // stack empty, but won't know that until we've imported...so instead
+    // we'll BADCODE out if we mess up.
+    //
+    // (the concern here is that the runtime asks us to OSR a
+    // different IL version than the one that matched the method that
+    // triggered OSR).  This should not happen but I might have the
+    // IL versioning stuff wrong.
+    //
+    // TODO: we also currently expect this block to be a join point,
+    // which we should verify over when we find jump targets.
+    impImportBlockPending(entryBlock);
 
     /* Import blocks in the worker-list until there are no more */
 
@@ -19730,7 +19808,7 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         case CORINFO_INTRINSIC_Round:
         case CORINFO_INTRINSIC_Ceiling:
         case CORINFO_INTRINSIC_Floor:
-            return compSupports(InstructionSet_SSE41);
+            return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
         default:
             return false;

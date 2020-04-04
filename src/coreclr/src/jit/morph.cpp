@@ -4796,45 +4796,51 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
     //
     // We don't need a copy if this is the last use of an implicit by-ref local.
     //
-    // We can't determine that all of the time, but if there is only
-    // one use and the method has no loops, then this use must be the last.
     if (opts.OptimizationEnabled())
     {
-        GenTreeLclVarCommon* lcl = nullptr;
-
-        if (argx->OperIsLocal())
-        {
-            lcl = argx->AsLclVarCommon();
-        }
-        else if ((argx->OperGet() == GT_OBJ) && argx->AsIndir()->Addr()->OperIsLocal())
-        {
-            lcl = argx->AsObj()->Addr()->AsLclVarCommon();
-        }
+        GenTreeLclVar* const lcl = argx->IsImplicitByrefParameterValue(this);
 
         if (lcl != nullptr)
         {
-            unsigned varNum = lcl->AsLclVarCommon()->GetLclNum();
-            if (lvaIsImplicitByRefLocal(varNum))
+            const unsigned       varNum           = lcl->GetLclNum();
+            LclVarDsc* const     varDsc           = lvaGetDesc(varNum);
+            const unsigned short totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
+
+            // We don't have liveness so we rely on other indications of last use.
+            //
+            // We handle these cases:
+            //
+            // * (must not copy) If the call is a tail call, the use is a last use.
+            //   We must skip the copy if we have a fast tail call.
+            //
+            // * (must copy) However the current slow tail call helper always copies
+            //   the tail call args from the current frame, so we must copy
+            //   if the tail call is a slow tail call.
+            //
+            // * (may not copy) if the call is noreturn, the use is a last use.
+            //   We also check for just one reference here as we are not doing
+            //   alias analysis of the call's parameters, or checking if the call
+            //   site is not within some try region.
+            //
+            // * (may not copy) if there is exactly one use of the local in the method,
+            //   and the call is not in loop, this is a last use.
+            //
+            const bool isTailCallLastUse = call->IsTailCall();
+            const bool isCallLastUse     = (totalAppearances == 1) && !fgMightHaveLoop();
+            const bool isNoReturnLastUse = (totalAppearances == 1) && call->IsNoReturn();
+            if (!call->IsTailCallViaHelper() && (isTailCallLastUse || isCallLastUse || isNoReturnLastUse))
             {
-                LclVarDsc* varDsc = &lvaTable[varNum];
-                // JIT_TailCall helper has an implicit assumption that all tail call arguments live
-                // on the caller's frame. If an argument lives on the caller caller's frame, it may get
-                // overwritten if that frame is reused for the tail call. Therefore, we should always copy
-                // struct parameters if they are passed as arguments to a tail call.
-                if (!call->IsTailCallViaHelper() && (varDsc->lvRefCnt(RCS_EARLY) == 1) && !fgMightHaveLoop())
-                {
-                    assert(!call->IsTailCall());
+                varDsc->setLvRefCnt(0, RCS_EARLY);
+                args->SetNode(lcl);
+                assert(argEntry->GetNode() == lcl);
 
-                    varDsc->setLvRefCnt(0, RCS_EARLY);
-                    args->SetNode(lcl);
-                    assert(argEntry->GetNode() == lcl);
-
-                    JITDUMP("did not have to make outgoing copy for V%2d", varNum);
-                    return;
-                }
+                JITDUMP("did not need to make outgoing copy for last use of implicit byref V%2d\n", varNum);
+                return;
             }
         }
     }
+
+    JITDUMP("making an outgoing copy for struct arg\n");
 
     if (fgOutgoingArgTemps == nullptr)
     {
@@ -5296,7 +5302,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     noway_assert(elemTyp != TYP_STRUCT || elemStructType != nullptr);
 
 #ifdef FEATURE_SIMD
-    if (featureSIMD && varTypeIsStruct(elemTyp) && elemSize <= maxSIMDStructBytes())
+    if (featureSIMD && varTypeIsStruct(elemTyp) && structSizeMightRepresentSIMDType(elemSize))
     {
         // If this is a SIMD type, this is the point at which we lose the type information,
         // so we need to set the correct type on the GT_IND.
@@ -5314,8 +5320,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     }
 #endif // FEATURE_SIMD
 
-    // Set up the the array length's offset into lenOffs
-    // And    the the first element's offset into elemOffs
+    // Set up the array length's offset into lenOffs
+    // And    the first element's offset into elemOffs
     ssize_t lenOffs;
     ssize_t elemOffs;
     if (tree->gtFlags & GTF_INX_STRING_LAYOUT)
@@ -5552,8 +5558,15 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // This is an array index expression.
     tree->gtFlags |= GTF_IND_ARR_INDEX;
 
-    /* An indirection will cause a GPF if the address is null */
-    tree->gtFlags |= GTF_EXCEPT;
+    // If there's a bounds check, the indir won't fault.
+    if (bndsChk)
+    {
+        tree->gtFlags |= GTF_IND_NONFAULTING;
+    }
+    else
+    {
+        tree->gtFlags |= GTF_EXCEPT;
+    }
 
     if (nCSE)
     {
@@ -6550,7 +6563,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 //
 // Windows Amd64:
 //    A fast tail call can be made whenever the number of callee arguments
-//    is larger than or equal to the number of caller arguments, or we have four
+//    is less than or equal to the number of caller arguments, or we have four
 //    or fewer callee arguments. This is because, on Windows AMD64, each
 //    argument uses exactly one register or one 8-byte stack slot. Thus, we only
 //    need to count arguments, and not be concerned with the size of each
@@ -6676,9 +6689,9 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     fgInitArgInfo(callee);
     fgArgInfo* argInfo = callee->fgArgInfo;
 
-    bool   hasByrefParameter  = false;
-    size_t calleeArgStackSize = 0;
-    size_t callerArgStackSize = info.compArgStackSize;
+    bool   hasMustCopyByrefParameter = false;
+    size_t calleeArgStackSize        = 0;
+    size_t callerArgStackSize        = info.compArgStackSize;
 
     for (unsigned index = 0; index < argInfo->ArgCount(); ++index)
     {
@@ -6688,12 +6701,222 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 
         if (arg->isStruct)
         {
-            // Byref struct arguments are not allowed to fast tail call as the information
-            // of the caller's stack is lost when the callee is compiled.
             if (arg->passedByRef)
             {
-                hasByrefParameter = true;
-                break;
+                // Generally a byref arg will block tail calling, as we have to
+                // make a local copy of the struct for the callee.
+                hasMustCopyByrefParameter = true;
+
+                // If we're optimizing, we may be able to pass our caller's byref to our callee,
+                // and so still be able to tail call.
+                if (opts.OptimizationEnabled())
+                {
+                    // First, see if this arg is an implicit byref param.
+                    GenTreeLclVar* const lcl = arg->GetNode()->IsImplicitByrefParameterValue(this);
+
+                    if (lcl != nullptr)
+                    {
+                        // Yes, the arg is an implicit byref param.
+                        const unsigned   lclNum = lcl->GetLclNum();
+                        LclVarDsc* const varDsc = lvaGetDesc(lcl);
+
+                        // The param must not be promoted; if we've promoted, then the arg will be
+                        // a local struct assembled from the promoted fields.
+                        if (varDsc->lvPromoted)
+                        {
+                            JITDUMP("Arg [%06u] is promoted implicit byref V%02u, so no tail call\n",
+                                    dspTreeID(arg->GetNode()), lclNum);
+                        }
+                        else
+                        {
+                            JITDUMP("Arg [%06u] is unpromoted implicit byref V%02u, seeing if we can still tail call\n",
+                                    dspTreeID(arg->GetNode()), lclNum);
+
+                            // We have to worry about introducing aliases if we bypass copying
+                            // the struct at the call. We'll do some limited analysis to see if we
+                            // can rule this out.
+                            const unsigned argLimit = 6;
+
+                            // If this is the only appearance of the byref in the method, then
+                            // aliasing is not possible.
+                            //
+                            // If no other call arg refers to this byref, and no other arg is
+                            // a pointer which could refer to this byref, we can optimize.
+                            //
+                            // We only check this for calls with small numbers of arguments,
+                            // as the analysis cost will be quadratic.
+                            //
+                            if (varDsc->lvRefCnt(RCS_EARLY) == 1)
+                            {
+                                JITDUMP("... yes, arg is the only appearance of V%02u\n", lclNum);
+                                hasMustCopyByrefParameter = false;
+                            }
+                            else if (argInfo->ArgCount() <= argLimit)
+                            {
+                                GenTree* interferingArg = nullptr;
+                                for (unsigned index2 = 0; index2 < argInfo->ArgCount(); ++index2)
+                                {
+                                    if (index2 == index)
+                                    {
+                                        continue;
+                                    }
+
+                                    fgArgTabEntry* const arg2 = argInfo->GetArgEntry(index2, false);
+                                    JITDUMP("... checking other arg [%06u]...\n", dspTreeID(arg2->GetNode()));
+                                    DISPTREE(arg2->GetNode());
+
+                                    // Do we pass 'lcl' more than once to the callee?
+                                    if (arg2->isStruct && arg2->passedByRef)
+                                    {
+                                        GenTreeLclVarCommon* const lcl2 =
+                                            arg2->GetNode()->IsImplicitByrefParameterValue(this);
+
+                                        if ((lcl2 != nullptr) && (lclNum == lcl2->GetLclNum()))
+                                        {
+                                            // not copying would introduce aliased implicit byref structs
+                                            // in the callee ... we can't optimize.
+                                            interferingArg = arg2->GetNode();
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            JITDUMP("... arg refers to different implicit byref V%02u\n",
+                                                    lcl2->GetLclNum());
+                                            continue;
+                                        }
+                                    }
+
+                                    // Do we pass a byref pointer which might point within 'lcl'?
+                                    //
+                                    // We can assume the 'lcl' is unaliased on entry to the
+                                    // method, so the only way we can have an aliasing byref pointer at
+                                    // the call is if 'lcl' is address taken/exposed in the method.
+                                    //
+                                    // Note even though 'lcl' is not promoted, we are in the middle
+                                    // of the promote->rewrite->undo->(morph)->demote cycle, and so
+                                    // might see references to promoted fields of 'lcl' that haven't yet
+                                    // been demoted (see fgMarkDemotedImplicitByRefArgs).
+                                    //
+                                    // So, we also need to scan all 'lcl's fields, if any, to see if they
+                                    // are exposed.
+                                    //
+                                    // When looking for aliases from other args, we check for both TYP_BYREF
+                                    // and TYP_I_IMPL typed args here. Conceptually anything that points into
+                                    // an implicit byref parameter should be TYP_BYREF, as these parameters could
+                                    // refer to boxed heap locations (say if the method is invoked by reflection)
+                                    // but there are some stack only structs (like typed references) where
+                                    // the importer/runtime code uses TYP_I_IMPL, and fgInitArgInfo will
+                                    // transiently retype all simple address-of implicit parameter args as
+                                    // TYP_I_IMPL.
+                                    //
+                                    if ((arg2->argType == TYP_BYREF) || (arg2->argType == TYP_I_IMPL))
+                                    {
+                                        JITDUMP("...arg is a byref, must run an alias check\n");
+                                        bool checkExposure = true;
+                                        bool hasExposure   = false;
+
+                                        // See if there is any way arg could refer to a parameter struct.
+                                        GenTree* arg2Node = arg2->GetNode();
+                                        if (arg2Node->OperIs(GT_LCL_VAR))
+                                        {
+                                            GenTreeLclVarCommon* arg2LclNode = arg2Node->AsLclVarCommon();
+                                            assert(arg2LclNode->GetLclNum() != lclNum);
+                                            LclVarDsc* arg2Dsc = lvaGetDesc(arg2LclNode);
+
+                                            // Other params can't alias implicit byref params
+                                            if (arg2Dsc->lvIsParam)
+                                            {
+                                                checkExposure = false;
+                                            }
+                                        }
+                                        // Because we're checking TYP_I_IMPL above, at least
+                                        // screen out obvious things that can't cause aliases.
+                                        else if (arg2Node->IsIntegralConst())
+                                        {
+                                            checkExposure = false;
+                                        }
+
+                                        if (checkExposure)
+                                        {
+                                            JITDUMP(
+                                                "... not sure where byref arg points, checking if V%02u is exposed\n",
+                                                lclNum);
+                                            // arg2 might alias arg, see if we've exposed
+                                            // arg somewhere in the method.
+                                            if (varDsc->lvHasLdAddrOp || varDsc->lvAddrExposed)
+                                            {
+                                                // Struct as a whole is exposed, can't optimize
+                                                JITDUMP("... V%02u is exposed\n", lclNum);
+                                                hasExposure = true;
+                                            }
+                                            else if (varDsc->lvFieldLclStart != 0)
+                                            {
+                                                // This is the promoted/undone struct case.
+                                                //
+                                                // The field start is actually the local number of the promoted local,
+                                                // use it to enumerate the fields.
+                                                const unsigned   promotedLcl    = varDsc->lvFieldLclStart;
+                                                LclVarDsc* const promotedVarDsc = lvaGetDesc(promotedLcl);
+                                                JITDUMP("...promoted-unpromoted case -- also checking exposure of "
+                                                        "fields of V%02u\n",
+                                                        promotedLcl);
+
+                                                for (unsigned fieldIndex = 0; fieldIndex < promotedVarDsc->lvFieldCnt;
+                                                     fieldIndex++)
+                                                {
+                                                    LclVarDsc* fieldDsc =
+                                                        lvaGetDesc(promotedVarDsc->lvFieldLclStart + fieldIndex);
+
+                                                    if (fieldDsc->lvHasLdAddrOp || fieldDsc->lvAddrExposed)
+                                                    {
+                                                        // Promoted and not yet demoted field is exposed, can't optimize
+                                                        JITDUMP("... field V%02u is exposed\n",
+                                                                promotedVarDsc->lvFieldLclStart + fieldIndex);
+                                                        hasExposure = true;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        if (hasExposure)
+                                        {
+                                            interferingArg = arg2->GetNode();
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        JITDUMP("...arg is not a byref or implicit byref (%s)\n",
+                                                varTypeName(arg2->GetNode()->TypeGet()));
+                                    }
+                                }
+
+                                if (interferingArg != nullptr)
+                                {
+                                    JITDUMP("... no, arg [%06u] may alias with V%02u\n", dspTreeID(interferingArg),
+                                            lclNum);
+                                }
+                                else
+                                {
+                                    JITDUMP("... yes, no other arg in call can alias V%02u\n", lclNum);
+                                    hasMustCopyByrefParameter = false;
+                                }
+                            }
+                            else
+                            {
+                                JITDUMP(" ... no, call has %u > %u args, alias analysis deemed too costly\n",
+                                        argInfo->ArgCount(), argLimit);
+                            }
+                        }
+                    }
+                }
+
+                if (hasMustCopyByrefParameter)
+                {
+                    // This arg blocks the tail call. No reason to keep scanning the remaining args.
+                    break;
+                }
             }
         }
     }
@@ -6748,17 +6971,18 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #endif // DEBUG
     };
 
-// Note on vararg methods:
-// If the caller is vararg method, we don't know the number of arguments passed by caller's caller.
-// But we can be sure that in-coming arg area of vararg caller would be sufficient to hold its
-// fixed args. Therefore, we can allow a vararg method to fast tail call other methods as long as
-// out-going area required for callee is bounded by caller's fixed argument space.
-//
-// Note that callee being a vararg method is not a problem since we can account the params being passed.
-//
-// We will currently decide to not fast tail call on Windows armarch if the caller or callee is a vararg
-// method. This is due to the ABI differences for native vararg methods for these platforms. There is
-// work required to shuffle arguments to the correct locations.
+    // Note on vararg methods:
+    // If the caller is vararg method, we don't know the number of arguments passed by caller's caller.
+    // But we can be sure that in-coming arg area of vararg caller would be sufficient to hold its
+    // fixed args. Therefore, we can allow a vararg method to fast tail call other methods as long as
+    // out-going area required for callee is bounded by caller's fixed argument space.
+    //
+    // Note that callee being a vararg method is not a problem since we can account the params being passed.
+    //
+    // We will currently decide to not fast tail call on Windows armarch if the caller or callee is a vararg
+    // method. This is due to the ABI differences for native vararg methods for these platforms. There is
+    // work required to shuffle arguments to the correct locations.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
     if (info.compIsVarArgs || callee->IsVarargs())
@@ -6782,7 +7006,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // For Windows some struct parameters are copied on the local frame
     // and then passed by reference. We cannot fast tail call in these situation
     // as we need to keep our frame around.
-    if (hasByrefParameter)
+    if (hasMustCopyByrefParameter)
     {
         reportFastTailCallDecision("Callee has a byref parameter");
         return false;
@@ -6836,13 +7060,18 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // It cannot be an inline candidate
     assert(!call->IsInlineCandidate());
 
-    auto failTailCall = [&](const char* reason) {
+    auto failTailCall = [&](const char* reason, unsigned lclNum = BAD_VAR_NUM) {
 #ifdef DEBUG
         if (verbose)
         {
             printf("\nRejecting tail call in morph for call ");
             printTreeID(call);
-            printf(": %s\n", reason);
+            printf(": %s", reason);
+            if (lclNum != BAD_VAR_NUM)
+            {
+                printf(" V%02u", lclNum);
+            }
+            printf("\n");
         }
 #endif
 
@@ -6946,9 +7175,9 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         //
         if (call->IsImplicitTailCall())
         {
-            if (varDsc->lvHasLdAddrOp)
+            if (varDsc->lvHasLdAddrOp && !lvaIsImplicitByRefLocal(varNum))
             {
-                failTailCall("Local address taken");
+                failTailCall("Local address taken", varNum);
                 return nullptr;
             }
             if (varDsc->lvAddrExposed)
@@ -6971,20 +7200,20 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                 }
                 else
                 {
-                    failTailCall("Local address taken");
+                    failTailCall("Local address taken", varNum);
                     return nullptr;
                 }
             }
             if (varDsc->lvPromoted && varDsc->lvIsParam && !lvaIsImplicitByRefLocal(varNum))
             {
-                failTailCall("Has Struct Promoted Param");
+                failTailCall("Has Struct Promoted Param", varNum);
                 return nullptr;
             }
             if (varDsc->lvPinned)
             {
                 // A tail call removes the method from the stack, which means the pinning
                 // goes away for the callee.  We can't allow that.
-                failTailCall("Has Pinned Vars");
+                failTailCall("Has Pinned Vars", varNum);
                 return nullptr;
             }
         }
@@ -7219,7 +7448,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
     Statement* nextMorphStmt = fgMorphStmt->GetNextStmt();
-    // Remove all stmts after the call.
+    JITDUMP("Remove all stmts after the call.\n");
     while (nextMorphStmt != nullptr)
     {
         Statement* stmtToRemove = nextMorphStmt;
@@ -7227,7 +7456,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         fgRemoveStmt(compCurBB, stmtToRemove);
     }
 
-    fgMorphStmt->SetRootNode(call);
+    bool     isRootReplaced = false;
+    GenTree* root           = fgMorphStmt->GetRootNode();
+
+    if (root != call)
+    {
+        JITDUMP("Replace root node [%06d] with [%06d] tail call node.\n", dspTreeID(root), dspTreeID(call));
+        isRootReplaced = true;
+        fgMorphStmt->SetRootNode(call);
+    }
 
     // Tail call via helper: The VM can't use return address hijacking if we're
     // not going to return and the helper doesn't have enough info to safely poll,
@@ -7272,41 +7509,41 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         compCurBB->bbJumpKind = BBJ_THROW;
     }
 
-    // For non-void calls, we return a place holder which will be
-    // used by the parent GT_RETURN node of this call.
-
-    GenTree* result = call;
-    if (origCallType != TYP_VOID && info.compRetType != TYP_VOID)
+    if (isRootReplaced)
     {
-        var_types nodeTy = origCallType;
-#ifdef FEATURE_HFA
-        // Return a dummy node, as the return is already removed.
-        if (nodeTy == TYP_STRUCT)
+        // We have replaced the root node of this stmt and deleted the rest,
+        // but we still have the deleted, dead nodes on the `fgMorph*` stack
+        // if the root node was an `ASG`, `RET` or `CAST`.
+        // Return a zero con node to exit morphing of the old trees without asserts
+        // and forbid POST_ORDER morphing doing something wrong with our call.
+        var_types callType;
+        if (varTypeIsStruct(origCallType))
         {
-            // This is a HFA, use float 0.
-            nodeTy = TYP_FLOAT;
+            CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
+            Compiler::structPassingKind howToReturnStruct;
+            callType = getReturnTypeForStruct(retClsHnd, &howToReturnStruct);
+            assert((howToReturnStruct != SPK_Unknown) && (howToReturnStruct != SPK_ByReference));
+            if (howToReturnStruct == SPK_ByValue)
+            {
+                callType = TYP_I_IMPL;
+            }
+            else if (howToReturnStruct == SPK_ByValueAsHfa || varTypeIsSIMD(callType))
+            {
+                callType = TYP_FLOAT;
+            }
+            assert((callType != TYP_UNKNOWN) && !varTypeIsStruct(callType));
         }
-#elif defined(UNIX_AMD64_ABI)
-        // Return a dummy node, as the return is already removed.
-        if (varTypeIsStruct(nodeTy))
+        else
         {
-            // This is a register-returned struct. Return a 0.
-            // The actual return registers are hacked in lower and the register allocator.
-            nodeTy = TYP_INT;
+            callType = origCallType;
         }
-#endif
-#ifdef FEATURE_SIMD
-        // Return a dummy node, as the return is already removed.
-        if (varTypeIsSIMD(nodeTy))
-        {
-            nodeTy = TYP_DOUBLE;
-        }
-#endif
-        result = gtNewZeroConNode(genActualType(nodeTy));
-        result = fgMorphTree(result);
+        GenTree* zero = gtNewZeroConNode(callType);
+        return fgMorphTree(zero);
     }
-
-    return result;
+    else
+    {
+        return call;
+    }
 }
 
 /*****************************************************************************
@@ -7943,14 +8180,26 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // Remove the call
     fgRemoveStmt(block, lastStmt);
 
-    // Set the loop edge.  Ensure we have a scratch block and then target the
-    // next block.  Loop detection needs to see a pred out of the loop, so
-    // mark the scratch block BBF_DONT_REMOVE to prevent empty block removal
-    // on it.
-    fgEnsureFirstBBisScratch();
-    fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
+    // Set the loop edge.
+    if (opts.IsOSR())
+    {
+        // Todo: this may not look like a viable loop header.
+        // Might need the moral equivalent of a scratch BB.
+        block->bbJumpDest = fgEntryBB;
+    }
+    else
+    {
+        // Ensure we have a scratch block and then target the next
+        // block.  Loop detection needs to see a pred out of the loop,
+        // so mark the scratch block BBF_DONT_REMOVE to prevent empty
+        // block removal on it.
+        fgEnsureFirstBBisScratch();
+        fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
+        block->bbJumpDest = fgFirstBB->bbNext;
+    }
+
+    // Finish hooking things up.
     block->bbJumpKind = BBJ_ALWAYS;
-    block->bbJumpDest = fgFirstBB->bbNext;
     block->bbJumpDest->bbFlags |= BBF_JMP_TARGET;
     fgAddRefPred(block->bbJumpDest, block);
     block->bbFlags &= ~BBF_HAS_JMP;
@@ -9210,7 +9459,7 @@ GenTree* Compiler::fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenT
         unsigned   fieldLclNum = destLclVar->lvFieldLclStart + i;
         LclVarDsc* fieldDesc   = lvaGetDesc(fieldLclNum);
         GenTree*   dest        = gtNewLclvNode(fieldLclNum, fieldDesc->TypeGet());
-        // If it had been labeled a "USEASG", assignments to the the individual promoted fields are not.
+        // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
         dest->gtFlags |= (destLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG));
 
         GenTree* src;
@@ -10210,7 +10459,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 noway_assert(destLclNum != BAD_VAR_NUM);
                 unsigned dstFieldLclNum = lvaTable[destLclNum].lvFieldLclStart + i;
                 dstFld                  = gtNewLclvNode(dstFieldLclNum, lvaTable[dstFieldLclNum].TypeGet());
-                // If it had been labeled a "USEASG", assignments to the the individual promoted fields are not.
+                // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
                 if (destAddr != nullptr)
                 {
                     noway_assert(destAddr->AsOp()->gtOp1->gtOper == GT_LCL_VAR);
@@ -13120,7 +13369,7 @@ DONE_MORPHING_CHILDREN:
                 // all the comma nodes the type of op1.
                 // TODO: the comma flag update below is conservative and can be improved.
                 // For example, if we made the ADDR(IND(x)) == x transformation, we may be able to
-                // get rid of some of the the IND flags on the COMMA nodes (e.g., GTF_GLOB_REF).
+                // get rid of some of the IND flags on the COMMA nodes (e.g., GTF_GLOB_REF).
 
                 while (!commas.Empty())
                 {
@@ -13508,6 +13757,13 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
     switch (oper)
     {
         case GT_ASG:
+            // Make sure we're allowed to do this.
+            if (optValnumCSE_phase)
+            {
+                // It is not safe to reorder/delete CSE's
+                break;
+            }
+
             if (varTypeIsStruct(typ) && !tree->IsPhiDefn())
             {
                 if (tree->OperIsCopyBlkOp())
@@ -13522,14 +13778,6 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 
             if (typ == TYP_LONG)
             {
-                break;
-            }
-
-            /* Make sure we're allowed to do this */
-
-            if (optValnumCSE_phase)
-            {
-                // It is not safe to reorder/delete CSE's
                 break;
             }
 
@@ -14756,8 +15004,10 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         /* Did we fold the conditional */
 
         noway_assert(lastStmt->GetRootNode()->AsOp()->gtOp1);
+        GenTree* condTree;
+        condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
         GenTree* cond;
-        cond = lastStmt->GetRootNode()->AsOp()->gtOp1;
+        cond = condTree->gtEffectiveVal(true);
 
         if (cond->OperKind() & GTK_CONST)
         {
@@ -14767,10 +15017,17 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
             noway_assert(cond->gtOper == GT_CNS_INT);
             noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
-            /* remove the statement from bbTreelist - No need to update
-             * the reference counts since there are no lcl vars */
-            fgRemoveStmt(block, lastStmt);
-
+            if (condTree != cond)
+            {
+                // Preserve any side effects
+                assert(condTree->OperIs(GT_COMMA));
+                lastStmt->SetRootNode(condTree);
+            }
+            else
+            {
+                // no side effects, remove the jump entirely
+                fgRemoveStmt(block, lastStmt);
+            }
             // block is a BBJ_COND that we are folding the conditional for
             // bTaken is the path that will always be taken from block
             // bNotTaken is the path that will never be taken from block
@@ -14969,8 +15226,10 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         /* Did we fold the conditional */
 
         noway_assert(lastStmt->GetRootNode()->AsOp()->gtOp1);
+        GenTree* condTree;
+        condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
         GenTree* cond;
-        cond = lastStmt->GetRootNode()->AsOp()->gtOp1;
+        cond = condTree->gtEffectiveVal(true);
 
         if (cond->OperKind() & GTK_CONST)
         {
@@ -14979,9 +15238,17 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 
             noway_assert(cond->gtOper == GT_CNS_INT);
 
-            /* remove the statement from bbTreelist - No need to update
-             * the reference counts since there are no lcl vars */
-            fgRemoveStmt(block, lastStmt);
+            if (condTree != cond)
+            {
+                // Preserve any side effects
+                assert(condTree->OperIs(GT_COMMA));
+                lastStmt->SetRootNode(condTree);
+            }
+            else
+            {
+                // no side effects, remove the switch entirely
+                fgRemoveStmt(block, lastStmt);
+            }
 
             /* modify the flow graph */
 
@@ -15200,10 +15467,6 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
 {
     fgRemoveRestOfBlock = false;
 
-    /* Make the current basic block address available globally */
-
-    compCurBB = block;
-
     *lnot = *loadw = false;
 
     fgCurrentlyInUseArgTemps = hashBv::Create(this);
@@ -15401,10 +15664,6 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
     }
 #endif
 
-#ifdef DEBUG
-    compCurBB = (BasicBlock*)INVALID_POINTER_VALUE;
-#endif
-
     // Reset this back so that it doesn't leak out impacting other blocks
     fgRemoveRestOfBlock = false;
 }
@@ -15487,125 +15746,27 @@ void Compiler::fgMorphBlocks()
             optAssertionReset(0);
         }
 #endif
+        // Make the current basic block address available globally.
+        compCurBB = block;
 
-        /* Process all statement trees in the basic block */
-
+        // Process all statement trees in the basic block.
         fgMorphStmts(block, &lnot, &loadw);
 
-        /* Are we using a single return block? */
-
-        if (block->bbJumpKind == BBJ_RETURN)
+        // Do we need to merge the result of this block into a single return block?
+        if ((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {
-            if ((genReturnBB != nullptr) && (genReturnBB != block) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+            if ((genReturnBB != nullptr) && (genReturnBB != block))
             {
-
-                // Note 1: A block is not guaranteed to have a last stmt if its jump kind is BBJ_RETURN.
-                // For example a method returning void could have an empty block with jump kind BBJ_RETURN.
-                // Such blocks do materialize as part of in-lining.
-                //
-                // Note 2: A block with jump kind BBJ_RETURN does not necessarily need to end with GT_RETURN.
-                // It could end with a tail call or rejected tail call or monitor.exit or a GT_INTRINSIC.
-                // For now it is safe to explicitly check whether last stmt is GT_RETURN if genReturnLocal
-                // is BAD_VAR_NUM.
-                //
-                // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.
-
-                Statement* lastStmt = block->lastStmt();
-                GenTree*   ret      = (lastStmt != nullptr) ? lastStmt->GetRootNode() : nullptr;
-
-                if ((ret != nullptr) && (ret->OperGet() == GT_RETURN) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
-                {
-                    // This return was generated during epilog merging, so leave it alone
-                }
-                else
-                {
-                    /* We'll jump to the genReturnBB */
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if !defined(TARGET_X86)
-                    if (info.compFlags & CORINFO_FLG_SYNCH)
-                    {
-                        fgConvertSyncReturnToLeave(block);
-                    }
-                    else
-#endif // !TARGET_X86
-                    {
-                        block->bbJumpKind = BBJ_ALWAYS;
-                        block->bbJumpDest = genReturnBB;
-                        fgAddRefPred(genReturnBB, block);
-                        fgReturnCount--;
-                    }
-                    if (genReturnLocal != BAD_VAR_NUM)
-                    {
-                        // replace the GT_RETURN node to be a GT_ASG that stores the return value into genReturnLocal.
-
-                        // Method must be returning a value other than TYP_VOID.
-                        noway_assert(compMethodHasRetVal());
-
-                        // This block must be ending with a GT_RETURN
-                        noway_assert(lastStmt != nullptr);
-                        noway_assert(lastStmt->GetNextStmt() == nullptr);
-                        noway_assert(ret != nullptr);
-
-                        // GT_RETURN must have non-null operand as the method is returning the value assigned to
-                        // genReturnLocal
-                        noway_assert(ret->OperGet() == GT_RETURN);
-                        noway_assert(ret->gtGetOp1() != nullptr);
-
-                        Statement* pAfterStatement = lastStmt;
-                        IL_OFFSETX offset          = lastStmt->GetILOffsetX();
-                        GenTree*   tree =
-                            gtNewTempAssign(genReturnLocal, ret->gtGetOp1(), &pAfterStatement, offset, block);
-                        if (tree->OperIsCopyBlkOp())
-                        {
-                            tree = fgMorphCopyBlock(tree);
-                        }
-
-                        if (pAfterStatement == lastStmt)
-                        {
-                            lastStmt->SetRootNode(tree);
-                        }
-                        else
-                        {
-                            // gtNewTempAssign inserted additional statements after last
-                            fgRemoveStmt(block, lastStmt);
-                            Statement* newStmt = gtNewStmt(tree, offset);
-                            fgInsertStmtAfter(block, pAfterStatement, newStmt);
-                            lastStmt = newStmt;
-                        }
-
-                        // make sure that copy-prop ignores this assignment.
-                        lastStmt->GetRootNode()->gtFlags |= GTF_DONT_CSE;
-                    }
-                    else if (ret != nullptr && ret->OperGet() == GT_RETURN)
-                    {
-                        // This block ends with a GT_RETURN
-                        noway_assert(lastStmt != nullptr);
-                        noway_assert(lastStmt->GetNextStmt() == nullptr);
-
-                        // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn
-                        // block
-                        noway_assert(ret->TypeGet() == TYP_VOID);
-                        noway_assert(ret->gtGetOp1() == nullptr);
-
-                        fgRemoveStmt(block, lastStmt);
-                    }
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("morph " FMT_BB " to point at onereturn.  New block is\n", block->bbNum);
-                        fgTableDispBasicBlock(block);
-                    }
-#endif
-                }
+                fgMergeBlockReturn(block);
             }
         }
+
         block = block->bbNext;
-    } while (block);
+    } while (block != nullptr);
 
-    /* We are done with the global morphing phase */
-
+    // We are done with the global morphing phase
     fgGlobalMorph = false;
+    compCurBB     = nullptr;
 
 #ifdef DEBUG
     if (verboseTrees)
@@ -15613,6 +15774,116 @@ void Compiler::fgMorphBlocks()
         fgDispBasicBlocks(true);
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// fgMergeBlockReturn: assign the block return value (if any) into the single return temp
+//   and branch to the single return block.
+//
+// Arguments:
+//   block - the block to process.
+//
+// Notes:
+//   A block is not guaranteed to have a last stmt if its jump kind is BBJ_RETURN.
+//   For example a method returning void could have an empty block with jump kind BBJ_RETURN.
+//   Such blocks do materialize as part of in-lining.
+//
+//   A block with jump kind BBJ_RETURN does not necessarily need to end with GT_RETURN.
+//   It could end with a tail call or rejected tail call or monitor.exit or a GT_INTRINSIC.
+//   For now it is safe to explicitly check whether last stmt is GT_RETURN if genReturnLocal
+//   is BAD_VAR_NUM.
+//
+void Compiler::fgMergeBlockReturn(BasicBlock* block)
+{
+    assert((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0));
+    assert((genReturnBB != nullptr) && (genReturnBB != block));
+
+    // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.
+
+    Statement* lastStmt = block->lastStmt();
+    GenTree*   ret      = (lastStmt != nullptr) ? lastStmt->GetRootNode() : nullptr;
+
+    if ((ret != nullptr) && (ret->OperGet() == GT_RETURN) && ((ret->gtFlags & GTF_RET_MERGED) != 0))
+    {
+        // This return was generated during epilog merging, so leave it alone
+    }
+    else
+    {
+        // We'll jump to the genReturnBB.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if !defined(TARGET_X86)
+        if (info.compFlags & CORINFO_FLG_SYNCH)
+        {
+            fgConvertSyncReturnToLeave(block);
+        }
+        else
+#endif // !TARGET_X86
+        {
+            block->bbJumpKind = BBJ_ALWAYS;
+            block->bbJumpDest = genReturnBB;
+            fgAddRefPred(genReturnBB, block);
+            fgReturnCount--;
+        }
+        if (genReturnLocal != BAD_VAR_NUM)
+        {
+            // replace the GT_RETURN node to be a GT_ASG that stores the return value into genReturnLocal.
+
+            // Method must be returning a value other than TYP_VOID.
+            noway_assert(compMethodHasRetVal());
+
+            // This block must be ending with a GT_RETURN
+            noway_assert(lastStmt != nullptr);
+            noway_assert(lastStmt->GetNextStmt() == nullptr);
+            noway_assert(ret != nullptr);
+
+            // GT_RETURN must have non-null operand as the method is returning the value assigned to
+            // genReturnLocal
+            noway_assert(ret->OperGet() == GT_RETURN);
+            noway_assert(ret->gtGetOp1() != nullptr);
+
+            Statement* pAfterStatement = lastStmt;
+            IL_OFFSETX offset          = lastStmt->GetILOffsetX();
+            GenTree*   tree = gtNewTempAssign(genReturnLocal, ret->gtGetOp1(), &pAfterStatement, offset, block);
+            if (tree->OperIsCopyBlkOp())
+            {
+                tree = fgMorphCopyBlock(tree);
+            }
+
+            if (pAfterStatement == lastStmt)
+            {
+                lastStmt->SetRootNode(tree);
+            }
+            else
+            {
+                // gtNewTempAssign inserted additional statements after last
+                fgRemoveStmt(block, lastStmt);
+                Statement* newStmt = gtNewStmt(tree, offset);
+                fgInsertStmtAfter(block, pAfterStatement, newStmt);
+                lastStmt = newStmt;
+            }
+        }
+        else if (ret != nullptr && ret->OperGet() == GT_RETURN)
+        {
+            // This block ends with a GT_RETURN
+            noway_assert(lastStmt != nullptr);
+            noway_assert(lastStmt->GetNextStmt() == nullptr);
+
+            // Must be a void GT_RETURN with null operand; delete it as this block branches to oneReturn
+            // block
+            noway_assert(ret->TypeGet() == TYP_VOID);
+            noway_assert(ret->gtGetOp1() == nullptr);
+
+            fgRemoveStmt(block, lastStmt);
+        }
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("morph " FMT_BB " to point at onereturn.  New block is\n", block->bbNum);
+            fgTableDispBasicBlock(block);
+        }
+#endif
+    }
 }
 
 /*****************************************************************************
@@ -16828,8 +17099,23 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 // through the pointer parameter, the same as we'd do for this
                 // parameter if it weren't promoted at all (otherwise the initialization
                 // of the new temp would just be a needless memcpy at method entry).
-                bool undoPromotion = (lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT) ||
-                                     (varDsc->lvRefCnt(RCS_EARLY) <= varDsc->lvFieldCnt);
+                //
+                // Otherwise, see how many appearances there are. We keep two early ref counts: total
+                // number of references to the struct or some field, and how many of these are
+                // arguments to calls. We undo promotion unless we see enough non-call uses.
+                //
+                const unsigned totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
+                const unsigned callAppearances  = varDsc->lvRefCntWtd(RCS_EARLY);
+                assert(totalAppearances >= callAppearances);
+                const unsigned nonCallAppearances = totalAppearances - callAppearances;
+
+                bool undoPromotion = ((lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT) ||
+                                      (nonCallAppearances <= varDsc->lvFieldCnt));
+
+                JITDUMP("%s promotion of implicit by-ref V%02u: %s total: %u non-call: %u fields: %u\n",
+                        undoPromotion ? "Undoing" : "Keeping", lclNum,
+                        (lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT) ? "dependent;" : "",
+                        totalAppearances, nonCallAppearances, varDsc->lvFieldCnt);
 
                 if (!undoPromotion)
                 {
@@ -16863,7 +17149,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
                     {
                         // Set the new parent.
                         fieldVarDsc->lvParentLcl = newLclNum;
-                        // Clear the ref count field; it is used to communicate the nubmer of references
+                        // Clear the ref count field; it is used to communicate the number of references
                         // to the implicit byref parameter when morphing calls that pass the implicit byref
                         // out as an outgoing argument value, but that doesn't pertain to this field local
                         // which is now a field of a non-arg local.
@@ -17210,6 +17496,13 @@ GenTree* Compiler::fgMorphImplicitByRefArgs(GenTree* tree, bool isAddr)
 void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZero)
 {
     // We expect 'addr' to be an address at this point.
+    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
+
+    // Tunnel through any commas.
+    const bool commaOnly = true;
+    addr                 = addr->gtEffectiveVal(commaOnly);
+
+    // We still expect 'addr' to be an address at this point.
     assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
 
     FieldSeqNode* fieldSeqUpdate   = fieldSeqZero;

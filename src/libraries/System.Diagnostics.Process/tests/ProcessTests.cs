@@ -15,6 +15,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 using Xunit.Sdk;
@@ -225,6 +226,7 @@ namespace System.Diagnostics.Tests
 
                         px.Kill();
                         Assert.True(px.WaitForExit(WaitInMS));
+                        px.WaitForExit(); // wait for event handlers to complete
                     }
                 }
             }
@@ -1406,6 +1408,9 @@ namespace System.Diagnostics.Tests
                 process.BeginOutputReadLine();
 
                 Assert.True(process.Start());
+
+                Assert.True(process.WaitForExit(WaitInMS));
+                process.WaitForExit(); // ensure event handlers have completed
             }
         }
 
@@ -1508,6 +1513,40 @@ namespace System.Diagnostics.Tests
         {
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
+        }
+        
+        [Fact]
+        [OuterLoop]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
+        {
+            const string ExePath = "notepad.exe";
+            Assert.True(IsProgramInstalled(ExePath));
+
+            using (Process process = Process.Start(ExePath))
+            {
+                try
+                {
+                    for (int attempt = 0; attempt < 50; ++attempt)
+                    {
+                        process.Refresh();
+                        if (process.MainWindowHandle != IntPtr.Zero)
+                        {
+                            break;
+                        }
+
+                        Thread.Sleep(100);
+                    }
+
+                    Assert.NotEqual(IntPtr.Zero, process.MainWindowHandle);
+                }
+                finally
+                {
+                    process.Kill();
+                    Assert.True(process.WaitForExit(WaitInMS));
+                }
+            }
         }
 
         [Fact]

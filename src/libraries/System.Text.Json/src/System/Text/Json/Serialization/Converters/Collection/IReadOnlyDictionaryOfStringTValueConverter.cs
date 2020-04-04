@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (!TypeToConvert.IsAssignableFrom(RuntimeType))
             {
-                ThrowHelper.ThrowNotSupportedException_DeserializeNoParameterlessConstructor(TypeToConvert);
+                ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(TypeToConvert);
             }
 
             state.Current.ReturnValue = new Dictionary<string, TValue>();

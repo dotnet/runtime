@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <Import
-    Condition="'$(PackageTargetRuntime)' != ''"
-    Project="$(MSBuildThisFileDirectory)runtime.$(OSGroup).$(MSBuildThisFile)" />
+    Condition="'$(PackageTargetRuntime)' != '' and Exists('$(MSBuildThisFileDirectory)runtime.$(TargetOS).$(MSBuildThisFile)')"
+    Project="$(MSBuildThisFileDirectory)runtime.$(TargetOS).$(MSBuildThisFile)" />
 
 </Project>

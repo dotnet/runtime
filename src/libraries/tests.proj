@@ -2,13 +2,18 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
   <Import Project="$(RepositoryEngineeringDir)coverage.props" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'"> 
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\System.Utf8String.Experimental\tests\System.Utf8String.Experimental.Tests.csproj" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(EnableCoverageSupport)' == 'true'">
     <CoverageReportInputPath>$(ArtifactsBinDir)*.Tests/**/coverage.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
-    <SerializeProjects>true</SerializeProjects>
-  </PropertyGroup>
-  <PropertyGroup>
-    <TargetFramework>netcoreapp5.0</TargetFramework> 
+    <SerializeProjects>true</SerializeProjects> 
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
@@ -40,8 +45,19 @@
   <Import Project="$(RepositoryEngineeringDir)coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
   
+  <ItemGroup>
+    <SetupProjects Include="$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj" />
+    <SetupProjects Include="$(MSBuildThisFileDirectory)\pretest.proj" />
+  </ItemGroup>
+
   <Target Name="Build" DependsOnTargets="BuildAllProjects" />
   <Target Name="BuildAllProjects">
+    <!-- These projects are required to restore the runtime and setup testhost -->
+    <MSBuild Targets="Build"
+             Projects="@(SetupProjects)"
+             Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true' and '$(ContinuousIntegrationBuild)' == 'true'" 
+             BuildInParallel="false"
+             ContinueOnError="ErrorAndStop" />
     <MSBuild Targets="Build"
              Projects="@(Project)"
              Properties="BuildAllProjects=true;%(Project.AdditionalProperties)"

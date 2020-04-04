@@ -8,12 +8,26 @@ parameters:
   crossrootfsDir: ''
   timeoutInMinutes: ''
   signBinaries: false
-  publishToBlobFeed: false
   stagedBuild: false
   variables: {}
   pool: ''
 
 jobs:
+- template: /eng/pipelines/coreclr/templates/build-corelib-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    container: ${{ parameters.container }}
+    testGroup: ${{ parameters.testGroup }}
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
+    timeoutInminutes: ${{ parameters.timeoutInMinutes }}
+    signBinaries: ${{ parameters.signBinaries }}
+    stagedBuild: ${{ parameters.stagedBuild }}
+    variables: ${{ parameters.variables }}
+    pool: ${{ parameters.pool }}
+    
 - template: /eng/pipelines/coreclr/templates/build-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
@@ -25,7 +39,6 @@ jobs:
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
     signBinaries: ${{ parameters.signBinaries }}
-    publishToBlobFeed: ${{ parameters.publishToBlobFeed }}
     stagedBuild: ${{ parameters.stagedBuild }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
@@ -44,7 +57,6 @@ jobs:
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
     signBinaries: ${{ parameters.signBinaries }}
-    publishToBlobFeed: ${{ parameters.publishToBlobFeed }}
     stagedBuild: ${{ parameters.stagedBuild }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}

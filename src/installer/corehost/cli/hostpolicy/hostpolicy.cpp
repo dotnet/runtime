@@ -44,7 +44,7 @@ namespace
     std::atomic<bool> g_context_initializing(false);
     std::condition_variable g_context_initializing_cv;
 
-    int create_coreclr()
+    int HOSTPOLICY_CALLTYPE create_coreclr()
     {
         int rc;
         {
@@ -266,7 +266,7 @@ int run_app_for_context(
     return exit_code;
 }
 
-int run_app(const int argc, const pal::char_t *argv[])
+int HOSTPOLICY_CALLTYPE run_app(const int argc, const pal::char_t *argv[])
 {
     const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ true);
     if (context == nullptr)
@@ -439,7 +439,7 @@ int corehost_libhost_init(const hostpolicy_init_t &hostpolicy_init, const pal::s
 
 namespace
 {
-    int get_delegate(coreclr_delegate_type type, void **delegate)
+    int HOSTPOLICY_CALLTYPE get_delegate(coreclr_delegate_type type, void **delegate)
     {
         if (delegate == nullptr)
             return StatusCode::InvalidArgFailure;
@@ -492,7 +492,7 @@ namespace
         }
     }
 
-    int get_property(const pal::char_t *key, const pal::char_t **value)
+    int HOSTPOLICY_CALLTYPE get_property(const pal::char_t *key, const pal::char_t **value)
     {
         if (key == nullptr)
             return StatusCode::InvalidArgFailure;
@@ -507,7 +507,7 @@ namespace
         return StatusCode::Success;
     }
 
-    int set_property(const pal::char_t *key, const pal::char_t *value)
+    int HOSTPOLICY_CALLTYPE set_property(const pal::char_t *key, const pal::char_t *value)
     {
         if (key == nullptr)
             return StatusCode::InvalidArgFailure;
@@ -531,7 +531,7 @@ namespace
         return StatusCode::Success;
     }
 
-    int get_properties(size_t * count, const pal::char_t **keys, const pal::char_t **values)
+    int HOSTPOLICY_CALLTYPE get_properties(size_t * count, const pal::char_t **keys, const pal::char_t **values)
     {
         if (count == nullptr)
             return StatusCode::InvalidArgFailure;

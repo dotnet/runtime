@@ -29,6 +29,7 @@
 #include "interoputil.h"
 #include "prettyprintsig.h"
 #include "formattype.h"
+#include "fieldmarshaler.h"
 
 #ifdef FEATURE_PREJIT
 #include "compile.h"
@@ -103,7 +104,7 @@ class ArgIteratorBaseForPInvoke : public ArgIteratorBase
 protected:
     FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
     {
-        return pMT->GetLayoutInfo()->IsNativeStructPassedInRegisters();
+        return pMT->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
     }
 };
 
@@ -1337,7 +1338,7 @@ ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
     // Mark that we are performing a stackwalker like operation on the current thread.
     // This is necessary to allow the signature parsing functions to work without triggering any loads
-    ClrFlsValueSwitch threadStackWalking(TlsIdx_StackWalkerWalkingThread, GetThread());
+    StackWalkerWalkingThreadHolder threadStackWalking(GetThread());
 
 #ifdef TARGET_X86
     MetaSig msig(this);
@@ -4885,7 +4886,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot(
     WRAPPER_NO_CONTRACT;
 
     LoaderAllocator *mdLoaderAllocator = GetLoaderAllocator();
-    MethodDescBackpatchInfoTracker::ConditionalLockHolder lockHolder;
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
     RecordAndBackpatchEntryPointSlot_Locked(
         mdLoaderAllocator,
@@ -4906,7 +4907,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot_Locked(
     PCODE currentEntryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
     _ASSERTE(mdLoaderAllocator != nullptr);
     _ASSERTE(mdLoaderAllocator == GetLoaderAllocator());
     _ASSERTE(slotLoaderAllocator != nullptr);
@@ -4935,7 +4936,7 @@ FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
     _ASSERTE(entryPoint != NULL);
     _ASSERTE(isPrestubEntryPoint == (entryPoint == GetPrestubEntryPointToBackpatch()));
     _ASSERTE(!isPrestubEntryPoint || !onlyFromPrestubEntryPoint);
-    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
 
     LoaderAllocator *mdLoaderAllocator = GetLoaderAllocator();
     MethodDescBackpatchInfoTracker *backpatchInfoTracker = mdLoaderAllocator->GetMethodDescBackpatchInfoTracker();
@@ -5097,7 +5098,7 @@ void MethodDesc::SetMethodEntryPoint(PCODE addr)
 
     // Similarly to GetMethodEntryPoint(), it is up to the caller to ensure that calls to this function are appropriately
     // synchronized. Currently, the only caller synchronizes with the following lock.
-    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
 
     TADDR pSlot = GetAddrOfSlot();
 
@@ -5253,6 +5254,8 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
 }
 
 #ifndef CROSSGEN_COMPILE
+
+#ifdef TARGET_WINDOWS
 FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName) const
 {
     CONTRACTL
@@ -5263,11 +5266,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
     }
     CONTRACTL_END;
 
-#ifndef TARGET_UNIX
     FARPROC pFunc = GetProcAddress(hMod, entryPointName);
-#else
-    FARPROC pFunc = PAL_GetProcAddressDirect(hMod, entryPointName);
-#endif
 
 #if defined(TARGET_X86)
 
@@ -5308,6 +5307,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
 
     return pFunc;
 }
+#endif
 
 //*******************************************************************************
 LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
@@ -5322,21 +5322,21 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
 
     char const * funcName = GetEntrypointName();
 
-    FARPROC pFunc = NULL;
-
-#ifndef TARGET_UNIX
+#ifndef TARGET_WINDOWS
+    return reinterpret_cast<LPVOID>(PAL_GetProcAddressDirect(hMod, funcName));
+#else
     // Handle ordinals.
     if (funcName[0] == '#')
     {
         long ordinal = atol(funcName + 1);
         return reinterpret_cast<LPVOID>(GetProcAddress(hMod, (LPCSTR)(size_t)((UINT16)ordinal)));
     }
-#endif
 
-    // Just look for the user-provided name without charset suffixes.  If it is unicode fcn, we are going
+    // Just look for the user-provided name without charset suffixes.
+    // If  it is unicode fcn, we are going
     // to need to check for the 'W' API because it takes precedence over the
     // unmangled one (on NT some APIs have unmangled ANSI exports).
-    pFunc = FindEntryPointWithMangling(hMod, funcName);
+    FARPROC pFunc = FindEntryPointWithMangling(hMod, funcName);
     if ((pFunc != NULL && IsNativeAnsi()) || IsNativeNoMangled())
     {
         return reinterpret_cast<LPVOID>(pFunc);
@@ -5368,6 +5368,7 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
     }
 
     return reinterpret_cast<LPVOID>(pFunc);
+#endif
 }
 #endif // CROSSGEN_COMPILE
 
@@ -5413,6 +5414,11 @@ BOOL MethodDesc::HasNativeCallableAttribute()
         FORBID_FAULT;
     }
     CONTRACTL_END;
+
+    if (IsILStub())
+    {
+        return AsDynamicMethodDesc()->IsNativeCallableStub();
+    }
 
     HRESULT hr = GetCustomAttribute(
         WellKnownAttribute::NativeCallable,

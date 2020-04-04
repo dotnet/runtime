@@ -19,7 +19,7 @@ Once you've built the whole runtime and assuming you want to work with just mono
 ```
 or on Windows,
 ```bat
-build.cmd --subsetCategory mono
+build.cmd -subsetCategory mono
 ```
 When the build completes, product binaries will be dropped in the `artifacts\bin\mono\<OS>.<arch>.<flavor>` folder.
 
@@ -29,6 +29,11 @@ Here are a list of build arguments that may be of use.  These apply to both `bui
 For both `build.sh` and `mono.sh`
 
 `/p:MonoEnableLlvm=true` - Builds mono w/ LLVM
+
+`/p:MonoEnableLlvm=true /p:MonoLLVMDir=path/to/llvm` - Builds mono w/ LLVM from a custom path
+
+`/p:MonoEnableLlvm=true /p:MonoLLVMDir=path/to/llvm /p:MonoLLVMUseCxx11Abi=true` - Builds mono w/ LLVM 
+from a custom path (and that LLVM was built with C++11 ABI)
 
 For `build.sh`
 
@@ -45,7 +50,7 @@ To generate nuget packages:
 ```
 or on Windows,
 ```bat
-build.cmd --subsetCategory mono -pack (with optional release configuration)
+build.cmd -subsetCategory mono -pack (with optional release configuration)
 ```
 
 The following packages will be created under `artifacts\packages\<configuration>\Shipping`:

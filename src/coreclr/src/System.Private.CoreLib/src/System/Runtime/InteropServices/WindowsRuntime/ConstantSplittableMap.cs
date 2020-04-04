@@ -78,8 +78,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         public TValue Lookup(TKey key)
         {
-            TValue value;
-            bool found = TryGetValue(key, out value);
+            bool found = TryGetValue(key, out TValue value);
 
             if (!found)
             {

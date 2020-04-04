@@ -1809,6 +1809,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // Most of these checks are already done by importer or fgMorphTailCall().
     // This serves as a double sanity check.
     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0); // tail calls from synchronized methods
+    assert(!comp->opts.IsReversePInvoke());                  // tail calls reverse pinvoke
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
 
@@ -3172,7 +3173,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 #else  // !TARGET_X86
         // In case of helper dispatched tail calls, "thisptr" will be the third arg.
         // The first two args are: real call target and addr of args copy routine.
-        const unsigned argNum  = 2;
+        const unsigned    argNum  = 2;
 #endif // !TARGET_X86
 
         fgArgTabEntry* thisArgTabEntry = comp->gtArgEntryByArgNum(call, argNum);
@@ -3439,7 +3440,7 @@ void Lowering::InsertPInvokeMethodProlog()
 #if defined(TARGET_X86) || defined(TARGET_ARM)
     GenTreeCall::Use* argList = comp->gtNewCallArgs(frameAddr);
 #else
-    GenTreeCall::Use*  argList = comp->gtNewCallArgs(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
+    GenTreeCall::Use*     argList = comp->gtNewCallArgs(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
 #endif
 
     GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, argList);
@@ -3620,9 +3621,18 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         GenTree* frameAddr =
             new (comp, GT_LCL_VAR_ADDR) GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar);
 
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
+        // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
+        // This is because the callee pops stack arguments, and we need to keep track of this during stack
+        // walking
+        const unsigned    numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
+        GenTree*          stackBytes     = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
+        GenTreeCall::Use* args           = comp->gtNewCallArgs(frameAddr, stackBytes);
+#else
+        GenTreeCall::Use* args    = comp->gtNewCallArgs(frameAddr);
+#endif
         // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
-        GenTree* helperCall =
-            comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, comp->gtNewCallArgs(frameAddr));
+        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, args);
 
         comp->fgMorphTree(helperCall);
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, helperCall));
@@ -5217,7 +5227,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
     return nextToLower;
 }
 
-void Lowering::DoPhase()
+PhaseStatus Lowering::DoPhase()
 {
     // If we have any PInvoke calls, insert the one-time prolog code. We'll inserted the epilog code in the
     // appropriate spots later. NOTE: there is a minor optimization opportunity here, as we still create p/invoke
@@ -5281,6 +5291,8 @@ void Lowering::DoPhase()
     // impact of any dead code removal. Note this may leave us with
     // tracked vars that have zero refs.
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 #ifdef DEBUG

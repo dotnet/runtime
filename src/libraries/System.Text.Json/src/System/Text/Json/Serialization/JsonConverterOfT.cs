@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization
     /// Converts an object or value to or from JSON.
     /// </summary>
     /// <typeparam name="T">The <see cref="Type"/> to convert.</typeparam>
-    public abstract class JsonConverter<T> : JsonConverter
+    public abstract partial class JsonConverter<T> : JsonConverter
     {
         /// <summary>
         /// When overidden, constructs a new <see cref="JsonConverter{T}"/> instance.
@@ -21,7 +21,8 @@ namespace System.Text.Json.Serialization
             // Today only typeof(object) can have polymorphic writes.
             // In the future, this will be check for !IsSealed (and excluding value types).
             CanBePolymorphic = TypeToConvert == typeof(object);
-
+            IsValueType = TypeToConvert.IsValueType;
+            HandleNullValue = ShouldHandleNullValue;
             IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
             CanUseDirectReadOrWrite = !CanBePolymorphic && IsInternalConverter && ClassType == ClassType.Value;
         }
@@ -46,7 +47,17 @@ namespace System.Text.Json.Serialization
             return new JsonPropertyInfo<T>();
         }
 
+        internal override sealed JsonParameterInfo CreateJsonParameterInfo()
+        {
+            return new JsonParameterInfo<T>();
+        }
+
         internal override Type? ElementType => null;
+
+        // Allow a converter that can't be null to return a null value representation, such as JsonElement or Nullable<>.
+        // In other cases, this will likely cause an JsonException in the converter.
+        // Do not call this directly; it is cached in HandleNullValue.
+        internal virtual bool ShouldHandleNullValue => IsValueType;
 
         /// <summary>
         /// Is the converter built-in.
@@ -68,24 +79,8 @@ namespace System.Text.Json.Serialization
             return true;
         }
 
-        // This non-generic API is sealed as it just forwards to the generic version.
-        internal sealed override bool TryReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out object? value)
-        {
-            bool success = TryRead(ref reader, typeToConvert, options, ref state, out T valueOfT);
-            if (success)
-            {
-                value = valueOfT;
-            }
-            else
-            {
-                value = default;
-            }
-
-            return success;
-        }
-
         // Provide a default implementation for value converters.
-        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T value)
+        internal virtual bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
             value = Read(ref reader, typeToConvert, options);
             return true;
@@ -212,7 +207,7 @@ namespace System.Text.Json.Serialization
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializerCycleDetected(options.MaxDepth);
+                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
             if (CanBePolymorphic)
@@ -240,6 +235,16 @@ namespace System.Text.Json.Serialization
                         // We found a different converter; forward to that.
                         return jsonConverter.TryWriteAsObject(writer, value, options, ref state);
                     }
+                }
+            }
+            else
+            {
+                // We do not pass null values to converters unless HandleNullValue is true. Null values for properties were
+                // already handled in GetMemberAndWriteJson() so we don't need to check for IgnoreNullValues here.
+                if (value == null && !HandleNullValue)
+                {
+                    writer.WriteNullValue();
+                    return true;
                 }
             }
 
@@ -284,7 +289,7 @@ namespace System.Text.Json.Serialization
 
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializerCycleDetected(options.MaxDepth);
+                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
             bool success;

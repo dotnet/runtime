@@ -1,58 +1,76 @@
 # How to get up and running on .NET Core
 
 This document provides the steps necessary to consume a nightly build of
-.NET Core runtime and SDK.
+.NET runtime and SDK.
 
 Please note that these steps are likely to change as we're simplifying
 this experience. Make sure to consult this document often.
 
+## Obtaining nightly builds of NuGet packages
+
+If you are only looking to get fixes for an individual NuGet package, and don't need a preview version of the entire runtime, you can add the nightly build package feed to your `NuGet.config` file.  The easiest way to do this is by using the dotnet CLI:
+
+**(Recommended)** Create a local NuGet.Config file for your solution, if don't already have one.  Using a local NuGet.Config file will enable the nightly feed as a package source for projects in the current directory only.
+```
+dotnet new nugetconfig
+```
+
+Next, add the package source to NuGet.Config with the [dotnet nuget add source](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-nuget-add-source) command:
+```
+dotnet nuget add source -n dotnet5 https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet5/nuget/v3/index.json
+```
+
+Then, you will be able to add the latest prerelease version of the desired package to your project.
+
+**Example:** To add version 5.0.0-preview.1.20120.5 of the System.Data.OleDb package, use the [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) command:
+```
+dotnet add package System.Data.OleDb -v 5.0.0-preview.1.20120.5
+```
+
+To use nightly builds of the entire runtime, follow the steps given in the rest of this document instead.
+
 ## Install prerequisites
 
-1. Acquire the latest nightly .NET Core SDK by downloading the zip or tarball listed in https://github.com/dotnet/core-sdk#installers-and-binaries (for example, https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-win-x64.zip ) into a new folder, for instance `C:\dotnet`.
+1. Acquire the latest nightly .NET SDK by downloading the zip or tarball listed in https://github.com/dotnet/core-sdk#installers-and-binaries (for example, https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-win-x64.zip ) into a new folder, for instance `C:\dotnet`.
 
 2. By default, the dotnet CLI will use the globally installed SDK if it matches the major/minor version you request and has a higher revision. To force it to use the locally installed SDK, you must set an environment variable `DOTNET_MULTILEVEL_LOOKUP=0` in your shell. You can use `dotnet --info` to verify what version of the Shared Framework it is using.
 
-3. Reminder: if you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045: The current .NET SDK does not support targeting .NET Core 3.0." then you may be executing an older `dotnet`.
+3. Reminder: if you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET Core 5.0." then you may be executing an older `dotnet`.
 
 After setting up dotnet you can verify you are using the dogfooding version by executing `dotnet --info`. Here is an example output at the time of writing:
 ```
 >dotnet --info
 .NET Core SDK (reflecting any global.json):
- Version:   3.0.100-preview-009844
- Commit:    fa073dacc4
+ Version:   5.0.100-preview.1.20167.6
+ Commit:    00255dd10b
 
 Runtime Environment:
  OS Name:     Windows
- OS Version:  10.0.17134
+ OS Version:  10.0.18363
  OS Platform: Windows
  RID:         win10-x64
- Base Path:   C:\dotnet\sdk\3.0.100-preview-009844\
+ Base Path:   c:\dotnet\sdk\5.0.100-preview.1.20167.6\
 
 Host (useful for support):
-  Version: 3.0.0-preview-27218-01
-  Commit:  d40b87f29d
+  Version: 5.0.0-preview.1.20120.5
+  Commit:  3c523a6a7a
 
 .NET Core SDKs installed:
-  3.0.100-preview-009844 [C:\dotnet\sdk]
+  5.0.100-preview.1.20167.6 [c:\dotnet\sdk]
 
 .NET Core runtimes installed:
-  Microsoft.AspNetCore.App 3.0.0-preview-18579-0056 [C:\dotnet\shared\Microsoft.AspNetCore.App]
-  Microsoft.NETCore.App 3.0.0-preview-27218-01 [C:\dotnet\shared\Microsoft.NETCore.App]
-  Microsoft.WindowsDesktop.App 3.0.0-alpha-27218-3 [C:\dotnet\shared\Microsoft.WindowsDesktop.App]
+  Microsoft.AspNetCore.App 5.0.0-preview.1.20124.5 [c:\dotnet\shared\Microsoft.AspNetCore.App]
+  Microsoft.NETCore.App 5.0.0-preview.1.20120.5 [c:\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.WindowsDesktop.App 5.0.0-preview.1.20127.5 [c:\dotnet\shared\Microsoft.WindowsDesktop.App]
 
 To install additional .NET Core runtimes or SDKs:
   https://aka.ms/dotnet-download
 ```
 
-4. Our nightly builds are uploaded to dotnet-blob feeds, not NuGet - so ensure the .NET Core blob feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these line:
+4. Our nightly builds are uploaded to dotnet-blob feeds, not NuGet - so ensure the .NET Core blob feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add these lines:
 ```xml
 <packageSources>
-    <add key="dotnet-core" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
-    <add key="dotnet-windowsdesktop" value="https://dotnetfeed.blob.core.windows.net/dotnet-windowsdesktop/index.json" />
-    <add key="aspnet-aspnetcore" value="https://dotnetfeed.blob.core.windows.net/aspnet-aspnetcore/index.json" />
-    <add key="aspnet-aspnetcore-tooling" value="https://dotnetfeed.blob.core.windows.net/aspnet-aspnetcore-tooling/index.json" />
-    <add key="aspnet-entityframeworkcore" value="https://dotnetfeed.blob.core.windows.net/aspnet-entityframeworkcore/index.json" />
-    <add key="aspnet-extensions" value="https://dotnetfeed.blob.core.windows.net/aspnet-extensions/index.json" />
+    <add key="dotnet5" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet5/nuget/v3/index.json" />
     <add key="gRPC repository" value="https://grpc.jfrog.io/grpc/api/nuget/v3/grpc-nuget-dev" />
     ...
 </packageSources>    
@@ -82,28 +100,27 @@ Rinse and repeat!
 ## Advanced Scenario - Using a nightly build of Microsoft.NETCore.App
 
 When using the above instructions, your application will run against the same
-.NET Core runtime that comes with the SDK. That works fine to get up and
+.NET runtime that comes with the SDK. That works fine to get up and
 running quickly. However, there are times when you need to use a nightly build
 of Microsoft.NETCore.App which hasn't made its way into the SDK yet. To enable
 this, there are two options you can take.
 
 ### Option 1: Framework-dependent
 
-This is the default case for applications - running against an installed .NET Core
-runtime.
+This is the default case for applications - running against an installed .NET runtime.
 
-1. You still need to install the prerequisite .NET Core SDK from above.
-2. Optionally, install the specific .NET Core runtime you require:
-    - https://github.com/dotnet/core-setup#daily-builds
+1. You still need to install the prerequisite .NET SDK from above.
+2. Optionally, install the specific .NET runtime you require:
+    - https://github.com/dotnet/core-sdk#installers-and-binaries
 3. Modify your .csproj to reference the nightly build of Microsoft.NETCore.App
 
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- Ensure that the target framework is correct e.g. 'netcoreapp5.0' -->
-    <TargetFramework>netcoreapp3.0</TargetFramework>
-    <!-- modify version in this line with one reported by `dotnet --info` under ".NET Core runtimes installed" -> Microsoft.NETCore.App -->
-    <RuntimeFrameworkVersion>3.0.0-preview-27225-1</RuntimeFrameworkVersion>
+    <TargetFramework>netcoreapp5.0</TargetFramework>
+    <!-- modify version in this line with one reported by `dotnet --info` under ".NET runtimes installed" -> Microsoft.NETCore.App -->
+    <RuntimeFrameworkVersion>5.0.0-preview.1.20120.5</RuntimeFrameworkVersion>
   </PropertyGroup>
 ```
 
@@ -114,9 +131,9 @@ $ dotnet run
 
 ### Option 2: Self-contained
 
-In this case, the .NET Core runtime will be published along with your application.
+In this case, the .NET runtime will be published along with your application.
 
-1. You still need to install the prerequisite .NET Core SDK from above.
+1. You still need to install the prerequisite .NET SDK from above.
 2. Modify your .csproj to reference the nightly build of Microsoft.NETCore.App *and*
 make it self-contained by adding a RuntimeIdentifier (RID).
 
@@ -124,10 +141,10 @@ make it self-contained by adding a RuntimeIdentifier (RID).
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- Ensure that the target framework is correct e.g. 'netcoreapp5.0' -->
-    <TargetFramework>netcoreapp3.0</TargetFramework>
-    <!-- modify build in this line with version reported by `dotnet --info` as above under ".NET Core runtimes installed" -> Microsoft.NETCore.App -->
+    <TargetFramework>netcoreapp5.0</TargetFramework>
+    <!-- modify build in this line with version reported by `dotnet --info` as above under ".NET runtimes installed" -> Microsoft.NETCore.App -->
     <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json -->
-    <RuntimeFrameworkVersion>3.0.0-preview-27218-01</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>5.0.0-preview.1.20120.5</RuntimeFrameworkVersion>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier> <!-- RID to make it self-contained -->
   </PropertyGroup>
 ```
@@ -135,7 +152,7 @@ make it self-contained by adding a RuntimeIdentifier (RID).
 ```
 $ dotnet restore
 $ dotnet publish
-$ bin\Debug\netcoreapp3.0\win-x64\publish\App.exe
+$ bin\Debug\netcoreapp5.0\win-x64\publish\App.exe
 ```
 
 ## More Advanced Scenario - Using your local CoreFx build
@@ -227,4 +244,3 @@ windows (on Linux substitute ~/ for %HOMEPATH%) you could delete
      %HOMEPATH%\.nuget\packages\runtime.win-x64.microsoft.private.corefx.netcoreapp\4.6.0-dev.18626.1
 ```
 which should make `dotnet restore` now pick up the new copy.
-

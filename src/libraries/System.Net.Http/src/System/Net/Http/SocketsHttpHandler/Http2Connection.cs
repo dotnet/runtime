@@ -61,13 +61,13 @@ namespace System.Net.Http
         private int _lastStreamId = -1;
 
         // This will be set when a connection IO error occurs
-        private Exception _abortException;
+        private Exception? _abortException;
 
         // If an in-progress write is canceled we need to be able to immediately
         // report a cancellation to the user, but also block the connection until
         // the write completes. We avoid actually canceling the write, as we would
         // then have to close the whole connection.
-        private Task _inProgressWrite = null;
+        private Task? _inProgressWrite = null;
 
         private const int MaxStreamId = int.MaxValue;
 
@@ -338,7 +338,7 @@ namespace System.Net.Http
         // Callers must check for this and send a RST_STREAM or ignore as appropriate.
         // If the streamId is invalid or the stream is idle, calling this function
         // will result in a connection level error.
-        private Http2Stream GetStream(int streamId)
+        private Http2Stream? GetStream(int streamId)
         {
             if (streamId <= 0 || streamId >= _nextStream)
             {
@@ -347,7 +347,7 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
-                if (!_httpStreams.TryGetValue(streamId, out Http2Stream http2Stream))
+                if (!_httpStreams.TryGetValue(streamId, out Http2Stream? http2Stream))
                 {
                     return null;
                 }
@@ -364,7 +364,7 @@ namespace System.Net.Http
             bool endStream = frameHeader.EndStreamFlag;
 
             int streamId = frameHeader.StreamId;
-            Http2Stream http2Stream = GetStream(streamId);
+            Http2Stream? http2Stream = GetStream(streamId);
 
             // Note, http2Stream will be null if this is a closed stream.
             // We will still process the headers, to ensure the header decoding state is up-to-date,
@@ -475,7 +475,7 @@ namespace System.Net.Http
         {
             Debug.Assert(frameHeader.Type == FrameType.Data);
 
-            Http2Stream http2Stream = GetStream(frameHeader.StreamId);
+            Http2Stream? http2Stream = GetStream(frameHeader.StreamId);
 
             // Note, http2Stream will be null if this is a closed stream.
             // Just ignore the frame in this case.
@@ -683,7 +683,7 @@ namespace System.Net.Http
             }
             else
             {
-                Http2Stream http2Stream = GetStream(frameHeader.StreamId);
+                Http2Stream? http2Stream = GetStream(frameHeader.StreamId);
                 if (http2Stream == null)
                 {
                     // Ignore invalid stream ID, as per RFC
@@ -708,7 +708,7 @@ namespace System.Net.Http
                 throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
             }
 
-            Http2Stream http2Stream = GetStream(frameHeader.StreamId);
+            Http2Stream? http2Stream = GetStream(frameHeader.StreamId);
             if (http2Stream == null)
             {
                 // Ignore invalid stream ID, as per RFC
@@ -979,7 +979,7 @@ namespace System.Net.Http
             _headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string separator)
+        private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, string? separator)
         {
             if (NetEventSource.IsEnabled) Trace($"{nameof(values)}={string.Join(separator, values.ToArray())}");
 
@@ -1033,7 +1033,7 @@ namespace System.Net.Http
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = _headerValues.AsSpan(0, headerValuesCount);
 
-                KnownHeader knownHeader = header.Key.KnownHeader;
+                KnownHeader? knownHeader = header.Key.KnownHeader;
                 if (knownHeader != null)
                 {
                     // The Host header is not sent for HTTP2 because we send the ":authority" pseudo-header instead
@@ -1058,10 +1058,10 @@ namespace System.Net.Http
 
                         // For all other known headers, send them via their pre-encoded name and the associated value.
                         WriteBytes(knownHeader.Http2EncodedName);
-                        string separator = null;
+                        string? separator = null;
                         if (headerValues.Length > 1)
                         {
-                            HttpHeaderParser parser = header.Key.Parser;
+                            HttpHeaderParser? parser = header.Key.Parser;
                             if (parser != null && parser.SupportsMultipleValues)
                             {
                                 separator = parser.Separator;
@@ -1121,6 +1121,7 @@ namespace System.Net.Http
                 WriteBytes(_pool._http2EncodedAuthorityHostHeader);
             }
 
+            Debug.Assert(request.RequestUri != null);
             string pathAndQuery = request.RequestUri.PathAndQuery;
             if (pathAndQuery == "/")
             {
@@ -1139,7 +1140,7 @@ namespace System.Net.Http
             // Determine cookies to send.
             if (_pool.Settings._useCookies)
             {
-                string cookiesFromContainer = _pool.Settings._cookieContainer.GetCookieHeader(request.RequestUri);
+                string cookiesFromContainer = _pool.Settings._cookieContainer!.GetCookieHeader(request.RequestUri);
                 if (cookiesFromContainer != string.Empty)
                 {
                     WriteBytes(KnownHeaders.Cookie.Http2EncodedName);
@@ -1832,7 +1833,7 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
-                if (!_httpStreams.Remove(http2Stream.StreamId, out Http2Stream removed))
+                if (!_httpStreams.Remove(http2Stream.StreamId, out Http2Stream? removed))
                 {
                     Debug.Fail($"Stream {http2Stream.StreamId} not found in dictionary during RemoveStream???");
                     return;
@@ -1857,10 +1858,10 @@ namespace System.Net.Http
 
         public sealed override string ToString() => $"{nameof(Http2Connection)}({_pool})"; // Description for diagnostic purposes
 
-        public override void Trace(string message, [CallerMemberName] string memberName = null) =>
+        public override void Trace(string message, [CallerMemberName] string? memberName = null) =>
             Trace(0, message, memberName);
 
-        internal void Trace(int streamId, string message, [CallerMemberName] string memberName = null) =>
+        internal void Trace(int streamId, string message, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessage(
                 _pool?.GetHashCode() ?? 0,    // pool ID
                 GetHashCode(),                // connection ID

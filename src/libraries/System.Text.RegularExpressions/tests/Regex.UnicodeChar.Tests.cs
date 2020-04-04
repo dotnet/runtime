@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
-namespace System.Text.RegularExpressions
+namespace System.Text.RegularExpressions.Tests
 {
     public class RegexUnicodeCharTests
     {

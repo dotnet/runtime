@@ -12,7 +12,7 @@ public class ClassFromA : IGetTypeFromC
     {
         this._fromC = new ClassFromC();
     }
-    
+
     public object GetTypeFromC()
     {
         return this._fromC.GetType();
@@ -62,6 +62,12 @@ public class ValidRegistrationStringCallbacks : IValidateRegistrationCallbacks
         s_didUnregister = false;
     }
 }
+
+public class InheritedRegistrationTypeCallbacks : RegistrationTypeCallbacksFromB
+{ }
+
+public class InheritedRegistrationStringCallbacks : RegistrationStringCallbacksFromB
+{ }
 
 public class NoRegistrationCallbacks : IValidateRegistrationCallbacks
 {

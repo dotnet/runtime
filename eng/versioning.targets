@@ -42,9 +42,9 @@
     <Description Condition="'$(Description)' == ''">$(AssemblyName)</Description>
 
     <!-- SDK sets product to assembly but we want it to be our product name -->
-    <Product>Microsoft%AE .NET Core</Product>
+    <Product>Microsoft%AE .NET</Product>
 
-    <!-- Use the .NET Core product branding version for informational version description -->
+    <!-- Use the .NET product branding version for informational version description -->
     <InformationalVersion>$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(VersionSuffix)' != ''">$(InformationalVersion)-$(VersionSuffix)</InformationalVersion>
   </PropertyGroup>
@@ -69,6 +69,7 @@
   <!-- Note: ReferenceAssemblies.targets still uses @(AssemblyInfoLines) as well. So if you remove this, those need to migrate too. -->
   <Target Name="_WriteNonStringAssemblyInfoAttributes"
           AfterTargets="CoreGenerateAssemblyInfo"
+          BeforeTargets="BeforeCompile;CoreCompile"
           Inputs="$(MSBuildProjectFile)"
           Outputs="$(AssemblyInfoFile)">
 

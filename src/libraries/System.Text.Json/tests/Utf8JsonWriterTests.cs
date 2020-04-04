@@ -752,7 +752,7 @@ namespace System.Text.Json.Tests
                 Assert.Equal(1_050_097_521, writer.BytesPending);
 
                 // Next write forces a grow beyond 2 GB
-                Assert.Throws<OverflowException>(() => writer.WriteStringValue(text3));
+                Assert.Throws<OutOfMemoryException>(() => writer.WriteStringValue(text3));
 
                 Assert.Equal(1_050_097_521, writer.BytesPending);
 

@@ -1,13 +1,13 @@
 
-# Using your .NET Core Runtime Build with dotnet cli
+# Using your .NET Runtime build with .NET SDK
 
-This walkthrough explains how to run against your local CoreCLR build using `dotnet cli` only.
+This walkthrough explains how to run against your local CoreCLR build using .NET SDK only.
 
 For other walkthroughs see:
 
 - [Using Your Build - Update CoreCLR from raw binary output](./testing/using-your-build.md)
-- [Using CoreRun To Run .NET Core Application](./testing/using-corerun.md)
-- [Dogfooding .NET Core SDK](https://github.com/dotnet/runtime/blob/master/docs/project/dogfooding.md).
+- [Using CoreRun To Run .NET Application](./testing/using-corerun.md)
+- [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/master/docs/project/dogfooding.md).
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ For other walkthroughs see:
     artifacts\bin\coreclr\<OS>.<arch>.<flavor>\.nuget\pkg\runtime.<OS>-<arch>.Microsoft.NETCore.Runtime.CoreCLR.<version>.nupkg
 ```
 
-2. Acquired the latest nightly .NET Core SDK from [here](https://github.com/dotnet/cli/blob/master/README.md#installers-and-binaries) and added it's root folder to your [path](requirements/windows-requirements.md#adding-to-the-default-path-variable)
+2. Acquired the latest nightly .NET SDK from [here](https://github.com/dotnet/cli/blob/master/README.md#installers-and-binaries) and added it's root folder to your [path](requirements/windows-requirements.md#adding-to-the-default-path-variable)
 
 ## First Run
 
@@ -29,7 +29,7 @@ From now on all instructions relate to this folder as "app folder".
 
 ### 2. Create NuGet.Config file
 
-The build script creates NuGet packages and puts them to `artifacts\bin\coreclr\<OS>.<arch>.<flavor>\.nuget\pkg\`. dotnet cli has no idea about its existence and we need to tell it where to search for the packages.
+The build script creates NuGet packages and puts them to `artifacts\bin\coreclr\<OS>.<arch>.<flavor>\.nuget\pkg\`. .NET SDK has no idea about its existence and we need to tell it where to search for the packages.
 
 Please run `dotnet new nugetconfig` in the app folder and update the created `NuGet.Config` file:
 
@@ -132,7 +132,7 @@ Running the app should tell you the version and which user and machine build the
 at the time of building:
 
 ```
-Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: https://github.com/dotnet/coreclr/tree/3d6da797d1f7dc47d5934189787a4e8006ab3a04
+Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: https://github.com/dotnet/runtime/tree/3d6da797d1f7dc47d5934189787a4e8006ab3a04
 The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
 ```
 

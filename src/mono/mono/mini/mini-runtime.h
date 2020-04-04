@@ -111,12 +111,12 @@ struct MonoJitTlsData {
 	/* 
 	 * The current exception in flight
 	 */
-	guint32 thrown_exc;
+	MonoGCHandle thrown_exc;
 	/*
 	 * If the current exception is not a subclass of Exception,
 	 * the original exception.
 	 */
-	guint32 thrown_non_exc;
+	MonoGCHandle thrown_non_exc;
 
 	/*
 	 * The calling assembly in llvmonly mode.
@@ -160,7 +160,7 @@ typedef struct {
 #endif
 } MonoLMFExt;
 
-typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
+typedef void (*MonoFtnPtrEHCallback) (MonoGCHandle gchandle);
 
 typedef struct MonoDebugOptions {
 	gboolean handle_sigint;
@@ -516,6 +516,10 @@ gboolean mono_jit_map_is_enabled (void);
 #define mono_emit_jit_tramp(s,z,d) do { } while (0) /* non-empty to avoid warning */
 #define mono_jit_map_is_enabled() (0)
 #endif
+
+void mono_enable_jit_dump (void);
+void mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code);
+void mono_jit_dump_cleanup (void);
 
 /*
  * Per-OS implementation functions.

@@ -13,7 +13,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
-#if CORECLR && TARGET_WINDOWS
+#if (CORECLR || MONO) && TARGET_WINDOWS
 using Internal.Win32;
 #endif
 #if ES_BUILD_AGAINST_DOTNET_V35
@@ -288,10 +288,8 @@ namespace System.Diagnostics.Tracing
                             filterData = null;
 
                         // read filter data only when a session is being *added*
-                        byte[]? data;
-                        int keyIndex;
                         if (bEnabling &&
-                            GetDataFromController(etwSessionId, filterData, out command, out data, out keyIndex))
+                            GetDataFromController(etwSessionId, filterData, out command, out byte[]? data, out int keyIndex))
                         {
                             args = new Dictionary<string, string?>(4);
                             // data can be null if the filterArgs had a very large size which failed our sanity check
@@ -469,42 +467,59 @@ namespace System.Diagnostics.Tracing
             // does not have this issue.
 #if (TARGET_WINDOWS && (ES_SESSION_INFO || !ES_BUILD_STANDALONE))
             int buffSize = 256;     // An initial guess that probably works most of the time.
-            byte* buffer;
-            while (true)
+            byte* stackSpace = stackalloc byte[buffSize];
+            byte* buffer = stackSpace;
+            try
             {
-                byte* space = stackalloc byte[buffSize];
-                buffer = space;
-                int hr = 0;
-
-                fixed (Guid* provider = &m_providerId)
+                while (true)
                 {
-                    hr = Interop.Advapi32.EnumerateTraceGuidsEx(Interop.Advapi32.TRACE_QUERY_INFO_CLASS.TraceGuidQueryInfo,
-                        provider, sizeof(Guid), buffer, buffSize, out buffSize);
+                    int hr = 0;
+
+                    fixed (Guid* provider = &m_providerId)
+                    {
+                        hr = Interop.Advapi32.EnumerateTraceGuidsEx(Interop.Advapi32.TRACE_QUERY_INFO_CLASS.TraceGuidQueryInfo,
+                            provider, sizeof(Guid), buffer, buffSize, out buffSize);
+                    }
+                    if (hr == 0)
+                        break;
+                    if (hr != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                        return;
+
+                    if (buffer != stackSpace)
+                    {
+                        byte* toFree = buffer;
+                        buffer = null;
+                        Marshal.FreeHGlobal((IntPtr)toFree);
+                    }
+                    buffer = (byte*)Marshal.AllocHGlobal(buffSize);
                 }
-                if (hr == 0)
-                    break;
-                if (hr != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
-                    return;
+
+                var providerInfos = (Interop.Advapi32.TRACE_GUID_INFO*)buffer;
+                var providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&providerInfos[1];
+                int processId = unchecked((int)Interop.Kernel32.GetCurrentProcessId());
+                // iterate over the instances of the EventProvider in all processes
+                for (int i = 0; i < providerInfos->InstanceCount; i++)
+                {
+                    if (providerInstance->Pid == processId)
+                    {
+                        var enabledInfos = (Interop.Advapi32.TRACE_ENABLE_INFO*)&providerInstance[1];
+                        // iterate over the list of active ETW sessions "listening" to the current provider
+                        for (int j = 0; j < providerInstance->EnableCount; j++)
+                            action(enabledInfos[j].LoggerId, enabledInfos[j].MatchAllKeyword, ref sessionList);
+                    }
+                    if (providerInstance->NextOffset == 0)
+                        break;
+                    Debug.Assert(0 <= providerInstance->NextOffset && providerInstance->NextOffset < buffSize);
+                    byte* structBase = (byte*)providerInstance;
+                    providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&structBase[providerInstance->NextOffset];
+                }
             }
-
-            var providerInfos = (Interop.Advapi32.TRACE_GUID_INFO*)buffer;
-            var providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&providerInfos[1];
-            int processId = unchecked((int)Interop.Kernel32.GetCurrentProcessId());
-            // iterate over the instances of the EventProvider in all processes
-            for (int i = 0; i < providerInfos->InstanceCount; i++)
+            finally
             {
-                if (providerInstance->Pid == processId)
+                if (buffer != null && buffer != stackSpace)
                 {
-                    var enabledInfos = (Interop.Advapi32.TRACE_ENABLE_INFO*)&providerInstance[1];
-                    // iterate over the list of active ETW sessions "listening" to the current provider
-                    for (int j = 0; j < providerInstance->EnableCount; j++)
-                        action(enabledInfos[j].LoggerId, enabledInfos[j].MatchAllKeyword, ref sessionList);
+                    Marshal.FreeHGlobal((IntPtr)buffer);
                 }
-                if (providerInstance->NextOffset == 0)
-                    break;
-                Debug.Assert(0 <= providerInstance->NextOffset && providerInstance->NextOffset < buffSize);
-                byte* structBase = (byte*)providerInstance;
-                providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&structBase[providerInstance->NextOffset];
             }
 #else
 #if !ES_BUILD_PCL && TARGET_WINDOWS  // TODO command arguments don't work on PCL builds...

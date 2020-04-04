@@ -33,7 +33,12 @@
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/Transforms/Scalar.h"
+
+#if LLVM_API_VERSION >= 800
+#include "llvm/CodeGen/BuiltinGCs.h"
+#else
 #include "llvm/CodeGen/GCs.h"
+#endif
 
 #include <cstdlib>
 
@@ -48,6 +53,17 @@ extern cl::opt<std::string> MonoEHFrameSymbol;
 void
 mono_llvm_set_unhandled_exception_handler (void)
 {
+}
+
+// noop function that merely ensures that certain symbols are not eliminated
+// from the resulting binary.
+static void
+link_gc () {
+#if LLVM_API_VERSION >= 800
+	llvm::linkAllBuiltinGCs();
+#else
+	llvm::linkCoreCLRGC(); // Mono uses built-in "coreclr" GCStrategy
+#endif
 }
 
 template <typename T>
@@ -67,19 +83,12 @@ void bzero (void *to, size_t count) { memset (to, 0, count); }
 
 static MonoNativeTlsKey current_cfg_tls_id;
 
-static unsigned char*
+static unsigned char *
 alloc_code (LLVMValueRef function, int size)
 {
-	MonoCompile *cfg;
-
-	cfg = (MonoCompile*)mono_native_tls_get_value (current_cfg_tls_id);
-
-	if (cfg) {
-		// FIXME: dynamic
-		return (unsigned char*)mono_domain_code_reserve (cfg->domain, size);
-	} else {
-		return (unsigned char*)mono_domain_code_reserve (mono_domain_get (), size);
-	}
+	auto cfg = (MonoCompile *)mono_native_tls_get_value (current_cfg_tls_id);
+	g_assert (cfg);
+	return (unsigned char *)mono_domain_code_reserve (cfg->domain, size);
 }
 
 class MonoJitMemoryManager : public RTDyldMemoryManager
@@ -311,7 +320,6 @@ public:
 		initializeInstCombine(registry);
 		initializeTarget(registry);
 		initializeLoopIdiomRecognizeLegacyPassPass(registry);
-		linkCoreCLRGC(); // Mono uses built-in "coreclr" GCStrategy
 
 		// FIXME: find optimal mono specific order of passes
 		// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
@@ -452,6 +460,8 @@ mono_llvm_jit_init ()
 {
 	if (jit != nullptr) return;
 
+	link_gc ();
+
 	mono_native_tls_alloc (&current_cfg_tls_id, NULL);
 
 	InitializeNativeTarget ();
@@ -472,17 +482,25 @@ mono_llvm_jit_init ()
 		EB.setTargetOptions (opts);
 	}
 
-	EB.setOptLevel(CodeGenOpt::Aggressive);
-	EB.setMCPU(sys::getHostCPUName());
+	EB.setOptLevel (CodeGenOpt::Aggressive);
+	EB.setMCPU (sys::getHostCPUName ());
+
+#ifdef TARGET_AMD64
+	EB.setMArch ("x86-64");
+#elif TARGET_X86
+	EB.setMArch ("x86");
+#elif TARGET_ARM64
+	EB.setMArch ("aarch64");
+#elif TARGET_ARM
+	EB.setMArch ("arm");
+#else
+	g_assert_not_reached ();
+#endif
+
 	auto TM = EB.selectTarget ();
 	assert (TM);
 
 	jit = make_mono_llvm_jit (TM);
-}
-
-void
-mono_llvm_jit_set_tls_cfg (MonoCompile *cfg) {
-	mono_native_tls_set_value (current_cfg_tls_id, cfg);
 }
 
 MonoEERef
@@ -498,9 +516,12 @@ mono_llvm_create_ee (LLVMExecutionEngineRef *ee)
  * CALLEE_ADDRS. Return the EH frame address in EH_FRAME.
  */
 gpointer
-mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
+mono_llvm_compile_method (MonoEERef mono_ee, MonoCompile *cfg, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
 {
-	return jit->compile (unwrap<Function> (method), nvars, callee_vars, callee_addrs, eh_frame);
+	mono_native_tls_set_value (current_cfg_tls_id, cfg);
+	auto ret = jit->compile (unwrap<Function> (method), nvars, callee_vars, callee_addrs, eh_frame);
+	mono_native_tls_set_value (current_cfg_tls_id, nullptr);
+	return ret;
 }
 
 void
@@ -520,10 +541,6 @@ mono_llvm_jit_init ()
 {
 }
 
-void
-mono_llvm_jit_set_tls_cfg (MonoCompile *cfg) {
-}
-
 MonoEERef
 mono_llvm_create_ee (LLVMExecutionEngineRef *ee)
 {
@@ -532,7 +549,7 @@ mono_llvm_create_ee (LLVMExecutionEngineRef *ee)
 }
 
 gpointer
-mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
+mono_llvm_compile_method (MonoEERef mono_ee, MonoCompile *cfg, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
 {
 	g_assert_not_reached ();
 	return NULL;

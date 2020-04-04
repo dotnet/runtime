@@ -36,7 +36,7 @@ function(set_common_libs TargetType)
 
     # Libraries used for exe projects
     if (${TargetType} STREQUAL "exe")
-        if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD)
+        if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
             target_link_libraries (${DOTNET_PROJECT_NAME} "pthread")
         endif()
 

@@ -22,7 +22,7 @@
 #include <crsttypes.h>
 #undef __IN_CRST_CPP
 
-#if defined(DAC_COMPILE) && defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
+#if defined(DACCESS_COMPILE) && defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
     // Validate the DAC T_CRITICAL_SECTION matches the runtime CRITICAL section when we are not cross compiling.
     // This is important when we are cross OS compiling the DAC
     static_assert(PAL_CS_NATIVE_DATA_SIZE == DAC_CS_NATIVE_DATA_SIZE,     T_CRITICAL_SECTION_VALIDATION_MESSAGE);
@@ -33,7 +33,7 @@
     static_assert(offsetof(CRITICAL_SECTION, RecursionCount) == offsetof(T_CRITICAL_SECTION, RecursionCount), T_CRITICAL_SECTION_VALIDATION_MESSAGE);
     static_assert(offsetof(CRITICAL_SECTION, OwningThread)   == offsetof(T_CRITICAL_SECTION, OwningThread),   T_CRITICAL_SECTION_VALIDATION_MESSAGE);
     static_assert(offsetof(CRITICAL_SECTION, SpinCount)      == offsetof(T_CRITICAL_SECTION, SpinCount),      T_CRITICAL_SECTION_VALIDATION_MESSAGE);
-#endif // defined(DAC_COMPILE) && defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
+#endif // defined(DACCESS_COMPILE) && defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
 
 #ifndef DACCESS_COMPILE
 Volatile<LONG> g_ShutdownCrstUsageCount = 0;
@@ -124,8 +124,7 @@ void CrstBase::ReleaseAndBlockForShutdownIfNotSpecialThread()
     }
     CONTRACTL_END;
 
-    if (
-        (((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & (ThreadType_Finalizer|ThreadType_DbgHelper|ThreadType_Shutdown|ThreadType_GC)) == 0)
+    if ((t_ThreadType & (ThreadType_Finalizer|ThreadType_DbgHelper|ThreadType_Shutdown|ThreadType_GC)) == 0)
     {
         // The process is shutting down. Release the lock and just block forever.
         this->Leave();
@@ -389,6 +388,9 @@ void CrstBase::Leave()
 
 
 #ifdef _DEBUG
+
+thread_local CrstBase* t_pOwnedCrstsChain;
+
 void CrstBase::PreEnter()
 {
     STATIC_CONTRACT_NOTHROW;
@@ -470,10 +472,10 @@ void CrstBase::PostEnter()
         _ASSERTE((m_next == NULL) && (m_prev == NULL));
 
         // Link this Crst into the Thread's chain of OwnedCrsts
-        CrstBase *pcrst = GetThreadsOwnedCrsts();
+        CrstBase *pcrst = t_pOwnedCrstsChain;
         if (pcrst == NULL)
         {
-            SetThreadsOwnedCrsts (this);
+            t_pOwnedCrstsChain = this;
         }
         else
         {
@@ -528,7 +530,7 @@ void CrstBase::PreLeave()
         if (m_prev)
             m_prev->m_next = m_next;
         else
-            SetThreadsOwnedCrsts(m_next);
+            t_pOwnedCrstsChain = m_next;
 
         if (m_next)
             m_next->m_prev = m_prev;
@@ -585,16 +587,6 @@ struct CrstDebugInfo
 };
 const int crstDebugInfoCount = 4000;
 CrstDebugInfo crstDebugInfo[crstDebugInfoCount];
-
-CrstBase *CrstBase::GetThreadsOwnedCrsts()
-{
-    return (CrstBase*)ClrFlsGetValue(TlsIdx_OwnedCrstsChain);
-}
-void CrstBase::SetThreadsOwnedCrsts(CrstBase *pCrst)
-{
-    WRAPPER_NO_CONTRACT;
-    ClrFlsSetValue(TlsIdx_OwnedCrstsChain, (LPVOID) (pCrst));
-}
 
 void CrstBase::DebugInit(CrstType crstType, CrstFlags flags)
 {
@@ -655,7 +647,7 @@ void CrstBase::DebugDestroy()
             {
                 if (m_next)
                     m_next->m_prev = NULL; // workaround: break up the chain
-                SetThreadsOwnedCrsts(NULL);
+                t_pOwnedCrstsChain = NULL;
             }
         }
         else
@@ -753,7 +745,7 @@ BOOL CrstBase::IsSafeToTake()
 
     // See if the current thread already owns a lower or sibling lock.
     BOOL fSafe = TRUE;
-    for (CrstBase *pcrst = GetThreadsOwnedCrsts(); pcrst != NULL; pcrst = pcrst->m_next)
+    for (CrstBase *pcrst = t_pOwnedCrstsChain; pcrst != NULL; pcrst = pcrst->m_next)
     {
         fSafe =
             !pcrst->m_holderthreadid.IsCurrentThread()

@@ -587,18 +587,6 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetAppDomainObject(VMPTR_AppDomain vmApp
 
 }
 
-// Determine if the specified AppDomain is the default domain
-BOOL DacDbiInterfaceImpl::IsDefaultDomain(VMPTR_AppDomain   vmAppDomain)
-{
-    DD_ENTER_MAY_THROW;
-
-    AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-    BOOL fDefaultDomain = pAppDomain->IsDefaultDomain();
-
-    return fDefaultDomain;
-}
-
-
 // Get the full AD friendly name for the given EE AppDomain.
 void DacDbiInterfaceImpl::GetAppDomainFullName(
     VMPTR_AppDomain   vmAppDomain,
@@ -5584,9 +5572,6 @@ CorDebugUserState DacDbiInterfaceImpl::GetPartialUserState(VMPTR_Thread vmThread
     {
         result |= USER_WAIT_SLEEP_JOIN;
     }
-
-    // CoreCLR does not support user-requested thread suspension
-    _ASSERTE(!(ts & Thread::TS_UserSuspendPending));
 
     if (pThread->IsThreadPoolThread())
     {
