@@ -130,9 +130,10 @@ namespace System.Net.Http.Functional.Tests
                     Environment.SetEnvironmentVariable("http_proxy", proxyServer.Uri.AbsoluteUri.ToString());
 
                     File.AppendAllText(logFilePath, $"http_proxy: {Environment.GetEnvironmentVariable("http_proxy")}{Environment.NewLine}");
+                    File.AppendAllText(logFilePath, $"HTTP_PROXY: {Environment.GetEnvironmentVariable("HTTP_PROXY")}{Environment.NewLine}");
                     File.AppendAllText(logFilePath, $"HTTPS_PROXY: {Environment.GetEnvironmentVariable("HTTPS_PROXY")}{Environment.NewLine}");
                     File.AppendAllText(logFilePath, $"ALL_PROXY: {Environment.GetEnvironmentVariable("ALL_PROXY")}{Environment.NewLine}");
-                    File.AppendAllText(logFilePath, $"ALL_PROXY: {Environment.GetEnvironmentVariable("ALL_PROXY")}{Environment.NewLine}");
+                    File.AppendAllText(logFilePath, $"NO_PROXY: {Environment.GetEnvironmentVariable("NO_PROXY")}{Environment.NewLine}");
                     File.AppendAllText(logFilePath, $"proxy type: {HttpClient.DefaultProxy.GetType()}{Environment.NewLine}");
                     File.AppendAllText (logFilePath, $"proxy uri: {HttpClient.DefaultProxy.GetProxy(Configuration.Http.RemoteEchoServer)}{Environment.NewLine}");
                     File.AppendAllText (logFilePath, $"is bypassed: {HttpClient.DefaultProxy.IsBypassed(Configuration.Http.RemoteEchoServer)}{Environment.NewLine}");
@@ -143,7 +144,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         string body = await response.Content.ReadAsStringAsync();
                         File.AppendAllText(logFilePath, body);
-                        Assert.Contains("proxyServer.ViaHeader", body);
+                        Assert.Contains(proxyServer.ViaHeader, body);
                     }
                     File.AppendAllText (logFilePath, $"http_proxy: {Environment.GetEnvironmentVariable("http_proxy")}{Environment.NewLine}");
                 }
