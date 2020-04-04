@@ -377,15 +377,25 @@ namespace System.Security.Cryptography
                     ECPrivateKey privateKey = ECPrivateKey.Decode(privateKeyInfo.PrivateKey, AsnEncodingRules.BER);
                     EccKeyFormatHelper.FromECPrivateKey(privateKey, privateAlgorithm, out ECParameters ecParameters);
 
-                    if (!ecParameters.Curve.IsExplicit || ecParameters.Q.X != null || ecParameters.Q.Y != null)
+                    fixed (byte* pD = ecParameters.D)
                     {
-                        return null;
-                    }
+                        try
+                        {
+                            if (!ecParameters.Curve.IsExplicit || ecParameters.Q.X != null || ecParameters.Q.Y != null)
+                            {
+                                return null;
+                            }
 
-                    byte[] zero = new byte[ecParameters.D!.Length];
-                    ecParameters.Q.Y = zero;
-                    ecParameters.Q.X = zero;
-                    return EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters, privateKeyInfo.Attributes);
+                            byte[] zero = new byte[ecParameters.D!.Length];
+                            ecParameters.Q.Y = zero;
+                            ecParameters.Q.X = zero;
+                            return EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters, privateKeyInfo.Attributes);
+                        }
+                        finally
+                        {
+                            Array.Clear(ecParameters.D!, 0, ecParameters.D!.Length);
+                        }
+                    }
                 }
             }
         }
