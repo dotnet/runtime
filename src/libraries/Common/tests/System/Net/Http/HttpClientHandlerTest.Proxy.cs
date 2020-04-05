@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics.Tracing;
 
 using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.DotNet.RemoteExecutor;
@@ -114,6 +115,33 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        private sealed class HttpEventListener : EventListener
+        {
+            TestOutput _output;
+
+            public HttpEventListener(TestOutput writer) {
+                _output = writer;
+            }
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "Microsoft-System-Net-Http")
+                    EnableEvents(eventSource, EventLevel.LogAlways);
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                var sb = new StringBuilder().Append($"[{eventData.EventName}] ");
+                for (int i = 0; i < eventData.Payload?.Count; i++)
+                {
+                    if (i > 0)
+                        sb.Append(", ");
+                    sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
+                }
+                _output.WriteLine(sb.ToString());
+                    
+            }
+        }
+
         class TestOutput: ITestOutputHelper
         {
             Action<string> _writer;
@@ -144,6 +172,8 @@ namespace System.Net.Http.Functional.Tests
             RemoteExecutor.Invoke(async (useVersionString, logFilePath) =>
             {
                 TestOutput output = new TestOutput((message)=>File.AppendAllText(logFilePath,message));
+                HttpEventListener l = new HttpEventListener(output);
+                
                 var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true, Output = output };
                 using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
                 {
