@@ -9,7 +9,10 @@
     <ProjectReference Include="@(MonoProject)" />
     <ProjectReference Include="@(LibrariesProject)" />
     <ProjectReference Include="@(InstallerProject)" />
-    <!-- Exclude installer depproj and pkgproj from static graph restore. We restore them below. -->
+    <!--
+      Exclude installer depproj and pkgproj from static graph restore. We restore them below.
+      Remove when https://github.com/NuGet/Home/issues/9398 is fixed.
+    -->
     <ProjectReference Remove="@(DepprojProjectToBuild)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
     <ProjectReference Remove="@(PkgprojProjectToBuild)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
@@ -64,10 +67,8 @@
   </Target>
 
   <Target Name="RestoreDepprojsAndPkgProjs"
-          BeforeTargets="Restore"
-          Condition="'@(LibrariesRestoreProject)' != '' or '@(DepprojProjectToBuild)' != '' or '@(PkgprojProjectToBuild)' != ''">
+          BeforeTargets="Restore">
     <MSBuild Projects="@(LibrariesRestoreProject);@(DepprojProjectToBuild);@(PkgprojProjectToBuild)"
-             BuildinParallel="true"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());RestoreUseStaticGraphEvaluation=false"
              Targets="Restore" />
   </Target>
