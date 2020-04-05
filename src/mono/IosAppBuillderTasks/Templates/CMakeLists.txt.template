@@ -15,10 +15,6 @@ add_executable(
     ${APP_RESOURCES}
 )
 
-if (MONO_ARCH STREQUAL arm64)
-    add_definitions(-DDEVICE)
-endif()
-
 include_directories("%MonoInclude%")
 
 set_target_properties(%ProjectName% PROPERTIES

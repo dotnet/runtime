@@ -29,6 +29,7 @@ public class IosAppBuilderTask : Task
     /// </summary>
     [Required]
     public string AppDir { get; set; } = ""!;
+
     /// <summary>
     /// Path to Mono public headers (*.h)
     /// </summary>
