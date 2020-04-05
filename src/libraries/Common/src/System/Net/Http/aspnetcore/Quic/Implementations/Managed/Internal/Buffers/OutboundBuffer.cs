@@ -1,18 +1,13 @@
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Quic.Implementations.Managed.Internal.Frames;
-using System.Threading.Tasks.Dataflow;
 
-namespace System.Net.Quic.Implementations.Managed.Internal
+namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 {
     /// <summary>
     ///     Structure for containing outbound stream data.
     /// </summary>
-    internal class OutboundBuffer
+    internal sealed class OutboundBuffer : BufferBase
     {
-        private List<StreamChunk> _chunks = new List<StreamChunk>();
-
         /// <summary>
         ///     Ranges of bytes awaiting to be sent.
         /// </summary>
@@ -81,26 +76,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal void Enqueue(ReadOnlySpan<byte> data)
         {
             _pending.Add(WrittenBytes, WrittenBytes + (ulong) data.Length - 1);
-
-            // utilize unused space in the last chunk
-            if (_chunks.Count > 0 && _chunks[^1].Length < (ulong) _chunks[^1].Buffer.Length)
-            {
-                var last = _chunks[^1];
-                int copied = Math.Min(last.Buffer.Length - (int)last.Length, data.Length);
-                data.Slice(0, copied).CopyTo(last.Buffer.AsSpan((int)last.Length));
-                _chunks[^1] = new StreamChunk(last.StreamOffset, last.Buffer, last.Length + (ulong) copied);
-
-                data = data.Slice(copied);
-                WrittenBytes += (ulong) copied;
-
-                // avoid renting zero array
-                if (data.IsEmpty) return;
-            }
-
-            var buffer = ArrayPool<byte>.Shared.Rent(data.Length);
-            data.CopyTo(buffer);
-
-            _chunks.Add(new StreamChunk(WrittenBytes, buffer, (ulong) data.Length));
+            EnqueueAtEnd(WrittenBytes, data);
             WrittenBytes += (ulong) data.Length;
         }
 

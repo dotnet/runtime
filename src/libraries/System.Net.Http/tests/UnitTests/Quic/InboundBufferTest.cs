@@ -1,4 +1,6 @@
+using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Buffers;
 using Xunit;
 
 namespace System.Net.Quic.Tests
@@ -33,7 +35,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(0u, buffer.BytesAvailable);
         }
 
-        [Fact(Skip =  "Not Implemented")]
+        [Fact]
         public void ReceivesOutOfOrderData()
         {
             ReceiveBytes(5, 5);
@@ -45,6 +47,22 @@ namespace System.Net.Quic.Tests
             buffer.Deliver(destination);
 
             Assert.Equal(new byte[]{0,1,2,3,4,5,6,7,8,9}, destination);
+        }
+
+        [Fact]
+        public void ReceiveDuplicateData()
+        {
+            ReceiveBytes(0, 5);
+            ReceiveBytes(10, 5);
+            ReceiveBytes(20, 5);
+
+            ReceiveBytes(0, 25);
+
+            Assert.Equal(25u, buffer.BytesAvailable);
+            var destination = new byte[25];
+
+            buffer.Deliver(destination);
+            Assert.Equal(Enumerable.Range(0, 25).Select(i => (byte) i), destination);
         }
     }
 }

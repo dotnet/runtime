@@ -1,4 +1,5 @@
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Buffers;
 using Xunit;
 
 namespace System.Net.Quic.Tests

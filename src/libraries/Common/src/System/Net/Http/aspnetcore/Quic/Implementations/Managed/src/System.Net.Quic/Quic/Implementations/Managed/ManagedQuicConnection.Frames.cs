@@ -147,7 +147,6 @@ namespace System.Net.Quic.Implementations.Managed
             // do handshake to set encryption secrets (to be able to process coalesced packets
             if (handshakeWanted)
             {
-                // TODO-RZ: Deliver buffered data.
                 _tls.DoHandshake();
             }
 
@@ -202,18 +201,27 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.ConnectionClose;
 
-            var stream = GetEpoch(GetEncryptionLevel(packetType)).CryptoInboundBuffer;
+            EncryptionLevel level = GetEncryptionLevel(packetType);
+            var stream = GetEpoch(level).CryptoInboundBuffer;
+
             // don't buffer if not needed
             if (stream.BytesRead == crypto.Offset)
             {
                 stream.Skip((ulong)crypto.CryptoData.Length);
-                _tls.OnDataReceived(GetEncryptionLevel(packetType), crypto.CryptoData);
+                _tls.OnDataReceived(level, crypto.CryptoData);
+
+                // process also buffered data received earlier
+                if (stream.BytesAvailable > 0)
+                {
+                    // define a copy of level variable with smaller scope to prevent allocations in common case
+                    EncryptionLevel level2 = level;
+                    stream.Deliver(segment => { _tls.OnDataReceived(level2, segment); });
+                }
             }
             else
             {
                 stream.Receive(crypto.Offset, crypto.CryptoData);
             }
-            // TODO-RZ: Utilize the offset
 
             return ProcessPacketResult.Ok;
         }

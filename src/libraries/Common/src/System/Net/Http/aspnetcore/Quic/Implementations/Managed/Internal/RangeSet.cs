@@ -241,7 +241,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 else if (end < range.End)
                 {
                     // split the range and we are done
-                    _ranges.Insert(index, new Range(end + 1, range.End));
+                    _ranges.Insert(index + 1, new Range(end + 1, range.End));
                     range.End = start - 1;
                     return;
                 }
