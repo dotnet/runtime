@@ -3546,6 +3546,55 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<uint> ExtractAndNarrowLow (Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint8x8_t vext_s8 (uint8x8_t a, uint8x8_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #n
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #n
+        /// </summary>
+        public static Vector64<byte> ExtractVector64(Vector64<byte> upper, Vector64<byte> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vext_s16 (int16x4_t a, int16x4_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #(n*2)
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*2)
+        /// </summary>
+        public static Vector64<short> ExtractVector64(Vector64<short> upper, Vector64<short> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vext_s32 (int32x2_t a, int32x2_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #(n*4)
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*4)
+        /// </summary>
+        public static Vector64<int> ExtractVector64(Vector64<int> upper, Vector64<int> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vext_s8 (int8x8_t a, int8x8_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #n
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #n
+        /// </summary>
+        public static Vector64<sbyte> ExtractVector64(Vector64<sbyte> upper, Vector64<sbyte> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vext_f32 (float32x2_t a, float32x2_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #(n*4)
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*4)
+        /// </summary>
+        public static Vector64<float> ExtractVector64(Vector64<float> upper, Vector64<float> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vext_s16 (uint16x4_t a, uint16x4_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #(n*2)
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*2)
+        /// </summary>
+        public static Vector64<ushort> ExtractVector64(Vector64<ushort> upper, Vector64<ushort> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vext_s32 (uint32x2_t a, uint32x2_t b, const int n)
+        ///   A32: VEXT.8 Dd, Dn, Dm, #(n*4)
+        ///   A64: EXT Vd.8B, Vn.8B, Vm.8B, #(n*4)
+        /// </summary>
+        public static Vector64<uint> ExtractVector64(Vector64<uint> upper, Vector64<uint> lower, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float32x2_t vfma_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
         ///   A32: VFMA.F32 Dd, Dn, Dm
         ///   A64: FMLA Vd.2S, Vn.2S, Vm.2S
