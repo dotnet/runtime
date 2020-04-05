@@ -32,6 +32,12 @@ if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES ${HEADERS})
 endif()
 
+# This is required to map a symbol reference to a matching definition local to the module (.so)
+# containing the reference instead of using definitions from other modules.
+if(CLR_CMAKE_TARGET_LINUX)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+endif()
+
 function(set_common_libs TargetType)
 
     # Libraries used for exe projects
