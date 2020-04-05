@@ -88,7 +88,6 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithMissingObjectProperty obj
                 = JsonSerializer.Deserialize<ClassWithMissingObjectProperty>(@"{ ""Object"": {} }");
 
-            Assert.NotNull(obj);
             Assert.Null(obj.Collection);
         }
 
@@ -98,7 +97,6 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithMissingCollectionProperty obj
                 = JsonSerializer.Deserialize<ClassWithMissingCollectionProperty>(@"{ ""Collection"": [] }");
 
-            Assert.NotNull(obj);
             Assert.Null(obj.Object);
         }
 
