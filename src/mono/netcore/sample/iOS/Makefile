@@ -17,7 +17,7 @@ build: clean program
 	cp $(ARTIFACTS_MONO)/System.Private.CoreLib.{dll,pdb} bin
 	cp $(ARTIFACTS_MONO)/libmono.a bin
 	cp $(ARTIFACTS_BCL)/* bin
-	$(DOTNET) msbuild /t:BuildIosApp /p:Configuration=Debug \
+	$(DOTNET) msbuild /t:BuildIosApp /p:Configuration=$(MONO_CONFIG) \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:TargetOS=iOS \
 	/p:AppDir=$(CURDIR)/bin \

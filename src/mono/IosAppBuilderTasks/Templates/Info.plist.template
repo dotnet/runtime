@@ -10,8 +10,6 @@
 	<string>net.dot.%BundleIdentifier%</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
-	<key>%BundleIdentifier%</key>
-	<string>XunitTestRunner</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
