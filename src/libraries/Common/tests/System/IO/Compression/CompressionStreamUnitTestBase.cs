@@ -662,7 +662,7 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public async Task CompressDecompress_RoundTrip()
+        public async Task CompressDecompress_RoundTrip_BaseTests()
         {
             await CompressDecompress_RoundTrip(ReadWriteMode.SyncArray, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
             await CompressDecompress_RoundTrip(ReadWriteMode.SyncSpan, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
@@ -711,7 +711,7 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public async Task Flush_RoundTrip()
+        public async Task Flush_RoundTrip_BaseTests()
         {
             if (FlushNoOps)
                 return;
@@ -773,7 +773,7 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public async Task Flush_Consecutive()
+        public async Task Flush_Consecutive_BaseTests()
         {
             if (FlushNoOps)
                 return;
@@ -847,7 +847,7 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public async Task Flush_BeforeFirstWrites()
+        public async Task Flush_BeforeFirstWrites_BaseTests()
         {
             if (FlushNoOps)
                 return;
@@ -1168,7 +1168,7 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
-        public void BaseStream(CompressionMode mode)
+        public void BaseStreamTest(CompressionMode mode)
         {
             using (var baseStream = new MemoryStream())
             using (var compressor = CreateStream(baseStream, mode))
