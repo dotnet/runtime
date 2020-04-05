@@ -47,7 +47,8 @@ typedef enum
 {
     walk_for_gc = 1,
     walk_for_bgc = 2,
-    walk_for_loh = 3
+    walk_for_loh = 3,
+    walk_for_poh = 4
 } walk_surv_type;
 
 // Different operations that can be done by GCToEEInterface::StompWriteBarrier

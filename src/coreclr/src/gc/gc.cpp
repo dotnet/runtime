@@ -23993,10 +23993,11 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (!loh_compacted_p)
 #endif //FEATURE_LOH_COMPACTION
         {
-            GCToEEInterface::DiagWalkLOHSurvivors(__this);
+            GCToEEInterface::DiagWalkUOHSurvivors(__this, loh_generation);
             sweep_uoh_objects (loh_generation);
         }
 
+        GCToEEInterface::DiagWalkUOHSurvivors(__this, poh_generation);
         sweep_uoh_objects (poh_generation);
     }
     else
@@ -25829,7 +25830,9 @@ void gc_heap::walk_survivors (record_surv_fn fn, void* context, walk_surv_type t
         walk_survivors_for_bgc (context, fn);
 #endif //BACKGROUND_GC && FEATURE_EVENT_TRACE
     else if (type == walk_for_loh)
-        walk_survivors_for_loh (context, fn);
+        walk_survivors_for_uoh (context, fn, loh_generation);
+    else if (type == walk_for_poh)
+        walk_survivors_for_uoh (context, fn, poh_generation);
     else
         assert (!"unknown type!");
 }
@@ -33600,7 +33603,7 @@ void reset_memory (uint8_t* o, size_t sizeo)
     }
 }
 
-BOOL gc_heap::large_object_marked (uint8_t* o, BOOL clearp)
+BOOL gc_heap::uoh_object_marked (uint8_t* o, BOOL clearp)
 {
     BOOL m = FALSE;
     // It shouldn't be necessary to do these comparisons because this is only used for blocking
@@ -33638,9 +33641,9 @@ void gc_heap::walk_survivors_relocation (void* profiling_context, record_surv_fn
 #endif //FEATURE_LOH_COMPACTION
 }
 
-void gc_heap::walk_survivors_for_loh (void* profiling_context, record_surv_fn fn)
+void gc_heap::walk_survivors_for_uoh (void* profiling_context, record_surv_fn fn, int gen_number)
 {
-    generation* gen        = large_object_generation;
+    generation* gen        = generation_of (gen_number);
     heap_segment* seg      = heap_segment_rw (generation_start_segment (gen));;
 
     PREFIX_ASSUME(seg != NULL);
@@ -33659,7 +33662,7 @@ void gc_heap::walk_survivors_for_loh (void* profiling_context, record_surv_fn fn
             else
                 o = heap_segment_mem (seg);
         }
-        if (large_object_marked(o, FALSE))
+        if (uoh_object_marked(o, FALSE))
         {
             plug_start = o;
 
@@ -33671,7 +33674,7 @@ void gc_heap::walk_survivors_for_loh (void* profiling_context, record_surv_fn fn
                 {
                     break;
                 }
-                m = large_object_marked (o, FALSE);
+                m = uoh_object_marked (o, FALSE);
             }
 
             plug_end = o;
@@ -33680,7 +33683,7 @@ void gc_heap::walk_survivors_for_loh (void* profiling_context, record_surv_fn fn
         }
         else
         {
-            while (o < heap_segment_allocated (seg) && !large_object_marked(o, FALSE))
+            while (o < heap_segment_allocated (seg) && !uoh_object_marked(o, FALSE))
             {
                 o = o + AlignQword (size (o));
             }
@@ -34542,7 +34545,7 @@ void gc_heap::sweep_uoh_objects (int gen_num)
                              (size_t)heap_segment_allocated (seg)));
             }
         }
-        if (large_object_marked(o, TRUE))
+        if (uoh_object_marked(o, TRUE))
         {
             plug_start = o;
             //everything between plug_end and plug_start is free
@@ -34556,14 +34559,14 @@ void gc_heap::sweep_uoh_objects (int gen_num)
                 {
                     break;
                 }
-                m = large_object_marked (o, TRUE);
+                m = uoh_object_marked (o, TRUE);
             }
             plug_end = o;
             dprintf (3, ("plug [%Ix, %Ix[", (size_t)plug_start, (size_t)plug_end));
         }
         else
         {
-            while (o < heap_segment_allocated (seg) && !large_object_marked(o, FALSE))
+            while (o < heap_segment_allocated (seg) && !uoh_object_marked(o, FALSE))
             {
                 o = o + AlignQword (size (o));
             }
