@@ -11,7 +11,7 @@
 #include "mini.h"
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 175
+#define MONO_AOT_FILE_VERSION 176
 
 #define MONO_AOT_TRAMP_PAGE_SIZE 16384
 
@@ -113,14 +113,14 @@ typedef struct MonoAotFileInfo
 #define MONO_AOT_FILE_INFO_FIRST_SYMBOL jit_got
 	/* Global Offset Table for JITted code */
 	gpointer jit_got;
-	/* Global Offset Table for LLVM code */
-	gpointer llvm_got;
 	/* Mono EH Frame created by llc when using LLVM */
 	gpointer mono_eh_frame;
 	/* Points to the get_method () function in the LLVM image or NULL */
 	gpointer llvm_get_method;
 	/* Points to the get_unbox_tramp () function in the LLVM image or NULL */
 	gpointer llvm_get_unbox_tramp;
+	/* Points to the init_aotconst () function in the LLVM image or NULL */
+	gpointer llvm_init_aotconst;
 	gpointer jit_code_start;
 	gpointer jit_code_end;
 	gpointer method_addresses;
@@ -184,6 +184,8 @@ typedef struct MonoAotFileInfo
 	guint32 plt_got_info_offset_base;
 	/* Number of entries in the GOT */
 	guint32 got_size;
+	/* Number of entries in the LLVM GOT */
+	guint32 llvm_got_size;
 	/* Number of entries in the PLT */
 	guint32 plt_size;
 	/* Number of methods */
