@@ -107,6 +107,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void Ctor_ThrownException_GetFramesReturnsExpected()
         {
+            // TODO: is this test redundant? See Ctor_ThrownException_GetFramesReturnsExpected_2 below
             var stackTrace = new StackTrace(InvokeException());
             VerifyFrames(stackTrace, false);
         }
@@ -124,7 +125,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Ctor_ThrownException_GetFramesReturnsExpected(bool fNeedFileInfo)
+        public void Ctor_ThrownException_GetFramesReturnsExpected_2(bool fNeedFileInfo)
         {
             var stackTrace = new StackTrace(InvokeException(), fNeedFileInfo);
             VerifyFrames(stackTrace, fNeedFileInfo);
