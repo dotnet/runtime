@@ -574,6 +574,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static <#= typeName #> PolynomialMultiply(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)PolynomialMult(op1, op2);
+
 <#
         }
 
@@ -594,6 +595,16 @@ namespace JIT.HardwareIntrinsics.Arm
             else
               return (<#= type.small  #>)right[i - left.Length] != result[i];
         }
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double" })
+        {
+#>
+        public static <#= typeName #> ExtractVector(<#= typeName #>[] op1, <#= typeName #>[] op2, int op3, int i) => (op3 + i < op1.Length) ? op1[op3 + i] : op2[op3 + i - op1.Length];
+
+        public static <#= typeName #> Insert(<#= typeName #>[] op1, int op2, <#= typeName #> op3, int i) => (op2 != i) ? op1[i] : op3;
+
 <#
         }
 #>
