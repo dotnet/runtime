@@ -34,7 +34,7 @@ namespace System.Reflection.Emit
         // public constructor to form the custom attribute with constructor, constructor
         // parameters and named properties.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      PropertyInfo[] namedProperties, object[] propertyValues)
+                                      PropertyInfo[] namedProperties, object?[] propertyValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
                                        propertyValues, Array.Empty<FieldInfo>(), Array.Empty<object>());
@@ -43,7 +43,7 @@ namespace System.Reflection.Emit
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      FieldInfo[] namedFields, object[] fieldValues)
+                                      FieldInfo[] namedFields, object?[] fieldValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, Array.Empty<PropertyInfo>(),
                                        Array.Empty<object>(), namedFields, fieldValues);
@@ -52,8 +52,8 @@ namespace System.Reflection.Emit
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      PropertyInfo[] namedProperties, object[] propertyValues,
-                                      FieldInfo[] namedFields, object[] fieldValues)
+                                      PropertyInfo[] namedProperties, object?[] propertyValues,
+                                      FieldInfo[] namedFields, object?[] fieldValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
                                        propertyValues, namedFields, fieldValues);
