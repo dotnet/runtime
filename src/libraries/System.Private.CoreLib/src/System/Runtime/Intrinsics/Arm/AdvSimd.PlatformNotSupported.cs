@@ -3322,48 +3322,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<float> DivideScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///  int8x8_t vmovn_s16 (int16x8_t a)
-        ///   A32: VMOVN.I16 Dd, Qm
-        ///   A64: XTN Vd.8B, Vn.8H
-        /// </summary>
-        public static Vector64<sbyte> ExtractAndNarrowLow (Vector128<short> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int16x4_t vmovn_s32 (int32x4_t a)
-        ///   A32: VMOVN.I32 Dd, Qm
-        ///   A64: XTN Vd.4H, Vn.4S
-        /// </summary>
-        public static Vector64<short> ExtractAndNarrowLow (Vector128<int> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  int32x2_t vmovn_s64 (int64x2_t a)
-        ///   A32: VMOVN.I64 Dd, Qm
-        ///   A64: XTN Vd.2S, Vn.2D
-        /// </summary>
-        public static Vector64<int> ExtractAndNarrowLow (Vector128<long> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  uint8x8_t vmovn_u16 (uint16x8_t a)
-        ///   A32: VMOVN.I16 Dd, Qm
-        ///   A64: XTN Vd.8B, Vn.8H
-        /// </summary>
-        public static Vector64<byte> ExtractAndNarrowLow (Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  uint16x4_t vmovn_u32 (uint32x4_t a)
-        ///   A32: VMOVN.I32 Dd, Qm
-        ///   A64: XTN Vd.4H, Vn.4S
-        /// </summary>
-        public static Vector64<ushort> ExtractAndNarrowLow (Vector128<uint> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///  uint32x2_t vmovn_u64 (uint64x2_t a)
-        ///   A32: VMOVN.I64 Dd, Qm
-        ///   A64: XTN Vd.2S, Vn.2D
-        /// </summary>
-        public static Vector64<uint> ExtractAndNarrowLow (Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         ///  int8x16_t vmovn_high_s16 (int8x8_t r, int16x8_t a)
         ///   A32: VMOVN.I16 Dd+1, Qm
         ///   A64: XTN2 Vd.16B, Vn.8H
@@ -3404,6 +3362,48 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: XTN2 Vd.4S, Vn.2D
         /// </summary>
         public static Vector128<uint> ExtractAndNarrowHigh (Vector64<uint> lower, Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///  int8x8_t vmovn_s16 (int16x8_t a)
+        ///   A32: VMOVN.I16 Dd, Qm
+        ///   A64: XTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<sbyte> ExtractAndNarrowLow (Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///  int16x4_t vmovn_s32 (int32x4_t a)
+        ///   A32: VMOVN.I32 Dd, Qm
+        ///   A64: XTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<short> ExtractAndNarrowLow (Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///  int32x2_t vmovn_s64 (int64x2_t a)
+        ///   A32: VMOVN.I64 Dd, Qm
+        ///   A64: XTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<int> ExtractAndNarrowLow (Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///  uint8x8_t vmovn_u16 (uint16x8_t a)
+        ///   A32: VMOVN.I16 Dd, Qm
+        ///   A64: XTN Vd.8B, Vn.8H
+        /// </summary>
+        public static Vector64<byte> ExtractAndNarrowLow (Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///  uint16x4_t vmovn_u32 (uint32x4_t a)
+        ///   A32: VMOVN.I32 Dd, Qm
+        ///   A64: XTN Vd.4H, Vn.4S
+        /// </summary>
+        public static Vector64<ushort> ExtractAndNarrowLow (Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///  uint32x2_t vmovn_u64 (uint64x2_t a)
+        ///   A32: VMOVN.I64 Dd, Qm
+        ///   A64: XTN Vd.2S, Vn.2D
+        /// </summary>
+        public static Vector64<uint> ExtractAndNarrowLow (Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x2_t vfma_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
