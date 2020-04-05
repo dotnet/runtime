@@ -1,6 +1,7 @@
 MONO_CONFIG=Debug
 MONO_ARCH=arm64
 
+ARTIFACTS_BIN=../../../../../artifacts/bin/
 ARTIFACTS_BCL=$(ARTIFACTS_BIN)runtime/netcoreapp5.0-iOS-$(MONO_CONFIG)-$(MONO_ARCH)
 ARTIFACTS_MONO=$(ARTIFACTS_BIN)/mono/iOS.$(MONO_ARCH).$(MONO_CONFIG)
 
