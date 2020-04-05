@@ -34,7 +34,7 @@
         <File Id="fileLicenseTxt" KeyPath="yes" Source="$(var.HostSrc)\LICENSE.txt">
           <CopyFile Id="copyFileLicenseTxt" DestinationDirectory="PROGRAMFILES_DOTNET" />
         </File>
-        <File Id="fileThirdPartyNoticesTxt" Source="$(var.HostSrc)\ThirdPartyNotices.txt">
+        <File Id="fileThirdPartyNoticesTxt" Source="$(var.HostSrc)\THIRD-PARTY-NOTICES.txt">
           <CopyFile Id="copyFileThirdPartyNoticesTxt" DestinationDirectory="PROGRAMFILES_DOTNET" />
         </File>
       </Component>

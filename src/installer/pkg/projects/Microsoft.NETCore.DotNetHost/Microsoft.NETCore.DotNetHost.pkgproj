@@ -28,7 +28,7 @@
           DestinationFolder="$(PublishRootDir)" />
 
     <Copy SourceFiles="$(RepoRoot)THIRD-PARTY-NOTICES.TXT"
-          DestinationFiles="$(PublishRootDir)ThirdPartyNotices.txt" />
+          DestinationFiles="$(PublishRootDir)THIRD-PARTY-NOTICES.txt" />
 
     <Copy SourceFiles="$(RepoRoot)LICENSE.TXT"
           DestinationFiles="$(PublishRootDir)LICENSE.txt"

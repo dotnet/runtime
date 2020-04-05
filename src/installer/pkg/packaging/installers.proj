@@ -90,7 +90,7 @@
           DestinationFolder="$(SharedHostPublishRoot)" />
 
     <Copy SourceFiles="$(RepoRoot)THIRD-PARTY-NOTICES.TXT"
-          DestinationFiles="$(SharedHostPublishRoot)ThirdPartyNotices.txt" />
+          DestinationFiles="$(SharedHostPublishRoot)THIRD-PARTY-NOTICES.txt" />
 
     <Copy SourceFiles="$(RepoRoot)LICENSE.TXT"
           DestinationFiles="$(SharedHostPublishRoot)LICENSE.txt"
