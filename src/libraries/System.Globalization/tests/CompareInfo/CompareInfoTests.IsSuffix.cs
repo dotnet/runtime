@@ -82,10 +82,10 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "a\u0000b", "b\u0000b", CompareOptions.None, false };
 
             // Platform differences
-            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
-            yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
-            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDC00", CompareOptions.None, PlatformDetection.IsWindows ? true : false };
-            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDC00", CompareOptions.IgnoreCase, PlatformDetection.IsWindows ? true : false };
+            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", CompareOptions.None, PlatformDetection.ShouldUseIcu ? false : true };
+            yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, PlatformDetection.ShouldUseIcu ? false : true };
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDC00", CompareOptions.None, PlatformDetection.ShouldUseIcu ? false : true };
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDC00", CompareOptions.IgnoreCase, PlatformDetection.ShouldUseIcu ? false : true };
         }
 
         [Theory]
@@ -109,7 +109,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void IsSuffix_UnassignedUnicode()
         {
-            bool result = PlatformDetection.IsWindows ? true : false;
+            bool result = PlatformDetection.ShouldUseIcu ? false : true;
 
             IsSuffix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result);
             IsSuffix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result);

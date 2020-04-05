@@ -380,7 +380,10 @@ int32_t GlobalizationNative_LoadICU()
 // return the current loaded ICU version
 int32_t GlobalizationNative_GetICUVersion()
 {
-    int32_t version;
-    u_getVersion((uint8_t *) &version);
+    int32_t version = 0;
+    if (u_getVersion_ptr != NULL)
+    {
+        u_getVersion((uint8_t *) &version);
+    }
     return version;
 }
