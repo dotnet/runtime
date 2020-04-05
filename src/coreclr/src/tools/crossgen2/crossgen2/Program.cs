@@ -407,7 +407,6 @@ namespace ILCompiler
                             typeSystemContext,
                             _commandLineOptions.Composite,
                             _commandLineOptions.InputBubble,
-                            isCompositeBuildMode: _commandLineOptions.Composite,
                             inputModules,
                             versionBubbleModules,
                             _commandLineOptions.CompileBubbleGenerics);

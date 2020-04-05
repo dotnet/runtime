@@ -27,7 +27,6 @@ namespace ILCompiler
                 base(context,
                      isCompositeBuildMode,
                      isInputBubble,
-                     isCompositeBuildMode: isCompositeBuildMode,
                      compilationModuleSet,
                      versionBubbleModuleSet,
                      compileGenericDependenciesFromVersionBubbleModuleSet)
