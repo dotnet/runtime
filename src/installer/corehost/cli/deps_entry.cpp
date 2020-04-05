@@ -72,6 +72,7 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
             if (app->locate(sub_path, candidate))
             {
                 trace::verbose(_X("    %s found in bundle [%s]"), sub_path.c_str(), candidate.c_str());
+                return true;
             }
             else
             {
