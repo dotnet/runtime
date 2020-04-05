@@ -529,6 +529,26 @@
              Properties="Configuration=$(Configuration)"
              Targets="Restore;Build" />
   </Target>
+  <UsingTask TaskName="IosAppBuilderTask" AssemblyFile="$(BinDir)IosAppBuilderTasks.dll"/>
+
+  <Target Name="BuildIosApp" DependsOnTargets="BuildIosAppBuilderTasks">
+    <IosAppBuilderTask 
+        Arch="$(TargetArchitecture)"
+        ProjectName="HelloiOS"
+        MonoInclude="$(BinDir)include\mono-2.0"
+        CrossCompiler="$(BinDir)cross\mono-aot-cross"
+        EntryPointLib="$(EntryPointLib)"
+        NativeMainSource="$(NativeMainSource)"
+        GenerateOnlyXcodeProject="$(GenerateOnlyXcodeProject)"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        AppDir="$(AppDir)">
+        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </IosAppBuilderTask>
+
+    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
+    <Message Importance="High" Text="App: $(AppBundlePath)"/>
+  </Target>
 
   <!-- General targets -->
   <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildIosAppBuilderTasks">
@@ -722,20 +742,6 @@
     <Error Condition="$([System.IO.Directory]::GetDirectories('$(LocalDotnetDir)\shared\Microsoft.NETCore.App').Length) > 1" Text="$(LocalDotnetDir) contains more than one SDK, please delete unused ones." />
     <Error Condition="Exists('$(LocalMonoDotnetDir)') AND $([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App').Length) > 1" Text="$(LocalMonoDotnetDir) contains more than one SDK, please delete unused ones." />
     <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
-  </Target>
-
-  <UsingTask TaskName="IosAppBuilderTask" AssemblyFile="$(BinDir)IosAppBuilderTasks.dll"/>
-  <Target Name="BuildIosSample" DependsOnTargets="Build">
-    <IosAppBuilderTask 
-        Arch="$(TargetArchitecture)"
-        ProjectName="HelloiOS"
-        MonoInclude="$(BinDir)include\mono-2.0"
-        CrossCompiler="$(BinDir)cross\mono-aot-cross"
-        EntryPointLib="Program.dll"
-        NativeMainSource="$(MSBuildThisFileDirectory)netcore\sample\iOS\main.m"
-        GenerateOnlyXcodeProject="True"
-        AppDir="$(AppDir)">
-    </IosAppBuilderTask>
   </Target>
 
 </Project>

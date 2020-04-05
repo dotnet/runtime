@@ -12,12 +12,20 @@ all: mono-libraries build
 program:
 	$(DOTNET) build Program.csproj
 
+# copy everything to bin/ and run BuildIosApp task
 build: clean program
 	cp $(ARTIFACTS_MONO)/System.Private.CoreLib.{dll,pdb} bin
 	cp $(ARTIFACTS_MONO)/libmono.a bin
 	cp $(ARTIFACTS_BCL)/* bin
-	$(DOTNET) msbuild /t:BuildIosSample /p:Configuration=Debug \
-	/p:TargetArchitecture=$(MONO_ARCH) /p:AppDir=$(CURDIR)/bin /p:TargetOS=iOS ../../../mono.proj
+	$(DOTNET) msbuild /t:BuildIosApp /p:Configuration=Debug \
+	/p:TargetArchitecture=$(MONO_ARCH) \
+	/p:TargetOS=iOS \
+	/p:AppDir=$(CURDIR)/bin \
+	/p:NativeMainSource=$(CURDIR)/main.m \
+	/p:GenerateOnlyXcodeProject=true \
+	/p:DevTeamProvisioning= \
+	/p:EntryPointLib=Program.dll \
+	../../../mono.proj
 
 # rebuild mono and libraries for iOS and arm64 or x64
 mono-libraries:
