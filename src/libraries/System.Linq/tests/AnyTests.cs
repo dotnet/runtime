@@ -59,7 +59,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [MemberData(nameof(TestData))]
-        public void Any(IEnumerable<int> source, bool expected)
+        public void AnyTest(IEnumerable<int> source, bool expected)
         {
             Assert.Equal(expected, source.Any());
         }
