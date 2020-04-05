@@ -11,7 +11,7 @@ internal class Xcode
 {
     public static string Sysroot { get; } = Utils.RunProcess("xcrun", "--sdk iphoneos --show-sdk-path");
 
-    public static void GenerateXCode(
+    public static string GenerateXCode(
         string projectName,
         string entryPointLib,
         string workspace,
@@ -31,6 +31,15 @@ internal class Xcode
             // use built-in main.m (with default UI) if it's not set
             nativeMainSource = Path.Combine(binDir, "main.m");
             File.WriteAllText(nativeMainSource, Utils.GetEmbeddedResource("main.m"));
+        }
+        else
+        {
+            string newMainPath = Path.Combine(binDir, "main.m");
+            if (nativeMainSource != newMainPath)
+            {
+                File.Copy(nativeMainSource, Path.Combine(binDir, "main.m"), true);
+                nativeMainSource = newMainPath;
+            }
         }
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
@@ -81,6 +90,8 @@ internal class Xcode
                 .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
 
         Utils.RunProcess("cmake", cmakeArgs.ToString(), workingDir: binDir);
+
+        return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
 
     public static string BuildAppBundle(

@@ -14,7 +14,7 @@ internal class Utils
 {
     public static string GetEmbeddedResource(string file)
     {
-        using Stream stream = typeof(Utils).Assembly.GetManifestResourceStream("appbuilder.Templates." + file)!;
+        using Stream stream = typeof(Utils).Assembly.GetManifestResourceStream("IosAppBuilderTasks.Templates." + file)!;
         using var ms = new MemoryStream();
         stream!.CopyTo(ms);
         ms.Position = 0;
@@ -79,7 +79,19 @@ internal class Utils
 
     public static TaskLoggingHelper? Logger { get; set; }
 
-    public static void LogInfo(string? msg) => Logger?.LogMessage(MessageImportance.High, msg);
+    public static void LogInfo(string? msg)
+    {
+        if (msg != null)
+        {
+            Logger?.LogMessage(MessageImportance.High, msg);
+        }
+    }
 
-    public static void LogError(string? msg) => Logger?.LogError(msg);
+    public static void LogError(string? msg)
+    {
+        if (msg != null)
+        {
+            Logger?.LogError(msg);
+        }
+    }
 }

@@ -724,4 +724,18 @@
     <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
   </Target>
 
+  <UsingTask TaskName="IosAppBuilderTask" AssemblyFile="$(BinDir)IosAppBuilderTasks.dll"/>
+  <Target Name="BuildIosSample" DependsOnTargets="Build">
+    <IosAppBuilderTask 
+        Arch="$(TargetArchitecture)"
+        ProjectName="HelloiOS"
+        MonoInclude="$(BinDir)include\mono-2.0"
+        CrossCompiler="$(BinDir)cross\mono-aot-cross"
+        EntryPointLib="Program.dll"
+        NativeMainSource="$(MSBuildThisFileDirectory)netcore\sample\iOS\main.m"
+        GenerateOnlyXcodeProject="True"
+        AppDir="$(AppDir)">
+    </IosAppBuilderTask>
+  </Target>
+
 </Project>

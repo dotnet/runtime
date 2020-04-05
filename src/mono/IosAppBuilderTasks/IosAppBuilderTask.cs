@@ -65,10 +65,21 @@ public class IosAppBuilderTask : Task
     public string? DevTeamProvisioning { get; set; }
 
     /// <summary>
+    /// Only generate an xcode project
+    /// </summary>
+    public bool GenerateOnlyXcodeProject { get; set; }
+
+    /// <summary>
     /// Path to *.app bundle
     /// </summary>
     [Output]
     public string AppBundlePath { get; set; } = ""!;
+
+    /// <summary>
+    /// Path to xcode project
+    /// </summary>
+    [Output]
+    public string XcodeProjectPath { get; set; } = ""!;
 
     public override bool Execute()
     {
@@ -115,18 +126,18 @@ public class IosAppBuilderTask : Task
             Path.Combine(binDir, "modules.m"));
 
         // generate xcode project
-        Xcode.GenerateXCode(ProjectName, EntryPointLib, AppDir, binDir, MonoInclude, NativeMainSource);
+        XcodeProjectPath = Xcode.GenerateXCode(ProjectName, EntryPointLib, AppDir, binDir, MonoInclude, NativeMainSource);
 
-        // build app
-        string appBundle = Xcode.BuildAppBundle(
-            Path.Combine(binDir, ProjectName, ProjectName + ".xcodeproj"),
-            Arch, Optimized, DevTeamProvisioning);
+        if (!GenerateOnlyXcodeProject)
+        {
+            // build app
+            AppBundlePath = Xcode.BuildAppBundle(
+                Path.Combine(binDir, ProjectName, ProjectName + ".xcodeproj"),
+                Arch, Optimized, DevTeamProvisioning);
+        }
 
         stopWatch.Stop();
-        Debug.Assert(Directory.Exists(appBundle)); // it's actually a directory
-        Log.LogMessage(MessageImportance.High, $"App: {appBundle} in {stopWatch.Elapsed.TotalSeconds:F1} s.");
-
-        AppBundlePath = appBundle;
+        Log.LogMessage(MessageImportance.High, $"Xcode: {XcodeProjectPath}\n App: {AppBundlePath}\n\tin {stopWatch.Elapsed.TotalSeconds:F1} s.");
         return true;
     }
 }
