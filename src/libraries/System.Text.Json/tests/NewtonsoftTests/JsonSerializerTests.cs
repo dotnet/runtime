@@ -131,15 +131,6 @@ namespace System.Text.Json.Tests
             p2.Spouse = p1;
             Assert.Throws<JsonException> (() => JsonSerializer.Serialize(p1));
         }
-
-        [Fact]
-        public void JsonDocumentDeserialization()
-        {
-            using (JsonDocument document = JsonSerializer.Deserialize<JsonDocument>("{\"data\": 12}"))
-            {
-                Assert.Equal(12, document.RootElement.GetProperty("data").GetInt32());
-            }
-        }
     }
 
     public class PersonReference
