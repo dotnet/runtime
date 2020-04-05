@@ -279,7 +279,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public Task ManyConcurrentWriteAsyncs()
+        public Task ManyConcurrentWriteAsyncs_BaseTest()
         {
             // For inner loop, just test one case
             return ManyConcurrentWriteAsyncs(
