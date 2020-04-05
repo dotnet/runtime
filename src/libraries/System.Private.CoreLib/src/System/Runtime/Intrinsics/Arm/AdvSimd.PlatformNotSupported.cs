@@ -3322,6 +3322,146 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<float> DivideScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint8_t vget_lane_u8 (uint8x8_t v, const int lane)
+        ///   A32: VMOV.U8 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.B[lane]
+        /// </summary>
+        public static byte Extract(Vector64<byte> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64_t vget_lane_f64 (float64x1_t v, const int lane)
+        ///   A32: VMOV.F64 Dd, Dm
+        ///   A64: DUP Dd, Vn.D[lane]
+        /// </summary>
+        public static double Extract(Vector64<double> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16_t vget_lane_s16 (int16x4_t v, const int lane)
+        ///   A32: VMOV.S16 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.H[lane]
+        /// </summary>
+        public static short Extract(Vector64<short> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t vget_lane_s32 (int32x2_t v, const int lane)
+        ///   A32: VMOV.32 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.S[lane]
+        /// </summary>
+        public static int Extract(Vector64<int> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t vget_lane_s64 (int64x1_t v, const int lane)
+        ///   A32: VMOV Rt, Rt2, Dm
+        ///   A64: UMOV Xd, Vn.D[lane]
+        /// </summary>
+        public static long Extract(Vector64<long> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8_t vget_lane_s8 (int8x8_t v, const int lane)
+        ///   A32: VMOV.S8 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.B[lane]
+        /// </summary>
+        public static sbyte Extract(Vector64<sbyte> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vget_lane_f32 (float32x2_t v, const int lane)
+        ///   A32: VMOV.F32 Sd, Sm
+        ///   A64: DUP Sd, Vn.S[lane]
+        /// </summary>
+        public static float Extract(Vector64<float> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16_t vget_lane_u16 (uint16x4_t v, const int lane)
+        ///   A32: VMOV.U16 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.H[lane]
+        /// </summary>
+        public static ushort Extract(Vector64<ushort> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vget_lane_u32 (uint32x2_t v, const int lane)
+        ///   A32: VMOV.32 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.S[lane]
+        /// </summary>
+        public static uint Extract(Vector64<uint> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t vget_lane_u64 (uint64x1_t v, const int lane)
+        ///   A32: VMOV Rt, Rt2, Dm
+        ///   A64: UMOV Xd, Vn.D[lane]
+        /// </summary>
+        public static ulong Extract(Vector64<ulong> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8_t vgetq_lane_u8 (uint8x16_t v, const int lane)
+        ///   A32: VMOV.U8 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.B[lane]
+        /// </summary>
+        public static byte Extract(Vector128<byte> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64_t vgetq_lane_f64 (float64x2_t v, const int lane)
+        ///   A32: VMOV.F64 Dd, Dm
+        ///   A64: DUP Dd, Vn.D[lane]
+        /// </summary>
+        public static double Extract(Vector128<double> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16_t vgetq_lane_s16 (int16x8_t v, const int lane)
+        ///   A32: VMOV.S16 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.H[lane]
+        /// </summary>
+        public static short Extract(Vector128<short> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t vgetq_lane_s32 (int32x4_t v, const int lane)
+        ///   A32: VMOV.32 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.S[lane]
+        /// </summary>
+        public static int Extract(Vector128<int> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t vgetq_lane_s64 (int64x2_t v, const int lane)
+        ///   A32: VMOV Rt, Rt2, Dm
+        ///   A64: UMOV Xd, Vn.D[lane]
+        /// </summary>
+        public static long Extract(Vector128<long> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8_t vgetq_lane_s8 (int8x16_t v, const int lane)
+        ///   A32: VMOV.S8 Rt, Dn[lane]
+        ///   A64: SMOV Wd, Vn.B[lane]
+        /// </summary>
+        public static sbyte Extract(Vector128<sbyte> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vgetq_lane_f32 (float32x4_t v, const int lane)
+        ///   A32: VMOV.F32 Sd, Sm
+        ///   A64: DUP Sd, Vn.S[lane]
+        /// </summary>
+        public static float Extract(Vector128<float> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16_t vgetq_lane_u16 (uint16x8_t v, const int lane)
+        ///   A32: VMOV.U16 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.H[lane]
+        /// </summary>
+        public static ushort Extract(Vector128<ushort> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t vgetq_lane_u32 (uint32x4_t v, const int lane)
+        ///   A32: VMOV.32 Rt, Dn[lane]
+        ///   A64: UMOV Wd, Vn.S[lane]
+        /// </summary>
+        public static uint Extract(Vector128<uint> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t vgetq_lane_u64 (uint64x2_t v, const int lane)
+        ///   A32: VMOV Rt, Rt2, Dm
+        ///   A64: UMOV Xd, Vn.D[lane]
+        /// </summary>
+        public static ulong Extract(Vector128<ulong> vector, byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         ///  int8x16_t vmovn_high_s16 (int8x8_t r, int16x8_t a)
         ///   A32: VMOVN.I16 Dd+1, Qm
         ///   A64: XTN2 Vd.16B, Vn.8H
