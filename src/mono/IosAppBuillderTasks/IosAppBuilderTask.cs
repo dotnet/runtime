@@ -78,6 +78,9 @@ public class IosAppBuilderTask : Task
             throw new ArgumentException("arm64 arch requires CrossCompiler");
         }
 
+        // escape spaces
+        ProjectName = ProjectName.Replace(" ", "-");
+
         var stopWatch = Stopwatch.StartNew();
 
         // see https://github.com/dotnet/runtime/issues/34448
