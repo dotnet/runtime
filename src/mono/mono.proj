@@ -524,8 +524,14 @@
              Targets="Build" />
   </Target>
 
+  <Target Name="BuildIosAppBuilderTasks">
+    <MSBuild Projects="$(MonoProjectRoot)IosAppBuilderTasks\IosAppBuilderTasks.csproj"
+             Properties="Configuration=$(Configuration)"
+             Targets="Restore;Build" />
+  </Target>
+
   <!-- General targets -->
-  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
+  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildIosAppBuilderTasks">
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
@@ -536,6 +542,7 @@
       <_MonoRuntimeStaticFilePath Condition="'$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
       <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm64'">$(MonoObjDir)cross\out\bin\aarch64-darwin-mono-sgen</_MonoAotCrossFilePath>
       <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm'">$(MonoObjDir)cross\out\bin\arm-darwin-mono-sgen</_MonoAotCrossFilePath>
+      <_IosAppBuilderTasksFilePath Condition="'$(TargetsiOS)' == 'true'">$(ArtifactsObjDir)mono\IosAppBuilderTasks\$(TargetArchitecture)\$(Configuration)\IosAppBuilderTasks.dll</_IosAppBuilderTasksFilePath>
     </PropertyGroup>
 
     <!-- Copy Mono runtime files to artifacts directory -->
@@ -548,6 +555,9 @@
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
         <Destination>$(BinDir)cross\mono-aot-cross</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_IosAppBuilderTasksFilePath)">
+        <Destination>$(BinDir)IosAppBuilderTasks.dll</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
     </ItemGroup>
