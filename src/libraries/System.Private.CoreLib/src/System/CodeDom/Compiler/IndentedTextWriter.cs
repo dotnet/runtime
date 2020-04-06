@@ -45,7 +45,11 @@ namespace System.CodeDom.Compiler
         public int Indent
         {
             get { return _indentLevel; }
-            set { _indentLevel = Math.Max(value, 0); }
+            set
+            {
+                _indentLevel = Math.Max(value, 0);
+                _tabsPending = _indentLevel != 0;
+            }
         }
 
         public TextWriter InnerWriter => _writer;

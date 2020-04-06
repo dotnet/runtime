@@ -693,7 +693,8 @@ namespace System.IO
 
         public virtual Task WriteLineAsync()
         {
-            return WriteAsync(CoreNewLine);
+            return Task.Factory.StartNew(state => ((TextWriter) state!).WriteLine(), this,
+                CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         public virtual Task FlushAsync()
