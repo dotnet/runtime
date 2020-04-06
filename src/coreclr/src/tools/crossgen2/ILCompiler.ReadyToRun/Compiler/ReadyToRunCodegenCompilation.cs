@@ -38,6 +38,8 @@ namespace ILCompiler
         public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
         public Logger Logger => _logger;
 
+        public InstructionSetSupport InstructionSetSupport { get; }
+
         protected Compilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
@@ -45,8 +47,10 @@ namespace ILCompiler
             ILProvider ilProvider,
             DevirtualizationManager devirtualizationManager,
             IEnumerable<ModuleDesc> modulesBeingInstrumented,
-            Logger logger)
+            Logger logger,
+            InstructionSetSupport instructionSetSupport)
         {
+            InstructionSetSupport = instructionSetSupport;
             _dependencyGraph = dependencyGraph;
             _nodeFactory = nodeFactory;
             _logger = logger;
@@ -232,6 +236,7 @@ namespace ILCompiler
             Logger logger,
             DevirtualizationManager devirtualizationManager,
             IEnumerable<string> inputFiles,
+            InstructionSetSupport instructionSetSupport,
             bool resilient,
             bool generateMapFile,
             int parallelism)
@@ -242,7 +247,8 @@ namespace ILCompiler
                   ilProvider,
                   devirtualizationManager,
                   modulesBeingInstrumented: nodeFactory.CompilationModuleGroup.CompilationModuleSet,
-                  logger)
+                  logger,
+                  instructionSetSupport)
         {
             _resilient = resilient;
             _parallelism = parallelism;
@@ -250,6 +256,12 @@ namespace ILCompiler
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
             _inputFiles = inputFiles;
+
+            // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
+            // code if the runtime environment doesn't support the specified instruction set
+            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
+            ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
+            _dependencyGraph.AddRoot(new Import(NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
         }
 
         public override void Compile(string outputFile)

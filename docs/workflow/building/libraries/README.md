@@ -81,9 +81,9 @@ The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture)
 
 For more details on the build settings see [project-guidelines](../../../coding-guidelines/project-guidelines.md#build-pivots).
 
-If you invoke the `build` script without any actions, the default action chain `-restore -build` is executed. You can chain multiple actions together (e.g., `-restore -build -buildtests`) and they will execute in the appropriate order. Note that if you specify actions like `-build` explicitly, you likely need to explicitly add `-restore` as well.
+If you invoke the `build` script without any actions, the default action chain `-restore -build` is executed.
 
-By default the `build` script only builds the product libraries and none of the tests. If you want to build the tests you can add the flag `-buildtests`. If you want to run the tests you can add the flag `-test`. To build and run the tests combine both arguments: `-buildtests -test`. To specify just the libraries, use `-subcategory libraries`.
+By default the `build` script only builds the product libraries and none of the tests. If you want to include tests, you want to add the subset `-subset libtests`. If you want to run the tests you want to use the `-test` action instead of the `-build`, e.g. `build.cmd/sh -subsetcategory libraries -test`. To specify just the libraries, use `-subcategory libraries`.
 
 **Examples**
 - Building in release mode for platform x64 (restore and build are implicit here as no actions are passed in)
@@ -93,7 +93,7 @@ By default the `build` script only builds the product libraries and none of the 
 
 - Building the src assemblies and build and run tests (running all tests takes a considerable amount of time!)
 ```bash
-./build.sh -subsetCategory libraries -restore -build -buildtests -test
+./build.sh -subsetCategory libraries -restore -build -test
 ```
 
 - Building for different target frameworks (restore and build are implicit again as no action is passed in)

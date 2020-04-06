@@ -31,7 +31,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -76,7 +75,7 @@ namespace System.Reflection
         // FIXME: "Not implemented.  Always returns null"
         public override ICustomAttributeProvider ReturnTypeCustomAttributes
         {
-            get { return null; }
+            get { return null!; }
         }
 
         // FIXME: "Not implemented.  Always returns zero"
@@ -103,7 +102,7 @@ namespace System.Reflection
         }
 
         // FIXME: "Not implemented"
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw new NotImplementedException();
         }

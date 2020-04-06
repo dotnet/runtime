@@ -58,16 +58,18 @@ typedef struct {
 	LLVMModuleRef lmodule;
 	LLVMValueRef throw_icall, rethrow, throw_corlib_exception;
 	GHashTable *llvm_types;
-	LLVMValueRef got_var;
-	const char *got_symbol;
+	LLVMValueRef dummy_got_var;
 	const char *get_method_symbol;
 	const char *get_unbox_tramp_symbol;
+	const char *init_aotconst_symbol;
 	GHashTable *plt_entries;
 	GHashTable *plt_entries_ji;
 	GHashTable *method_to_lmethod;
 	GHashTable *method_to_call_info;
 	GHashTable *lvalue_to_lcalls;
 	GHashTable *direct_callables;
+	/* Maps got slot index -> LLVMValueRef */
+	GHashTable *aotconst_vars;
 	char **bb_names;
 	int bb_names_len;
 	GPtrArray *used;
@@ -86,9 +88,8 @@ typedef struct {
 	MonoAssembly *assembly;
 	char *global_prefix;
 	MonoAotFileInfo aot_info;
-	const char *jit_got_symbol;
 	const char *eh_frame_symbol;
-	LLVMValueRef get_method, get_unbox_tramp;
+	LLVMValueRef get_method, get_unbox_tramp, init_aotconst_func;
 	LLVMValueRef init_method, init_method_gshared_mrgctx, init_method_gshared_this, init_method_gshared_vtable;
 	LLVMValueRef code_start, code_end;
 	LLVMValueRef inited_var;
@@ -1717,6 +1718,7 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 		name = g_strdup_printf ("rgctx_slot_index_%s", mono_rgctx_info_type_to_str (entry->info_type));
 		break;
 	}
+	case MONO_PATCH_INFO_AOT_MODULE:
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 	case MONO_PATCH_INFO_GC_NURSERY_START:
@@ -1763,9 +1765,7 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 					 guint32 *out_got_offset, MonoJumpInfo **out_ji)
 {
 	guint32 got_offset;
-	LLVMValueRef indexes [2];
-	LLVMValueRef got_entry_addr, load;
-	char *name = NULL;
+	LLVMValueRef load;
 
 	MonoJumpInfo tmp_ji;
 	tmp_ji.type = type;
@@ -1782,20 +1782,32 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 	if (out_got_offset)
 		*out_got_offset = got_offset;
 
-	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-	indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
-	got_entry_addr = LLVMBuildGEP (builder, module->got_var, indexes, 2, "");
+	LLVMValueRef const_var = g_hash_table_lookup (module->aotconst_vars, GINT_TO_POINTER (got_offset));
+	if (!const_var) {
+		LLVMTypeRef type = llvm_type;
+		// FIXME:
+		char *name = get_aotconst_name (ji->type, ji->data.target, got_offset);
+		char *symbol = g_strdup_printf ("aotconst_%s", name);
+		g_free (name);
+		LLVMValueRef v = LLVMAddGlobal (module->lmodule, type, symbol);
+		LLVMSetVisibility (v, LLVMHiddenVisibility);
+		LLVMSetLinkage (v, LLVMInternalLinkage);
+		LLVMSetInitializer (v, LLVMConstNull (type));
+		// FIXME:
+		LLVMSetAlignment (v, 8);
 
-	name = get_aotconst_name (type, data, got_offset);
-	load = LLVMBuildLoad (builder, got_entry_addr, "");
+		g_hash_table_insert (module->aotconst_vars, GINT_TO_POINTER (got_offset), v);
+		const_var = v;
+	}
+
+	load = LLVMBuildLoad (builder, const_var, "");
 
 	if (mono_aot_is_shared_got_offset (got_offset))
 		set_invariant_load_flag (load);
 	if (type == MONO_PATCH_INFO_LDSTR)
 		set_nonnull_load_flag (load);
 
-	load = LLVMBuildBitCast (builder, load, llvm_type, name);
-	g_free (name);
+	load = LLVMBuildBitCast (builder, load, llvm_type, "");
 
 	return load;
 }
@@ -1841,7 +1853,7 @@ get_dummy_aotconst (EmitContext *ctx, LLVMTypeRef llvm_type)
 	LLVMBuilderRef builder = ctx->builder;
 	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-	got_entry_addr = LLVMBuildGEP (builder, ctx->module->got_var, indexes, 2, "");
+	got_entry_addr = LLVMBuildGEP (builder, ctx->module->dummy_got_var, indexes, 2, "");
 
 	load = LLVMBuildLoad (builder, got_entry_addr, "");
 	load = convert (ctx, load, llvm_type);
@@ -2911,6 +2923,59 @@ emit_get_unbox_tramp (MonoLLVMModule *module)
 	}
 
 	mark_as_used (module, func);
+	LLVMDisposeBuilder (builder);
+}
+
+/*
+ * emit_init_aotconst:
+ *
+ *   Emit a function to initialize the aotconst_ variables. Called by the runtime.
+ */
+static void
+emit_init_aotconst (MonoLLVMModule *module)
+{
+	LLVMModuleRef lmodule = module->lmodule;
+	LLVMValueRef func, switch_ins;
+	LLVMBasicBlockRef entry_bb, fail_bb, bb;
+	LLVMBasicBlockRef *bbs = NULL;
+	LLVMBuilderRef builder = LLVMCreateBuilder ();
+	char *name;
+
+	func = LLVMAddFunction (lmodule, module->init_aotconst_symbol, LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), IntPtrType (), FALSE));
+	LLVMSetLinkage (func, LLVMExternalLinkage);
+	LLVMSetVisibility (func, LLVMHiddenVisibility);
+	mono_llvm_add_func_attr (func, LLVM_ATTR_NO_UNWIND);
+	module->init_aotconst_func = func;
+
+	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
+
+	bbs = g_new0 (LLVMBasicBlockRef, module->max_got_offset + 1);
+	for (int i = 0; i < module->max_got_offset + 1; ++i) {
+		name = g_strdup_printf ("BB_%d", i);
+		bb = LLVMAppendBasicBlock (func, name);
+		g_free (name);
+		bbs [i] = bb;
+
+		LLVMPositionBuilderAtEnd (builder, bb);
+
+		LLVMValueRef var = g_hash_table_lookup (module->aotconst_vars, GINT_TO_POINTER (i));
+		if (var) {
+			LLVMValueRef addr = LLVMBuildBitCast (builder, var, LLVMPointerType (IntPtrType (), 0), "");
+			LLVMBuildStore (builder, LLVMGetParam (func, 1), addr);
+		}
+		LLVMBuildRetVoid (builder);
+	}
+
+	fail_bb = LLVMAppendBasicBlock (func, "FAIL");
+	LLVMPositionBuilderAtEnd (builder, fail_bb);
+	LLVMBuildRetVoid (builder);
+
+	LLVMPositionBuilderAtEnd (builder, entry_bb);
+
+	switch_ins = LLVMBuildSwitch (builder, LLVMGetParam (func, 0), fail_bb, 0);
+	for (int i = 0; i < module->max_got_offset + 1; ++i)
+		LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
+
 	LLVMDisposeBuilder (builder);
 }
 
@@ -10202,10 +10267,10 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->lmodule = LLVMModuleCreateWithName ("aot");
 	module->assembly = assembly;
 	module->global_prefix = g_strdup (global_prefix);
-	module->got_symbol = g_strdup_printf ("%s_llvm_got", global_prefix);
 	module->eh_frame_symbol = g_strdup_printf ("%s_eh_frame", global_prefix);
 	module->get_method_symbol = g_strdup_printf ("%s_get_method", global_prefix);
 	module->get_unbox_tramp_symbol = g_strdup_printf ("%s_get_unbox_tramp", global_prefix);
+	module->init_aotconst_symbol = g_strdup_printf ("%s_init_aotconst", global_prefix);
 	module->external_symbols = TRUE;
 	module->emit_dwarf = emit_dwarf;
 	module->static_link = static_link;
@@ -10216,6 +10281,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->context = LLVMGetGlobalContext ();
 	module->cfgs = g_ptr_array_new ();
 	module->intrins_by_id = g_new0 (LLVMValueRef, INTRINS_NUM);
+	module->aotconst_vars = g_hash_table_new (NULL, NULL);
 
 	if (llvm_only)
 		/* clang ignores our debug info because it has an invalid version */
@@ -10281,19 +10347,14 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	}
 #endif
 
-	/* Add GOT */
-	/*
-	 * We couldn't compute the type of the LLVM global representing the got because
-	 * its size is only known after all the methods have been emitted. So create
-	 * a dummy variable, and replace all uses it with the real got variable when
-	 * its size is known in mono_llvm_emit_aot_module ().
-	 */
 	{
-		LLVMTypeRef got_type = LLVMArrayType (module->ptr_type, 0);
+		LLVMTypeRef got_type = LLVMArrayType (module->ptr_type, 16);
 
-		module->got_var = LLVMAddGlobal (module->lmodule, got_type, "mono_dummy_got");
+		module->dummy_got_var = LLVMAddGlobal (module->lmodule, got_type, "dummy_got");
 		module->got_idx_to_type = g_hash_table_new (NULL, NULL);
-		LLVMSetInitializer (module->got_var, LLVMConstNull (got_type));
+		LLVMSetInitializer (module->dummy_got_var, LLVMConstNull (got_type));
+		LLVMSetVisibility (module->dummy_got_var, LLVMHiddenVisibility);
+		LLVMSetLinkage (module->dummy_got_var, LLVMInternalLinkage);
 	}
 
 	/* Add initialization array */
@@ -10363,8 +10424,7 @@ mono_llvm_fixup_aot_module (void)
 		method = site->method;
 		LLVMValueRef lmethod = (LLVMValueRef)g_hash_table_lookup (module->method_to_lmethod, method);
 		LLVMValueRef placeholder = (LLVMValueRef)site->load;
-		LLVMValueRef indexes [2], got_entry_addr, load;
-		char *name;
+		LLVMValueRef load;
 
 		gboolean can_direct_call = FALSE;
 
@@ -10403,19 +10463,11 @@ mono_llvm_fixup_aot_module (void)
 
 			g_hash_table_insert (patches_to_null, site->ji, site->ji);
 		} else {
-			int got_offset = compute_aot_got_offset (module, site->ji, site->type);
-
-			module->max_got_offset = MAX (module->max_got_offset, got_offset);
-
+			// FIXME:
 			LLVMBuilderRef builder = LLVMCreateBuilder ();
 			LLVMPositionBuilderBefore (builder, placeholder);
-			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-			indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
-			got_entry_addr = LLVMBuildGEP (builder, module->got_var, indexes, 2, "");
 
-			name = get_aotconst_name (site->ji->type, site->ji->data.target, got_offset);
-			load = LLVMBuildLoad (builder, got_entry_addr, "");
-			load = LLVMBuildBitCast (builder, load, site->type, name ? name : "");
+			load = get_aotconst_module (module, builder, site->ji->type, site->ji->data.target, site->type, NULL, NULL);
 			LLVMReplaceAllUsesWith (placeholder, load);
 		}
 		g_free (site);
@@ -10531,7 +10583,7 @@ AddJitGlobal (MonoLLVMModule *module, LLVMTypeRef type, const char *name)
 	return v;
 }
 #define FILE_INFO_NUM_HEADER_FIELDS 2
-#define FILE_INFO_NUM_SCALAR_FIELDS 22
+#define FILE_INFO_NUM_SCALAR_FIELDS 23
 #define FILE_INFO_NUM_ARRAY_FIELDS 5
 #define FILE_INFO_NUM_AOTID_FIELDS 1
 #define FILE_INFO_NFIELDS (FILE_INFO_NUM_HEADER_FIELDS + MONO_AOT_FILE_INFO_NUM_SYMBOLS + FILE_INFO_NUM_SCALAR_FIELDS + FILE_INFO_NUM_ARRAY_FIELDS + FILE_INFO_NUM_AOTID_FIELDS)
@@ -10613,7 +10665,6 @@ emit_aot_file_info (MonoLLVMModule *module)
 		fields [tindex ++] = LLVMConstNull (eltype);
 	else
 		fields [tindex ++] = AddJitGlobal (module, eltype, "jit_got");
-	fields [tindex ++] = module->got_var;
 	/* llc defines this directly */
 	if (!module->llvm_only) {
 		fields [tindex ++] = LLVMAddGlobal (lmodule, eltype, module->eh_frame_symbol);
@@ -10624,6 +10675,7 @@ emit_aot_file_info (MonoLLVMModule *module)
 		fields [tindex ++] = module->get_method;
 		fields [tindex ++] = module->get_unbox_tramp ? module->get_unbox_tramp : LLVMConstNull (eltype);
 	}
+	fields [tindex ++] = module->init_aotconst_func;
 	if (module->has_jitted_code) {
 		fields [tindex ++] = AddJitGlobal (module, eltype, "jit_code_start");
 		fields [tindex ++] = AddJitGlobal (module, eltype, "jit_code_end");
@@ -10707,6 +10759,7 @@ emit_aot_file_info (MonoLLVMModule *module)
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->plt_got_offset_base, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->plt_got_info_offset_base, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->got_size, FALSE);
+	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->llvm_got_size, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->plt_size, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->nmethods, FALSE);
 	fields [tindex ++] = LLVMConstInt (LLVMInt32Type (), info->nextra_methods, FALSE);
@@ -10919,50 +10972,15 @@ mono_llvm_propagate_nonnull_final (GHashTable *all_specializable, MonoLLVMModule
 void
 mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 {
-	LLVMTypeRef got_type, inited_type;
-	LLVMValueRef real_got, real_inited;
+	LLVMTypeRef inited_type;
+	LLVMValueRef real_inited;
 	MonoLLVMModule *module = &aot_module;
 
 	emit_llvm_code_end (module);
 
 	/* 
-	 * Create the real got variable and replace all uses of the dummy variable with
+	 * Create the real init_var and replace all uses of the dummy variable with
 	 * the real one.
-	 */
-	int size = module->max_got_offset + 1;
-	LLVMTypeRef *members = g_malloc0 (sizeof (LLVMValueRef) * size);
-	for (int i = 0; i < size; i++) {
-		LLVMTypeRef lookup_type = NULL;
-
-		lookup_type = (LLVMTypeRef) g_hash_table_lookup (module->got_idx_to_type, GINT_TO_POINTER (i));
-
-		if (!lookup_type)
-			lookup_type = module->ptr_type;
-
-		members [i] = LLVMPointerType (lookup_type, 0);
-	}
-
-	got_type = LLVMStructCreateNamed (module->context, g_strdup_printf ("MONO_GOT_%s", cu_name));
-	LLVMStructSetBody (got_type, members, size, FALSE);
-	real_got = LLVMAddGlobal (module->lmodule, got_type, module->got_symbol);
-
-	LLVMSetInitializer (real_got, LLVMConstNull (got_type));
-	if (module->external_symbols) {
-		LLVMSetLinkage (real_got, LLVMExternalLinkage);
-		LLVMSetVisibility (real_got, LLVMHiddenVisibility);
-	} else {
-		LLVMSetLinkage (real_got, LLVMInternalLinkage);
-	}
-	mono_llvm_replace_uses_of (module->got_var, real_got);
-
-	mark_as_used (&aot_module, real_got);
-
-	/* Delete the dummy got so it doesn't become a global */
-	LLVMDeleteGlobal (module->got_var);
-	module->got_var = real_got;
-
-	/*
-	 * Same for the init_var
 	 */
 	inited_type = LLVMArrayType (LLVMInt8Type (), module->max_inited_idx + 1);
 	real_inited = LLVMAddGlobal (module->lmodule, inited_type, "mono_inited");
@@ -10975,6 +10993,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		emit_get_method (&aot_module);
 		emit_get_unbox_tramp (&aot_module);
 	}
+	emit_init_aotconst (module);
 
 	emit_llvm_used (&aot_module);
 	emit_dbg_info (&aot_module, filename, cu_name);

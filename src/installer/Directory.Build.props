@@ -95,6 +95,7 @@
     <OutputRid Condition="'$(TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(TargetOS)' == 'iOS'">ios-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'Android'">android-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -165,6 +166,7 @@
     <TargetsWindows>false</TargetsWindows>
     <TargetsOSX>false</TargetsOSX>
     <TargetsiOS>false</TargetsiOS>
+    <TargetsAndroid>false</TargetsAndroid>
     <TargetsLinux>false</TargetsLinux>
     <TargetsUnix>false</TargetsUnix>
     <TargetsUbuntu>false</TargetsUbuntu>
@@ -192,6 +194,13 @@
     <When Condition="$(OutputRid.StartsWith('ios'))">
       <PropertyGroup>
         <TargetsiOS>true</TargetsiOS>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(OutputRid.StartsWith('android'))">
+      <PropertyGroup>
+        <TargetsAndroid>true</TargetsAndroid>
+        <TargetsLinux>true</TargetsLinux>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
@@ -338,7 +347,7 @@
     <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
     <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
     <!-- OSX doesn't have crossgen symbols, yet -->
-    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS'"></CrossGenSymbolExtension>
+    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'"></CrossGenSymbolExtension>
   </PropertyGroup>
 
 </Project>

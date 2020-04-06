@@ -2079,9 +2079,12 @@ init_amodule_got (MonoAotModule *amodule, gboolean preinit)
 		for (i = 0; i < npatches; ++i)
 			amodule->got [i] = amodule->shared_got [i];
 	}
-	if (amodule->llvm_got) {
-		for (i = 0; i < npatches; ++i)
+	if (amodule->info.flags & MONO_AOT_FILE_FLAG_WITH_LLVM) {
+		void (*init_aotconst) (int, gpointer) = (void (*)(int, gpointer))amodule->info.llvm_init_aotconst;
+		for (i = 0; i < npatches; ++i) {
 			amodule->llvm_got [i] = amodule->shared_got [i];
+			init_aotconst (i, amodule->llvm_got [i]);
+		}
 	}
 
 	mono_mempool_destroy (mp);
@@ -2300,7 +2303,10 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	memcpy (&amodule->info, info, sizeof (*info));
 
 	amodule->got = (void **)amodule->info.jit_got;
-	amodule->llvm_got = (void **)amodule->info.llvm_got;
+	/*
+	 * The llvm code keeps its data in separate scalar variables, so this just used by this module.
+	 */
+	amodule->llvm_got = g_malloc0 (sizeof (gpointer) * amodule->info.llvm_got_size);
 	amodule->globals = globals;
 	amodule->sofile = sofile;
 	amodule->method_to_code = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -4705,6 +4711,11 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 				got [got_slots [pindex]] = addr;
 				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
 					register_jump_target_got_slot (domain, ji->data.method, &(got [got_slots [pindex]]));
+
+				if (llvm) {
+					void (*init_aotconst) (int, gpointer) = (void (*)(int, gpointer))amodule->info.llvm_init_aotconst;
+					init_aotconst (got_slots [pindex], addr);
+				}
 			}
 			ji->type = MONO_PATCH_INFO_NONE;
 		}

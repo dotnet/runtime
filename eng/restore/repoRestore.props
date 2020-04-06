@@ -1,6 +1,6 @@
 <Project TreatAsLocalProperty="ExcludeRestorePackageImports">
-
   <PropertyGroup>
+    <RestoreUseStaticGraphEvaluation>false</RestoreUseStaticGraphEvaluation>
     <!-- Need to set ProjectAssetsFile to something so it doesn't get set to the Tools.proj assets file when we import the generated props -->
     <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == ''">unused</ProjectAssetsFile>
     <!-- Nuget will normally disable all generated imports as part of a restore to avoid 
@@ -14,12 +14,6 @@
   <PropertyGroup>
     <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == 'unused'" />
     <ExcludeRestorePackageImports>$(_excludeRestorePackageImports)</ExcludeRestorePackageImports>
-  </PropertyGroup>
-
-  <!-- Enable the repo-restored analyzers -->
-  <PropertyGroup>
-    <AnalyzerPropsFile>$(ToolSetCommonDirectory)Tools.Analyzers.props</AnalyzerPropsFile>
-    <EnableAnalyzers Condition="'$(EnableAnalyzers)' == '' and '$(IsSourceProject)' == 'true'">true</EnableAnalyzers>
   </PropertyGroup>
   
   <PropertyGroup>

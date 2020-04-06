@@ -22,5 +22,11 @@
     <IgnoredTypes Include="System.Threading.IOCompletionCallback" />
     <IgnoredTypes Include="System.Threading.NativeOverlapped" />
     <IgnoredTypes Include="System.DBNull" />
+    <IgnoredTypes Include="System.Runtime.Serialization.OnDeserializedAttribute" />
+    <IgnoredTypes Include="System.Runtime.Serialization.OnDeserializingAttribute" />
+    <IgnoredTypes Include="System.Runtime.Serialization.OnSerializingAttribute" />
+    <IgnoredTypes Include="System.Runtime.Serialization.OnSerializedAttribute" />
+    <IgnoredTypes Include="System.Runtime.Serialization.SerializationException" />
+    <IgnoredTypes Include="System.Runtime.Serialization.StreamingContext" />
   </ItemGroup>
 </Project>

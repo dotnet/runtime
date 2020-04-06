@@ -52,7 +52,6 @@ jobs:
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
-        - _skipTestRestoreArg: /p:SkipTestRestore=false
         - ${{ parameters.variables }}
 
       steps:
@@ -73,24 +72,12 @@ jobs:
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
 
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          - script: $(_msbuildCommand) src/libraries/restore/runtime/runtime.depproj 
-                    $(_runtimeArtifactsPathArg)
-                    $(_runtimeOSArg)
+          - script: $(_buildScript)
+                    -subset pretest
+                    $(_buildArguments)
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-                    /p:TargetArchitecture=${{ parameters.archType }}
-                    /p:Configuration=${{ parameters.buildConfig }}
                     /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
-            displayName: Override $(runtimeFlavorName) from live drop
-
-          - script: $(_buildScript) -projects $(Build.SourcesDirectory)/src/libraries/pretest.proj 
-                    $(_runtimeArtifactsPathArg)
-                    $(_runtimeOSArg)
-                    /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-                    /p:TargetArchitecture=${{ parameters.archType }}
-                    /p:Configuration=${{ parameters.buildConfig }}
-                    /p:SkipBuildProjects=true
-                    /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/pretest.binlog
-            displayName: Build PreTest to Generate Deps Json File
+            displayName: Prepare TestHost with runtime $(runtimeFlavorName)
 
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
