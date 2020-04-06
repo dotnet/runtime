@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void SerializeJsonDocument()
         {
-            JsonDocumentClass obj = new JsonDocumentClass();
+            using JsonDocumentClass obj = new JsonDocumentClass();
             obj.Document = JsonSerializer.Deserialize<JsonDocument>(JsonDocumentClass.s_json);
             obj.Verify();
             string reserialized = JsonSerializer.Serialize(obj.Document);
@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
-        public class JsonDocumentClass : ITestClass
+        public class JsonDocumentClass : ITestClass, IDisposable
         {
             public JsonDocument Document { get; set; }
 
@@ -82,12 +82,17 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(JsonValueKind.Null, nullType.ValueKind);
                 Assert.Equal("", nullType.ToString()); // JsonElement returns empty string for null.
             }
+
+            public void Dispose()
+            {
+                Document.Dispose();
+            }
         }
 
         [Fact]
         public void SerializeJsonElementArray()
         {
-            JsonDocumentArrayClass obj = new JsonDocumentArrayClass();
+            using JsonDocumentArrayClass obj = new JsonDocumentArrayClass();
             obj.Document = JsonSerializer.Deserialize<JsonDocument>(JsonDocumentArrayClass.s_json);
             obj.Verify();
             string reserialized = JsonSerializer.Serialize(obj.Document);
@@ -101,7 +106,7 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
-        public class JsonDocumentArrayClass : ITestClass
+        public class JsonDocumentArrayClass : ITestClass, IDisposable
         {
             public JsonDocument Document { get; set; }
 
@@ -136,6 +141,11 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal("False", array[2].ToString());
                 Assert.Equal(JsonValueKind.String, array[3].ValueKind);
                 Assert.Equal("Hello", array[3].ToString());
+            }
+
+            public void Dispose()
+            {
+                Document.Dispose();
             }
         }
 
