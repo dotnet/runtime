@@ -2188,9 +2188,13 @@ invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *an
 			if (hook->version == 2)
 				assembly = hook->func.v2 (alc, aname, apath, FALSE, hook->user_data, error);
 			else { // v3
+#ifdef ENABLE_NETCORE
 				MonoGCHandle strong_gchandle = mono_gchandle_from_handle (mono_gchandle_get_target_handle (alc->gchandle), TRUE);
 				assembly = hook->func.v3 (strong_gchandle, aname, apath, hook->user_data, error);
 				mono_gchandle_free_internal (strong_gchandle);
+#else
+				assembly = hook->func.v3 (NULL, aname, apath, hook->user_data, error);
+#endif
 			}
 			/* TODO: propagage error out to callers */
 			mono_error_assert_ok (error);
@@ -4860,7 +4864,11 @@ mono_assembly_load_full_alc (MonoAssemblyName *aname, const char *basedir, MonoI
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyByNameRequest req;
+#ifdef ENABLE_NETCORE
 	MonoAssemblyLoadContext *alc = mono_alc_from_gchandle (alc_gchandle);
+#else
+	MonoAssemblyLoadContext *alc = mono_domain_default_alc (mono_domain_get ());
+#endif
 	mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
 	req.requesting_assembly = NULL;
 	req.basedir = basedir;
