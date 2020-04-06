@@ -2715,12 +2715,13 @@ namespace Mono.Linker.Steps {
 							// GetConstructor (BindingFlags, Binder, Type [], ParameterModifier [])
 							// GetConstructor (BindingFlags, Binder, CallingConventions, Type [], ParameterModifier [])
 							//
+							/*
 							case "GetConstructor":
 								if (!methodCalled.IsStatic)
 									ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Constructor, instructionIndex - 1);
 
 								break;
-
+								*/
 							//
 							// GetMethod (string)
 							// GetMethod (string, BindingFlags)
@@ -2735,12 +2736,13 @@ namespace Mono.Linker.Steps {
 							// GetMethod (string, int, BindingFlags, Binder?, Type[], ParameterModifier[]?)
 							// GetMethod (string, int, BindingFlags, Binder?, CallingConventions, Type[], ParameterModifier[]?)
 							//
+							/*
 							case "GetMethod":
 								if (!methodCalled.IsStatic)
 									ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Method, instructionIndex - 1);
 
 								break;
-
+								*/
 							//
 							// GetField (string)
 							// GetField (string, BindingFlags)

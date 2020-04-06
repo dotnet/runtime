@@ -110,8 +110,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string) })]
 		static void TestNullName ()
 		{
 			var method = typeof (MethodUsedViaReflection).GetMethod (null);
@@ -134,8 +132,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetMethod), new Type [] { typeof (string), typeof (BindingFlags) })]
 		static void TestNullType ()
 		{
 			Type type = null;
@@ -351,7 +347,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 				return 42;
 			}
 			
-			private static int OnlyCalledViaReflection(int foo)
+			private int OnlyCalledViaReflection(int foo)
 			{
 				return 43;
 			}
@@ -366,17 +362,17 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			[Kept]
 			public static int OnlyCalledViaReflection ()
 			{
-				return 42;
+				return 45;
 			}
-
+			[Kept]
 			private static int OnlyCalledViaReflection (int foo)
 			{
-				return 43;
+				return 46;
 			}
 			[Kept]
 			public static int ElseIfCall ()
 			{
-				return 44;
+				return 47;
 			}
 		}
 		private class ElseClass
@@ -384,17 +380,17 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			[Kept]
 			public static int OnlyCalledViaReflection ()
 			{
-				return 42;
-			}
-
-			private static int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
+				return 48;
 			}
 			[Kept]
-			public static int ElseIfCall ()
+			private static int OnlyCalledViaReflection (int foo)
 			{
-				return 44;
+				return 49;
+			}
+			
+			public int ElseIfCall ()
+			{
+				return 50;
 			}
 		}
 	}
