@@ -14,6 +14,7 @@
 #include <fnmatch.h>
 #include <ctime>
 #include <pwd.h>
+#include "config.h"
 
 #if defined(TARGET_OSX)
 #include <mach-o/dyld.h>
@@ -25,6 +26,13 @@
 #define symlinkEntrypointExecutable "/proc/self/exe"
 #elif !defined(TARGET_OSX)
 #define symlinkEntrypointExecutable "/proc/curproc/exe"
+#endif
+
+#if !HAVE_DIRENT_D_TYPE
+#define DT_UNKNOWN 0
+#define DT_DIR 4
+#define DT_REG 8
+#define DT_LNK 10
 #endif
 
 pal::string_t pal::to_string(int value) { return std::to_string(value); }
@@ -821,8 +829,14 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
                 continue;
             }
 
+#if HAVE_DIRENT_D_TYPE
+            int dirEntryType = entry->d_type;
+#else
+            int dirEntryType = DT_UNKNOWN;
+#endif
+
             // We are interested in files only
-            switch (entry->d_type)
+            switch (dirEntryType)
             {
             case DT_DIR:
                 break;

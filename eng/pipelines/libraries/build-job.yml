@@ -59,15 +59,12 @@ jobs:
           - ${{ format('coreclr_corelib_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, 'linux', parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
 
       variables:
-        - _skipTestRestoreArg: /p:SkipTestRestore=true
-        - _buildAction: -build
+        - _addtionalBuildArguments: ''
         - ${{ parameters.variables }}
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - EMSDK_PATH: $(Build.BinariesDirectory)/emsdk
         - ${{ if eq(parameters.runTests, true) }}:
-          - _buildAction: -build -buildtests /p:ArchiveTests=true
-          - ${{ if ne(parameters.framework, 'allConfigurations') }}:
-            - _skipTestRestoreArg: /p:SkipTestRestore=false
+          - _addtionalBuildArguments: /p:IncludeLibrariesTestSubset=true /p:ArchiveTests=true
 
         - ${{ parameters.variables }}
 
@@ -95,26 +92,36 @@ jobs:
             parameters:
               installDotnet: true
 
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Restore.binlog
-          displayName: Restore
-
         - script: $(_buildScript)
-                $(_buildAction)
                 $(_buildArguments)
-          displayName: Build
+                $(_addtionalBuildArguments)
+          displayName: Restore and Build Product
 
         - ${{ if eq(parameters.runTests, false) }}:
-          - task: CopyFiles@2
-            displayName: Prepare ref folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref
+          - ${{ if ne(parameters.isOfficialBuild, true) }}:            
+            - task: CopyFiles@2
+              displayName: Prepare testhost folder to publish
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
+                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
 
-          - task: CopyFiles@2
-            displayName: Prepare runtime folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
+            - task: CopyFiles@2
+              displayName: Prepare artifacts toolset folder to publish
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/toolset
+                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/toolset
+
+            - task: CopyFiles@2
+              displayName: Prepare runtime folder to publish
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
+                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
+
+            - task: CopyFiles@2
+              displayName: Prepare ref folder to publish
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref
+                targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref
 
           - task: CopyFiles@2
             displayName: Prepare shared framework ref assemblies to publish
@@ -139,19 +146,6 @@ jobs:
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/native
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/native
-
-          - task: CopyFiles@2
-            displayName: Prepare testhost folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
-            condition: ne(variables['_skipTestHostCopy'], 'true')
-
-          - task: CopyFiles@2
-            displayName: Prepare artifacts toolset folder to publish
-            inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/toolset
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/toolset
 
           - task: CopyFiles@2
             displayName: Prepare artifacts packages folder to publish

@@ -304,10 +304,6 @@
   </ItemGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
-  <!-- Setup ILLink.targets -->
-  <ItemGroup>
-    <PackageReference Include="ILLink.Tasks" Version="$(ILLinkTasksVersion)" ExcludeAssets="build" GeneratePathProperty="True" />
-  </ItemGroup>
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
     <Copy SourceFiles="$(BinDir)/IL/System.Private.CoreLib.dll;$(BinDir)/IL/System.Private.CoreLib.pdb"

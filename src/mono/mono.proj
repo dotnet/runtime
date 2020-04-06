@@ -1,11 +1,7 @@
-<Project>
+<Project DefaultTargets="Build">
   <Import Project="Directory.Build.props" />
-  <Import Project="Directory.Build.targets" />
+
   <PropertyGroup>
-    <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
-    <MonoEnableLLVM Condition="'$(MonoEnableLLVM)' == ''">false</MonoEnableLLVM>
-    <MonoEnableCXX Condition="'$(MonoEnableCXX)' == ''">false</MonoEnableCXX>
-    <MonoLLVMDir Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
     <MonoCrossDir Condition="'$(MonoCrossDir)' == '' and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</MonoCrossDir>
     <DotNetExec Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</DotNetExec>
     <DotNetExec Condition="'$(DotNetExec)' == ''">dotnet</DotNetExec>
@@ -518,63 +514,6 @@
     <Exec Command="$(_MonoBuildCommand)" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
-  <Target Name="BuildCoreLib">
-    <MSBuild Projects="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj"
-             Properties="Configuration=$(Configuration)"
-             Targets="Build" />
-  </Target>
-
-  <!-- General targets -->
-  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
-    <PropertyGroup>
-      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsiOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
-      <_MonoRuntimeStaticFilePath Condition="'$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm64'">$(MonoObjDir)cross\out\bin\aarch64-darwin-mono-sgen</_MonoAotCrossFilePath>
-      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm'">$(MonoObjDir)cross\out\bin\arm-darwin-mono-sgen</_MonoAotCrossFilePath>
-    </PropertyGroup>
-
-    <!-- Copy Mono runtime files to artifacts directory -->
-    <ItemGroup>
-      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath)">
-        <Destination>$(BinDir)$(MonoFileName)</Destination>
-      </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeStaticFilePath)">
-        <Destination>$(BinDir)$(MonoStaticFileName)</Destination>
-      </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
-        <Destination>$(BinDir)cross\mono-aot-cross</Destination>
-      </_MonoRuntimeArtifacts>
-      <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
-          DestinationFiles="%(_MonoRuntimeArtifacts.Destination)"
-          SkipUnchangedFiles="true" />
-
-    <Copy SourceFiles="@(_MonoIncludeArtifacts)"
-          DestinationFiles="@(_MonoIncludeArtifacts->'$(BinDir)include\%(RecursiveDir)%(Filename)%(Extension)')"
-          SkipUnchangedFiles="true"
-          Condition="'$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'"/>
-
-    <Exec Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true'" Command="install_name_tool -id @rpath/$(MonoFileName) $(BinDir)$(MonoFileName)" />
-  </Target>
-
-  <Target Name="Restore">
-    <MSBuild Projects="$(MonoProjectRoot)netcore\nuget\packages.builds" Targets="Restore" />
-    <MSBuild Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == '$(MonoObjDir)llvm'" Projects="$(MonoProjectRoot)llvm\llvm-init.proj" Targets="Restore" Properties="MonoObjDir=$(MonoObjDir);MonoLLVMDir=$(MonoLLVMDir)" />
-  </Target>
-
-  <Target Name="Pack">
-    <MSBuild Projects="$(MonoProjectRoot)netcore\nuget\packages.builds" Targets="Build" />
-  </Target>
-
-  <Target Name="Test" />
-
   <!-- Precompile (AssembliesToPrecompile) using (MonoExec) -->
   <Target Name="PrecompileAssembly">
    <PropertyGroup>
@@ -712,6 +651,49 @@
     <Error Condition="$([System.IO.Directory]::GetDirectories('$(LocalDotnetDir)\shared\Microsoft.NETCore.App').Length) > 1" Text="$(LocalDotnetDir) contains more than one SDK, please delete unused ones." />
     <Error Condition="Exists('$(LocalMonoDotnetDir)') AND $([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App').Length) > 1" Text="$(LocalMonoDotnetDir) contains more than one SDK, please delete unused ones." />
     <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
+  </Target>
+
+  <Import Project="Directory.Build.targets" />
+
+  <!-- Ordering matters! Overwriting the Build target. -->
+  <!-- General targets -->
+  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
+    <PropertyGroup>
+      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsiOS)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.so</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
+      <_MonoRuntimeStaticFilePath Condition="'$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">$(MonoObjDir)out\lib\libmonosgen-2.0.a</_MonoRuntimeStaticFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm64'">$(MonoObjDir)cross\out\bin\aarch64-darwin-mono-sgen</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath Condition="'$(TargetsiOS)' == 'true' and '$(Platform)' == 'arm'">$(MonoObjDir)cross\out\bin\arm-darwin-mono-sgen</_MonoAotCrossFilePath>
+    </PropertyGroup>
+
+    <!-- Copy Mono runtime files to artifacts directory -->
+    <ItemGroup>
+      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath)">
+        <Destination>$(BinDir)$(MonoFileName)</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoRuntimeStaticFilePath)">
+        <Destination>$(BinDir)$(MonoStaticFileName)</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
+        <Destination>$(BinDir)cross\mono-aot-cross</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
+          DestinationFiles="%(_MonoRuntimeArtifacts.Destination)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(_MonoIncludeArtifacts)"
+          DestinationFiles="@(_MonoIncludeArtifacts->'$(BinDir)include\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'"/>
+
+    <Exec Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true'" Command="install_name_tool -id @rpath/$(MonoFileName) $(BinDir)$(MonoFileName)" />
   </Target>
 
 </Project>

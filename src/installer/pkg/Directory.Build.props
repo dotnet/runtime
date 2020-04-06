@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- Disable NuGet static graph evaluation as pkgprojs do their own restore.  -->
+    <RestoreUseStaticGraphEvaluation>false</RestoreUseStaticGraphEvaluation>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

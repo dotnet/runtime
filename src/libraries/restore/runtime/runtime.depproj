@@ -111,4 +111,14 @@
         <ReferenceCopyLocalPaths Include="@(CoreCLRILFiles)" />
       </ItemGroup>
   </Target>
+
+  <!-- Strip away placeholder tfms and TargetFrameworkSuffix. -->
+  <Target Name="StripTargetFrameworkSuffixFromTargetFrameworks"
+          Condition="'$(TargetFrameworks)' != ''"
+          BeforeTargets="_GetRestoreTargetFrameworksOutput;_GetRestoreTargetFrameworksAsItems">
+    <PropertyGroup>
+      <TargetFrameworks Condition="'$(TargetFrameworks)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '_[^;]+;?', ''))</TargetFrameworks>
+      <TargetFrameworks Condition="'$(TargetFrameworks)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFrameworks)', '-[^;]+', ''))</TargetFrameworks>
+    </PropertyGroup>
+  </Target>
 </Project>
