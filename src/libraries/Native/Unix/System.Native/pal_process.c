@@ -220,6 +220,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* stdoutFd,
                                       int32_t* stderrFd)
 {
+#if HAVE_FORK
 #if !HAVE_PIPE2
     bool haveProcessCreateLock = false;
 #endif
@@ -509,6 +510,9 @@ done:;
     free(getGroupsBuffer);
 
     return success ? 0 : -1;
+#else
+    return -1;
+#endif
 }
 
 FILE* SystemNative_POpen(const char* command, const char* type)
