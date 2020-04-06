@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ReferenceFromRuntime Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
 
 </Project>

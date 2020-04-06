@@ -1,23 +1,21 @@
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
 
-  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
-    <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
+  <PropertyGroup>
+    <TraversalGlobalProperties>BuildAllProjects=true</TraversalGlobalProperties>
+    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
-    <Project Include="$(PkgDir)*\*.builds" >
-      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
-    </Project>
-    <Project Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' OR '$(DotNetBuildFromSource)' == 'true'">
-      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
-    </Project>
+  <ItemGroup>
+    <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true'" />
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
   <Import Project="$(PkgDir)baseline\baseline.props" />
 
-  <UsingTask TaskName="UpdatePackageIndex" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll"/>
+  <!-- Calculate PackageDownload items for restore. -->
+  <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
   <!--
     Updates the package index to mark all packages we are building that can go stable as stable.
@@ -26,8 +24,9 @@
     ones that might do this. After we ship a stable set of packages this target should be ran and the
     changes to the package index should be commited to the repo.
   -->
+  <UsingTask TaskName="UpdatePackageIndex" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll"/>
   <Target Name="UpdatePackageIndexWithStableVersions"
-          BeforeTargets="BuildAllProjects"
+          BeforeTargets="Build"
           Condition="'$(DotNetFinalVersionKind)' == 'release'">
     <ItemGroup>
       <!--
@@ -42,8 +41,7 @@
              BuildInParallel="$(BuildInParallel)"
              Projects="@(PkgProjects)"
              RemoveProperties="Configuration">
-      <Output TaskParameter="TargetOutputs"
-              ItemName="_StablePackages" />
+      <Output TaskParameter="TargetOutputs" ItemName="_StablePackages" />
     </MSBuild>
 
     <Message Text="Marking package '%(_StablePackages.Identity)' stable with version '%(_StablePackages.Version)'" />
@@ -56,28 +54,28 @@
 
   <!-- Generate a version text file we include in our packages -->
   <Target Name="GenerateVersionFileForPackages"
-          BeforeTargets="BuildAllProjects"
+          BeforeTargets="Build"
           DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
-
     <Error Condition="'$(SourceRevisionId)' == ''" Text="SourceRevisionId is not set, which means the SourceLink targets are not included in the build. Those are needed to produce a correct sha for our build outputs." />
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(VersionFileForPackages)))" />
-
-    <WriteLinesToFile
-      File="$(VersionFileForPackages)"
-      Lines="$(SourceRevisionId)"
-      Overwrite="true" />
+    <WriteLinesToFile File="$(VersionFileForPackages)"
+                      Lines="$(SourceRevisionId)"
+                      Overwrite="true" />
   </Target>
-
-  <Import Project="$(MSBuildThisFileDirectory)dir.traversal.targets" />
 
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"
           Condition="'$(ContinuousIntegrationBuild)' == 'true'"
-          AfterTargets="BuildAllProjects">
+          AfterTargets="Build">
     <ItemGroup>
       <_PackageReports Include="$(PackageReportDir)*.json" />
     </ItemGroup>
 
-    <Message Condition="'@(_PackageReports)' != ''" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
+    <Message Condition="'@(_PackageReports)' != '' and Exists('$(ArtifactsDir)packages')" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
   </Target>
+
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
+
+  <!-- Pack is a no-op and should just invoke build. -->
+  <Target Name="Pack" DependsOnTargets="Build" />
 </Project>
