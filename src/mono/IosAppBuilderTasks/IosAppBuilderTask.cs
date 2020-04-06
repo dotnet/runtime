@@ -70,6 +70,11 @@ public class IosAppBuilderTask : Task
     public bool GenerateOnlyXcodeProject { get; set; }
 
     /// <summary>
+    /// Files to be ignored in AppDir
+    /// </summary>
+    public ITaskItem[]? ExcludeFromAppDir { get; set; }
+
+    /// <summary>
     /// Path to *.app bundle
     /// </summary>
     [Output]
@@ -93,11 +98,14 @@ public class IosAppBuilderTask : Task
         // escape spaces
         ProjectName = ProjectName.Replace(" ", "-");
 
-        var stopWatch = Stopwatch.StartNew();
-
-        // see https://github.com/dotnet/runtime/issues/34448
-        // Can be exposed as an input argument if needed
-        string[] excludes = {"System.Runtime.WindowsRuntime.dll"};
+        string[] excludes = new string[0];
+        if (ExcludeFromAppDir != null)
+        {
+            excludes = ExcludeFromAppDir
+                .Where(i => !string.IsNullOrEmpty(i.ItemSpec))
+                .Select(i => i.ItemSpec)
+                .ToArray();
+        }
         string[] libsToAot = Directory.GetFiles(AppDir, "*.dll")
             .Where(f => !excludes.Contains(Path.GetFileName(f)))
             .ToArray();
@@ -136,8 +144,7 @@ public class IosAppBuilderTask : Task
                 Arch, Optimized, DevTeamProvisioning);
         }
 
-        stopWatch.Stop();
-        Log.LogMessage(MessageImportance.High, $"Xcode: {XcodeProjectPath}\n App: {AppBundlePath}\n\tin {stopWatch.Elapsed.TotalSeconds:F1} s.");
+        Log.LogMessage(MessageImportance.High, $"Xcode: {XcodeProjectPath}\n App: {AppBundlePath}");
         return true;
     }
 }
