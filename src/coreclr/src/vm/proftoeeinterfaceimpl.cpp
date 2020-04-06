@@ -8407,7 +8407,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
                 {
                     // not in jitted or ngend code or inside an inlined P/Invoke (the leaf-most EE Frame is
                     // an InlinedCallFrame with an active call)
-                    _ASSERTE(!fIsManagedCode || pThreadToSnapshot->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+                    _ASSERTE(!fIsManagedCode || InlinedCallFrame::IsValidInlinedCallFrame(pThreadToSnapshot->GetFrame()));
                 }
             }
         }

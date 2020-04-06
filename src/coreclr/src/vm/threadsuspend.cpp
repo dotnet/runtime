@@ -814,7 +814,7 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
     else
     {
         MethodDesc *pMD = pCf->GetFunction();
-        if (pMD != NULL && pMD->IsILStub() && pCf->pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
+        if (pMD != NULL && pMD->IsILStub() && InlinedCallFrame::IsValidInlinedCallFrame(pCf->pFrame))
         {
             // This may be IL stub for an interesting interop call - latch it.
             frameAction = LatchCurrentFrame;

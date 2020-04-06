@@ -1352,7 +1352,7 @@ void ExceptionTracker::InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisF
 
     if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
     {
-        // Inactive ICFs in IL stubs contain the true interop MethodDesc which must be
+        // ICFs in IL stubs contain the true interop MethodDesc which must be
         // reported in the stack trace.
         if (pMD->IsILStub() && pMD->AsDynamicMethodDesc()->HasMDContextArg())
         {

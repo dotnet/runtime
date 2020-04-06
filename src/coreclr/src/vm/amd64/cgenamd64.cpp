@@ -117,6 +117,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     {
         NOTHROW;
         GC_NOTRIGGER;
+        PRECONDITION(m_pCallerReturnAddress != NULL);
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || m_pCallerReturnAddress != NULL);
 #endif

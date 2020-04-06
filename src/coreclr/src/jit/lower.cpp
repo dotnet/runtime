@@ -3772,6 +3772,28 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     tree = CreateFrameLinkUpdate(PopFrame);
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
     ContainCheckStoreIndir(tree->AsIndir());
+
+#ifdef DEBUG
+    // We'll only reset m_pCallerReturnAddress to nullptr for debug builds for consistency checks at various
+    // places
+
+    const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = comp->eeGetEEInfo()->inlinedCallFrameInfo;
+
+    // ----------------------------------------------------------------------------------
+    // InlinedCallFrame.m_pCallerReturnAddress = nullptr
+
+    GenTreeLclFld* const storeCallSiteTracker =
+        new (comp, GT_STORE_LCL_FLD) GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar,
+                                                   callFrameInfo.offsetOfReturnAddress);
+
+    GenTreeIntCon* const constantZero = new (comp, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
+
+    storeCallSiteTracker->gtOp1 = constantZero;
+    storeCallSiteTracker->gtFlags |= GTF_VAR_DEF;
+
+    BlockRange().InsertBefore(insertionPoint, constantZero, storeCallSiteTracker);
+    ContainCheckStoreLoc(storeCallSiteTracker);
+#endif // TARGET_64BIT
 }
 
 //------------------------------------------------------------------------

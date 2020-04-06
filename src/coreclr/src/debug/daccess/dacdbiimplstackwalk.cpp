@@ -1078,10 +1078,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
                 }
                 else if (ft == Frame::TYPE_EXIT)
                 {
-                    if (pFrame->GetVTablePtr() != InlinedCallFrame::GetMethodFrameVPtr())
-                    {
-                        resultType = STUBFRAME_M2U;
-                    }
+                    resultType = STUBFRAME_M2U;
                 }
             }
             break;

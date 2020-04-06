@@ -2853,6 +2853,7 @@ public:
     virtual TADDR GetReturnAddressPtr()
     {
         WRAPPER_NO_CONTRACT;
+        _ASSERTE(m_pCallerReturnAddress != NULL);
         return PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this, m_pCallerReturnAddress);
     }
 
@@ -2945,6 +2946,15 @@ public:
     //---------------------------------------------------------------
 
     static void GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo * pEEInfo);
+
+    static BOOL IsValidInlinedCallFrame(Frame* pFrame)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        return pFrame &&
+            pFrame != FRAME_TOP &&
+            InlinedCallFrame::GetMethodFrameVPtr() == pFrame->GetVTablePtr();
+    }
 
     // Marks the frame as inactive.
     void Reset()
