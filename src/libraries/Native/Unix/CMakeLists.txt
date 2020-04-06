@@ -10,6 +10,11 @@ if(CLR_CMAKE_TARGET_IOS)
     cmake_minimum_required(VERSION 3.14.5)
 endif()
 
+if(CLR_CMAKE_TARGET_TVOS)
+    # CMake 3.14.5 contains bug fixes for iOS
+    cmake_minimum_required(VERSION 3.14.5)
+endif()
+
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
     cmake_policy(SET CMP0083 NEW)
 endif(NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -134,7 +139,7 @@ else ()
 endif ()
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
-elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
+elseif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -158,7 +163,7 @@ endif(CLR_CMAKE_TARGET_FREEBSD)
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
 if(CLR_CMAKE_TARGET_UNIX)
-    if(NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS)
+    if(NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
         if(CLR_CMAKE_TARGET_OSX)
             add_definitions(-DTARGET_OSX)
             add_link_options(-Wl,-bind_at_load)
@@ -179,7 +184,7 @@ include(configure.cmake)
 add_subdirectory(System.IO.Compression.Native)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
-if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
+if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)  # TODO: reenable
     add_subdirectory(System.IO.Ports.Native)
 endif()
 endif()
@@ -192,7 +197,7 @@ add_subdirectory(System.Native)
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
     # skip for now
-elseif(CLR_CMAKE_TARGET_IOS)
+elseif(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Net.Security.Native)
     #add_subdirectory(System.Globalization.Native) # TODO: reenable
     # System.Security.Cryptography.Native is intentionally disabled on iOS
@@ -207,6 +212,6 @@ else()
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
 
-if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()
