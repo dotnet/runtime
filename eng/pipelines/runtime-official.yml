@@ -30,6 +30,7 @@ variables:
   value: .NETCore
 - name: _DotNetValidationArtifactsCategory
   value: .NETCoreValidation
+- group: DotNet-Runtime-SDLValidation-Params
 
 stages:
 - stage: Build

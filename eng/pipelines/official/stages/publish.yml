@@ -35,20 +35,19 @@ stages:
     symbolPublishingAdditionalParameters: "'-warnAsError:$false'"
     # Publish to blob storage.
     publishInstallersAndChecksums: true
-    # Enable SDL validation, passing through values from the 'core-setup-sdl-validation' group.
+    # Enable SDL validation, passing through values from the 'DotNet-Runtime-SDLValidation-Params' group.
     SDLValidationParameters:
-      enable: false # TODO: (Consolidation) Decide who owns SDL validation errors and enable. https://github.com/dotnet/runtime/issues/1027
+      enable: true
       artifactNames:
-      - PackageArtifacts
-      - BlobArtifacts
+      - AssetManifests
       params: >-
         -SourceToolsList @("policheck","credscan")
-        -TsaInstanceURL "$(TsaInstanceURL)"
-        -TsaProjectName "$(TsaProjectName)"
-        -TsaNotificationEmail "$(TsaNotificationEmail)"
-        -TsaCodebaseAdmin "$(TsaCodebaseAdmin)"
-        -TsaBugAreaPath "$(TsaBugAreaPath)"
-        -TsaIterationPath "$(TsaIterationPath)"
-        -TsaRepositoryName "$(TsaRepositoryName)"
-        -TsaCodebaseName "$(TsaCodebaseName)"
+        -TsaInstanceURL $(TsaInstanceURL)
+        -TsaProjectName $(TsaProjectName)
+        -TsaNotificationEmail $(TsaNotificationEmail)
+        -TsaCodebaseAdmin $(TsaCodebaseAdmin)
+        -TsaBugAreaPath $(TsaBugAreaPath)
+        -TsaIterationPath $(TsaIterationPath)
+        -TsaRepositoryName $(TsaRepositoryName)
+        -TsaCodebaseName $(TsaCodebaseName)
         -TsaPublish $True
