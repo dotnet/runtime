@@ -255,7 +255,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (!epoch.CryptoOutboundStream.HasPendingData)
                 return;
 
-            (ulong offset, ulong count) = epoch.CryptoOutboundStream.GetNextPendingRange();
+            (ulong offset, ulong count) = epoch.CryptoOutboundStream.GetNextSendableRange();
 
             // assume 2 * 2 bytes for offset and length and 1 B for type
             count = Math.Min(count, (ulong) writer.BytesAvailable - 5);

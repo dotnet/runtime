@@ -15,8 +15,23 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         protected List<StreamChunk> _chunks = new List<StreamChunk>();
 
         /// <summary>
+        ///     Total number of bytes allowed to transport in this stream.
+        /// </summary>
+        protected ulong MaxData { get; private set; }
+
+        /// <summary>
+        ///     Updates the <see cref="MaxData"/> parameter.
+        /// </summary>
+        /// <param name="value">Value of the parameter.</param>
+        internal void UpdateMaxData(ulong value)
+        {
+            MaxData = Math.Max(MaxData, value);
+        }
+
+        /// <summary>
         ///     Optimized code for the case when data are added without duplication and at the end of the buffer.
         /// </summary>
+        /// <param name="offset">Offset at which the data is enqueued</param>
         /// <param name="data">Data segment to be added.</param>
         protected void EnqueueAtEnd(ulong offset, ReadOnlySpan<byte> data)
         {

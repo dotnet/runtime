@@ -54,7 +54,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Outbound messages to be carried in CRYPTO frames.
         /// </summary>
-        internal OutboundBuffer CryptoOutboundStream { get; } = new OutboundBuffer();
+        internal OutboundBuffer CryptoOutboundStream { get; } = new OutboundBuffer(ulong.MaxValue);
 
         /// <summary>
         ///     Inbound messages from CRYPTO frames.

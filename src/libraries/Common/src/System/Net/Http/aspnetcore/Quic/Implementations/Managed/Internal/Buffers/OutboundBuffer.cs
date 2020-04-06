@@ -8,6 +8,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal sealed class OutboundBuffer : BufferBase
     {
+        public OutboundBuffer(ulong maxData)
+        {
+            UpdateMaxData(maxData);
+        }
+
         /// <summary>
         ///     Ranges of bytes awaiting to be sent.
         /// </summary>
@@ -26,7 +31,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Returns true if buffer contains any readable data.
         /// </summary>
-        internal bool HasPendingData => _pending.Count > 0;
+        internal bool HasPendingData => _pending.Count > 0 && _pending[0].Start < MaxData;
 
         /// <summary>
         ///     True if there is data that has not been confirmed received.
@@ -34,12 +39,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal bool HasUnackedData => _pending.Count + _checkedOut.Count != 0;
 
         /// <summary>
-        ///     Returns length of the next contiguous range of data that can be checked out.
+        ///     Returns length of the next contiguous range of data that can be checked out, respecting the <see cref="BufferBase.MaxData"/> parameter.
         /// </summary>
         /// <returns></returns>
-        internal (ulong offset, ulong count) GetNextPendingRange()
+        internal (ulong offset, ulong count) GetNextSendableRange()
         {
-            return (_pending[0].Start, _pending[0].Length);
+            ulong sendableLength = MaxData - _pending[0].Start;
+            return (_pending[0].Start, Math.Min(sendableLength, _pending[0].Length));
         }
 
         /// <summary>
@@ -48,7 +54,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <param name="destination">Destination memory for the data.</param>
         internal void CheckOut(Span<byte> destination)
         {
-            Debug.Assert((ulong) destination.Length <= GetNextPendingRange().count);
+            Debug.Assert((ulong) destination.Length <= GetNextSendableRange().count);
 
             ulong start = _pending.GetMin();
             ulong end = start + (ulong) destination.Length - 1;
