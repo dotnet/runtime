@@ -32,8 +32,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         longfile.h)
 else()
     list(APPEND SOURCES
-        pal.unix.cpp
-        ${VERSION_FILE_PATH})
+        pal.unix.cpp)
 endif()
 
 set(SKIP_VERSIONING 1)
