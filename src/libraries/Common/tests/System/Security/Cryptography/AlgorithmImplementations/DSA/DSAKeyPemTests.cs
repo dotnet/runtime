@@ -13,15 +13,19 @@ namespace System.Security.Cryptography.Dsa.Tests
         [Fact]
         public static void ImportFromPem_NoPem()
         {
-            string pem = "pem? what pem? there is no pem here.";
-            using DSA dsa = DSAFactory.Create();
-            AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromPem(pem));
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = "pem? what pem? there is no pem here.";
+                AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromPem(pem));
+            }
         }
 
         [Fact]
         public static void ImportFromPem_Pkcs8UnEncrypted_Simple()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 -----BEGIN PRIVATE KEY-----
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
 IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
@@ -29,18 +33,19 @@ IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
 55aYKyKwy5i8
 -----END PRIVATE KEY-----";
+                dsa.ImportFromPem(pem);
+                DSAParameters dsaParameters = dsa.ExportParameters(true);
 
-            using DSA dsa = DSAFactory.Create();
-            dsa.ImportFromPem(pem);
-            DSAParameters dsaParameters = dsa.ExportParameters(true);
-
-            DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters, dsaParameters);
+                DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters, dsaParameters);
+            }
         }
 
         [Fact]
         public static void ImportFromPem_Pkcs8_UnrelatedPrecedingPem()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 -----BEGIN CERTIFICATE-----
 MII=
 -----END CERTIFICATE-----
@@ -51,18 +56,19 @@ IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
 55aYKyKwy5i8
 -----END PRIVATE KEY-----";
+                dsa.ImportFromPem(pem);
+                DSAParameters dsaParameters = dsa.ExportParameters(true);
 
-            using DSA dsa = DSAFactory.Create();
-            dsa.ImportFromPem(pem);
-            DSAParameters dsaParameters = dsa.ExportParameters(true);
-
-            DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters, dsaParameters);
+                DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters, dsaParameters);
+            }
         }
 
         [Fact]
         public static void ImportFromPem_Pkcs8_PrecedingMalformedPem()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 -----BEGIN CERTIFICATE-----
 $$$ BAD PEM
 -----END CERTIFICATE-----
@@ -73,18 +79,19 @@ IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
 55aYKyKwy5i8
 -----END PRIVATE KEY-----";
+                dsa.ImportFromPem(pem);
+                DSAParameters dsaParameters = dsa.ExportParameters(true);
 
-            using DSA dsa = DSAFactory.Create();
-            dsa.ImportFromPem(pem);
-            DSAParameters dsaParameters = dsa.ExportParameters(true);
-
-            DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters, dsaParameters);
+                DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters, dsaParameters);
+            }
         }
 
         [Fact]
         public static void ImportFromPem_SubjectPublicKeyInfo_Simple()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 -----BEGIN PUBLIC KEY-----
 MIHxMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWNIHRn
 QNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV1eFk
@@ -93,18 +100,19 @@ MKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6fve7
 qsHywr1WjmoyRnIn4Stq5FqNlHhUGkgKyAA4qshjgn1uOYQGGiWQXBi9JJmoOWY8
 PKRWBQ==
 -----END PUBLIC KEY-----";
+                dsa.ImportFromPem(pem);
+                DSAParameters dsaParameters = dsa.ExportParameters(false);
 
-            using DSA dsa = DSAFactory.Create();
-            dsa.ImportFromPem(pem);
-            DSAParameters dsaParameters = dsa.ExportParameters(false);
-
-            DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters.ToPublic(), dsaParameters);
+                DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters.ToPublic(), dsaParameters);
+            }
         }
 
         [Fact]
         public static void ImportFromPem_Pkcs8_AmbiguousKey_Pkcs8()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 -----BEGIN PRIVATE KEY-----
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
 IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
@@ -119,15 +127,16 @@ IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
 55aYKyKwy5i8
 -----END PRIVATE KEY-----";
-
-            using DSA dsa = DSAFactory.Create();
-            AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromPem(pem));
+                AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromPem(pem));
+            }
         }
 
         [Fact]
         public static void ImportFromPem_Pkcs8_AmbiguousKey_Spki()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 -----BEGIN PUBLIC KEY-----
 MIHxMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWNIHRn
 QNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV1eFk
@@ -143,15 +152,16 @@ IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
 55aYKyKwy5i8
 -----END PRIVATE KEY-----";
-
-            using DSA dsa = DSAFactory.Create();
-            AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromPem(pem));
+                AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromPem(pem));
+            }
         }
 
         [Fact]
         public static void ImportFromPem_Pkcs8_AmbiguousKey_EncryptedPkcs8()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIIBIDBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIkM/kCKe6rYsCAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECBOccveL65bDBIHQiCcCqwxJs93g1+16
@@ -168,15 +178,16 @@ IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
 55aYKyKwy5i8
 -----END PRIVATE KEY-----";
-
-            using DSA dsa = DSAFactory.Create();
-            AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromPem(pem));
+                AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromPem(pem));
+            }
         }
 
         [Fact]
         public static void ImportFromPem_EncryptedPrivateKeyFails()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIIBIDBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIkM/kCKe6rYsCAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECBOccveL65bDBIHQiCcCqwxJs93g1+16
@@ -186,29 +197,31 @@ MGHbpaaShD6iJfoGMRX0frr0mMCtuOOZkkjBF9pSpkhaH0TDSq1PrVLxcM0/S4Vs
 dVYwfovccu8ktEAwk5XAOo0r+5CCw2lDDw/hbDeO87BToC5Cc5nu3F5LxAUj8Flc
 v8pi3w==
 -----END ENCRYPTED PRIVATE KEY-----";
-
-            using DSA dsa = DSAFactory.Create();
-            AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromPem(pem));
+                AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromPem(pem));
+            }
         }
 
         [Fact]
         public static void ImportFromPem_SpkiAlgorithmMismatch_Throws()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 The below key is for an RSA SPKI
 -----BEGIN PUBLIC KEY-----
 MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQx
 m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
 -----END PUBLIC KEY-----";
-
-            using DSA dsa = DSAFactory.Create();
-            Assert.Throws<CryptographicException>(() => dsa.ImportFromPem(pem));
+                Assert.Throws<CryptographicException>(() => dsa.ImportFromPem(pem));
+            }
         }
 
         [Fact]
         public static void ImportFromEncryptedPem_Pkcs8_Encrypted_Char_Simple()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIIBIDBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIkM/kCKe6rYsCAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECBOccveL65bDBIHQiCcCqwxJs93g1+16
@@ -218,18 +231,19 @@ MGHbpaaShD6iJfoGMRX0frr0mMCtuOOZkkjBF9pSpkhaH0TDSq1PrVLxcM0/S4Vs
 dVYwfovccu8ktEAwk5XAOo0r+5CCw2lDDw/hbDeO87BToC5Cc5nu3F5LxAUj8Flc
 v8pi3w==
 -----END ENCRYPTED PRIVATE KEY-----";
+                dsa.ImportFromEncryptedPem(pem, "test");
+                DSAParameters dsaParameters = dsa.ExportParameters(true);
 
-            using DSA dsa = DSAFactory.Create();
-            dsa.ImportFromEncryptedPem(pem, "test");
-            DSAParameters dsaParameters = dsa.ExportParameters(true);
-
-            DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters, dsaParameters);
+                DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters, dsaParameters);
+            }
         }
 
         [Fact]
         public static void ImportFromEncryptedPem_Pkcs8_Encrypted_Byte_Simple()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIIBLDBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIfcoipdEY/C4CAggA
 MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBC9heEphj00fB89aP6chSOjBIHQ
@@ -239,19 +253,20 @@ ho0YNYGUDSgOs6RxBpw1rJUCnAlHNU09peCjEP+aZSrhsxlejN/GpVS4e0JTmMeo
 xTL6VO9mx52x6h5WDAQAisMVeMkBoxQUWLANXiw1zSfVbsmB7mDknsRcvD3tcgMs
 7YLD7LQMiPAIjDlOP8XP/w==
 -----END ENCRYPTED PRIVATE KEY-----";
+                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
+                dsa.ImportFromEncryptedPem(pem, passwordBytes);
+                DSAParameters dsaParameters = dsa.ExportParameters(true);
 
-            using DSA dsa = DSAFactory.Create();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
-            dsa.ImportFromEncryptedPem(pem, passwordBytes);
-            DSAParameters dsaParameters = dsa.ExportParameters(true);
-
-            DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters, dsaParameters);
+                DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters, dsaParameters);
+            }
         }
 
         [Fact]
         public static void ImportFromEncryptedPem_Pkcs8_Encrypted_AmbiguousPem()
         {
-            string pem = @"
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIIBLDBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIfcoipdEY/C4CAggA
 MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBC9heEphj00fB89aP6chSOjBIHQ
@@ -270,27 +285,30 @@ MGHbpaaShD6iJfoGMRX0frr0mMCtuOOZkkjBF9pSpkhaH0TDSq1PrVLxcM0/S4Vs
 dVYwfovccu8ktEAwk5XAOo0r+5CCw2lDDw/hbDeO87BToC5Cc5nu3F5LxAUj8Flc
 v8pi3w==
 -----END ENCRYPTED PRIVATE KEY-----";
-
-            using DSA dsa = DSAFactory.Create();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
-            AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromEncryptedPem(pem, passwordBytes));
+                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
+                AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromEncryptedPem(pem, passwordBytes));
+            }
         }
 
         [Fact]
         public static void ImportFromEncryptedPem_Pkcs8_Byte_NoPem()
         {
-            string pem = "";
-            using DSA dsa = DSAFactory.Create();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
-            AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromEncryptedPem(pem, passwordBytes));
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = "";
+                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
+                AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromEncryptedPem(pem, passwordBytes));
+            }
         }
 
         [Fact]
         public static void ImportFromEncryptedPem_Pkcs8_Char_NoPem()
         {
-            string pem = "";
-            using DSA dsa = DSAFactory.Create();
-            AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromEncryptedPem(pem, "k"));
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = "";
+                AssertExtensions.Throws<ArgumentException>("input", () => dsa.ImportFromEncryptedPem(pem, "k"));
+            }
         }
 
         private static DSAParameters ToPublic(this DSAParameters dsaParams)
