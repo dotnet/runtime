@@ -72,7 +72,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             string expectedOSName = File.ReadAllLines("/etc/os-release")
                 .First(line => line.StartsWith("ID=", StringComparison.OrdinalIgnoreCase))
                 .Substring("ID=".Length)
-                .Trim();
+                .Trim('\"', '\'');
 
             Assert.StartsWith(expectedOSName, RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
