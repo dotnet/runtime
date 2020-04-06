@@ -207,7 +207,7 @@ namespace System.Text.Json.Serialization
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
-                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.MaxDepth);
+                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
             if (CanBePolymorphic)
@@ -289,7 +289,7 @@ namespace System.Text.Json.Serialization
 
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
-                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.MaxDepth);
+                ThrowHelper.ThrowJsonException_SerializerCycleDetected(options.EffectiveMaxDepth);
             }
 
             bool success;

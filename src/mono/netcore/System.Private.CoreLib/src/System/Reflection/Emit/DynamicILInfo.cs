@@ -26,7 +26,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 using System.Runtime.InteropServices;
 
@@ -37,7 +36,7 @@ namespace System.Reflection.Emit
     public class DynamicILInfo
     {
 
-        private DynamicMethod method;
+        private DynamicMethod method = null!;
 
         internal DynamicILInfo()
         {
@@ -74,7 +73,7 @@ namespace System.Reflection.Emit
 
         public int GetTokenFor(RuntimeMethodHandle method)
         {
-            MethodBase mi = MethodBase.GetMethodFromHandle(method);
+            MethodBase mi = MethodBase.GetMethodFromHandle(method)!;
             return this.method.GetILGenerator().TokenGenerator.GetToken(mi, false);
         }
 
@@ -101,23 +100,24 @@ namespace System.Reflection.Emit
             throw new NotImplementedException();
         }
 
-        public void SetCode(byte[] code, int maxStackSize)
+        public void SetCode(byte[]? code, int maxStackSize)
         {
-            if (code == null)
-                throw new ArgumentNullException(nameof(code));
             method.GetILGenerator().SetCode(code, maxStackSize);
         }
 
         [CLSCompliantAttribute(false)]
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
         {
-            if (code == null)
+            if (codeSize < 0)
+                throw new ArgumentOutOfRangeException(nameof(codeSize), SR.ArgumentOutOfRange_GenericPositive);
+            if (codeSize > 0 && code == null)
                 throw new ArgumentNullException(nameof(code));
+
             method.GetILGenerator().SetCode(code, codeSize, maxStackSize);
         }
 
         // FIXME:
-        public void SetExceptions(byte[] exceptions)
+        public void SetExceptions(byte[]? exceptions)
         {
             throw new NotImplementedException();
         }
@@ -130,7 +130,7 @@ namespace System.Reflection.Emit
         }
 
         // FIXME:
-        public void SetLocalSignature(byte[] localSignature)
+        public void SetLocalSignature(byte[]? localSignature)
         {
             throw new NotImplementedException();
         }

@@ -21,7 +21,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -36,10 +35,10 @@ namespace System.Reflection
         #region Sync with object-internals.h
         #region Sync with ModuleBuilder
         internal IntPtr _impl; /* a pointer to a MonoImage */
-        internal Assembly assembly;
-        internal string fqname;
-        internal string name;
-        internal string scopename;
+        internal Assembly assembly = null!;
+        internal string fqname = null!;
+        internal string name = null!;
+        internal string scopename = null!;
         internal bool is_resource;
         internal int token;
         #endregion
@@ -108,12 +107,11 @@ namespace System.Reflection
         }
 
         public override
-        Type[] FindTypes(TypeFilter filter, object filterCriteria)
+        Type[] FindTypes(TypeFilter? filter, object? filterCriteria)
         {
             var filtered = new List<Type>();
-            Type[] types = GetTypes();
-            foreach (Type t in types)
-                if (filter(t, filterCriteria))
+            foreach (Type t in GetTypes())
+                if (filter != null && filter(t, filterCriteria))
                     filtered.Add(t);
             return filtered.ToArray();
         }
@@ -131,7 +129,7 @@ namespace System.Reflection
         }
 
         public override
-        FieldInfo GetField(string name, BindingFlags bindingAttr)
+        FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -164,7 +162,7 @@ namespace System.Reflection
 
         protected
         override
-        MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             if (IsResource())
                 return null;
@@ -212,12 +210,12 @@ namespace System.Reflection
 
         public
         override
-        FieldInfo ResolveField(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        FieldInfo ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return ResolveField(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
-        internal static FieldInfo ResolveField(Module module, IntPtr monoModule, int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        internal static FieldInfo ResolveField(Module module, IntPtr monoModule, int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             ResolveTokenError error;
 
@@ -230,12 +228,12 @@ namespace System.Reflection
 
         public
         override
-        MemberInfo ResolveMember(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        MemberInfo ResolveMember(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return ResolveMember(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
-        internal static MemberInfo ResolveMember(Module module, IntPtr monoModule, int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        internal static MemberInfo ResolveMember(Module module, IntPtr monoModule, int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             ResolveTokenError error;
 
@@ -248,12 +246,12 @@ namespace System.Reflection
 
         public
         override
-        MethodBase ResolveMethod(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        MethodBase ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return ResolveMethod(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
-        internal static MethodBase ResolveMethod(Module module, IntPtr monoModule, int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        internal static MethodBase ResolveMethod(Module module, IntPtr monoModule, int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             ResolveTokenError error;
 
@@ -284,12 +282,12 @@ namespace System.Reflection
 
         public
         override
-        Type ResolveType(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return ResolveType(this, _impl, metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
-        internal static Type ResolveType(Module module, IntPtr monoModule, int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        internal static Type ResolveType(Module module, IntPtr monoModule, int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             ResolveTokenError error;
 
@@ -357,7 +355,7 @@ namespace System.Reflection
                 return new ArgumentException(string.Format("Token 0x{0:x} is not a valid {1} token in the scope of module {2}", metadataToken, tokenType, name), nameof(metadataToken));
         }
 
-        internal static IntPtr[] ptrs_from_types(Type[] types)
+        internal static IntPtr[]? ptrs_from_types(Type[]? types)
         {
             if (types == null)
                 return null;
@@ -394,19 +392,19 @@ namespace System.Reflection
         internal static extern Type GetGlobalType(IntPtr module);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr ResolveTypeToken(IntPtr module, int token, IntPtr[] type_args, IntPtr[] method_args, out ResolveTokenError error);
+        internal static extern IntPtr ResolveTypeToken(IntPtr module, int token, IntPtr[]? type_args, IntPtr[]? method_args, out ResolveTokenError error);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr ResolveMethodToken(IntPtr module, int token, IntPtr[] type_args, IntPtr[] method_args, out ResolveTokenError error);
+        internal static extern IntPtr ResolveMethodToken(IntPtr module, int token, IntPtr[]? type_args, IntPtr[]? method_args, out ResolveTokenError error);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr ResolveFieldToken(IntPtr module, int token, IntPtr[] type_args, IntPtr[] method_args, out ResolveTokenError error);
+        internal static extern IntPtr ResolveFieldToken(IntPtr module, int token, IntPtr[]? type_args, IntPtr[]? method_args, out ResolveTokenError error);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern string ResolveStringToken(IntPtr module, int token, out ResolveTokenError error);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern MemberInfo ResolveMemberToken(IntPtr module, int token, IntPtr[] type_args, IntPtr[] method_args, out ResolveTokenError error);
+        internal static extern MemberInfo ResolveMemberToken(IntPtr module, int token, IntPtr[]? type_args, IntPtr[]? method_args, out ResolveTokenError error);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern byte[] ResolveSignature(IntPtr module, int metadataToken, out ResolveTokenError error);

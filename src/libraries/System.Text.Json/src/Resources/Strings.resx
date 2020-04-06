@@ -506,6 +506,9 @@
   <data name="BufferMaximumSizeExceeded" xml:space="preserve">
     <value>Cannot allocate a buffer of size {0}.</value>
   </data>
+  <data name="CannotSerializeOpenGeneric" xml:space="preserve">
+    <value>The type '{0}' has generic parameters that have not been replaced by specific types, which is not valid during serialization or deserialization.</value>
+  </data>
   <data name="SerializeTypeInstanceNotSupported" xml:space="preserve">
     <value>Serialization and deserialization of 'System.Type' instances are not supported and should be avoided since they can lead to security issues.</value>
   </data>

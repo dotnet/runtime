@@ -8,6 +8,7 @@
 // using /src/coreclr/src/tools/Common/JitInterface/ThunkGenerator/gen.bat
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Internal.TypeSystem;
@@ -83,7 +84,7 @@ namespace Internal.JitInterface
 
     }
 
-    public struct InstructionSetFlags
+    public struct InstructionSetFlags : IEnumerable<InstructionSet>
     {
         ulong _flags;
         
@@ -107,7 +108,49 @@ namespace Internal.JitInterface
             return _flags == other._flags;
         }
 
-        public static InstructionSetFlags ExpandInstructionSetByImplication(TargetArchitecture architecture, InstructionSetFlags input)
+        public void Add(InstructionSetFlags other)
+        {
+            _flags |= other._flags;
+        }
+
+        public void IntersectionWith(InstructionSetFlags other)
+        {
+            _flags &= other._flags;
+        }
+
+        public void Remove(InstructionSetFlags other)
+        {
+            _flags &= ~other._flags;
+        }
+
+        public bool IsEmpty()
+        {
+            return _flags == 0;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public IEnumerator<InstructionSet> GetEnumerator()
+        {
+            for (int i = 1; i < (int)InstructionSet.NONE; i ++)
+            {
+                InstructionSet instructionSet = (InstructionSet)i;
+                if (HasInstructionSet(instructionSet))
+                {
+                    yield return instructionSet;
+                }
+            }
+        }
+
+        public void ExpandInstructionSetByImplication(TargetArchitecture architecture)
+        {
+            this = ExpandInstructionSetByImplicationHelper(architecture, this);
+        }
+
+        public static InstructionSetFlags ExpandInstructionSetByImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
         {
             InstructionSetFlags oldflags = input;
             InstructionSetFlags resultflags = input;
@@ -120,10 +163,16 @@ namespace Internal.JitInterface
                 case TargetArchitecture.ARM64:
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase_Arm64);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32_Arm64);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes))
@@ -139,20 +188,36 @@ namespace Internal.JitInterface
                 case TargetArchitecture.X64:
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE))
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE2_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE2);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE41))
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE41_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE41_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE41);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE42))
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE42_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE42_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE42);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_BMI1))
                         resultflags.AddInstructionSet(InstructionSet.X64_BMI1_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_BMI1_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_BMI1);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_BMI2))
                         resultflags.AddInstructionSet(InstructionSet.X64_BMI2_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_BMI2_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_BMI2);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_LZCNT))
                         resultflags.AddInstructionSet(InstructionSet.X64_LZCNT_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_LZCNT_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_LZCNT);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_POPCNT))
                         resultflags.AddInstructionSet(InstructionSet.X64_POPCNT_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_POPCNT_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_POPCNT);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE3))
@@ -215,61 +280,188 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
-        public static IEnumerable<KeyValuePair<string,InstructionSet>> ArchitectureToValidInstructionSets(TargetArchitecture architecture)
+        public void ExpandInstructionSetByReverseImplication(TargetArchitecture architecture)
+        {
+            this = ExpandInstructionSetByReverseImplicationHelper(architecture, this);
+        }
+
+        private static InstructionSetFlags ExpandInstructionSetByReverseImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
+        {
+            InstructionSetFlags oldflags = input;
+            InstructionSetFlags resultflags = input;
+            do
+            {
+                oldflags = resultflags;
+                switch(architecture)
+                {
+
+                case TargetArchitecture.ARM64:
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha256);
+                    break;
+
+                case TargetArchitecture.X64:
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE41_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE41);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE42_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE42);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_BMI1_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_BMI1);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_BMI2_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_BMI2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_LZCNT_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_LZCNT);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_POPCNT_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_POPCNT);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE3);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE3))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSSE3);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSSE3))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE41);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE41))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE42);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE42))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AES);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X64_BMI1);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X64_BMI2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X64_FMA);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE42))
+                        resultflags.AddInstructionSet(InstructionSet.X64_POPCNT);
+                    break;
+
+                case TargetArchitecture.X86:
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SSE2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SSE3);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE3))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SSSE3);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSSE3))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SSE41);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE41))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SSE42);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE42))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVX);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AES);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X86_BMI1);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X86_BMI2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                        resultflags.AddInstructionSet(InstructionSet.X86_FMA);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE42))
+                        resultflags.AddInstructionSet(InstructionSet.X86_POPCNT);
+                    break;
+
+                }
+            } while (!oldflags.Equals(resultflags));
+            return resultflags;
+        }
+
+        public struct InstructionSetInfo
+        {
+            public readonly string Name;
+            public readonly InstructionSet InstructionSet;
+            public readonly bool Specifiable;
+
+            public InstructionSetInfo(string name, InstructionSet instructionSet, bool specifiable)
+            {
+                Name = name;
+                InstructionSet = instructionSet;
+                Specifiable = specifiable;
+            }
+        }
+
+        public static IEnumerable<InstructionSetInfo> ArchitectureToValidInstructionSets(TargetArchitecture architecture)
         {
             switch (architecture)
             {
 
                 case TargetArchitecture.ARM64:
-                    yield return new KeyValuePair<string, InstructionSet>("ArmBase", InstructionSet.ARM64_ArmBase);
-                    yield return new KeyValuePair<string, InstructionSet>("AdvSimd", InstructionSet.ARM64_AdvSimd);
-                    yield return new KeyValuePair<string, InstructionSet>("Aes", InstructionSet.ARM64_Aes);
-                    yield return new KeyValuePair<string, InstructionSet>("Crc32", InstructionSet.ARM64_Crc32);
-                    yield return new KeyValuePair<string, InstructionSet>("Sha1", InstructionSet.ARM64_Sha1);
-                    yield return new KeyValuePair<string, InstructionSet>("Sha256", InstructionSet.ARM64_Sha256);
-                    yield return new KeyValuePair<string, InstructionSet>("Atomics", InstructionSet.ARM64_Atomics);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector64", InstructionSet.ARM64_Vector64);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector128", InstructionSet.ARM64_Vector128);
+                    yield return new InstructionSetInfo("base", InstructionSet.ARM64_ArmBase, true);
+                    yield return new InstructionSetInfo("neon", InstructionSet.ARM64_AdvSimd, true);
+                    yield return new InstructionSetInfo("aes", InstructionSet.ARM64_Aes, true);
+                    yield return new InstructionSetInfo("crc", InstructionSet.ARM64_Crc32, true);
+                    yield return new InstructionSetInfo("sha1", InstructionSet.ARM64_Sha1, true);
+                    yield return new InstructionSetInfo("sha2", InstructionSet.ARM64_Sha256, true);
+                    yield return new InstructionSetInfo("lse", InstructionSet.ARM64_Atomics, true);
+                    yield return new InstructionSetInfo("Vector64", InstructionSet.ARM64_Vector64, false);
+                    yield return new InstructionSetInfo("Vector128", InstructionSet.ARM64_Vector128, false);
                     break;
 
                 case TargetArchitecture.X64:
-                    yield return new KeyValuePair<string, InstructionSet>("Sse", InstructionSet.X64_SSE);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse2", InstructionSet.X64_SSE2);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse3", InstructionSet.X64_SSE3);
-                    yield return new KeyValuePair<string, InstructionSet>("Ssse3", InstructionSet.X64_SSSE3);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse41", InstructionSet.X64_SSE41);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse42", InstructionSet.X64_SSE42);
-                    yield return new KeyValuePair<string, InstructionSet>("Avx", InstructionSet.X64_AVX);
-                    yield return new KeyValuePair<string, InstructionSet>("Avx2", InstructionSet.X64_AVX2);
-                    yield return new KeyValuePair<string, InstructionSet>("Aes", InstructionSet.X64_AES);
-                    yield return new KeyValuePair<string, InstructionSet>("Bmi1", InstructionSet.X64_BMI1);
-                    yield return new KeyValuePair<string, InstructionSet>("Bmi2", InstructionSet.X64_BMI2);
-                    yield return new KeyValuePair<string, InstructionSet>("Fma", InstructionSet.X64_FMA);
-                    yield return new KeyValuePair<string, InstructionSet>("Lzcnt", InstructionSet.X64_LZCNT);
-                    yield return new KeyValuePair<string, InstructionSet>("Pclmulqdq", InstructionSet.X64_PCLMULQDQ);
-                    yield return new KeyValuePair<string, InstructionSet>("Popcnt", InstructionSet.X64_POPCNT);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector128", InstructionSet.X64_Vector128);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector256", InstructionSet.X64_Vector256);
+                    yield return new InstructionSetInfo("sse", InstructionSet.X64_SSE, true);
+                    yield return new InstructionSetInfo("sse2", InstructionSet.X64_SSE2, true);
+                    yield return new InstructionSetInfo("sse3", InstructionSet.X64_SSE3, true);
+                    yield return new InstructionSetInfo("ssse3", InstructionSet.X64_SSSE3, true);
+                    yield return new InstructionSetInfo("sse4.1", InstructionSet.X64_SSE41, true);
+                    yield return new InstructionSetInfo("sse4.2", InstructionSet.X64_SSE42, true);
+                    yield return new InstructionSetInfo("avx", InstructionSet.X64_AVX, true);
+                    yield return new InstructionSetInfo("avx2", InstructionSet.X64_AVX2, true);
+                    yield return new InstructionSetInfo("aes", InstructionSet.X64_AES, true);
+                    yield return new InstructionSetInfo("bmi", InstructionSet.X64_BMI1, true);
+                    yield return new InstructionSetInfo("bmi2", InstructionSet.X64_BMI2, true);
+                    yield return new InstructionSetInfo("fma", InstructionSet.X64_FMA, true);
+                    yield return new InstructionSetInfo("lzcnt", InstructionSet.X64_LZCNT, true);
+                    yield return new InstructionSetInfo("pclmul", InstructionSet.X64_PCLMULQDQ, true);
+                    yield return new InstructionSetInfo("popcnt", InstructionSet.X64_POPCNT, true);
+                    yield return new InstructionSetInfo("Vector128", InstructionSet.X64_Vector128, false);
+                    yield return new InstructionSetInfo("Vector256", InstructionSet.X64_Vector256, false);
                     break;
 
                 case TargetArchitecture.X86:
-                    yield return new KeyValuePair<string, InstructionSet>("Sse", InstructionSet.X86_SSE);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse2", InstructionSet.X86_SSE2);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse3", InstructionSet.X86_SSE3);
-                    yield return new KeyValuePair<string, InstructionSet>("Ssse3", InstructionSet.X86_SSSE3);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse41", InstructionSet.X86_SSE41);
-                    yield return new KeyValuePair<string, InstructionSet>("Sse42", InstructionSet.X86_SSE42);
-                    yield return new KeyValuePair<string, InstructionSet>("Avx", InstructionSet.X86_AVX);
-                    yield return new KeyValuePair<string, InstructionSet>("Avx2", InstructionSet.X86_AVX2);
-                    yield return new KeyValuePair<string, InstructionSet>("Aes", InstructionSet.X86_AES);
-                    yield return new KeyValuePair<string, InstructionSet>("Bmi1", InstructionSet.X86_BMI1);
-                    yield return new KeyValuePair<string, InstructionSet>("Bmi2", InstructionSet.X86_BMI2);
-                    yield return new KeyValuePair<string, InstructionSet>("Fma", InstructionSet.X86_FMA);
-                    yield return new KeyValuePair<string, InstructionSet>("Lzcnt", InstructionSet.X86_LZCNT);
-                    yield return new KeyValuePair<string, InstructionSet>("Pclmulqdq", InstructionSet.X86_PCLMULQDQ);
-                    yield return new KeyValuePair<string, InstructionSet>("Popcnt", InstructionSet.X86_POPCNT);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector128", InstructionSet.X86_Vector128);
-                    yield return new KeyValuePair<string, InstructionSet>("Vector256", InstructionSet.X86_Vector256);
+                    yield return new InstructionSetInfo("sse", InstructionSet.X86_SSE, true);
+                    yield return new InstructionSetInfo("sse2", InstructionSet.X86_SSE2, true);
+                    yield return new InstructionSetInfo("sse3", InstructionSet.X86_SSE3, true);
+                    yield return new InstructionSetInfo("ssse3", InstructionSet.X86_SSSE3, true);
+                    yield return new InstructionSetInfo("sse4.1", InstructionSet.X86_SSE41, true);
+                    yield return new InstructionSetInfo("sse4.2", InstructionSet.X86_SSE42, true);
+                    yield return new InstructionSetInfo("avx", InstructionSet.X86_AVX, true);
+                    yield return new InstructionSetInfo("avx2", InstructionSet.X86_AVX2, true);
+                    yield return new InstructionSetInfo("aes", InstructionSet.X86_AES, true);
+                    yield return new InstructionSetInfo("bmi", InstructionSet.X86_BMI1, true);
+                    yield return new InstructionSetInfo("bmi2", InstructionSet.X86_BMI2, true);
+                    yield return new InstructionSetInfo("fma", InstructionSet.X86_FMA, true);
+                    yield return new InstructionSetInfo("lzcnt", InstructionSet.X86_LZCNT, true);
+                    yield return new InstructionSetInfo("pclmul", InstructionSet.X86_PCLMULQDQ, true);
+                    yield return new InstructionSetInfo("popcnt", InstructionSet.X86_POPCNT, true);
+                    yield return new InstructionSetInfo("Vector128", InstructionSet.X86_Vector128, false);
+                    yield return new InstructionSetInfo("Vector256", InstructionSet.X86_Vector256, false);
                     break;
 
             }

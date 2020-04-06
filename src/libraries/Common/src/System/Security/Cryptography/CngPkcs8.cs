@@ -120,7 +120,23 @@ namespace System.Security.Cryptography
             }
 
             bytesRead = len;
-            return ImportPkcs8(source.Slice(0, len));
+            ReadOnlySpan<byte> pkcs8Source = source.Slice(0, len);
+
+            try
+            {
+                return ImportPkcs8(pkcs8Source);
+            }
+            catch (CryptographicException)
+            {
+                AsnWriter? pkcs8ZeroPublicKey = RewritePkcs8ECPrivateKeyWithZeroPublicKey(pkcs8Source);
+
+                if (pkcs8ZeroPublicKey == null)
+                {
+                    throw;
+                }
+
+                return ImportPkcs8(pkcs8ZeroPublicKey.EncodeAsSpan());
+            }
         }
 
         internal static unsafe Pkcs8Response ImportEncryptedPkcs8PrivateKey(
@@ -147,7 +163,21 @@ namespace System.Security.Cryptography
                     }
                     catch (CryptographicException e)
                     {
-                        throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
+                        AsnWriter? pkcs8ZeroPublicKey = RewritePkcs8ECPrivateKeyWithZeroPublicKey(decryptedSpan);
+
+                        if (pkcs8ZeroPublicKey == null)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
+                        }
+
+                        try
+                        {
+                            return ImportPkcs8(pkcs8ZeroPublicKey.EncodeAsSpan());
+                        }
+                        catch (CryptographicException)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
+                        }
                     }
                     finally
                     {
@@ -199,7 +229,22 @@ namespace System.Security.Cryptography
                     }
                     catch (CryptographicException e)
                     {
-                        throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
+                        AsnWriter? pkcs8ZeroPublicKey = RewritePkcs8ECPrivateKeyWithZeroPublicKey(decryptedSpan);
+
+                        if (pkcs8ZeroPublicKey == null)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
+                        }
+
+                        try
+                        {
+                            bytesRead = len;
+                            return ImportPkcs8(pkcs8ZeroPublicKey.EncodeAsSpan());
+                        }
+                        catch (CryptographicException)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
+                        }
                     }
                     finally
                     {
@@ -302,6 +347,56 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptoPool.Return(rented, rentWritten);
+            }
+        }
+
+        // CNG cannot import a PrivateKeyInfo with the following criteria:
+        // 1. Is a EC key with explicitly encoded parameters
+        // 2. Is missing the PublicKey from ECPrivateKey.
+        // CNG can import an explicit EC PrivateKeyInfo if the PublicKey
+        // is present. CNG will also re-compute the public key from the
+        // private key if they do not much. To help CNG be able to import
+        // these keys, we re-write the PKCS8 to contain a zeroed PublicKey.
+        //
+        // If the PKCS8 key does not meet the above criteria, null is returned,
+        // signaling the original exception should be thrown.
+        private static unsafe AsnWriter? RewritePkcs8ECPrivateKeyWithZeroPublicKey(ReadOnlySpan<byte> source)
+        {
+            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+            {
+                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                {
+                    PrivateKeyInfoAsn privateKeyInfo = PrivateKeyInfoAsn.Decode(manager.Memory, AsnEncodingRules.BER);
+                    AlgorithmIdentifierAsn privateAlgorithm = privateKeyInfo.PrivateKeyAlgorithm;
+
+                    if (privateAlgorithm.Algorithm.Value != Oids.EcPublicKey)
+                    {
+                        return null;
+                    }
+
+                    ECPrivateKey privateKey = ECPrivateKey.Decode(privateKeyInfo.PrivateKey, AsnEncodingRules.BER);
+                    EccKeyFormatHelper.FromECPrivateKey(privateKey, privateAlgorithm, out ECParameters ecParameters);
+
+                    fixed (byte* pD = ecParameters.D)
+                    {
+                        try
+                        {
+                            if (!ecParameters.Curve.IsExplicit || ecParameters.Q.X != null || ecParameters.Q.Y != null)
+                            {
+                                return null;
+                            }
+
+                            byte[] zero = new byte[ecParameters.D!.Length];
+                            ecParameters.Q.Y = zero;
+                            ecParameters.Q.X = zero;
+                            return EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters, privateKeyInfo.Attributes);
+                        }
+                        finally
+                        {
+                            Array.Clear(ecParameters.D!, 0, ecParameters.D!.Length);
+                        }
+                    }
+                }
             }
         }
 

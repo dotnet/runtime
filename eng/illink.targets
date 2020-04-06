@@ -7,6 +7,15 @@
     </TargetsTriggeredByCompilation>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="illink.tasks"
+                      Version="$(ILLinkTasksVersion)"
+                      PrivateAssets="all"
+                      IsImplicitlyDefined="true"
+                      ExcludeAssets="build"
+                      GeneratePathProperty="true" />
+  </ItemGroup>
+
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
     <ILLinkTasksDir>$([MSBuild]::NormalizeDirectory('$(PkgILLink_Tasks)', 'tools'))</ILLinkTasksDir>

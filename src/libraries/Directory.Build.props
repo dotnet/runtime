@@ -14,9 +14,9 @@
   <PropertyGroup>
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
+    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and ($(MSBuildProjectFullPath.Contains('\ref\')) or $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly> 
     <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
-    <RuntimePropsFile>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'tmp', '$(Configuration)', 'RuntimeOS.props'))</RuntimePropsFile>
-    <RuntimeGraph>$(LibrariesProjectRoot)\OSGroups.json</RuntimeGraph>
+    <RuntimeGraph>$(LibrariesProjectRoot)OSGroups.json</RuntimeGraph>
     <BuildTargetFramework>netcoreapp5.0</BuildTargetFramework>
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
     <!-- TargetOS can be removed after renaming the property in arcade repo-->
@@ -27,7 +27,6 @@
   </PropertyGroup>
 
   <Import Project="$(RuntimePropsFile)" Condition="Exists('$(RuntimePropsFile)')"/>
-
 
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
   
@@ -50,75 +49,6 @@
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
     <BuildSettings Condition="'$(BuildSettings)' == ''">$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</BuildSettings>
   </PropertyGroup>
-  
-  <Choose>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Windows_NT'">
-      <PropertyGroup>
-        <TargetsWindows>true</TargetsWindows>
-        <PackageTargetRuntime>win</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Unix'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <PackageTargetRuntime>unix</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Linux'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsLinux>true</TargetsLinux>
-        <PackageTargetRuntime>linux</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Android'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsLinux>true</TargetsLinux>
-        <TargetsAndroid>true</TargetsAndroid>
-        <PackageTargetRuntime>android</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'OSX'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsOSX>true</TargetsOSX>
-        <PackageTargetRuntime>osx</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'iOS'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsiOS>true</TargetsiOS>
-        <PackageTargetRuntime>ios</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'FreeBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsFreeBSD>true</TargetsFreeBSD>
-        <PackageTargetRuntime>freebsd</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'NetBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsNetBSD>true</TargetsNetBSD>
-        <PackageTargetRuntime>netbsd</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'WebAssembly'">
-      <PropertyGroup>
-        <TargetsLinux>true</TargetsLinux>
-        <TargetsWebAssembly>true</TargetsWebAssembly>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == ''">
-      <PropertyGroup>
-        <TargetsAnyOS>true</TargetsAnyOS>
-      </PropertyGroup>
-    </When>
-  </Choose>
 
   <!-- Define test projects and companions -->
   <PropertyGroup>
@@ -133,25 +63,16 @@
     <IsShipping Condition="'$(IsTestProject)' == 'true'">false</IsShipping>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <EnableProjectRestore Condition="'$(IsTestProject)' == 'true'">true</EnableProjectRestore>
-  </PropertyGroup>
-
-  <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.props" />
-
   <!-- Common repo directories -->
   <PropertyGroup>
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <NativeBinDir>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'native', '$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
-
+    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <PkgDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'pkg'))</PkgDir>
   </PropertyGroup>
 
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
-    <!-- Default any assembly not specifying a key to use the Open Key -->
-    <StrongNameKeyId>Open</StrongNameKeyId>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -159,6 +80,13 @@
     <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt,$(RepositoryEngineeringDir)ApiCompatExcludeAttributes.txt</ApiCompatExcludeAttributeList>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Projects which are manually built. -->
+    <ProjectExclusions Include="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
+    <!-- TODO: Reenable when mono supports utf8string. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\System.Utf8String.Experimental\**\*.csproj" Condition="'$(RuntimeFlavor)' == 'Mono'" />
+  </ItemGroup>
 
   <PropertyGroup>
     <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
@@ -194,6 +122,7 @@
 
     <!-- There are no iOS tools and it can be built on OSX only, so use that -->
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'ios'">osx-x64</ToolRuntimeRID>
+    <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolRuntimeRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
     <_portableOS Condition="'$(TargetOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
@@ -205,13 +134,6 @@
     <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</_packageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(RuntimeOS)-$(TargetArchitecture)</PackageRID>
-  </PropertyGroup>
-
-  <!-- Set some shortcuts for more terse conditions in project files -->
-  <PropertyGroup>
-    <TargetsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
-    <TargetsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</TargetsNetStandard>
-    <TargetsNetFx Condition="$(TargetFramework.StartsWith('net4'))">true</TargetsNetFx>
   </PropertyGroup>
 
   <!-- set properties for each vertical -->
@@ -238,11 +160,24 @@
 
   <!-- Import packaging props -->
   <Import Project="$(RepositoryEngineeringDir)packaging.props" />
+  
+  <PropertyGroup>
+    <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
+    <!-- Assembly bin directory where implementation and ref output are placed -->
+    <AssemblyBinDirOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(MSBuildProjectName)'))</AssemblyBinDirOutputPath>  
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath Condition="'$(IsReferenceAssembly)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'ref'))</BaseIntermediateOutputPath>
+    <BaseOutputPath Condition="'$(IsReferenceAssembly)' == 'true'">$([MSBuild]::NormalizeDirectory('$(AssemblyBinDirOutputPath)', 'ref'))</BaseOutputPath>    
+  </PropertyGroup>
+  
+  <Import Project="$(MSBuildThisDirectory)targetframework.props" Condition="'$(DesignTimeBuild)' != 'true'" />
 
   <PropertyGroup>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
 
+    <!-- Default any assembly not specifying a key to use the Open Key -->
+    <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
 
@@ -294,10 +229,10 @@
     <Features>strict;nullablePublicOnly</Features>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- We decided to keep this disabled by default to see some history of way have a look at https://github.com/dotnet/corefx/issues/3140 -->
+    <!-- We decided to keep this disabled by default: https://github.com/dotnet/runtime/issues/15152 -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
-    <EnableAnalyzers Condition="'$(EnableProjectRestore)' == 'true' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'">true</EnableAnalyzers>
+    <EnableAnalyzers Condition="'$(EnableAnalyzers)' == '' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'">true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Set up some common paths -->
@@ -316,13 +251,10 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(BuildSettings)'))</RuntimePath>
-    <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
     <BuildTargetFrameworkRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(BuildTargetFramework)'))</BuildTargetFrameworkRefPath>
-    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
     <NetStandard20RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.0'))</NetStandard20RefPath>
     <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
     <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(NetFrameworkCurrent)'))</NetFxRefPath>
-    <ILAsmToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsToolsetDir)', 'ilasm'))</ILAsmToolPath>
 
     <!-- Helix properties -->
     <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig>
@@ -342,24 +274,22 @@
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
 
-    <!-- interop is not available on NETStandard1.0 -->
-    <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFramework)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
 
-    <!-- setting the output paths -->
-    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)\</OutputPath>
-    <OutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseOutputPath)$(TargetFramework)-$(Configuration)\</OutputPath>
-    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)\</IntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)\</IntermediateOutputPath>
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)references.props" />
 
   <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
-  <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" />
+  <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" Condition="'$(IsReferenceAssembly)' == 'true'" />
+
+  <PropertyGroup>
+    <DisableProjectRestore Condition="'$(MSBuildProjectExtension)' == '.depproj' or '$(MSBuildProjectExtension)' == '.pkgproj'">true</DisableProjectRestore>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)restore\repoRestore.props" Condition="'$(DisableProjectRestore)' == 'true'" />
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -402,7 +332,7 @@
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'">
     <EnableTestSupport>true</EnableTestSupport>
     <EnableCoverageSupport Condition="'$(Coverage)' == 'true' and '$(CoverageSupported)' != 'false'">true</EnableCoverageSupport>
-    <EnableLaunchSettings Condition="'$(DotNetBuildFromSource)' != 'true'">true</EnableLaunchSettings>
+    <EnableLaunchSettings Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'">true</EnableLaunchSettings>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />

@@ -14,6 +14,7 @@ namespace ILCompiler
         public FileInfo[] UnrootedInputFilePaths { get; set; }
         public FileInfo[] Mibc { get; set; }
         public string[] Reference { get; set; }
+        public string InstructionSet { get; set; }
         public FileInfo OutputFilePath { get; set; }
         public bool Optimize { get; set; }
         public bool OptimizeSpace { get; set; }
@@ -44,6 +45,8 @@ namespace ILCompiler
 
         public string[] CodegenOptions { get; set; }
 
+        public bool CompositeOrInputBubble => Composite || InputBubble;
+
         public static Command RootCommand()
         {
             // For some reason, arity caps at 255 by default
@@ -70,6 +73,10 @@ namespace ILCompiler
                     { 
                         Arity = arbitraryArity
                     } 
+                },
+                new Option(new[] { "--instruction-set" }, SR.InstructionSets)
+                {
+                    Argument = new Argument<string>() 
                 },
                 new Option(new[] { "--mibc", "-m" }, SR.MibcFiles)
                 {

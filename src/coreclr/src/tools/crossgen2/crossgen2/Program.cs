@@ -81,7 +81,7 @@ namespace ILCompiler
 
             if (_commandLineOptions.CompileBubbleGenerics)
             {
-                if (!_commandLineOptions.InputBubble)
+                if (!_commandLineOptions.CompositeOrInputBubble)
                 {
                     Console.WriteLine(SR.WarningIgnoringBubbleGenerics);
                     _commandLineOptions.CompileBubbleGenerics = false;
@@ -149,6 +149,104 @@ namespace ILCompiler
                     throw new CommandLineException(SR.TargetOSUnsupported);
             }
 
+            InstructionSetSupportBuilder instructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
+
+            // Ready to run images are built with certain instruction set baselines
+            if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
+            {
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
+            }
+            else if (_targetArchitecture == TargetArchitecture.ARM64)
+            {
+                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
+            }
+
+
+            if (_commandLineOptions.InstructionSet != null)
+            {
+                List<string> instructionSetParams = new List<string>();
+
+                // At this time, instruction sets may only be specified with --input-bubble, as
+                // we do not yet have a stable ABI for all vector parameter/return types.
+                if (!_commandLineOptions.InputBubble)
+                    throw new CommandLineException(SR.InstructionSetWithoutInputBubble);
+
+                // Normalize instruction set format to include implied +.
+                string[] instructionSetParamsInput = _commandLineOptions.InstructionSet.Split(",");
+                for (int i = 0; i < instructionSetParamsInput.Length; i++)
+                {
+                    string instructionSet = instructionSetParamsInput[i];
+
+                    if (String.IsNullOrEmpty(instructionSet))
+                        throw new CommandLineException(String.Format(SR.InstructionSetMustNotBe, ""));
+
+                    char firstChar = instructionSet[0];
+                    if ((firstChar != '+') && (firstChar != '-'))
+                    {
+                        instructionSet =  "+" + instructionSet;
+                    }
+                    instructionSetParams.Add(instructionSet);
+                }
+
+                Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
+                foreach (string instructionSetSpecifier in instructionSetParams)
+                {
+                    string instructionSet = instructionSetSpecifier.Substring(1, instructionSetSpecifier.Length - 1);
+
+                    bool enabled = instructionSetSpecifier[0] == '+' ? true : false;
+                    if (enabled)
+                    {
+                        if (!instructionSetSupportBuilder.AddSupportedInstructionSet(instructionSet))
+                            throw new CommandLineException(String.Format(SR.InstructionSetMustNotBe, instructionSet));
+                    }
+                    else
+                    {
+                        if (!instructionSetSupportBuilder.RemoveInstructionSetSupport(instructionSet))
+                            throw new CommandLineException(String.Format(SR.InstructionSetMustNotBe, instructionSet));
+                    }
+                }
+            }
+
+            instructionSetSupportBuilder.ComputeInstructionSetFlags(out var supportedInstructionSet, out var unsupportedInstructionSet,
+                (string specifiedInstructionSet, string impliedInstructionSet) =>
+                    throw new CommandLineException(String.Format(SR.InstructionSetInvalidImplication, specifiedInstructionSet, impliedInstructionSet)));
+
+            InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
+
+            // Ready to run images are built with certain instruction sets that are optimistically assumed to be present
+            if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
+            {
+                // For ReadyToRun we set these hardware features as enabled always, as most
+                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
+                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
+                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
+                // support AVX instructions. As the jit generates logic that depends on these features it will call
+                // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
+                // code.
+                // 
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.1");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
+            }
+
+            optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _, 
+                (string specifiedInstructionSet, string impliedInstructionSet) => throw new NotSupportedException());
+            optimisticInstructionSet.Remove(unsupportedInstructionSet);
+            optimisticInstructionSet.Add(supportedInstructionSet);
+
+            var instructionSetSupport = new InstructionSetSupport(supportedInstructionSet,
+                                                                  unsupportedInstructionSet,
+                                                                  optimisticInstructionSet,
+                                                                  InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(_targetArchitecture),
+                                                                  _targetArchitecture);
+
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
                 ICompilation compilation;
@@ -160,7 +258,7 @@ namespace ILCompiler
 
                     SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
-                    var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, SimdVectorLength.None);
+                    var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
                     CompilerTypeSystemContext typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode);
 
                     //
@@ -223,7 +321,7 @@ namespace ILCompiler
                         rootingModules.Add(module);
                         versionBubbleModulesHash.Add(module);
 
-                        if (!_commandLineOptions.InputBubble)
+                        if (!_commandLineOptions.CompositeOrInputBubble)
                         {
                             break;
                         }
@@ -295,6 +393,7 @@ namespace ILCompiler
                         compilationGroup = new SingleMethodCompilationModuleGroup(
                             typeSystemContext,
                             _commandLineOptions.Composite,
+                            _commandLineOptions.InputBubble,
                             inputModules,
                             versionBubbleModules,
                             _commandLineOptions.CompileBubbleGenerics,
@@ -307,6 +406,7 @@ namespace ILCompiler
                         compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
                             typeSystemContext,
                             _commandLineOptions.Composite,
+                            _commandLineOptions.InputBubble,
                             inputModules,
                             versionBubbleModules,
                             _commandLineOptions.CompileBubbleGenerics);
@@ -333,9 +433,12 @@ namespace ILCompiler
                         // For non-single-method compilations add compilation roots.
                         foreach (var module in rootingModules)
                         {
-                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager, _commandLineOptions.Partial));
+                            compilationRoots.Add(new ReadyToRunRootProvider(
+                                module,
+                                profileDataManager,
+                                profileDrivenPartialNGen: _commandLineOptions.Partial));
 
-                            if (!_commandLineOptions.InputBubble)
+                            if (!_commandLineOptions.CompositeOrInputBubble)
                             {
                                 break;
                             }
@@ -362,6 +465,7 @@ namespace ILCompiler
                         .UseMapFile(_commandLineOptions.Map)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseJitPath(_commandLineOptions.JitPath)
+                        .UseInstructionSetSupport(instructionSetSupport)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)

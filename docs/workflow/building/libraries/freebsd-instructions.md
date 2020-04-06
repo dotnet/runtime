@@ -7,7 +7,7 @@ Tested on plain FreeBSD 11.3 Azure image
 ## Prerequisites
 This needs to be done once on fresh system.
 
-```sudo pkg install cmake git icu libunwind bash python2 krb5 lttng-ust llvm60 libgit2```
+```sudo pkg install cmake git icu libunwind bash python2 krb5 lttng-ust llvm90 libgit2 libinotify openssl```
 
 some scripts may still assume /bin/bash exists. To workaround it for now do of needed:
 ```

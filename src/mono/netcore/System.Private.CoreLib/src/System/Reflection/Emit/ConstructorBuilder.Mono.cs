@@ -30,7 +30,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -43,23 +42,23 @@ namespace System.Reflection.Emit
 
 #pragma warning disable 169, 414
         private RuntimeMethodHandle mhandle;
-        private ILGenerator ilgen;
-        internal Type[] parameters;
+        private ILGenerator? ilgen;
+        internal Type[]? parameters;
         private MethodAttributes attrs;
         private MethodImplAttributes iattrs;
         private int table_idx;
         private CallingConventions call_conv;
         private TypeBuilder type;
-        internal ParameterBuilder[] pinfo;
-        private CustomAttributeBuilder[] cattrs;
+        internal ParameterBuilder[]? pinfo;
+        private CustomAttributeBuilder[]? cattrs;
         private bool init_locals = true;
-        private Type[][] paramModReq;
-        private Type[][] paramModOpt;
-        private object permissions;
+        private Type[][]? paramModReq;
+        private Type[][]? paramModOpt;
+        private object? permissions;
 #pragma warning restore 169, 414
         internal bool finished;
 
-        internal ConstructorBuilder(TypeBuilder tb, MethodAttributes attributes, CallingConventions callingConvention, Type[] parameterTypes, Type[][] paramModReq, Type[][] paramModOpt)
+        internal ConstructorBuilder(TypeBuilder tb, MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
             attrs = attributes | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;
             call_conv = callingConvention;
@@ -144,7 +143,7 @@ namespace System.Reflection.Emit
 
         internal override Type GetParameterType(int pos)
         {
-            return parameters[pos];
+            return parameters![pos];
         }
 
         internal MethodBase RuntimeResolve()
@@ -152,12 +151,12 @@ namespace System.Reflection.Emit
             return type.RuntimeResolve().GetConstructor(this);
         }
 
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw not_supported();
         }
 
-        public override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw not_supported();
         }
@@ -210,7 +209,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string strParamName)
+        public ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string? strParamName)
         {
             // The 0th ParameterBuilder does not correspond to an
             // actual parameter, but .NETFramework lets you define
@@ -221,8 +220,7 @@ namespace System.Reflection.Emit
                 throw not_after_created();
 
             ParameterBuilder pb = new ParameterBuilder(this, iSequence, attributes, strParamName);
-            if (pinfo == null)
-                pinfo = new ParameterBuilder[parameters.Length + 1];
+            pinfo ??= new ParameterBuilder[parameters!.Length + 1];
             pinfo[iSequence] = pb;
             return pb;
         }
@@ -264,7 +262,7 @@ namespace System.Reflection.Emit
             if (customBuilder == null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
-            string attrname = customBuilder.Ctor.ReflectedType.FullName;
+            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.MethodImplAttribute")
             {
                 byte[] data = customBuilder.Data;
