@@ -1,5 +1,4 @@
 # TODO: investigate (too many failures or stuck)
--nonamespace System.IO.Tests
 -nonamespace System.Net
 -nonamespace System.Threading.Tasks.Dataflow.Tests
 -nonamespace System.Threading.Tasks.Tests
