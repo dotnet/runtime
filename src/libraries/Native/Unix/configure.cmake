@@ -6,7 +6,7 @@ include(CheckPrototypeDefinition)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
-
+include(CMakePushCheckState)
 
 if (CLR_CMAKE_TARGET_ANDROID)
     set(PAL_UNIX_NAME \"ANDROID\")
@@ -821,6 +821,19 @@ check_symbol_exists(
     sys/inotify.h
     HAVE_INOTIFY_RM_WATCH)
 set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
+
+if (CLR_CMAKE_TARGET_LINUX)
+    cmake_push_check_state(RESET)
+    set (CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+    set (CMAKE_REQUIRED_LIBRARIES "-lanl")
+
+    check_symbol_exists(
+        getaddrinfo_a
+        netdb.h
+        HAVE_GETADDRINFO_A)
+
+    cmake_pop_check_state()
+endif ()
 
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)

@@ -62,6 +62,10 @@ if (GEN_SHARED_LIB)
     endif ()
     endif ()
     install_with_stripped_symbols (System.Native PROGRAMS .)
+
+    if (HAVE_GETADDRINFO_A)
+        target_link_libraries(System.Native anl)
+    endif ()
 endif ()
 
 add_library(System.Native-Static
