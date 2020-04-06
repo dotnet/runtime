@@ -209,7 +209,7 @@ namespace System
                 static StrongBox<bool> EnsureInitialized()
                 {
                     Volatile.Write(ref _isStdInRedirected, new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
-                    return _isStdErrRedirected!;
+                    return _isStdInRedirected!;
                 }
             }
         }
