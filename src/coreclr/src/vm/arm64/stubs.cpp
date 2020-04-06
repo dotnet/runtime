@@ -894,19 +894,13 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         NOTHROW;
         GC_NOTRIGGER;
 #ifdef PROFILING_SUPPORTED
-        PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
+        PRECONDITION(CORProfilerStackSnapshotEnabled() || m_pCallerReturnAddress != NULL);
 #endif
         HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
-
-    if (!InlinedCallFrame::FrameHasActiveCall(this))
-    {
-        LOG((LF_CORDB, LL_ERROR, "WARNING: InlinedCallFrame::UpdateRegDisplay called on inactive frame %p\n", this));
-        return;
-    }
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;

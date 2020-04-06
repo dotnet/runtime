@@ -479,8 +479,7 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
             *pPotentialFP = FramePointer::MakeFramePointer( (LPVOID)sp );
         }
 
-        return ((pFrame != pData->GetThread()->GetFrame()) ||
-            InlinedCallFrame::FrameHasActiveCall(pInlinedFrame));
+        return pFrame != pData->GetThread()->GetFrame();
 
     }
     else

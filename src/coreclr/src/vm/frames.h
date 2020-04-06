@@ -2830,7 +2830,7 @@ public:
     virtual MethodDesc *GetFunction()
     {
         WRAPPER_NO_CONTRACT;
-        if (FrameHasActiveCall(this) && HasFunction())
+        if (HasFunction())
             return PTR_MethodDesc(m_Datum);
         else
             return NULL;
@@ -2853,18 +2853,13 @@ public:
     virtual TADDR GetReturnAddressPtr()
     {
         WRAPPER_NO_CONTRACT;
-
-        if (FrameHasActiveCall(this))
-            return PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this,
-                                            m_pCallerReturnAddress);
-        else
-            return NULL;
+        return PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this, m_pCallerReturnAddress);
     }
 
     virtual BOOL NeedsUpdateRegDisplay()
     {
         WRAPPER_NO_CONTRACT;
-        return FrameHasActiveCall(this);
+        return TRUE;
     }
 
     // Given a methodDesc representing an ILStub for a pinvoke call,
@@ -2950,18 +2945,6 @@ public:
     //---------------------------------------------------------------
 
     static void GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo * pEEInfo);
-
-    // Is the specified frame an InlinedCallFrame which has an active call
-    // inside it right now?
-    static BOOL FrameHasActiveCall(Frame *pFrame)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-        return pFrame &&
-            pFrame != FRAME_TOP &&
-            InlinedCallFrame::GetMethodFrameVPtr() == pFrame->GetVTablePtr() &&
-            dac_cast<TADDR>(dac_cast<PTR_InlinedCallFrame>(pFrame)->m_pCallerReturnAddress) != NULL;
-    }
 
     // Marks the frame as inactive.
     void Reset()

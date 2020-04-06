@@ -1376,9 +1376,6 @@ Stub *GenerateInitPInvokeFrameHelper()
     psl->ThumbEmitStoreRegIndirect(thumbRegSp, regFrame, FrameInfo.offsetOfCallSiteSP - negSpace);
 #endif
 
-    // mov [regThread + offsetof(Thread, m_pFrame)], regFrame
-    psl->ThumbEmitStoreRegIndirect(regFrame, regThread, offsetof(Thread, m_pFrame));
-
     // leave current Thread in R4
 
 #ifdef TARGET_UNIX
@@ -1892,25 +1889,14 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        // We should skip over InlinedCallFrame if it is not active.
-        // It will be part of a JITed method's frame, and the stack-walker
-        // can handle such a case.
 #ifdef PROFILING_SUPPORTED
-        PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
+        PRECONDITION(CORProfilerStackSnapshotEnabled() || m_pCallerReturnAddress != NULL);
 #endif
         HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
-
-    // @TODO: Remove this after the debugger is fixed to avoid stack-walks from bad places
-    // @TODO: This may be still needed for sampling profilers
-    if (!InlinedCallFrame::FrameHasActiveCall(this))
-    {
-        LOG((LF_CORDB, LL_ERROR, "WARNING: InlinedCallFrame::UpdateRegDisplay called on inactive frame %p\n", this));
-        return;
-    }
 
     // reset pContext; it's only valid for active (top-most) frame
     pRD->pContext = NULL;

@@ -3371,8 +3371,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 // InsertPInvokeMethodProlog: Create the code that runs at the start of
 // every method that has PInvoke calls.
 //
-// Initialize the TCB local and the InlinedCallFrame object. Then link ("push")
-// the InlinedCallFrame object on the Frame chain. The layout of InlinedCallFrame
+// Initialize the TCB local and the InlinedCallFrame object. The layout of InlinedCallFrame
 // is defined in vm/frames.h. See also vm/jitinterface.cpp for more information.
 // The offsets of these fields is returned by the VM in a call to ICorStaticInfo::getEEInfo().
 //
@@ -3493,23 +3492,6 @@ void Lowering::InsertPInvokeMethodProlog()
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeFP));
     DISPTREERANGE(firstBlockRange, storeFP);
 #endif // !defined(TARGET_ARM)
-
-    // --------------------------------------------------------
-    // On 32-bit targets, CORINFO_HELP_INIT_PINVOKE_FRAME initializes the PInvoke frame and then pushes it onto
-    // the current thread's Frame stack. On 64-bit targets, it only initializes the PInvoke frame.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef TARGET_64BIT
-    if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
-    {
-        // Push a frame - if we are NOT in an IL stub, this is done right before the call
-        // The init routine sets InlinedCallFrame's m_pNext, so we just set the thead's top-of-stack
-        GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
-        firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
-        DISPTREERANGE(firstBlockRange, frameUpd);
-    }
-#endif // TARGET_64BIT
 }
 
 //------------------------------------------------------------------------
@@ -3572,24 +3554,12 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     GenTree* storeGCState = SetGCState(1);
     returnBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeGCState));
     ContainCheckStoreIndir(storeGCState->AsIndir());
-
-    // Pop the frame if necessary. This always happens in the epilog on 32-bit targets. For 64-bit targets, we only do
-    // this in the epilog for IL stubs; for non-IL stubs the frame is popped after every PInvoke call.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef TARGET_64BIT
-    if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
-#endif // TARGET_64BIT
-    {
-        GenTree* frameUpd = CreateFrameLinkUpdate(PopFrame);
-        returnBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
-    }
 }
 
 //------------------------------------------------------------------------
 // InsertPInvokeCallProlog: Emit the call-site prolog for direct calls to unmanaged code.
-// It does all the necessary call-site setup of the InlinedCallFrame.
+// It does all the necessary call-site setup of the InlinedCallFrame, including linking
+// the frame to the current thread.
 //
 // Arguments:
 //    call - the call for which we are inserting the PInvoke prolog.
@@ -3647,7 +3617,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     // InlinedCallFrame.m_pCallerReturnAddress = return address
     // GT_START_PREEEMPTC
     // Thread.gcState = 0
-    // (non-stub) - update top Frame on TCB         // 64-bit targets only
+    // Update top Frame on TCB
 
     // ----------------------------------------------------------------------------------
     // Setup InlinedCallFrame.callSiteTarget (which is how the JIT refers to it).
@@ -3732,23 +3702,12 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
     InsertTreeBeforeAndContainCheck(insertBefore, storeLab);
 
-    // Push the PInvoke frame if necessary. On 32-bit targets this only happens in the method prolog if a method
-    // contains PInvokes; on 64-bit targets this is necessary in non-stubs.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef TARGET_64BIT
-    if (!comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
-    {
-        // Set the TCB's frame to be the one we just created.
-        // Note the init routine for the InlinedCallFrame (CORINFO_HELP_INIT_PINVOKE_FRAME)
-        // has prepended it to the linked list to maintain the stack of Frames.
-        //
-        // Stubs do this once per stub, not once per call.
-        GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
-        BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
-    }
-#endif // TARGET_64BIT
+    // Set the TCB's frame to be the one we just created.
+    // Note the init routine for the InlinedCallFrame (CORINFO_HELP_INIT_PINVOKE_FRAME)
+    // has prepended it to the linked list to maintain the stack of Frames.
+    GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
+    BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, frameUpd));
+    ContainCheckStoreIndir(frameUpd->AsIndir());
 
     // IMPORTANT **** This instruction must be the last real instruction ****
     // It changes the thread's state to Preemptive mode
@@ -3808,35 +3767,11 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
     ContainCheckReturnTrap(tree->AsOp());
 
-    // Pop the frame if necessary. On 32-bit targets this only happens in the method epilog; on 64-bit targets thi
-    // happens after every PInvoke call in non-stubs. 32-bit targets instead mark the frame as inactive.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef TARGET_64BIT
-    if (!comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
-    {
-        tree = CreateFrameLinkUpdate(PopFrame);
-        BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
-        ContainCheckStoreIndir(tree->AsIndir());
-    }
-#else
-    const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = comp->eeGetEEInfo()->inlinedCallFrameInfo;
-
-    // ----------------------------------------------------------------------------------
-    // InlinedCallFrame.m_pCallerReturnAddress = nullptr
-
-    GenTreeLclFld* const storeCallSiteTracker =
-        new (comp, GT_STORE_LCL_FLD) GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar,
-                                                   callFrameInfo.offsetOfReturnAddress);
-
-    GenTreeIntCon* const constantZero = new (comp, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
-
-    storeCallSiteTracker->gtOp1 = constantZero;
-    storeCallSiteTracker->gtFlags |= GTF_VAR_DEF;
-
-    BlockRange().InsertBefore(insertionPoint, constantZero, storeCallSiteTracker);
-    ContainCheckStoreLoc(storeCallSiteTracker);
-#endif // TARGET_64BIT
+    // Pop the InlinedCallFrame. Because the ICF is no longer linked to the thread, there is no need at this point
+    // to reset the m_pCallerReturnAddress to zero
+    tree = CreateFrameLinkUpdate(PopFrame);
+    BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
+    ContainCheckStoreIndir(tree->AsIndir());
 }
 
 //------------------------------------------------------------------------

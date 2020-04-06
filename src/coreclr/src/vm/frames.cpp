@@ -1965,8 +1965,7 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress()
 
     PCODE pRetAddr = Frame::GetReturnAddress();
 
-    if (InlinedCallFrame::FrameHasActiveCall(m_Next) &&
-        pRetAddr == m_Next->GetReturnAddress())
+    if (pRetAddr == m_Next->GetReturnAddress())
     {
         // there's actually no unmanaged code involved - we were called directly
         // from managed code using an InlinedCallFrame

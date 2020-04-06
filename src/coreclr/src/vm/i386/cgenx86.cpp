@@ -592,25 +592,14 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        // We should skip over InlinedCallFrame if it is not active.
-        // It will be part of a JITed method's frame, and the stack-walker
-        // can handle such a case.
 #ifdef PROFILING_SUPPORTED
-        PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
+        PRECONDITION(CORProfilerStackSnapshotEnabled() || m_pCallerReturnAddress != NULL);
 #endif
         HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
     CONTRACT_END;
-
-    // @TODO: Remove this after the debugger is fixed to avoid stack-walks from bad places
-    // @TODO: This may be still needed for sampling profilers
-    if (!InlinedCallFrame::FrameHasActiveCall(this))
-    {
-        LOG((LF_CORDB, LL_ERROR, "WARNING: InlinedCallFrame::UpdateRegDisplay called on inactive frame %p\n", this));
-        return;
-    }
 
     DWORD stackArgSize = 0;
 
@@ -1026,9 +1015,6 @@ Stub *GenerateInitPInvokeFrameHelper()
     // mov [edi + FrameInfo.offsetOfReturnAddress], 0
     psl->X86EmitOffsetModRM(0xc7, (X86Reg)0x0, kEDI, FrameInfo.offsetOfReturnAddress - negSpace);
     psl->Emit32(0);
-
-    // mov [esi + offsetof(Thread, m_pFrame)], edi
-    psl->X86EmitIndexRegStore(kESI, offsetof(Thread, m_pFrame), kEDI);
 
     // leave current Thread in ESI
     psl->X86EmitReturn(0);

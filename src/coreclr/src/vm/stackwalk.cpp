@@ -2550,7 +2550,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
     {
         Frame* pInlinedFrame = NULL;
 
-        if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame))
+        if (m_crawl.pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
         {
             pInlinedFrame = m_crawl.pFrame;
         }
@@ -2997,7 +2997,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
         if (fHandleSkippedFrames
 #ifdef TARGET_X86
             || // On x86 we have already reported the InlinedCallFrame, don't report it again.
-            (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) && !fReportInteropMD)
+            (m_crawl.pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr() && !fReportInteropMD)
 #endif // TARGET_X86
             )
         {

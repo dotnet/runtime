@@ -2309,7 +2309,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         currentIP = (UINT_PTR)GetControlPC(pCf->GetRegisterSet());
         currentSP = (UINT_PTR)GetRegdisplaySP(pCf->GetRegisterSet());
     }
-    else if (InlinedCallFrame::FrameHasActiveCall(pFrame))
+    else if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
     {
         // don't have the IP, SP for native code
         currentIP = 0;
@@ -3125,7 +3125,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
 
     MethodDesc* pMethodDesc = pCf->GetCodeInfo()->GetMethodDesc();
     TADDR startAddress = pCf->GetCodeInfo()->GetStartAddress();
-    if (InlinedCallFrame::FrameHasActiveCall(pThread->m_pFrame))
+    if (pThread->m_pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
     {
         // When unwinding an exception in ReadyToRun, the JIT_PInvokeEnd helper which unlinks the ICF from
         // the thread will be skipped. This is because unlike jitted code, each pinvoke is wrapped by calls
@@ -3149,7 +3149,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
                                                                      NULL /* StackwalkCacheUnwindInfo* */);
         _ASSERTE(unwindSuccess);
 
-        if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP) && ExecutionManager::IsReadyToRunCode(((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress))
+        if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP) /*&& ExecutionManager::IsReadyToRunCode(((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress)*/)
         {
             _ASSERTE((TADDR)pThread->m_pFrame >= handlerFrameSP);
             pThread->m_pFrame->Pop(pThread);

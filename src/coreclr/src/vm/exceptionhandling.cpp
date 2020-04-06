@@ -340,9 +340,6 @@ StackWalkAction UpdateObjectRefInResumeContextCallback(CrawlFrame* pCF, LPVOID p
             // Is this an InlinedCallFrame?
             if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
             {
-                // If we are here, then ICF is expected to be active.
-                _ASSERTE(InlinedCallFrame::FrameHasActiveCall(pFrame));
-
                 // Copy the CalleeSavedFP to the data structure that is passed this callback
                 // by the stackwalker. This is the value of frame pointer when ICF is setup
                 // in a managed frame.
@@ -1353,8 +1350,7 @@ void ExceptionTracker::InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisF
     pcfThisFrame->pFrame = pFrame;
     pcfThisFrame->pFunc = pFrame->GetFunction();
 
-    if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr() &&
-        !InlinedCallFrame::FrameHasActiveCall(pFrame))
+    if (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
     {
         // Inactive ICFs in IL stubs contain the true interop MethodDesc which must be
         // reported in the stack trace.
@@ -1874,7 +1870,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
                     // JIT_PInvokeEnd helper will be skipped, we need to unlink the ICF here. If the executing method
                     // has another pinovoke, it will re-link the ICF again when the JIT_PInvokeBegin helper is called
 
-                    if (ExecutionManager::IsReadyToRunCode(((InlinedCallFrame*)pFrame)->m_pCallerReturnAddress))
+                    //if (ExecutionManager::IsReadyToRunCode(((InlinedCallFrame*)pFrame)->m_pCallerReturnAddress))
                     {
                         pICFForUnwindTarget = pICFForUnwindTarget->Next();
                     }
