@@ -23,8 +23,6 @@
 -nonamespace MonoTests.System.Drawing
 -nonamespace System.Reflection.Emit.Tests
 
--nomethod System.ComponentModel.TypeConverterTests
-
 # System.PlatformNotSupportedException : This API is specific to the way in which Windows handles asynchronous I/O, and is not supported on this platform.
 -nomethod Microsoft.Extensions.FileProviders.PhysicalFileProviderTests.TokenCallbackInvokedOnFileChange
 -nomethod Microsoft.Extensions.FileProviders.Physical.Tests.PhysicalFilesWatcherTests.HandlesOnRenamedEventsThatMatchRootPath
