@@ -20,6 +20,6 @@ MONO_API MONO_RT_EXTERNAL_ONLY
 MonoAssembly *mono_assembly_load_full_alc (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status, MonoAssemblyLoadContextGCHandle alc_gchandle);
 
 typedef MonoAssembly * (*MonoAssemblyPreLoadFuncV3) (MonoAssemblyLoadContextGCHandle *alc_gchandle, MonoAssemblyName *aname, char **assemblies_path, gpointer user_data, MonoError *error);
-void mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer user_data);
+void mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer user_data, gboolean append);
 
 #endif /*__MONO_METADATA_MONO_PRIVATE_UNSTABLE_H__*/

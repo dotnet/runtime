@@ -2286,7 +2286,7 @@ mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer 
 	}
 }
 
-void mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer user_data)
+void mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer user_data, gboolean append)
 {
 	AssemblyPreLoadHook *hook;
 
@@ -2296,9 +2296,16 @@ void mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpoi
 	hook->version = 3;
 	hook->func.v3 = func;
 	hook->user_data = user_data;
-	hook->next = assembly_preload_hook;
 
-	assembly_preload_hook = hook;
+	if (append && assembly_preload_hook != NULL) {
+		AssemblyPreLoadHook *old = assembly_preload_hook;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = assembly_preload_hook;
+		assembly_preload_hook = hook;
+	}
 }
 
 
