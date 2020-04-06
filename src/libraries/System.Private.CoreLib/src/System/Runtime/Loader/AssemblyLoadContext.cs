@@ -12,8 +12,10 @@ using System.Threading;
 
 namespace System.Runtime.Loader
 {
+    [StructLayout(LayoutKind.Sequential)]
     public partial class AssemblyLoadContext
     {
+        // Keep in sync with MonoManagedAssemblyLoadContextInternalState in object-internals.h
         private enum InternalState
         {
             /// <summary>
@@ -34,6 +36,7 @@ namespace System.Runtime.Loader
 #region private data members
         // If you modify any of these fields, you must also update the
         // AssemblyLoadContextBaseObject structure in object.h
+        // and MonoManagedAssemblyLoadContext in object-internals.h
 
         // synchronization primitive to protect against usage of this instance while unloading
         private readonly object _unloadLock;
