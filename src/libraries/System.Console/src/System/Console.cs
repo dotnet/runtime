@@ -43,7 +43,7 @@ namespace System
                 {
                     ConsolePal.EnsureConsoleInitialized(); // May lock Console.Out
 
-                    lock ( s_syncObject) // Ensures In and InputEncoding are synchronized.
+                    lock (s_syncObject) // Ensures In and InputEncoding are synchronized.
                     {
                         return s_in ??= ConsolePal.GetOrCreateReader();
                     }
@@ -58,7 +58,7 @@ namespace System
                 Encoding? encoding = Volatile.Read(ref s_inputEncoding);
                 if (encoding == null)
                 {
-                    lock ( s_syncObject)
+                    lock (s_syncObject)
                     {
                         encoding = s_inputEncoding ??= ConsolePal.InputEncoding;
                     }
@@ -69,7 +69,7 @@ namespace System
             {
                 CheckNonNull(value, nameof(value));
 
-                lock ( s_syncObject)
+                lock (s_syncObject)
                 {
                     // Set the terminal console encoding.
                     ConsolePal.SetConsoleInputEncoding(value);
@@ -91,7 +91,7 @@ namespace System
                 Encoding? encoding = Volatile.Read(ref s_outputEncoding);
                 if (encoding == null)
                 {
-                    lock ( s_syncObject)
+                    lock (s_syncObject)
                     {
                         encoding = s_outputEncoding ??= ConsolePal.OutputEncoding;
                     }
@@ -102,7 +102,7 @@ namespace System
             {
                 CheckNonNull(value, nameof(value));
 
-                lock ( s_syncObject)
+                lock (s_syncObject)
                 {
                     // Set the terminal console encoding.
                     ConsolePal.SetConsoleOutputEncoding(value);
@@ -157,7 +157,7 @@ namespace System
 
                 static TextWriter EnsureInitialized()
                 {
-                    lock ( s_syncObject) // Ensures Out and OutputEncoding are synchronized.
+                    lock (s_syncObject) // Ensures Out and OutputEncoding are synchronized.
                     {
                         return s_out ??= CreateOutputWriter(OpenStandardOutput());
                     }
@@ -173,7 +173,7 @@ namespace System
 
                 static TextWriter EnsureInitialized()
                 {
-                    lock ( s_syncObject) // Ensures Error and OutputEncoding are synchronized.
+                    lock (s_syncObject) // Ensures Error and OutputEncoding are synchronized.
                     {
                         return s_error ??= CreateOutputWriter(OpenStandardError());
                     }
@@ -407,7 +407,7 @@ namespace System
         {
             add
             {
-                lock ( s_syncObject)
+                lock (s_syncObject)
                 {
                     s_cancelCallbacks += value;
 
@@ -421,7 +421,7 @@ namespace System
             }
             remove
             {
-                lock ( s_syncObject)
+                lock (s_syncObject)
                 {
                     s_cancelCallbacks -= value;
                     if (s_registrar != null && s_cancelCallbacks == null)
@@ -495,7 +495,7 @@ namespace System
         {
             CheckNonNull(newOut, nameof(newOut));
             newOut = TextWriter.Synchronized(newOut);
-            lock ( s_syncObject)
+            lock (s_syncObject)
             {
                 s_isOutTextWriterRedirected = true;
                 s_out = newOut;
@@ -506,7 +506,7 @@ namespace System
         {
             CheckNonNull(newError, nameof(newError));
             newError = TextWriter.Synchronized(newError);
-            lock ( s_syncObject)
+            lock (s_syncObject)
             {
                 s_isErrorTextWriterRedirected = true;
                 s_error = newError;
