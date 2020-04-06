@@ -12,7 +12,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
     public class RuntimeIdentifierTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyOSRid()
         {
             Assert.NotNull(RuntimeInformation.RuntimeIdentifier);
@@ -21,7 +20,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyEnvironmentVariable()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -63,14 +61,12 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyWindowsRid()
         {
             Assert.StartsWith("win", RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyLinuxRid()
         {
             string expectedOSName = File.ReadAllLines("/etc/os-release")
@@ -82,14 +78,12 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyFreeBSDRid()
         {
             Assert.StartsWith("freebsd", RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact, PlatformSpecific(TestPlatforms.OSX)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/26780")] // need a new testhost
         public void VerifyOSXRid()
         {
             Assert.StartsWith("osx", RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
