@@ -19,6 +19,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal const ulong DefaultMaxAckDelay = 25;
 
         /// <summary>
+        ///     Set of default transport parameters.
+        /// </summary>
+        internal static readonly TransportParameters Default = new TransportParameters();
+
+        /// <summary>
         ///     Value of the destination connection ID field from the first Initial packet sent by the client. This transport
         ///     parameter is only sent by a server. This is the same value sent in the "Original Destination Connection ID" field
         ///     of a retry packet. Server MUST include this parameter if it sent a Retry packet.
@@ -57,7 +62,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         /// <summary>
         ///     Initial flow control limit for peer-initiated bidirectional streams. This limit applies to newly created
-        ///     bidirectional streams opened by the endpoint that receives the transport parameter.
+        ///     bidirectional streams opened by the endpoint that sends the transport parameter.
         /// </summary>
         internal ulong InitialMaxStreamDataBidiRemote { get; set; }
 

@@ -114,14 +114,14 @@ namespace System.Net.Quic.Implementations.Managed
             _isServer = isServer;
 
             // TODO-RZ: compose transport params from options
-            localTransportParams = new TransportParameters();
+            _localTransportParameters = new TransportParameters();
 
             _epochs = new EpochData[3] {new EpochData(), new EpochData(), new EpochData()};
         }
 
         private void Init()
         {
-            _tls.Init(cert, privateKey, _isServer, localTransportParams);
+            _tls.Init(cert, privateKey, _isServer, _localTransportParameters);
 
             if (_isServer)
             {
@@ -138,6 +138,27 @@ namespace System.Net.Quic.Implementations.Managed
 
             // generate first Crypto frames
             _tls.DoHandshake();
+        }
+
+        private void DoHandshake()
+        {
+            var status = _tls.DoHandshake();
+
+            // TODO-RZ: application level protocol negotiation
+
+            if (ReferenceEquals(_peerTransportParameters, TransportParameters.Default))
+            {
+                var param = _tls.GetPeerTransportParameters(_isServer);
+
+                if (param != null)
+                {
+                    ref ConnectionFlowControlLimits limits = ref _peerLimits;
+
+                    limits.MaxData = param.InitialMaxData;
+                    limits.MaxStreamsBidi = param.InitialMaxStreamsBidi;
+                    limits.MaxStreamsUni = param.InitialMaxStreamsUni;
+                }
+            }
         }
 
         private void DeriveInitialProtectionKeys(byte[] dcid)
@@ -516,11 +537,6 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             return written;
-        }
-
-        internal TransportParameters GetPeerTransportParameters()
-        {
-            return _tls.GetPeerTransportParameters(_isServer);
         }
 
         private static PacketEpoch GetEpoch(PacketType packetType)

@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
@@ -31,8 +32,6 @@ namespace System.Net.Quic.Implementations.Managed
         };
 
         private readonly IntPtr _ssl;
-
-        private TransportParameters? _remoteTransportParams;
 
         public Tls(GCHandle handle)
         {
@@ -149,24 +148,25 @@ namespace System.Net.Quic.Implementations.Managed
             return Interop.OpenSslQuic.SslGetCipherId(_ssl);
         }
 
-        internal unsafe TransportParameters GetPeerTransportParameters(bool isServer)
+        internal unsafe TransportParameters? GetPeerTransportParameters(bool isServer)
         {
-            if (_remoteTransportParams == null)
+            if (Interop.OpenSslQuic.SslGetPeerQuicTransportParams(_ssl, out byte* data, out IntPtr length) == 0 ||
+                length.ToInt32() == 0)
             {
-                byte[] buffer = new byte[1024];
-                byte* data;
-                IntPtr length;
-                Interop.OpenSslQuic.SslGetPeerQuicTransportParams(_ssl, out data, out length);
-
-                new Span<byte>(data, length.ToInt32()).CopyTo(buffer);
-                var reader = new QuicReader(new ArraySegment<byte>(buffer, 0, length.ToInt32()));
-                if (!TransportParameters.Read(reader, !isServer, out _remoteTransportParams))
-                {
-                    throw new InvalidOperationException("Failed to get peers transport params");
-                }
+                return null;
             }
 
-            return _remoteTransportParams!;
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(length.ToInt32());
+
+            new Span<byte>(data, length.ToInt32()).CopyTo(buffer);
+            var reader = new QuicReader(new ArraySegment<byte>(buffer, 0, length.ToInt32()));
+
+            // TODO-RZ: Should failure to deserialize be a connection error?
+
+            TransportParameters.Read(reader, !isServer, out var parameters);
+            ArrayPool<byte>.Shared.Return(buffer);
+
+            return parameters;
         }
 
         private static unsafe int SetEncryptionSecretsImpl(IntPtr ssl, OpenSslEncryptionLevel level, byte* readSecret,

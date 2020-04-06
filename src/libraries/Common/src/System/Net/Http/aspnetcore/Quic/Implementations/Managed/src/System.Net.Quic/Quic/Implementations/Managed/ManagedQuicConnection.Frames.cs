@@ -147,7 +147,7 @@ namespace System.Net.Quic.Implementations.Managed
             // do handshake to set encryption secrets (to be able to process coalesced packets
             if (handshakeWanted)
             {
-                _tls.DoHandshake();
+                DoHandshake();
             }
 
             return ProcessPacketResult.Ok;
