@@ -3560,7 +3560,7 @@ namespace Mono.Linker.Steps {
 
 								foreach (var value in methodParams [0].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue)
-										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", BindingFlags.Instance, parametersCount: 0);
+										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, parametersCount: 0);
 									else
 										RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.DefaultConstructor, value, calledMethod.Parameters [0]);
 								}
