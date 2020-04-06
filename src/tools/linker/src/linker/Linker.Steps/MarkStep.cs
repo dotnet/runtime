@@ -2828,137 +2828,6 @@ namespace Mono.Linker.Steps {
 						break;
 
 					//
-					// System.Linq.Expressions.Expression
-					//
-					case "Expression" when methodCalledType.Namespace == "System.Linq.Expressions":
-						Instruction second_argument;
-						TypeDefinition declaringType;
-
-						if (!methodCalled.IsStatic)
-							break;
-
-						switch (methodCalled.Name) {
-
-							//
-							// static Call (Type, String, Type[], Expression[])
-							//
-							case "Call": {
-									reflectionContext.AnalyzingPattern ();
-
-									var first_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 4);
-									if (first_arg_instr < 0) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-										break;
-									}
-
-									var first_arg = _instructions [first_arg_instr];
-									if (first_arg.OpCode == OpCodes.Ldtoken)
-										first_arg_instr++;
-
-									declaringType = FindReflectionTypeForLookup (_instructions, first_arg_instr);
-									if (declaringType == null) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 1st argument which cannot be analyzed");
-										break;
-									}
-
-									var second_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 3);
-									second_argument = _instructions [second_arg_instr];
-									if (second_argument.OpCode != OpCodes.Ldstr) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 2nd argument which cannot be analyzed");
-										break;
-									}
-
-									var name = (string)second_argument.Operand;
-
-									MarkMethodsFromReflectionCall (ref reflectionContext, declaringType, name, null, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-								}
-
-								break;
-
-							//
-							// static Property(Expression, Type, String)
-							// static Field (Expression, Type, String)
-							//
-							case "Property":
-							case "Field": {
-									reflectionContext.AnalyzingPattern ();
-
-									var second_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 2);
-									if (second_arg_instr < 0) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-										break;
-									}
-
-									var second_arg = _instructions [second_arg_instr];
-									if (second_arg.OpCode == OpCodes.Ldtoken)
-										second_arg_instr++;
-
-									declaringType = FindReflectionTypeForLookup (_instructions, second_arg_instr);
-									if (declaringType == null) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 2nd argument which cannot be analyzed");
-										break;
-									}
-
-									var third_arg_inst = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 1);
-									var third_argument = _instructions [third_arg_inst];
-									if (third_argument.OpCode != OpCodes.Ldstr) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with the 3rd argument which cannot be analyzed");
-										break;
-									}
-
-									var name = (string)third_argument.Operand;
-
-									//
-									// The first argument can be any expression but we are looking only for simple null
-									// which we can convert to static only field lookup
-									//
-									var first_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 3);
-									bool staticOnly = false;
-
-									if (first_arg_instr >= 0) {
-										var first_arg = _instructions [first_arg_instr];
-										if (first_arg.OpCode == OpCodes.Ldnull)
-											staticOnly = true;
-									}
-
-									if (methodCalled.Name [0] == 'P')
-										MarkPropertiesFromReflectionCall (ref reflectionContext, declaringType, name, staticOnly);
-									else
-										MarkFieldsFromReflectionCall (ref reflectionContext, declaringType, name, staticOnly);
-								}
-
-								break;
-
-							//
-							// static New (Type)
-							//
-							case "New": {
-									reflectionContext.AnalyzingPattern ();
-
-									var first_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, 1);
-									if (first_arg_instr < 0) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-										break;
-									}
-
-									var first_arg = _instructions [first_arg_instr];
-									if (first_arg.OpCode == OpCodes.Ldtoken)
-										first_arg_instr++;
-
-									declaringType = FindReflectionTypeForLookup (_instructions, first_arg_instr);
-									if (declaringType == null) {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with 1st argument which cannot be analyzed");
-										break;
-									}
-
-									MarkMethodsFromReflectionCall (ref reflectionContext, declaringType, ".ctor", 0, BindingFlags.Instance, parametersCount: 0);
-								}
-								break;
-						}
-
-						break;
-
-					//
 					// System.Reflection.RuntimeReflectionExtensions
 					//
 					case "RuntimeReflectionExtensions" when methodCalledType.Namespace == "System.Reflection":
@@ -3616,6 +3485,97 @@ namespace Mono.Linker.Steps {
 							break;
 
 						//
+						// static Call (Type, String, Type[], Expression[])
+						//
+						case "Call" when calledMethod.DeclaringType.Name == "Expression"
+							&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
+							&& calledMethod.Parameters.Count == 4
+							&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type": {
+
+								reflectionContext.AnalyzingPattern ();
+
+								foreach (var value in methodParams [0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										foreach (var stringParam in methodParams [1].UniqueValues ()) {
+											// TODO: Change this as needed after deciding whether or not we are to keep
+											// all methods on a type that was accessed via reflection.
+											if (stringParam is KnownStringValue stringValue)
+												MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+											else
+												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+										}
+									} else if (value == NullValue.Instance) {
+										reflectionContext.RecordHandledPattern ();
+									} else if (value is MethodParameterValue) {
+										// TODO: Check if parameter is annotated.
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+									} else {
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
+									}
+								}
+							}
+							break;
+
+						//
+						// static Field (Expression, Type, String)
+						// static Property (Expression, Type, String)
+						//
+						case var fieldOrProperty when ((fieldOrProperty == "Field" || fieldOrProperty == "Property")
+							&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
+							&& calledMethod.DeclaringType.Name == "Expression"
+							&& calledMethod.Parameters.Count == 3
+							&& calledMethod.Parameters [1].ParameterType.FullName == "System.Type"): {
+
+								reflectionContext.AnalyzingPattern ();
+
+								foreach (var value in methodParams [1].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue) {
+										foreach (var stringParam in methodParams [2].UniqueValues ()) {
+											if (stringParam is KnownStringValue stringValue) {
+												bool staticOnly = methodParams [0].Kind == ValueNodeKind.Null;
+												// TODO: Change this as needed after deciding if we are to keep all fields/properties on a type
+												// that is accessed via reflection. For now, let's only keep the field/property that is retrieved.
+												if (calledMethod.Name [0] == 'P')
+													MarkPropertiesFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
+												else
+													MarkFieldsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
+											} else {
+												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
+											}
+										}
+									} else if (value == NullValue.Instance) {
+										reflectionContext.RecordHandledPattern ();
+									} else if (value is MethodParameterValue) {
+										// TODO: Check if parameter is annotated.
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+									} else {
+										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
+									}
+								}
+							}
+							break;
+
+						//
+						// static New (Type)
+						//
+						case "New" when calledMethod.DeclaringType.Name == "Expression"
+							&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
+							&& calledMethod.Parameters.Count == 1
+							&& calledMethod.Parameters[0].ParameterType.FullName == "System.Type":
+							{
+
+								reflectionContext.AnalyzingPattern();
+
+								foreach (var value in methodParams [0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue)
+										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, parametersCount: 0);
+									else
+										RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.DefaultConstructor, value, calledMethod.Parameters [0]);
+								}
+							}
+							break;
+
+						//
 						// static CreateInstance (System.Type type)
 						// static CreateInstance (System.Type type, bool nonPublic)
 						// static CreateInstance (System.Type type, params object?[]? args)
@@ -3864,6 +3824,60 @@ namespace Mono.Linker.Steps {
 					bool publicOnly = (bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public;
 					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve {(publicOnly ? "public" : "")} method `{name}` on type `{declaringType.FullName}`.");
 				}
+			}
+
+			void MarkPropertiesFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
+			{
+				bool foundMatch = false;
+				foreach (var property in declaringType.Properties) {
+					if (property.Name != name)
+						continue;
+
+					bool markedAny = false;
+					var methodCalling = reflectionContext.MethodCalling;
+
+					// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
+					// Be conservative and mark everything for the property.
+					var getter = property.GetMethod;
+					if (getter != null && (!staticOnly || staticOnly && getter.IsStatic)) {
+						reflectionContext.RecordRecognizedPattern (getter, () => _markStep.MarkIndirectlyCalledMethod (getter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+						markedAny = true;
+					}
+
+					var setter = property.SetMethod;
+					if (setter != null && (!staticOnly || staticOnly && setter.IsStatic)) {
+						reflectionContext.RecordRecognizedPattern (setter, () => _markStep.MarkIndirectlyCalledMethod (setter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+						markedAny = true;
+					}
+
+					if (markedAny) {
+						foundMatch = true;
+						reflectionContext.RecordRecognizedPattern (property, () => _markStep.MarkProperty (property, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+					}
+				}
+
+				if (!foundMatch)
+					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve property `{name}` on type `{declaringType.FullName}`.");
+			}
+
+			void MarkFieldsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
+			{
+				bool foundMatch = false;
+				var methodCalling = reflectionContext.MethodCalling;
+				foreach (var field in declaringType.Fields) {
+					if (field.Name != name)
+						continue;
+
+					if (staticOnly && !field.IsStatic)
+						continue;
+
+					foundMatch = true;
+					reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+					break;
+				}
+
+				if (!foundMatch)
+					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve field `{name}` on type `{declaringType.FullName}`.");
 			}
 
 			void MarkConstructorsOnType (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<MethodDefinition, bool> filter)
