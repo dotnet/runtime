@@ -41,7 +41,11 @@ namespace System
 
                 static TextReader EnsureInitialized()
                 {
-                    ConsolePal.EnsureConsoleInitialized(); // May lock Console.Out
+                    // EnsureConsoleInitialized may lock Console.Out.
+                    // We musn't call it under s_syncObject lock,
+                    // otherwise there can be a deadlock when another
+                    // thread locks these objects in opposite order.
+                    ConsolePal.EnsureConsoleInitialized();
 
                     lock (s_syncObject) // Ensures In and InputEncoding are synchronized.
                     {

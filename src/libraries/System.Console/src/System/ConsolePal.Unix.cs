@@ -935,6 +935,7 @@ namespace System
         /// <summary>Ensures that the console has been initialized for use.</summary>
         private static void EnsureInitializedCore()
         {
+            // Initialization is only needed when input isn't redirected.
             if (Console.IsInputRedirected)
             {
                 s_initialized = true;
