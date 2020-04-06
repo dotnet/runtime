@@ -39,7 +39,7 @@ KNOWN_EVENT(BGC2ndConBegin, GCEventProvider_Private, GCEventLevel_Information, G
 KNOWN_EVENT(BGC2ndConEnd, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 KNOWN_EVENT(BGCDrainMark, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 KNOWN_EVENT(BGCRevisit, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
-KNOWN_EVENT(BGCOverflow, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
+KNOWN_EVENT(BGCOverflow_V1, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 KNOWN_EVENT(BGCAllocWaitBegin, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 KNOWN_EVENT(BGCAllocWaitEnd, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)
 KNOWN_EVENT(GCFullNotify_V1, GCEventProvider_Private, GCEventLevel_Information, GCEventKeyword_GCPrivate)

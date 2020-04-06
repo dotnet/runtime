@@ -148,7 +148,7 @@ public:
     virtual
     void FireBGCRevisit(uint64_t pages, uint64_t objects, uint32_t isLarge) = 0;
     virtual
-    void FireBGCOverflow(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge) = 0;
+    void FireBGCOverflow_V1(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge, uint32_t genNumber) = 0;
     virtual
     void FireBGCAllocWaitBegin(uint32_t reason) = 0;
     virtual

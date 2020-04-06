@@ -74,7 +74,7 @@ public:
     void FireBGC2ndConEnd();
     void FireBGCDrainMark(uint64_t objects);
     void FireBGCRevisit(uint64_t pages, uint64_t objects, uint32_t isLarge);
-    void FireBGCOverflow(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge);
+    void FireBGCOverflow_V1(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge, uint32_t genNumber);
     void FireBGCAllocWaitBegin(uint32_t reason);
     void FireBGCAllocWaitEnd(uint32_t reason);
     void FireGCFullNotify_V1(uint32_t genNumber, uint32_t isAlloc);

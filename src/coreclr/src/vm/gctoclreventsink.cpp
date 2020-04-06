@@ -303,9 +303,9 @@ void GCToCLREventSink::FireBGCRevisit(uint64_t pages, uint64_t objects, uint32_t
     FireEtwBGCRevisit(pages, objects, isLarge, GetClrInstanceId());
 }
 
-void GCToCLREventSink::FireBGCOverflow(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge)
+void GCToCLREventSink::FireBGCOverflow_V1(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge, uint32_t genNumber)
 {
-    FireEtwBGCOverflow(min, max, objects, isLarge, GetClrInstanceId());
+    FireEtwBGCOverflow_V1(min, max, objects, isLarge, GetClrInstanceId(), genNumber);
 }
 
 void GCToCLREventSink::FireBGCAllocWaitBegin(uint32_t reason)

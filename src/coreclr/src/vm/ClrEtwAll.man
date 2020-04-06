@@ -5246,6 +5246,26 @@
                         </UserData>
                     </template>
 
+                    <template tid="BGCOverflow_V1">
+                        <data name="Min" inType="win:UInt64" />
+                        <data name="Max" inType="win:UInt64" />
+                        <data name="Objects" inType="win:UInt64" />
+                        <data name="IsLarge" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="GenNumber" inType="win:UInt32" />
+
+                        <UserData>
+                            <BGCOverflow_V1 xmlns="myNs">
+                                <Min> %1 </Min>
+                                <Max> %2 </Max>
+                                <Objects> %3 </Objects>
+                                <IsLarge> %4 </IsLarge>
+                                <ClrInstanceID> %5 </ClrInstanceID>
+                                <GenNumber> %6 </GenNumber>
+                            </BGCOverflow_V1>
+                        </UserData>
+                    </template>
+
                     <template tid="BGCAllocWait">
                         <data name="Reason" inType="win:UInt32" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
@@ -5941,6 +5961,11 @@
                            keywords ="GCPrivateKeyword"  opcode="BGCOverflow"
                            task="GarbageCollectionPrivate"
                            symbol="BGCOverflow" message="$(string.PrivatePublisher.BGCOverflowEventMessage)"/>
+
+                    <event value="22" version="1" level="win:Informational"  template="BGCOverflow_V1"
+                           keywords ="GCPrivateKeyword"  opcode="BGCOverflow"
+                           task="GarbageCollectionPrivate"
+                           symbol="BGCOverflow_V1" message="$(string.PrivatePublisher.BGCOverflowEventMessage)"/>
 
                     <event value="23" version="0" level="win:Informational"  template="BGCAllocWait"
                            keywords ="GCPrivateKeyword"  opcode="BGCAllocWaitBegin"
@@ -7003,6 +7028,7 @@
                 <string id="PrivatePublisher.BGCDrainMarkEventMessage" value="Objects=%1;%nClrInstanceID=%2"/>
                 <string id="PrivatePublisher.BGCRevisitEventMessage" value="Pages=%1;%nObjects=%2;%nIsLarge=%3;%nClrInstanceID=%4"/>
                 <string id="PrivatePublisher.BGCOverflowEventMessage" value="Min=%1;%nMax=%2;%Objects=%3;%nIsLarge=%4;%nClrInstanceID=%5"/>
+                <string id="PrivatePublisher.BGCOverflow_V1EventMessage" value="Min=%1;%nMax=%2;%Objects=%3;%nIsLarge=%4;%nClrInstanceID=%5;%GenNumber=%6"/>
                 <string id="PrivatePublisher.BGCAllocWaitEventMessage" value="Reason=%1;%nClrInstanceID=%2"/>
                 <string id="PrivatePublisher.GCFullNotifyEventMessage" value="GenNumber=%1;%nIsAlloc=%2"/>
                 <string id="PrivatePublisher.GCFullNotify_V1EventMessage" value="GenNumber=%1;%nIsAlloc=%2;%nClrInstanceID=%3"/>

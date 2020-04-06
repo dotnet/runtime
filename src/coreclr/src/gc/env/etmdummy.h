@@ -249,6 +249,7 @@
 #define FireEtwBGCDrainMark(Objects, ClrInstanceID) 0
 #define FireEtwBGCRevisit(Pages, Objects, IsLarge, ClrInstanceID) 0
 #define FireEtwBGCOverflow(Min, Max, Objects, IsLarge, ClrInstanceID) 0
+#define FireEtwBGCOverflow_V1(Min, Max, Objects, IsLarge, ClrInstanceID, GenNumber) 0
 #define FireEtwBGCAllocWaitBegin(Reason, ClrInstanceID) 0
 #define FireEtwBGCAllocWaitEnd(Reason, ClrInstanceID) 0
 #define FireEtwGCFullNotify(GenNumber, IsAlloc) 0

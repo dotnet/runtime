@@ -447,6 +447,7 @@ nomac:GarbageCollectionPrivate:::BGCSweepEnd
 nomac:GarbageCollectionPrivate:::BGCDrainMark
 nomac:GarbageCollectionPrivate:::BGCRevisit
 nomac:GarbageCollectionPrivate:::BGCOverflow
+nomac:GarbageCollectionPrivate:::BGCOverflow_V1
 nomac:GarbageCollectionPrivate:::BGCAllocWaitBegin
 nomac:GarbageCollectionPrivate:::BGCAllocWaitEnd
 nomac:GarbageCollectionPrivate:::GCFullNotify

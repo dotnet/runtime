@@ -16596,9 +16596,9 @@ inline
 void fire_overflow_event (uint8_t* overflow_min,
                           uint8_t* overflow_max,
                           size_t marked_objects,
-                          int large_objects_p)
+                          int gen_number)
 {
-    FIRE_EVENT(BGCOverflow, (uint64_t)overflow_min, (uint64_t)overflow_max, marked_objects, large_objects_p);
+    FIRE_EVENT(BGCOverflow_V1, (uint64_t)overflow_min, (uint64_t)overflow_max, marked_objects, gen_number == loh_generation, gen_number);
 }
 
 void gc_heap::concurrent_print_time_delta (const char* msg)
@@ -20364,7 +20364,7 @@ void gc_heap::background_process_mark_overflow_internal (int condemned_gen_numbe
             }
 
             dprintf (2, ("h%d: SOH: ov-mo: %Id", heap_number, total_marked_objects));
-            fire_overflow_event (min_add, max_add, total_marked_objects, !small_object_segments);
+            fire_overflow_event (min_add, max_add, total_marked_objects, i);
             if (small_object_segments)
             {
                 concurrent_print_time_delta (concurrent_p ? "Cov SOH" : "Nov SOH");
