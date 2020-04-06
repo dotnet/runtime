@@ -244,7 +244,7 @@ namespace ReadyToRun.SuperIlc
             }
 
             string coreRootDir;
-            if (_options.Composite)
+            if (_options.Composite && !(_options.Framework || _options.UseFramework))
             {
                 coreRootDir = GetOutputPath(outputRoot);
             }
