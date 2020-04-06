@@ -534,7 +534,8 @@
   <Target Name="BuildIosApp" DependsOnTargets="BuildIosAppBuilderTasks">
     <IosAppBuilderTask 
         Arch="$(TargetArchitecture)"
-        ProjectName="HelloiOS"
+        ProjectName="$(ProjectName)"
+        Optimized="$(Optimized)"
         MonoInclude="$(BinDir)include\mono-2.0"
         CrossCompiler="$(BinDir)cross\mono-aot-cross"
         EntryPointLib="$(EntryPointLib)"

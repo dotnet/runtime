@@ -14,7 +14,8 @@ internal class Utils
 {
     public static string GetEmbeddedResource(string file)
     {
-        using Stream stream = typeof(Utils).Assembly.GetManifestResourceStream("IosAppBuilderTasks.Templates." + file)!;
+        using Stream stream = typeof(Utils).Assembly
+            .GetManifestResourceStream("IosAppBuilderTasks.Templates." + file)!;
         using var ms = new MemoryStream();
         stream!.CopyTo(ms);
         ms.Position = 0;

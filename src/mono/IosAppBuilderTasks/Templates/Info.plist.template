@@ -8,6 +8,8 @@
 	<string>%BundleIdentifier%</string>
 	<key>CFBundleIdentifier</key>
 	<string>net.dot.%BundleIdentifier%</string>
+	<key>CFBundleName</key>
+	<string>%BundleIdentifier%</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
