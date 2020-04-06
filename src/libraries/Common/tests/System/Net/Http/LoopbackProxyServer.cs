@@ -14,8 +14,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Xunit.Abstractions;
-
 namespace System.Net.Test.Common
 {
     /// <summary>
@@ -42,7 +40,6 @@ namespace System.Net.Test.Common
         private readonly List<ReceivedRequest> _requests;
         private int _connections;
         private bool _disposed;
-        ITestOutputHelper _output;
 
         public int Connections => _connections;
         public List<ReceivedRequest> Requests => _requests;
@@ -59,7 +56,6 @@ namespace System.Net.Test.Common
             _authSchemes = options.AuthenticationSchemes;
             _connectionCloseAfter407 = options.ConnectionCloseAfter407;
             _addViaRequestHeader = options.AddViaRequestHeader;
-            _output = options.Output;
             _serverStopped = new ManualResetEvent(false);
 
             _requests = new List<ReceivedRequest>();
@@ -67,7 +63,6 @@ namespace System.Net.Test.Common
 
         private void Start()
         {
-            _output?.WriteLine("Starting loopback proxy server");
             Task.Run(async () =>
             {
                 var activeTasks = new ConcurrentDictionary<Task, int>();
@@ -77,17 +72,15 @@ namespace System.Net.Test.Common
                     while (true)
                     {
                         Socket s = await _listener.AcceptAsync().ConfigureAwait(false);
-                        _output?.WriteLine($"Accepting socket from {s.RemoteEndPoint}");
+
                         var connectionTask = Task.Run(async () =>
                         {
                             try
                             {
                                 await ProcessConnection(s).ConfigureAwait(false);
-                                _output?.WriteLine("Request preocessed");
                             }
                             catch (Exception ex)
                             {
-                                _output?.WriteLine(ex.Message);
                                 EventSourceTestLogging.Log.TestAncillaryError(ex);
                             }
                         });
@@ -146,7 +139,6 @@ namespace System.Net.Test.Common
             line = reader.ReadLine();
             if (line == null)
             {
-                _output?.WriteLine("Connection has been closed by client");
                 // Connection has been closed by client.
                 return false;
             }
@@ -207,16 +199,13 @@ namespace System.Net.Test.Common
             // Add 'Via' header.
             if (_addViaRequestHeader)
             {
-                _output?.WriteLine("Add 'Via' header");
                 requestMessage.Headers.Add("Via", ViaHeaderValue);
             }
 
             var handler = new HttpClientHandler() { UseProxy = false };
-            _output?.WriteLine($"Sending request to: {url}");
             using (HttpClient outboundClient = new HttpClient(handler))
             using (HttpResponseMessage response = await outboundClient.SendAsync(requestMessage).ConfigureAwait(false))
             {
-                _output?.WriteLine($"Received response from: {url}");
                 // Transfer the response headers from the server to the client.
                 var sb = new StringBuilder($"HTTP/{response.Version.ToString(2)} {(int)response.StatusCode} {response.ReasonPhrase}\r\n");
                 foreach (KeyValuePair<string, IEnumerable<string>> header in response.Headers)
@@ -229,11 +218,9 @@ namespace System.Net.Test.Common
                 }
                 sb.Append("\r\n");
                 writer.Write(sb.ToString());
-                _output?.WriteLine(sb.ToString());
                 // Forward the response body from the server to the client.
                 string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 writer.Write(responseBody);
-                _output?.WriteLine(responseBody);
                 return true;
             }
         }
@@ -385,7 +372,6 @@ namespace System.Net.Test.Common
             public AuthenticationSchemes AuthenticationSchemes { get; set; } = AuthenticationSchemes.None;
             public bool ConnectionCloseAfter407 { get; set; } = false;
             public bool AddViaRequestHeader { get; set; } = false;
-            public ITestOutputHelper Output { get; set; } = null; 
         }
     }
 }

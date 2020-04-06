@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics.Tracing;
 
 using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.DotNet.RemoteExecutor;
@@ -123,7 +121,7 @@ namespace System.Net.Http.Functional.Tests
         {
             RemoteExecutor.Invoke(async (useVersionString) =>
             {
-                var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true, Output = output };
+                var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true };
                 using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
                 {
                     Environment.SetEnvironmentVariable("http_proxy", proxyServer.Uri.AbsoluteUri.ToString());
