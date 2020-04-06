@@ -5,6 +5,7 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -48,6 +49,33 @@ namespace System.Net.NameResolution.PalTests
             }
             Assert.NotNull(aliases);
             Assert.NotNull(addresses);
+            Assert.True(addresses.Length > 0);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task GetAddrInfoAsync_LocalHost(bool justAddresses)
+        {
+            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
+            {
+                return;
+            }
+
+            if (justAddresses)
+            {
+                IPAddress[] addresses = await ((Task<IPAddress[]>)NameResolutionPal.GetAddrInfoAsync("localhost", justAddresses)).ConfigureAwait(false);
+
+                Assert.NotNull(addresses);
+                Assert.True(addresses.Length > 0);
+            }
+            else
+            {
+                IPHostEntry hostEntry = await ((Task<IPHostEntry>)NameResolutionPal.GetAddrInfoAsync("localhost", justAddresses)).ConfigureAwait(false);
+
+                Assert.NotNull(hostEntry);
+                Assert.True(hostEntry.AddressList.Length > 0);
+            }
         }
 
         [Theory]
@@ -160,6 +188,40 @@ namespace System.Net.NameResolution.PalTests
             Assert.Equal(SocketError.Success, error);
             Assert.NotNull(aliases);
             Assert.NotNull(addresses);
+            Assert.True(addresses.Length > 0);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task GetAddrInfoAsync_ExternalHost(bool justAddresses)
+        {
+            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
+            {
+                return;
+            }
+
+            const string hostName = "microsoft.com";
+
+            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
+            {
+                return;
+            }
+
+            if (justAddresses)
+            {
+                IPAddress[] addresses = await ((Task<IPAddress[]>)NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses)).ConfigureAwait(false);
+
+                Assert.NotNull(addresses);
+                Assert.True(addresses.Length > 0);
+            }
+            else
+            {
+                IPHostEntry hostEntry = await ((Task<IPHostEntry>)NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses)).ConfigureAwait(false);
+
+                Assert.NotNull(hostEntry);
+                Assert.True(hostEntry.AddressList.Length > 0);
+            }
         }
 
         [Theory]
