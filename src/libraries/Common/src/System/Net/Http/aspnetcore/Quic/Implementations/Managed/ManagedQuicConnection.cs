@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
@@ -12,9 +13,32 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Managed
 {
-    internal partial class ManagedQuicConnection : QuicConnectionProvider
+    internal sealed partial class ManagedQuicConnection : QuicConnectionProvider
     {
-        private class Context
+        private struct ConnectionFlowControlLimits
+        {
+            /// <summary>
+            ///     Maximum amount of data the endpoint is allowed to send.
+            /// </summary>
+            internal ulong MaxData { get; set; }
+
+            /// <summary>
+            ///     Maximum number of streams the endpoint can open.
+            /// </summary>
+            internal ulong MaxStreams { get; set; }
+
+            /// <summary>
+            ///     Maximum number of bidirectional streams the endpoint is allowed to open.
+            /// </summary>
+            internal ulong MaxStreamsBidi { get; set; }
+
+            /// <summary>
+            ///     Maximum number of unidirectional streams the endpoint is allowed to open.
+            /// </summary>
+            internal ulong MaxStreamsUni { get; set; }
+        }
+
+        private sealed class Context
         {
             public Context(DateTime now)
             {
@@ -54,7 +78,15 @@ namespace System.Net.Quic.Implementations.Managed
 
         private readonly EpochData[] _epochs;
 
-        private readonly TransportParameters localTransportParams;
+        /// <summary>
+        ///     QUIC transport parameters used for this endpoint.
+        /// </summary>
+        private readonly TransportParameters _localTransportParameters;
+
+        /// <summary>
+        ///     QUIC transport parameters requested by peer endpoint.
+        /// </summary>
+        private TransportParameters _peerTransportParameters = TransportParameters.Default;
 
         private QuicVersion version = QuicVersion.Draft27;
 
@@ -67,12 +99,25 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ConnectionId? _dcid;
 
-        // TODO-RZ: flow control counts
+        /// <summary>
+        ///     Flow control limits for this endpoint for the entire connection.
+        /// </summary>
+        private ConnectionFlowControlLimits _localLimits;
+
+        /// <summary>
+        ///     Flow control limits for the peer endpoint for the entire connection.
+        /// </summary>
+        private ConnectionFlowControlLimits _peerLimits;
 
         // TODO-RZ: remove these, they don't need to be saved
         private string? cert;
 
         private string? privateKey;
+
+        /// <summary>
+        ///     All streams organized by the stream type.
+        /// </summary>
+        private List<ManagedQuicStream>[] _streams = new List<ManagedQuicStream>[4];
 
         /// <summary>
         ///     Error to send in next packet in a CONNECTION_CLOSE frame.
@@ -279,7 +324,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             // if (epoch.ReceivedPacketNumbers.Contains(packetNumber))
             // {
-            // return ProcessPacketResult.Ok; // already processed;
+            //     return ProcessPacketResult.Ok; // already processed;
             // }
 
             if (epoch.LargestReceivedPacketNumber < packetNumber)
@@ -298,7 +343,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             // HACK: we do not want to try processing the AEAD integrity tag as if it were frames.
             var originalSegment = reader.Buffer;
-            var tagLength = GetEpoch(GetEncryptionLevel(packetType)).RecvCryptoSeal!.TagLength;
+            int tagLength = GetEpoch(GetEncryptionLevel(packetType)).RecvCryptoSeal!.TagLength;
             reader.Reset(reader.Buffer.Slice(reader.BytesRead, reader.BytesLeft - tagLength));
             var retval = ProcessFrames(reader, packetType, context);
             reader.Reset(originalSegment);
@@ -594,9 +639,23 @@ namespace System.Net.Quic.Implementations.Managed
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
-        internal override QuicStreamProvider OpenUnidirectionalStream() => throw new NotImplementedException();
+        internal override QuicStreamProvider OpenUnidirectionalStream()
+        {
+            // TODO-RZ: use messages from string resources
+            if (GetRemoteAvailableUnidirectionalStreamCount() == 0)
+                throw new InvalidOperationException("Cannot open stream");
 
-        internal override QuicStreamProvider OpenBidirectionalStream() => throw new NotImplementedException();
+            return OpenStream(unidirectional: true);
+        }
+
+        internal override QuicStreamProvider OpenBidirectionalStream()
+        {
+            // TODO-RZ: use messages from string resources
+            if (GetRemoteAvailableBidirectionalStreamCount() == 0)
+                throw new InvalidOperationException("Cannot open stream");
+
+            return OpenStream(unidirectional: false);
+        }
 
         internal override long GetRemoteAvailableUnidirectionalStreamCount() => throw new NotImplementedException();
 
