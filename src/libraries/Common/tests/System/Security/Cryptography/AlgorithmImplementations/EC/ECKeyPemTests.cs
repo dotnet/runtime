@@ -16,59 +16,68 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void ImportFromPem_NoPem()
         {
-            using TAlg key = CreateKey();
-            AssertExtensions.Throws<ArgumentException>("input", () => key.ImportFromPem(""));
+            using (TAlg key = CreateKey())
+            {
+                AssertExtensions.Throws<ArgumentException>("input", () => key.ImportFromPem(""));
+            }
         }
 
         [Fact]
         public void ImportFromPem_ECPrivateKey_Simple()
         {
-            using TAlg key = CreateKey();
-            key.ImportFromPem(@"
+            using (TAlg key = CreateKey())
+            {
+                key.ImportFromPem(@"
 -----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
 AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
 NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END EC PRIVATE KEY-----");
-            ECParameters ecParameters = ExportParameters(key, true);
-            ECParameters expected = EccTestData.GetNistP256ReferenceKey();
-            EccTestBase.AssertEqual(expected, ecParameters);
+                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters expected = EccTestData.GetNistP256ReferenceKey();
+                EccTestBase.AssertEqual(expected, ecParameters);
+            }
         }
 
         [Fact]
         public void ImportFromPem_Pkcs8_Simple()
         {
-            using TAlg key = CreateKey();
-            key.ImportFromPem(@"
+            using (TAlg key = CreateKey())
+            {
+                key.ImportFromPem(@"
 -----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcKEsLbFoRe1W/2jP
 whpHKz8E19aFG/Y0ny19WzRSs4qhRANCAASBAezkdGSm6tcM9ppuK9PYhpGjJi0i
 y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
 -----END PRIVATE KEY-----");
-            ECParameters ecParameters = ExportParameters(key, true);
-            ECParameters expected = EccTestData.GetNistP256ReferenceKey();
-            EccTestBase.AssertEqual(expected, ecParameters);
+                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters expected = EccTestData.GetNistP256ReferenceKey();
+                EccTestBase.AssertEqual(expected, ecParameters);
+            }
         }
 
         [Fact]
         public void ImportFromPem_Spki_Simple()
         {
-            using TAlg key = CreateKey();
-            key.ImportFromPem(@"
+            using (TAlg key = CreateKey())
+            {
+                key.ImportFromPem(@"
 -----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END PUBLIC KEY-----");
-            ECParameters ecParameters = ExportParameters(key, false);
-            ECParameters expected = EccTestData.GetNistP256ReferenceKey();
-            EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
+                ECParameters ecParameters = ExportParameters(key, false);
+                ECParameters expected = EccTestData.GetNistP256ReferenceKey();
+                EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
+            }
         }
 
         [Fact]
         public void ImportFromPem_Spki_PrecedingUnrelatedPemIsIgnored()
         {
-            using TAlg key = CreateKey();
-            key.ImportFromPem(@"
+            using (TAlg key = CreateKey())
+            {
+                key.ImportFromPem(@"
 -----BEGIN CERTIFICATE-----
 MIICTzCCAgmgAwIBAgIJAMQtYhFJ0+5jMA0GCSqGSIb3DQEBBQUAMIGSMQswCQYD
 VQQGEwJVUzETMBEGA1UECAwKV2FzaGluZ3RvbjEQMA4GA1UEBwwHUmVkbW9uZDEY
@@ -88,16 +97,18 @@ wggvPj3b2WMXsVWiPr4S1Y/nBA==
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END PUBLIC KEY-----");
-            ECParameters ecParameters = ExportParameters(key, false);
-            ECParameters expected = EccTestData.GetNistP256ReferenceKey();
-            EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
+                ECParameters ecParameters = ExportParameters(key, false);
+                ECParameters expected = EccTestData.GetNistP256ReferenceKey();
+                EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
+            }
         }
 
         [Fact]
         public void ImportFromPem_Spki_PrecedingMalformedPem()
         {
-            using TAlg key = CreateKey();
-            key.ImportFromPem(@"
+            using (TAlg key = CreateKey())
+            {
+                key.ImportFromPem(@"
 -----BEGIN CERTIFICATE-----
 $$ I AM NOT A PEM
 -----END CERTIFICATE-----
@@ -105,15 +116,18 @@ $$ I AM NOT A PEM
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END PUBLIC KEY-----");
-            ECParameters ecParameters = ExportParameters(key, false);
-            ECParameters expected = EccTestData.GetNistP256ReferenceKey();
-            EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
+                ECParameters ecParameters = ExportParameters(key, false);
+                ECParameters expected = EccTestData.GetNistP256ReferenceKey();
+                EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
+            }
         }
 
         [Fact]
         public void ImportFromPem_Spki_AmbiguousKey_Spki()
         {
-            string pem = @"
+            using (TAlg key = CreateKey())
+            {
+                string pem = @"
 -----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
@@ -122,14 +136,16 @@ Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END PUBLIC KEY-----";
-            using TAlg key = CreateKey();
-            AssertExtensions.Throws<ArgumentException>("input", () => key.ImportFromPem(pem));
+                AssertExtensions.Throws<ArgumentException>("input", () => key.ImportFromPem(pem));
+            }
         }
 
         [Fact]
         public void ImportFromPem_Spki_AmbiguousKey_EncryptedPkcs8()
         {
-            string pem = @"
+            using (TAlg key = CreateKey())
+            {
+                string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAjVvm4KTLb0JgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIuHgfok8Ytl0EgZDkDSJ9vt8UvSesdyV+
@@ -141,14 +157,16 @@ Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END PUBLIC KEY-----";
-            using TAlg key = CreateKey();
-            AssertExtensions.Throws<ArgumentException>("input", () => key.ImportFromPem(pem));
+                AssertExtensions.Throws<ArgumentException>("input", () => key.ImportFromPem(pem));
+            }
         }
 
         [Fact]
         public void ImportFromPem_EncryptedPrivateKeyFails()
         {
-            string pem = @"
+            using (TAlg key = CreateKey())
+            {
+                string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAjVvm4KTLb0JgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIuHgfok8Ytl0EgZDkDSJ9vt8UvSesdyV+
@@ -156,14 +174,16 @@ Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
 opSAJ/pvHONL5kyAJLeNyG9c/mR2qyrP2L9gL0Z5fB9NyPejKTLi0PXMGQWdDTH8
 Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
 -----END ENCRYPTED PRIVATE KEY-----";
-            using TAlg key = CreateKey();
-            AssertExtensions.Throws<ArgumentException>("input", () => key.ImportFromPem(pem));
+                AssertExtensions.Throws<ArgumentException>("input", () => key.ImportFromPem(pem));
+            }
         }
 
         [Fact]
         public void ImportFromEncryptedPem_Pkcs8_Char_Simple()
         {
-            string pem = @"
+            using (TAlg key = CreateKey())
+            {
+                string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAjVvm4KTLb0JgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIuHgfok8Ytl0EgZDkDSJ9vt8UvSesdyV+
@@ -171,17 +191,19 @@ Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
 opSAJ/pvHONL5kyAJLeNyG9c/mR2qyrP2L9gL0Z5fB9NyPejKTLi0PXMGQWdDTH8
 Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
 -----END ENCRYPTED PRIVATE KEY-----";
-            using TAlg key = CreateKey();
-            key.ImportFromEncryptedPem(pem, "test");
-            ECParameters ecParameters = ExportParameters(key, true);
-            ECParameters expected = EccTestData.GetNistP256ReferenceKey();
-            EccTestBase.AssertEqual(expected, ecParameters);
+                key.ImportFromEncryptedPem(pem, "test");
+                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters expected = EccTestData.GetNistP256ReferenceKey();
+                EccTestBase.AssertEqual(expected, ecParameters);
+            }
         }
 
         [Fact]
         public void ImportFromEncryptedPem_Pkcs8_Byte_Simple()
         {
-            string pem = @"
+            using (TAlg key = CreateKey())
+            {
+                string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIHsMFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAgf9krO2ZiPvAICCAAw
 DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEEEv4Re1ATH9lHzx+13GoZU0EgZAV
@@ -189,18 +211,20 @@ iE/+pIb/4quf+Y524bXUKTGYXzdSUE8Dp1qdZFcwDiCYCTtpL+065fGhmf1KZS2c
 /OMt/tWvtMSj17+dJvShsu/NYJXF5fsfpSJbd3e50Y3AisW0Ob7mmF54KBfg6Y+4
 aATwwQdUIKVzUZsQctsHPjbriQKKn7GKSyUOikBUNQ+TozojX8/g7JAsl+T9jGM=
 -----END ENCRYPTED PRIVATE KEY-----";
-            using TAlg key = CreateKey();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
-            key.ImportFromEncryptedPem(pem, passwordBytes);
-            ECParameters ecParameters = ExportParameters(key, true);
-            ECParameters expected = EccTestData.GetNistP256ReferenceKey();
-            EccTestBase.AssertEqual(expected, ecParameters);
+                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
+                key.ImportFromEncryptedPem(pem, passwordBytes);
+                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters expected = EccTestData.GetNistP256ReferenceKey();
+                EccTestBase.AssertEqual(expected, ecParameters);
+            }
         }
 
         [Fact]
         public void ImportFromEncryptedPem_AmbiguousPem_Byte()
         {
-            string pem = @"
+            using (TAlg key = CreateKey())
+            {
+                string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIHsMFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAgf9krO2ZiPvAICCAAw
 DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEEEv4Re1ATH9lHzx+13GoZU0EgZAV
@@ -215,17 +239,19 @@ Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
 opSAJ/pvHONL5kyAJLeNyG9c/mR2qyrP2L9gL0Z5fB9NyPejKTLi0PXMGQWdDTH8
 Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
 -----END ENCRYPTED PRIVATE KEY-----";
-            using TAlg key = CreateKey();
-            byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
+                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
 
-            AssertExtensions.Throws<ArgumentException>("input", () =>
-                key.ImportFromEncryptedPem(pem, passwordBytes));
+                AssertExtensions.Throws<ArgumentException>("input", () =>
+                    key.ImportFromEncryptedPem(pem, passwordBytes));
+            }
         }
 
         [Fact]
         public void ImportFromEncryptedPem_AmbiguousPem_Char()
         {
-            string pem = @"
+            using (TAlg key = CreateKey())
+            {
+                string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
 MIHsMFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAgf9krO2ZiPvAICCAAw
 DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEEEv4Re1ATH9lHzx+13GoZU0EgZAV
@@ -240,16 +266,18 @@ Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
 opSAJ/pvHONL5kyAJLeNyG9c/mR2qyrP2L9gL0Z5fB9NyPejKTLi0PXMGQWdDTH8
 Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
 -----END ENCRYPTED PRIVATE KEY-----";
-            using TAlg key = CreateKey();
-            AssertExtensions.Throws<ArgumentException>("input", () =>
-                key.ImportFromEncryptedPem(pem, ""));
+                AssertExtensions.Throws<ArgumentException>("input", () =>
+                    key.ImportFromEncryptedPem(pem, ""));
+            }
         }
 
         [Fact]
         public void ImportFromEncryptedPem_NoPem()
         {
-            using TAlg key = CreateKey();
-            AssertExtensions.Throws<ArgumentException>("input", () => key.ImportFromEncryptedPem("", ""));
+            using(TAlg key = CreateKey())
+            {
+                AssertExtensions.Throws<ArgumentException>("input", () => key.ImportFromEncryptedPem("", ""));
+            }
         }
     }
 }
