@@ -32,7 +32,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
-
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
@@ -139,7 +138,7 @@ namespace Mono.Linker.Steps {
 		};
 #endif
 
-		readonly FlowAnnotations _flowAnnotations;
+		FlowAnnotations _flowAnnotations;
 
 		public MarkStep ()
 		{
@@ -149,8 +148,6 @@ namespace Mono.Linker.Steps {
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo)> ();
 			_typesWithInterfaces = new List<TypeDefinition> ();
 			_unreachableBodies = new List<MethodBody> ();
-
-			_flowAnnotations = new FlowAnnotations (new AttributeFlowAnnotationSource (), _context);
 		}
 
 		public AnnotationStore Annotations => _context.Annotations;
@@ -159,6 +156,16 @@ namespace Mono.Linker.Steps {
 		public virtual void Process (LinkContext context)
 		{
 			_context = context;
+
+			IFlowAnnotationSource annotationSource = new AttributeFlowAnnotationSource ();
+			if (_context.DataflowAnnotations != null && _context.DataflowAnnotations.Count > 0) {
+				annotationSource = new AggregateFlowAnnotationSource (
+					_context.DataflowAnnotations.Select (s => new JsonFlowAnnotationSource (_context, s))
+					.Append (annotationSource));
+			}
+
+			_flowAnnotations = new FlowAnnotations (annotationSource, _context);
+
 
 			Initialize ();
 			Process ();
@@ -2824,9 +2831,6 @@ namespace Mono.Linker.Steps {
 					// System.Reflection.RuntimeReflectionExtensions
 					//
 					case "RuntimeReflectionExtensions" when methodCalledType.Namespace == "System.Reflection":
-						Instruction second_argument;
-						TypeDefinition declaringType;
-
 						switch (methodCalled.Name) {
 							//
 							// static GetRuntimeField (this Type type, string name)
@@ -3493,16 +3497,12 @@ namespace Mono.Linker.Steps {
 								foreach (var value in methodParams [0].UniqueValues ()) {
 									if (value is SystemTypeValue systemTypeValue) {
 										foreach (var stringParam in methodParams [1].UniqueValues ()) {
-											if (stringParam is KnownStringValue stringValue) {
+											// TODO: Change this as needed after deciding whether or not we are to keep
+											// all methods on a type that was accessed via reflection.
+											if (stringParam is KnownStringValue stringValue)
 												MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-											} else if (stringParam is NullValue) {
-												reflectionContext.RecordHandledPattern ();
-											} else if (stringParam is MethodParameterValue) {
-												// TODO: Check if parameter is annotated.
+											else
 												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
-											} else {
-												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 2nd argument which cannot be analyzed");
-											}
 										}
 									} else if (value == NullValue.Instance) {
 										reflectionContext.RecordHandledPattern ();
@@ -3533,16 +3533,12 @@ namespace Mono.Linker.Steps {
 										foreach (var stringParam in methodParams [2].UniqueValues ()) {
 											if (stringParam is KnownStringValue stringValue) {
 												bool staticOnly = methodParams [0].Kind == ValueNodeKind.Null;
-												if (calledMethod.Name [0] == 'P') {
+												// TODO: Change this as needed after deciding if we are to keep all fields/properties on a type
+												// that is accessed via reflection. For now, let's only keep the field/property that is retrieved.
+												if (calledMethod.Name [0] == 'P')
 													MarkPropertiesFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
-												} else {
+												else
 													MarkFieldsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, stringValue.Contents, staticOnly);
-												}
-											} else if (stringParam is NullValue) {
-												reflectionContext.RecordHandledPattern ();
-											} else if (stringParam is MethodParameterValue) {
-												// TODO: Check if parameter is annotated.
-												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
 											} else {
 												reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 3rd argument which cannot be analyzed");
 											}
@@ -3565,21 +3561,16 @@ namespace Mono.Linker.Steps {
 						case "New" when calledMethod.DeclaringType.Name == "Expression"
 							&& calledMethod.DeclaringType.Namespace == "System.Linq.Expressions"
 							&& calledMethod.Parameters.Count == 1
-							&& calledMethod.Parameters [0].ParameterType.FullName == "System.Type": {
+							&& calledMethod.Parameters[0].ParameterType.FullName == "System.Type":
+							{
 
-								reflectionContext.AnalyzingPattern ();
+								reflectionContext.AnalyzingPattern();
 
-								foreach (var value in methodParams[0].UniqueValues ()) {
-									if (value is SystemTypeValue systemTypeValue) {
-										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", BindingFlags.Instance, parametersCount: 0);
-									} else if (value == NullValue.Instance) {
-										reflectionContext.RecordHandledPattern ();
-									} else if (value is MethodParameterValue) {
-										// TODO: Check if parameter is annotated.
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
-									} else {
-										reflectionContext.RecordUnrecognizedPattern ($"Expression call '{calledMethod.FullName}' inside '{callingMethodBody.Method.FullName}' was detected with 1st argument which cannot be analyzed");
-									}
+								foreach (var value in methodParams [0].UniqueValues ()) {
+									if (value is SystemTypeValue systemTypeValue)
+										MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, parametersCount: 0);
+									else
+										RequireDynamicallyAccessedMembers (ref reflectionContext, DynamicallyAccessedMemberKinds.DefaultConstructor, value, calledMethod.Parameters [0]);
 								}
 							}
 							break;
@@ -3665,8 +3656,18 @@ namespace Mono.Linker.Steps {
 								for (int parameterIndex = 0; parameterIndex < methodParams.Count; parameterIndex ++) {
 									var requiredMemberKinds = _flowAnnotations.GetParameterAnnotation (calledMethodDefinition, parameterIndex);
 									if (requiredMemberKinds != 0) {
-										var targetParameter = calledMethodDefinition.Parameters [parameterIndex - (calledMethodDefinition.HasImplicitThis () ? 1 : 0)];
-										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, methodParams [parameterIndex], targetParameter);
+										IMetadataTokenProvider targetContext;
+										if (calledMethodDefinition.HasImplicitThis ()) {
+											if (parameterIndex == 0)
+												targetContext = calledMethodDefinition;
+											else
+												targetContext = calledMethodDefinition.Parameters [parameterIndex - 1];
+										}
+										else {
+											targetContext = calledMethodDefinition.Parameters [parameterIndex];
+										}
+
+										RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, methodParams [parameterIndex], targetContext);
 									}
 								}
 
@@ -3732,14 +3733,49 @@ namespace Mono.Linker.Steps {
 					} else if (uniqueValue is SystemTypeValue systemTypeValue) {
 						// Note that it's important to first test for the widest selector (Constructors > PublicConstructors > DefaultConstructor)
 						// as the wider ones include the narrower ones in the bitfield values.
-						if (requiredMemberKinds.HasFlag(DynamicallyAccessedMemberKinds.Constructors)) {
-							MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", bindingFlags: null);
-						} else if (requiredMemberKinds.HasFlag(DynamicallyAccessedMemberKinds.PublicConstructors)) {
-							MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", BindingFlags.Public);
-						} else if (requiredMemberKinds.HasFlag(DynamicallyAccessedMemberKinds.DefaultConstructor)) {
-							MarkMethodsFromReflectionCall (ref reflectionContext, systemTypeValue.TypeRepresented, ".ctor", bindingFlags: null, parametersCount: 0);
-						} else {
-							throw new NotImplementedException ();
+						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Constructors)) {
+							MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
+						}
+						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicConstructors)) {
+							MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, filter: m => m.IsPublic);
+						}
+						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.DefaultConstructor)) {
+							MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, filter: m => m.Parameters.Count == 0);
+						}
+
+						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Methods)) {
+							MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
+						}
+						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicMethods)) {
+							MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: m => m.IsPublic);
+						}
+
+						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Fields)) {
+							MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
+						}
+						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicFields)) {
+							MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.IsPublic);
+						}
+
+						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.NestedTypes)) {
+							MarkNestedTypesOnType (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
+						}
+						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicNestedTypes)) {
+							MarkNestedTypesOnType (ref reflectionContext, systemTypeValue.TypeRepresented, filter: t => t.IsNestedPublic);
+						}
+
+						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Properties)) {
+							MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
+						}
+						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicProperties)) {
+							MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => (f.GetMethod == null || f.GetMethod.IsPublic) || (f.SetMethod == null || f.SetMethod.IsPublic));
+						}
+
+						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Events)) {
+							MarkEventsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
+						}
+						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicEvents)) {
+							MarkEventsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => (f.AddMethod == null || f.AddMethod.IsPublic) || (f.RemoveMethod == null || f.RemoveMethod.IsPublic));
 						}
 					} else if (uniqueValue == NullValue.Instance) {
 						// Ignore - probably unreachable path as it would fail at runtime anyway.
@@ -3844,17 +3880,167 @@ namespace Mono.Linker.Steps {
 					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve field `{name}` on type `{declaringType.FullName}`.");
 			}
 
+			void MarkConstructorsOnType (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<MethodDefinition, bool> filter)
+			{
+				foreach (var method in type.Methods) {
+					if (!method.IsConstructor)
+						continue;
+
+					if (filter != null && !filter (method))
+						continue;
+
+					var methodCalling = reflectionContext.MethodCalling;
+					reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+				}
+			}
+
+			void MarkMethodsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<MethodDefinition, bool> filter)
+			{
+				bool onBaseType = false;
+				while (type != null) {
+					foreach (var method in type.Methods) {
+						// Ignore constructors as those are not considered methods from a reflection's point of view
+						if (method.IsConstructor)
+							continue;
+
+						// Ignore private methods on a base type - those are completely ignored by reflection
+						// (anything private on the base type is not visible via the derived type)
+						if (onBaseType && method.IsPrivate)
+							continue;
+
+						// Note that special methods like property getter/setter, event adder/remover will still get through and will be marked.
+						// This is intentional as reflection treats these as methods as well.
+
+						if (filter != null && !filter (method))
+							continue;
+
+						var methodCalling = reflectionContext.MethodCalling;
+						reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+					}
+
+					type = type.BaseType?.Resolve ();
+					onBaseType = true;
+				}
+			}
+
+			void MarkFieldsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<FieldDefinition, bool> filter)
+			{
+				bool onBaseType = false;
+				while (type != null) {
+					foreach (var field in type.Fields) {
+						// Ignore private fields on a base type - those are completely ignored by reflection
+						// (anything private on the base type is not visible via the derived type)
+						if (onBaseType && field.IsPrivate)
+							continue;
+
+						// Note that compiler generated fields backing some properties and events will get through here.
+						// This is intentional as reflection treats these as fields as well.
+
+						if (filter != null && !filter (field))
+							continue;
+
+						var methodCalling = reflectionContext.MethodCalling;
+						reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+					}
+
+					type = type.BaseType?.Resolve ();
+					onBaseType = true;
+				}
+			}
+
+			void MarkNestedTypesOnType (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<TypeDefinition, bool> filter)
+			{
+				foreach (var nestedType in type.NestedTypes) {
+					if (filter != null && !filter (nestedType))
+						continue;
+
+					var methodCalling = reflectionContext.MethodCalling;
+					reflectionContext.RecordRecognizedPattern (nestedType, () => _markStep.MarkType (nestedType, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+				}
+			}
+
+			void MarkPropertiesOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<PropertyDefinition, bool> filter)
+			{
+				bool onBaseType = false;
+				while (type != null) {
+					foreach (var property in type.Properties) {
+						// Ignore private properties on a base type - those are completely ignored by reflection
+						// (anything private on the base type is not visible via the derived type)
+						// Note that properties themselves are not actually private, their accessors are
+						if (onBaseType && 
+							(property.GetMethod == null || property.GetMethod.IsPrivate) && 
+							(property.SetMethod == null || property.SetMethod.IsPrivate))
+							continue;
+
+						if (filter != null && !filter (property))
+							continue;
+
+						var methodCalling = reflectionContext.MethodCalling;
+						reflectionContext.RecordRecognizedPattern (property, () => {
+							// Marking the property itself actually doesn't keep it (it only marks its attributes and records the dependency), we have to mark the methods on it
+							_markStep.MarkProperty (property, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
+							// TODO - this is sort of questionable - when somebody asks for a property they probably want to call either get or set
+							// but linker tracks those separately, and so accessing the getter/setter will raise a warning as it's potentially trimmed.
+							// So including them here doesn't actually remove the warning even if the code is written correctly.
+							_markStep.MarkMethodIfNotNull (property.GetMethod, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
+							_markStep.MarkMethodIfNotNull (property.SetMethod, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
+							_markStep.MarkMethodsIf (property.OtherMethods, m => true, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
+						});
+					}
+
+					type = type.BaseType?.Resolve ();
+					onBaseType = true;
+				}
+			}
+
+			void MarkEventsOnTypeHierarchy (ref ReflectionPatternContext reflectionContext, TypeDefinition type, Func<EventDefinition, bool> filter)
+			{
+				bool onBaseType = false;
+				while (type != null) {
+					foreach (var @event in type.Events) {
+						// Ignore private properties on a base type - those are completely ignored by reflection
+						// (anything private on the base type is not visible via the derived type)
+						// Note that properties themselves are not actually private, their accessors are
+						if (onBaseType &&
+							(@event.AddMethod == null || @event.AddMethod.IsPrivate) &&
+							(@event.RemoveMethod == null || @event.RemoveMethod.IsPrivate))
+							continue;
+
+						if (filter != null && !filter (@event))
+							continue;
+
+						var methodCalling = reflectionContext.MethodCalling;
+						reflectionContext.RecordRecognizedPattern (@event, () => {
+							// MarkEvent actually marks the add/remove/invoke methods as well, so no need to mark those explicitly
+							_markStep.MarkEvent (@event, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
+							_markStep.MarkMethodsIf (@event.OtherMethods, m => true, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling));
+						});
+					}
+
+					type = type.BaseType?.Resolve ();
+					onBaseType = true;
+				}
+			}
+
 			string GetValueDescriptionForErrorMessage (ValueNode value)
 			{
 				switch (value) {
 					case MethodParameterValue methodParameterValue: {
 							if (methodParameterValue.SourceContext is MethodDefinition method) {
-								int declaredParameterIndex = methodParameterValue.ParameterIndex - (method.HasImplicitThis () ? 1 : 0);
+								int declaredParameterIndex;
+								if (method.HasImplicitThis ()) {
+									if (methodParameterValue.ParameterIndex == 0)
+										return GetMetadataTokenDescriptionForErrorMessage (method);
+
+									declaredParameterIndex = methodParameterValue.ParameterIndex - 1;
+								} else
+									declaredParameterIndex = methodParameterValue.ParameterIndex;
+
 								if (declaredParameterIndex >= 0 && declaredParameterIndex < method.Parameters.Count)
 									return GetMetadataTokenDescriptionForErrorMessage (method.Parameters [declaredParameterIndex]);
 							}
 
-							return $"method prameter #{methodParameterValue.ParameterIndex}";
+							return $"parameter #{methodParameterValue.ParameterIndex} of method '{methodParameterValue.SourceContext}'";
 						}
 
 					case MethodReturnValue methodReturnValue: {
@@ -3879,7 +4065,9 @@ namespace Mono.Linker.Steps {
 					case ParameterDefinition parameterDefinition: return $"parameter '{parameterDefinition.Name}' of method '{parameterDefinition.Method}'";
 					case MethodReturnType methodReturnType: return $"return value of method '{methodReturnType.Method}'";
 					case FieldDefinition fieldDefinition: return $"field '{fieldDefinition}'";
-					default: return targetContext.ToString ();
+					// MethodDefinition is used to represent the "this" parameter as we don't support annotations on the method itself.
+					case MethodDefinition methodDefinition: return $"implicit 'this' parameter of method '{methodDefinition}'";
+					default: return $"'{targetContext}'";
 				};
 			}
 

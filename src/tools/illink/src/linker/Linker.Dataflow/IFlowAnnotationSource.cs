@@ -11,6 +11,10 @@ namespace Mono.Linker.Dataflow
 
 		DynamicallyAccessedMemberKinds GetReturnParameterAnnotation (MethodDefinition method);
 
+		// Should return annotation which applies to the "this" parameter of the method
+		// Note that this does not apply to the "this" parameter on extension methods, it's the this on instance methods.
+		DynamicallyAccessedMemberKinds GetThisParameterAnnotation (MethodDefinition method);
+
 		DynamicallyAccessedMemberKinds GetFieldAnnotation (FieldDefinition field);
 	}
 }
