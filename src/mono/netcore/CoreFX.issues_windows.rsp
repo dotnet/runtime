@@ -24,7 +24,6 @@
 -nonamespace System.Reflection.Emit.Tests
 
 -nomethod System.ComponentModel.TypeConverterTests
--nomethod System.IO.CreateSafeFileHandleTests.*
 -nomethod System.IO.AsWinRTStreamTests.*
 
 # System.PlatformNotSupportedException : This API is specific to the way in which Windows handles asynchronous I/O, and is not supported on this platform.
