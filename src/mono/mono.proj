@@ -529,7 +529,8 @@
              Properties="Configuration=$(Configuration)"
              Targets="Restore;Build" />
   </Target>
-  <UsingTask TaskName="IosAppBuilderTask" AssemblyFile="$(BinDir)IosAppBuilderTasks.dll"/>
+  <UsingTask TaskName="IosAppBuilderTask" 
+             AssemblyFile="$(ArtifactsObjDir)mono\IosAppBuilderTasks\$(TargetArchitecture)\$(Configuration)\IosAppBuilderTasks.dll" />
 
   <Target Name="BuildIosApp" DependsOnTargets="BuildIosAppBuilderTasks">
     <IosAppBuilderTask 

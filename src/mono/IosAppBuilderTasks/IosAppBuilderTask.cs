@@ -106,7 +106,7 @@ public class IosAppBuilderTask : Task
         Directory.CreateDirectory(binDir);
 
         // run AOT compilation only for devices
-        if (Arch == "arm64")
+        if (isDevice)
         {
             if (string.IsNullOrEmpty(CrossCompiler))
                 throw new InvalidOperationException("cross-compiler is not set");
@@ -128,7 +128,7 @@ public class IosAppBuilderTask : Task
         // generate xcode project
         XcodeProjectPath = Xcode.GenerateXCode(ProjectName, EntryPointLib, AppDir, binDir, MonoInclude, NativeMainSource);
 
-        if (!GenerateOnlyXcodeProject)
+        if (!GenerateOnlyXcodeProject && (!isDevice || !string.IsNullOrEmpty(DevTeamProvisioning)))
         {
             // build app
             AppBundlePath = Xcode.BuildAppBundle(

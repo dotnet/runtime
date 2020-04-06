@@ -39,8 +39,7 @@ build: clean program
 	/p:Optimized=false \
 	/p:AppDir=$(CURDIR)/bin \
 	/p:NativeMainSource=$(CURDIR)/main.m \
-	/p:GenerateOnlyXcodeProject=false \
-	/p:DevTeamProvisioning=H6BUBW32QD \
+	/p:DevTeamProvisioning= \
 	/p:EntryPointLib=Program.dll \
 	../../../mono.proj
 
