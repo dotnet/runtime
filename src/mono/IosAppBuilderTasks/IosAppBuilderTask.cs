@@ -120,11 +120,7 @@ public class IosAppBuilderTask : Task
                 throw new InvalidOperationException("cross-compiler is not set");
 
             AotCompiler.PrecompileLibraries(CrossCompiler, binDir, libsToAot,
-                new Dictionary<string, string>
-                {
-                    {"DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1"},
-                    {"MONO_PATH", AppDir},
-                },
+                new Dictionary<string, string> { {"MONO_PATH", AppDir} },
                 Optimized);
         }
 

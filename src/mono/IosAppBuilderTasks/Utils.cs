@@ -55,7 +55,7 @@ internal class Utils
             }
         }
 
-        Process process = Process.Start(processStartInfo);
+        Process process = Process.Start(processStartInfo)!;
         process.ErrorDataReceived += (sender, e) =>
             {
                 LogError(e.Data);
