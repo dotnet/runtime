@@ -17,6 +17,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Branch_NullValueNode ();
 			Branch_MethodParameterValueNode (typeof (ExpressionCallString), "Foo");
 			Branch_UnrecognizedPatterns ();
+			// TODO
+			TestPublicOnBase();
+			TestProtectedOnBase();
 		}
 
 		[Kept]
@@ -50,6 +53,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		#region RecognizedReflectionAccessPatterns
+		[UnrecognizedReflectionAccessPattern ( // Expression.Call (Type, null, Type []);
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) })]
 		[RecognizedReflectionAccessPattern (
 			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) },
 			typeof (ExpressionCallString), nameof (A), new Type [0])]
@@ -145,6 +150,18 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		#region Helpers
 		[Kept]
+		static void TestPublicOnBase ()
+		{
+			Expression.Call (typeof (ADerived), "PublicOnBase", Type.EmptyTypes);
+		}
+
+		[Kept]
+		static void TestProtectedOnBase ()
+		{
+			Expression.Call (typeof (ADerived), "ProtectedOnBase", Type.EmptyTypes);
+		}
+
+		[Kept]
 		static Type FindType ()
 		{
 			return typeof (ExpressionCallString);
@@ -174,6 +191,26 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		protected static T Count<T> (T t)
 		{
 			return default (T);
+		}
+
+		[Kept]
+		class ABase
+		{
+			// [Kept] : TODO - should be kept: https://github.com/mono/linker/issues/1042
+			public static void PublicOnBase ()
+			{
+			}
+
+			// [Kept] : TODO - should be kept: https://github.com/mono/linker/issues/1042
+			protected static void ProtectedOnBase ()
+			{
+			}
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (ABase))]
+		class ADerived : ABase
+		{
 		}
 		#endregion
 	}

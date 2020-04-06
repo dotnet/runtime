@@ -51,6 +51,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				tclo.Substitutions.Add (Path.Combine (inputPath, file));
 			}
 
+			foreach (var subsFile in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerDataflowAnnotationsFile))) {
+				var ca = subsFile.ConstructorArguments;
+				var file = (string)ca [0].Value;
+				tclo.DataflowAnnotations.Add (Path.Combine (inputPath, file));
+			}
+
 			foreach (var additionalArgumentAttr in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerArgumentAttribute)))
 			{
 				var ca = additionalArgumentAttr.ConstructorArguments;
@@ -194,6 +200,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			return _testCaseTypeDefinition.CustomAttributes
 				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerSubstitutionFileAttribute))
+				.Select (GetSourceAndRelativeDestinationValue);
+		}
+
+		public virtual IEnumerable<SourceAndDestinationPair> GetDataflowAnnotationFiles ()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerDataflowAnnotationsFile))
 				.Select (GetSourceAndRelativeDestinationValue);
 		}
 

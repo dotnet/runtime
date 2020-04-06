@@ -18,6 +18,7 @@
 		Events = 0b00011000_00000000,
 	}
 
+	[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.Method, AllowMultiple = false)]
 	public class DynamicallyAccessedMembersAttribute : Attribute
 	{
 		public DynamicallyAccessedMemberKinds MemberKinds { get; }

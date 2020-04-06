@@ -6,16 +6,14 @@ using System.Text;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[KeptMember (".ctor()")]
+	// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
+	//   - so the main validation is done by the UnrecognizedReflectionAccessPattern attributes.
+	[SkipKeptItemsValidation]
 	public class FieldDataFlow
 	{
 		public static void Main ()
 		{
 			var instance = new FieldDataFlow ();
-
-			// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
-			//   - so the main validation is done by the UnrecognizedReflectionAccessPattern attributes.
-			// The test doesn't really validate that things are marked correctly, so Kept attributes are here to make it work mostly.
 
 			instance.ReadFromInstanceField ();
 			instance.WriteToInstanceField ();
@@ -30,17 +28,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.WriteToStaticFieldOnADifferentClass ();
 		}
 
-		[Kept]
-		[KeptAttributeAttribute(typeof (DynamicallyAccessedMembersAttribute))]
 		[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
 		Type _typeWithDefaultConstructor;
 
-		[Kept]
-		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
 		static Type _staticTypeWithDefaultConstructor;
 
-		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type [] { typeof (Type) },
 			"The field 'System.Type Mono.Linker.Tests.Cases.DataFlow.FieldDataFlow::_typeWithDefaultConstructor' " +
 			"with dynamically accessed member kinds 'DefaultConstructor' is passed into " +
@@ -57,7 +50,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToInstanceField), new Type [] { })]
-		[Kept]
 		private void WriteToInstanceField ()
 		{
 			_typeWithDefaultConstructor = GetTypeWithDefaultConstructor ();
@@ -66,7 +58,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			_typeWithDefaultConstructor = GetUnkownType ();
 		}
 
-		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireConstructors), new Type [] { typeof (Type) })]
 		private void ReadFromInstanceFieldOnADifferentClass ()
@@ -80,7 +71,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToInstanceFieldOnADifferentClass), new Type [] { })]
-		[Kept]
 		private void WriteToInstanceFieldOnADifferentClass ()
 		{
 			var store = new TypeStore ();
@@ -91,7 +81,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			store._typeWithDefaultConstructor = GetUnkownType ();
 		}
 
-		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireConstructors), new Type [] { typeof (Type) })]
 		private void ReadFromStaticField ()
@@ -103,7 +92,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToStaticField), new Type [] { })]
-		[Kept]
 		private void WriteToStaticField ()
 		{
 			_staticTypeWithDefaultConstructor = GetTypeWithDefaultConstructor ();
@@ -112,7 +100,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			_staticTypeWithDefaultConstructor = GetUnkownType ();
 		}
 
-		[Kept]
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (RequireConstructors), new Type [] { typeof (Type) })]
 		private void ReadFromStaticFieldOnADifferentClass ()
@@ -124,7 +111,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (FieldDataFlow), nameof (WriteToStaticFieldOnADifferentClass), new Type [] { })]
-		[Kept]
 		private void WriteToStaticFieldOnADifferentClass ()
 		{
 			TypeStore._staticTypeWithDefaultConstructor = GetTypeWithDefaultConstructor ();
@@ -133,76 +119,56 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TypeStore._staticTypeWithDefaultConstructor = GetUnkownType ();
 		}
 
-		[Kept]
 		private static void RequireDefaultConstructor (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.DefaultConstructor)]
-			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
 		{
 		}
 
-		[Kept]
 		private static void RequirePublicConstructors (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.PublicConstructors)]
-			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
 		{
 		}
 
-		[Kept]
 		private static void RequireConstructors (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
-			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
 		{
 		}
 
-		[Kept]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
-		[return: KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		private static Type GetTypeWithDefaultConstructor ()
 		{
 			return null;
 		}
 
-		[Kept]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
-		[return: KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		private static Type GetTypeWithPublicConstructors ()
 		{
 			return null;
 		}
 
-		[Kept]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
-		[return: KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 		private static Type GetTypeWithConstructors ()
 		{
 			return null;
 		}
 
-		[Kept]
 		private static Type GetUnkownType ()
 		{
 			return null;
 		}
 
-		[Kept]
 		private static void RequireNothing (Type type)
 		{
 		}
 
-		[Kept]
-		[KeptMember(".ctor()")]
 		class TypeStore
 		{
-			[Kept]
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
 			public Type _typeWithDefaultConstructor;
 
-			[Kept]
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
 			public static Type _staticTypeWithDefaultConstructor;
 		}

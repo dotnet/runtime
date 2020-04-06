@@ -16,6 +16,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Branch_SystemTypeValueNode_UnknownStringValue ();
 			Branch_MethodParameterValueNode (typeof (ExpressionFieldString), "Foo");
 			Branch_UnrecognizedPatterns ();
+			// TODO
+			Expression.Field(null, typeof(ADerived), "_protectedFieldOnBase");
+			Expression.Field(null, typeof(ADerived), "_publicFieldOnBase");
 		}
 
 		[Kept]
@@ -44,6 +47,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			var expr = Expression.Field (null, typeof (ExpressionFieldString), "TestOnlyStatic1");
 		}
 
+		[UnrecognizedReflectionAccessPattern ( // Expression.Field (Expression, Type, null);
+				typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 		[RecognizedReflectionAccessPattern (
 			typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) },
 			typeof (ExpressionFieldString), nameof (TestName2))]
@@ -171,5 +176,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			return "unknownstring";
 		}
 		#endregion
+	}
+
+	[Kept]
+	class ABase
+	{
+		// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
+		protected static bool _protectedFieldOnBase;
+
+		// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
+		public static bool _publicFieldOnBase;
+	}
+
+	[Kept]
+	[KeptBaseType (typeof (ABase))]
+	class ADerived : ABase
+	{
 	}
 }
