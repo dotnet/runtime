@@ -30,9 +30,9 @@ namespace Mono.Linker.Dataflow
 			if (_methods.TryGetValue(method, out var ann) && ann.ParameterAnnotations != null) {
 				string paramName = method.Parameters [index].Name;
 
-				foreach (var annotatedParam in ann.ParameterAnnotations)
-					if (annotatedParam.ParamName == paramName)
-						return annotatedParam.Annotation;
+				foreach (var (ParamName, Annotation) in ann.ParameterAnnotations)
+					if (ParamName == paramName)
+						return Annotation;
 			}
 
 			return 0;
@@ -48,6 +48,18 @@ namespace Mono.Linker.Dataflow
 			return _methods.TryGetValue (method, out var ann) ? ann.ReturnAnnotation : 0;
 		}
 
+		public DynamicallyAccessedMemberKinds GetThisParameterAnnotation (MethodDefinition method)
+		{
+			if (_methods.TryGetValue (method, out var ann) && ann.ParameterAnnotations != null) {
+
+				foreach (var (ParamName, Annotation) in ann.ParameterAnnotations)
+					if (ParamName == "this")
+						return Annotation;
+			}
+
+			return 0;
+		}
+
 		static DynamicallyAccessedMemberKinds ParseKinds(string s)
 		{
 			// Enum.Parse accepts a comma as a separator for Flags
@@ -60,7 +72,9 @@ namespace Mono.Linker.Dataflow
 			using FileStream jsonFileStream = File.OpenRead (jsonFile);
 
 			// We only support UTF-8
-			using JsonDocument jsonDoc = JsonDocument.Parse (jsonFileStream);
+			using JsonDocument jsonDoc = JsonDocument.Parse (jsonFileStream, new JsonDocumentOptions {
+				CommentHandling = JsonCommentHandling.Skip
+			});
 
 			// TODO: need to also check the document is structurally sound.
 			foreach (var assemblyElement in jsonDoc.RootElement.EnumerateObject ()) {
@@ -189,7 +203,7 @@ namespace Mono.Linker.Dataflow
 		{
 			private List<T> _list;
 
-			public void Add (T value) => (_list ?? (_list = new List<T> ())).Add (value);
+			public void Add (T value) => (_list ??= new List<T> ()).Add (value);
 
 			public T [] ToArray () => _list?.ToArray ();
 		}
