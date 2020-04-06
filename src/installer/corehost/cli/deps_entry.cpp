@@ -61,7 +61,8 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
     candidate.reserve(base.length() + ietf_dir.length() + normalized_path.length() + 3);
 
     pal::string_t file_path = look_in_base ? get_filename(normalized_path) : normalized_path;
-    pal::string_t sub_path = ietf_dir + file_path;
+    pal::string_t sub_path = ietf_dir;
+    append_path(&sub_path, file_path.c_str());
 
     if (look_in_bundle && bundle::info_t::is_single_file_bundle())
     {
