@@ -3668,7 +3668,7 @@ typebuilder_setup_one_field (MonoDynamicImage *dynamic_image, MonoClass *klass, 
 		if (klass->enumtype && strcmp (field->name, "value__") == 0) // used by enum classes to store the instance value
 			field->type->attrs |= FIELD_ATTRIBUTE_RT_SPECIAL_NAME;
 
-		if (!klass->enumtype && !mono_type_get_underlying_type (field->type)) {
+		if (klass->enumtype && !mono_type_get_underlying_type (field->type)) {
 			mono_class_set_type_load_failure (klass, "Field '%s' is an enum type with a bad underlying type", field->name);
 			goto leave;
 		}
