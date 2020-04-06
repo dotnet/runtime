@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -33,8 +32,16 @@ internal static partial class Interop
             internal int IPAddressCount;       // Number of IP addresses in the list
         }
 
+        internal unsafe delegate void GetHostEntryForNameCallback(HostEntry* entry, int status);
+
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_PlatformSupportsGetAddrInfoAsync")]
+        internal static extern bool PlatformSupportsGetAddrInfoAsync();
+
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostEntryForName")]
         internal static extern unsafe int GetHostEntryForName(string address, HostEntry* entry);
+
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostEntryForNameAsync")]
+        internal static extern unsafe int GetHostEntryForNameAsync(string address, HostEntry* entry, GetHostEntryForNameCallback callback);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeHostEntry")]
         internal static extern unsafe void FreeHostEntry(HostEntry* entry);
