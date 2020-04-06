@@ -123,12 +123,14 @@ struct HWIntrinsicInfo
     NamedIntrinsic         id;
     const char*            name;
     CORINFO_InstructionSet isa;
-    int                    ival;
-    unsigned               simdSize;
-    int                    numArgs;
-    instruction            ins[10];
-    HWIntrinsicCategory    category;
-    HWIntrinsicFlag        flags;
+#ifdef TARGET_XARCH
+    int ival;
+#endif
+    unsigned            simdSize;
+    int                 numArgs;
+    instruction         ins[10];
+    HWIntrinsicCategory category;
+    HWIntrinsicFlag     flags;
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
@@ -169,10 +171,12 @@ struct HWIntrinsicInfo
         return lookup(id).isa;
     }
 
+#ifdef TARGET_XARCH
     static int lookupIval(NamedIntrinsic id)
     {
         return lookup(id).ival;
     }
+#endif
 
     static unsigned lookupSimdSize(NamedIntrinsic id)
     {

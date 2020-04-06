@@ -174,7 +174,7 @@ ValueNumFuncDef(HWI_##id, argCount, false, false, false)   // All of the HARDWAR
 #define VNF_HWI_FIRST VNF_HWI_Vector128_As
 
 #elif defined (TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, ival, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for arm64
 #include "hwintrinsiclistarm64.h"
 #define VNF_HWI_FIRST VNF_HWI_Vector64_AsByte
