@@ -402,7 +402,7 @@ namespace System.Diagnostics.Tests
             MemberData(nameof(StartOSXProcessWithArgumentList))]
         [PlatformSpecific(TestPlatforms.OSX)]
         [OuterLoop("Opens browser")]
-        public void ProcessStart_UseShellExecuteTrue_OpenUrl_SuccessfullyReadsArgument(string[] argumentList)
+        public void ProcessStart_UseShellExecuteTrue_OpenUrl_SuccessfullyReadsArgumentArray(string[] argumentList)
         {
             var startInfo = new ProcessStartInfo { UseShellExecute = true, FileName = "https://github.com/dotnet/corefx"};
 
