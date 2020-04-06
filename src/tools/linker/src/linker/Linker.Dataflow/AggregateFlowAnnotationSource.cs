@@ -32,5 +32,10 @@ namespace Mono.Linker.Dataflow
 		{
 			return _sources.Aggregate<IFlowAnnotationSource, DynamicallyAccessedMemberKinds> (0, (r, s) => r | s.GetReturnParameterAnnotation (method));
 		}
+
+		public DynamicallyAccessedMemberKinds GetThisParameterAnnotation (MethodDefinition method)
+		{
+			return _sources.Aggregate<IFlowAnnotationSource, DynamicallyAccessedMemberKinds> (0, (r, s) => r | s.GetThisParameterAnnotation (method));
+		}
 	}
 }

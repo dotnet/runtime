@@ -1,6 +1,7 @@
 {
   "test": {
-    "Mono.Linker.Tests.Cases.DataFlow" : {
+    "Mono.Linker.Tests.Cases.DataFlow": {
+      // Test comment - the name of the test class
       "JsonAnnotations": {
 
         "_typeWithDefaultConstructor": "DefaultConstructor",
