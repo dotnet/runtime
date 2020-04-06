@@ -43,7 +43,6 @@ jobs:
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
-        - _skipTestRestoreArg: /p:SkipTestRestore=false
         
         - ${{ parameters.variables }}
 
@@ -55,15 +54,12 @@ jobs:
             artifactFileName: $(librariesBuildArtifactName)$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
             cleanUnpackFolder: false
-        
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
-          displayName: Restore
 
         - script: $(_buildScript)
-                -buildtests
+                -subset pretest-libtests
                 $(_buildArguments)
                 $(_archiveTestsParameter)
-          displayName: Build
+          displayName: Restore and Build
 
         - template: /eng/pipelines/common/upload-artifact-step.yml
           parameters:

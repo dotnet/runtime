@@ -779,7 +779,7 @@ if %__BuildPackages% EQU 1 (
     REM The conditions as to what to build are captured in the builds file.
     REM Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\build.ps1"^
-        -r -b -projects %__SourceDir%\.nuget\packages.builds^
+        -r -b -projects %__SourceDir%\.nuget\coreclr-packages.proj^
         -verbosity minimal /clp:nosummary /nodeReuse:false /bl:!__BuildLog!^
         /p:PortableBuild=true^
         /p:Platform=%__BuildArch% %__CommonMSBuildArgs% %__UnprocessedBuildArgs%

@@ -7256,7 +7256,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
 void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 {
     // i) SSE4.1 is supported by the underlying hardware
-    assert(compiler->compSupports(InstructionSet_SSE41));
+    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE41));
 
     // ii) treeNode oper is a GT_INTRINSIC
     assert(treeNode->OperGet() == GT_INTRINSIC);

@@ -1,0 +1,40 @@
+cmake_minimum_required(VERSION 3.5.2)
+
+project(Profiler)
+
+set(GCBASIC_SOURCES gcbasicprofiler/gcbasicprofiler.cpp)
+set(REJIT_SOURCES rejitprofiler/rejitprofiler.cpp rejitprofiler/ilrewriter.cpp rejitprofiler/sigparse.cpp)
+set(EVENTPIPE_SOURCES eventpipeprofiler/eventpipeprofiler.cpp)
+set(UNITTEST_SOURCES unittestprofiler/unittestprofiler.cpp)
+
+set(SOURCES ${GCBASIC_SOURCES} ${REJIT_SOURCES} ${EVENTPIPE_SOURCES} ${UNITTEST_SOURCES} profiler.def profiler.cpp classfactory.cpp dllmain.cpp guids.cpp)
+
+include_directories(../../../../src/pal/prebuilt/inc)
+
+if(NOT WIN32)
+    include_directories(../../../../src/pal/inc/rt ../../../../src/pal/inc ../../../../src/inc)
+    add_compile_options(-DPAL_STDCPP_COMPAT)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_compile_options(-Wno-null-arithmetic)
+    else(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_compile_options(-Wno-conversion-null -Wno-pointer-arith)
+    endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+endif(NOT WIN32)
+
+# add the executable
+add_library(Profiler SHARED ${SOURCES})
+
+if(WIN32)
+	set(DEPENDENCIES Advapi32.lib oleaut32.lib Ole32.lib)
+else(WIN32)
+    set(DEPENDENCIES pthread dl)
+endif(WIN32)
+
+target_link_libraries(Profiler PUBLIC ${DEPENDENCIES})
+
+# add the install targets
+install(TARGETS Profiler DESTINATION bin)
+
+if(WIN32)
+	install(FILES $<TARGET_PDB_FILE:${PROJECT_NAME}> DESTINATION bin OPTIONAL)
+endif(WIN32)

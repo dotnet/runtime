@@ -291,11 +291,13 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EC_KEY_new_by_curve_name) \
     REQUIRED_FUNCTION(EC_KEY_set_group) \
     REQUIRED_FUNCTION(EC_KEY_set_private_key) \
+    REQUIRED_FUNCTION(EC_KEY_set_public_key) \
     REQUIRED_FUNCTION(EC_KEY_set_public_key_affine_coordinates) \
     REQUIRED_FUNCTION(EC_KEY_up_ref) \
     REQUIRED_FUNCTION(EC_METHOD_get_field_type) \
     REQUIRED_FUNCTION(EC_POINT_free) \
     REQUIRED_FUNCTION(EC_POINT_get_affine_coordinates_GFp) \
+    REQUIRED_FUNCTION(EC_POINT_mul) \
     REQUIRED_FUNCTION(EC_POINT_new) \
     REQUIRED_FUNCTION(EC_POINT_set_affine_coordinates_GFp) \
     REQUIRED_FUNCTION(ERR_clear_error) \
@@ -679,11 +681,13 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EC_KEY_new_by_curve_name EC_KEY_new_by_curve_name_ptr
 #define EC_KEY_set_group EC_KEY_set_group_ptr
 #define EC_KEY_set_private_key EC_KEY_set_private_key_ptr
+#define EC_KEY_set_public_key EC_KEY_set_public_key_ptr
 #define EC_KEY_set_public_key_affine_coordinates EC_KEY_set_public_key_affine_coordinates_ptr
 #define EC_KEY_up_ref EC_KEY_up_ref_ptr
 #define EC_METHOD_get_field_type EC_METHOD_get_field_type_ptr
 #define EC_POINT_free EC_POINT_free_ptr
 #define EC_POINT_get_affine_coordinates_GFp EC_POINT_get_affine_coordinates_GFp_ptr
+#define EC_POINT_mul EC_POINT_mul_ptr
 #define EC_POINT_new EC_POINT_new_ptr
 #define EC_POINT_set_affine_coordinates_GFp EC_POINT_set_affine_coordinates_GFp_ptr
 #define ERR_clear_error ERR_clear_error_ptr
