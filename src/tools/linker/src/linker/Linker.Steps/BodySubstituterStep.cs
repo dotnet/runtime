@@ -57,9 +57,9 @@ namespace Mono.Linker.Steps
 			while (iterator.MoveNext ()) {
 				var name = GetAssemblyName (iterator.Current);
 
-				var cache = Context.Resolver.AssemblyCache;
+				AssemblyDefinition assembly = Context.GetLoadedAssembly (name.Name);
 
-				if (!cache.TryGetValue (name.Name, out AssemblyDefinition assembly)) {
+				if (assembly == null) {
 					Context.LogMessage (MessageImportance.Low, $"Could not match assembly '{name.FullName}' for substitution");
 					continue;
 				}

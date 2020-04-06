@@ -84,7 +84,7 @@ namespace Mono.Linker.Steps {
 
 		bool ShouldProcessAssemblyResource (string name)
 		{
-			AssemblyDefinition assembly = GetAssemblyIfReferenced (name);
+			AssemblyDefinition assembly = Context.GetLoadedAssembly (name);
 
 			if (assembly == null)
 				return false;
@@ -98,15 +98,6 @@ namespace Mono.Linker.Steps {
 			default:
 				return false;
 			}
-		}
-
-		AssemblyDefinition GetAssemblyIfReferenced (string name)
-		{
-			foreach (AssemblyDefinition assembly in Context.GetAssemblies ())
-				if (assembly.Name.Name == name)
-					return assembly;
-
-			return null;
 		}
 
 		protected virtual void AddToPipeline (IStep resolveStep)
