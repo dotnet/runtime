@@ -106,7 +106,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        installer.cmd -restore -build -ci -test
+        build.cmd -subsetcategory installer -restore -build -test -ci
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
@@ -121,7 +121,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
+        $(Build.SourcesDirectory)/build.sh -subsetcategory installer -restore -build -test -ci
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
@@ -136,7 +136,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
+        $(Build.SourcesDirectory)/build.sh -subsetcategory installer --restore --build --ci --test
         -configuration $(_BuildConfig)
         -os ${{ parameters.osGroup }}
         -arch ${{ parameters.archType }}
@@ -169,7 +169,7 @@ jobs:
         value: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
 
     - name: BuildScript
-      value: ./installer.sh
+      value: ./build.sh
     - name: MSBuildScript
       value: /root/runtime/eng/common/msbuild.sh
 
@@ -198,7 +198,7 @@ jobs:
 
     - name: BuildArguments
       value: >-
-        --restore --build --ci --test
+        -subsetcategory installer -restore -build -test -ci
         /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
