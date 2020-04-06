@@ -57,6 +57,15 @@
     <CLRTestPriorityToBuild>0</CLRTestPriorityToBuild>
   </PropertyGroup>
 
+  <!-- Which tests can we build? Default: All tests.
+    At the command-line, the user can specify:
+    +  /p:CLRTestNeedTargetToBuild=0 and tests which do not "need a target specified" will build.
+    +  /p:CLRTestNeedTargetToBuild=1 and tests which do "need a target specified" will build.
+   -->
+  <PropertyGroup>
+    <CLRTestNeedTargetToBuild></CLRTestNeedTargetToBuild>
+  </PropertyGroup>
+
   <!-- Where to put a "testhost" for running corefx tests -->
   <PropertyGroup>
     <TestHostVersion>$(ProductVersion)</TestHostVersion>
