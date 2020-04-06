@@ -22,7 +22,7 @@ namespace System
         // there's little benefit to having a large buffer.  So we use a smaller buffer size to reduce working set.
         private const int WriteBufferSize = 256;
 
-        private static readonly object  s_syncObject = new object();
+        private static readonly object s_syncObject = new object();
         private static TextReader? s_in;
         private static TextWriter? s_out, s_error;
         private static Encoding? s_inputEncoding;
