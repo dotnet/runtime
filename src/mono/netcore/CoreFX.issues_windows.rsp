@@ -24,8 +24,6 @@
 -nonamespace System.Reflection.Emit.Tests
 
 -nomethod System.ComponentModel.TypeConverterTests
--nomethod System.Globalization.Tests.StringNormalizationAllTests.Normalize
--nomethod System.Globalization.Tests.StringNormalizationTests.IsNormalized
 -nomethod System.IO.CreateSafeFileHandleTests.*
 -nomethod System.IO.AsWinRTStreamTests.*
 
