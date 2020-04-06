@@ -4244,7 +4244,14 @@ mono_llvm_emit_aot_file_info (MonoAotFileInfo *info, gboolean has_jitted_code)
 	g_assert_not_reached ();
 }
 
-void mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
+gpointer
+mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
+{
+	g_assert_not_reached ();
+}
+
+gpointer
+mono_llvm_emit_aot_data_aligned (const char *symbol, guint8 *data, int data_len, int align)
 {
 	g_assert_not_reached ();
 }
