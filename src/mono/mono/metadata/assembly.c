@@ -2162,8 +2162,9 @@ typedef struct AssemblyPreLoadHook AssemblyPreLoadHook;
 struct AssemblyPreLoadHook {
 	AssemblyPreLoadHook *next;
 	union {
-		MonoAssemblyPreLoadFunc v1;
-		MonoAssemblyPreLoadFuncV2 v2;
+		MonoAssemblyPreLoadFunc v1; // legacy internal use
+		MonoAssemblyPreLoadFuncV2 v2; // current internal use
+		MonoAssemblyPreLoadFuncV3 v3; // netcore external use
 	} func;
 	gpointer user_data;
 	gint32 version;
@@ -2183,8 +2184,14 @@ invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *an
 			assembly = hook->func.v1 (aname, apath, hook->user_data);
 		else {
 			ERROR_DECL (error);
-			g_assert (hook->version == 2);
-			assembly = hook->func.v2 (alc, aname, apath, FALSE, hook->user_data, error);
+			g_assert (hook->version == 2 || hook->version == 3);
+			if (hook->version == 2)
+				assembly = hook->func.v2 (alc, aname, apath, FALSE, hook->user_data, error);
+			else { // v3
+				MonoGCHandle strong_gchandle = mono_gchandle_from_handle (mono_gchandle_get_target_handle (alc->gchandle), TRUE);
+				assembly = hook->func.v3 (strong_gchandle, aname, apath, hook->user_data, error);
+				mono_gchandle_free_internal (strong_gchandle);
+			}
 			/* TODO: propagage error out to callers */
 			mono_error_assert_ok (error);
 		}
@@ -2278,6 +2285,22 @@ mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer 
 		*hooks = hook;
 	}
 }
+
+void mono_install_assembly_preload_hook_v3 (MonoAssemblyPreLoadFuncV3 func, gpointer user_data)
+{
+	AssemblyPreLoadHook *hook;
+
+	g_return_if_fail (func != NULL);
+
+	hook = g_new0 (AssemblyPreLoadHook, 1);
+	hook->version = 3;
+	hook->func.v3 = func;
+	hook->user_data = user_data;
+	hook->next = assembly_preload_hook;
+
+	assembly_preload_hook = hook;
+}
+
 
 static void
 free_assembly_preload_hooks (void)
