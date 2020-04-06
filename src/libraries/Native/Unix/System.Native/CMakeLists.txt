@@ -80,3 +80,34 @@ endif ()
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.Native-Static DESTINATION .)
+
+if (HAVE_GETADDRINFO_A)
+    add_executable(tests
+        tests.c
+    )
+
+    target_link_libraries(tests
+        System.Native
+        pthread
+    )
+
+    enable_testing()
+
+    add_test(no_args tests)
+    set_tests_properties(no_args PROPERTIES WILL_FAIL TRUE)
+    set_tests_properties(no_args PROPERTIES TIMEOUT 1)
+
+    add_test(hostname_local tests localhost)
+    set_tests_properties(hostname_local PROPERTIES TIMEOUT 1)
+
+    add_test(hostname_ok tests google.at)
+    set_tests_properties(hostname_ok PROPERTIES TIMEOUT 1)
+
+    add_test(hostname_invalid tests abc.test01)
+    set_tests_properties(hostname_invalid PROPERTIES WILL_FAIL TRUE)
+    set_tests_properties(hostname_invalid PROPERTIES TIMEOUT 1)
+
+    add_test(hostname_null tests null)
+    set_tests_properties(hostname_null PROPERTIES WILL_FAIL TRUE)
+    set_tests_properties(hostname_null PROPERTIES TIMEOUT 1)
+endif ()
