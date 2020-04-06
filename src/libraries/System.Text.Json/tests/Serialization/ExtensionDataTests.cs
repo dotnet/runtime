@@ -250,6 +250,44 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(obj.MyOverflow);
         }
 
+
+        private class ClassWithExtensionData
+        {
+            [JsonExtensionData]
+            public Dictionary<string, object> Overflow { get; set; }
+        }
+
+        public class DictionaryOverflowConverter : JsonConverter<Dictionary<string, object>>
+        {
+            public override Dictionary<string, object> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, Dictionary<string, object> value, JsonSerializerOptions options)
+            {
+                writer.WriteString(JsonEncodedText.Encode("MyCustomOverflowWrite"), "OverflowValueWrite");
+            }
+        }
+
+        [Fact]
+        public static void ExtensionPropertyObjectValue_SupportsWritingToCustomSerializer()
+        {
+            var root = new ClassWithExtensionData
+            {
+                Overflow = new Dictionary<string, object>
+                {
+                    ["test"] = "TestValue",
+                },
+            };
+
+            var opts = new JsonSerializerOptions();
+            opts.Converters.Add(new DictionaryOverflowConverter());
+
+            string json = JsonSerializer.Serialize(root, opts);
+            Assert.Equal(@"{""MyCustomOverflowWrite"":""OverflowValueWrite""}", json);
+        }
+
         [Fact]
         public static void ExtensionPropertyObjectValue_Empty()
         {
