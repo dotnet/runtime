@@ -416,6 +416,7 @@ namespace System.IO.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_WriteAsync_AsyncWrites : FileStream_AsyncWrites
     {
         protected override Task WriteAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
@@ -462,6 +463,7 @@ namespace System.IO.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_BeginEndWrite_AsyncWrites : FileStream_AsyncWrites
     {
         protected override Task WriteAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
