@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Runtime.InteropServices;
@@ -15,14 +14,14 @@ namespace System.Security.Cryptography.Asn1
     internal partial struct GeneralNameAsn
     {
         internal System.Security.Cryptography.Asn1.OtherNameAsn? OtherName;
-        internal string Rfc822Name;
-        internal string DnsName;
+        internal string? Rfc822Name;
+        internal string? DnsName;
         internal ReadOnlyMemory<byte>? X400Address;
         internal ReadOnlyMemory<byte>? DirectoryName;
         internal System.Security.Cryptography.Asn1.EdiPartyNameAsn? EdiPartyName;
-        internal string Uri;
+        internal string? Uri;
         internal ReadOnlyMemory<byte>? IPAddress;
-        internal string RegisteredId;
+        internal string? RegisteredId;
 
 #if DEBUG
         static GeneralNameAsn()
