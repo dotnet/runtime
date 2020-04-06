@@ -59,15 +59,12 @@ jobs:
           - ${{ format('coreclr_corelib_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, 'linux', parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
 
       variables:
-        - _skipTestRestoreArg: /p:SkipTestRestore=true
-        - _buildAction: -build
+        - _addtionalBuildArguments: ''
         - ${{ parameters.variables }}
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - EMSDK_PATH: $(Build.BinariesDirectory)/emsdk
         - ${{ if eq(parameters.runTests, true) }}:
-          - _buildAction: -build -buildtests /p:ArchiveTests=true
-          - ${{ if ne(parameters.framework, 'allConfigurations') }}:
-            - _skipTestRestoreArg: /p:SkipTestRestore=false
+          - _addtionalBuildArguments: /p:IncludeLibrariesTestSubset=true /p:ArchiveTests=true
 
         - ${{ parameters.variables }}
 
@@ -95,13 +92,10 @@ jobs:
             parameters:
               installDotnet: true
 
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Restore.binlog
-          displayName: Restore
-
         - script: $(_buildScript)
-                $(_buildAction)
                 $(_buildArguments)
-          displayName: Build
+                $(_addtionalBuildArguments)
+          displayName: Restore and Build Product
 
         - ${{ if eq(parameters.runTests, false) }}:
           - ${{ if ne(parameters.isOfficialBuild, true) }}:            

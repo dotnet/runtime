@@ -1,12 +1,9 @@
-<Project Sdk="Microsoft.Build.Traversal">
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' OR '$(DotNetBuildFromSource)'=='true'">
-    <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
-  </ItemGroup>
+<Project>
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
 
   <ItemGroup>
-    <ProjectReference Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.builds" />
-    <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.builds" />
-    <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" />
+    <ProjectReference Include="Microsoft.NETCore.Tool.MonoAOT\Microsoft.NETCore.Tool.MonoAOT.proj" Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" />
+    <ProjectReference Include="Microsoft.NETCore.Runtime.Mono\Microsoft.NETCore.Runtime.Mono.proj" />
   </ItemGroup>
 
   <!-- Generate a version.txt file we include in our packages
@@ -35,7 +32,12 @@
     <ItemGroup>
       <!-- Pass the FileVersion calculated by _InitializeAssemblyVersion to referenced projects -->
       <ProjectReference Update="@(ProjectReference)"
-                        AdditionalProperties="%(AdditionalProperties);FileVersion=$(FileVersion)" />
+                        AdditionalProperties="%(ProjectReference.AdditionalProperties);FileVersion=$(FileVersion)" />
     </ItemGroup>
   </Target>
+
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
+
+  <!-- Ordering matters! Overwriting the Pack target which should just invoke Build. -->
+  <Target Name="Pack" DependsOnTargets="Build" />
 </Project>
