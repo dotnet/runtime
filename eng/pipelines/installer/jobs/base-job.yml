@@ -136,7 +136,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/installer.sh --restore --build --ci --test
+        $(Build.SourcesDirectory)/build.sh -subsetcategory installer --restore --build --ci --test
         -configuration $(_BuildConfig)
         -os ${{ parameters.osGroup }}
         -arch ${{ parameters.archType }}
