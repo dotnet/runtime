@@ -45,11 +45,12 @@ namespace System.IO
 
             try
             {
-                CancellationTokenSource cancellation = new CancellationTokenSource();
-                RunningInstance instance = new RunningInstance(this, _directory, _includeSubdirectories, TranslateFlags(_notifyFilters), cancellation.Token);
-                _enabled = true;
+                var cancellation = new CancellationTokenSource();
                 _cancellation = cancellation;
-                instance.Start();
+                _enabled = true;
+
+                var instance = new RunningInstance(this, _directory, _includeSubdirectories, TranslateFlags(_notifyFilters));
+                instance.Start(cancellation.Token);
             }
             catch
             {
@@ -131,47 +132,52 @@ namespace System.IO
 
             // The user can input relative paths, which can muck with our path comparisons. Save off the
             // actual full path so we can use it for comparing
-            private string _fullDirectory;
+            private readonly string _fullDirectory;
 
             // Boolean if we allow events from nested folders
-            private bool _includeChildren;
+            private readonly bool _includeChildren;
 
             // The bitmask of events that we want to send to the user
-            private FSEventStreamEventFlags _filterFlags;
+            private readonly FSEventStreamEventFlags _filterFlags;
+
+            // Callback delegate for the EventStream events
+            private readonly Interop.EventStream.FSEventStreamCallback _callback;
 
             // The EventStream to listen for events on
             private SafeEventStreamHandle? _eventStream;
 
-
-            // Callback delegate for the EventStream events
-            private Interop.EventStream.FSEventStreamCallback? _callback;
-
-            // Token to monitor for cancellation requests, upon which processing is stopped and all
-            // state is cleaned up.
-            private readonly CancellationToken _cancellationToken;
-
-            // Calling RunLoopStop multiple times SegFaults so protect the call to it
-            private bool _stopping;
+            // Registration with the cancellation token.
+            private CancellationTokenRegistration _cancellationRegistration;
 
             private ExecutionContext? _context;
 
-            internal RunningInstance(
+            internal unsafe RunningInstance(
                 FileSystemWatcher watcher,
                 string directory,
                 bool includeChildren,
-                FSEventStreamEventFlags filter,
-                CancellationToken cancelToken)
+                FSEventStreamEventFlags filter)
             {
-                Debug.Assert(string.IsNullOrEmpty(directory) == false);
-                Debug.Assert(!cancelToken.IsCancellationRequested);
+                Debug.Assert(!string.IsNullOrEmpty(directory));
 
-                _weakWatcher = new WeakReference<FileSystemWatcher>(watcher);
+                // Make sure _fullPath doesn't contain a link or alias since the OS will give back the actual,
+                // non link'd or alias'd paths.
                 _fullDirectory = System.IO.Path.GetFullPath(directory);
+                _fullDirectory = Interop.Sys.RealPath(_fullDirectory);
+                if (_fullDirectory is null)
+                {
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, isDirectory: true);
+                }
+
+                // Also ensure it has a trailing slash.
+                if (!_fullDirectory.EndsWith('/'))
+                {
+                    _fullDirectory += "/";
+                }
+
+                _callback = new Interop.EventStream.FSEventStreamCallback(FileSystemEventCallback);
+                _weakWatcher = new WeakReference<FileSystemWatcher>(watcher);
                 _includeChildren = includeChildren;
                 _filterFlags = filter;
-                _cancellationToken = cancelToken;
-                _cancellationToken.UnsafeRegister(obj => ((RunningInstance)obj!).CancellationCallback(), this);
-                _stopping = false;
             }
 
             private static class StaticWatcherRunLoopManager
@@ -260,14 +266,12 @@ namespace System.IO
                 }
             }
 
-            private void CancellationCallback()
+            private void CleanupEventStream()
             {
-                SafeEventStreamHandle? eventStream =  _eventStream;
-                if (!_stopping && eventStream != null)
+                SafeEventStreamHandle? eventStream = Interlocked.Exchange(ref _eventStream, null);
+                if (eventStream != null)
                 {
-                    _stopping = true;
-                    _eventStream = null;
-
+                    _cancellationRegistration.Unregister();
                     try
                     {
                         // When we get here, we've requested to stop so cleanup the EventStream and unschedule from the RunLoop
@@ -281,24 +285,8 @@ namespace System.IO
                 }
             }
 
-            internal unsafe void Start()
+            internal void Start(CancellationToken cancellationToken)
             {
-                // Make sure _fullPath doesn't contain a link or alias
-                // since the OS will give back the actual, non link'd or alias'd paths
-                _fullDirectory = Interop.Sys.RealPath(_fullDirectory);
-                if (_fullDirectory == null)
-                {
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
-                }
-
-                Debug.Assert(string.IsNullOrEmpty(_fullDirectory) == false, "Watch directory is null or empty");
-
-                // Normalize the _fullDirectory path to have a trailing slash
-                if (_fullDirectory[_fullDirectory.Length - 1] != '/')
-                {
-                    _fullDirectory += "/";
-                }
-
                 // Get the path to watch and verify we created the CFStringRef
                 SafeCreateHandle path = Interop.CoreFoundation.CFStringCreateWithCString(_fullDirectory);
                 if (path.IsInvalid)
@@ -312,12 +300,6 @@ namespace System.IO
                 {
                     path.Dispose();
                     throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), _fullDirectory, true);
-                }
-
-                // Create the callback for the EventStream if it wasn't previously created for this instance.
-                if (_callback == null)
-                {
-                    _callback = new Interop.EventStream.FSEventStreamCallback(FileSystemEventCallback);
                 }
 
                 _context = ExecutionContext.Capture();
@@ -342,13 +324,19 @@ namespace System.IO
                 StaticWatcherRunLoopManager.ScheduleEventStream(_eventStream);
 
                 bool started = Interop.EventStream.FSEventStreamStart(_eventStream);
-                if (!started)
+                if (started)
+                {
+                    // Once we've started, register to stop the watcher on cancellation being requested.
+                    _cancellationRegistration = cancellationToken.UnsafeRegister(obj => ((RunningInstance)obj!).CleanupEventStream(), this);
+                }
+                else
                 {
                     // Try to get the Watcher to raise the error event; if we can't do that, just silently exit since the watcher is gone anyway
+                    int error = Marshal.GetLastWin32Error();
                     if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                     {
                         // An error occurred while trying to start the run loop so fail out
-                        watcher.OnError(new ErrorEventArgs(new IOException(SR.EventStream_FailedToStart, Marshal.GetLastWin32Error())));
+                        watcher.OnError(new ErrorEventArgs(new IOException(SR.EventStream_FailedToStart, error)));
                     }
                 }
             }
@@ -367,7 +355,7 @@ namespace System.IO
                 // there's nothing more to do (we can't raise events), so bail.
                 if (!_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                 {
-                    CancellationCallback();
+                    CleanupEventStream();
                     return;
                 }
 
