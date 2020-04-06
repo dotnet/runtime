@@ -464,7 +464,7 @@ if(CLR_CMAKE_TARGET_IOS)
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
     unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
-elif(CLR_CMAKE_TARGET_TVOS)
+elseif(CLR_CMAKE_TARGET_TVOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
