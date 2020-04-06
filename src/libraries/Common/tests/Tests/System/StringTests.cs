@@ -7215,6 +7215,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34577", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static unsafe void NormalizationTest() // basic test; more tests in globalization tests
         {
             // U+0063  LATIN SMALL LETTER C
