@@ -5293,7 +5293,7 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
 #ifdef TARGET_X86
     if (returnKind == RT_Float)
     {
-        hijackAddress = reinterpret_cast<VOID *>(OnHijackFPTripThread);
+        pvHijackAddr = reinterpret_cast<VOID *>(OnHijackFPTripThread);
     }
 #endif // TARGET_X86
 
@@ -5625,7 +5625,7 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-bool GetReturnAddressHijackInfo(Thread *pThread, EECodeInfo *pCodeInfo, ReturnKind *pReturnKind)
+static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pReturnKind)
 {
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     return pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken, pReturnKind);
@@ -6086,7 +6086,7 @@ BOOL Thread::HandledJITCase(BOOL ForTaskSwitchIn)
 
             ReturnKind returnKind;
 
-            if (GetReturnAddressHijackInfo(this, &codeInfo, &returnKind))
+            if (GetReturnAddressHijackInfo(&codeInfo, &returnKind))
             {
 
 #ifdef FEATURE_ENABLE_GCPOLL
@@ -6639,7 +6639,7 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         ReturnKind returnKind;
 
-        if (!GetReturnAddressHijackInfo(pThread, &codeInfo, &returnKind))
+        if (!GetReturnAddressHijackInfo(&codeInfo, &returnKind))
         {
             return;
         }
