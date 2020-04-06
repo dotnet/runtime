@@ -1125,6 +1125,17 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void BeginConnect_IPAddresses_ListeningSocket_Throws_InvalidOperation()
+        {
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                socket.Listen(1);
+                Assert.Throws<InvalidOperationException>(() => socket.BeginConnect(new[] { IPAddress.Loopback }, 1, TheAsyncCallback, null));
+            }
+        }
+
+        [Fact]
         public async Task ConnectAsync_IPAddresses_ListeningSocket_Throws_InvalidOperation()
         {
             using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
