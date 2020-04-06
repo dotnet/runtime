@@ -22,16 +22,11 @@ static pal::string_t normalize_dir_separator(const pal::string_t& path)
 }
 
 // -----------------------------------------------------------------------------
-// Given a "base" directory, determine the resolved path this this file.
+// Given a "base" directory, determine the resolved path for this file.
 //
-// If this file exists within the single-file bundle candidate is:
-//  * If the file was extracted to disk, the full-path to the extracted file.
-//  * Otherwise, the path within the bundle, relative to the "base" directory.
-//    The runtime expects the entries in the TPA,  NativeDllSearchDirectories, etc 
-//    to be absolute paths. Therefore, the relative-paths within the bundle are
-//    expressed as absolute paths with respect to the location of the bundle-file.
-// Otherwise, candidate is:
-//  *  The full local path of the file.
+// * If this file exists within the single-file bundle candidate is
+//   the full-path to the extracted file.
+// * Otherwise, candidate is the full local path of the file.
 //
 // Parameters:
 //    base - The base directory to look for the relative path of this entry
@@ -70,6 +65,8 @@ bool deps_entry_t::to_path(const pal::string_t& base, const pal::string_t& ietf_
 
         if (base.compare(app->base_path()) == 0)
         {
+            // If sub_path is found in the single-file bundle,
+            // app::locate() will set candidate to the full-path to the assembly extracted out to disk.
             if (app->locate(sub_path, candidate))
             {
                 trace::verbose(_X("    %s found in bundle [%s]"), sub_path.c_str(), candidate.c_str());

@@ -88,7 +88,7 @@ void need_newer_framework_error()
     pal::string_t url = get_download_url();
     trace::error(_X("  _ To run this application, you need to install a newer version of .NET Core."));
     trace::error(_X(""));
-    trace::error(_X("  - %s"), url.c_str());
+    trace::error(_X("  - %s&apphost_version=%s"), url.c_str(), _STRINGIFY(COMMON_HOST_PKG_VER));
 }
 
 #if defined(CURHOST_EXE)

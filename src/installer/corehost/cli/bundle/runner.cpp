@@ -63,13 +63,15 @@ bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_pa
 
     if (entry == nullptr)
     {
+        full_path.clear();
         return false;
     }
 
-    bool needs_extraction = entry->needs_extraction();
-    pal::string_t file_base = entry->needs_extraction() ? app->extraction_path() : app->base_path();
+    // Currently, all files except deps.json and runtimeconfig.json are extracted to disk.
+    // The json files are not queried by the host using this method.
+    assert(entry->needs_extraction());
 
-    full_path.assign(file_base);
+    full_path.assign(app->extraction_path());
     append_path(&full_path, relative_path.c_str());
 
     return true;
