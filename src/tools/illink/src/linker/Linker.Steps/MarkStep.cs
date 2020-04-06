@@ -569,7 +569,8 @@ namespace Mono.Linker.Steps {
 			AssemblyDefinition assembly;
 			var args = ca.ConstructorArguments;
 			if (args.Count >= 3 && args [2].Value is string assemblyName) {
-				if (!_context.Resolver.AssemblyCache.TryGetValue (assemblyName, out assembly)) {
+				assembly = _context.GetLoadedAssembly (assemblyName);
+				if (assembly == null) {
 					_context.LogMessage (MessageImportance.Low, $"Could not resolve '{assemblyName}' assembly dependency");
 					return;
 				}
@@ -3167,7 +3168,8 @@ namespace Mono.Linker.Steps {
 				}
 
 				string assembly_name = (string)first_arg.Operand;
-				if (!_markStep._context.Resolver.AssemblyCache.TryGetValue (assembly_name, out var assembly)) {
+				var assembly = _markStep._context.GetLoadedAssembly (assembly_name);
+				if (assembly == null) {
 					reflectionContext.RecordUnrecognizedPattern ($"Activator call '{reflectionContext.MethodCalled.FullName}' inside '{_methodCalling.FullName}' references assembly '{assembly_name}' which could not be found");
 					return;
 				}

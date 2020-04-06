@@ -394,6 +394,14 @@ namespace Mono.Linker {
 			return asms;
 		}
 
+		public AssemblyDefinition GetLoadedAssembly (string name)
+		{
+			if (_resolver.AssemblyCache.TryGetValue (name, out var ad))
+				return ad;
+
+			return null;
+		}
+
 		public void SetParameter (string key, string value)
 		{
 			_parameters [key] = value;
