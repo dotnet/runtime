@@ -49,8 +49,7 @@
 
   <PropertyGroup>
     <DefaultSubsetCategories>libraries-installer-coreclr-mono</DefaultSubsetCategories>
-    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'iOS'">libraries-installer-mono</DefaultSubsetCategories>
-    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'Android'">libraries-mono</DefaultSubsetCategories>
+    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'">libraries-installer-mono</DefaultSubsetCategories>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -63,7 +62,7 @@
     <DefaultLibrariesSubsets Condition="'$(IncludeLibrariesTestSubset)' == 'true'">$(DefaultLibrariesSubsets)-libtests</DefaultLibrariesSubsets>
 
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
-    <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS'">depproj-pkgproj</DefaultInstallerSubsets>
+    <DefaultInstallerSubsets Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'">depproj-pkgproj</DefaultInstallerSubsets>
   </PropertyGroup>
 
   <PropertyGroup>

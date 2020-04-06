@@ -133,9 +133,9 @@
         <IsNative>true</IsNative>
       </RuntimeFiles>
 
-      <MonoCrossFiles Condition="'$(TargetOS)' == 'iOS'"
+      <MonoCrossFiles Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'"
         Include="$(MonoArtifactsPath)\cross\*.*" />
-      <MonoIncludeFiles Condition="'$(TargetOS)' == 'iOS'"
+      <MonoIncludeFiles Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'"
         Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
 
