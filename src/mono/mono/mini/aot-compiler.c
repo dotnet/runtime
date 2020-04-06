@@ -8113,10 +8113,6 @@ parse_cpu_features (const gchar *attr)
 #elif defined(TARGET_ARM64)
 	if (!strcmp (attr + prefix, "base"))
 		feature = MONO_CPU_ARM64_BASE;
-	else if (!strcmp (attr + prefix, "neon"))
-		feature = MONO_CPU_ARM64_NEON;
-	else if (!strcmp (attr + prefix, "crypto"))
-		feature = MONO_CPU_ARM64_CRYPTO;
 	else if (!strcmp (attr + prefix, "crc"))
 		feature = MONO_CPU_ARM64_CRC;
 #elif defined(TARGET_WASM)

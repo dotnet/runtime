@@ -11557,8 +11557,6 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 		{ "bmi2",	MONO_CPU_X86_BMI2 },
 #endif
 #if defined(TARGET_ARM64)
-		{ "neon",	MONO_CPU_ARM64_NEON },
-		{ "crypto",	MONO_CPU_ARM64_CRYPTO },
 		{ "crc",	MONO_CPU_ARM64_CRC },
 #endif
 	};
