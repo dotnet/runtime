@@ -1280,7 +1280,7 @@ namespace
 
 extern "C" DLL_EXPORT void* STDMETHODCALLTYPE GetNativeIntIntFunction()
 {
-    return &IntIntImpl;
+    return (void*)&IntIntImpl;
 }
 
 extern "C" DLL_EXPORT void STDMETHODCALLTYPE MarshalStructAsParam_DelegateFieldMarshaling(DelegateFieldMarshaling* d)
