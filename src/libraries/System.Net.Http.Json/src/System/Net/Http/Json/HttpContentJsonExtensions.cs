@@ -19,7 +19,7 @@ namespace System.Net.Http.Json
             Debug.Assert(content.Headers.ContentType != null);
             Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
 
-            return ReadFromJsonAsyncCore(content, type, sourceEncoding, options ?? JsonContent.DefaultSerializerOptions, cancellationToken);
+            return ReadFromJsonAsyncCore(content, type, sourceEncoding, options, cancellationToken);
         }
 
         public static Task<T> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
@@ -28,7 +28,7 @@ namespace System.Net.Http.Json
             Debug.Assert(content.Headers.ContentType != null);
             Encoding? sourceEncoding = JsonContent.GetEncoding(content.Headers.ContentType.CharSet);
 
-            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options ?? JsonContent.DefaultSerializerOptions, cancellationToken);
+            return ReadFromJsonAsyncCore<T>(content, sourceEncoding, options, cancellationToken);
         }
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
@@ -43,7 +43,7 @@ namespace System.Net.Http.Json
 
             using (contentStream)
             {
-                return await JsonSerializer.DeserializeAsync(contentStream, type, options, cancellationToken).ConfigureAwait(false);
+                return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -59,7 +59,7 @@ namespace System.Net.Http.Json
 
             using (contentStream)
             {
-                return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken).ConfigureAwait(false);
+                return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonContent.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
             }
         }
 
