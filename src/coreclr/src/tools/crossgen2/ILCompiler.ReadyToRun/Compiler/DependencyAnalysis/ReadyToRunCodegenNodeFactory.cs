@@ -535,7 +535,7 @@ namespace ILCompiler.DependencyAnalysis
 
             AssemblyTableNode assemblyTable = null;
 
-            if (CompilationModuleGroup.CompilationModuleSet.Skip(1).Any())
+            if (CompilationModuleGroup.IsCompositeBuildMode)
             {
                 assemblyTable = new AssemblyTableNode(Target);
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);
