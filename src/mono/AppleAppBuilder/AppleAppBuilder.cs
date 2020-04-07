@@ -67,12 +67,12 @@ public class AppleAppBuilderTask : Task
     /// <summary>
     /// Build *.app bundle (using XCode for now)
     /// </summary>
-    public bool BuildAppBundle { get; set; } = true;
+    public bool BuildAppBundle { get; set; }
 
     /// <summary>
     /// Generate xcode project
     /// </summary>
-    public bool GenerateXcodeProject { get; set; } = true;
+    public bool GenerateXcodeProject { get; set; }
 
     /// <summary>
     /// Files to be ignored in AppDir
@@ -142,24 +142,23 @@ public class AppleAppBuilderTask : Task
         if (GenerateXcodeProject)
         {
             XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, AppDir, binDir, MonoInclude, NativeMainSource);
+            if (BuildAppBundle)
+            {
+                if (isDevice && string.IsNullOrEmpty(DevTeamProvisioning))
+                {
+                    // DevTeamProvisioning shouldn't be empty for arm64 builds
+                    Utils.LogInfo("DevTeamProvisioning is not set, BuildAppBundle step is skipped.");
+                }
+                else
+                {
+                    AppBundlePath = Xcode.BuildAppBundle(
+                        Path.Combine(binDir, ProjectName, ProjectName + ".xcodeproj"),
+                        Arch, Optimized, DevTeamProvisioning);
+                }
+            }
+            Utils.LogInfo($"Xcode: {XcodeProjectPath}\n App: {AppBundlePath}");
         }
 
-        if (BuildAppBundle)
-        {
-            if (isDevice && string.IsNullOrEmpty(DevTeamProvisioning))
-            {
-                // DevTeamProvisioning shouldn't be empty for arm64 builds
-                Utils.LogInfo("DevTeamProvisioning is not set, BuildAppBundle step is skipped.");
-            }
-            else
-            {
-                AppBundlePath = Xcode.BuildAppBundle(
-                    Path.Combine(binDir, ProjectName, ProjectName + ".xcodeproj"),
-                    Arch, Optimized, DevTeamProvisioning);
-            }
-        }
-
-        Utils.LogInfo($"Xcode: {XcodeProjectPath}\n App: {AppBundlePath}");
         return true;
     }
 }
