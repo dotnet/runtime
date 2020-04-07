@@ -3,7 +3,6 @@
 -nonamespace System.Runtime.InteropServices.WindowsRuntime
 -nonamespace System.Runtime.InteropServices.Tests
 -nonamespace System.Management.Tests
--nonamespace System.Threading.Overlapped.Tests
 -nonamespace BasicEventSourceTests
 -nonamespace System.ComponentModel.TypeConverterTests
 -nonamespace System.DirectoryServices.Protocols.Tests
