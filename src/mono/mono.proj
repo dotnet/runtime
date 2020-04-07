@@ -129,6 +129,8 @@
       <_MonoCFLAGS Include="-mtvos-version-min=$(tvOSVersionMin)" />
       <_MonoCFLAGS Include="-Wl,-application_extension" />
       <_MonoCFLAGS Include="-fexceptions" />
+      <_MonoCFLAGS Include="-fembed-bitcode" />
+      <_MonoCFLAGS Include="-fno-gnu-inline-asm" />
 
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm64'" Include="-arch arm64" />
       <_MonoCXXFLAGS Include="-isysroot $(XcodeDir)/Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS$(tvOSVersion).sdk" />
