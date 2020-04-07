@@ -107,7 +107,7 @@ int8_t* info_t::config_t::map(const pal::string_t& path, const location_t* &loca
     // * There is no performance limitation due to a larger sized mapping, since we actually only read the pages with relevant contents.
     // * Files that are too large to be mapped (ex: that exhaust 32-bit virtual address space) are not supported. 
 
-    int8_t* addr = (int8_t*)pal::mmap_read(app->m_bundle_path);
+    int8_t* addr = (int8_t*)pal::mmap_copy_on_write(app->m_bundle_path);
     if (addr == nullptr)
     {
         trace::error(_X("Failure processing application bundle."));
