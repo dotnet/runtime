@@ -165,6 +165,10 @@ initDistroRidGlobal()
                 distroRid="android-$buildArch"
             elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"
+            elif [ "$targetOs" = "AnyOS" ]; then
+                if [ "$buildArch" = "AnyCPU" ]; then
+                    distroRid="any"
+                fi
             fi
         fi
 
