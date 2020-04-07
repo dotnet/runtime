@@ -53,7 +53,7 @@ void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoade
 
     m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, m_pImageLayout, pHeader, /*compositeImage*/ NULL, pamTracker);
     m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
-    m_componentAssemblyCount = (m_pComponentAssemblies != NULL ? m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY) : 1);
+    m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
     
     // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
     m_pManifestMetadata = LoadManifestMetadata();
@@ -130,11 +130,6 @@ PTR_READYTORUN_CORE_HEADER NativeImage::GetComponentAssemblyHeader(LPCUTF8 simpl
 {
     STANDARD_VM_CONTRACT;
 
-    if (m_componentAssemblyCount == 1)
-    {
-        return dac_cast<PTR_READYTORUN_CORE_HEADER>(&m_pReadyToRunInfo->GetReadyToRunHeader()->CoreHeader);
-    }
-
     const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.LookupPtr(simpleName);
     if (assemblyNameIndex != NULL)
     {
@@ -143,7 +138,6 @@ PTR_READYTORUN_CORE_HEADER NativeImage::GetComponentAssemblyHeader(LPCUTF8 simpl
             (const READYTORUN_COMPONENT_ASSEMBLIES_ENTRY *)&pImageBase[m_pComponentAssemblies->VirtualAddress] + assemblyNameIndex->Index;
         return (PTR_READYTORUN_CORE_HEADER)&pImageBase[componentAssembly->ReadyToRunCoreHeader.VirtualAddress];
     }
-
     return NULL;
 }
 #endif
