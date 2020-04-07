@@ -15,11 +15,9 @@ internal class Utils
     public static string GetEmbeddedResource(string file)
     {
         using Stream stream = typeof(Utils).Assembly
-            .GetManifestResourceStream("IosAppBuilderTasks.Templates." + file)!;
-        using var ms = new MemoryStream();
-        stream!.CopyTo(ms);
-        ms.Position = 0;
-        return Encoding.UTF8.GetString(ms.ToArray());
+            .GetManifestResourceStream("AppleAppBuilder.Templates." + file)!;
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
 
     public static string RunProcess(
@@ -33,14 +31,14 @@ internal class Utils
         var outputBuilder = new StringBuilder();
         var errorBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
-            {
-                FileName = path,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                Arguments = args,
-            };
+        {
+            FileName = path,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            Arguments = args,
+        };
 
         if (workingDir != null)
         {
@@ -57,16 +55,16 @@ internal class Utils
 
         Process process = Process.Start(processStartInfo)!;
         process.ErrorDataReceived += (sender, e) =>
-            {
-                LogError(e.Data);
-                outputBuilder.AppendLine(e.Data);
-                errorBuilder.AppendLine(e.Data);
-            };
+        {
+            LogError(e.Data);
+            outputBuilder.AppendLine(e.Data);
+            errorBuilder.AppendLine(e.Data);
+        };
         process.OutputDataReceived += (sender, e) =>
-            {
-                LogInfo(e.Data);
-                outputBuilder.AppendLine(e.Data);
-            };
+        {
+            LogInfo(e.Data);
+            outputBuilder.AppendLine(e.Data);
+        };
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.WaitForExit();

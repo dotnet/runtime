@@ -10,7 +10,7 @@ using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class IosAppBuilderTask : Task
+public class AppleAppBuilderTask : Task
 {
     /// <summary>
     /// Path to arm64 AOT cross-compiler (mono-aot-cross)
@@ -40,7 +40,7 @@ public class IosAppBuilderTask : Task
     /// This library will be used as an entry-point (e.g. TestRunner.dll)
     /// </summary>
     [Required]
-    public string EntryPointLib { get; set; } = ""!;
+    public string MainLibraryFileName { get; set; } = ""!;
 
     /// <summary>
     /// Path to a custom main.m with custom UI
@@ -130,7 +130,7 @@ public class IosAppBuilderTask : Task
             Path.Combine(binDir, "modules.m"));
 
         // generate xcode project
-        XcodeProjectPath = Xcode.GenerateXCode(ProjectName, EntryPointLib, AppDir, binDir, MonoInclude, NativeMainSource);
+        XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, AppDir, binDir, MonoInclude, NativeMainSource);
 
         if (!GenerateOnlyXcodeProject && (!isDevice || !string.IsNullOrEmpty(DevTeamProvisioning)))
         {

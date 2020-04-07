@@ -32,7 +32,7 @@ build: clean program
 	cp $(ARTIFACTS_MONO)/libmono.a bin
 	for lib in $(BCL_LIBS); do cp $(ARTIFACTS_BCL)/$$lib bin; done
 	cp $(ARTIFACTS_BCL)/*.a bin
-	$(DOTNET) msbuild /t:BuildIosApp /p:Configuration=$(MONO_CONFIG) \
+	$(DOTNET) msbuild /t:BuildAppleApp /p:Configuration=$(MONO_CONFIG) \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:TargetOS=iOS \
 	/p:ProjectName=HelloiOS \
@@ -40,7 +40,7 @@ build: clean program
 	/p:AppDir=$(CURDIR)/bin \
 	/p:NativeMainSource=$(CURDIR)/main.m \
 	/p:DevTeamProvisioning= \
-	/p:EntryPointLib=Program.dll \
+	/p:MainLibraryFileName=Program.dll \
 	../../../mono.proj
 
 deploy-sim: build

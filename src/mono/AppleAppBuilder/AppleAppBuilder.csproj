@@ -18,7 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AotCompiler.cs" />
-    <Compile Include="IosAppBuilderTask.cs" />
+    <Compile Include="AppleAppBuilder.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Xcode.cs" />
   </ItemGroup>
