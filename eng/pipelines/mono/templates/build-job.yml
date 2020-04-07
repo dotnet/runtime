@@ -92,10 +92,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build$(scriptExt) -subsetcategory mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build$(scriptExt) -subsetcategory mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
 
     # Publish product output directory for consumption by tests.
@@ -111,10 +111,10 @@ jobs:
 
     # Build packages
     - ${{ if and(ne(parameters.llvm, true), ne(parameters.osGroup, 'Windows_NT')) }}:
-      - script: ./build$(scriptExt) -subsetcategory mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+      - script: ./build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
         displayName: Build nupkg
     - ${{ if and(ne(parameters.llvm, true), eq(parameters.osGroup, 'Windows_NT')) }}:
-      - script: build$(scriptExt) -subsetcategory mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+      - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
         displayName: Build nupkg
 
     # Save packages using the prepare-signed-artifacts format.

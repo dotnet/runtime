@@ -93,6 +93,7 @@ jobs:
               installDotnet: true
 
         - script: $(_buildScript)
+                -subset libs
                 $(_buildArguments)
                 $(_addtionalBuildArguments)
           displayName: Restore and Build Product
