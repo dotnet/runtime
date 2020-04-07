@@ -95,6 +95,10 @@ jobs:
             parameters:
               installDotnet: true
 
+        # Build CoreLib
+        - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib $(crossArg) -arch $(archType) -c ${{ parameters.liveRuntimeBuildConfig }} $(officialBuildIdArg) -ci
+          displayName: Build System.Private.CoreLib
+
         - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Restore.binlog
           displayName: Restore
 
