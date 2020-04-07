@@ -250,7 +250,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(obj.MyOverflow);
         }
 
-
         private class ClassWithExtensionData
         {
             [JsonExtensionData]
@@ -266,25 +265,47 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, Dictionary<string, object> value, JsonSerializerOptions options)
             {
-                writer.WriteString(JsonEncodedText.Encode("MyCustomOverflowWrite"), "OverflowValueWrite");
+                writer.WriteString("MyCustomOverflowWrite", "OverflowValueWrite");
             }
         }
 
         [Fact]
-        public static void ExtensionPropertyObjectValue_SupportsWritingToCustomSerializer()
+        public static void ExtensionPropertyObjectValue_SupportsWritingToCustomSerializerWithOptions()
         {
             var root = new ClassWithExtensionData
             {
                 Overflow = new Dictionary<string, object>
                 {
-                    ["test"] = "TestValue",
+                    ["TestKey"] = "TestValue",
                 },
             };
 
-            var opts = new JsonSerializerOptions();
-            opts.Converters.Add(new DictionaryOverflowConverter());
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new DictionaryOverflowConverter());
 
-            string json = JsonSerializer.Serialize(root, opts);
+            string json = JsonSerializer.Serialize(root, options);
+            Assert.Equal(@"{""MyCustomOverflowWrite"":""OverflowValueWrite""}", json);
+        }
+
+        private class ClassWithExtensionDataWithAttributedConverter
+        {
+            [JsonExtensionData]
+            [JsonConverter(typeof(DictionaryOverflowConverter))]
+            public Dictionary<string, object> Overflow { get; set; }
+        }
+
+        [Fact]
+        public static void ExtensionPropertyObjectValue_SupportsWritingToAttributedCustomSerializer()
+        {
+            var root = new ClassWithExtensionDataWithAttributedConverter
+            {
+                Overflow = new Dictionary<string, object>
+                {
+                    ["TestKey"] = "TestValue",
+                },
+            };
+
+            string json = JsonSerializer.Serialize(root);
             Assert.Equal(@"{""MyCustomOverflowWrite"":""OverflowValueWrite""}", json);
         }
 
