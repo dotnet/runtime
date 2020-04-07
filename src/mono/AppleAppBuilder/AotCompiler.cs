@@ -54,6 +54,8 @@ internal class AotCompiler
             .Append("full,");
 
         // TODO: enable LLVM
+        // TODO: enable System.Runtime.Intrinsics.Arm (LLVM-only for now)
+        // e.g. .Append("mattr=+crc,")
 
         crossArgs
             .Append(" --aot=").Append(aotArgs).Append(" ")
@@ -64,7 +66,7 @@ internal class AotCompiler
         var clangArgs = new StringBuilder();
         if (optimize)
         {
-            clangArgs.Append(" -O2");
+            clangArgs.Append(" -Os");
         }
         clangArgs
             .Append(" -isysroot ").Append(Xcode.Sysroot)

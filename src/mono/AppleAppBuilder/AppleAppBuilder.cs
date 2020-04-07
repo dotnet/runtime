@@ -65,9 +65,14 @@ public class AppleAppBuilderTask : Task
     public string? DevTeamProvisioning { get; set; }
 
     /// <summary>
-    /// Only generate an xcode project
+    /// Build *.app bundle (using XCode for now)
     /// </summary>
-    public bool GenerateOnlyXcodeProject { get; set; }
+    public bool BuildAppBundle { get; set; } = true;
+
+    /// <summary>
+    /// Generate xcode project
+    /// </summary>
+    public bool GenerateXcodeProject { get; set; } = true;
 
     /// <summary>
     /// Files to be ignored in AppDir
@@ -93,6 +98,11 @@ public class AppleAppBuilderTask : Task
         if (isDevice && string.IsNullOrEmpty(CrossCompiler))
         {
             throw new ArgumentException("arm64 arch requires CrossCompiler");
+        }
+
+        if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
+        {
+            throw new ArgumentException($"MainLibraryFileName='{MainLibraryFileName}' was not found in AppDir='{AppDir}'");
         }
 
         // escape spaces
@@ -129,18 +139,27 @@ public class AppleAppBuilderTask : Task
             Directory.GetFiles(binDir, "*.dll.o"),
             Path.Combine(binDir, "modules.m"));
 
-        // generate xcode project
-        XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, AppDir, binDir, MonoInclude, NativeMainSource);
-
-        if (!GenerateOnlyXcodeProject && (!isDevice || !string.IsNullOrEmpty(DevTeamProvisioning)))
+        if (GenerateXcodeProject)
         {
-            // build app
-            AppBundlePath = Xcode.BuildAppBundle(
-                Path.Combine(binDir, ProjectName, ProjectName + ".xcodeproj"),
-                Arch, Optimized, DevTeamProvisioning);
+            XcodeProjectPath = Xcode.GenerateXCode(ProjectName, MainLibraryFileName, AppDir, binDir, MonoInclude, NativeMainSource);
         }
 
-        Log.LogMessage(MessageImportance.High, $"Xcode: {XcodeProjectPath}\n App: {AppBundlePath}");
+        if (BuildAppBundle)
+        {
+            if (isDevice && string.IsNullOrEmpty(DevTeamProvisioning))
+            {
+                // DevTeamProvisioning shouldn't be empty for arm64 builds
+                Utils.LogInfo("DevTeamProvisioning is not set, BuildAppBundle step is skipped.");
+            }
+            else
+            {
+                AppBundlePath = Xcode.BuildAppBundle(
+                    Path.Combine(binDir, ProjectNme, ProjectName + ".xcodeproj"),
+                    Arch, Optimized, DevTeamProviasioning);
+            }
+        }
+
+        Utils.LogInfo($"Xcode: {XcodeProjectPath}\n App: {AppBundlePath}");
         return true;
     }
 }
