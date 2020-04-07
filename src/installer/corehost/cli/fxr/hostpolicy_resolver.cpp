@@ -12,7 +12,6 @@
 #include <utils.h>
 
 #include "json_parser.h"
-#include "bundle/info.h"
 
 namespace
 {

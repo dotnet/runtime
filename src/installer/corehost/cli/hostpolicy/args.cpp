@@ -136,7 +136,7 @@ bool set_root_from_app(const pal::string_t& managed_application_path,
 
     if (pal::realpath(&args.managed_application))
     {
-        args.app_root = get_directory(managed_application_path);
+        args.app_root = get_directory(args.managed_application);
         return true;
     }
 

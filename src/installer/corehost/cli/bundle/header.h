@@ -77,7 +77,6 @@ namespace bundle
             : m_num_embedded_files(num_embedded_files)
             , m_bundle_id()
             , m_v2_header()
-            , m_header_size(0)
         {
         }
 
@@ -89,8 +88,6 @@ namespace bundle
         const location_t& runtimeconfig_json_location() const { return m_v2_header.runtimeconfig_json_location; }
         bool is_netcoreapp3_compat_mode() const { return m_v2_header.is_netcoreapp3_compat_mode(); }
 
-        size_t size() const { return m_header_size; }
-
         static const uint32_t major_version = 2;
         static const uint32_t minor_version = 0;
 
@@ -98,7 +95,6 @@ namespace bundle
         int32_t m_num_embedded_files;
         pal::string_t m_bundle_id;
         header_fixed_v2_t m_v2_header;
-        size_t m_header_size;
     };
 }
 #endif // __HEADER_H__

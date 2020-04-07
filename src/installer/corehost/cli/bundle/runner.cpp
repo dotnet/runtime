@@ -20,8 +20,13 @@ StatusCode runner_t::extract()
     {
         const int8_t* addr = map_bundle();
 
-        // Set the Reader offset to read post the bundle header
-        reader_t reader(addr, m_bundle_size, m_header_offset + m_header.size());
+        // Set the Reader at header_offset
+        reader_t reader(addr, m_bundle_size, m_header_offset);
+
+        // Read the bundle header
+        m_header = header_t::read(reader);
+        m_deps_json.set_location(&m_header.deps_json_location());
+        m_runtimeconfig_json.set_location(&m_header.runtimeconfig_json_location());
 
         // Read the bundle manifest
         m_manifest = manifest_t::read(reader, m_header.num_embedded_files());

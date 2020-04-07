@@ -11,6 +11,26 @@ using namespace bundle;
 // Global single-file bundle information, if any
 const info_t* info_t::the_app = nullptr;
 
+info_t::info_t(const pal::char_t* bundle_path,
+               const pal::char_t* app_path,
+               int64_t header_offset)
+    : m_bundle_path(bundle_path)
+    , m_bundle_size(0)
+    , m_header_offset(header_offset)
+{
+    m_base_path = get_directory(m_bundle_path);
+
+    // Single-file bundles currently only support deps/runtime config json files
+    // named based on the app.dll. Any other name for these configuration files
+    // mentioned via the command line are assumed to be actual files on disk.
+    // 
+    // Supporting custom names for these config files is straightforward (with associated changes in bundler and SDK).
+    // There is no known use-case for it yet, and the facility is TBD.
+
+    m_deps_json = config_t(get_deps_from_app_binary(m_base_path, app_path));
+    m_runtimeconfig_json = config_t(get_runtime_config_path(m_base_path, get_filename_without_ext(app_path)));
+}
+
 StatusCode info_t::process_bundle(const pal::char_t* bundle_path, const pal::char_t* app_path, int64_t header_offset)
 {
     if (header_offset == 0)
@@ -19,15 +39,13 @@ StatusCode info_t::process_bundle(const pal::char_t* bundle_path, const pal::cha
         return StatusCode::Success;
     }
 
-    static info_t info(bundle_path, header_offset);
+    static info_t info(bundle_path, app_path, header_offset);
     StatusCode status = info.process_header();
 
     if (status != StatusCode::Success)
     {
         return status;
     }
-
-    info.init_config(app_path);
 
     trace::info(_X("Single-File bundle details:"));
     trace::info(_X("DepsJson Offset:[%lx] Size[%lx]"), info.m_header.deps_json_location().offset, info.m_header.deps_json_location().size);
@@ -48,6 +66,8 @@ StatusCode info_t::process_header()
         reader_t reader(addr, m_bundle_size, m_header_offset);
 
         m_header = header_t::read(reader);
+        m_deps_json.set_location(&m_header.deps_json_location());
+        m_runtimeconfig_json.set_location(&m_header.runtimeconfig_json_location());
 
         unmap_bundle(addr);
 
@@ -57,23 +77,6 @@ StatusCode info_t::process_header()
     {
         return e;
     }
-}
-
-void info_t::init_config(const pal::string_t& app_path)
-{
-    // Single-file bundles currently only support deps/runtime config json files
-    // named based on the app.dll. Any other name for these configuration files
-    // mentioned via the command line are assumed to be actual files on disk.
-    // 
-    // Supporting custom names for these config files is straightforward (with associated changes in bundler and SDK).
-    // There is no known use-case for it yet, and the facility is TBD.
-
-    m_base_path = get_directory(m_bundle_path);
-    pal::string_t deps_json_name = get_deps_from_app_binary(m_base_path, app_path);
-    pal::string_t runtimeconfig_json_name = get_runtime_config_path(m_base_path, get_filename_without_ext(app_path));
-
-    m_deps_json = config_t(deps_json_name, &m_header.deps_json_location());
-    m_runtimeconfig_json = config_t(runtimeconfig_json_name, &m_header.runtimeconfig_json_location());
 }
 
 int8_t* info_t::config_t::map(const pal::string_t& path, const location_t* &location)

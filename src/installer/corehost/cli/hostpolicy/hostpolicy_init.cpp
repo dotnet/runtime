@@ -127,11 +127,11 @@ bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
         // For the backwards compat case, this will be later initialized with argv[0]
     }
 
-    if (input->version_lo >= offsetof(host_interface_t, app_bundle) + sizeof(input->app_bundle))
+    if (input->version_lo >= offsetof(host_interface_t, single_file_bundle_header_offset) + sizeof(input->single_file_bundle_header_offset))
     {
-        if (input->app_bundle != nullptr)
+        if (input->single_file_bundle_header_offset != 0)
         {
-            static bundle::runner_t bundle_runner(input->app_bundle);
+            static bundle::runner_t bundle_runner(input->host_info_host_path, input->host_info_app_path, input->single_file_bundle_header_offset);
             bundle::info_t::the_app = &bundle_runner;
         }
     }

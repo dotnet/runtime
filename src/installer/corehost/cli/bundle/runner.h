@@ -20,12 +20,10 @@ namespace bundle
     class runner_t : public info_t
     {
     public:
-        runner_t(const pal::char_t* bundle_path_value,
-                 int64_t header_offset_value)
-            : info_t(bundle_path_value, header_offset_value) {}
-
-        runner_t(const bundle::info_t* info)
-            : info_t(info) {}
+        runner_t(const pal::char_t* bundle_path,
+                 const pal::char_t *app_path,
+                 int64_t header_offset)
+            : info_t(bundle_path, app_path, header_offset) {}
 
         const pal::string_t& extraction_path() const { return m_extraction_path; }
 

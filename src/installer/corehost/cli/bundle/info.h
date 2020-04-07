@@ -28,7 +28,7 @@ namespace bundle
                 m_location = config.m_location;
             }
 
-            config_t(const pal::string_t& path, const location_t *location)
+            config_t(const pal::string_t& path, const location_t *location=nullptr)
             {
                 m_path = path;
                 m_location = location;
@@ -45,6 +45,11 @@ namespace bundle
                        (the_app->m_deps_json.matches(path) || the_app->m_runtimeconfig_json.matches(path));
             }
 
+            void set_location(const location_t* location)
+            {
+                m_location = location;
+            }
+
             static int8_t* map(const pal::string_t& path, const location_t* &location);
             static void unmap(const int8_t* addr, const location_t* location);
 
@@ -58,29 +63,15 @@ namespace bundle
 
         bool is_netcoreapp3_compat_mode() const { return m_header.is_netcoreapp3_compat_mode(); }
         const pal::string_t& base_path() const { return m_base_path; }
+        int64_t header_offset() const { return m_header_offset; }
 
         // Global single-file info object
         static const info_t* the_app;
 
     protected:
-        info_t(const pal::char_t* bundle_path_value,
-            int64_t header_offset_value)
-            : m_bundle_path(bundle_path_value)
-            , m_bundle_size(0)
-            , m_header_offset(header_offset_value)
-            , m_deps_json()
-            , m_runtimeconfig_json() {}
-
-        info_t(const info_t* info)
-        {
-            m_bundle_path = info->m_bundle_path;
-            m_base_path = info->m_base_path;
-            m_bundle_size = info->m_bundle_size;
-            m_header_offset = info->m_header_offset;
-            m_header = info->m_header;
-            m_deps_json = info->m_deps_json;
-            m_runtimeconfig_json = info->m_runtimeconfig_json;
-        }
+          info_t(const pal::char_t* bundle_path,
+                 const pal::char_t* app_path,
+                 int64_t header_offset);
 
         const int8_t* map_bundle();
         void unmap_bundle(const int8_t* addr) const;
@@ -94,7 +85,6 @@ namespace bundle
         config_t m_runtimeconfig_json;
 
     private:
-        void init_config(const pal::string_t& app_path);
         StatusCode process_header();
     };
 }

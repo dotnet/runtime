@@ -36,12 +36,10 @@ header_t header_t::read(reader_t& reader)
     header_t header(fixed_header->num_embedded_files);
 
     // bundle_id is a component of the extraction path
-    size_t bundle_id_size = reader.read_path_string(header.m_bundle_id);
+    reader.read_path_string(header.m_bundle_id);
 
     const header_fixed_v2_t *v2_header = reinterpret_cast<const header_fixed_v2_t*>(reader.read_direct(sizeof(header_fixed_v2_t)));
     header.m_v2_header = *v2_header;
-
-    header.m_header_size = sizeof(header_fixed_t) + bundle_id_size + sizeof(header_fixed_v2_t);
 
     return header;
 }
