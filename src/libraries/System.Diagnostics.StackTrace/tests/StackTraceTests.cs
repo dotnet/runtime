@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -107,7 +107,6 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void Ctor_ThrownException_GetFramesReturnsExpected()
         {
-            // TODO: is this test redundant? See Ctor_ThrownException_GetFramesReturnsExpected_2 below
             var stackTrace = new StackTrace(InvokeException());
             VerifyFrames(stackTrace, false);
         }

@@ -40,7 +40,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void RemoveNonExistingTest()
         {
-            var emptySet = this.Empty<int>();
+            IImmutableSet<int> emptySet = this.Empty<int>();
             Assert.Same(emptySet, emptySet.Remove(5));
 
             // Also fill up a set with many elements to build up the tree, then remove from various places in the tree.

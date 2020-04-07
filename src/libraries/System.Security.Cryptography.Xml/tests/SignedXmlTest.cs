@@ -1413,7 +1413,8 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20429")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
         public void HmacMustBeMultipleOfEightBits()
         {
             static void hmacMustBeMultipleOfEightBits(int bits)
