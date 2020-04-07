@@ -5018,7 +5018,7 @@ namespace System.Tests
         [InlineData("hElLo", "hello")]
         [InlineData("HeLlO", "hello")]
         [InlineData("", "")]
-        public static void ToLower(string s, string expected)
+        public static void ToLower_String(string s, string expected)
         {
             Assert.Equal(expected, s.ToLower());
 
@@ -5222,7 +5222,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ToLower_2()
+        public static void ToLower_CharArray()
         {
             var expectedSource = new char[3] { 'a', 'B', 'c' };
             var expectedDestination = new char[3] { 'a', 'b', 'c' };
@@ -5434,7 +5434,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ToUpper_2()
+        public static void ToUpper_CharArray()
         {
             var expectedSource = new char[3] { 'a', 'B', 'c' };
             var expectedDestination = new char[3] { 'A', 'B', 'C' };
@@ -5559,7 +5559,7 @@ namespace System.Tests
         [InlineData("hElLo", "HELLO")]
         [InlineData("HeLlO", "HELLO")]
         [InlineData("", "")]
-        public static void ToUpper(string s, string expected)
+        public static void ToUpper_String(string s, string expected)
         {
             Assert.Equal(expected, s.ToUpper());
 
