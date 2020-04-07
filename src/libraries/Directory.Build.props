@@ -321,7 +321,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'">
-    <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+    <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'">
