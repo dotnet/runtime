@@ -50,7 +50,7 @@ public:
     void FireGCGenerationRange(uint8_t generation, void* rangeStart, uint64_t rangeUsedLength, uint64_t rangeReservedLength) = 0;
 
     virtual
-    void FireGCHeapStats_V1(
+    void FireGCHeapStats_V2(
         uint64_t generationSize0,
         uint64_t totalPromotedSize0,
         uint64_t generationSize1,
@@ -59,6 +59,8 @@ public:
         uint64_t totalPromotedSize2,
         uint64_t generationSize3,
         uint64_t totalPromotedSize3,
+        uint64_t generationSize4,
+        uint64_t totalPromotedSize4,
         uint64_t finalizationPromotedSize,
         uint64_t finalizationPromotedCount,
         uint32_t pinnedObjectCount,

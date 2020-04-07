@@ -51,7 +51,7 @@ void GCToCLREventSink::FireGCEnd_V1(uint32_t count, uint32_t depth)
     FireEtwGCEnd_V1(count, depth, GetClrInstanceId());
 }
 
-void GCToCLREventSink::FireGCHeapStats_V1(
+void GCToCLREventSink::FireGCHeapStats_V2(
         uint64_t generationSize0,
         uint64_t totalPromotedSize0,
         uint64_t generationSize1,
@@ -60,6 +60,8 @@ void GCToCLREventSink::FireGCHeapStats_V1(
         uint64_t totalPromotedSize2,
         uint64_t generationSize3,
         uint64_t totalPromotedSize3,
+        uint64_t generationSize4,
+        uint64_t totalPromotedSize4,
         uint64_t finalizationPromotedSize,
         uint64_t finalizationPromotedCount,
         uint32_t pinnedObjectCount,
@@ -68,10 +70,11 @@ void GCToCLREventSink::FireGCHeapStats_V1(
 {
     LIMITED_METHOD_CONTRACT;
 
-    FireEtwGCHeapStats_V1(generationSize0, totalPromotedSize0, generationSize1, totalPromotedSize1,
+    FireEtwGCHeapStats_V2(generationSize0, totalPromotedSize0, generationSize1, totalPromotedSize1,
                           generationSize2, totalPromotedSize2, generationSize3, totalPromotedSize3,
                           finalizationPromotedSize, finalizationPromotedCount, pinnedObjectCount,
-                          sinkBlockCount, gcHandleCount, GetClrInstanceId());
+                          sinkBlockCount, gcHandleCount, GetClrInstanceId(),
+                          generationSize4, totalPromotedSize4);
 }
 
 void GCToCLREventSink::FireGCCreateSegment_V1(void* address, size_t size, uint32_t type)

@@ -53,11 +53,13 @@ nomac:GarbageCollection:::GCRestartEEEnd
 noclrinstanceid:GarbageCollection:::GCRestartEEEnd
 nostack:GarbageCollection:::GCRestartEEEnd
 nostack:GarbageCollection:::GCRestartEEEnd_V1
-nomac:GarbageCollection:::GCHeapStats
 noclrinstanceid:GarbageCollection:::GCHeapStats
 nostack:GarbageCollection:::GCHeapStats
 nostack:GarbageCollection:::GCHeapStats_V1
+nostack:GarbageCollection:::GCHeapStats_V2
+nomac:GarbageCollection:::GCHeapStats
 nomac:GarbageCollection:::GCHeapStats_V1
+nomac:GarbageCollection:::GCHeapStats_V2
 nomac:GarbageCollection:::GCCreateSegment
 nostack:GarbageCollection:::GCCreateSegment
 noclrinstanceid:GarbageCollection:::GCCreateSegment

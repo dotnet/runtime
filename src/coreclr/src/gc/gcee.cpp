@@ -167,11 +167,12 @@ void GCHeap::UpdatePostGCCounters()
         g_GenerationSizes[3], g_GenerationPromotedSizes[3]));
 #endif //SIMPLE_DPRINTF
 
-    FIRE_EVENT(GCHeapStats_V1,
+    FIRE_EVENT(GCHeapStats_V2,
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
         g_GenerationSizes[2], g_GenerationPromotedSizes[2],
         g_GenerationSizes[3], g_GenerationPromotedSizes[3],
+        g_GenerationSizes[4], g_GenerationPromotedSizes[4],
         promoted_finalization_mem,
         GetFinalizablePromotedCount(),
         static_cast<uint32_t>(total_num_pinned_objects),
