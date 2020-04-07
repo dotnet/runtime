@@ -314,15 +314,16 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	mono_marshal_init ();
 	mono_gc_init_icalls ();
 
-	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE), FALSE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE), FALSE, FALSE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE), FALSE, TRUE);
-	mono_install_assembly_load_hook_v2 (mono_domain_fire_assembly_load, NULL);
+	// We have to append here because otherwise this will run before the netcore hook (which is installed first), see https://github.com/dotnet/runtime/issues/34273
+	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE), FALSE, TRUE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE), FALSE, FALSE, FALSE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE), FALSE, TRUE, FALSE);
+	mono_install_assembly_load_hook_v2 (mono_domain_fire_assembly_load, NULL, FALSE);
 
 #ifndef ENABLE_NETCORE // refonly hooks
-	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE), TRUE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE), TRUE, FALSE);
-	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE), TRUE, TRUE);
+	mono_install_assembly_preload_hook_v2 (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE), TRUE, FALSE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE), TRUE, FALSE, FALSE);
+	mono_install_assembly_search_hook_v2 (mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE), TRUE, TRUE, FALSE);
 	mono_install_assembly_asmctx_from_path_hook (mono_domain_asmctx_from_path, NULL);
 #endif
 

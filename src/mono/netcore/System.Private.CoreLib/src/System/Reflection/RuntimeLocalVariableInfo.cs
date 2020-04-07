@@ -10,7 +10,7 @@ namespace System.Reflection
     internal sealed class RuntimeLocalVariableInfo : LocalVariableInfo
     {
         #region Keep in sync with MonoReflectionLocalVariableInfo in object-internals.h
-        internal Type type;
+        internal Type? type;
         internal bool is_pinned;
         internal ushort position;
         #endregion
@@ -19,7 +19,7 @@ namespace System.Reflection
 
         public override int LocalIndex => position;
 
-        public override Type LocalType => type;
+        public override Type LocalType => type!;
     }
 
 }

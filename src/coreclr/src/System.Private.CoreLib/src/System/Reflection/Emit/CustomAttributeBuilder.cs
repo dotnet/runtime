@@ -34,7 +34,7 @@ namespace System.Reflection.Emit
         // public constructor to form the custom attribute with constructor, constructor
         // parameters and named properties.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      PropertyInfo[] namedProperties, object[] propertyValues)
+                                      PropertyInfo[] namedProperties, object?[] propertyValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
                                        propertyValues, Array.Empty<FieldInfo>(), Array.Empty<object>());
@@ -43,7 +43,7 @@ namespace System.Reflection.Emit
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      FieldInfo[] namedFields, object[] fieldValues)
+                                      FieldInfo[] namedFields, object?[] fieldValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, Array.Empty<PropertyInfo>(),
                                        Array.Empty<object>(), namedFields, fieldValues);
@@ -52,8 +52,8 @@ namespace System.Reflection.Emit
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                      PropertyInfo[] namedProperties, object[] propertyValues,
-                                      FieldInfo[] namedFields, object[] fieldValues)
+                                      PropertyInfo[] namedProperties, object?[] propertyValues,
+                                      FieldInfo[] namedFields, object?[] fieldValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
                                        propertyValues, namedFields, fieldValues);
@@ -97,8 +97,8 @@ namespace System.Reflection.Emit
         }
 
         internal void InitCustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
-                                                 PropertyInfo[] namedProperties, object[] propertyValues,
-                                                 FieldInfo[] namedFields, object[] fieldValues)
+                                                 PropertyInfo[] namedProperties, object?[] propertyValues,
+                                                 FieldInfo[] namedFields, object?[] fieldValues)
         {
             if (con == null)
                 throw new ArgumentNullException(nameof(con));
@@ -183,7 +183,7 @@ namespace System.Reflection.Emit
 
                 // Allow null for non-primitive types only.
                 Type propType = property.PropertyType;
-                object propertyValue = propertyValues[i];
+                object? propertyValue = propertyValues[i];
                 if (propertyValue == null && propType.IsValueType)
                     throw new ArgumentNullException("propertyValues[" + i + "]");
 
@@ -241,7 +241,7 @@ namespace System.Reflection.Emit
 
                 // Allow null for non-primitive types only.
                 Type fldType = namedField.FieldType;
-                object fieldValue = fieldValues[i];
+                object? fieldValue = fieldValues[i];
                 if (fieldValue == null && fldType.IsValueType)
                     throw new ArgumentNullException("fieldValues[" + i + "]");
 

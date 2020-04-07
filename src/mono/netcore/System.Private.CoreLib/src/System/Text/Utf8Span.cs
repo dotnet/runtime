@@ -6,8 +6,6 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 0809  //warning CS0809: Obsolete member 'Utf8Span.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
-
 namespace System.Text
 {
     [StructLayout(LayoutKind.Auto)]
@@ -39,7 +37,9 @@ namespace System.Text
 
         [Obsolete("Equals(object) on Utf8Span will always throw an exception. Use Equals(Utf8Span) or operator == instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
+#pragma warning disable 0809  // Obsolete member 'Utf8Span.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
         public override bool Equals(object? obj)
+#pragma warning restore 0809
         {
             throw new NotSupportedException(SR.Utf8Span_CannotCallEqualsObject);
         }

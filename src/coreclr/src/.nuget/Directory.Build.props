@@ -17,7 +17,7 @@
 
     <!-- Distro rid is passed as runtimeos-arch-->
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
-    <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(__TargetOS)' == 'OSX'">osx.10.12-x64</_parseDistroRid>
+    <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(TargetOS)' == 'OSX'">osx.10.12-x64</_parseDistroRid>
     <_distroRidIndex>$(_parseDistroRid.LastIndexOfAny("-"))</_distroRidIndex>
     <_archRidIndex>$([MSBuild]::Add($(_distroRidIndex), 1))</_archRidIndex>
     <OSRid Condition="'$(OSRid)' == '' and '$(_distroRidIndex)' != '-1'">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
@@ -25,7 +25,6 @@
 
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_archRidIndex)' != '0'">$(_parseDistroRid.SubString($(_archRidIndex)))</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(Platform)' != ''">$(Platform)</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(BuildArch)</TargetArchitecture>
 
     <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
 
@@ -46,7 +45,7 @@
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'osx'">OSX</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'android'">Android</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'win'">Windows_NT</_derivedPackageTargetOSGroup>
-    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(__TargetOS)' != ''">$(__TargetOS)</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(TargetOS)' != ''">$(TargetOS)</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == ''">Linux</_derivedPackageTargetOSGroup>
 
     <_isSupportedOSGroup Condition="!$(SupportedPackageOSGroups.Contains(';$(_derivedPackageTargetOSGroup);'))">false</_isSupportedOSGroup>

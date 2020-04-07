@@ -68,11 +68,11 @@
 
   <Target Name="GenerateProjectInstallers" Condition="'$(GenerateProjectInstallers)' == 'true'">
     <ItemGroup>
-      <InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" />
-      <InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.sfxproj" />
+      <_InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" />
+      <_InstallerProject Include="$(InstallerProjectRoot)pkg\projects\**\*.sfxproj" />
     </ItemGroup>
 
-    <MSBuild Projects="@(InstallerProject)" Targets="GenerateInstallers" />
+    <MSBuild Projects="@(_InstallerProject)" Targets="GenerateInstallers" />
   </Target>
 
   <Target Name="InitPackage">

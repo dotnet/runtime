@@ -64,6 +64,10 @@ jobs:
         - name: ROOTFS_DIR
           value: ${{ parameters.jobParameters.crossrootfsDir }}
 
+      - ${{ if eq(parameters.osGroup, 'Android') }}:
+        - name: ANDROID_NDK_HOME
+          value: /usr/local/ndk
+
       - name: runtimeFlavorName
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
           value: Mono

@@ -82,6 +82,24 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(obj.Class);
         }
 
+        [Fact]
+        public static void MissingObjectProperty()
+        {
+            ClassWithMissingObjectProperty obj
+                = JsonSerializer.Deserialize<ClassWithMissingObjectProperty>(@"{ ""Object"": {} }");
+
+            Assert.Null(obj.Collection);
+        }
+
+        [Fact]
+        public static void MissingCollectionProperty()
+        {
+            ClassWithMissingCollectionProperty obj
+                = JsonSerializer.Deserialize<ClassWithMissingCollectionProperty>(@"{ ""Collection"": [] }");
+
+            Assert.Null(obj.Object);
+        }
+
         private class ClassWithPublicGetterAndPrivateSetter
         {
             public NestedClass Class { get; private set; }
@@ -271,7 +289,15 @@ namespace System.Text.Json.Serialization.Tests
             public ClassWithIgnoredUnsupportedBigInteger MyClass { get; set; }
         }
 
-        // Todo: https://github.com/dotnet/runtime/issues/32348
+        public class ClassWithMissingObjectProperty
+        {
+            public object[] Collection { get; set; }
+        }
+
+        public class ClassWithMissingCollectionProperty
+        {
+            public object Object { get; set; }
+        }
 
         public class ClassWithPrivateSetterAndGetter
         {

@@ -1983,7 +1983,7 @@ mono_install_assembly_load_hook_v1 (MonoAssemblyLoadFunc func, gpointer user_dat
 }
 
 void
-mono_install_assembly_load_hook_v2 (MonoAssemblyLoadFuncV2 func, gpointer user_data)
+mono_install_assembly_load_hook_v2 (MonoAssemblyLoadFuncV2 func, gpointer user_data, gboolean append)
 {
 	g_return_if_fail (func != NULL);
 
@@ -1991,8 +1991,16 @@ mono_install_assembly_load_hook_v2 (MonoAssemblyLoadFuncV2 func, gpointer user_d
 	hook->version = 2;
 	hook->func.v2 = func;
 	hook->user_data = user_data;
-	hook->next = assembly_load_hook;
-	assembly_load_hook = hook;
+
+	if (append && assembly_load_hook != NULL) { // If we don't have any installed hooks, append vs prepend is irrelevant
+		AssemblyLoadHook *old = assembly_load_hook;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = assembly_load_hook;
+		assembly_load_hook = hook;
+	}
 }
 
 /**
@@ -2081,7 +2089,7 @@ mono_install_assembly_search_hook_internal_v1 (MonoAssemblySearchFunc func, gpoi
 }
 
 void
-mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean refonly, gboolean postload)
+mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer user_data, gboolean refonly, gboolean postload, gboolean append)
 {
 	if (func == NULL)
 		return;
@@ -2092,14 +2100,22 @@ mono_install_assembly_search_hook_v2 (MonoAssemblySearchFuncV2 func, gpointer us
 	hook->user_data = user_data;
 	hook->refonly = refonly;
 	hook->postload = postload;
-	hook->next = assembly_search_hook;
-	assembly_search_hook = hook;
+
+	if (append && assembly_search_hook != NULL) { // If we don't have any installed hooks, append vs prepend is irrelevant
+		AssemblySearchHook *old = assembly_search_hook;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = assembly_search_hook;
+		assembly_search_hook = hook;
+	}
 }
 
 /**
  * mono_install_assembly_search_hook:
  */
-void          
+void
 mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
 	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE, FALSE);
@@ -2128,7 +2144,7 @@ mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, gpointer
 /**
  * mono_install_assembly_postload_search_hook:
  */
-void          
+void
 mono_install_assembly_postload_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
 	mono_install_assembly_search_hook_internal_v1 (func, user_data, FALSE, TRUE);
@@ -2238,7 +2254,7 @@ mono_install_assembly_refonly_preload_hook (MonoAssemblyPreLoadFunc func, gpoint
 }
 
 void
-mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean refonly)
+mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean refonly, gboolean append)
 {
 	AssemblyPreLoadHook *hook;
 
@@ -2250,9 +2266,16 @@ mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer 
 	hook->version = 2;
 	hook->func.v2 = func;
 	hook->user_data = user_data;
-	hook->next = *hooks;
 
-	*hooks = hook;
+	if (append && *hooks != NULL) { // If we don't have any installed hooks, append vs prepend is irrelevant
+		AssemblyPreLoadHook *old = *hooks;
+		while (old->next != NULL)
+			old = old->next;
+		old->next = hook;
+	} else {
+		hook->next = *hooks;
+		*hooks = hook;
+	}
 }
 
 static void

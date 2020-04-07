@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
     {
         internal int Version;
         internal System.Security.Cryptography.Asn1.Pkcs7.EncryptedContentInfoAsn EncryptedContentInfo;
-        internal System.Security.Cryptography.Asn1.AttributeAsn[] UnprotectedAttributes;
+        internal System.Security.Cryptography.Asn1.AttributeAsn[]? UnprotectedAttributes;
 
         internal void Encode(AsnWriter writer)
         {

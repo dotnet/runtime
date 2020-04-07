@@ -6,6 +6,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 
@@ -97,7 +98,14 @@ namespace System.Security.Cryptography
             out ECParameters ret)
         {
             ECPrivateKey key = ECPrivateKey.Decode(keyData, AsnEncodingRules.BER);
+            FromECPrivateKey(key, algId, out ret);
+        }
 
+        internal static void FromECPrivateKey(
+            ECPrivateKey key,
+            in AlgorithmIdentifierAsn algId,
+            out ECParameters ret)
+        {
             ValidateParameters(key.Parameters, algId);
 
             if (key.Version != 1)
@@ -105,30 +113,33 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            // Implementation limitation
-            if (key.PublicKey == null)
-            {
-                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-            }
+            byte[]? x = null;
+            byte[]? y = null;
 
-            ReadOnlySpan<byte> publicKeyBytes = key.PublicKey.Value.Span;
-
-            if (publicKeyBytes.Length == 0)
+            if (key.PublicKey != null)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
+                ReadOnlySpan<byte> publicKeyBytes = key.PublicKey.Value.Span;
 
-            // Implementation limitation
-            // 04 (Uncompressed ECPoint) is almost always used.
-            if (publicKeyBytes[0] != 0x04)
-            {
-                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-            }
+                if (publicKeyBytes.Length == 0)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
 
-            // https://www.secg.org/sec1-v2.pdf, 2.3.4, #3 (M has length 2 * CEIL(log2(q)/8) + 1)
-            if (publicKeyBytes.Length != 2 * key.PrivateKey.Length + 1)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                // Implementation limitation
+                // 04 (Uncompressed ECPoint) is almost always used.
+                if (publicKeyBytes[0] != 0x04)
+                {
+                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
+                }
+
+                // https://www.secg.org/sec1-v2.pdf, 2.3.4, #3 (M has length 2 * CEIL(log2(q)/8) + 1)
+                if (publicKeyBytes.Length != 2 * key.PrivateKey.Length + 1)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                x = publicKeyBytes.Slice(1, key.PrivateKey.Length).ToArray();
+                y = publicKeyBytes.Slice(1 + key.PrivateKey.Length).ToArray();
             }
 
             ECDomainParameters domainParameters;
@@ -142,13 +153,15 @@ namespace System.Security.Cryptography
                 domainParameters = ECDomainParameters.Decode(algId.Parameters!.Value, AsnEncodingRules.DER);
             }
 
+            Debug.Assert((x == null) == (y == null));
+
             ret = new ECParameters
             {
                 Curve = GetCurve(domainParameters),
                 Q =
                 {
-                    X = publicKeyBytes.Slice(1, key.PrivateKey.Length).ToArray(),
-                    Y = publicKeyBytes.Slice(1 + key.PrivateKey.Length).ToArray(),
+                    X = x,
+                    Y = y,
                 },
                 D = key.PrivateKey.ToArray(),
             };
@@ -463,7 +476,7 @@ namespace System.Security.Cryptography
             writer.PopSequence();
         }
 
-        internal static AsnWriter WritePkcs8PrivateKey(ECParameters ecParameters)
+        internal static AsnWriter WritePkcs8PrivateKey(ECParameters ecParameters, AttributeAsn[]? attributes = null)
         {
             ecParameters.Validate();
 
@@ -475,9 +488,29 @@ namespace System.Security.Cryptography
             // Don't need the domain parameters because they're contained in the algId.
             using (AsnWriter ecPrivateKey = WriteEcPrivateKey(ecParameters, includeDomainParameters: false))
             using (AsnWriter algorithmIdentifier = WriteAlgorithmIdentifier(ecParameters))
+            using (AsnWriter? attributeWriter = WritePrivateKeyInfoAttributes(attributes))
             {
-                return KeyFormatHelper.WritePkcs8(algorithmIdentifier, ecPrivateKey);
+                return KeyFormatHelper.WritePkcs8(algorithmIdentifier, ecPrivateKey, attributeWriter);
             }
+        }
+
+        [return: NotNullIfNotNull("attributes")]
+        private static AsnWriter? WritePrivateKeyInfoAttributes(AttributeAsn[]? attributes)
+        {
+            if (attributes == null)
+                return null;
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 0);
+            writer.PushSetOf(tag);
+
+            for (int i = 0; i < attributes.Length; i++)
+            {
+                attributes[i].Encode(writer);
+            }
+
+            writer.PopSetOf(tag);
+            return writer;
         }
 
         private static void WriteEcParameters(ECParameters ecParameters, AsnWriter writer)
@@ -776,7 +809,9 @@ namespace System.Security.Cryptography
                 }
 
                 // publicKey
+                if (ecParameters.Q.X != null)
                 {
+                    Debug.Assert(ecParameters.Q.Y != null);
                     Asn1Tag explicit1 = new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true);
                     writer.PushSequence(explicit1);
 

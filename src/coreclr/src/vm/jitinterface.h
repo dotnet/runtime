@@ -1038,9 +1038,6 @@ public:
 
     void reportFatalError(CorJitResult result);
 
-    void logSQMLongJitEvent(unsigned mcycles, unsigned msec, unsigned ilSize, unsigned numBasicBlocks, bool minOpts,
-                            CORINFO_METHOD_HANDLE methodHnd);
-
     HRESULT allocMethodBlockCounts (
             UINT32                count,           // the count of <ILOffset, ExecutionCount> tuples
             BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples

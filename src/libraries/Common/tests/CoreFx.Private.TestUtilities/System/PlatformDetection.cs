@@ -114,7 +114,7 @@ namespace System
         public static bool SupportsClientAlpn => SupportsAlpn || (IsOSX && PlatformDetection.OSXVersion > new Version(10, 12));
 
         // OpenSSL 1.1.1 and above.
-        public static bool SupportsTls13 => !IsWindows && !IsOSX && (OpenSslVersion.CompareTo(new Version(1,1,1)) >= 0);
+        public static bool SupportsTls13 => GetTls13Support();
 
         private static Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
@@ -202,6 +202,44 @@ namespace System
             }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
+        }
+
+        private static bool GetTls13Support()
+        {
+            if (IsWindows)
+            {
+                if (!IsWindows10Version2004OrGreater)
+                {
+                    return false;
+                }
+
+                string clientKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Client";
+                string serverKey = @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.3\Server";
+
+                object client, server;
+                try
+                {
+                    client = Registry.GetValue(clientKey, "Enabled", null);
+                    server = Registry.GetValue(serverKey, "Enabled", null);
+                    if (client is int c && server is int s)
+                    {
+                        return c == 1 && s == 1;
+                    }
+                }
+                catch { };
+                // assume no if key is missing or on error.
+                return false;
+            }
+            else if (IsOSX)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/1979")]
+                return false;
+            }
+            else
+            {
+                // Covers Linux and FreeBSD
+                return OpenSslVersion >= new Version(1,1,1);
+            }
         }
 
         private static bool GetIsRunningOnMonoInterpreter()

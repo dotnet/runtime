@@ -248,7 +248,7 @@ namespace Internal.Cryptography.Pal
             // Nothing requires that there be fewer keys than certs,
             // but it's sort of nonsensical when loading this way.
             CertBagAsn[] certBags = ArrayPool<CertBagAsn>.Shared.Rent(10);
-            AttributeAsn[][] certBagAttrs = ArrayPool<AttributeAsn[]>.Shared.Rent(10);
+            AttributeAsn[]?[] certBagAttrs = ArrayPool<AttributeAsn[]?>.Shared.Rent(10);
             SafeBagAsn[] keyBags = ArrayPool<SafeBagAsn>.Shared.Rent(10);
             RentedSubjectPublicKeyInfo[]? publicKeyInfos = null;
             AsymmetricAlgorithm[]? keys = null;
@@ -326,7 +326,7 @@ namespace Internal.Cryptography.Pal
                 }
 
                 ArrayPool<CertBagAsn>.Shared.Return(certBags, clearArray: true);
-                ArrayPool<AttributeAsn[]>.Shared.Return(certBagAttrs, clearArray: true);
+                ArrayPool<AttributeAsn[]?>.Shared.Return(certBagAttrs, clearArray: true);
                 ArrayPool<SafeBagAsn>.Shared.Return(keyBags, clearArray: true);
             }
         }
@@ -356,7 +356,7 @@ namespace Internal.Cryptography.Pal
         private void DecryptAndProcessSafeContents(
             ReadOnlySpan<char> password,
             ref CertBagAsn[] certBags,
-            ref AttributeAsn[][] certBagAttrs,
+            ref AttributeAsn[]?[] certBagAttrs,
             ref int certBagIdx,
             ref SafeBagAsn[] keyBags,
             ref int keyBagIdx)
@@ -455,7 +455,7 @@ namespace Internal.Cryptography.Pal
 
         private void BuildCertsWithKeys(
             CertBagAsn[] certBags,
-            AttributeAsn[][] certBagAttrs,
+            AttributeAsn[]?[] certBagAttrs,
             CertAndKey[] certs,
             int certBagIdx,
             SafeBagAsn[] keyBags,
@@ -581,7 +581,7 @@ namespace Internal.Cryptography.Pal
         {
             for (int i = 0; i < keyBagCount; i++)
             {
-                foreach (AttributeAsn attr in keyBags[i].BagAttributes)
+                foreach (AttributeAsn attr in keyBags[i].BagAttributes ?? Array.Empty<AttributeAsn>())
                 {
                     if (attr.AttrType.Value == Oids.LocalKeyId && attr.AttrValues.Length > 0)
                     {
@@ -656,7 +656,7 @@ namespace Internal.Cryptography.Pal
         private static void ProcessSafeContents(
             in ContentInfoAsn safeContentsAsn,
             ref CertBagAsn[] certBags,
-            ref AttributeAsn[][] certBagAttrs,
+            ref AttributeAsn[]?[] certBagAttrs,
             ref int certBagIdx,
             ref SafeBagAsn[] keyBags,
             ref int keyBagIdx)

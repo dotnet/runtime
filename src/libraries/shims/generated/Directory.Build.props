@@ -12,9 +12,10 @@
 
   <ItemGroup>
     <!-- reference everything but self -->
+    <!-- Type duplicated in Microsoft.Extensions.DependencyModel. Exclude it for now: https://github.com/dotnet/runtime/issues/34420 -->
     <ReferencePath
       Include="$(RefPath)*.dll"
-      Exclude="$(RefPath)$(MSBuildProjectName).dll;$(RefPath)netstandard.dll" />
+      Exclude="$(RefPath)$(MSBuildProjectName).dll;$(RefPath)netstandard.dll;$(RefPath)Microsoft.Extensions.DependencyModel.dll" />
 
     <!-- required by compiler to resolve core types -->
     <ProjectReference Condition="'$(MSBuildProjectName)' != 'netstandard'"

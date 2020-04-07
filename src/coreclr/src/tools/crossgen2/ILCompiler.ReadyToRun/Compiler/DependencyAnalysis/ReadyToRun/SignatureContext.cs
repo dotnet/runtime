@@ -32,6 +32,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         public readonly ModuleTokenResolver Resolver;
 
+        public SignatureContext OuterContext => new SignatureContext(GlobalContext, Resolver);
+
         public SignatureContext(EcmaModule context, ModuleTokenResolver resolver)
         {
             GlobalContext = context;
@@ -53,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public EcmaModule GetTargetModule(TypeDesc type)
         {
-            if (type.IsPrimitive || type.IsString || type.IsObject)
+            if (type.IsPrimitive || type.IsString || type.IsObject || type.IsWellKnownType(WellKnownType.TypedReference))
             {
                 return LocalContext;
             }

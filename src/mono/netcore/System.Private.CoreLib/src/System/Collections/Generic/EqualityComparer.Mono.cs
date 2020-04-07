@@ -9,14 +9,14 @@ namespace System.Collections.Generic
 {
     public partial class EqualityComparer<T>
     {
-        private static volatile EqualityComparer<T> defaultComparer;
+        private static volatile EqualityComparer<T>? defaultComparer;
 
         public static EqualityComparer<T> Default
         {
             [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
             get
             {
-                EqualityComparer<T> comparer = defaultComparer;
+                EqualityComparer<T>? comparer = defaultComparer;
                 if (comparer == null)
                 {
                     // Do not use static constructor. Generic static constructors are problematic for Mono AOT.

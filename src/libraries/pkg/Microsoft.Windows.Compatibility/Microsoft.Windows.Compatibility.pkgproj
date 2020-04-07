@@ -32,9 +32,6 @@
     <PrereleaseLibraryPackage Include="System.IO.Packaging" />
     <PrereleaseLibraryPackage Include="System.IO.Ports" />
     <PrereleaseLibraryPackage Include="System.Management" />
-    <PrereleaseLibraryPackage Include="System.Reflection.Emit" />
-    <PrereleaseLibraryPackage Include="System.Reflection.Emit.ILGeneration" />
-    <PrereleaseLibraryPackage Include="System.Reflection.Emit.Lightweight" />
     <PrereleaseLibraryPackage Include="System.Runtime.Caching" />
     <PrereleaseLibraryPackage Include="System.Security.AccessControl" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Cng" />
@@ -59,7 +56,16 @@
       <Version>4.5.0</Version>
     </LibraryPackage>
     <LibraryPackage Include="System.Data.SqlClient">
-      <Version>4.8.0</Version>
+      <Version>4.8.1</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.Reflection.Emit">
+      <Version>4.7.0</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.Reflection.Emit.ILGeneration">
+      <Version>4.7.0</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.Reflection.Emit.Lightweight">
+      <Version>4.7.0</Version>
     </LibraryPackage>
 
     <!-- Service model packages -->
