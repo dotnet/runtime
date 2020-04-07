@@ -516,12 +516,6 @@
     <Exec Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" Command="make install -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)cross" />
   </Target>
 
-  <Target Name="BuildMonoRuntimeWASM" Condition="'$(TargetsWASM)' == 'true'" DependsOnTargets="ConfigureMonoRuntimeUnix">
-    <Message Text="--- Building Mono (WASM) ---" Importance="High" />
-    <Exec Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; make -j$([System.Environment]::ProcessorCount)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
-    <Exec Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; make install -j$([System.Environment]::ProcessorCount)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
-  </Target>
-
   <!-- Windows Mono runtime build -->
   <Target Name="BuildMonoRuntimeWindows" Condition="'$(OS)' == 'Windows_NT'">
 
