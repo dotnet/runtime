@@ -100,7 +100,8 @@
       <_MonoConfigureParams Include="--without-sigaltstack" />
       <_MonoConfigureParams Include="--disable-cooperative-suspend" />
       <_MonoConfigureParams Include="--disable-hybrid-suspend" />
-      <_MonoConfigureParams Include="--disable-crash-reporting" />
+      <_MonoConfigureParams Include="--enable-llvm-runtime" />
+      <_MonoConfigureParams Include="--with-bitcode=yes" />
 
       <_MonoAC_VARS Include="ac_cv_c_bigendian=no" />
       <_MonoAC_VARS Include="ac_cv_func_fstatat=no" />
@@ -154,6 +155,7 @@
 
       <_MonoLDFLAGS Condition="'$(Platform)' == 'arm64'" Include="-arch arm64" />
       <_MonoLDFLAGS Include="-Wl,-no_weak_imports" />
+      <_MonoLDFLAGS Include="-Wl,-bitcode_bundle" />
       <_MonoLDFLAGS Include="-framework CoreFoundation" />
       <_MonoLDFLAGS Include="-lobjc" />
       <_MonoLDFLAGS Include="-lc++" />
