@@ -1420,10 +1420,10 @@ namespace System.Globalization
                     count--;
                 }
 
-                // If we are looking for nothing, just return 0
+                // empty substrings trivially occur at the end of the search space
                 if (value.Length == 0 && count >= 0 && startIndex - count + 1 >= 0)
                 {
-                    return startIndex;
+                    return startIndex + 1;
                 }
             }
 
@@ -1453,7 +1453,7 @@ namespace System.Globalization
 
         internal static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(value != null);
 
             if (GlobalizationMode.Invariant)
@@ -1468,7 +1468,7 @@ namespace System.Globalization
 
             if (value.Length == 0)
             {
-                return Math.Max(0, startIndex - count + 1);
+                return startIndex + 1; // startIndex is the index of the last char to include in the search space
             }
 
             if (count == 0)

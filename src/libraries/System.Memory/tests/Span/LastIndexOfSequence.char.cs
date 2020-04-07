@@ -74,11 +74,11 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceZeroLengthValue_Char()
         {
-            // A zero-length value is always "found" at the start of the span.
+            // A zero-length value is always "found" at the end of the span.
             Span<char> span = new Span<char>(new char[] { '0', '1', '7', '2', '3', '7', '7', '4', '5', '7', '7', '7', '8', '6', '6', '7', '7', '8', '9' });
             Span<char> value = new Span<char>(Array.Empty<char>());
             int index = span.LastIndexOf(value);
-            Assert.Equal(0, index);
+            Assert.Equal(span.Length, index);
         }
 
         [Fact]
@@ -93,7 +93,6 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceLengthOneValue_Char()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<char> span = new Span<char>(new char[] { '0', '1', '2', '3', '4', '5' });
             Span<char> value = new Span<char>(new char[] { '2' });
             int index = span.LastIndexOf(value);
@@ -103,7 +102,6 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceLengthOneValueAtVeryEnd_Char()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<char> span = new Span<char>(new char[] { '0', '1', '2', '3', '4', '5' });
             Span<char> value = new Span<char>(new char[] { '5' });
             int index = span.LastIndexOf(value);
@@ -113,7 +111,6 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceLengthOneValueMultipleTimes_Char()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<char> span = new Span<char>(new char[] { '0', '1', '5', '3', '4', '5' });
             Span<char> value = new Span<char>(new char[] { '5' });
             int index = span.LastIndexOf(value);
@@ -123,7 +120,6 @@ namespace System.SpanTests
         [Fact]
         public static void LastIndexOfSequenceLengthOneValueJustPasttVeryEnd_Char()
         {
-            // A zero-length value is always "found" at the start of the span.
             Span<char> span = new Span<char>(new char[] { '0', '1', '2', '3', '4', '5' }, 0, 5);
             Span<char> value = new Span<char>(new char[] { '5' });
             int index = span.LastIndexOf(value);

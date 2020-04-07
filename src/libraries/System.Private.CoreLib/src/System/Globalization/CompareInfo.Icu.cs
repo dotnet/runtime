@@ -459,9 +459,12 @@ namespace System.Globalization
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
 
+            // startIndex points to the final char to include in the search space.
+            // empty target strings trivially occur at the end of the search space.
+
             if (target.Length == 0)
             {
-                return startIndex;
+                return startIndex + 1;
             }
 
             if (options == CompareOptions.Ordinal)
