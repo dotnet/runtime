@@ -129,31 +129,6 @@ lookup_intrins_info (SimdIntrinsic *intrinsics, int size, MonoMethod *cmethod)
 	return (SimdIntrinsic *)mono_binary_search (cmethod->name, intrinsics, size / sizeof (SimdIntrinsic), sizeof (SimdIntrinsic), &simd_intrinsic_info_compare_by_name);
 }
 
-static int
-type_to_expand_op (MonoType *type)
-{
-	switch (type->type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-		return OP_EXPAND_I1;
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-		return OP_EXPAND_I2;
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		return OP_EXPAND_I4;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		return OP_EXPAND_I8;
-	case MONO_TYPE_R4:
-		return OP_EXPAND_R4;
-	case MONO_TYPE_R8:
-		return OP_EXPAND_R8;
-	default:
-		g_assert_not_reached ();
-	}
-}
-
 /*
  * Return a simd vreg for the simd value represented by SRC.
  * SRC is the 'this' argument to methods.
@@ -289,6 +264,33 @@ get_vector_t_elem_type (MonoType *vector_type)
 		!strcmp (m_class_get_name (klass), "Vector256`1"));
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	return etype;
+}
+
+#ifdef TARGET_AMD64
+
+static int
+type_to_expand_op (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_EXPAND_I1;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_EXPAND_I2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_EXPAND_I4;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_EXPAND_I8;
+	case MONO_TYPE_R4:
+		return OP_EXPAND_R4;
+	case MONO_TYPE_R8:
+		return OP_EXPAND_R8;
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 static guint16 vector_methods [] = {
@@ -669,6 +671,95 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 
 	return NULL;
 }
+#endif // !TARGET_ARM64
+
+#ifdef TARGET_ARM64
+
+static SimdIntrinsic armbase_methods [] = {
+	{SN_LeadingSignCount},
+	{SN_LeadingZeroCount},
+	{SN_ReverseElementBits},
+	{SN_get_IsSupported}
+};
+
+static SimdIntrinsic crc32_methods [] = {
+	{SN_ComputeCrc32},
+	{SN_ComputeCrc32C},
+	{SN_get_IsSupported}
+};
+
+static MonoInst*
+emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	// Arm64 intrinsics are LLVM-only
+	if (!COMPILE_LLVM (cfg))
+		return NULL;
+
+	MonoInst *ins;
+	gboolean supported, is_64bit;
+	MonoClass *klass = cmethod->klass;
+	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+	gboolean arg0_i32 = (arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4);
+	SimdIntrinsic *info;
+
+	if (is_hw_intrinsics_class (klass, "ArmBase", &is_64bit)) {
+		info = lookup_intrins_info (armbase_methods, sizeof (armbase_methods), cmethod);
+		if (!info)
+			return NULL;
+
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_BASE) != 0;
+
+		switch (info->id) {
+		case SN_get_IsSupported:
+			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+			ins->type = STACK_I4;
+			return ins;
+		case SN_LeadingZeroCount:
+			return emit_simd_ins_for_sig (cfg, klass, arg0_i32 ? OP_LZCNT32 : OP_LZCNT64, 0, arg0_type, fsig, args);
+		case SN_LeadingSignCount:
+			return emit_simd_ins_for_sig (cfg, klass, arg0_i32 ? OP_LSCNT32 : OP_LSCNT64, 0, arg0_type, fsig, args);
+		case SN_ReverseElementBits:
+			return emit_simd_ins_for_sig (cfg, klass,
+				(is_64bit ? OP_XOP_I8_I8 : OP_XOP_I4_I4),
+				(is_64bit ? SIMD_OP_ARM64_RBIT64 : SIMD_OP_ARM64_RBIT32),
+				arg0_type, fsig, args);
+		default:
+			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
+		}
+	}
+
+	if (is_hw_intrinsics_class (klass, "Crc32", &is_64bit)) {
+		info = lookup_intrins_info (crc32_methods, sizeof (crc32_methods), cmethod);
+		if (!info)
+			return NULL;
+		
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_CRC) != 0;
+
+		switch (info->id) {
+		case SN_get_IsSupported:
+			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+			ins->type = STACK_I4;
+			return ins;
+		case SN_ComputeCrc32:
+		case SN_ComputeCrc32C: {
+			SimdOp op = (SimdOp)0;
+			gboolean is_c = info->id == SN_ComputeCrc32C;
+			switch (get_underlying_type (fsig->params [1])) {
+			case MONO_TYPE_U1: op = is_c ? SIMD_OP_ARM64_CRC32CB : SIMD_OP_ARM64_CRC32B; break;
+			case MONO_TYPE_U2: op = is_c ? SIMD_OP_ARM64_CRC32CH : SIMD_OP_ARM64_CRC32H; break;
+			case MONO_TYPE_U4: op = is_c ? SIMD_OP_ARM64_CRC32CW : SIMD_OP_ARM64_CRC32W; break;
+			case MONO_TYPE_U8: op = is_c ? SIMD_OP_ARM64_CRC32CX : SIMD_OP_ARM64_CRC32X; break;
+			default: g_assert_not_reached (); break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_XOP_I4_I4_I8 : OP_XOP_I4_I4_I4, op, arg0_type, fsig, args);
+		}
+		default:
+			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
+		}
+	}
+	return NULL;
+}
+#endif // TARGET_ARM64
 
 #ifdef TARGET_AMD64
 
@@ -1632,7 +1723,6 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 
 	return NULL;
 }
-#endif
 
 static guint16 vector_128_methods [] = {
 	SN_AsByte,
@@ -1792,6 +1882,8 @@ emit_vector256_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	return NULL;
 }
 
+#endif // !TARGET_ARM64
+
 MonoInst*
 mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -1809,12 +1901,20 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (m_class_get_nested_in (cmethod->klass))
 		class_ns = m_class_get_name_space (m_class_get_nested_in (cmethod->klass));
 
-#ifdef TARGET_AMD64 // TODO: test and enable for x86 too
-	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86")) {
-		MonoInst *ins = emit_x86_intrinsics (cfg ,cmethod, fsig, args);
+#ifdef TARGET_ARM64
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.Arm")) {
+		MonoInst *ins = emit_arm64_intrinsics (cfg, cmethod, fsig, args);
 		return ins;
 	}
-#endif
+#endif // TARGET_ARM64
+
+#ifdef TARGET_AMD64 // TODO: test and enable for x86 too
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86")) {
+		MonoInst *ins = emit_x86_intrinsics (cfg, cmethod, fsig, args);
+		return ins;
+	}
+
+	// FIXME: implement Vector64<T>, Vector128<T> and Vector<T> for Arm64
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128`1"))
@@ -1831,6 +1931,7 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (!strcmp (class_name, "Vector`1"))
 			return emit_sys_numerics_vector_t (cfg, cmethod, fsig, args);
 	}
+#endif // TARGET_AMD64
 
 	return NULL;
 }

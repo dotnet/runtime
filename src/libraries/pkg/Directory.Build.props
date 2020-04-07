@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <DisableProjectRestore>true</DisableProjectRestore>
+  </PropertyGroup>
+
   <Import Project="..\Directory.Build.props" />
 
   <PropertyGroup>

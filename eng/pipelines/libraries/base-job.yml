@@ -36,7 +36,7 @@ jobs:
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
-        - _buildScriptFileName: libraries
+        - _buildScriptFileName: build
         - _BuildConfig: ${{ parameters.buildConfig }}
 
         - _msbuildCommonParameters: ''
@@ -44,7 +44,6 @@ jobs:
         - _runtimeOSArg: ''
         - _finalFrameworkArg: ''
         - _buildScript: $(_buildScriptFileName)$(scriptExt)
-        - _warnAsErrorArg: ''
         - _testScopeArg: ''
         - _extraHelixArguments: ''
         - _crossBuildPropertyArg: ''
@@ -63,9 +62,6 @@ jobs:
 
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, ''), eq(parameters.archType, 'arm')) }}:
           - _runtimeOSArg: /p:RuntimeOS=ubuntu.16.04
-
-        - ${{ if and(or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'WebAssembly')), ne(parameters.container, '')) }}:
-          - _warnAsErrorArg: '-warnAsError false'
 
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
@@ -87,7 +83,6 @@ jobs:
           - _extraHelixArguments: /p:BuildAllConfigurations=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
-          - _skipTestHostCopy: true
           - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
 
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
@@ -117,7 +112,7 @@ jobs:
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: -subsetcategory libraries -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
       dependsOn:

@@ -23,24 +23,28 @@ BCL_LIBS = \
 	Microsoft.Win32.Primitives.dll \
 	System.Console.dll
 
+all: mono-libraries aot-all xcode 
+
+# rebuild mono and libraries for iOS and arm64 or x64
+mono-libraries:
+	../../../../.././build.sh -os iOS -arch $(MONO_ARCH) --subsetCategory mono-libraries
+
 # once a new library is added here it should also be 
 # added in mono_ios_register_modules() (runtime.m)
-all: prepare
+aot-all: prepare
 	make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_MONO)/System.Private.CoreLib.dll
 	for lib in $(BCL_LIBS); do make aot-lib-${MONO_ARCH} LIB=$(ARTIFACTS_BCL)/$$lib; done
-	make Program.dll.o
+	make aot-program
 
 # recompile Program.cs AOT
-Program.dll.o: bin/Program.dll Makefile
+aot-program:
+	$(DOTNET) build -c Debug Program.csproj
 	make aot-lib-${MONO_ARCH} LIB=bin/Program.dll
 
 # we need to copy some BCL libs to ARTIFACTS_MONO
 # to be able to aot other bcl libs
 prepare:
 	for lib in $(BCL_LIBS); do cp $(ARTIFACTS_BCL)/$$lib $(ARTIFACTS_MONO); done
-
-bin/Program.dll: Program.cs
-	$(DOTNET) build -c Debug Program.csproj
 
 # we'll use regular jit for simulator
 aot-lib-x64:
@@ -54,7 +58,7 @@ aot-lib-arm64:
 	cp $(LIB) $(notdir $(LIB))
 
 # generate an xcode project
-xcode: all
+xcode:
 	cmake -S. -BXcode -GXcode \
 	-DCMAKE_SYSTEM_NAME=iOS \
 	"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \

@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
     {
         internal string BagId;
         internal ReadOnlyMemory<byte> BagValue;
-        internal System.Security.Cryptography.Asn1.AttributeAsn[] BagAttributes;
+        internal System.Security.Cryptography.Asn1.AttributeAsn[]? BagAttributes;
 
         internal void Encode(AsnWriter writer)
         {

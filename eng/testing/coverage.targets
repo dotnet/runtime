@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <!-- Skip generating individual reports if a full report is generated. -->
-  <ItemGroup Condition="'$(TestAllProjects)' != 'true' and '$(SkipCoverageReport)' != 'true'">
+  <ItemGroup Condition="'$(BuildAllProjects)' != 'true' and '$(SkipCoverageReport)' != 'true'">
     <PostRunScriptCommands Include="$(CoverageReportCommandLine)" />
   </ItemGroup>
 

@@ -1135,7 +1135,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
     var_types      targetType  = node->TypeGet();
     var_types      baseType    = node->gtSIMDBaseType;
 
-    assert(compiler->compSupports(InstructionSet_SSE));
+    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE));
     assert((baseType >= TYP_BYTE) && (baseType <= TYP_DOUBLE));
 
     GenTree* op1 = node->gtGetOp1();

@@ -12,6 +12,11 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+// no-op for iOS and tvOS.
+// watchOS is not supported yet.
+#define MONO_ENTER_GC_UNSAFE
+#define MONO_EXIT_GC_UNSAFE
+
 static os_log_t stdout_log;
 
 static char *bundle_path;
