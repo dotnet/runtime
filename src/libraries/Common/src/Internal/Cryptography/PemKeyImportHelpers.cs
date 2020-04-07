@@ -56,10 +56,11 @@ namespace Internal.Cryptography
             ReadOnlySpan<char> base64Contents = foundSlice[foundFields.Base64Data];
             int base64size = foundFields.DecodedDataLength;
             byte[] decodeBuffer = CryptoPool.Rent(base64size);
+            int bytesWritten = 0;
 
             try
             {
-                if (!Convert.TryFromBase64Chars(base64Contents, decodeBuffer, out int bytesWritten))
+                if (!Convert.TryFromBase64Chars(base64Contents, decodeBuffer, out bytesWritten))
                 {
                     // Couldn't decode base64. We shouldn't get here since the
                     // contents are pre-validated.
@@ -68,12 +69,12 @@ namespace Internal.Cryptography
                 }
 
                 Debug.Assert(bytesWritten == base64size);
-                Span<byte> decodedBase64 = decodeBuffer.AsSpan(0, base64size);
+                Span<byte> decodedBase64 = decodeBuffer.AsSpan(0, bytesWritten);
                 importAction(password, decodedBase64, out _);
             }
             finally
             {
-                CryptoPool.Return(decodeBuffer, clearSize: base64size);
+                CryptoPool.Return(decodeBuffer, clearSize: bytesWritten);
             }
         }
 
@@ -133,10 +134,11 @@ namespace Internal.Cryptography
             ReadOnlySpan<char> base64Contents = foundSlice[foundFields.Base64Data];
             int base64size = foundFields.DecodedDataLength;
             byte[] decodeBuffer = CryptoPool.Rent(base64size);
+            int bytesWritten = 0;
 
             try
             {
-                if (!Convert.TryFromBase64Chars(base64Contents, decodeBuffer, out int bytesWritten))
+                if (!Convert.TryFromBase64Chars(base64Contents, decodeBuffer, out bytesWritten))
                 {
                     // Couldn't decode base64. We shouldn't get here since the
                     // contents are pre-validated.
@@ -145,12 +147,12 @@ namespace Internal.Cryptography
                 }
 
                 Debug.Assert(bytesWritten == base64size);
-                Span<byte> decodedBase64 = decodeBuffer.AsSpan(0, base64size);
+                Span<byte> decodedBase64 = decodeBuffer.AsSpan(0, bytesWritten);
                 importAction(decodedBase64, out _);
             }
             finally
             {
-                CryptoPool.Return(decodeBuffer, clearSize: base64size);
+                CryptoPool.Return(decodeBuffer, clearSize: bytesWritten);
             }
         }
     }
