@@ -7,7 +7,7 @@
   <!-- Set default Platform -->
   <PropertyGroup>
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(HostArch)</TargetArchitecture>
     <Platform>$(TargetArchitecture)</Platform>
 
     <PlatformConfigPathPart>$(TargetOS).$(Platform).$(Configuration)</PlatformConfigPathPart>
