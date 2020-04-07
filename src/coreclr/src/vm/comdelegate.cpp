@@ -1315,13 +1315,10 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
+        PRECONDITION(pCallback != NULL);
+        PRECONDITION(pMT != NULL);
     }
     CONTRACTL_END;
-
-    if (!pCallback)
-    {
-        return NULL;
-    }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Check if this callback was originally a managed method passed out to unmanaged code.
@@ -1358,6 +1355,9 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         return pDelegate;
     }
 
+    // Validate the MethodTable is a delegate type
+    if (!pMT->IsDelegate())
+        COMPlusThrow(kArgumentException);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // This is an unmanaged callsite. We need to create a new delegate.
