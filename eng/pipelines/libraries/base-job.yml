@@ -54,7 +54,7 @@ jobs:
         - ${{ if ne(parameters.testScope, '') }}:
           - _testScopeArg: -testscope ${{ parameters.testScope }}
 
-        - ${{ if eq(parameters.osGroup, 'Linux') }}:
+        - ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
           - _crossBuildPropertyArg: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
 
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
