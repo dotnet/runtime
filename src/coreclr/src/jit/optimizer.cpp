@@ -151,8 +151,8 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nMarking a loop from " FMT_BB " to " FMT_BB,
-            begBlk->bbNum, excludeEndBlk ? endBlk->bbPrev->bbNum : endBlk->bbNum);
+        printf("\nMarking a loop from " FMT_BB " to " FMT_BB, begBlk->bbNum,
+               excludeEndBlk ? endBlk->bbPrev->bbNum : endBlk->bbNum);
     }
 #endif
 
