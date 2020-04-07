@@ -425,6 +425,7 @@ cleanup:
 #if HAVE_GETADDRINFO_A
 struct GetAddrInfoAsyncState
 {
+    struct addrinfo hint;
     struct gaicb gai_request;
     struct gaicb* gai_requests;
     struct sigevent sigevent;
@@ -511,14 +512,12 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, HostEntry*
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }
 
-    struct addrinfo hint;
-    GetHostEntryForNameCreateHint(&hint);
-
     struct GetAddrInfoAsyncState* state = malloc(sizeof(struct GetAddrInfoAsyncState));
 
+    GetHostEntryForNameCreateHint(&state->hint);
     state->gai_request.ar_name = (const char*)address;
     state->gai_request.ar_service = NULL;
-    state->gai_request.ar_request = &hint;
+    state->gai_request.ar_request = &state->hint;
     state->gai_request.ar_result = NULL;
     state->gai_requests = &state->gai_request;
 
