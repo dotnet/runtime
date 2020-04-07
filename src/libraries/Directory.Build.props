@@ -280,8 +280,6 @@
     <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)references.props" />
-
   <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" Condition="'$(IsReferenceAssembly)' == 'true'" />
 
@@ -296,9 +294,6 @@
 
     <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
     <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
-
-    <!-- Set the documentation output file globally. -->
-    <DocumentationFile Condition="'$(IsSourceProject)' == 'true' and '$(DocumentationFile)' == ''">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
 
     <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
