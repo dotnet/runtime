@@ -3,31 +3,53 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Loader;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
 using TestLibrary;
 
+public class FakeNativeLibrary
+{
+    public const string Name = "FakeNativeLibrary";
+    public const string RedirectName = "FakeNativeLibraryRedirect";
+
+    public static readonly IntPtr Handle = new IntPtr(ResolveUnmanagedDllTests.rand.Next());
+}
+
 public class ALC : AssemblyLoadContext
 {
-    public bool LoadUnmanagedDllCalled { get; private set; }
+    private List<string> invocations = new List<string>();
 
     public void Reset()
     {
-        LoadUnmanagedDllCalled = false;
+        invocations.Clear();
+    }
+
+    public void Validate(params string[] expectedNames)
+    {
+        Assert.AreAllEqual(expectedNames, invocations, $"Unexpected invocations for {nameof(LoadUnmanagedDll)}.");
     }
 
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
     {
-        LoadUnmanagedDllCalled = true;
+        invocations.Add(unmanagedDllName);
 
         if (string.Equals(unmanagedDllName, NativeLibraryToLoad.InvalidName))
             return LoadUnmanagedDllFromPath(NativeLibraryToLoad.GetFullPath());
 
         if (string.Equals(unmanagedDllName, FakeNativeLibrary.Name))
             return FakeNativeLibrary.Handle;
+
+        if (string.Equals(unmanagedDllName, FakeNativeLibrary.RedirectName))
+        {
+            IntPtr ptr;
+            if (NativeLibrary.TryLoad(FakeNativeLibrary.Name, Assemblies.First(), null, out ptr))
+                return ptr;
+        }
 
         return IntPtr.Zero;
     }
@@ -36,7 +58,7 @@ public class ALC : AssemblyLoadContext
 public class ResolveUnmanagedDllTests
 {
     private static readonly int seed = 123;
-    private static readonly Random rand = new Random(seed);
+    internal static readonly Random rand = new Random(seed);
 
     public static int Main()
     {
@@ -62,8 +84,10 @@ public class ResolveUnmanagedDllTests
         var asm = alc.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
 
         Console.WriteLine(" -- Validate explicit load...");
+
+        // ALC implementation returns a fake handle value
         IntPtr ptr = NativeLibrary.Load(FakeNativeLibrary.Name, asm, null);
-        Assert.IsTrue(alc.LoadUnmanagedDllCalled, "AssemblyLoadContext.LoadUnmanagedDll should have been called.");
+        alc.Validate(FakeNativeLibrary.Name);
         Assert.AreEqual(FakeNativeLibrary.Handle, ptr, $"Unexpected return value for {nameof(NativeLibrary.Load)}");
 
         alc.Reset();
@@ -71,8 +95,24 @@ public class ResolveUnmanagedDllTests
 
         bool success = NativeLibrary.TryLoad(FakeNativeLibrary.Name, asm, null, out ptr);
         Assert.IsTrue(success, $"NativeLibrary.TryLoad should have succeeded");
-        Assert.IsTrue(alc.LoadUnmanagedDllCalled, "AssemblyLoadContext.LoadUnmanagedDll should have been called.");
+        alc.Validate(FakeNativeLibrary.Name);
         Assert.AreEqual(FakeNativeLibrary.Handle, ptr, $"Unexpected return value for {nameof(NativeLibrary.Load)}");
+
+        alc.Reset();
+
+        // ALC implementation calls NativeLibrary.TryLoad with a different name
+        ptr = NativeLibrary.Load(FakeNativeLibrary.RedirectName, asm, null);
+        alc.Validate(FakeNativeLibrary.RedirectName, FakeNativeLibrary.Name);
+        Assert.AreEqual(FakeNativeLibrary.Handle, ptr, $"Unexpected return value for {nameof(NativeLibrary.Load)}");
+
+        alc.Reset();
+        ptr = IntPtr.Zero;
+
+        success = NativeLibrary.TryLoad(FakeNativeLibrary.RedirectName, asm, null, out ptr);
+        Assert.IsTrue(success, $"NativeLibrary.TryLoad should have succeeded");
+        alc.Validate(FakeNativeLibrary.RedirectName, FakeNativeLibrary.Name);
+        Assert.AreEqual(FakeNativeLibrary.Handle, ptr, $"Unexpected return value for {nameof(NativeLibrary.Load)}");
+
         alc.Reset();
 
         Console.WriteLine(" -- Validate p/invoke...");
@@ -81,7 +121,7 @@ public class ResolveUnmanagedDllTests
         int expected = addend1 + addend2;
 
         int value = NativeSumInAssemblyLoadContext(alc, addend1, addend2);
-        Assert.IsTrue(alc.LoadUnmanagedDllCalled, "AssemblyLoadContext.LoadUnmanagedDll should have been called.");
+        alc.Validate(NativeLibraryToLoad.InvalidName);
         Assert.AreEqual(expected, value, $"Unexpected return value for {nameof(NativeSum)}");
     }
 

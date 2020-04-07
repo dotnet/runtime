@@ -68,13 +68,12 @@ namespace System.Runtime.InteropServices
         /// If DllImportSearchPath parameter is non-null, the flags in this enumeration are used.
         /// Otherwise, the flags specified by the DefaultDllImportSearchPaths attribute on the
         /// calling assembly (if any) are used.
-        /// This method behaves as if DllImport was used in the specified <paramref name="assembly"/>.
-        /// It will invoke the managed extension points for native library resolution:
-        /// * The per-assembly registered callback
+        /// This method follows the native library resolution for the AssemblyLoadContext of the
+        /// specified assembly. It will invoke the managed extension points:
         /// * AssemblyLoadContext.LoadUnmanagedDll()
         /// * AssemblyLoadContext.ResolvingUnmanagedDllEvent
-        /// If this method is called from within one of the managed extension points, the extension
-        /// points will not be recursively called again.
+        /// It does not invoke extension points that are not tied to the AssemblyLoadContext:
+        /// * The per-assembly registered DllImportResolver callback
         /// </summary>
         /// <param name="libraryName">The name of the native library to be loaded</param>
         /// <param name="assembly">The assembly loading the native library</param>
@@ -82,7 +81,7 @@ namespace System.Runtime.InteropServices
         /// <returns>The handle for the loaded library</returns>
         /// <exception cref="System.ArgumentNullException">If libraryPath or assembly is null</exception>
         /// <exception cref="System.ArgumentException">If assembly is not a RuntimeAssembly</exception>
-        /// <exception cref="System.DllNotFoundException ">If the library can't be found.</exception>
+        /// <exception cref="System.DllNotFoundException">If the library can't be found.</exception>
         /// <exception cref="System.BadImageFormatException">If the library is not valid.</exception>
         public static IntPtr Load(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
@@ -106,13 +105,12 @@ namespace System.Runtime.InteropServices
         /// If DllImportSearchPath parameter is non-null, the flags in this enumeration are used.
         /// Otherwise, the flags specified by the DefaultDllImportSearchPaths attribute on the
         /// calling assembly (if any) are used.
-        /// This method behaves as if DllImport was used in the specified <paramref name="assembly"/>.
-        /// It will invoke the managed extension points for native library resolution:
-        /// * The per-assembly registered callback
+        /// This method follows the native library resolution for the AssemblyLoadContext of the
+        /// specified assembly. It will invoke the managed extension points:
         /// * AssemblyLoadContext.LoadUnmanagedDll()
         /// * AssemblyLoadContext.ResolvingUnmanagedDllEvent
-        /// If this method is called from within one of the managed extension points, the extension
-        /// points will not be recursively called again.
+        /// It does not invoke extension points that are not tied to the AssemblyLoadContext:
+        /// * The per-assembly registered DllImportResolver callback
         /// </summary>
         /// <param name="libraryName">The name of the native library to be loaded</param>
         /// <param name="assembly">The assembly loading the native library</param>

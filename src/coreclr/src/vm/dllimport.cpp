@@ -6492,10 +6492,6 @@ namespace
         //Dynamic Pinvoke Support:
         //Check if we  need to provide the host a chance to provide the unmanaged dll
 
-        // AssemblyLoadContext is not supported in AppX mode
-        if (AppX::IsAppXProcess())
-            return NULL;
-
 #ifndef TARGET_UNIX
         if (IsWindowsAPISet(wszLibName))
         {
@@ -6611,10 +6607,6 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        // AssemblyLoadContext is not supported in AppX mode
-        if (AppX::IsAppXProcess())
-            return NULL;
-
         INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
         if (ptrManagedAssemblyLoadContext == NULL)
         {
@@ -6653,12 +6645,23 @@ namespace
         return hmod;
     }
 
-    NATIVE_LIBRARY_HANDLE LoadLibraryModuleViaCallback(
-        Assembly * pAssembly,
-        LPCWSTR wszLibName,
-        BOOL hasDllImportSearchPathFlags,
-        DWORD dllImportSearchPathFlags)
+    NATIVE_LIBRARY_HANDLE LoadLibraryModuleViaCallback(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
     {
+        STANDARD_VM_CONTRACT;
+
+        if (pMD->GetModule()->IsSystem())
+        {
+            // Don't attempt to callback on Corelib itself.
+            // The LoadLibrary callback stub is managed code that requires CoreLib
+            return NULL;
+        }
+
+        DWORD dllImportSearchPathFlags;
+        BOOL searchAssemblyDirectory;
+        BOOL hasDllImportSearchPathFlags = GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
+        dllImportSearchPathFlags |= searchAssemblyDirectory ? DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY : 0;
+
+        Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
         NATIVE_LIBRARY_HANDLE handle = NULL;
 
         GCX_COOP();
@@ -6685,26 +6688,6 @@ namespace
         GCPROTECT_END();
 
         return handle;
-    }
-
-    NATIVE_LIBRARY_HANDLE LoadLibraryModuleViaCallback(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
-    {
-        STANDARD_VM_CONTRACT;
-
-        if (pMD->GetModule()->IsSystem())
-        {
-            // Don't attempt to callback on Corelib itself.
-            // The LoadLibrary callback stub is managed code that requires CoreLib
-            return NULL;
-        }
-
-        DWORD dllImportSearchPathFlags;
-        BOOL searchAssemblyDirectory;
-        BOOL hasDllImportSearchPathFlags = GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
-        dllImportSearchPathFlags |= searchAssemblyDirectory ? DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY : 0;
-
-        Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
-        return LoadLibraryModuleViaCallback(pAssembly, wszLibName, hasDllImportSearchPathFlags, dllImportSearchPathFlags);
     }
 
     // Try to load the module alongside the assembly where the PInvoke was declared.
@@ -6974,31 +6957,6 @@ namespace
         Assembly *pAssembly = pMD->GetMethodTable()->GetAssembly();
         return LoadLibraryModuleBySearch(pAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
     }
-
-    // This thread local and UseExtensionPoints class are used to guard against infinite recursion.
-    // The managed APIs (NativeLibarary.Load/TryLoad) that invoke managed extension points can also
-    // be called from within the extension points themselves. This class tracks whether or not the
-    // runtime is in a state where it should invoke those extension points (i.e. whether or not it
-    // is already in a load triggered by the managed APIs.
-    thread_local bool t_shouldInvokeExtensionPoints = true;
-    class UseExtensionPoints
-    {
-    public:
-        UseExtensionPoints()
-        {
-            ShouldInvoke = t_shouldInvokeExtensionPoints;
-            t_shouldInvokeExtensionPoints = false;
-        }
-
-        ~UseExtensionPoints()
-        {
-            if (ShouldInvoke)
-                t_shouldInvokeExtensionPoints = true;
-        }
-
-    public:
-        bool ShouldInvoke;
-    };
 }
 
 // static
@@ -7014,57 +6972,39 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryByName(LPCWSTR libraryName, Assembly *
     }
     CONTRACTL_END;
 
-    UseExtensionPoints useExtensionPoints;
-    bool invokeExtensionPoints = useExtensionPoints.ShouldInvoke;
+    NATIVE_LIBRARY_HANDLE hmod = nullptr;
 
-    // First checks if a default dllImportSearchPathFlags was passed in, if so, use that value.
-    // Otherwise checks if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
+    // Resolve using the AssemblyLoadContext.LoadUnmanagedDll implementation
+    hmod = LoadLibraryModuleViaAssemblyLoadContext(callingAssembly, libraryName);
+    if (hmod != nullptr)
+        return hmod;
+
+    // Check if a default dllImportSearchPathFlags was passed in. If so, use that value.
+    // Otherwise, check if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
     // If so, use that value.
     BOOL searchAssemblyDirectory;
+    DWORD dllImportSearchPathFlags;
     if (hasDllImportSearchFlags)
     {
+        dllImportSearchPathFlags = dllImportSearchFlags & ~DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
         searchAssemblyDirectory = dllImportSearchFlags & DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
+
     }
     else
     {
-        hasDllImportSearchFlags = GetDllImportSearchPathFlags(callingAssembly->GetManifestModule(),
-            &dllImportSearchFlags,
-            &searchAssemblyDirectory);
-        dllImportSearchFlags |= searchAssemblyDirectory ? DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY : 0;
-    }
-
-    NATIVE_LIBRARY_HANDLE hmod = nullptr;
-
-    if (invokeExtensionPoints)
-    {
-        // Resolve using the registered DllImportResolver for the assembly
-        if (!callingAssembly->IsSystem())
-        {
-            hmod = LoadLibraryModuleViaCallback(callingAssembly, libraryName, hasDllImportSearchFlags, dllImportSearchFlags);
-            if (hmod != nullptr)
-                return hmod;
-        }
-
-        // Resolve using the AssemblyLoadContext.LoadUnmanagedDll implementation
-        hmod = LoadLibraryModuleViaAssemblyLoadContext(callingAssembly, libraryName);
-        if (hmod != nullptr)
-            return hmod;
+        GetDllImportSearchPathFlags(callingAssembly->GetManifestModule(),
+                                    &dllImportSearchPathFlags, &searchAssemblyDirectory);
     }
 
     LoadLibErrorTracker errorTracker;
-    DWORD dllImportSearchPathFlags = dllImportSearchFlags & ~DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
-
     hmod = LoadLibraryModuleBySearch(callingAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
     if (hmod != nullptr)
         return hmod;
 
-    if (invokeExtensionPoints)
-    {
-        // Resolve using the AssemblyLoadContext.ResolvingUnmanagedDll event
-        hmod = LoadLibraryModuleViaAssemblyLoadContextEvent(callingAssembly, libraryName);
-        if (hmod != nullptr)
-            return hmod;
-    }
+    // Resolve using the AssemblyLoadContext.ResolvingUnmanagedDll event
+    hmod = LoadLibraryModuleViaAssemblyLoadContextEvent(callingAssembly, libraryName);
+    if (hmod != nullptr)
+        return hmod;
 
     if (throwOnError)
     {
