@@ -85,6 +85,8 @@ namespace System
                                                     bufferSize: InteractiveBufferSize));
 
                     // Don't overwrite a set reader.
+                    // The reader doesn't own resources, so we don't need to dispose
+                    // when it was already set.
                     Interlocked.CompareExchange(ref s_stdInReader, reader, null);
 
                     return s_stdInReader;
