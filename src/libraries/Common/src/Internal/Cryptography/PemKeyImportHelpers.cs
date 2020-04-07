@@ -32,7 +32,7 @@ namespace Internal.Cryptography
             {
                 ReadOnlySpan<char> label = pem[fields.Label];
 
-                if (label.SequenceEqual("ENCRYPTED PRIVATE KEY"))
+                if (label.SequenceEqual(PemLabels.EncryptedPkcs8PrivateKey))
                 {
                     if (foundEncryptedPem)
                     {
@@ -108,7 +108,7 @@ namespace Internal.Cryptography
                     foundFields = fields;
                     foundSlice = pem;
                 }
-                else if (label.SequenceEqual("ENCRYPTED PRIVATE KEY"))
+                else if (label.SequenceEqual(PemLabels.EncryptedPkcs8PrivateKey))
                 {
                     containsEncryptedPem = true;
                 }

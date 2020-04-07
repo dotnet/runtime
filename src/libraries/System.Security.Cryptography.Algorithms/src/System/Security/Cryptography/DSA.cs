@@ -1158,11 +1158,11 @@ namespace System.Security.Cryptography
         public override void ImportFromPem(ReadOnlySpan<char> input)
         {
             PemKeyImportHelpers.ImportPem(input, label => {
-                if (label.SequenceEqual("PRIVATE KEY"))
+                if (label.SequenceEqual(PemLabels.Pkcs8PrivateKey))
                 {
                     return ImportPkcs8PrivateKey;
                 }
-                else if (label.SequenceEqual("PUBLIC KEY"))
+                else if (label.SequenceEqual(PemLabels.SpkiPublicKey))
                 {
                     return ImportSubjectPublicKeyInfo;
                 }
