@@ -110,6 +110,11 @@ namespace Internal.Cryptography
                 }
                 else if (label.SequenceEqual(PemLabels.EncryptedPkcs8PrivateKey))
                 {
+                    if (importAction != null || containsEncryptedPem)
+                    {
+                        throw new ArgumentException(SR.Argument_PemImport_AmbiguousPem, nameof(input));
+                    }
+
                     containsEncryptedPem = true;
                 }
 
