@@ -70,6 +70,9 @@ namespace Internal.Cryptography
 
                 Debug.Assert(bytesWritten == base64size);
                 Span<byte> decodedBase64 = decodeBuffer.AsSpan(0, bytesWritten);
+
+                // Don't need to check the bytesRead here. We're already operating
+                // on an input which is already a parsed subset of the input.
                 importAction(password, decodedBase64, out _);
             }
             finally
@@ -153,6 +156,9 @@ namespace Internal.Cryptography
 
                 Debug.Assert(bytesWritten == base64size);
                 Span<byte> decodedBase64 = decodeBuffer.AsSpan(0, bytesWritten);
+
+                // Don't need to check the bytesRead here. We're already operating
+                // on an input which is already a parsed subset of the input.
                 importAction(decodedBase64, out _);
             }
             finally
