@@ -393,6 +393,10 @@ VOID Frame::Push(Thread *pThread)
     }
     CONTRACTL_END;
 
+    // We should never be pushing InlinedCallFrames here. IFCs are linked/unlinked through
+    // the PInvoke helpers in ReadyToRun, or from codegen around PInvoke calls in jitted code.
+    CONSISTENCY_CHECK(GetVTablePtr() != InlinedCallFrame::GetMethodFrameVPtr());
+
     _ASSERTE(*GetGSCookiePtr() == GetProcessGSCookie());
 
     m_Next = pThread->GetFrame();
@@ -454,7 +458,14 @@ VOID Frame::Pop(Thread *pThread)
              (*m_Next->GetGSCookiePtr() == GetProcessGSCookie()));
 
     pThread->SetFrame(m_Next);
-    m_Next = NULL;
+
+    // InlinedCallFrames are initialized in the prolog of a jitted method with PInvokes, so
+    // we must not change the value of m_Next here, otherwise when we link an ICF during a PInvoke
+    // call, we will lose the rest of the frames chain.
+    if (GetVTablePtr() != InlinedCallFrame::GetMethodFrameVPtr())
+    {
+        m_Next = NULL;
+    }
 }
 
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
@@ -1947,7 +1958,6 @@ VOID InlinedCallFrame::Init()
     m_pCallSiteSP = NULL;
     m_pCallerReturnAddress = NULL;
 }
-
 
 
 void UnmanagedToManagedFrame::ExceptionUnwind()
