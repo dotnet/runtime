@@ -168,7 +168,8 @@ namespace Mono.Linker.Dataflow
 					MethodDefinition setMethod = property.SetMethod;
 					if (setMethod != null) {
 
-						if (!ScanMethodBodyForFieldAccess (setMethod.Body, write: true, out backingFieldFromSetter)) {
+						// TODO: Handle abstract properties - no way to propagate the annotation to the field
+						if (!setMethod.HasBody || !ScanMethodBodyForFieldAccess (setMethod.Body, write: true, out backingFieldFromSetter)) {
 							// TODO: warn we couldn't find a unique backing field
 						}
 
@@ -190,7 +191,8 @@ namespace Mono.Linker.Dataflow
 					MethodDefinition getMethod = property.GetMethod;
 					if (getMethod != null) {
 
-						if (ScanMethodBodyForFieldAccess (getMethod.Body, write: false, out backingFieldFromGetter)) {
+						// TODO: Handle abstract properties - no way to propagate the annotation to the field
+						if (!getMethod.HasBody || !ScanMethodBodyForFieldAccess (getMethod.Body, write: false, out backingFieldFromGetter)) {
 							// TODO: warn we couldn't find a unique backing field
 						}
 
