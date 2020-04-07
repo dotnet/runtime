@@ -3449,13 +3449,14 @@ namespace Mono.Linker.Steps {
 
 				DynamicallyAccessedMemberKinds returnValueDynamicallyAccessedMemberKinds = 0;
 
+				methodReturnValue = null;
+
+				var calledMethodDefinition = calledMethod.Resolve ();
+				if (calledMethodDefinition == null)
+					return false;
+
 				try {
 
-					methodReturnValue = null;
-
-					var calledMethodDefinition = calledMethod.Resolve ();
-					if (calledMethodDefinition == null)
-						return false;
 
 					bool requiresDataFlowAnalysis = _flowAnnotations.RequiresDataFlowAnalysis (calledMethodDefinition);
 					returnValueDynamicallyAccessedMemberKinds =  requiresDataFlowAnalysis ?
@@ -3696,7 +3697,9 @@ namespace Mono.Linker.Steps {
 				// unknown value with the return type of the method.
 				if (methodReturnValue == null) {
 					if (calledMethod.ReturnType.MetadataType != MetadataType.Void) {
-						methodReturnValue = new MethodReturnValue(returnValueDynamicallyAccessedMemberKinds);
+						methodReturnValue = new MethodReturnValue (returnValueDynamicallyAccessedMemberKinds) {
+							SourceContext = calledMethodDefinition
+						};
 					}
 				}
 
