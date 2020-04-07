@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     internal partial struct PolicyInformation
     {
         internal string PolicyIdentifier;
-        internal System.Security.Cryptography.Pkcs.Asn1.PolicyQualifierInfo[] PolicyQualifiers;
+        internal System.Security.Cryptography.Pkcs.Asn1.PolicyQualifierInfo[]? PolicyQualifiers;
 
         internal void Encode(AsnWriter writer)
         {

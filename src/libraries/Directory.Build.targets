@@ -1,5 +1,9 @@
 <Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
   <PropertyGroup>
+    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>  
+  </PropertyGroup>
+  
+  <PropertyGroup>
     <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
     <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
@@ -13,6 +17,8 @@
     <FileAlignment Condition="'$(FileAlignment)' == '512'" />
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'" />
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
+    <!-- Set the documentation output file globally. -->
+    <DocumentationFile Condition="'$(IsSourceProject)' == 'true' and '$(DocumentationFile)' == '' and '$(MSBuildProjectExtension)' != '.vbproj'">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup>
