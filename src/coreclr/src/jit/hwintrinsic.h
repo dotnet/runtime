@@ -96,9 +96,16 @@ enum HWIntrinsicFlag : unsigned int
     // but may be table-driven in the front-end
     HW_Flag_SpecialCodeGen = 0x2000,
 
+#if defined(TARGET_XARCH)
     // No Read/Modify/Write Semantics
     // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
     HW_Flag_NoRMWSemantics = 0x4000,
+#elif defined(TARGET_ARM64)
+    // The intrinsic has read/modify/write semantics in multiple-operands form.
+    HW_Flag_HasRMWSemantics = 0x4000,
+#else
+#error Unsupported platform
+#endif
 
     // Special import
     // the intrinsics need special rules in importer,
@@ -292,7 +299,13 @@ struct HWIntrinsicInfo
     static bool HasRMWSemantics(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
+#if defined(TARGET_XARCH)
         return (flags & HW_Flag_NoRMWSemantics) == 0;
+#elif defined(TARGET_ARM64)
+        return (flags & HW_Flag_HasRMWSemantics) != 0;
+#else
+#error Unsupported platform
+#endif
     }
 
     static bool HasSpecialImport(NamedIntrinsic id)
