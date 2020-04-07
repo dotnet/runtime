@@ -838,7 +838,7 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(EqualsData))]
-        public void EqualsBaseTest(ImmutableArray<int> first, ImmutableArray<int> second, bool expected)
+        public void EqualsTest(ImmutableArray<int> first, ImmutableArray<int> second, bool expected)
         {
             Assert.Equal(expected, first == second);
             Assert.NotEqual(expected, first != second);

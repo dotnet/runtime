@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -125,7 +125,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Ctor_ThrownException_GetFramesReturnsExpected_2(bool fNeedFileInfo)
+        public void Ctor_Bool_ThrownException_GetFramesReturnsExpected(bool fNeedFileInfo)
         {
             var stackTrace = new StackTrace(InvokeException(), fNeedFileInfo);
             VerifyFrames(stackTrace, fNeedFileInfo);

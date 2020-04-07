@@ -1666,7 +1666,7 @@ namespace System.Tests
         [InlineData("Hello", "llo" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false)]
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", "a", StringComparison.OrdinalIgnoreCase, false)]
-        public static void EndsWith_ExplicitComparisonType(string s, string value, StringComparison comparisonType, bool expected)
+        public static void EndsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
             {
@@ -4639,7 +4639,7 @@ namespace System.Tests
         [InlineData("Hello", SoftHyphen + "Hel", StringComparison.OrdinalIgnoreCase, false)]
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", "hello", StringComparison.OrdinalIgnoreCase, false)]
-        public static void StartsWith_WithExplicitComparisonType(string s, string value, StringComparison comparisonType, bool expected)
+        public static void StartsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
             {

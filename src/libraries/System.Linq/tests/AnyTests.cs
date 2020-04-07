@@ -59,7 +59,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [MemberData(nameof(TestData))]
-        public void AnyTest(IEnumerable<int> source, bool expected)
+        public void Any(IEnumerable<int> source, bool expected)
         {
             Assert.Equal(expected, source.Any());
         }
@@ -87,7 +87,7 @@ namespace System.Linq.Tests
 
         [Theory]
         [MemberData(nameof(TestDataWithPredicate))]
-        public void Any(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
+        public void Any_Predicate(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
         {
             if (predicate == null)
             {

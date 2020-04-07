@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
         [Fact]
         public static void VerifyDefaults()
         {
-            static void verifyDefaults(Rijndael alg)
+            static void test(Rijndael alg)
             {
                 // The block size differs from the base
                 Assert.Equal(128, alg.LegalBlockSizes[0].MinSize);
@@ -42,12 +42,12 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
                 // We use an internal class for the implementation, not the public RijndaelManaged
                 Assert.IsNotType<RijndaelManaged>(alg);
 
-                verifyDefaults(alg);
+                test(alg);
             }
 
             using (var alg = new RijndaelManaged())
             {
-                verifyDefaults(alg);
+                test(alg);
             }
         }
 
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
         [Fact]
         public static void EncryptDecryptKnownECB192()
         {
-            static void encryptDecryptKnownECB192(Rijndael alg)
+            static void test(Rijndael alg)
             {
                 byte[] plainTextBytes =
                     new ASCIIEncoding().GetBytes("This is a sentence that is longer than a block, it ensures that multi-block functions work.");
@@ -132,19 +132,19 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
 
             using (var alg = Rijndael.Create())
             {
-                encryptDecryptKnownECB192(alg);
+                test(alg);
             }
 
             using (var alg = new RijndaelManaged())
             {
-                encryptDecryptKnownECB192(alg);
+                test(alg);
             }
         }
 
         [Fact]
         public static void TestShims()
         {
-            static void testShims(Rijndael alg)
+            static void test(Rijndael alg)
             {
                 alg.BlockSize = 128;
                 Assert.Equal(128, alg.BlockSize);
@@ -173,12 +173,12 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
 
             using (var alg = Rijndael.Create())
             {
-                testShims(alg);
+                test(alg);
             }
 
             using (var alg = new RijndaelManaged())
             {
-                testShims(alg);
+                test(alg);
             }
         }
 
