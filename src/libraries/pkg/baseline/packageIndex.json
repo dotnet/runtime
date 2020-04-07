@@ -173,6 +173,34 @@
         "5.0.0.0": "5.0.0"
       }
     },
+    "Microsoft.Extensions.Caching.Memory": {
+      "StableVersions": [
+        "1.0.0",
+        "1.0.1",
+        "1.0.2",
+        "1.1.0",
+        "1.1.1",
+        "1.1.2",
+        "2.0.0",
+        "2.0.1",
+        "2.0.2",
+        "2.1.0",
+        "2.1.1",
+        "2.1.2",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
     "Microsoft.Extensions.Configuration": {
       "StableVersions": [
         "1.0.0",
@@ -365,6 +393,87 @@
         "5.0.0.0": "5.0.0"
       }
     },
+    "Microsoft.Extensions.Configuration.Json": {
+      "StableVersions": [
+        "1.0.0",
+        "1.0.1",
+        "1.0.2",
+        "1.1.0",
+        "1.1.1",
+        "1.1.2",
+        "2.0.0",
+        "2.0.1",
+        "2.0.2",
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
+    "Microsoft.Extensions.Configuration.UserSecrets": {
+      "StableVersions": [
+        "1.0.0",
+        "1.0.1",
+        "1.0.2",
+        "1.1.0",
+        "1.1.1",
+        "1.1.2",
+        "2.0.0",
+        "2.0.1",
+        "2.0.2",
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
+    "Microsoft.Extensions.Configuration.Xml": {
+      "StableVersions": [
+        "1.0.0",
+        "1.0.1",
+        "1.0.2",
+        "1.1.0",
+        "1.1.1",
+        "1.1.2",
+        "2.0.0",
+        "2.0.1",
+        "2.0.2",
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
     "Microsoft.Extensions.DependencyInjection": {
       "StableVersions": [
         "1.0.0",
@@ -410,6 +519,36 @@
       ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
+    "Microsoft.Extensions.DependencyModel": {
+      "StableVersions": [
+        "1.0.0",
+        "1.0.2",
+        "1.0.3",
+        "1.1.0",
+        "1.1.1",
+        "1.1.2",
+        "1.1.9",
+        "2.0.0",
+        "2.0.1",
+        "2.0.3",
+        "2.0.4",
+        "2.1.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2",
+        "3.1.3"
+      ],
+      "BaselineVersion": "5.0.0",
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "3.1.3.0": "5.0.0",
         "5.0.0.0": "5.0.0"
       }
     },
@@ -507,6 +646,24 @@
         "5.0.0.0": "5.0.0"
       }
     },
+    "Microsoft.Extensions.Hosting": {
+      "StableVersions": [
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
     "Microsoft.Extensions.Hosting.Abstractions": {
       "StableVersions": [
         "2.0.0",
@@ -529,7 +686,205 @@
         "5.0.0.0": "5.0.0"
       }
     },
+    "Microsoft.Extensions.Http": {
+      "StableVersions": [
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
+    "Microsoft.Extensions.Logging": {
+      "StableVersions": [
+        "1.0.0",
+        "1.0.1",
+        "1.0.2",
+        "1.1.0",
+        "1.1.1",
+        "1.1.2",
+        "2.0.0",
+        "2.0.1",
+        "2.0.2",
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
     "Microsoft.Extensions.Logging.Abstractions": {
+      "StableVersions": [
+        "1.0.0",
+        "1.0.1",
+        "1.0.2",
+        "1.1.0",
+        "1.1.1",
+        "1.1.2",
+        "2.0.0",
+        "2.0.1",
+        "2.0.2",
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
+    "Microsoft.Extensions.Logging.Configuration": {
+      "StableVersions": [
+        "2.0.0",
+        "2.0.1",
+        "2.0.2",
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
+    "Microsoft.Extensions.Logging.Console": {
+      "StableVersions": [
+        "1.0.0",
+        "1.0.1",
+        "1.0.2",
+        "1.1.0",
+        "1.1.1",
+        "1.1.2",
+        "2.0.0",
+        "2.0.1",
+        "2.0.2",
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
+    "Microsoft.Extensions.Logging.Debug": {
+      "StableVersions": [
+        "1.0.0",
+        "1.0.1",
+        "1.0.2",
+        "1.1.0",
+        "1.1.1",
+        "1.1.2",
+        "2.0.0",
+        "2.0.1",
+        "2.0.2",
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
+    "Microsoft.Extensions.Logging.EventLog": {
+      "StableVersions": [
+        "1.0.0",
+        "1.0.1",
+        "1.0.2",
+        "1.1.0",
+        "1.1.1",
+        "1.1.2",
+        "2.0.0",
+        "2.0.1",
+        "2.0.2",
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
+    "Microsoft.Extensions.Logging.EventSource": {
+      "StableVersions": [
+        "1.1.0",
+        "1.1.1",
+        "1.1.2",
+        "2.0.0",
+        "2.0.1",
+        "2.0.2",
+        "2.1.0",
+        "2.1.1",
+        "2.2.0",
+        "3.0.0",
+        "3.0.1",
+        "3.0.2",
+        "3.0.3",
+        "3.1.0",
+        "3.1.1",
+        "3.1.2"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
+    "Microsoft.Extensions.Logging.TraceSource": {
       "StableVersions": [
         "1.0.0",
         "1.0.1",
@@ -1020,6 +1375,15 @@
       ],
       "BaselineVersion": "1.6.1",
       "InboxOn": {}
+    },
+    "Newtonsoft.Json": {
+      "StableVersions": [
+        "9.0.1"
+      ],
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "9.0.0.0": "9.0.1"
+      }
     },
     "PresentationBuildTasks": {
       "InboxOn": {
@@ -1931,9 +2295,11 @@
         "4.5.1",
         "4.6.0",
         "4.6.1",
-        "4.7.0"
+        "4.7.0",
+        "4.8.0",
+        "4.8.1"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "4.8.0",
       "InboxOn": {
         "net461": "4.1.0.0",
         "monoandroid10": "Any",
@@ -3374,6 +3740,12 @@
         "4.2.0.0": "4.4.0"
       }
     },
+    "System.Net.Http.Json": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "5.0.0"
+      }
+    },
     "System.Net.Http.Rtc": {
       "StableVersions": [
         "4.0.0",
@@ -4134,7 +4506,8 @@
         "4.0.0",
         "4.0.1",
         "4.3.0",
-        "4.6.0"
+        "4.6.0",
+        "4.7.0"
       ],
       "BaselineVersion": "4.6.0",
       "InboxOn": {
@@ -4162,7 +4535,8 @@
         "4.0.0",
         "4.0.1",
         "4.3.0",
-        "4.6.0"
+        "4.6.0",
+        "4.7.0"
       ],
       "BaselineVersion": "4.6.0",
       "InboxOn": {
@@ -4191,7 +4565,8 @@
         "4.0.0",
         "4.0.1",
         "4.3.0",
-        "4.6.0"
+        "4.6.0",
+        "4.7.0"
       ],
       "BaselineVersion": "4.6.0",
       "InboxOn": {

@@ -8,7 +8,7 @@ namespace System.Diagnostics
 {
     public static class Debugger
     {
-        public static readonly string DefaultCategory = "";
+        public static readonly string? DefaultCategory;
 
         public static bool IsAttached => IsAttached_internal();
 
@@ -32,8 +32,10 @@ namespace System.Diagnostics
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void Log_icall(int level, ref string category, ref string message);
 
-        public static void Log(int level, string category, string message)
+        public static void Log(int level, string? category, string? message)
         {
+            category ??= string.Empty;
+            message ??= string.Empty;
             Log_icall(level, ref category, ref message);
         }
 

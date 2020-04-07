@@ -129,31 +129,6 @@ lookup_intrins_info (SimdIntrinsic *intrinsics, int size, MonoMethod *cmethod)
 	return (SimdIntrinsic *)mono_binary_search (cmethod->name, intrinsics, size / sizeof (SimdIntrinsic), sizeof (SimdIntrinsic), &simd_intrinsic_info_compare_by_name);
 }
 
-static int
-type_to_expand_op (MonoType *type)
-{
-	switch (type->type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-		return OP_EXPAND_I1;
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-		return OP_EXPAND_I2;
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		return OP_EXPAND_I4;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		return OP_EXPAND_I8;
-	case MONO_TYPE_R4:
-		return OP_EXPAND_R4;
-	case MONO_TYPE_R8:
-		return OP_EXPAND_R8;
-	default:
-		g_assert_not_reached ();
-	}
-}
-
 /*
  * Return a simd vreg for the simd value represented by SRC.
  * SRC is the 'this' argument to methods.
@@ -289,6 +264,33 @@ get_vector_t_elem_type (MonoType *vector_type)
 		!strcmp (m_class_get_name (klass), "Vector256`1"));
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	return etype;
+}
+
+#ifdef TARGET_AMD64
+
+static int
+type_to_expand_op (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_EXPAND_I1;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_EXPAND_I2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_EXPAND_I4;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_EXPAND_I8;
+	case MONO_TYPE_R4:
+		return OP_EXPAND_R4;
+	case MONO_TYPE_R8:
+		return OP_EXPAND_R8;
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 static guint16 vector_methods [] = {
@@ -669,6 +671,95 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 
 	return NULL;
 }
+#endif // !TARGET_ARM64
+
+#ifdef TARGET_ARM64
+
+static SimdIntrinsic armbase_methods [] = {
+	{SN_LeadingSignCount},
+	{SN_LeadingZeroCount},
+	{SN_ReverseElementBits},
+	{SN_get_IsSupported}
+};
+
+static SimdIntrinsic crc32_methods [] = {
+	{SN_ComputeCrc32},
+	{SN_ComputeCrc32C},
+	{SN_get_IsSupported}
+};
+
+static MonoInst*
+emit_arm64_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	// Arm64 intrinsics are LLVM-only
+	if (!COMPILE_LLVM (cfg))
+		return NULL;
+
+	MonoInst *ins;
+	gboolean supported, is_64bit;
+	MonoClass *klass = cmethod->klass;
+	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+	gboolean arg0_i32 = (arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4);
+	SimdIntrinsic *info;
+
+	if (is_hw_intrinsics_class (klass, "ArmBase", &is_64bit)) {
+		info = lookup_intrins_info (armbase_methods, sizeof (armbase_methods), cmethod);
+		if (!info)
+			return NULL;
+
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_BASE) != 0;
+
+		switch (info->id) {
+		case SN_get_IsSupported:
+			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+			ins->type = STACK_I4;
+			return ins;
+		case SN_LeadingZeroCount:
+			return emit_simd_ins_for_sig (cfg, klass, arg0_i32 ? OP_LZCNT32 : OP_LZCNT64, 0, arg0_type, fsig, args);
+		case SN_LeadingSignCount:
+			return emit_simd_ins_for_sig (cfg, klass, arg0_i32 ? OP_LSCNT32 : OP_LSCNT64, 0, arg0_type, fsig, args);
+		case SN_ReverseElementBits:
+			return emit_simd_ins_for_sig (cfg, klass,
+				(is_64bit ? OP_XOP_I8_I8 : OP_XOP_I4_I4),
+				(is_64bit ? SIMD_OP_ARM64_RBIT64 : SIMD_OP_ARM64_RBIT32),
+				arg0_type, fsig, args);
+		default:
+			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
+		}
+	}
+
+	if (is_hw_intrinsics_class (klass, "Crc32", &is_64bit)) {
+		info = lookup_intrins_info (crc32_methods, sizeof (crc32_methods), cmethod);
+		if (!info)
+			return NULL;
+		
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_ARM64_CRC) != 0;
+
+		switch (info->id) {
+		case SN_get_IsSupported:
+			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
+			ins->type = STACK_I4;
+			return ins;
+		case SN_ComputeCrc32:
+		case SN_ComputeCrc32C: {
+			SimdOp op = (SimdOp)0;
+			gboolean is_c = info->id == SN_ComputeCrc32C;
+			switch (get_underlying_type (fsig->params [1])) {
+			case MONO_TYPE_U1: op = is_c ? SIMD_OP_ARM64_CRC32CB : SIMD_OP_ARM64_CRC32B; break;
+			case MONO_TYPE_U2: op = is_c ? SIMD_OP_ARM64_CRC32CH : SIMD_OP_ARM64_CRC32H; break;
+			case MONO_TYPE_U4: op = is_c ? SIMD_OP_ARM64_CRC32CW : SIMD_OP_ARM64_CRC32W; break;
+			case MONO_TYPE_U8: op = is_c ? SIMD_OP_ARM64_CRC32CX : SIMD_OP_ARM64_CRC32X; break;
+			default: g_assert_not_reached (); break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, is_64bit ? OP_XOP_I4_I4_I8 : OP_XOP_I4_I4_I4, op, arg0_type, fsig, args);
+		}
+		default:
+			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
+		}
+	}
+	return NULL;
+}
+#endif // TARGET_ARM64
 
 #ifdef TARGET_AMD64
 
@@ -741,12 +832,12 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_Prefetch2, OP_SSE_PREFETCHT2},
 	{SN_PrefetchNonTemporal, OP_SSE_PREFETCHNTA},
 	{SN_Reciprocal, OP_XOP_X_X, SIMD_OP_SSE_RCPPS},
-	{SN_ReciprocalScalar, 0, SIMD_OP_SSE_RCPSS},
+	{SN_ReciprocalScalar},
 	{SN_ReciprocalSqrt, OP_XOP_X_X, SIMD_OP_SSE_RSQRTPS},
-	{SN_ReciprocalSqrtScalar, 0, SIMD_OP_SSE_RSQRTSS},
+	{SN_ReciprocalSqrtScalar},
 	{SN_Shuffle},
 	{SN_Sqrt, OP_XOP_X_X, SIMD_OP_SSE_SQRTPS},
-	{SN_SqrtScalar, 0, SIMD_OP_SSE_SQRTSS},
+	{SN_SqrtScalar},
 	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
 	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
 	{SN_StoreAlignedNonTemporal, OP_SSE_MOVNTPS, 16 /* alignment */},
@@ -829,9 +920,9 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_LoadFence, OP_XOP, SIMD_OP_SSE_LFENCE},
 	{SN_LoadHigh, OP_SSE2_MOVHPD_LOAD},
 	{SN_LoadLow, OP_SSE2_MOVLPD_LOAD},
-	{SN_LoadScalarVector128, OP_SSE_MOVSD},
+	{SN_LoadScalarVector128},
 	{SN_LoadVector128},
-	{SN_MaskMove, OP_XOP_X_X_X_I, SIMD_OP_SSE_MASKMOVDQU},
+	{SN_MaskMove, OP_SSE2_MASKMOVDQU},
 	{SN_Max},
 	{SN_MaxScalar, OP_XOP_X_X_X, SIMD_OP_SSE_MAXSD},
 	{SN_MemoryFence, OP_XOP, SIMD_OP_SSE_MFENCE},
@@ -856,7 +947,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_ShuffleHigh},
 	{SN_ShuffleLow},
 	{SN_Sqrt, OP_XOP_X_X, SIMD_OP_SSE_SQRTPD},
-	{SN_SqrtScalar, 0, SIMD_OP_SSE_SQRTSD},
+	{SN_SqrtScalar},
 	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
 	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
 	{SN_StoreAlignedNonTemporal, OP_SSE_MOVNTPS, 16 /* alignment */},
@@ -865,7 +956,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_StoreNonTemporal, OP_SSE_MOVNTPS, 1 /* alignment */},
 	{SN_StoreScalar, OP_SSE_STORES},
 	{SN_Subtract},
-	{SN_SubtractSaturate},
+	{SN_SubtractSaturate, OP_SSE2_SUBS},
 	{SN_SubtractScalar, OP_SSE2_SUBSD},
 	{SN_SumAbsoluteDifferences, OP_XOP_X_X_X, SIMD_OP_SSE_PSADBW},
 	{SN_UnpackHigh, OP_SSE_UNPACKHI},
@@ -982,21 +1073,32 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_SHUFFLE, args [2]->inst_c0 /*mask*/, arg0_type, fsig, args);
 		}
-		case SN_ConvertScalarToVector128Single:
-			if (fsig->params [1]->type == MONO_TYPE_I4)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I4, SIMD_OP_SSE_CVTSI2SS, 0, fsig, args);
-			else if (fsig->params [1]->type == MONO_TYPE_I8)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I8, SIMD_OP_SSE_CVTSI2SS64, 0, fsig, args);
-			else
-				g_assert_not_reached ();
-			break;
+		case SN_ConvertScalarToVector128Single: {
+			int op = 0;
+			switch (fsig->params [1]->type) {
+			case MONO_TYPE_I4: op = OP_SSE_CVTSI2SS; break;
+			case MONO_TYPE_I8: op = OP_SSE_CVTSI2SS64; break;
+			default: g_assert_not_reached (); break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, 0, fsig, args);
+		}
 		case SN_ReciprocalScalar:
 		case SN_ReciprocalSqrtScalar:
-		case SN_SqrtScalar:
+		case SN_SqrtScalar: {
+			int op = 0;
+			switch (id) {
+			case SN_ReciprocalScalar: op = OP_SSE_RCPSS; break;
+			case SN_ReciprocalSqrtScalar: op = OP_SSE_RSQRTSS; break;
+			case SN_SqrtScalar: op = OP_SSE_SQRTSS; break;
+			};
 			if (fsig->param_count == 1)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, info->instc0, arg0_type, fsig, args);
-			else
-				return NULL;
+				return emit_simd_ins (cfg, klass, op, args [0]->dreg, args[0]->dreg);
+			else if (fsig->param_count == 2)
+				return emit_simd_ins (cfg, klass, op, args [0]->dreg, args[1]->dreg);
+			else 
+				g_assert_not_reached ();
+			break;
+		}
 		case SN_LoadScalarVector128:
 			return NULL;
 		default:
@@ -1027,17 +1129,6 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		}
 		case SN_Subtract:
 			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, arg0_type == MONO_TYPE_R8 ? OP_FSUB : OP_ISUB, arg0_type, fsig, args);
-		case SN_SubtractSaturate: {
-			SimdOp op = (SimdOp)0;
-			switch (arg0_type) {
-			case MONO_TYPE_I1: op = SIMD_OP_SSE_PSUBSB; break;
-			case MONO_TYPE_I2: op = SIMD_OP_SSE_PSUBSW; break;
-			case MONO_TYPE_U1: op = SIMD_OP_SSE_PSUBUSB; break;
-			case MONO_TYPE_U2: op = SIMD_OP_SSE_PSUBUSW; break;
-			default: g_assert_not_reached (); break;
-			}
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, op, arg0_type, fsig, args);
-		}
 		case SN_Add:
 			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, arg0_type == MONO_TYPE_R8 ? OP_FADD : OP_IADD, arg0_type, fsig, args);
 		case SN_Average:
@@ -1070,12 +1161,14 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			else
 				g_assert_not_reached ();
 			break;
-		case SN_ConvertScalarToVector128Double:
-			if (fsig->params [1]->type == MONO_TYPE_I4)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I4, SIMD_OP_SSE_CVTSI2SD, 0, fsig, args);
-			else if (fsig->params [1]->type == MONO_TYPE_I8)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I8, SIMD_OP_SSE_CVTSI2SD64, 0, fsig, args);
-			return emit_simd_ins_for_sig (cfg, klass, OP_CVTSD2SD, 0, arg0_type, fsig, args);
+		case SN_ConvertScalarToVector128Double: {
+			int op = OP_SSE2_CVTSS2SD;
+			switch (fsig->params [1]->type) {
+			case MONO_TYPE_I4: op = OP_SSE2_CVTSI2SD; break;
+			case MONO_TYPE_I8: op = OP_SSE2_CVTSI2SD64; break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, 0, fsig, args);
+		}
 		case SN_ConvertScalarToVector128Int32:
 		case SN_ConvertScalarToVector128Int64:
 		case SN_ConvertScalarToVector128UInt32:
@@ -1145,7 +1238,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			break;
 		case SN_Multiply:
 			if (arg0_type == MONO_TYPE_U4)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_PMULUDQ, arg0_type, fsig, args);
+				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PMULUDQ, 0, arg0_type, fsig, args);
 			else if (arg0_type == MONO_TYPE_R8)
 				return emit_simd_ins_for_sig (cfg, klass, OP_MULPD, 0, arg0_type, fsig, args);
 			else
@@ -1250,11 +1343,28 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_ShuffleLow:
 			g_assert (fsig->param_count == 2);
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFLW, 0, arg0_type, fsig, args);
-		case SN_SqrtScalar:
+		case SN_SqrtScalar: {
 			if (fsig->param_count == 1)
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, info->instc0, arg0_type, fsig, args);
-			else
-				return NULL;
+				return emit_simd_ins (cfg, klass, OP_SSE2_SQRTSD, args [0]->dreg, args[0]->dreg);
+			else if (fsig->param_count == 2)
+				return emit_simd_ins (cfg, klass, OP_SSE2_SQRTSD, args [0]->dreg, args[1]->dreg);
+			else {
+				g_assert_not_reached ();
+				break;
+			}
+		}
+		case SN_LoadScalarVector128: {
+			int op = 0;
+			switch (arg0_type) {
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4: op = OP_SSE2_MOVD; break;
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8: op = OP_SSE2_MOVQ; break;
+			case MONO_TYPE_R8: op = OP_SSE2_MOVUPD; break;
+			default: g_assert_not_reached(); break;
+			}
+			return emit_simd_ins_for_sig (cfg, klass, op, 0, 0, fsig, args);
+		}
 		default:
 			return NULL;
 		}
@@ -1613,7 +1723,6 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 
 	return NULL;
 }
-#endif
 
 static guint16 vector_128_methods [] = {
 	SN_AsByte,
@@ -1773,6 +1882,8 @@ emit_vector256_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	return NULL;
 }
 
+#endif // !TARGET_ARM64
+
 MonoInst*
 mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -1790,12 +1901,20 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (m_class_get_nested_in (cmethod->klass))
 		class_ns = m_class_get_name_space (m_class_get_nested_in (cmethod->klass));
 
-#ifdef TARGET_AMD64 // TODO: test and enable for x86 too
-	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86")) {
-		MonoInst *ins = emit_x86_intrinsics (cfg ,cmethod, fsig, args);
+#ifdef TARGET_ARM64
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.Arm")) {
+		MonoInst *ins = emit_arm64_intrinsics (cfg, cmethod, fsig, args);
 		return ins;
 	}
-#endif
+#endif // TARGET_ARM64
+
+#ifdef TARGET_AMD64 // TODO: test and enable for x86 too
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86")) {
+		MonoInst *ins = emit_x86_intrinsics (cfg, cmethod, fsig, args);
+		return ins;
+	}
+
+	// FIXME: implement Vector64<T>, Vector128<T> and Vector<T> for Arm64
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128`1"))
@@ -1812,6 +1931,7 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (!strcmp (class_name, "Vector`1"))
 			return emit_sys_numerics_vector_t (cfg, cmethod, fsig, args);
 	}
+#endif // TARGET_AMD64
 
 	return NULL;
 }

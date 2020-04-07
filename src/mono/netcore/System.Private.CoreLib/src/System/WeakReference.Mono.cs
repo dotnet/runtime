@@ -13,7 +13,7 @@ namespace System
 
         public virtual bool IsAlive => Target != null;
 
-        public virtual object Target
+        public virtual object? Target
         {
             get
             {
@@ -34,7 +34,7 @@ namespace System
             handle.Free();
         }
 
-        private void Create(object target, bool trackResurrection)
+        private void Create(object? target, bool trackResurrection)
         {
             if (trackResurrection)
             {

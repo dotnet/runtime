@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -52,7 +51,7 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool IsPinnableType(Type type);
 
-        internal static bool IsPinnable(object obj)
+        internal static bool IsPinnable(object? obj)
         {
             if (obj == null || obj is string)
                 return true;
@@ -64,7 +63,7 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void SetLastWin32Error(int error);
 
-        private static Exception GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
+        private static Exception? GetExceptionForHRInternal(int errorCode, IntPtr errorInfo)
         {
             switch (errorCode)
             {
@@ -308,7 +307,7 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void PtrToStructureInternal(IntPtr ptr, object structure, bool allowValueClasses);
 
-        private static void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
+        private static void PtrToStructureHelper(IntPtr ptr, object? structure, bool allowValueClasses)
         {
             if (structure == null)
                 throw new ArgumentNullException(nameof(structure));
@@ -317,7 +316,7 @@ namespace System.Runtime.InteropServices
 
         private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
         {
-            var obj = Activator.CreateInstance(structureType);
+            object obj = Activator.CreateInstance(structureType)!;
             PtrToStructureHelper(ptr, obj, true);
             return obj;
         }
@@ -341,13 +340,13 @@ namespace System.Runtime.InteropServices
 
         internal static unsafe IntPtr AllocBSTR(int length)
         {
-            var res = BufferToBSTR((char*)IntPtr.Zero, length);
+            IntPtr res = BufferToBSTR((char*)IntPtr.Zero, length);
             if (res == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return res;
         }
 
-        public static unsafe IntPtr StringToBSTR(string s)
+        public static unsafe IntPtr StringToBSTR(string? s)
         {
             if (s == null)
                 return IntPtr.Zero;

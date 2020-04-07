@@ -46,6 +46,7 @@
 #define xout std::cout
 #define DIR_SEPARATOR '/'
 #define PATH_SEPARATOR ':'
+#undef _X
 #define _X(s) s
 
 #define S_OK        0x00000000

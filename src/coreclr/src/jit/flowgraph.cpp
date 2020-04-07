@@ -6886,12 +6886,13 @@ unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNestin
     return curNesting;
 }
 
-/*****************************************************************************
- *
- *  Import the basic blocks of the procedure.
- */
-
-void Compiler::fgImport()
+//------------------------------------------------------------------------
+// fgImport: read the IL forf the method and create jit IR
+//
+// Returns:
+//    phase status
+//
+PhaseStatus Compiler::fgImport()
 {
     impImport();
 
@@ -6936,6 +6937,16 @@ void Compiler::fgImport()
     {
         compInlineResult->SetImportedILSize(info.compILImportSize);
     }
+
+    // Full preds are only used later on
+    assert(!fgComputePredsDone);
+    if (fgCheapPredsValid)
+    {
+        // Cheap predecessors are only used during importation
+        fgRemovePreds();
+    }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 /*****************************************************************************
@@ -21922,30 +21933,48 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
     return depth;
 }
 
-/*****************************************************************************
- *
- *  Inlining phase
- */
-
-void Compiler::fgInline()
+//------------------------------------------------------------------------
+// fgInline - expand inline candidates
+//
+// Returns:
+//   phase status indicating if anything was modified
+//
+// Notes:
+//   Inline candidates are identified during importation and candidate calls
+//   must be top-level expressions. In input IR, the result of the call (if any)
+//   is consumed elsewhere by a GT_RET_EXPR node.
+//
+//   For successful inlines, calls are replaced by a sequence of argument setup
+//   instructions, the inlined method body, and return value cleanup. Note
+//   Inlining may introduce new inline candidates. These are processed in a
+//   depth-first fashion, as the inliner walks the IR in statement order.
+//
+//   After inline expansion in a statement, the statement tree
+//   is walked to locate GT_RET_EXPR nodes. These are replaced by either
+//   * the original call tree, if the inline failed
+//   * the return value tree from the inlinee, if the inline succeeded
+//
+//   This replacement happens in preorder; on the postorder side of the same
+//   tree walk, we look for opportunties to devirtualize or optimize now that
+//   we know the context for the newly supplied return value tree.
+//
+//   Inline arguments may be directly substituted into the body of the inlinee
+//   in some cases. See impInlineFetchArg.
+//
+PhaseStatus Compiler::fgInline()
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgInline()\n");
-    }
-
     fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods().contains(info.compMethodName, info.compClassName,
                                                                         &info.compMethodInfo->args);
-
 #endif // DEBUG
 
-    BasicBlock* block = fgFirstBB;
+    BasicBlock* block       = fgFirstBB;
+    bool        madeChanges = false;
     noway_assert(block != nullptr);
 
     // Set the root inline context on all statements
@@ -21999,6 +22028,9 @@ void Compiler::fgInline()
 
                     fgMorphCallInline(call, &inlineResult);
 
+                    // If there's a candidate to process, we will make changes
+                    madeChanges = true;
+
                     // fgMorphCallInline may have updated the
                     // statement expression to a GT_NOP if the
                     // call returned a value, regardless of
@@ -22036,6 +22068,7 @@ void Compiler::fgInline()
             if (expr->OperGet() == GT_COMMA && expr->AsOp()->gtOp1->OperGet() == GT_CALL &&
                 expr->AsOp()->gtOp2->OperGet() == GT_NOP)
             {
+                madeChanges = true;
                 stmt->SetRootNode(expr->AsOp()->gtOp1);
             }
         }
@@ -22065,13 +22098,6 @@ void Compiler::fgInline()
 
     fgVerifyHandlerTab();
 
-    if (verbose)
-    {
-        printf("*************** After fgInline()\n");
-        fgDispBasicBlocks(true);
-        fgDispHandlerTab();
-    }
-
     if (verbose || fgPrintInlinedMethods)
     {
         JITDUMP("**************** Inline Tree");
@@ -22080,6 +22106,8 @@ void Compiler::fgInline()
     }
 
 #endif // DEBUG
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 #ifdef DEBUG
@@ -23914,6 +23942,9 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
 //------------------------------------------------------------------------
 // fgRemoveEmptyFinally: Remove try/finallys where the finally is empty
 //
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
 // Notes:
 //    Removes all try/finallys in the method with empty finallys.
 //    These typically arise from inlining empty Dispose methods.
@@ -23928,11 +23959,9 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
 //    empty (from say subsequent optimization). An SPMI run with
 //    just the "detection" part of this phase run after optimization
 //    found only one example where a new empty finally was detected.
-
-void Compiler::fgRemoveEmptyFinally()
+//
+PhaseStatus Compiler::fgRemoveEmptyFinally()
 {
-    JITDUMP("\n*************** In fgRemoveEmptyFinally()\n");
-
 #if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
@@ -23944,19 +23973,19 @@ void Compiler::fgRemoveEmptyFinally()
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, nothing to remove.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no removal.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no removal.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -24151,15 +24180,17 @@ void Compiler::fgRemoveEmptyFinally()
             printf("\n");
         }
 
-        fgVerifyHandlerTab();
-        fgDebugCheckBBlist(false, false);
-
 #endif // DEBUG
     }
+
+    return (emptyCount > 0) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
 // fgRemoveEmptyTry: Optimize try/finallys where the try is empty
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
 //
 // Notes:
 //    In runtimes where thread abort is not possible, `try {} finally {S}`
@@ -24173,8 +24204,8 @@ void Compiler::fgRemoveEmptyFinally()
 //    this optimization, the code block `S` can lose special
 //    within-finally status and so complete execution is no longer
 //    guaranteed.
-
-void Compiler::fgRemoveEmptyTry()
+//
+PhaseStatus Compiler::fgRemoveEmptyTry()
 {
     JITDUMP("\n*************** In fgRemoveEmptyTry()\n");
 
@@ -24196,25 +24227,25 @@ void Compiler::fgRemoveEmptyTry()
     if (!enableRemoveEmptyTry)
     {
         JITDUMP("Empty try removal disabled.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, nothing to remove.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no removal.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no removal.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -24470,25 +24501,17 @@ void Compiler::fgRemoveEmptyTry()
     {
         JITDUMP("fgRemoveEmptyTry() optimized %u empty-try try-finally clauses\n", emptyCount);
         fgOptimizedFinally = true;
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\n*************** After fgRemoveEmptyTry()\n");
-            fgDispBasicBlocks();
-            fgDispHandlerTab();
-            printf("\n");
-        }
-
-        fgVerifyHandlerTab();
-        fgDebugCheckBBlist(false, false);
-
-#endif // DEBUG
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
+
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
 // fgCloneFinally: Optimize normal exit path from a try/finally
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
 //
 // Notes:
 //    Handles finallys that are not enclosed by or enclosing other
@@ -24513,11 +24536,9 @@ void Compiler::fgRemoveEmptyTry()
 //    BBF_CLONED_FINALLY_BEGIN and BBF_CLONED_FINALLY_END. However
 //    these markers currently can get lost during subsequent
 //    optimizations.
-
-void Compiler::fgCloneFinally()
+//
+PhaseStatus Compiler::fgCloneFinally()
 {
-    JITDUMP("\n*************** In fgCloneFinally()\n");
-
 #if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
@@ -24536,31 +24557,30 @@ void Compiler::fgCloneFinally()
     if (!enableCloning)
     {
         JITDUMP("Finally cloning disabled.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, no cloning.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no cloning.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no cloning.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n*************** Before fgCloneFinally()\n");
         fgDispBasicBlocks();
         fgDispHandlerTab();
         printf("\n");
@@ -25064,23 +25084,21 @@ void Compiler::fgCloneFinally()
     if (cloneCount > 0)
     {
         JITDUMP("fgCloneFinally() cloned %u finally handlers\n", cloneCount);
-        fgOptimizedFinally = true;
 
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\n*************** After fgCloneFinally()\n");
             fgDispBasicBlocks();
             fgDispHandlerTab();
             printf("\n");
         }
 
-        fgVerifyHandlerTab();
-        fgDebugCheckBBlist(false, false);
         fgDebugCheckTryFinallyExits();
 
 #endif // DEBUG
     }
+
+    return (cloneCount > 0 ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING);
 }
 
 #ifdef DEBUG
@@ -25317,27 +25335,30 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
 #endif // !FEATURE_EH_FUNCLETS
 }
 
-//------------------------------------------------------------------------
-// fgUpdateFinallyTargetFlags: recompute BBF_FINALLY_TARGET bits for all blocks
-// after finally optimizations have run.
-
-void Compiler::fgUpdateFinallyTargetFlags()
-{
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-    // Any fixup required?
-    if (!fgOptimizedFinally)
+//------------------------------------------------------------------------
+// fgUpdateFinallyTargetFlags: recompute BBF_FINALLY_TARGET bits
+//    after EH optimizations
+//
+// Returns:
+//   phase status indicating if anything was modified
+//
+PhaseStatus Compiler::fgUpdateFinallyTargetFlags()
+{
+    // Any finally targetflag fixup required?
+    if (fgOptimizedFinally)
     {
-        JITDUMP("In fgUpdateFinallyTargetFlags - no finally opts, no fixup required\n");
-        return;
+        JITDUMP("updating finally target flag bits\n");
+        fgClearAllFinallyTargetBits();
+        fgAddFinallyTargetFlags();
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
-
-    JITDUMP("In fgUpdateFinallyTargetFlags, updating finally target flag bits\n");
-
-    fgClearAllFinallyTargetBits();
-    fgAddFinallyTargetFlags();
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    else
+    {
+        JITDUMP("no finally opts, no fixup required\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -25346,8 +25367,6 @@ void Compiler::fgUpdateFinallyTargetFlags()
 //
 void Compiler::fgClearAllFinallyTargetBits()
 {
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
     JITDUMP("*************** In fgClearAllFinallyTargetBits()\n");
 
     // Note that we clear the flags even if there are no EH clauses (compHndBBtabCount == 0)
@@ -25358,8 +25377,6 @@ void Compiler::fgClearAllFinallyTargetBits()
     {
         block->bbFlags &= ~BBF_FINALLY_TARGET;
     }
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 }
 
 //------------------------------------------------------------------------
@@ -25367,8 +25384,6 @@ void Compiler::fgClearAllFinallyTargetBits()
 //
 void Compiler::fgAddFinallyTargetFlags()
 {
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
     JITDUMP("*************** In fgAddFinallyTargetFlags()\n");
 
     if (compHndBBtabCount == 0)
@@ -25393,11 +25408,15 @@ void Compiler::fgAddFinallyTargetFlags()
             }
         }
     }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 }
+
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 //------------------------------------------------------------------------
 // fgMergeFinallyChains: tail merge finally invocations
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
 //
 // Notes:
 //
@@ -25406,10 +25425,8 @@ void Compiler::fgAddFinallyTargetFlags()
 //    try-finallys where there are multiple exit points in the try
 //    that have the same target.
 
-void Compiler::fgMergeFinallyChains()
+PhaseStatus Compiler::fgMergeFinallyChains()
 {
-    JITDUMP("\n*************** In fgMergeFinallyChains()\n");
-
 #if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
@@ -25421,19 +25438,19 @@ void Compiler::fgMergeFinallyChains()
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, nothing to merge.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no merging.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no merging.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     bool enableMergeFinallyChains = true;
@@ -25458,13 +25475,12 @@ void Compiler::fgMergeFinallyChains()
     if (!enableMergeFinallyChains)
     {
         JITDUMP("fgMergeFinallyChains disabled\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n*************** Before fgMergeFinallyChains()\n");
         fgDispBasicBlocks();
         fgDispHandlerTab();
         printf("\n");
@@ -25488,7 +25504,7 @@ void Compiler::fgMergeFinallyChains()
     if (!hasFinally)
     {
         JITDUMP("Method does not have any try-finallys; no merging.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // Process finallys from outside in, merging as we go. This gives
@@ -25611,6 +25627,8 @@ void Compiler::fgMergeFinallyChains()
                     "likely the non-canonical callfinallys were unreachable\n");
         }
     }
+
+    return didMerge ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -25768,6 +25786,9 @@ bool Compiler::fgUseThrowHelperBlocks()
 //------------------------------------------------------------------------
 // fgTailMergeThrows: Tail merge throw blocks and blocks with no return calls.
 //
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
 // Notes:
 //    Scans the flow graph for throw blocks and blocks with no return calls
 //    that can be merged, and opportunistically merges them.
@@ -25806,7 +25827,7 @@ bool Compiler::fgUseThrowHelperBlocks()
 //    *  CALL      void   ThrowHelper.ThrowArgumentOutOfRangeException
 //    \--*  CNS_INT   int    33
 //
-void Compiler::fgTailMergeThrows()
+PhaseStatus Compiler::fgTailMergeThrows()
 {
     noway_assert(opts.OptimizationEnabled());
 
@@ -25816,7 +25837,7 @@ void Compiler::fgTailMergeThrows()
     if (optNoReturnCallCount < 2)
     {
         JITDUMP("Method does not have multiple noreturn calls.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // This transformation requires block pred lists to be built
@@ -25939,7 +25960,7 @@ void Compiler::fgTailMergeThrows()
     if (numCandidates == 0)
     {
         JITDUMP("\n*************** no throws can be tail merged, sorry\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     JITDUMP("\n*** found %d merge candidates, rewriting flow\n\n", numCandidates);
@@ -26012,6 +26033,11 @@ void Compiler::fgTailMergeThrows()
         }
     }
 
+    if (updateCount == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     // If we altered flow, reset fgModified. Given where we sit in the
     // phase list, flow-dependent side data hasn't been built yet, so
     // nothing needs invalidation.
@@ -26019,21 +26045,9 @@ void Compiler::fgTailMergeThrows()
     // Note we could invoke a cleanup pass here, but optOptimizeFlow
     // seems to be missing some safety checks and doesn't expect to
     // see an already cleaned-up flow graph.
-    if (updateCount > 0)
-    {
-        assert(fgModified);
-        fgModified = false;
-    }
-
-#if DEBUG
-    if (verbose)
-    {
-        printf("\n*************** After fgTailMergeThrows(%d updates)\n", updateCount);
-        fgDispBasicBlocks();
-        fgVerifyHandlerTab();
-        fgDebugCheckBBlist();
-    }
-#endif // DEBUG
+    assert(fgModified);
+    fgModified = false;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------

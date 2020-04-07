@@ -2,18 +2,30 @@
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
+
+if getprop ro.product.system.model 2>&1 | grep -qi android; then
+    OSName="Android"
+fi
+
 case "$OSName" in
-FreeBSD|Linux|NetBSD|OpenBSD|SunOS)
+FreeBSD|Linux|NetBSD|OpenBSD|SunOS|Android)
     os=$OSName ;;
 Darwin)
-	os=OSX ;;
+    os=OSX ;;
 *)
     echo "Unsupported OS $OSName detected, configuring as if for Linux"
     os=Linux ;;
 esac
 
-# Use uname to determine what the CPU is.
-CPUName=$(uname -m)
+# On Solaris, `uname -m` is discoragued, see https://docs.oracle.com/cd/E36784_01/html/E36870/uname-1.html
+# and `uname -p` returns processor type (e.g. i386 on amd64).
+# The appropriate tool to determine CPU is isainfo(1) https://docs.oracle.com/cd/E36784_01/html/E36870/isainfo-1.html.
+if [ "$OSName" = "SunOS" ]; then
+    CPUName=$(isainfo -n)
+else
+    # For rest of the operating systems, use uname(1) to determine what the CPU is.
+    CPUName=$(uname -m)
+fi
 
 case "$CPUName" in
     aarch64)

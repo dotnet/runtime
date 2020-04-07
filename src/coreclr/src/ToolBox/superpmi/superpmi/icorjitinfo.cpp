@@ -1553,6 +1553,11 @@ bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, b
     return jitInstance->mc->repConvertPInvokeCalliToCall(pResolvedToken, fMustConvert);
 }
 
+void MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+{
+    jitInstance->mc->cr->AddCall("notifyInstructionSetUsage");
+}
+
 // Stuff directly on ICorJitInfo
 
 // Returns extended flags for a particular compilation instance.
@@ -1583,12 +1588,12 @@ void MyICJI::allocMem(ULONG              hotCodeSize,   /* IN */
 {
     jitInstance->mc->cr->AddCall("allocMem");
     // TODO-Cleanup: investigate if we need to check roDataBlock as well. Could hot block size be ever 0?
-    *hotCodeBlock = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, hotCodeSize);
+    *hotCodeBlock = jitInstance->mc->cr->allocateMemory(hotCodeSize);
     if (coldCodeSize > 0)
-        *coldCodeBlock = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, coldCodeSize);
+        *coldCodeBlock = jitInstance->mc->cr->allocateMemory(coldCodeSize);
     else
         *coldCodeBlock = nullptr;
-    *roDataBlock       = HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, roDataSize);
+    *roDataBlock       = jitInstance->mc->cr->allocateMemory(roDataSize);
     jitInstance->mc->cr->recAllocMem(hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock,
                                      coldCodeBlock, roDataBlock);
 }
@@ -1652,7 +1657,7 @@ void* MyICJI::allocGCInfo(size_t size /* IN */
                           )
 {
     jitInstance->mc->cr->AddCall("allocGCInfo");
-    void* temp = (unsigned char*)HeapAlloc(jitInstance->mc->cr->getCodeHeap(), 0, size);
+    void* temp = jitInstance->mc->cr->allocateMemory(size);
     jitInstance->mc->cr->recAllocGCInfo(size, temp);
 
     return temp;

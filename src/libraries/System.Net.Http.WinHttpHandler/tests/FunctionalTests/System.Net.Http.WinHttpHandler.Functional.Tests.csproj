@@ -199,6 +199,7 @@
     <Compile Include="ClientCertificateTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
   </ItemGroup>
 </Project>

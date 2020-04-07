@@ -20,6 +20,8 @@ namespace System.Text.Json
 
         public ConstructorDelegate? CreateObject { get; private set; }
 
+        public object? CreateObjectWithParameterizedCtor { get; set; }
+
         public ClassType ClassType { get; private set; }
 
         public JsonPropertyInfo? DataExtensionProperty { get; private set; }
@@ -159,8 +161,7 @@ namespace System.Text.Json
 
                         if (converter.ConstructorIsParameterized)
                         {
-                            converter.CreateConstructorDelegate(options);
-                            InitializeConstructorParameters(converter.ConstructorInfo);
+                            InitializeConstructorParameters(converter.ConstructorInfo!);
                         }
                     }
                     break;
@@ -304,22 +305,19 @@ namespace System.Text.Json
             JsonPropertyInfo jsonPropertyInfo,
             JsonSerializerOptions options)
         {
-            string matchingPropertyName = jsonPropertyInfo.NameAsString!;
-
             if (jsonPropertyInfo.IsIgnored)
             {
-                return JsonParameterInfo.CreateIgnoredParameterPlaceholder(matchingPropertyName, parameterInfo, options);
+                return JsonParameterInfo.CreateIgnoredParameterPlaceholder(parameterInfo, jsonPropertyInfo, options);
             }
 
             JsonConverter converter = jsonPropertyInfo.ConverterBase;
 
             JsonParameterInfo jsonParameterInfo = converter.CreateJsonParameterInfo();
             jsonParameterInfo.Initialize(
-                matchingPropertyName,
                 jsonPropertyInfo.DeclaredPropertyType,
                 jsonPropertyInfo.RuntimePropertyType!,
                 parameterInfo,
-                converter,
+                jsonPropertyInfo,
                 options);
 
             return jsonParameterInfo;

@@ -146,6 +146,9 @@ mono_gc_alloc_handle_obj (MonoVTable *vtable, gsize size);
 MonoArray*
 mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length);
 
+MonoArray*
+mono_gc_alloc_pinned_vector (MonoVTable *vtable, size_t size, uintptr_t max_length);
+
 MonoArrayHandle
 mono_gc_alloc_handle_vector (MonoVTable *vtable, gsize size, gsize max_length);
 

@@ -79,10 +79,10 @@ namespace System.Reflection
             return Load(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
-        internal static Assembly Load(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext assemblyLoadContext)
+        internal static Assembly Load(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
         {
             // TODO: pass AssemblyName
-            var assembly = InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
+            Assembly? assembly = InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
             if (assembly == null)
                 throw new FileNotFoundException(null, assemblyRef.Name);
             return assembly;
@@ -92,7 +92,7 @@ namespace System.Reflection
         internal static extern Assembly InternalLoad(string assemblyName, ref StackCrawlMark stackMark, IntPtr ptrLoadContextBinder);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern Type InternalGetType(Module module, string name, bool throwOnError, bool ignoreCase);
+        internal extern Type InternalGetType(Module? module, string name, bool throwOnError, bool ignoreCase);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void InternalGetAssemblyName(string assemblyFile, out Mono.MonoAssemblyName aname, out string codebase);

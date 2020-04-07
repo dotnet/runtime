@@ -81,6 +81,10 @@ elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     # keep ANDROID_NATIVE_API_LEVEL in sync with src/mono/Directory.Build.props
     __CMakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake -DANDROID_STL=none -DANDROID_NATIVE_API_LEVEL=21 $__CMakeArgs"
 
+    # workaround init-compiler.sh trying to detect clang, it's handled in android.toolchain.cmake already
+    export CLR_CC=$(which false)
+    export CLR_CXX=$(which false)
+
     if [[ "$__BuildArch" == x64 ]]; then
         __CMakeArgs="-DANDROID_ABI=x86_64 $__CMakeArgs"
     elif [[ "$__BuildArch" == x86 ]]; then

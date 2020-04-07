@@ -74,7 +74,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            dateTime = default(DateTime);
+            dateTime = default;
 
             int startYear;
             int startMonth;

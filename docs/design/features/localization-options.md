@@ -2,7 +2,7 @@
 
 The .NET Core host and runtime contain messages that can be displayed to both end-users and developers. Currently, all such messages are displayed in English.
 
-Other managed components built on top of .NET Core (e.g. SDK, WinForms, WPF) have already been localized, so a process already exists for handling translation and localizing assets, while the .NET Core runtime handles satellite assembly loading. The host and runtime are different in that they have messages that originate from native components and must continue to do so. While the runtime does contain some managed resources, this document focusses on localization of native resources.
+Other managed components built on top of .NET Runtime (e.g. SDK, WinForms, WPF) have already been localized, so a process already exists for handling translation and localizing assets, while the runtime handles satellite assembly loading. The host and runtime are different in that they have messages that originate from native components and must continue to do so. While the runtime does contain some managed resources, this document focusses on localization of native resources.
 
 The goal is to support:
 
@@ -63,7 +63,7 @@ Some infrastructure is in place for loading of resources on Windows, but is not 
 
 Each host component will include English resource strings by default. If the resource for the appropriate locale could not be found, the host components can always fall back to English.
 
-`dotnet`, `hostfxr`, and `hostpolicy` will each have separate resources that will be installed by the .NET Core runtime. These components can be different versions, so their resources must be separate.
+`dotnet`, `hostfxr`, and `hostpolicy` will each have separate resources that will be installed by the .NET runtime. These components can be different versions, so their resources must be separate.
 
 `apphost` will have a single localized message. All languages will be included in the executable itself. The message will direct the user to a URL that will contain localized content.
 
@@ -109,7 +109,7 @@ Possible options for hosts:
   - If the hosts are newer than installed runtime, new messages would not be localized
   - Issues:
     - Compatibility concerns for resource IDs / format values
-    - Awkward split deployment since `*host` components are not normally part of the .NET Core runtime install
+    - Awkward split deployment since `*host` components are not normally part of the .NET runtime install
 
   - Options:
     1. Separate resource for each host
@@ -121,7 +121,7 @@ Possible options for hosts:
 
 `comhost`, `ijwhost`, `winrthost`, and `nethost` are designed to be consumed by a component that .NET Core does not own and intentionally do not show messages to the user. As such, they sit at a low priority for localization support.
 
-`apphost` is the end-user-facing host. The amount of logic and messaging in `apphost` is intentionally limited. The most important message it contains for an end-user is for the missing .NET Core runtime scenario, so it should not rely on resources installed via the .NET Core runtime. 
+`apphost` is the end-user-facing host. The amount of logic and messaging in `apphost` is intentionally limited. The most important message it contains for an end-user is for the missing .NET runtime scenario, so it should not rely on resources installed via the .NET runtime. 
 
 Embedding resources in the `apphost` would make for the most stream-lined user experience (particularly around deployment). Since the `apphost` is sensitive to size, the number of messages will be pared down to one generic localized message which directs the user to a URL.
 
@@ -167,10 +167,10 @@ It is also an option to create tooling directly integrated in the dotnet/runtime
 Each platform has its own standard way and file formats for handling localization. There are two main approaches that can be taken here:
   1. Convert a base format to platform-specific localization formats and use platform-specific localization support
       - Requires a tool/script to convert file formats at build time
-      - Uses platform support and standard localization methods that the .NET Core team will not need to maintain
+      - Uses platform support and standard localization methods that the .NET team will not need to maintain
       - Different method for handling localized resources on each platform
   2. Create a custom solution: storage format for string resources, tools for generation from the [translated assets (.xlf)](#translated-assets), and implementation for reading
-      - Requires design of completely custom support that will need to be maintained by the .NET Core team on all platforms
+      - Requires design of completely custom support that will need to be maintained by the .NET team on all platforms
       - Allows support for both string resources from file or memory
       - All platforms could use the same method for handling localized resources
 

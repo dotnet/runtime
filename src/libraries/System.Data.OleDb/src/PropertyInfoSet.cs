@@ -69,7 +69,7 @@ namespace System.Data.OleDb
                     propertyLookup = new Dictionary<string, OleDbPropertyInfo>(StringComparer.OrdinalIgnoreCase);
 
                     IntPtr setPtr = this.handle;
-                    tagDBPROPINFO propinfo = new tagDBPROPINFO();
+                    ItagDBPROPINFO propinfo = OleDbStructHelpers.CreateTagDbPropInfo();
                     tagDBPROPINFOSET propinfoset = new tagDBPROPINFOSET();
 
                     for (int i = 0; i < setCount; ++i, setPtr = ADP.IntPtrOffset(setPtr, ODB.SizeOf_tagDBPROPINFOSET))

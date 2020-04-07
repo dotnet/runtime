@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
-using System.IO;
 using System.Reflection;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System
@@ -80,17 +76,17 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
         }
 
-        public static Type? GetTypeFromHandle(RuntimeTypeHandle handle)
+        public static Type GetTypeFromHandle(RuntimeTypeHandle handle)
         {
             if (handle.Value == IntPtr.Zero)
-                return null;
+                return null!; // FIXME: shouldn't return null
 
             return internal_from_handle(handle.Value);
         }
 
-        public static Type GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
+        public static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
 
-        public static Type GetTypeFromProgID(string progID, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
+        public static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError) => throw new PlatformNotSupportedException();
 
         internal virtual Type InternalResolve()
         {

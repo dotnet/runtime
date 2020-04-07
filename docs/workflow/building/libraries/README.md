@@ -12,11 +12,11 @@ git pull upstream master & git push origin master
 build -subsetCategory coreclr-libraries -runtimeConfiguration Release
 :: The above you may only perform once in a day, or when you pull down significant new changes.
 
-:: Switch to working on a given library (RegularExpressions in this case)
-cd src\libraries\System.Text.RegularExpressions
-
 :: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
 build -vs System.Text.RegularExpressions
+
+:: Switch to working on a given library (RegularExpressions in this case)
+cd src\libraries\System.Text.RegularExpressions
 
 :: Change to test directory
 cd tests
@@ -77,13 +77,13 @@ The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture)
 - `-framework|-f` identifies the target framework for the build. Possible values include `netcoreapp5.0` (currently the latest .NET Core version) or `net472`. (msbuild property `BuildTargetFramework`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
-- `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `ArchGroup`)
+- `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
 
 For more details on the build settings see [project-guidelines](../../../coding-guidelines/project-guidelines.md#build-pivots).
 
-If you invoke the `build` script without any actions, the default action chain `-restore -build` is executed. You can chain multiple actions together (e.g., `-restore -build -buildtests`) and they will execute in the appropriate order. Note that if you specify actions like `-build` explicitly, you likely need to explicitly add `-restore` as well.
+If you invoke the `build` script without any actions, the default action chain `-restore -build` is executed.
 
-By default the `build` script only builds the product libraries and none of the tests. If you want to build the tests you can add the flag `-buildtests`. If you want to run the tests you can add the flag `-test`. To build and run the tests combine both arguments: `-buildtests -test`. To specify just the libraries, use `-subcategory libraries`.
+By default the `build` script only builds the product libraries and none of the tests. If you want to include tests, you want to add the subset `-subset libtests`. If you want to run the tests you want to use the `-test` action instead of the `-build`, e.g. `build.cmd/sh -subsetcategory libraries -test`. To specify just the libraries, use `-subcategory libraries`.
 
 **Examples**
 - Building in release mode for platform x64 (restore and build are implicit here as no actions are passed in)
@@ -93,7 +93,7 @@ By default the `build` script only builds the product libraries and none of the 
 
 - Building the src assemblies and build and run tests (running all tests takes a considerable amount of time!)
 ```bash
-./build.sh -subsetCategory libraries -restore -build -buildtests -test
+./build.sh -subsetCategory libraries -restore -build -test
 ```
 
 - Building for different target frameworks (restore and build are implicit again as no action is passed in)
@@ -160,7 +160,7 @@ Under the `src` directory is a set of directories, each of which represents a pa
 
 For example the `src\libraries\System.Diagnostics.DiagnosticSource` directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly.
 
-You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup)]`.
+You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)]`.
 
 You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to
 `src\libraries\System.Diagnostics.DiagnosticSource\tests` and typing `dotnet build`.
@@ -171,7 +171,7 @@ For libraries that have multiple target frameworks the target frameworks will be
 
 **Examples**
 
-- Build project for Linux for .NET Core
+- Build project for Linux
 ```
 dotnet build System.Net.NetworkInformation.csproj /p:TargetOS=Linux
 ```
@@ -202,7 +202,7 @@ One can build in Debug or Release mode from the root by doing `./build.sh -subse
 
 ### Building other Architectures
 
-One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh -subsetCategory libraries -arch [value]` or in a project `/p:ArchGroup=[value]` after the `dotnet build` command.
+One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh -subsetCategory libraries -arch [value]` or in a project `/p:TargetArchitecture=[value]` after the `dotnet build` command.
 
 ## Working in Visual Studio
 

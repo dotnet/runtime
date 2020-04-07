@@ -27,14 +27,7 @@
     <ArtifactsObjDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'obj'))</ArtifactsObjDir>
   </PropertyGroup>
 
-  <!-- The TFMs to build and test against. -->
-  <PropertyGroup>
-    <NETCoreAppCurrentVersion>5.0</NETCoreAppCurrentVersion>
-    <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v$(NETCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
-    <NetCoreAppCurrent>netcoreapp$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
-    <NetFrameworkCurrent>net472</NetFrameworkCurrent>
-  </PropertyGroup>
-
+  <!-- Configuration properties which are needed in both the (isolated) restore and build phases. -->
   <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
 
   <!--

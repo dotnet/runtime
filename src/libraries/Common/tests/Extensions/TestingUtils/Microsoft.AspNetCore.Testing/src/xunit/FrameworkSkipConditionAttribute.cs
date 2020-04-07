@@ -33,7 +33,7 @@ namespace Microsoft.AspNetCore.Testing
                 return true;
             }
 
-#if NET461 || NET46
+#if NETFRAMEWORK
             if (excludedFrameworks.HasFlag(RuntimeFrameworks.Mono) &&
                 TestPlatformHelper.IsMono)
             {
@@ -44,7 +44,7 @@ namespace Microsoft.AspNetCore.Testing
             {
                 return false;
             }
-#elif NETSTANDARD2_0
+#elif NETSTANDARD2_0 || NETCOREAPP
             if (excludedFrameworks.HasFlag(RuntimeFrameworks.CoreCLR))
             {
                 return false;

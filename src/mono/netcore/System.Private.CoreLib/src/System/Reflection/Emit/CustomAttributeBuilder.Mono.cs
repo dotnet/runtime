@@ -30,11 +30,7 @@
 // (C) 2001 Ximian, Inc.  http://www.ximian.com
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
-using System;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -43,13 +39,13 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     public partial class CustomAttributeBuilder
     {
-        private ConstructorInfo ctor;
-        private byte[] data;
-        private object[] args;
-        private PropertyInfo[] namedProperties;
-        private object[] propertyValues;
-        private FieldInfo[] namedFields;
-        private object[] fieldValues;
+        private ConstructorInfo ctor = null!;
+        private byte[] data = null!;
+        private object?[]? args;
+        private PropertyInfo[] namedProperties = null!;
+        private object?[] propertyValues = null!;
+        private FieldInfo[] namedFields = null!;
+        private object?[] fieldValues = null!;
 
         internal ConstructorInfo Ctor
         {
@@ -62,7 +58,7 @@ namespace System.Reflection.Emit
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern byte[] GetBlob(Assembly asmb, ConstructorInfo con, object[] constructorArgs, PropertyInfo[] namedProperties, object[] propertyValues, FieldInfo[] namedFields, object[] fieldValues);
+        private static extern byte[] GetBlob(Assembly asmb, ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object[] propertyValues, FieldInfo[] namedFields, object[] fieldValues);
 
         internal object Invoke()
         {
@@ -88,24 +84,24 @@ namespace System.Reflection.Emit
             /* should we check that the user supplied data is correct? */
         }
 
-        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs)
         {
             Initialize(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(),
                     Array.Empty<FieldInfo>(), Array.Empty<object>());
         }
-        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs,
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
                 FieldInfo[] namedFields, object[] fieldValues)
         {
             Initialize(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(),
                     namedFields, fieldValues);
         }
-        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs,
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
                 PropertyInfo[] namedProperties, object[] propertyValues)
         {
             Initialize(con, constructorArgs, namedProperties, propertyValues, Array.Empty<FieldInfo>(),
                     Array.Empty<object>());
         }
-        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs,
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
                 PropertyInfo[] namedProperties, object[] propertyValues,
                 FieldInfo[] namedFields, object[] fieldValues)
         {
@@ -138,20 +134,20 @@ namespace System.Reflection.Emit
             if (paramType == typeof(object))
             {
                 if (t.IsArray && t.GetArrayRank() == 1)
-                    return IsValidType(t.GetElementType());
+                    return IsValidType(t.GetElementType()!);
                 if (!t.IsPrimitive && !typeof(Type).IsAssignableFrom(t) && t != typeof(string) && !t.IsEnum)
                     return false;
             }
             return true;
         }
 
-        private static bool IsValidValue(Type type, object value)
+        private static bool IsValidValue(Type type, object? value)
         {
             if (type.IsValueType && value == null)
                 return false;
-            if (type.IsArray && type.GetElementType().IsValueType)
+            if (type.IsArray && type.GetElementType()!.IsValueType)
             {
-                foreach (var v in (Array)value)
+                foreach (object? v in (Array)value!)
                 {
                     if (v == null)
                         return false;
@@ -160,7 +156,7 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        private void Initialize(ConstructorInfo con, object[] constructorArgs,
+        private void Initialize(ConstructorInfo con, object?[] constructorArgs,
                 PropertyInfo[] namedProperties, object[] propertyValues,
                 FieldInfo[] namedFields, object[] fieldValues)
         {
@@ -184,24 +180,25 @@ namespace System.Reflection.Emit
             if (fieldValues == null)
                 throw new ArgumentNullException(nameof(fieldValues));
             if (con.GetParametersCount() != constructorArgs.Length)
-                throw new ArgumentException("Parameter count does not match " +
-                        "passed in argument value count.");
+                throw new ArgumentException(SR.Argument_BadParameterCountsForConstructor);
             if (namedProperties.Length != propertyValues.Length)
-                throw new ArgumentException("Array lengths must be the same.",
-                        "namedProperties, propertyValues");
+                throw new ArgumentException(SR.Arg_ArrayLengthsDiffer, "namedProperties, propertyValues");
             if (namedFields.Length != fieldValues.Length)
-                throw new ArgumentException("Array lengths must be the same.",
-                        "namedFields, fieldValues");
+                throw new ArgumentException(SR.Arg_ArrayLengthsDiffer, "namedFields, fieldValues");
             if ((con.Attributes & MethodAttributes.Static) == MethodAttributes.Static ||
                     (con.Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private)
-                throw new ArgumentException("Cannot have private or static constructor.");
+                throw new ArgumentException(SR.Argument_BadConstructor);
 
-            Type atype = ctor.DeclaringType;
+            // Here coreclr does
+            // if ((con.CallingConvention & CallingConventions.Standard) != CallingConventions.Standard)
+            //    throw new ArgumentException(SR.Argument_BadConstructorCallConv);
+
+            Type atype = ctor.DeclaringType!;
             int i;
             i = 0;
             foreach (FieldInfo fi in namedFields)
             {
-                Type t = fi.DeclaringType;
+                Type t = fi.DeclaringType!;
                 if ((atype != t) && (!t.IsSubclassOf(atype)) && (!atype.IsSubclassOf(t)))
                     throw new ArgumentException("Field '" + fi.Name + "' does not belong to the same class as the constructor");
                 if (!IsValidType(fi.FieldType))
@@ -228,7 +225,7 @@ namespace System.Reflection.Emit
             {
                 if (!pi.CanWrite)
                     throw new ArgumentException("Property '" + pi.Name + "' does not have a setter.");
-                Type t = pi.DeclaringType;
+                Type t = pi.DeclaringType!;
                 if ((atype != t) && (!t.IsSubclassOf(atype)) && (!atype.IsSubclassOf(t)))
                     throw new ArgumentException("Property '" + pi.Name + "' does not belong to the same class as the constructor");
                 if (!IsValidType(pi.PropertyType))
@@ -260,8 +257,8 @@ namespace System.Reflection.Emit
                         if (!(paramType is TypeBuilder) && !paramType.IsEnum && !paramType.IsInstanceOfType(constructorArgs[i]))
                             if (!paramType.IsArray)
                                 throw new ArgumentException("Value of argument " + i + " does not match parameter type: " + paramType + " -> " + constructorArgs[i]);
-                        if (!IsValidParam(constructorArgs[i], paramType))
-                            throw new ArgumentException("Cannot emit a CustomAttribute with argument of type " + constructorArgs[i].GetType() + ".");
+                        if (!IsValidParam(constructorArgs[i]!, paramType))
+                            throw new ArgumentException("Cannot emit a CustomAttribute with argument of type " + constructorArgs[i]!.GetType() + ".");
                     }
                 }
                 i++;
@@ -297,7 +294,7 @@ namespace System.Reflection.Emit
             return Text.Encoding.UTF8.GetString(data, pos, len);
         }
 
-        internal static string decode_string(byte[] data, int pos, out int rpos)
+        internal static string? decode_string(byte[] data, int pos, out int rpos)
         {
             if (data[pos] == 0xff)
             {
@@ -314,7 +311,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal string string_arg()
+        internal string? string_arg()
         {
             int pos = 2;
             return decode_string(data, pos, out pos);
@@ -329,13 +326,13 @@ namespace System.Reflection.Emit
             bool hasSize = false;
             int value;
             int utype; /* the (stupid) ctor takes a short or an enum ... */
-            string marshalTypeName = null;
-            Type marshalTypeRef = null;
+            string? marshalTypeName = null;
+            Type? marshalTypeRef = null;
             string marshalCookie = string.Empty;
             utype = (int)data[2];
             utype |= ((int)data[3]) << 8;
 
-            string first_type_name = GetParameters(customBuilder.Ctor)[0].ParameterType.FullName;
+            string? first_type_name = GetParameters(customBuilder.Ctor)[0].ParameterType.FullName;
             int pos = 6;
             if (first_type_name == "System.Int16")
                 pos = 4;
@@ -355,7 +352,7 @@ namespace System.Reflection.Emit
                     /* enums, the value is preceeded by the type */
                     decode_string(data, pos, out pos);
                 }
-                string named_name = decode_string(data, pos, out pos);
+                string? named_name = decode_string(data, pos, out pos);
 
                 switch (named_name)
                 {
@@ -402,7 +399,7 @@ namespace System.Reflection.Emit
                             marshalTypeRef = Type.GetType(marshalTypeName);
                         break;
                     case "MarshalCookie":
-                        marshalCookie = decode_string(data, pos, out pos);
+                        marshalCookie = decode_string(data, pos, out pos)!;
                         break;
                     default:
                         throw new Exception("Unknown MarshalAsAttribute field: " + named_name);
@@ -436,43 +433,27 @@ namespace System.Reflection.Emit
             }
         }
 
-        private static Type elementTypeToType(int elementType)
-        {
+        private static Type elementTypeToType(int elementType) =>
             /* Partition II, section 23.1.16 */
-            switch (elementType)
+            elementType switch
             {
-                case 0x02:
-                    return typeof(bool);
-                case 0x03:
-                    return typeof(char);
-                case 0x04:
-                    return typeof(sbyte);
-                case 0x05:
-                    return typeof(byte);
-                case 0x06:
-                    return typeof(short);
-                case 0x07:
-                    return typeof(ushort);
-                case 0x08:
-                    return typeof(int);
-                case 0x09:
-                    return typeof(uint);
-                case 0x0a:
-                    return typeof(long);
-                case 0x0b:
-                    return typeof(ulong);
-                case 0x0c:
-                    return typeof(float);
-                case 0x0d:
-                    return typeof(double);
-                case 0x0e:
-                    return typeof(string);
-                default:
-                    throw new Exception("Unknown element type '" + elementType + "'");
-            }
-        }
+                0x02 => typeof(bool),
+                0x03 => typeof(char),
+                0x04 => typeof(sbyte),
+                0x05 => typeof(byte),
+                0x06 => typeof(short),
+                0x07 => typeof(ushort),
+                0x08 => typeof(int),
+                0x09 => typeof(uint),
+                0x0a => typeof(long),
+                0x0b => typeof(ulong),
+                0x0c => typeof(float),
+                0x0d => typeof(double),
+                0x0e => typeof(string),
+                _ => throw new Exception("Unknown element type '" + elementType + "'"),
+            };
 
-        private static object decode_cattr_value(Type t, byte[] data, int pos, out int rpos)
+        private static object? decode_cattr_value(Type t, byte[] data, int pos, out int rpos)
         {
             switch (Type.GetTypeCode(t))
             {
@@ -507,9 +488,9 @@ namespace System.Reflection.Emit
         internal struct CustomAttributeInfo
         {
             public ConstructorInfo ctor;
-            public object[] ctorArgs;
+            public object?[] ctorArgs;
             public string[] namedParamNames;
-            public object[] namedParamValues;
+            public object?[] namedParamValues;
         }
 
         internal static CustomAttributeInfo decode_cattr(CustomAttributeBuilder customBuilder)
@@ -529,7 +510,7 @@ namespace System.Reflection.Emit
 
             ParameterInfo[] pi = GetParameters(ctor);
             info.ctor = ctor;
-            info.ctorArgs = new object[pi.Length];
+            info.ctorArgs = new object?[pi.Length];
             for (int i = 0; i < pi.Length; ++i)
                 info.ctorArgs[i] = decode_cattr_value(pi[i].ParameterType, data, pos, out pos);
 
@@ -542,7 +523,7 @@ namespace System.Reflection.Emit
             {
                 int named_type = data[pos++];
                 int data_type = data[pos++];
-                string enum_type_name = null;
+                string? enum_type_name = null;
 
                 if (data_type == 0x55)
                 {
@@ -559,15 +540,15 @@ namespace System.Reflection.Emit
                 if (named_type == 0x53)
                 {
                     /* Field */
-                    FieldInfo fi = ctor.DeclaringType.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    FieldInfo? fi = ctor.DeclaringType!.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                     if (fi == null)
                         throw new Exception("Custom attribute type '" + ctor.DeclaringType + "' doesn't contain a field named '" + name + "'");
 
-                    object val = decode_cattr_value(fi.FieldType, data, pos, out pos);
+                    object? val = decode_cattr_value(fi.FieldType, data, pos, out pos);
                     if (enum_type_name != null)
                     {
-                        Type enumType = Type.GetType(enum_type_name);
-                        val = Enum.ToObject(enumType, val);
+                        Type enumType = Type.GetType(enum_type_name)!;
+                        val = Enum.ToObject(enumType, val!);
                     }
 
                     info.namedParamValues[i] = val;
@@ -582,8 +563,7 @@ namespace System.Reflection.Emit
 
         private static ParameterInfo[] GetParameters(ConstructorInfo ctor)
         {
-            ConstructorBuilder cb = ctor as ConstructorBuilder;
-            if (cb != null)
+            if (ctor is ConstructorBuilder cb)
                 return cb.GetParametersInternal();
 
             return ctor.GetParametersInternal();

@@ -1316,7 +1316,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 		return TRUE;
 
 	// Stack start limit is stack lower bound. Make sure there is enough room left.
-	void *limit = ((uint8_t *)thread->stack_start_limit) + MONO_MIN_EXECUTION_STACK_SIZE;
+	void *limit = ((uint8_t *)thread->stack_start_limit) + ALIGN_TO (MONO_STACK_OVERFLOW_GUARD_SIZE + MONO_MIN_EXECUTION_STACK_SIZE, ((gssize)mono_pagesize ()));
 
 	if (current < limit)
 		return FALSE;
@@ -8208,6 +8208,21 @@ ves_icall_System_IO_Compression_DeflateStreamNative_WriteZStream (gpointer strea
 }
 
 #endif
+
+#if defined(TARGET_WASM)
+G_EXTERN_C void mono_timezone_get_local_name (MonoString result);
+void
+ves_icall_System_TimeZoneInfo_mono_timezone_get_local_name (MonoString result)
+{
+	// MONO_CROSS_COMPILE returns undefined symbol "_mono_timezone_get_local_name"
+	// The icall offsets will be generated and linked at build time
+	// This is defined outside the runtime within the webassembly sdk
+#ifndef MONO_CROSS_COMPILE
+	return mono_timezone_get_local_name (result);
+#endif
+}
+#endif
+
 #endif /* ENABLE_NETCORE */
 
 #ifndef PLATFORM_NO_DRIVEINFO

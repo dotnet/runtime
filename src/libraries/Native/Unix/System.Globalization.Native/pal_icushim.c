@@ -121,12 +121,12 @@ static int FindICULibs(char* symbolName, char* symbolVersion)
 // Version ranges to search for each of the three version components
 // The rationale for major version range is that we support versions higher or
 // equal to the version we are built against and less or equal to that version
-// plus 20 to give us enough headspace. The ICU seems to version about twice
+// plus 30 to give us enough headspace. The ICU seems to version about twice
 // a year.
 // On some platforms (mainly Alpine Linux) we want to make our minimum version
 // an earlier version than what we build that we know we support.
 #define MinICUVersion  50
-#define MaxICUVersion  (U_ICU_VERSION_MAJOR_NUM + 20)
+#define MaxICUVersion  (U_ICU_VERSION_MAJOR_NUM + 30)
 #define MinMinorICUVersion  1
 #define MaxMinorICUVersion  5
 #define MinSubICUVersion 1
@@ -244,14 +244,8 @@ static int FindLibWithMajorVersion(const char* versionPrefix, char* symbolName, 
     // ICU packaging documentation (http://userguide.icu-project.org/packaging)
     // describes applications link against the major (e.g. libicuuc.so.54).
 
-    // Select the version of ICU present at build time.
-    if (OpenICULibraries(MinICUVersion, -1, -1, versionPrefix, symbolName, symbolVersion))
-    {
-        return TRUE;
-    }
-
     // Select the highest supported version of ICU present on the local machine
-    for (int i = MaxICUVersion; i > MinICUVersion; i--)
+    for (int i = MaxICUVersion; i >= MinICUVersion; i--)
     {
         if (OpenICULibraries(i, -1, -1, versionPrefix, symbolName, symbolVersion))
         {

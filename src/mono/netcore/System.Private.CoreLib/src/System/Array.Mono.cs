@@ -3,12 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Runtime.CompilerServices;
-using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Mono;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
@@ -143,7 +142,7 @@ namespace System
 
             Type src_type = sourceArray.GetType().GetElementType()!;
             Type dst_type = destinationArray.GetType().GetElementType()!;
-            var dst_type_vt = dst_type.IsValueType && Nullable.GetUnderlyingType(dst_type) == null;
+            bool dst_type_vt = dst_type.IsValueType && Nullable.GetUnderlyingType(dst_type) == null;
 
             bool src_is_enum = src_type.IsEnum;
             bool dst_is_enum = dst_type.IsEnum;
@@ -272,7 +271,7 @@ namespace System
             if (runtimeType == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
-            Array array = null;
+            Array? array = null;
             InternalCreate(ref array, runtimeType._impl.Value, 1, &length, null);
             GC.KeepAlive(runtimeType);
             return array;
@@ -292,7 +291,7 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             int* lengths = stackalloc int[] { length1, length2 };
-            Array array = null;
+            Array? array = null;
             InternalCreate(ref array, runtimeType._impl.Value, 2, lengths, null);
             GC.KeepAlive(runtimeType);
             return array;
@@ -314,7 +313,7 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             int* lengths = stackalloc int[] { length1, length2, length3 };
-            Array array = null;
+            Array? array = null;
             InternalCreate(ref array, runtimeType._impl.Value, 3, lengths, null);
             GC.KeepAlive(runtimeType);
             return array;
@@ -337,7 +336,7 @@ namespace System
                 if (lengths[i] < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            Array array = null;
+            Array? array = null;
             fixed (int* pLengths = &lengths[0])
                 InternalCreate(ref array, runtimeType._impl.Value, lengths.Length, pLengths, null);
             GC.KeepAlive(runtimeType);
@@ -365,7 +364,7 @@ namespace System
             if (runtimeType == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
-            Array array = null;
+            Array? array = null;
             fixed (int* pLengths = &lengths[0])
             fixed (int* pLowerBounds = &lowerBounds[0])
                 InternalCreate(ref array, runtimeType._impl.Value, lengths.Length, pLengths, pLowerBounds);
@@ -374,16 +373,16 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void InternalCreate(ref Array result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
+        private static extern unsafe void InternalCreate([NotNull] ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
 
         public object GetValue(int index)
         {
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
 
-            var lb = GetLowerBound(0);
+            int lb = GetLowerBound(0);
             if (index < lb || index > GetUpperBound(0))
-                throw new IndexOutOfRangeException("Index has to be between upper and lower bound of the array.");
+                throw new IndexOutOfRangeException(SR.Argument_IndexOutOfArrayBounds);
 
             if (GetType().GetElementType()!.IsPointer)
                 throw new NotSupportedException(SR.NotSupported_Type);
@@ -428,9 +427,9 @@ namespace System
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
 
-            var lb = GetLowerBound(0);
+            int lb = GetLowerBound(0);
             if (index < lb || index > GetUpperBound(0))
-                throw new IndexOutOfRangeException("Index has to be >= lower bound and <= upper bound of the array.");
+                throw new IndexOutOfRangeException(SR.Argument_IndexOutOfArrayBounds);
 
             if (GetType().GetElementType()!.IsPointer)
                 throw new NotSupportedException(SR.NotSupported_Type);
@@ -524,14 +523,14 @@ namespace System
         [Intrinsic]
         private void GetGenericValueImpl<T>(int pos, out T value)
         {
-            var self = this;
+            Array self = this;
             GetGenericValue_icall(ref self, pos, out value);
         }
 
         [Intrinsic]
         private void SetGenericValueImpl<T>(int pos, ref T value)
         {
-            var self = this;
+            Array self = this;
             SetGenericValue_icall(ref self, pos, ref value);
         }
 
@@ -637,9 +636,9 @@ namespace System
             if ((uint)index >= (uint)Length)
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
 
-            if (this is object[] oarray)
+            if (this is object?[] oarray)
             {
-                oarray![index] = (object)item;
+                oarray[index] = item;
                 return;
             }
 

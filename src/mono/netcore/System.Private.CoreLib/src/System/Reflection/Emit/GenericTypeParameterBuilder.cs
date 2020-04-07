@@ -29,15 +29,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Collections;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.Serialization;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
@@ -48,24 +43,24 @@ namespace System.Reflection.Emit
     {
         #region Sync with reflection.h
         private TypeBuilder tbuilder;
-        private MethodBuilder mbuilder;
+        private MethodBuilder? mbuilder;
         private string name;
         private int index;
-        private Type base_type;
+        private Type? base_type;
 #pragma warning disable 414
-        private Type[] iface_constraints;
-        private CustomAttributeBuilder[] cattrs;
+        private Type[]? iface_constraints;
+        private CustomAttributeBuilder[]? cattrs;
         private GenericParameterAttributes attrs;
 #pragma warning restore
         #endregion
 
-        public void SetBaseTypeConstraint(Type baseTypeConstraint)
+        public void SetBaseTypeConstraint(Type? baseTypeConstraint)
         {
             this.base_type = baseTypeConstraint ?? typeof(object);
         }
 
         [ComVisible(true)]
-        public void SetInterfaceConstraints(params Type[] interfaceConstraints)
+        public void SetInterfaceConstraints(params Type[]? interfaceConstraints)
         {
             this.iface_constraints = interfaceConstraints;
         }
@@ -76,7 +71,7 @@ namespace System.Reflection.Emit
         }
 
         internal GenericTypeParameterBuilder(TypeBuilder tbuilder,
-                              MethodBuilder mbuilder,
+                              MethodBuilder? mbuilder,
                               string name, int index)
         {
             this.tbuilder = tbuilder;
@@ -88,14 +83,14 @@ namespace System.Reflection.Emit
         internal override Type InternalResolve()
         {
             if (mbuilder != null)
-                return MethodBase.GetMethodFromHandle(mbuilder.MethodHandleInternal, mbuilder.TypeBuilder.InternalResolve().TypeHandle).GetGenericArguments()[index];
+                return MethodBase.GetMethodFromHandle(mbuilder.MethodHandleInternal, mbuilder.TypeBuilder.InternalResolve().TypeHandle)!.GetGenericArguments()[index];
             return tbuilder.InternalResolve().GetGenericArguments()[index];
         }
 
         internal override Type RuntimeResolve()
         {
             if (mbuilder != null)
-                return MethodBase.GetMethodFromHandle(mbuilder.MethodHandleInternal, mbuilder.TypeBuilder.RuntimeResolve().TypeHandle).GetGenericArguments()[index];
+                return MethodBase.GetMethodFromHandle(mbuilder.MethodHandleInternal, mbuilder.TypeBuilder.RuntimeResolve().TypeHandle)!.GetGenericArguments()[index];
             return tbuilder.RuntimeResolve().GetGenericArguments()[index];
         }
 
@@ -110,11 +105,11 @@ namespace System.Reflection.Emit
             return TypeAttributes.Public;
         }
 
-        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr,
-                                       Binder binder,
+        protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr,
+                                       Binder? binder,
                                        CallingConventions callConvention,
                                        Type[] types,
-                                       ParameterModifier[] modifiers)
+                                       ParameterModifier[]? modifiers)
         {
             throw not_supported();
         }
@@ -175,10 +170,10 @@ namespace System.Reflection.Emit
             throw not_supported();
         }
 
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr,
-                                 Binder binder,
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr,
+                                 Binder? binder,
                                  CallingConventions callConvention,
-                                 Type[] types, ParameterModifier[] modifiers)
+                                 Type[]? types, ParameterModifier[]? modifiers)
         {
             throw not_supported();
         }
@@ -198,10 +193,10 @@ namespace System.Reflection.Emit
             throw not_supported();
         }
 
-        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr,
-                                 Binder binder, Type returnType,
-                                 Type[] types,
-                                 ParameterModifier[] modifiers)
+        protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr,
+                                 Binder? binder, Type? returnType,
+                                 Type[]? types,
+                                 ParameterModifier[]? modifiers)
         {
             throw not_supported();
         }
@@ -211,12 +206,12 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        public override bool IsAssignableFrom(Type c)
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
             throw not_supported();
         }
 
-        public override bool IsAssignableFrom(TypeInfo typeInfo)
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
             if (typeInfo == null)
                 return false;
@@ -224,7 +219,7 @@ namespace System.Reflection.Emit
             return IsAssignableFrom(typeInfo.AsType());
         }
 
-        public override bool IsInstanceOfType(object o)
+        public override bool IsInstanceOfType(object? o)
         {
             throw not_supported();
         }
@@ -267,10 +262,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override object InvokeMember(string name, BindingFlags invokeAttr,
-                             Binder binder, object target, object[] args,
-                             ParameterModifier[] modifiers,
-                             CultureInfo culture, string[] namedParameters)
+        public override object? InvokeMember(string name, BindingFlags invokeAttr,
+                             Binder? binder, object? target, object?[]? args,
+                             ParameterModifier[]? modifiers,
+                             CultureInfo? culture, string[]? namedParameters)
         {
             throw not_supported();
         }
@@ -293,17 +288,17 @@ namespace System.Reflection.Emit
             get { return tbuilder.Assembly; }
         }
 
-        public override string AssemblyQualifiedName
+        public override string? AssemblyQualifiedName
         {
             get { return null; }
         }
 
-        public override Type BaseType
+        public override Type? BaseType
         {
             get { return base_type; }
         }
 
-        public override string FullName
+        public override string? FullName
         {
             get { return null; }
         }
@@ -339,7 +334,7 @@ namespace System.Reflection.Emit
             get { return name; }
         }
 
-        public override string Namespace
+        public override string? Namespace
         {
             get { return null; }
         }
@@ -349,12 +344,12 @@ namespace System.Reflection.Emit
             get { return tbuilder.Module; }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return mbuilder != null ? mbuilder.DeclaringType : tbuilder; }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return DeclaringType; }
         }
@@ -412,7 +407,7 @@ namespace System.Reflection.Emit
             throw new InvalidOperationException();
         }
 
-        public override MethodBase DeclaringMethod
+        public override MethodBase? DeclaringMethod
         {
             get { return mbuilder; }
         }
@@ -453,7 +448,7 @@ namespace System.Reflection.Emit
         }
 
         // FIXME:
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
             return base.Equals(o);
         }

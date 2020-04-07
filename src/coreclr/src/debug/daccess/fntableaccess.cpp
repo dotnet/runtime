@@ -217,9 +217,13 @@ static NTSTATUS OutOfProcessFunctionTableCallback_JIT(IN  ReadMemoryFunction    
                 OutOfProcessFindHeader(fpReadMemory, pUserContext, Hp.pHdrMap, hdrOffset, hdrOffset);
             }
 
-            pFunctions   = (PT_RUNTIME_FUNCTION)ClrHeapAlloc(ClrGetProcessHeap(), HEAP_ZERO_MEMORY, S_SIZE_T(nEntries) * S_SIZE_T(sizeof(T_RUNTIME_FUNCTION)));
-            *ppFunctions = pFunctions;
-            *pnEntries   = nEntries;
+            S_SIZE_T blockSize = S_SIZE_T(nEntries) * S_SIZE_T(sizeof(T_RUNTIME_FUNCTION));
+            if (blockSize.IsOverflow())
+                return STATUS_UNSUCCESSFUL;
+
+            pFunctions = (PT_RUNTIME_FUNCTION)HeapAlloc(GetProcessHeap(), 0, blockSize.Value());
+            if (pFunctions == NULL)
+                return STATUS_NO_MEMORY;
 
             //
             // walk the header map and copy the function tables
@@ -256,7 +260,7 @@ static NTSTATUS OutOfProcessFunctionTableCallback_JIT(IN  ReadMemoryFunction    
                 OutOfProcessFindHeader(fpReadMemory, pUserContext, Hp.pHdrMap, hdrOffset, hdrOffset);
             }
 
-            // Return the final count.
+            *ppFunctions = pFunctions;
             *pnEntries = index;
             break;
         }
@@ -371,7 +375,14 @@ static NTSTATUS OutOfProcessFunctionTableCallback_Stub(IN  ReadMemoryFunction   
 
             _ASSERTE(!nEntriesAllocated);
             nEntriesAllocated = nEntries;
-            rgFunctions = (PT_RUNTIME_FUNCTION)ClrHeapAlloc(ClrGetProcessHeap(), HEAP_ZERO_MEMORY, S_SIZE_T(nEntries) * S_SIZE_T(sizeof(T_RUNTIME_FUNCTION)));
+
+            S_SIZE_T blockSize = S_SIZE_T(nEntries) * S_SIZE_T(sizeof(T_RUNTIME_FUNCTION));
+            if (blockSize.IsOverflow())
+                return STATUS_UNSUCCESSFUL;
+
+            rgFunctions = (PT_RUNTIME_FUNCTION)HeapAlloc(GetProcessHeap(), 0, blockSize.Value());
+            if (rgFunctions == NULL)
+                return STATUS_NO_MEMORY;
             nEntries = 0;
         }
         else

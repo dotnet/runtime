@@ -3,14 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
     public partial class String
     {
+#pragma warning disable CS8618 // compiler sees this non-nullable static string as uninitialized
         [Intrinsic]
         public static readonly string Empty;
+#pragma warning restore CS8618
 
         public int Length
         {

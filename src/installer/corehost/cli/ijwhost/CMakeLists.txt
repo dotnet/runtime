@@ -51,5 +51,4 @@ if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_AR
     target_link_libraries(ijwhost Advapi32.lib Ole32.lib)
 endif()
 
-install(TARGETS ijwhost DESTINATION corehost)
-install_symbols (ijwhost corehost)
+install_with_stripped_symbols(ijwhost TARGETS corehost)
