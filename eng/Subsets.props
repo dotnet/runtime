@@ -86,6 +86,7 @@
 
   <ItemGroup>
     <!-- Libraries -->
+    <SubsetName Include="Depprojs" Category="Libraries" Description="The libraries upfront restore projects." />
     <SubsetName Include="Native" Category="Libraries" Description="The native libraries used in the shared framework." />
     <SubsetName Include="Ref" Category="Libraries" Description="The managed reference libraries." />
     <SubsetName Include="Src" Category="Libraries" Description="The managed implementation libraries." />
@@ -116,6 +117,7 @@
     <SubsetName Include="Bundle" Category="Installer" Description="The shared framework bundle installer projects. Produces .exe installers for Windows." />
     <SubsetName Include="Installers" Category="Installer" Description="Generates additional installers. This produces the shared frameworks and their installers." />
     <SubsetName Include="Test" Category="Installer" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
+    <SubsetName Include="Publish" Category="Installer" OnDemand="true" Description="Builds the installer publish infrastructure." />
   </ItemGroup>
 
   <!-- Default targets, parallelization and configurations. -->
@@ -275,6 +277,10 @@
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\HostActivation.Tests\HostActivation.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
     <InstallerProject Include="@(TestProjectToBuild)" Pack="false" Test="true" BuildInParallel="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('-publish-'))">
+    <InstallerProject Include="$(InstallerProjectRoot)publish\prepare-artifacts.proj" />
   </ItemGroup>
 
 </Project>
