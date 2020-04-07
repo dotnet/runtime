@@ -62,7 +62,7 @@ jobs:
         - _addtionalBuildArguments: ''
         - ${{ parameters.variables }}
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-          - EMSDK_PATH: $(Build.BinariesDirectory)/emsdk
+          - EMSDK_PATH: /usr/local/emscripten
         - ${{ if eq(parameters.runTests, true) }}:
           - _addtionalBuildArguments: /p:IncludeLibrariesTestSubset=true /p:ArchiveTests=true
 
@@ -77,15 +77,6 @@ jobs:
               ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
               ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
             displayName: Install Build Dependencies
-
-        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-          - script: |
-              EMSCRIPTEN_VERSION=1.38.47
-              git clone https://github.com/emscripten-core/emsdk.git $(EMSDK_PATH)
-              cd $(EMSDK_PATH)
-              ./emsdk install ${EMSCRIPTEN_VERSION}-upstream
-              ./emsdk activate --embedded ${EMSCRIPTEN_VERSION}-upstream
-            displayName: Install Emscripten
 
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
