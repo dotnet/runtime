@@ -290,6 +290,7 @@
       <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsiOS)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Interop.Libraries.iOS.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs" />
       <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
         <Link>Common\Interop\OSX\Interop.SearchPath.cs</Link>
