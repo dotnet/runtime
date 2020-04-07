@@ -19,7 +19,7 @@
     out and skip building. 
   -->
   <Target Name="MobileSkipBuildProps" 
-          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and '$(TargetOS)' == 'iOS'"
+          Condition="'$(SkipBuildOnRuntimePackOnlyOS)' == 'true' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android')"
           BeforeTargets="GetSkipBuildProps">
     <PropertyGroup>
       <SkipBuild>true</SkipBuild>

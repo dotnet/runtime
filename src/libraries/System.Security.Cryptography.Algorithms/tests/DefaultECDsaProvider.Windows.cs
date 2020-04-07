@@ -22,6 +22,8 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
+        public bool LimitedPrivateKeySupported => true;
+
         private static bool NativeOidFriendlyNameExists(string oidFriendlyName)
         {
             if (string.IsNullOrEmpty(oidFriendlyName))

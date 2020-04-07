@@ -18,10 +18,8 @@
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
-    <!-- Paths used during restore -->
-    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(Configuration)' == 'Release'">true</EnableNgenOptimization>
-    <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
-    <XmlDocDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'docs'))</XmlDocDir>
+    <!-- Downgrade compiler version to fix nullability issues: https://github.com/dotnet/runtime/issues/34417. -->
+    <MicrosoftNetCompilersToolsetVersion>3.6.0-2.20166.2</MicrosoftNetCompilersToolsetVersion>
     <!-- Blob storage container that has the "Latest" channel to publish to. -->
     <ContainerName>dotnet</ContainerName>
     <ChecksumContainerName>$(ContainerName)</ChecksumContainerName>
@@ -61,6 +59,7 @@
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20171.1</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>5.0.0-beta.20171.1</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetBuildTasksTargetFrameworkSdk>5.0.0-beta.20175.1</MicrosoftDotNetBuildTasksTargetFrameworkSdk>
     <MicrosoftDotNetCodeAnalysisVersion>5.0.0-beta.20171.1</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftDotNetGenAPIVersion>5.0.0-beta.20171.1</MicrosoftDotNetGenAPIVersion>
     <MicrosoftDotNetGenFacadesVersion>5.0.0-beta.20171.1</MicrosoftDotNetGenFacadesVersion>
@@ -77,7 +76,7 @@
     <MicrosoftDotNetPlatformAbstractionsVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsVersion>
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>5.0.0-preview.4.20202.18</MicrosoftNETCoreILAsmVersion>
-    <MicrosoftNETSdkILVersion>5.0.0-alpha.1.20076.2</MicrosoftNETSdkILVersion>
+    <MicrosoftNETSdkILVersion>5.0.0-preview.4.20202.18</MicrosoftNETSdkILVersion>
     <!-- Libraries dependencies -->
     <runtimenativeSystemIOPortsVersion>5.0.0-alpha.1.19563.3</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
