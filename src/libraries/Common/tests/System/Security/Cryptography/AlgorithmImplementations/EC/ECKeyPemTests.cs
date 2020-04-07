@@ -45,11 +45,63 @@ NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
         }
 
         [Fact]
+        public void ImportFromPem_ECPrivateKey_IgnoresUnrelatedAlgorithm()
+        {
+            using (TAlg key = CreateKey())
+            {
+                key.ImportFromPem(@"
+-----BEGIN RSA PRIVATE KEY-----
+MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
+uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
+Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
+9ykCIQDzcnsehnYgVZTTxzoCJ01PGpgESilRyFzNEsb8V60ZewIhAMCyOujqUqn7
+Q079SlHzXuvocqIdt4IM1EmIlrlU9GGvAh8Ijv3FFPUSLfANgfOIH9mX7ldpzzGk
+rmaUzxQvyuVLAiEArCTM8dSbopUADWnD4jArhU50UhWAIaM6ZrKqC8k0RKsCIQDC
+yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
+-----END RSA PRIVATE KEY-----
+-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
+AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
+NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
+-----END EC PRIVATE KEY-----");
+                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters expected = EccTestData.GetNistP256ReferenceKey();
+                EccTestBase.AssertEqual(expected, ecParameters);
+            }
+        }
+
+        [Fact]
         public void ImportFromPem_Pkcs8_Simple()
         {
             using (TAlg key = CreateKey())
             {
                 key.ImportFromPem(@"
+-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcKEsLbFoRe1W/2jP
+whpHKz8E19aFG/Y0ny19WzRSs4qhRANCAASBAezkdGSm6tcM9ppuK9PYhpGjJi0i
+y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
+-----END PRIVATE KEY-----");
+                ECParameters ecParameters = ExportParameters(key, true);
+                ECParameters expected = EccTestData.GetNistP256ReferenceKey();
+                EccTestBase.AssertEqual(expected, ecParameters);
+            }
+        }
+
+        [Fact]
+        public void ImportFromPem_Pkcs8_IgnoresUnrelatedAlgorithm()
+        {
+            using (TAlg key = CreateKey())
+            {
+                key.ImportFromPem(@"
+-----BEGIN RSA PRIVATE KEY-----
+MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
+uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
+Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
+9ykCIQDzcnsehnYgVZTTxzoCJ01PGpgESilRyFzNEsb8V60ZewIhAMCyOujqUqn7
+Q079SlHzXuvocqIdt4IM1EmIlrlU9GGvAh8Ijv3FFPUSLfANgfOIH9mX7ldpzzGk
+rmaUzxQvyuVLAiEArCTM8dSbopUADWnD4jArhU50UhWAIaM6ZrKqC8k0RKsCIQDC
+yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
+-----END RSA PRIVATE KEY-----
 -----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcKEsLbFoRe1W/2jP
 whpHKz8E19aFG/Y0ny19WzRSs4qhRANCAASBAezkdGSm6tcM9ppuK9PYhpGjJi0i
@@ -98,6 +150,31 @@ dRUwHwYDVR0jBBgwFoAU5FG2Fmi86hJOCf4KnjaxOGWVdRUwDAYDVR0TBAUwAwEB
 /zANBgkqhkiG9w0BAQUFAAMxAEzDg/u8TlApCnE8qxhcbTXk2MbX+2n5PCn+MVrW
 wggvPj3b2WMXsVWiPr4S1Y/nBA==
 -----END CERTIFICATE-----
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
+Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
+-----END PUBLIC KEY-----");
+                ECParameters ecParameters = ExportParameters(key, false);
+                ECParameters expected = EccTestData.GetNistP256ReferenceKey();
+                EccTestBase.ComparePublicKey(expected.Q, ecParameters.Q, isEqual: true);
+            }
+        }
+
+        [Fact]
+        public void ImportFromPem_Spki_IgnoresUnrelatedAlgorithms()
+        {
+            using (TAlg key = CreateKey())
+            {
+                key.ImportFromPem(@"
+-----BEGIN RSA PRIVATE KEY-----
+MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
+uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
+Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
+9ykCIQDzcnsehnYgVZTTxzoCJ01PGpgESilRyFzNEsb8V60ZewIhAMCyOujqUqn7
+Q079SlHzXuvocqIdt4IM1EmIlrlU9GGvAh8Ijv3FFPUSLfANgfOIH9mX7ldpzzGk
+rmaUzxQvyuVLAiEArCTM8dSbopUADWnD4jArhU50UhWAIaM6ZrKqC8k0RKsCIQDC
+yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
+-----END RSA PRIVATE KEY-----
 -----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
@@ -326,6 +403,24 @@ Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
                     key.ImportFromEncryptedPem(pem, ""));
                 Assert.Contains(AmbiguousExceptionMarker, ae.Message);
+            }
+        }
+
+        [Fact]
+        public void ImportFromEncryptedPem_UnencryptedPem_ThrowsNoPem()
+        {
+            using (TAlg key = CreateKey())
+            {
+                string pem = @"
+-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcKEsLbFoRe1W/2jP
+whpHKz8E19aFG/Y0ny19WzRSs4qhRANCAASBAezkdGSm6tcM9ppuK9PYhpGjJi0i
+y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
+-----END PRIVATE KEY-----";
+                byte[] passwordBytes = Array.Empty<byte>();
+                ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
+                    key.ImportFromEncryptedPem(pem, passwordBytes));
+                Assert.Contains(NoPemExceptionMarker, ae.Message);
             }
         }
 
