@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -41,10 +42,7 @@ namespace System
 
                 static TextReader EnsureInitialized()
                 {
-                    // EnsureConsoleInitialized may lock Console.Out.
-                    // We musn't call it under s_syncObject lock,
-                    // otherwise there can be a deadlock when another
-                    // thread locks these objects in opposite order.
+                    // Must be placed outside s_syncObject lock. See Out getter.
                     ConsolePal.EnsureConsoleInitialized();
 
                     lock (s_syncObject) // Ensures In and InputEncoding are synchronized.
@@ -157,6 +155,16 @@ namespace System
         {
             get
             {
+                // Console.Out shouldn't be locked after locking s_syncObject.
+                // Otherwise there can be a deadlock when another threads locks these
+                // objects in opposite order.
+                // This asserts checks on every get to cover the locking case.
+                //
+                // Some functionality requires the console to be initialized.
+                // On Linux, this initialization requires a lock on Console.Out.
+                // The EnsureConsoleInitialized call must be placed outside the s_syncObject lock.
+                Debug.Assert(!Monitor.IsEntered(s_syncObject));
+
                 return Volatile.Read(ref s_out) ?? EnsureInitialized();
 
                 static TextWriter EnsureInitialized()
@@ -411,6 +419,9 @@ namespace System
         {
             add
             {
+                // Must be placed outside s_syncObject lock. See Out getter.
+                ConsolePal.EnsureConsoleInitialized();
+
                 lock (s_syncObject)
                 {
                     s_cancelCallbacks += value;
