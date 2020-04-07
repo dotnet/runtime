@@ -35,8 +35,6 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        public bool LimitedPrivateKeySupported => true;
-
         private static bool IsValueOrFriendlyNameValid(string friendlyNameOrValue)
         {
             if (string.IsNullOrEmpty(friendlyNameOrValue))
