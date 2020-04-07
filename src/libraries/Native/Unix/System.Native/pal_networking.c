@@ -343,6 +343,9 @@ static int32_t GetHostEntries(const uint8_t* address, struct addrinfo* info, Hos
             }
         }
     }
+#else
+    // Actually not needed, but to use the parameter in case of HAVE_GETIFADDRS expands to 0.
+    address = NULL;
 #endif
 
     if (entry->IPAddressCount > 0)
@@ -540,9 +543,10 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, HostEntry*
     return result;
 #else
     // Actually not needed, but otherwise the parameters are unused.
-    assert(address != NULL);
-    assert(entry != NULL);
-    assert(callback != NULL);
+    if (address != NULL && entry != NULL && callback != NULL)
+    {
+        return -1;
+    }
 
     // GetHostEntryForNameAsync is not supported on this platform.
     return -1;
