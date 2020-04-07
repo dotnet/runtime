@@ -437,6 +437,7 @@ namespace System.Drawing.Printing.Tests
         {
             var printerSettings = new PrinterSettings();
             bool supportsColor = printerSettings.SupportsColor;
+            Assert.True(supportsColor);
         }
 
         [Theory]

@@ -517,7 +517,7 @@ namespace System.Drawing.Printing
         {
             get
             {
-                return GetDeviceCaps(Interop.Gdi32.DeviceCapability.BITSPIXEL, 1) > 1;
+                return DeviceCapabilities(SafeNativeMethods.DC_COLORDEVICE, IntPtr.Zero, 0) == 1;
             }
         }
 
