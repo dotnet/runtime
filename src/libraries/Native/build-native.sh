@@ -120,14 +120,13 @@ elif [[ "$__TargetOS" == iOS ]]; then
     fi
 elif [[ "$__TargetOS" == tvOS ]]; then
     __CMakeArgs="-DCMAKE_SYSTEM_NAME=tvOS $__CMakeArgs"
+    # set default tvOS device deployment target 
+    # keep in sync with tvOSVersionMin in src/mono/Directory.Build.props
+    __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=9.0 $__CMakeArgs"
     if [[ "$__BuildArch" == x64 ]]; then
-        # set default tvOS simulator deployment target (8.0 is the minimum supported by Xcode 11)
-        # keep in sync with src/mono/Directory.Build.props
-        __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=8.0 -DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $__CMakeArgs"
     elif [[ "$__BuildArch" == arm64 ]]; then
-        # set default tvOS device deployment target (7.0 is the minimum supported by Xcode 11)
-        # keep in sync with src/mono/Directory.Build.props
-        __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=7.0 -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
+        __CMakeArgs="-DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
         echo "Error: Unknown tvOS architecture $__BuildArch."
         exit 1
