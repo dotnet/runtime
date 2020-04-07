@@ -1,6 +1,5 @@
 # TODO: investigate (too many failures or stuck)
 -nonamespace System.Net
--nonamespace System.Threading.Tasks.Tests
 -nonamespace System.Security.Cryptography.Pkcs
 -nonamespace System.Runtime.InteropServices.WindowsRuntime
 -nonamespace System.Runtime.InteropServices.Tests
