@@ -15,7 +15,7 @@ namespace
 
 extern "C" DLL_EXPORT void* GetVoidVoidFcnPtr()
 {
-    return (void*)VoidVoidImpl;
+    return (void*)&VoidVoidImpl;
 }
 
 extern "C" DLL_EXPORT bool CheckFcnPtr(bool(STDMETHODCALLTYPE *fcnptr)(long long))
