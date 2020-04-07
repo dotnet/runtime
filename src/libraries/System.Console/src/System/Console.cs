@@ -220,7 +220,7 @@ namespace System
                 static StrongBox<bool> EnsureInitialized()
                 {
                     Volatile.Write(ref _isStdInRedirected, new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
-                    return _isStdInRedirected!;
+                    return _isStdInRedirected;
                 }
             }
         }
@@ -235,7 +235,7 @@ namespace System
                 static StrongBox<bool> EnsureInitialized()
                 {
                     Volatile.Write(ref _isStdOutRedirected, new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
-                    return _isStdOutRedirected!;
+                    return _isStdOutRedirected;
                 }
             }
         }
@@ -250,7 +250,7 @@ namespace System
                 static StrongBox<bool> EnsureInitialized()
                 {
                     Volatile.Write(ref _isStdErrRedirected, new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
-                    return _isStdErrRedirected!;
+                    return _isStdErrRedirected;
                 }
             }
         }
