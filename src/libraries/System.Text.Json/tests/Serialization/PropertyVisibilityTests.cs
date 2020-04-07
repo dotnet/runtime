@@ -82,6 +82,22 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void Serealize_new_slot_public_property_without_conflict_with_base_public_property()
+        {
+            // Serialize
+            var obj = new ClassWithNewSlotDecimalProperty();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{""MyNumeric"":1.5}", json);
+
+            // Deserialize
+            json = @"{""MyNumeric"":2.5}";
+            obj = JsonSerializer.Deserialize<ClassWithNewSlotDecimalProperty>(json);
+
+            Assert.Equal(2.5M, obj.MyNumeric);
+        }
+
+        [Fact]
         public static void Ignore_non_public_property()
         {
             // Serialize
@@ -370,6 +386,16 @@ namespace System.Text.Json.Serialization.Tests
             public string MyString { get; set; } = "DefaultValue";
 
             internal string myString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassWithHiddenByNewSlotIntProperty
+        {
+            public int MyNumeric { get; set; } = 1;
+        }
+
+        public class ClassWithNewSlotDecimalProperty : ClassWithHiddenByNewSlotIntProperty
+        {
+            public new decimal MyNumeric { get; set; } = 1.5M;
         }
 
         [Fact]

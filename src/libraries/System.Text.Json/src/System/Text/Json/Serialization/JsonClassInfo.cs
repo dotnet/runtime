@@ -127,7 +127,7 @@ namespace System.Text.Json
                                 if (propertyInfo.GetMethod?.IsPublic == true ||
                                     propertyInfo.SetMethod?.IsPublic == true)
                                 {
-                                    JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo.PropertyType, propertyInfo, type, options);
+                                    JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo.PropertyType, propertyInfo, currentType, options);
                                     Debug.Assert(jsonPropertyInfo != null && jsonPropertyInfo.NameAsString != null);
 
                                     // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
@@ -140,11 +140,12 @@ namespace System.Text.Json
                                             // Overwrite the one just added since it has [JsonIgnore].
                                             cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
                                         }
-                                        else if (jsonPropertyInfo.ShouldDeserialize == true || jsonPropertyInfo.ShouldSerialize == true)
+                                        else if (other.PropertyInfo?.Name != jsonPropertyInfo.PropertyInfo?.Name &&
+                                            (jsonPropertyInfo.ShouldDeserialize == true || jsonPropertyInfo.ShouldSerialize == true))
                                         {
                                             ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, jsonPropertyInfo);
                                         }
-                                        // else ignore jsonPropertyInfo since it has [JsonIgnore].
+                                        // else ignore jsonPropertyInfo since it has [JsonIgnore] or it's hidden by a new slot.
                                     }
                                 }
                             }
