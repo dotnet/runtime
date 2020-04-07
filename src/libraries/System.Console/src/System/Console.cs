@@ -155,10 +155,9 @@ namespace System
         {
             get
             {
-                // Console.Out shouldn't be locked after locking s_syncObject.
-                // Otherwise there can be a deadlock when another threads locks these
+                // Console.Out shouldn't be locked while holding a lock on s_syncObject.
+                // Otherwise there can be a deadlock when another thread locks these
                 // objects in opposite order.
-                // This asserts checks on every get to cover the locking case.
                 //
                 // Some functionality requires the console to be initialized.
                 // On Linux, this initialization requires a lock on Console.Out.
