@@ -636,7 +636,6 @@ bool BasicBlock::CloneBlockState(
     VarSetOps::AssignAllowUninitRhs(compiler, to->bbScope, from->bbScope);
     to->bbNatLoopNum = from->bbNatLoopNum;
 #ifdef DEBUG
-    to->bbLoopNum     = from->bbLoopNum;
     to->bbTgtStkDepth = from->bbTgtStkDepth;
 #endif // DEBUG
 
