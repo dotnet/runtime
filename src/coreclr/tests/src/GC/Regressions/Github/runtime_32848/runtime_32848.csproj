@@ -10,13 +10,11 @@
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
-set COMPlus_gcServer=1
-set COMPlus_gcStress=7
+set COMPlus_GCStress=f
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
-export COMPlus_gcServer=1
-export COMPlus_gcStress=7
+export COMPlus_GCStress=f
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
 
