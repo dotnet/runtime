@@ -146,6 +146,11 @@ check_symbol_exists(
     HAVE_PIPE2)
 
 check_symbol_exists(
+    renameat2
+    stdio.h
+    HAVE_RENAMEAT2)
+
+check_symbol_exists(
     getmntinfo
     sys/mount.h
     HAVE_MNTINFO)

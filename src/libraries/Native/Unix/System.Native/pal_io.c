@@ -1142,7 +1142,7 @@ int32_t SystemNative_Rename(const char* oldPath, const char* newPath, int32_t fl
     }
     else
     {
-#ifdef RENAME_NOREPLACE
+#if HAVE_RENAMEAT2 && defined(RENAME_NOREPLACE)
         // Linux renameat2() provides the functionality we want inline.
         // This is in a feature check block as this API may well be ported to other OSes later.
         do {
