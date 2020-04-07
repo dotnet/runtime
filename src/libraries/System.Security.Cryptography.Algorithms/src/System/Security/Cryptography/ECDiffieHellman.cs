@@ -440,15 +440,21 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="input">The PEM text of the key to import.</param>
         /// <exception cref="ArgumentException">
-        /// <paramref name="input"/> does not contain a PEM-encoded key with a recognized label.
-        ///   <para>
-        ///       -or-
-        ///   </para>
-        /// <paramref name="input"/> contains multiple PEM-encoded keys with a recognized label.
-        ///   <para>
-        ///       -or-
-        ///   </para>
-        /// <paramref name="input"/> contains an encrypted PEM-encoded key.
+        /// <para>
+        ///   <paramref name="input"/> does not contain a PEM-encoded key with a recognized label.
+        /// </para>
+        /// <para>
+        ///   -or-
+        /// </para>
+        /// <para>
+        ///   <paramref name="input"/> contains multiple PEM-encoded keys with a recognized label.
+        /// </para>
+        /// <para>
+        ///     -or-
+        /// </para>
+        /// <para>
+        ///   <paramref name="input"/> contains an encrypted PEM-encoded key.
+        /// </para>
         /// </exception>
         /// <remarks>
         ///   <para>
@@ -495,45 +501,58 @@ namespace System.Security.Cryptography
         /// The password to use for decrypting the key material.
         /// </param>
         /// <exception cref="ArgumentException">
-        /// <paramref name="input"/> does not contain a PEM-encoded key with a recognized label.
-        ///   <para>
-        ///       -or-
-        ///   </para>
-        /// <paramref name="input"/> contains multiple PEM-encoded keys with a recognized label.
+        /// <para>
+        ///   <paramref name="input"/> does not contain a PEM-encoded key with a recognized label.
+        /// </para>
+        /// <para>
+        ///    -or-
+        /// </para>
+        /// <para>
+        ///   <paramref name="input"/> contains multiple PEM-encoded keys with a recognized label.
+        /// </para>
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///  The password is incorrect.
+        ///   <para>
+        ///   The password is incorrect.
+        ///   </para>
         ///   <para>
         ///       -or-
         ///   </para>
-        ///  The base-64 decoded contents of the PEM text from <paramref name="input" />
-        ///  do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
+        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
         ///   <para>
         ///       -or-
         ///   </para>
+        ///   <para>
         ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
         ///   indicate the key is for an algorithm other than the algorithm
         ///   represented by this instance.
+        ///   </para>
         ///   <para>
         ///       -or-
         ///   </para>
+        ///   <para>
         ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
         ///   represent the key in a format that is not supported.
+        ///   </para>
         ///   <para>
         ///       -or-
         ///   </para>
+        ///   <para>
         ///   The algorithm-specific key import failed.
+        ///   </para>
         /// </exception>
         /// <remarks>
         ///   <para>
         ///   When the base-64 decoded contents of <paramref name="input" /> indicate an algorithm that uses PBKDF1
         ///   (Password-Based Key Derivation Function 1) or PBKDF2 (Password-Based Key Derivation Function 2),
-        ///   the password is converted to bytes via the UTF-8 encoding. This method
-        ///   only supports the binary (BER/CER/DER) encoding of EncryptedPrivateKeyInfo.
+        ///   the password is converted to bytes via the UTF-8 encoding.
         ///   </para>
         ///   <para>
         ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
-        ///   are found, an exception is raised to prevent importing a key when
+        ///   are found, an exception is thrown to prevent importing a key when
         ///   the key is ambiguous.
         ///   </para>
         ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
@@ -551,34 +570,48 @@ namespace System.Security.Cryptography
         /// The bytes to use as a password when decrypting the key material.
         /// </param>
         /// <exception cref="ArgumentException">
-        /// <paramref name="input"/> does not contain a PEM-encoded key with a recognized label.
+        ///   <para>
+        ///     <paramref name="input"/> does not contain a PEM-encoded key with a recognized label.
+        ///   </para>
         ///   <para>
         ///       -or-
         ///   </para>
-        /// <paramref name="input"/> contains multiple PEM-encoded keys with a recognized label.
+        ///   <para>
+        ///     <paramref name="input"/> contains multiple PEM-encoded keys with a recognized label.
+        ///   </para>
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///  The password is incorrect.
+        ///   <para>
+        ///   The password is incorrect.
+        ///   </para>
         ///   <para>
         ///       -or-
         ///   </para>
-        ///  The base-64 decoded contents of the PEM text from <paramref name="input" />
-        ///  do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   <para>
+        ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
+        ///   do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   </para>
         ///   <para>
         ///       -or-
         ///   </para>
+        ///   <para>
         ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
         ///   indicate the key is for an algorithm other than the algorithm
         ///   represented by this instance.
+        ///   </para>
         ///   <para>
         ///       -or-
         ///   </para>
+        ///   <para>
         ///   The base-64 decoded contents of the PEM text from <paramref name="input" />
         ///   represent the key in a format that is not supported.
+        ///   </para>
         ///   <para>
         ///       -or-
         ///   </para>
+        ///   <para>
         ///   The algorithm-specific key import failed.
+        ///   </para>
         /// </exception>
         /// <remarks>
         ///   <para>
@@ -588,12 +621,8 @@ namespace System.Security.Cryptography
         ///   passwords with PBKDF2 (Password-Based Key Derivation Function 2).
         ///   </para>
         ///   <para>
-        ///   The base-64 decoded contents of the PEM text only supports
-        ///   the binary (BER/CER/DER) encoding of EncryptedPrivateKeyInfo.
-        ///   </para>
-        ///   <para>
         ///   Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
-        ///   are found, an exception is raised to prevent importing a key when
+        ///   are found, an exception is thrown to prevent importing a key when
         ///   the key is ambiguous.
         ///   </para>
         ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>

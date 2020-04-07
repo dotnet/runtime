@@ -173,7 +173,7 @@ namespace System.Security.Cryptography
         /// The password to use for decrypting the key material.
         /// </param>
         /// <exception cref="NotImplementedException">
-        /// A derived type has not overriden this member.
+        /// A derived type has not overridden this member.
         /// </exception>
         /// <remarks>
         /// Because each algorithm may have algorithm-specific PEM labels, the
@@ -191,7 +191,7 @@ namespace System.Security.Cryptography
         /// The bytes to use as a password when decrypting the key material.
         /// </param>
         /// <exception cref="NotImplementedException">
-        /// A derived type has not overriden this member.
+        /// A derived type has not overridden this member.
         /// </exception>
         /// <remarks>
         /// Because each algorithm may have algorithm-specific PEM labels, the
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="input">The text of the PEM key to import.</param>
         /// <exception cref="NotImplementedException">
-        /// A derived type has not overriden this member.
+        /// A derived type has not overridden this member.
         /// </exception>
         /// <remarks>
         /// Because each algorithm may have algorithm-specific PEM labels, the
