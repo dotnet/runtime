@@ -17,7 +17,7 @@
     <FileAlignment Condition="'$(FileAlignment)' == '512'" />
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'" />
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
-      <!-- Set the documentation output file globally. -->
+    <!-- Set the documentation output file globally. -->
     <DocumentationFile Condition="'$(IsSourceProject)' == 'true' and '$(DocumentationFile)' == '' and '$(MSBuildProjectExtension)' != '.vbproj'">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
   </PropertyGroup>
 
