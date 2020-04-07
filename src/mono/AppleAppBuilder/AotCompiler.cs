@@ -50,9 +50,9 @@ internal class AotCompiler
             .Append("no-direct-calls,")
             .Append("dwarfdebug,")
             .Append("outfile=").Append(Path.Combine(binDir, libName + ".dll.s,"))
-            .Append("data-outfile=").Append(Path.Combine(binDir, libName + ".aotdata,"))
             .Append("full,");
 
+        // TODO: save *.aotdata
         // TODO: enable LLVM
         // TODO: enable System.Runtime.Intrinsics.Arm (LLVM-only for now)
         // e.g. .Append("mattr=+crc,")

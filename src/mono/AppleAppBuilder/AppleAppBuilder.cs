@@ -154,8 +154,8 @@ public class AppleAppBuilderTask : Task
             else
             {
                 AppBundlePath = Xcode.BuildAppBundle(
-                    Path.Combine(binDir, ProjectNme, ProjectName + ".xcodeproj"),
-                    Arch, Optimized, DevTeamProviasioning);
+                    Path.Combine(binDir, ProjectName, ProjectName + ".xcodeproj"),
+                    Arch, Optimized, DevTeamProvisioning);
             }
         }
 

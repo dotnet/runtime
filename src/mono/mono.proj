@@ -673,7 +673,8 @@
         CrossCompiler="$(BinDir)cross\mono-aot-cross"
         MainLibraryFileName="$(MainLibraryFileName)"
         NativeMainSource="$(NativeMainSource)"
-        GenerateOnlyXcodeProject="$(GenerateOnlyXcodeProject)"
+        GenerateXcodeProject="$(GenerateXcodeProject)"
+        BuildAppBundle="$(BuildAppBundle)"
         DevTeamProvisioning="$(DevTeamProvisioning)"
         AppDir="$(AppDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
