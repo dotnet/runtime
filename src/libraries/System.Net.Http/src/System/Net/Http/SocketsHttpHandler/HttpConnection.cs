@@ -198,7 +198,7 @@ namespace System.Net.Http
         {
             if (headers.HeaderStore != null)
             {
-                foreach (KeyValuePair<HeaderDescriptor, HttpHeaders.HeaderStoreItemInfo> header in headers.HeaderStore)
+                foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
                 {
                     if (header.Key.KnownHeader != null)
                     {
