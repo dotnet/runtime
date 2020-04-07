@@ -506,9 +506,11 @@
     <Touch Condition="'$(_MonoAotCrossConfigureCommand)' != ''" Files="$(MonoObjDir)cross/config.h" />
   </Target>
 
-  <Target Name="BuildMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT' and '$(TargetsWASM)' != 'true'" DependsOnTargets="ConfigureMonoRuntimeUnix">
+  <Target Name="BuildMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" DependsOnTargets="ConfigureMonoRuntimeUnix">
     <Message Text="--- Building Mono ---" Importance="High" />
-    <Exec Command="make -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
+    <Exec Condition="'$(TargetsWASM)' != 'true'" Command="make -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
+    <Exec Condition="'$(TargetsWASM)' == 'true'" Command="bash -c 'source $(EMSDK_PATH)/emsdk_env.sh &amp;&amp; make -j$([System.Environment]::ProcessorCount)'" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
+
     <Exec Condition="'$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'" Command="make install -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
 
     <Message Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" Text="--- Building Mono AOT cross-compiler ---" Importance="High" />
@@ -685,7 +687,7 @@
 
   <!-- Ordering matters! Overwriting the Build target. -->
   <!-- General targets -->
-  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows;BuildMonoRuntimeWASM">
+  <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
