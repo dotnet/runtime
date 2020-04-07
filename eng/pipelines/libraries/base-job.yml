@@ -127,7 +127,7 @@ jobs:
       steps:
       - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
-      - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, '')) }}:
+      - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), or(ne(parameters.runtimeFlavor, 'coreclr'), ne(parameters.testScope, ''))) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             unpackFolder: $(_runtimeDownloadPath)
