@@ -1336,28 +1336,13 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     if (DelegateHnd != (LPVOID)INVALIDENTRY)
     {
         // Found a managed callsite
-        OBJECTREF pDelegate = NULL;
-        GCPROTECT_BEGIN(pDelegate);
-
-        pDelegate = ObjectFromHandle((OBJECTHANDLE)DelegateHnd);
-
-        // Make sure we're not trying to sneak into another domain.
-        SyncBlock* pSyncBlock = pDelegate->GetSyncBlock();
-        _ASSERTE(pSyncBlock);
-
-        InteropSyncBlockInfo* pInteropInfo = pSyncBlock->GetInteropInfo();
-        _ASSERTE(pInteropInfo);
-
-        pUMEntryThunk = (UMEntryThunk*)pInteropInfo->GetUMEntryThunk();
-        _ASSERTE(pUMEntryThunk);
-
-        GCPROTECT_END();
-        return pDelegate;
+        return ObjectFromHandle((OBJECTHANDLE)DelegateHnd);
     }
 
     // Validate the MethodTable is a delegate type
+    // See Marshal.GetDelegateForFunctionPointer() for exception details.
     if (!pMT->IsDelegate())
-        COMPlusThrow(kArgumentException);
+        COMPlusThrowArgumentException(W("t"), W("Arg_MustBeDelegate"));
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // This is an unmanaged callsite. We need to create a new delegate.
