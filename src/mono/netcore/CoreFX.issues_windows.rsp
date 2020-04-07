@@ -11,7 +11,4 @@
 -nonamespace System.ComponentModel.TypeConverterTests
 -nonamespace System.DirectoryServices.Protocols.Tests
 -nonamespace System.Runtime.Serialization.Formatters.Tests
-
--nonamespace MonoTests.System.Drawing
-
 -nonamespace System.Reflection.Emit.Tests
