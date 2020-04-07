@@ -76,12 +76,12 @@ namespace System.Numerics
             if (X86Base.IsSupported)
             {
                 // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
-                // The XOR here is equivalent to subtraction since the BSR result is always between 0 and 31.
-                // This saves one instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
+                // 31 ^ BSR here is equivalent to 31 - BSR since the BSR result is always between 0 and 31.
+                // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
                 return 31 ^ (int)X86Base.BitScanReverse(value);
             }
 
-            return 31 - Log2SoftwareFallback(value);
+            return 31 ^ Log2SoftwareFallback(value);
         }
 
         /// <summary>
@@ -149,7 +149,7 @@ namespace System.Numerics
 
             if (ArmBase.IsSupported)
             {
-                return 31 - ArmBase.LeadingZeroCount(value);
+                return 31 ^ ArmBase.LeadingZeroCount(value);
             }
 
             // BSR returns the answer we're looking for directly.
@@ -185,10 +185,10 @@ namespace System.Numerics
 
             if (ArmBase.Arm64.IsSupported)
             {
-                return 63 - ArmBase.Arm64.LeadingZeroCount(value);
+                return 63 ^ ArmBase.Arm64.LeadingZeroCount(value);
             }
 
-            if (X86Base.IsSupported)
+            if (X86Base.X64.IsSupported)
             {
                 return (int)X86Base.X64.BitScanReverse(value);
             }

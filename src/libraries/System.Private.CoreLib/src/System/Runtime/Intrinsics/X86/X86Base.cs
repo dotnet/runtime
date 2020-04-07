@@ -12,18 +12,22 @@ namespace System.Runtime.Intrinsics.X86
     [Intrinsic]
     internal static class X86Base
     {
-        internal static bool IsSupported { get => IsSupported; }
+        public static bool IsSupported { get => IsSupported; }
 
         [Intrinsic]
         internal static class X64
         {
-            internal static bool IsSupported { get => IsSupported; }
+            public static bool IsSupported { get => IsSupported; }
 
             /// <summary>
             /// unsigned char _BitScanForward64 (unsigned __int32* index, unsigned __int64 a)
             ///   BSF reg reg/m64
             /// The above native signature does not directly correspond to the managed signature.
             /// </summary>
+            /// <remarks>
+            /// This method is to remain internal.
+            /// Its functionality is exposed in the public <see cref="System.Numerics.BitOperations" /> class.
+            /// </remarks>
             internal static ulong BitScanForward(ulong value) => BitScanForward(value);
 
             /// <summary>
@@ -31,6 +35,10 @@ namespace System.Runtime.Intrinsics.X86
             ///   BSR reg reg/m64
             /// The above native signature does not directly correspond to the managed signature.
             /// </summary>
+            /// <remarks>
+            /// This method is to remain internal.
+            /// Its functionality is exposed in the public <see cref="System.Numerics.BitOperations" /> class.
+            /// </remarks>
             internal static ulong BitScanReverse(ulong value) => BitScanReverse(value);
         }
 
@@ -39,6 +47,10 @@ namespace System.Runtime.Intrinsics.X86
         ///   BSF reg reg/m32
         /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
+        /// <remarks>
+        /// This method is to remain internal.
+        /// Its functionality is exposed in the public <see cref="System.Numerics.BitOperations" /> class.
+        /// </remarks>
         internal static uint BitScanForward(uint value) => BitScanForward(value);
 
         /// <summary>
@@ -46,6 +58,10 @@ namespace System.Runtime.Intrinsics.X86
         ///   BSR reg reg/m32
         /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
+        /// <remarks>
+        /// This method is to remain internal.
+        /// Its functionality is exposed in the public <see cref="System.Numerics.BitOperations" /> class.
+        /// </remarks>
         internal static uint BitScanReverse(uint value) => BitScanReverse(value);
     }
 }
