@@ -1308,7 +1308,7 @@ mono_gc_alloc_pinned_vector (MonoVTable *vtable, size_t size, uintptr_t max_leng
 	if (!SGEN_CAN_ALIGN_UP (size))
 		return NULL;
 
-	arr = (MonoArray*)sgen_alloc_obj_pinned (vtable, size); (vtable, size);
+	arr = (MonoArray*)sgen_alloc_obj_pinned (vtable, size);
 	if (G_UNLIKELY (!arr))
 		return NULL;
 
