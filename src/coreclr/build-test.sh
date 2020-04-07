@@ -551,8 +551,6 @@ handle_arguments_local() {
 
         needTarget0|-needTarget0)
             __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=0")
-            __BuildArch=AnyCPU
-            __TargetOS=AnyOS
             ;;
 
         needTarget1|-needTarget1)

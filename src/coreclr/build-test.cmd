@@ -135,10 +135,6 @@ if %__Priority% GTR 0 (
 
 if %__BuildNeedTarget% NEQ 2 (
     set "__BuildNeedTargetArg=/p:CLRTestNeedTargetToBuild=%__BuildNeedTarget%"
-    if %__BuildNeedTarget% EQU 0 (
-        set __TargetOS=AnyOS
-        set __BuildArch=AnyCPU
-    )
 )
 
 set TargetsWindowsArg=
