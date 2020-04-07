@@ -799,7 +799,7 @@ namespace System.Net.Http
 
                 while (AltSvcHeaderParser.Parser.TryParseValue(altSvcHeaderValue, null, ref parseIdx, out object? parsedValue))
                 {
-                    var value = (AltSvcHeaderValue)parsedValue;
+                    var value = (AltSvcHeaderValue?)parsedValue;
 
                     // 'clear' should be the only value present.
                     if (value == AltSvcHeaderValue.Clear)
@@ -810,7 +810,7 @@ namespace System.Net.Http
                         break;
                     }
 
-                    if (nextAuthority == null && value.AlpnProtocolName == "h3")
+                    if (nextAuthority == null && value != null && value.AlpnProtocolName == "h3")
                     {
                         var authority = new HttpAuthority(value.Host!, value.Port);
 

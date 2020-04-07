@@ -127,7 +127,6 @@ namespace <xsl:value-of select="@namespace" />
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;<xsl:if test="asn:SequenceOf | asn:SetOf">
 using System.Collections.Generic;</xsl:if>
@@ -213,7 +212,7 @@ namespace <xsl:value-of select="@namespace" />
   </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldDef">
-        private static readonly byte[] <xsl:call-template name="DefaultValueField"/> = { <xsl:value-of select="@defaultDerInit"/> };
+        private static ReadOnlySpan&lt;byte&gt; <xsl:call-template name="DefaultValueField"/> =&gt; new byte[] { <xsl:value-of select="@defaultDerInit"/> };
 </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldVerify">
@@ -690,9 +689,9 @@ namespace <xsl:value-of select="@namespace" />
   <xsl:template match="asn:OctetString" mode="DefaultTag">Asn1Tag.PrimitiveOctetString</xsl:template>
 
   <xsl:template match="asn:ObjectIdentifier[not(@backingType)] | asn:ObjectIdentifier[@backingType = 'Oid']" mode="FieldDef">
-        internal Oid <xsl:value-of select="@name" />;</xsl:template>
+        internal Oid<xsl:if test="@optional | parent::asn:Choice">?</xsl:if> <xsl:value-of select="@name" />;</xsl:template>
   <xsl:template match="asn:ObjectIdentifier[@backingType = 'string']" mode="FieldDef">
-        internal string <xsl:value-of select="@name" />;</xsl:template>
+        internal string<xsl:if test="@optional | parent::asn:Choice">?</xsl:if> <xsl:value-of select="@name" />;</xsl:template>
 
   <xsl:template match="asn:ObjectIdentifier[not(@backingType)] | asn:ObjectIdentifier[@backingType = 'Oid']" mode="CollectionElementType">Oid</xsl:template>
   <xsl:template match="asn:ObjectIdentifier[@backingType = 'string']" mode="CollectionElementType">string</xsl:template>
@@ -761,7 +760,7 @@ namespace <xsl:value-of select="@namespace" />
 
   <!-- All character string types -->
   <xsl:template match="asn:UTF8String | asn:PrintableString | asn:T61String | asn:IA5String | asn:VisibleString | asn:BMPString" mode="FieldDef">
-        internal string <xsl:value-of select="@name"/>;</xsl:template>
+        internal string<xsl:if test="@optional | parent::asn:Choice">?</xsl:if> <xsl:value-of select="@name"/>;</xsl:template>
 
   <xsl:template match="asn:UTF8String | asn:PrintableString | asn:T61String | asn:IA5String | asn:VisibleString | asn:BMPString" mode="CollectionElementType">string</xsl:template>
 
@@ -784,7 +783,7 @@ namespace <xsl:value-of select="@namespace" />
   <xsl:template match="asn:UTF8String | asn:PrintableString | asn:T61String | asn:IA5String | asn:VisibleString | asn:BMPString" mode="DefaultTag">new Asn1Tag(UniversalTagNumber.<xsl:value-of select="local-name()"/>)</xsl:template>
 
   <xsl:template match="asn:SequenceOf | asn:SetOf" mode="FieldDef">
-        internal <xsl:apply-templates mode="CollectionElementType"/>[] <xsl:value-of select="@name"/>;</xsl:template>
+        internal <xsl:apply-templates mode="CollectionElementType"/>[]<xsl:if test="@optional | parent::asn:Choice">?</xsl:if> <xsl:value-of select="@name"/>;</xsl:template>
 
   <xsl:template match="asn:SequenceOf | asn:SetOf" mode="EncodeSimpleValue" xml:space="default">
     <xsl:param name="writerName"/>
@@ -909,7 +908,7 @@ namespace <xsl:value-of select="@namespace" />
 
   <xsl:template name="ContextTag">new Asn1Tag(TagClass.ContextSpecific, <xsl:value-of select="@implicitTag | @explicitTag"/>)</xsl:template>
 
-  <xsl:template name="DefaultValueField">s_default<xsl:value-of select="@name"/></xsl:template>
+  <xsl:template name="DefaultValueField">Default<xsl:value-of select="@name"/></xsl:template>
 
   <xsl:template name="DefaultValueDecoder"><xsl:if test="@defaultDerInit">
             else

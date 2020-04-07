@@ -2006,10 +2006,10 @@ Compiler::lvaStructFieldInfo Compiler::StructPromotionHelper::GetFieldInfo(CORIN
     {
         unsigned  simdSize;
         var_types simdBaseType = compiler->getBaseTypeAndSizeOfSIMDType(fieldInfo.fldTypeHnd, &simdSize);
-        if ((simdSize >= compiler->minSIMDStructBytes()) && (simdSize <= compiler->maxSIMDStructBytes()))
+        // We will only promote fields of SIMD types that fit into a SIMD register.
+        if (simdBaseType != TYP_UNKNOWN)
         {
-            // We will only promote fields of SIMD types that fit into a SIMD register.
-            if (simdBaseType != TYP_UNKNOWN)
+            if ((simdSize >= compiler->minSIMDStructBytes()) && (simdSize <= compiler->maxSIMDStructBytes()))
             {
                 fieldInfo.fldType = compiler->getSIMDTypeForSize(simdSize);
                 fieldInfo.fldSize = simdSize;
@@ -6847,7 +6847,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
 
 void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t refCntWtdWidth)
 {
-    LclVarDsc* varDsc = lvaTable + lclNum;
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
     var_types  type   = varDsc->TypeGet();
 
     if (curState == INITIAL_FRAME_LAYOUT)
@@ -6856,30 +6856,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         gtDispLclVar(lclNum);
 
         printf(" %7s ", varTypeName(type));
-        if (genTypeSize(type) == 0)
-        {
-#if FEATURE_FIXED_OUT_ARGS
-            if (lclNum == lvaOutgoingArgSpaceVar)
-            {
-                // Since lvaOutgoingArgSpaceSize is a PhasedVar we can't read it for Dumping until
-                // after we set it to something.
-                if (lvaOutgoingArgSpaceSize.HasFinalValue())
-                {
-                    // A PhasedVar<T> can't be directly used as an arg to a variadic function
-                    unsigned value = lvaOutgoingArgSpaceSize;
-                    printf("(%2d) ", value);
-                }
-                else
-                {
-                    printf("(na) "); // The value hasn't yet been determined
-                }
-            }
-            else
-#endif // FEATURE_FIXED_OUT_ARGS
-            {
-                printf("(%2d) ", lvaLclSize(lclNum));
-            }
-        }
+        gtDispLclVarStructType(lclNum);
     }
     else
     {

@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                         // If the switch starts with a single "-" and it isn't in given mappings , it is an invalid usage
                         else if (keyStartIndex == 1)
                         {
-                            throw new FormatException(Resources.FormatError_ShortSwitchNotDefined(currentArg));
+                            throw new FormatException(SR.Format(SR.Error_ShortSwitchNotDefined, currentArg));
                         }
                         // Otherwise, use the switch name directly as a key
                         else
@@ -144,14 +144,14 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                 if (!mapping.Key.StartsWith("-") && !mapping.Key.StartsWith("--"))
                 {
                     throw new ArgumentException(
-                        Resources.FormatError_InvalidSwitchMapping(mapping.Key),
+                        SR.Format(SR.Error_InvalidSwitchMapping, mapping.Key),
                         nameof(switchMappings));
                 }
 
                 if (switchMappingsCopy.ContainsKey(mapping.Key))
                 {
                     throw new ArgumentException(
-                        Resources.FormatError_DuplicatedKeyInSwitchMappings(mapping.Key),
+                        SR.Format(SR.Error_DuplicatedKeyInSwitchMappings, mapping.Key),
                         nameof(switchMappings));
                 }
 

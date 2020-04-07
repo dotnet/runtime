@@ -18,26 +18,7 @@ namespace ILCompiler
         /// </summary>
         public static bool IsHardwareIntrinsic(MethodDesc method)
         {
-            TypeDesc owningType = method.OwningType;
-
-            if (owningType.IsIntrinsic && owningType is MetadataType mdType)
-            {
-                mdType = (MetadataType)mdType.ContainingType ?? mdType;
-                TargetArchitecture targetArch = owningType.Context.Target.Architecture;
-
-                if (targetArch == TargetArchitecture.X64 || targetArch == TargetArchitecture.X86)
-                {
-                    if (mdType.Namespace == "System.Runtime.Intrinsics.X86")
-                        return true;
-                }
-                else if (targetArch == TargetArchitecture.ARM64)
-                {
-                    if (mdType.Namespace == "System.Runtime.Intrinsics.Arm")
-                        return true;
-                }
-            }
-
-            return false;
+            return !string.IsNullOrEmpty(InstructionSetSupport.GetHardwareIntrinsicId(method.Context.Target.Architecture, method.OwningType));
         }
 
 #if !READYTORUN

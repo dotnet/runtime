@@ -19,8 +19,8 @@ usage()
   echo "Common settings:"
   echo "  --subset                   Build a subset, print available subsets with -subset help"
   echo "  --subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
-  echo "  --os                       Build operating system: Windows_NT or Unix"
-  echo "  --arch                     Build platform: x86, x64, arm or arm64"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, iOS or Android"
+  echo "  --arch                     Build platform: x86, x64, arm, armel or arm64"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
   echo "  --librariesConfiguration   Libraries build configuration: Debug or Release"
@@ -33,7 +33,6 @@ usage()
   echo "Actions (defaults to --restore --build):"
   echo "  --restore                  Restore dependencies (short: -r)"
   echo "  --build                    Build all source projects (short: -b)"
-  echo "  --buildtests               Build all test projects"
   echo "  --rebuild                  Rebuild all source projects"
   echo "  --test                     Build and run tests (short: -t)"
   echo "  --pack                     Package build outputs into NuGet packages"
@@ -46,6 +45,7 @@ usage()
   echo "  --framework                Build framework: netcoreapp5.0 or net472 (short: -f)"
   echo "  --coverage                 Collect code coverage when testing"
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
+  echo "  --testnobuild              Skip building tests when invoking -test"
   echo "  --allconfigurations        Build packages for all build configurations"
   echo ""
 
@@ -83,15 +83,14 @@ arguments=''
 cmakeargs=''
 extraargs=''
 build=false
-buildtests=false
 subsetCategory=''
-checkedPossibleDirectoryToBuild=false
+checkedSolutionBuild=false
 crossBuild=0
 
 source $scriptroot/native/init-os-and-arch.sh
 
 # Check if an action is passed in
-declare -a actions=("r" "restore" "b" "build" "buildtests" "rebuild" "t" "test" "pack" "sign" "publish" "clean")
+declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
 actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 
 while [[ $# > 0 ]]; do
@@ -112,7 +111,6 @@ while [[ $# > 0 ]]; do
       ;;
      -arch)
       arch=$2
-      arguments="$arguments /p:ArchGroup=$2 /p:TargetArchitecture=$2"
       shift 2
       ;;
      -configuration|-c)
@@ -139,20 +137,16 @@ while [[ $# > 0 ]]; do
       arguments="$arguments -build"
       shift 1
       ;;
-     -buildtests)
-      buildtests=true
-      shift 1
-      ;;
      -testscope)
       arguments="$arguments /p:TestScope=$2"
       shift 2
       ;;
+     -testnobuild)
+      arguments="$arguments /p:TestNoBuild=$2"
+      shift 2
+      ;;
      -coverage)
       arguments="$arguments /p:Coverage=true"
-      shift 1
-      ;;
-     -stripsymbols)
-      arguments="$arguments /p:BuildNativeStripSymbols=true"
       shift 1
       ;;
      -runtimeconfiguration)
@@ -184,13 +178,13 @@ while [[ $# > 0 ]]; do
       *)
       ea=$1
 
-      if [[ $checkedPossibleDirectoryToBuild == false ]] && [[ $subsetCategory == "libraries" ]]; then
-        checkedPossibleDirectoryToBuild=true
+      if [[ $checkedSolutionBuild == false ]]; then
+        checkedSolutionBuild=true
 
         if [[ -d "$1" ]]; then
-          ea="/p:DirectoryToBuild=$1"
-        elif [[ -d "$scriptroot/../src/libraries/$1" ]]; then
-          ea="/p:DirectoryToBuild=$scriptroot/../src/libraries/$1"
+          ea="-projects $1"
+        elif [[ -d "$scriptroot/../src/libraries/$1/$1.sln" ]]; then
+          ea="-projects $scriptroot/../src/libraries/$1/$1.sln"
         fi
       fi
 
@@ -199,14 +193,6 @@ while [[ $# > 0 ]]; do
       ;;
   esac
 done
-
-if [[ "$buildtests" == true ]]; then
-  if [[ "$build" == true ]]; then
-    arguments="$arguments /p:BuildTests=true"
-  else
-    arguments="$arguments -build /p:BuildTests=only"
-  fi
-fi
 
 if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
@@ -217,5 +203,6 @@ initDistroRid $os $arch $crossBuild
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
 cmakeargs="${cmakeargs// /%20}"
+arguments="$arguments /p:TargetArchitecture=$arch"
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
 "$scriptroot/common/build.sh" $arguments

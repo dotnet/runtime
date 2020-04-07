@@ -32,6 +32,7 @@ public:
             , actionTOC(false)
             , legacyCompare(false)
             , recursive(false)
+            , dedup(false)
             , stripCR(false)
             , nameOfFile1(nullptr)
             , nameOfFile2(nullptr)
@@ -57,6 +58,7 @@ public:
         bool  actionTOC;
         bool  legacyCompare;
         bool  recursive;
+        bool  dedup;
         bool  stripCR;
         char* nameOfFile1;
         char* nameOfFile2;

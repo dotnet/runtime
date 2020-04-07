@@ -179,7 +179,7 @@ private:
             common_path_prefix_len = 0;
         }
 
-        _ASSERTE(cgroup_path_relative_to_mount[common_path_prefix_len] == '/');
+        _ASSERTE((cgroup_path_relative_to_mount[common_path_prefix_len] == '/') || (cgroup_path_relative_to_mount[common_path_prefix_len] == '\0'));
 
         strcat_s(cgroup_path, len+1, cgroup_path_relative_to_mount + common_path_prefix_len);
 

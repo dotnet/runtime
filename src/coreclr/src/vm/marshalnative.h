@@ -106,12 +106,12 @@ public:
     //====================================================================
     // return an Object for IUnknown
     //====================================================================
-    static FCDECL1(Object*, GetObjectForIUnknown, IUnknown* pUnk);
+    static FCDECL1(Object*, GetObjectForIUnknownNative, IUnknown* pUnk);
 
     //====================================================================
     // return a unique cacheless Object for IUnknown
     //====================================================================
-    static FCDECL1(Object*, GetUniqueObjectForIUnknown, IUnknown* pUnk);
+    static FCDECL1(Object*, GetUniqueObjectForIUnknownNative, IUnknown* pUnk);
 
     //====================================================================
     // return a unique cacheless Object for IUnknown

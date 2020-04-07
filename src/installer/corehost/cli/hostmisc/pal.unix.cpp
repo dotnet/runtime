@@ -14,17 +14,25 @@
 #include <fnmatch.h>
 #include <ctime>
 #include <pwd.h>
+#include "config.h"
 
-#if defined(__APPLE__)
+#if defined(TARGET_OSX)
 #include <mach-o/dyld.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #endif
 
-#if defined(__LINUX__)
+#if defined(TARGET_LINUX)
 #define symlinkEntrypointExecutable "/proc/self/exe"
-#elif !defined(__APPLE__)
+#elif !defined(TARGET_OSX)
 #define symlinkEntrypointExecutable "/proc/curproc/exe"
+#endif
+
+#if !HAVE_DIRENT_D_TYPE
+#define DT_UNKNOWN 0
+#define DT_DIR 4
+#define DT_REG 8
+#define DT_LNK 10
 #endif
 
 pal::string_t pal::to_string(int value) { return std::to_string(value); }
@@ -60,7 +68,7 @@ bool pal::touch_file(const pal::string_t& path)
 
 void* pal::map_file_readonly(const pal::string_t& path, size_t& length)
 {
-    int fd = open(path.c_str(), O_RDONLY, (S_IRUSR | S_IRGRP | S_IROTH));
+    int fd = open(path.c_str(), O_RDONLY);
     if (fd == -1)
     {
         trace::error(_X("Failed to map file. open(%s) failed with error %d"), path.c_str(), errno);
@@ -162,7 +170,7 @@ bool pal::get_loaded_library(
     /*out*/ pal::string_t *path)
 {
     pal::string_t library_name_local;
-#if defined(__APPLE__)
+#if defined(TARGET_OSX)
     if (!pal::is_path_rooted(library_name))
         library_name_local.append("@rpath/");
 #endif
@@ -467,7 +475,7 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
-#if defined(__APPLE__)
+#if defined(TARGET_OSX)
      recv->assign(_X("/usr/local/share/dotnet"));
 #else
      recv->assign(_X("/usr/share/dotnet"));
@@ -491,7 +499,7 @@ pal::string_t trim_quotes(pal::string_t stringToCleanup)
     return stringToCleanup;
 }
 
-#if defined(__APPLE__)
+#if defined(TARGET_OSX)
 pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;
@@ -531,7 +539,7 @@ pal::string_t pal::get_current_os_rid_platform()
 
     return ridOS;
 }
-#elif defined(__FreeBSD__)
+#elif defined(TARGET_FREEBSD)
 // On FreeBSD get major verion. Minors should be compatible
 pal::string_t pal::get_current_os_rid_platform()
 {
@@ -679,7 +687,7 @@ pal::string_t pal::get_current_os_rid_platform()
 }
 #endif
 
-#if defined(__APPLE__)
+#if defined(TARGET_OSX)
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
     uint32_t path_length = 0;
@@ -694,7 +702,7 @@ bool pal::get_own_executable_path(pal::string_t* recv)
     }
     return false;
 }
-#elif defined(__FreeBSD__)
+#elif defined(TARGET_FREEBSD)
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
     int mib[4];
@@ -821,8 +829,14 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
                 continue;
             }
 
+#if HAVE_DIRENT_D_TYPE
+            int dirEntryType = entry->d_type;
+#else
+            int dirEntryType = DT_UNKNOWN;
+#endif
+
             // We are interested in files only
-            switch (entry->d_type)
+            switch (dirEntryType)
             {
             case DT_DIR:
                 break;
@@ -903,7 +917,7 @@ bool pal::is_running_in_wow64()
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)
 {
-#if defined(__APPLE__)
+#if defined(TARGET_OSX)
     // On Mac, paths are case-insensitive
     return (strcasecmp(path1.c_str(), path2.c_str()) == 0);
 #else

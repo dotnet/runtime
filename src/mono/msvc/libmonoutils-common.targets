@@ -207,6 +207,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-logger.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-error.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-publib.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-private-unstable.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-dl-fallback.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-counters.h" />
   </ItemGroup>

@@ -34,6 +34,5 @@ set(HEADERS
 
 include(../lib.cmake)
 
-install(TARGETS hostpolicy DESTINATION corehost)
-install_symbols(hostpolicy corehost)
+install_with_stripped_symbols(hostpolicy TARGETS corehost)
 target_link_libraries(hostpolicy libhostcommon)

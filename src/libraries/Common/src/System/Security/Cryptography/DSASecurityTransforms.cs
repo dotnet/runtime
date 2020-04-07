@@ -276,9 +276,7 @@ namespace System.Security.Cryptography
                     // Since the AppleCrypto implementation is limited to FIPS 186-2, signature field sizes
                     // are always 160 bits / 20 bytes (the size of SHA-1, and the only legal length for Q).
                     byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
-                        derFormatSignature,
-                        0,
-                        derFormatSignature.Length,
+                        derFormatSignature.AsSpan(0, derFormatSignature.Length),
                         fieldSizeBits: 160);
 
                     return ieeeFormatSignature;

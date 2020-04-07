@@ -96,7 +96,6 @@ package() {
     ./build.sh \
     -c Release \
     /p:PortableBuild=true \
-    /p:StripSymbols=true \
     /p:TargetArchitecture=x64 \
     /bl:artifacts/msbuild.portable.binlog
 

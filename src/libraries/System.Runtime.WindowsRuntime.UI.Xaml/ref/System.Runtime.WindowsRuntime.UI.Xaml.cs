@@ -16,7 +16,7 @@ namespace Windows.UI.Xaml
         public double BottomRight { get { throw null; } set { } }
         public double TopLeft { get { throw null; } set { } }
         public double TopRight { get { throw null; } set { } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(Windows.UI.Xaml.CornerRadius cornerRadius) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(Windows.UI.Xaml.CornerRadius cr1, Windows.UI.Xaml.CornerRadius cr2) { throw null; }
@@ -33,7 +33,7 @@ namespace Windows.UI.Xaml
         public System.TimeSpan TimeSpan { get { throw null; } }
         public Windows.UI.Xaml.Duration Add(Windows.UI.Xaml.Duration duration) { throw null; }
         public static int Compare(Windows.UI.Xaml.Duration t1, Windows.UI.Xaml.Duration t2) { throw null; }
-        public override bool Equals(object value) { throw null; }
+        public override bool Equals(object? value) { throw null; }
         public bool Equals(Windows.UI.Xaml.Duration duration) { throw null; }
         public static bool Equals(Windows.UI.Xaml.Duration t1, Windows.UI.Xaml.Duration t2) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -67,7 +67,7 @@ namespace Windows.UI.Xaml
         public bool IsAuto { get { throw null; } }
         public bool IsStar { get { throw null; } }
         public double Value { get { throw null; } }
-        public override bool Equals(object oCompare) { throw null; }
+        public override bool Equals(object? oCompare) { throw null; }
         public bool Equals(Windows.UI.Xaml.GridLength gridLength) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(Windows.UI.Xaml.GridLength gl1, Windows.UI.Xaml.GridLength gl2) { throw null; }
@@ -84,8 +84,8 @@ namespace Windows.UI.Xaml
     {
         public LayoutCycleException() { }
         protected LayoutCycleException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        public LayoutCycleException(string message) { }
-        public LayoutCycleException(string message, System.Exception innerException) { }
+        public LayoutCycleException(string? message) { }
+        public LayoutCycleException(string? message, System.Exception? innerException) { }
     }
     public partial struct Thickness
     {
@@ -96,7 +96,7 @@ namespace Windows.UI.Xaml
         public double Left { get { throw null; } set { } }
         public double Right { get { throw null; } set { } }
         public double Top { get { throw null; } set { } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(Windows.UI.Xaml.Thickness thickness) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(Windows.UI.Xaml.Thickness t1, Windows.UI.Xaml.Thickness t2) { throw null; }
@@ -110,14 +110,14 @@ namespace Windows.UI.Xaml.Automation
     {
         public ElementNotAvailableException() { }
         protected ElementNotAvailableException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        public ElementNotAvailableException(string message) { }
-        public ElementNotAvailableException(string message, System.Exception innerException) { }
+        public ElementNotAvailableException(string? message) { }
+        public ElementNotAvailableException(string? message, System.Exception? innerException) { }
     }
     public partial class ElementNotEnabledException : System.Exception
     {
         public ElementNotEnabledException() { }
-        public ElementNotEnabledException(string message) { }
-        public ElementNotEnabledException(string message, System.Exception innerException) { }
+        public ElementNotEnabledException(string? message) { }
+        public ElementNotEnabledException(string? message, System.Exception? innerException) { }
     }
 }
 namespace Windows.UI.Xaml.Controls.Primitives
@@ -128,7 +128,7 @@ namespace Windows.UI.Xaml.Controls.Primitives
         public GeneratorPosition(int index, int offset) { throw null; }
         public int Index { get { throw null; } set { } }
         public int Offset { get { throw null; } set { } }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(Windows.UI.Xaml.Controls.Primitives.GeneratorPosition gp1, Windows.UI.Xaml.Controls.Primitives.GeneratorPosition gp2) { throw null; }
         public static bool operator !=(Windows.UI.Xaml.Controls.Primitives.GeneratorPosition gp1, Windows.UI.Xaml.Controls.Primitives.GeneratorPosition gp2) { throw null; }
@@ -140,8 +140,8 @@ namespace Windows.UI.Xaml.Markup
     public partial class XamlParseException : System.Exception
     {
         public XamlParseException() { }
-        public XamlParseException(string message) { }
-        public XamlParseException(string message, System.Exception innerException) { }
+        public XamlParseException(string? message) { }
+        public XamlParseException(string? message, System.Exception? innerException) { }
     }
 }
 namespace Windows.UI.Xaml.Media
@@ -158,14 +158,14 @@ namespace Windows.UI.Xaml.Media
         public double M22 { get { throw null; } set { } }
         public double OffsetX { get { throw null; } set { } }
         public double OffsetY { get { throw null; } set { } }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object? o) { throw null; }
         public bool Equals(Windows.UI.Xaml.Media.Matrix value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(Windows.UI.Xaml.Media.Matrix matrix1, Windows.UI.Xaml.Media.Matrix matrix2) { throw null; }
         public static bool operator !=(Windows.UI.Xaml.Media.Matrix matrix1, Windows.UI.Xaml.Media.Matrix matrix2) { throw null; }
-        string System.IFormattable.ToString(string format, System.IFormatProvider provider) { throw null; }
+        string System.IFormattable.ToString(string? format, System.IFormatProvider? provider) { throw null; }
         public override string ToString() { throw null; }
-        public string ToString(System.IFormatProvider provider) { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
         public Windows.Foundation.Point Transform(Windows.Foundation.Point point) { throw null; }
     }
 }
@@ -175,7 +175,7 @@ namespace Windows.UI.Xaml.Media.Animation
     {
         private int _dummyPrimitive;
         public System.TimeSpan TimeSpan { get { throw null; } }
-        public override bool Equals(object value) { throw null; }
+        public override bool Equals(object? value) { throw null; }
         public bool Equals(Windows.UI.Xaml.Media.Animation.KeyTime value) { throw null; }
         public static bool Equals(Windows.UI.Xaml.Media.Animation.KeyTime keyTime1, Windows.UI.Xaml.Media.Animation.KeyTime keyTime2) { throw null; }
         public static Windows.UI.Xaml.Media.Animation.KeyTime FromTimeSpan(System.TimeSpan timeSpan) { throw null; }
@@ -196,15 +196,15 @@ namespace Windows.UI.Xaml.Media.Animation
         public bool HasCount { get { throw null; } }
         public bool HasDuration { get { throw null; } }
         public Windows.UI.Xaml.Media.Animation.RepeatBehaviorType Type { get { throw null; } set { } }
-        public override bool Equals(object value) { throw null; }
+        public override bool Equals(object? value) { throw null; }
         public bool Equals(Windows.UI.Xaml.Media.Animation.RepeatBehavior repeatBehavior) { throw null; }
         public static bool Equals(Windows.UI.Xaml.Media.Animation.RepeatBehavior repeatBehavior1, Windows.UI.Xaml.Media.Animation.RepeatBehavior repeatBehavior2) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(Windows.UI.Xaml.Media.Animation.RepeatBehavior repeatBehavior1, Windows.UI.Xaml.Media.Animation.RepeatBehavior repeatBehavior2) { throw null; }
         public static bool operator !=(Windows.UI.Xaml.Media.Animation.RepeatBehavior repeatBehavior1, Windows.UI.Xaml.Media.Animation.RepeatBehavior repeatBehavior2) { throw null; }
-        string System.IFormattable.ToString(string format, System.IFormatProvider formatProvider) { throw null; }
+        string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
         public override string ToString() { throw null; }
-        public string ToString(System.IFormatProvider formatProvider) { throw null; }
+        public string ToString(System.IFormatProvider? formatProvider) { throw null; }
     }
     public enum RepeatBehaviorType
     {
@@ -238,15 +238,15 @@ namespace Windows.UI.Xaml.Media.Media3D
         public double OffsetX { get { throw null; } set { } }
         public double OffsetY { get { throw null; } set { } }
         public double OffsetZ { get { throw null; } set { } }
-        public override bool Equals(object o) { throw null; }
+        public override bool Equals(object? o) { throw null; }
         public bool Equals(Windows.UI.Xaml.Media.Media3D.Matrix3D value) { throw null; }
         public override int GetHashCode() { throw null; }
         public void Invert() { }
         public static bool operator ==(Windows.UI.Xaml.Media.Media3D.Matrix3D matrix1, Windows.UI.Xaml.Media.Media3D.Matrix3D matrix2) { throw null; }
         public static bool operator !=(Windows.UI.Xaml.Media.Media3D.Matrix3D matrix1, Windows.UI.Xaml.Media.Media3D.Matrix3D matrix2) { throw null; }
         public static Windows.UI.Xaml.Media.Media3D.Matrix3D operator *(Windows.UI.Xaml.Media.Media3D.Matrix3D matrix1, Windows.UI.Xaml.Media.Media3D.Matrix3D matrix2) { throw null; }
-        string System.IFormattable.ToString(string format, System.IFormatProvider provider) { throw null; }
+        string System.IFormattable.ToString(string? format, System.IFormatProvider? provider) { throw null; }
         public override string ToString() { throw null; }
-        public string ToString(System.IFormatProvider provider) { throw null; }
+        public string ToString(System.IFormatProvider? provider) { throw null; }
     }
 }

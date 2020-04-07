@@ -167,7 +167,7 @@ public class ReversePInvoke_MashalArrayByRef_AsManagedTest
         Assert.IsTrue(DoCallBack_MarshalSbyteArray_AsParam_AsByRef(new DelSbyteArrByRefAsCdeclCaller(TestMethodForSbyteArray_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalSbyteArray_AsReversePInvokeByRef_AsCdecl Passed!");
 
-        // We don't support exception interop in .NET Core off-Windows.
+        // We don't support exception interop in .NET off-Windows.
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Console.WriteLine("\tScenario 3 : short ==> SHORT, Array_Size = -1, Return_Array_Size = 20");

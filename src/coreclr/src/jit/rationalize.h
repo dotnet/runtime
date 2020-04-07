@@ -25,7 +25,7 @@ public:
 
 #endif // DEBUG
 
-    virtual void DoPhase() override;
+    virtual PhaseStatus DoPhase() override;
 
     static void RewriteAssignmentIntoStoreLcl(GenTreeOp* assignment);
 

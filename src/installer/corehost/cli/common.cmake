@@ -24,25 +24,33 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/../)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/hostmisc)
 
 set(RESOURCES)
-if(CLR_CMAKE_TARGET_WIN32 AND NOT SKIP_VERSIONING)
-    list(APPEND RESOURCES ${CMAKE_CURRENT_LIST_DIR}/native.rc)
+if (NOT SKIP_VERSIONING)
+    if(CLR_CMAKE_TARGET_WIN32)
+        list(APPEND RESOURCES ${CMAKE_CURRENT_LIST_DIR}/native.rc)
+    else()
+        list(APPEND SOURCES ${VERSION_FILE_PATH})
+    endif()
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES ${HEADERS})
 endif()
 
+# This is required to map a symbol reference to a matching definition local to the module (.so)
+# containing the reference instead of using definitions from other modules.
+if(CLR_CMAKE_TARGET_LINUX)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+endif()
+
 function(set_common_libs TargetType)
 
     # Libraries used for exe projects
     if (${TargetType} STREQUAL "exe")
-        if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD)
+        if((CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD) AND NOT CLR_CMAKE_TARGET_ANDROID)
             target_link_libraries (${DOTNET_PROJECT_NAME} "pthread")
         endif()
 
-        if(CLR_CMAKE_TARGET_LINUX)
-            target_link_libraries (${DOTNET_PROJECT_NAME} "dl")
-        endif()
+        target_link_libraries (${DOTNET_PROJECT_NAME} ${CMAKE_DL_LIBS})
     endif()
 
     if (NOT ${TargetType} STREQUAL "lib-static")

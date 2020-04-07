@@ -3,13 +3,13 @@
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\EmptyDisposable.cs">
       <Link>Common\src\Extensions\EmptyDisposable.cs</Link>
     </Compile>
-    <Compile Include="**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -774,15 +774,13 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<double> LoadLow(Vector128<double> upper, double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// __m128i _mm_loadl_epi32 (__m128i const* mem_addr)
-        ///   MOVD xmm, reg/m64
-        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// __m128i _mm_loadu_si32 (void const* mem_addr)
+        ///   MOVD xmm, reg/m32
         /// </summary>
         public static unsafe Vector128<int> LoadScalarVector128(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// __m128i _mm_loadl_epi32 (__m128i const* mem_addr)
-        ///   MOVD xmm, reg/m64
-        /// The above native signature does not exist. We provide this additional overload for completeness.
+        /// __m128i _mm_loadu_si32 (void const* mem_addr)
+        ///   MOVD xmm, reg/m32
         /// </summary>
         public static unsafe Vector128<uint> LoadScalarVector128(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
@@ -1295,10 +1293,20 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static unsafe void StoreScalar(double* address, Vector128<double> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
+        /// void _mm_storeu_si32 (void* mem_addr, __m128i a)
+        ///   MOVD m32, xmm
+        /// </summary>
+        public static unsafe void StoreScalar(int* address, Vector128<int> source) { throw new PlatformNotSupportedException(); }
+        /// <summary>
         /// void _mm_storel_epi64 (__m128i* mem_addr, __m128i a)
         ///   MOVQ m64, xmm
         /// </summary>
         public static unsafe void StoreScalar(long* address, Vector128<long> source) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// void _mm_storeu_si32 (void* mem_addr, __m128i a)
+        ///   MOVD m32, xmm
+        /// </summary>
+        public static unsafe void StoreScalar(uint* address, Vector128<uint> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// void _mm_storel_epi64 (__m128i* mem_addr, __m128i a)
         ///   MOVQ m64, xmm

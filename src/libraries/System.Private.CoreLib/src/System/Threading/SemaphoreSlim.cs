@@ -728,7 +728,7 @@ namespace System.Threading
             else // millisecondsTimeout == Timeout.Infinite
             {
                 // Wait until either the task is completed or cancellation is requested.
-                var cancellationTask = new Task();
+                var cancellationTask = new Task(null, TaskCreationOptions.RunContinuationsAsynchronously, promiseStyle: true);
                 using (cancellationToken.UnsafeRegister(s => ((Task)s!).TrySetResult(), cancellationTask))
                 {
                     if (asyncWaiter == await TaskFactory.CommonCWAnyLogic(new Task[] { asyncWaiter, cancellationTask }).ConfigureAwait(false))

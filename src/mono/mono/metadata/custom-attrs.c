@@ -1627,8 +1627,10 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 		++i;
 	}
 	len = attr_array->len;
-	if (!len)
+	if (!len) {
+		g_array_free (attr_array, TRUE);
 		return NULL;
+	}
 	ainfo = (MonoCustomAttrInfo *)g_malloc0 (MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * len);
 	ainfo->num_attrs = len;
 	ainfo->image = image;

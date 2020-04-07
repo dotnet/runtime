@@ -8,78 +8,80 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-	[Serializable]
-	public struct RuntimeFieldHandle : ISerializable
-	{
-		readonly IntPtr value;
+    [Serializable]
+    public struct RuntimeFieldHandle : ISerializable
+    {
+        private readonly IntPtr value;
 
-		internal RuntimeFieldHandle (IntPtr v)
-		{
-			value = v;
-		}
+        internal RuntimeFieldHandle(IntPtr v)
+        {
+            value = v;
+        }
 
-		RuntimeFieldHandle (SerializationInfo info, StreamingContext context)
-		{
-			throw new PlatformNotSupportedException ();
-		}
+        private RuntimeFieldHandle(SerializationInfo info, StreamingContext context)
+        {
+            throw new PlatformNotSupportedException();
+        }
 
-		public void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			throw new PlatformNotSupportedException ();
-		}
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            throw new PlatformNotSupportedException();
+        }
 
-		public IntPtr Value {
-			get {
-				return value;
-			}
-		}
+        public IntPtr Value
+        {
+            get
+            {
+                return value;
+            }
+        }
 
-		internal bool IsNullHandle ()
-		{
-			return value == IntPtr.Zero;
-		}
+        internal bool IsNullHandle()
+        {
+            return value == IntPtr.Zero;
+        }
 
-		public override bool Equals (object? obj)
-		{
-			if (obj == null || GetType () != obj.GetType ())
-				return false;
+        public override bool Equals(object? obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+                return false;
 
-			return value == ((RuntimeFieldHandle)obj).Value;
-		}
+            return value == ((RuntimeFieldHandle)obj).Value;
+        }
 
-		public bool Equals (RuntimeFieldHandle handle)
-		{
-			return value == handle.Value;
-		}
+        public bool Equals(RuntimeFieldHandle handle)
+        {
+            return value == handle.Value;
+        }
 
-		public override int GetHashCode ()
-		{
-			return value.GetHashCode ();
-		}
+        public override int GetHashCode()
+        {
+            return value.GetHashCode();
+        }
 
-		public static bool operator == (RuntimeFieldHandle left, RuntimeFieldHandle right)
-		{
-			return left.Equals (right);
-		}
+        public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right)
+        {
+            return left.Equals(right);
+        }
 
-		public static bool operator != (RuntimeFieldHandle left, RuntimeFieldHandle right)
-		{
-			return !left.Equals (right);
-		}
+        public static bool operator !=(RuntimeFieldHandle left, RuntimeFieldHandle right)
+        {
+            return !left.Equals(right);
+        }
 
-		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		static extern void SetValueInternal (FieldInfo fi, object obj, object value);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void SetValueInternal(FieldInfo fi, object? obj, object? value);
 
-		internal static void SetValue (RuntimeFieldInfo field, Object obj, Object value, RuntimeType fieldType, FieldAttributes fieldAttr, RuntimeType declaringType, ref bool domainInitialized)
-		{
-			SetValueInternal (field, obj, value);
-		}
+        internal static void SetValue(RuntimeFieldInfo field, object? obj, object? value, RuntimeType? fieldType, FieldAttributes fieldAttr, RuntimeType? declaringType, ref bool domainInitialized)
+        {
+            SetValueInternal(field, obj, value);
+        }
 
-		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		static unsafe extern internal Object GetValueDirect (RuntimeFieldInfo field, RuntimeType fieldType, void *pTypedRef, RuntimeType contextType);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern unsafe object GetValueDirect(RuntimeFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType? contextType);
 
-		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		static unsafe extern internal void SetValueDirect (RuntimeFieldInfo field, RuntimeType fieldType, void* pTypedRef, Object value, RuntimeType contextType);
-	}
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void SetValueDirect(RuntimeFieldInfo field, RuntimeType fieldType, void* pTypedRef, object value, RuntimeType? contextType);
+    }
 
 }

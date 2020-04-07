@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
@@ -43,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         private static Type FirstGenericArgument(Type type)
         {
-            return type.GetTypeInfo().GenericTypeArguments.Single();
+            return type.GetTypeInfo().GenericTypeArguments[0];
         }
 
         private static IList CreateEmptyList(Type innerType)

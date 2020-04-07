@@ -449,7 +449,7 @@ namespace System.Drawing
             SaveIconImage(writer, (IconImage)imageData![best]);
         }
 
-        private void SaveBitmapAsIcon(BinaryWriter writer)
+        private unsafe void SaveBitmapAsIcon(BinaryWriter writer)
         {
             writer.Write((ushort)0);    // idReserved must be 0
             writer.Write((ushort)1);    // idType must be 1
@@ -466,7 +466,7 @@ namespace System.Drawing
             ide.imageOffset = 22;   // 22 is the first icon position (for single icon files)
 
             BitmapInfoHeader bih = default;
-            bih.biSize = (uint)Marshal.SizeOf(typeof(BitmapInfoHeader));
+            bih.biSize = (uint)sizeof(BitmapInfoHeader);
             bih.biWidth = bitmap.Width;
             bih.biHeight = 2 * bitmap.Height; // include both XOR and AND images
             bih.biPlanes = 1;

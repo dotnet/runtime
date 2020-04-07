@@ -339,6 +339,13 @@ class AsAnyTests
 
     private static void RunBestFitMappingTests()
     {
+        if (System.Globalization.CultureInfo.CurrentCulture.Name != "en-US")
+        {
+            Console.WriteLine("Non english platforms are not supported");
+            Console.WriteLine("passing without running tests");
+            return;
+        }
+
         TestAnsiStringBestFitMapping();
         TestAnsiStringBuilder();
         TestAnsiStringArrayBestFitMapping();

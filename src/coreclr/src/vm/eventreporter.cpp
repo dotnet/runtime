@@ -111,11 +111,11 @@ EventReporter::EventReporter(EventReporterType type)
         }
     }
 
-    // Log the .NET Core Version if we can get it
+    // Log the .NET Version if we can get it
     LPCWSTR fxProductVersion = Configuration::GetKnobStringValue(W("FX_PRODUCT_VERSION"));
     if (fxProductVersion != nullptr)
     {
-        m_Description.Append(W(".NET Core Version: "));
+        m_Description.Append(W(".NET Version: "));
         m_Description.Append(fxProductVersion);
         m_Description.Append(W("\n"));
     }

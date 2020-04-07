@@ -278,8 +278,8 @@ namespace System.Net
     {
         string AuthenticationType { get; }
         bool CanPreAuthenticate { get; }
-        System.Net.Authorization Authenticate(string challenge, System.Net.WebRequest request, System.Net.ICredentials credentials);
-        System.Net.Authorization PreAuthenticate(System.Net.WebRequest request, System.Net.ICredentials credentials);
+        System.Net.Authorization? Authenticate(string challenge, System.Net.WebRequest request, System.Net.ICredentials credentials);
+        System.Net.Authorization? PreAuthenticate(System.Net.WebRequest request, System.Net.ICredentials credentials);
     }
     public partial interface ICredentialPolicy
     {

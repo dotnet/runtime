@@ -3562,7 +3562,7 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
             structSize = m_pComp->info.compCompHnd->getClassSize(structHnd);
             // We do not normalize the type field accesses during importation unless they
             // are used in a call, return or assignment.
-            if ((fieldType == TYP_STRUCT) && (structSize <= m_pComp->largestEnregisterableStructSize()))
+            if ((fieldType == TYP_STRUCT) && m_pComp->structSizeMightRepresentSIMDType(structSize))
             {
                 fieldType = m_pComp->impNormStructType(structHnd);
             }
@@ -8825,6 +8825,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_ReadyToRunGenericStaticBase:
         case VNF_ReadyToRunIsInstanceOf:
         case VNF_ReadyToRunCastClass:
+        case VNF_ReadyToRunGenericHandle:
         {
             useEntryPointAddrAsArg0 = true;
         }
@@ -9218,6 +9219,10 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
         case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
             vnf = VNF_RuntimeHandleMethod;
+            break;
+
+        case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+            vnf = VNF_ReadyToRunGenericHandle;
             break;
 
         case CORINFO_HELP_RUNTIMEHANDLE_CLASS:

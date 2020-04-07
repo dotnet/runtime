@@ -105,7 +105,20 @@ private:
 
 static UMEntryThunkFreeList s_thunkFreeList(DEFAULT_THUNK_FREE_LIST_THRESHOLD);
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
+#ifdef TARGET_X86
+
+#ifdef FEATURE_STUBS_AS_IL
+
+EXTERN_C void UMThunkStub(void);
+
+PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return GetEEFuncEntryPoint(UMThunkStub);
+}
+
+#else // FEATURE_STUBS_AS_IL
 
 EXTERN_C VOID __cdecl UMThunkStubRareDisable();
 EXTERN_C Thread* __stdcall CreateThreadBlockThrow();
@@ -754,16 +767,18 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     return pcpusl->Link(pLoaderHeap);
 }
 
-#else // TARGET_X86 && !FEATURE_STUBS_AS_IL
+#endif // FEATURE_STUBS_AS_IL
+
+#else // TARGET_X86
 
 PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return GetEEFuncEntryPoint(UMThunkStub);
+    return m_pILStub;
 }
 
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86
 
 UMEntryThunkCache::UMEntryThunkCache(AppDomain *pDomain) :
     m_crst(CrstUMEntryThunkCache),
@@ -842,7 +857,7 @@ extern "C" VOID STDCALL ReversePInvokeBadTransition()
     // Fail
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
                                              COR_E_EXECUTIONENGINE,
-                                             W("Invalid Program: attempted to call a NativeCallable method from runtime-typesafe code.")
+                                             W("Invalid Program: attempted to call a NativeCallable method from managed code.")
                                             );
 }
 
@@ -1194,33 +1209,20 @@ VOID UMThunkMarshInfo::RunTimeInit()
 
     if (pFinalILStub == NULL)
     {
-        if (pMD != NULL && !pMD->IsEEImpl() &&
-            !NDirect::MarshalingRequired(pMD, GetSignature().GetRawSig(), GetModule()))
-        {
-            // Call the method directly in no-delegate case if possible. This is important to avoid JITing
-            // for stubs created via code:ICLRRuntimeHost2::CreateDelegate during coreclr startup.
-            pFinalILStub = pMD->GetMultiCallableAddrOfCode();
-        }
+        PInvokeStaticSigInfo sigInfo;
+
+        if (pMD != NULL)
+            new (&sigInfo) PInvokeStaticSigInfo(pMD);
         else
-        {
-            // For perf, it is important to avoid expensive initialization of
-            // PInvokeStaticSigInfo if we have NGened stub.
-            PInvokeStaticSigInfo sigInfo;
+            new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
 
-            if (pMD != NULL)
-                new (&sigInfo) PInvokeStaticSigInfo(pMD);
-            else
-                new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
+        DWORD dwStubFlags = 0;
 
-            DWORD dwStubFlags = 0;
+        if (sigInfo.IsDelegateInterop())
+            dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
 
-            if (sigInfo.IsDelegateInterop())
-                dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
-
-            pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
-            pFinalILStub = JitILStub(pStubMD);
-
-        }
+        pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
+        pFinalILStub = JitILStub(pStubMD);
     }
 
 #if defined(TARGET_X86)
@@ -1277,13 +1279,6 @@ VOID UMThunkMarshInfo::RunTimeInit()
         // For all the other calling convention except cdecl, callee pops the stack arguments
         m_cbRetPop = cbRetPop + static_cast<UINT16>(m_cbActualArgSize);
     }
-#else // TARGET_X86
-    //
-    // m_cbActualArgSize gets the number of arg bytes for the NATIVE signature
-    //
-    m_cbActualArgSize =
-        (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : pMD->SizeOfArgStack();
-
 #endif // TARGET_X86
 
 #endif // TARGET_X86 && !FEATURE_STUBS_AS_IL

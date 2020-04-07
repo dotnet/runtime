@@ -111,7 +111,7 @@ namespace System.Net.Http.Headers
 
             if (GenericHeaderParser.SingleValueAuthenticationParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (AuthenticationHeaderValue)output;
+                parsedValue = (AuthenticationHeaderValue)output!;
                 return true;
             }
             return false;

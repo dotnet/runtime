@@ -54,6 +54,13 @@ namespace ILCompiler.DependencyAnalysis
 
             _r2rHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelper);
 
+            _instructionSetSupportFixups = new NodeCache<string, ISymbolNode>(key =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    new ReadyToRunInstructionSetSupportSignature(key));
+            });
+
             _fieldAddressCache = new NodeCache<FieldDesc, ISymbolNode>(key =>
             {
                 return new DelayLoadHelperImport(
@@ -77,6 +84,14 @@ namespace ILCompiler.DependencyAnalysis
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.FieldBaseOffset, key)
+                );
+            });
+
+            _checkFieldOffsetCache = new NodeCache<FieldDesc, ISymbolNode>(key =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    new FieldFixupSignature(ReadyToRunFixupKind.Check_FieldOffset, key)
                 );
             });
 
@@ -229,6 +244,14 @@ namespace ILCompiler.DependencyAnalysis
             return _r2rHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target));
         }
 
+        private NodeCache<string, ISymbolNode> _instructionSetSupportFixups;
+
+        public ISymbolNode PerMethodInstructionSetSupportFixup(InstructionSetSupport instructionSetSupport)
+        {
+            string key = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
+            return _instructionSetSupportFixups.GetOrAdd(key);
+        }
+
         private ISymbolNode CreateNewHelper(TypeDesc type)
         {
             return new DelayLoadHelperImport(
@@ -374,6 +397,13 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode FieldOffset(FieldDesc fieldDesc)
         {
             return _fieldOffsetCache.GetOrAdd(fieldDesc);
+        }
+
+        private NodeCache<FieldDesc, ISymbolNode> _checkFieldOffsetCache;
+
+        public ISymbolNode CheckFieldOffset(FieldDesc fieldDesc)
+        {
+            return _checkFieldOffsetCache.GetOrAdd(fieldDesc);
         }
 
         private NodeCache<TypeDesc, ISymbolNode> _fieldBaseOffsetCache;

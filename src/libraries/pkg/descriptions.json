@@ -15,12 +15,25 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.Caching.Abstractions",
+    "Description": "Caching abstractions for in-memory cache and distributed cache.",
+    "CommonTypes": [
+      "Microsoft.Extensions.Caching.Distributed.IDistributedCache",
+      "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+    ]
+  },
+  {
+    "Name": "Microsoft.Extensions.Caching.Memory",
+    "Description": "In-memory cache implementation of Microsoft.Extensions.Caching.Memory.IMemoryCache.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.Extensions.Configuration",
     "Description": "Implementation of key-value pair based configuration for Microsoft.Extensions.Configuration. Includes the memory configuration provider.",
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.Extensions.Configuration.Abstraction",
+    "Name": "Microsoft.Extensions.Configuration.Abstractions",
     "Description": "Abstractions of key-value pair based configuration.",
     "CommonTypes": [
       "Microsoft.Extensions.Configuration.IConfiguration",
@@ -31,7 +44,7 @@
     ]
   },
   {
-    "Name": "Microsoft.Extensions.Configuration.Bindar",
+    "Name": "Microsoft.Extensions.Configuration.Binder",
     "Description": "Functionality to bind an object to data in configuration providers for Microsoft.Extensions.Configuration.",
     "CommonTypes": []
   },
@@ -76,6 +89,13 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.DependencyModel",
+    "Description": "Abstractions for reading `.deps` files.",
+    "CommonTypes": [
+        "Microsoft.Extensions.DependencyModel.DependencyContext"
+    ]
+  },
+  {
     "Name": "Microsoft.Extensions.DependencyInjection.Abstractions",
     "Description": "Abstractions for dependency injection.",
     "CommonTypes": [
@@ -108,13 +128,20 @@
   },
   {
     "Name": "Microsoft.Extensions.Hosting",
-    "Description": ".NET Core hosting and startup infrastructures for applications.",
+    "Description": "Hosting and startup infrastructures for applications.",
     "CommonTypes": []
   },
   {
     "Name": "Microsoft.Extensions.Hosting.Abstractions",
-    "Description": ".NET Core hosting and startup abstractions for applications.",
+    "Description": "Hosting and startup abstractions for applications.",
     "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Http",
+    "Description": "The HttpClient factory is a pattern for configuring and retrieving named HttpClients in a composable way. The HttpClient factory provides extensibility to plug in DelegatingHandlers that address cross-cutting concerns such as service location, load balancing, and reliability. The default HttpClient factory provides built-in diagnostics and logging and manages the lifetimes of connections in a performant way.",
+    "CommonTypes": [
+      "System.Net.Http.IHttpClientFactory"
+    ]
   },
   {
     "Name": "Microsoft.Extensions.Logging",
@@ -177,6 +204,11 @@
   {
     "Name": "Microsoft.Extensions.Options.DataAnnotations",
     "Description": "Provides additional DataAnnotations specific functionality related to Options.",
+    "CommonTypes": []
+  },
+  {
+    "Name": "Microsoft.Extensions.Internal.Transport",
+    "Description": "Internal transport package to provide aspnetcore with the assemblies that make up the Microsoft.ASPNetCore.App shared framework.",
     "CommonTypes": []
   },
   {
@@ -250,7 +282,7 @@
   },
   {
     "Name": "Microsoft.NETCore.Runtime",
-    "Description": "The .NET Core runtime.",
+    "Description": "The .NET runtime.",
     "CommonTypes": []
   },
   {
@@ -318,7 +350,7 @@
   },
   {
     "Name": "Microsoft.XmlSerializer.Generator",
-    "Description": "Like the Xml Serializer Generator (sgen.exe) on desktop, Microsoft.XmlSerializer.Generator NuGet package is the solution for .NET Core and .NET Standard Libraries. It creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.",
+    "Description": "Creates an Xml serialization assembly for types contained in an assembly in order to improve the startup performance of Xml serialization when serializing or de-serializing objects of those types using XmlSerializer.",
     "CommonTypes": []
   },
   {
@@ -869,7 +901,7 @@
   },
   {
     "Name": "System.Drawing.Primitives",
-    "Description": "Provides basic drawing primitive structures, that exposes the corresponding System.Drawing.dll types in .NET Core.",
+    "Description": "Provides basic drawing primitive structures.",
     "CommonTypes": [
       "System.Drawing.Color",
       "System.Drawing.Point",
@@ -1207,6 +1239,15 @@
     "Description": "Provides a simple, programmatically controlled HTTP protocol listener.",
     "CommonTypes": [
       "System.Net.HttpListener"
+    ]
+  },
+  {
+    "Name": "System.Net.Http.Json",
+    "Description": "Provides extension methods for System.Net.Http.HttpClient and System.Net.Http.HttpContent that perform automatic serialization and deserialization using System.Text.Json.",
+    "CommonTypes": [
+      "System.Net.Http.Json.HttpClientJsonExtensions",
+      "System.Net.Http.Json.HttpContentJsonExtensions",
+      "System.Net.Http.Json.JsonContent"
     ]
   },
   {

@@ -57,7 +57,7 @@ namespace System.Net.Http.Headers
 
             if (MediaTypeHeaderParser.SingleValueWithQualityParser.TryParseValue(input, null, ref index, out object? output))
             {
-                parsedValue = (MediaTypeWithQualityHeaderValue)output;
+                parsedValue = (MediaTypeWithQualityHeaderValue)output!;
                 return true;
             }
             return false;

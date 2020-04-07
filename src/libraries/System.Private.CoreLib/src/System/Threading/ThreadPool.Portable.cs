@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
@@ -29,23 +28,17 @@ namespace System.Threading
 
         ~RegisteredWaitHandle()
         {
-            if(WaitThread != null)
+            if (WaitThread != null)
             {
                 Unregister(null);
             }
         }
 
-        private static AutoResetEvent s_cachedEvent;
+        private static AutoResetEvent? s_cachedEvent;
 
-        private static AutoResetEvent RentEvent()
-        {
-            AutoResetEvent resetEvent = Interlocked.Exchange(ref s_cachedEvent, (AutoResetEvent)null);
-            if (resetEvent == null)
-            {
-                resetEvent = new AutoResetEvent(false);
-            }
-            return resetEvent;
-        }
+        private static AutoResetEvent RentEvent() =>
+            Interlocked.Exchange(ref s_cachedEvent, null) ??
+            new AutoResetEvent(false);
 
         private static void ReturnEvent(AutoResetEvent resetEvent)
         {
@@ -59,7 +52,6 @@ namespace System.Threading
         /// The callback to execute when the wait on <see cref="Handle"/> either times out or completes.
         /// </summary>
         internal _ThreadPoolWaitOrTimerCallback Callback { get; }
-
 
         /// <summary>
         /// The <see cref="WaitHandle"/> that was registered.
@@ -88,7 +80,7 @@ namespace System.Threading
         /// <summary>
         /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
         /// </summary>
-        private SafeWaitHandle UserUnregisterWaitHandle { get; set; }
+        private SafeWaitHandle? UserUnregisterWaitHandle { get; set; }
 
         private IntPtr UserUnregisterWaitHandleValue { get; set; }
 
@@ -97,14 +89,14 @@ namespace System.Threading
         /// <summary>
         /// The <see cref="PortableThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
         /// </summary>
-        internal PortableThreadPool.WaitThread WaitThread { get; set; }
+        internal PortableThreadPool.WaitThread? WaitThread { get; set; }
 
         /// <summary>
         /// The number of callbacks that are currently queued on the Thread Pool or executing.
         /// </summary>
         private int _numRequestedCallbacks;
 
-        private LowLevelLock _callbackLock = new LowLevelLock();
+        private readonly LowLevelLock _callbackLock = new LowLevelLock();
 
         /// <summary>
         /// Notes if we need to signal the user's unregister event after all callbacks complete.
@@ -115,9 +107,9 @@ namespace System.Threading
 
         private bool _unregistered;
 
-        private AutoResetEvent _callbacksComplete;
+        private AutoResetEvent? _callbacksComplete;
 
-        private AutoResetEvent _removed;
+        private AutoResetEvent? _removed;
 
         /// <summary>
         /// Unregisters this wait handle registration from the wait threads.
@@ -128,7 +120,7 @@ namespace System.Threading
         /// This method will only return true on the first call.
         /// Passing in a wait handle with a value of -1 will result in a blocking wait, where Unregister will not return until the full unregistration is completed.
         /// </remarks>
-        public bool Unregister(WaitHandle waitObject)
+        public bool Unregister(WaitHandle? waitObject)
         {
             GC.SuppressFinalize(this);
             _callbackLock.Acquire();
@@ -189,7 +181,7 @@ namespace System.Threading
                 _callbackLock.Release();
             }
 
-            WaitThread.UnregisterWait(this);
+            WaitThread!.UnregisterWait(this);
             return true;
         }
 
@@ -199,13 +191,13 @@ namespace System.Threading
         private void SignalUserWaitHandle()
         {
             _callbackLock.VerifyIsLocked();
-            SafeWaitHandle handle = UserUnregisterWaitHandle;
+            SafeWaitHandle? handle = UserUnregisterWaitHandle;
             IntPtr handleValue = UserUnregisterWaitHandleValue;
             try
             {
                 if (handleValue != IntPtr.Zero && handleValue != (IntPtr)(-1))
                 {
-                    Debug.Assert(handleValue == handle.DangerousGetHandle());
+                    Debug.Assert(handleValue == handle!.DangerousGetHandle());
                     EventWaitHandle.Set(handle);
                 }
             }
@@ -307,7 +299,7 @@ namespace System.Threading
             Debug.Assert(IsBlocking);
             Debug.Assert(_unregisterCalled); // Should only be called when the wait is unregistered by the user.
 
-            _callbacksComplete.WaitOne();
+            _callbacksComplete!.WaitOne();
             ReturnEvent(_callbacksComplete);
             _callbacksComplete = null;
         }
@@ -317,7 +309,7 @@ namespace System.Threading
             Debug.Assert(!IsBlocking);
             Debug.Assert(_unregisterCalled); // Should only be called when the wait is unregistered by the user.
 
-            _removed.WaitOne();
+            _removed!.WaitOne();
             ReturnEvent(_removed);
             _removed = null;
         }
@@ -408,7 +400,7 @@ namespace System.Threading
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
-             Object state,
+             object? state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce,
              bool flowExecutionContext)

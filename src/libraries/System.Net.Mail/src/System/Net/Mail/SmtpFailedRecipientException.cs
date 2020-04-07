@@ -12,36 +12,36 @@ namespace System.Net.Mail
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SmtpFailedRecipientException : SmtpException, ISerializable
     {
-        private readonly string _failedRecipient;
+        private readonly string? _failedRecipient;
         internal bool fatal;
 
         public SmtpFailedRecipientException() : base() { }
 
-        public SmtpFailedRecipientException(string message) : base(message) { }
+        public SmtpFailedRecipientException(string? message) : base(message) { }
 
-        public SmtpFailedRecipientException(string message, Exception innerException) : base(message, innerException) { }
+        public SmtpFailedRecipientException(string? message, Exception? innerException) : base(message, innerException) { }
 
         protected SmtpFailedRecipientException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             _failedRecipient = info.GetString("failedRecipient");
         }
 
-        public SmtpFailedRecipientException(SmtpStatusCode statusCode, string failedRecipient) : base(statusCode)
+        public SmtpFailedRecipientException(SmtpStatusCode statusCode, string? failedRecipient) : base(statusCode)
         {
             _failedRecipient = failedRecipient;
         }
 
-        public SmtpFailedRecipientException(SmtpStatusCode statusCode, string failedRecipient, string serverResponse) : base(statusCode, serverResponse, true)
+        public SmtpFailedRecipientException(SmtpStatusCode statusCode, string? failedRecipient, string? serverResponse) : base(statusCode, serverResponse, true)
         {
             _failedRecipient = failedRecipient;
         }
 
-        public SmtpFailedRecipientException(string message, string failedRecipient, Exception innerException) : base(message, innerException)
+        public SmtpFailedRecipientException(string? message, string? failedRecipient, Exception? innerException) : base(message, innerException)
         {
             _failedRecipient = failedRecipient;
         }
 
-        public string FailedRecipient
+        public string? FailedRecipient
         {
             get
             {

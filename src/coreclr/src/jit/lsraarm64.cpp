@@ -390,7 +390,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount                    = cmpXchgNode->gtOpComparand->isContained() ? 2 : 3;
             assert(dstCount == 1);
 
-            if (!compiler->compSupports(InstructionSet_Atomics))
+            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
             {
                 // For ARMv8 exclusives requires a single internal register
                 buildInternalIntRegisterDefForNode(tree);
@@ -412,7 +412,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
                 // For ARMv8 exclusives the lifetime of the comparand must be extended because
                 // it may be used used multiple during retries
-                if (!compiler->compSupports(InstructionSet_Atomics))
+                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
                 {
                     setDelayFree(comparandUse);
                 }
@@ -432,7 +432,7 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == (tree->TypeGet() == TYP_VOID) ? 0 : 1);
             srcCount = tree->gtGetOp2()->isContained() ? 1 : 2;
 
-            if (!compiler->compSupports(InstructionSet_Atomics))
+            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
             {
                 // GT_XCHG requires a single internal register; the others require two.
                 buildInternalIntRegisterDefForNode(tree);
@@ -452,7 +452,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
             // For ARMv8 exclusives the lifetime of the addr and data must be extended because
             // it may be used used multiple during retries
-            if (!compiler->compSupports(InstructionSet_Atomics))
+            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
             {
                 // Internals may not collide with target
                 if (dstCount == 1)
@@ -994,11 +994,11 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 //
 int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 {
-    NamedIntrinsic      intrinsicId = intrinsicTree->gtHWIntrinsicId;
-    var_types           baseType    = intrinsicTree->gtSIMDBaseType;
-    InstructionSet      isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
-    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-    int                 numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
+    NamedIntrinsic         intrinsicId = intrinsicTree->gtHWIntrinsicId;
+    var_types              baseType    = intrinsicTree->gtSIMDBaseType;
+    CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
+    HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+    int                    numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
 
     GenTree* op1    = intrinsicTree->gtGetOp1();
     GenTree* op2    = intrinsicTree->gtGetOp2();
@@ -1133,6 +1133,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 }
                 break;
 
+            case NI_AdvSimd_AbsoluteDifferenceAdd:
             case NI_AdvSimd_FusedMultiplyAdd:
             case NI_AdvSimd_FusedMultiplySubtract:
             case NI_AdvSimd_Arm64_FusedMultiplyAdd:
@@ -1147,6 +1148,17 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 srcCount += 1;
                 srcCount += BuildDelayFreeUses(op2);
                 srcCount += BuildDelayFreeUses(op3);
+                break;
+
+            case NI_AdvSimd_ExtractAndNarrowHigh:
+
+                assert((numArgs == 2) && (op2 != nullptr));
+
+                buildUses = false;
+
+                tgtPrefUse = BuildUse(op1);
+                srcCount += 1;
+                srcCount += BuildDelayFreeUses(op2);
                 break;
 
             default:

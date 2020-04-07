@@ -412,8 +412,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
 
-            MethodDesc localMethod = targetMethod.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            return _localMethodCache.GetOrAdd(localMethod);
+            return _localMethodCache.GetOrAdd(targetMethod.Method);
         }
 
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()

@@ -70,8 +70,6 @@
 
       <NupkgToPublishFile Include="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile)" />
 
-      <UploadToBlobStorageFile Include="@(NupkgToPublishFile)" />
-
       <!--
         Assuming all symbol packages ship and can be found by turning .nupkg => .symbols.nupkg, find
         them. Don't check for missing symbol packages here: some nupkgs don't have them for valid
@@ -91,8 +89,6 @@
       <SymbolNupkgToPublishFile
         Include="@(PotentialSymbolNupkgToPublishFile)"
         Condition="Exists('%(Identity)')" />
-
-      <UploadToBlobStorageFile Include="@(SymbolNupkgToPublishFile)" />
     </ItemGroup>
 
     <Error

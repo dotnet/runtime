@@ -4681,7 +4681,7 @@ template<class T> void DeleteExecutable(T *p)
     {
         p->T::~T();
 
-        ClrHeapFree(ClrGetProcessExecutableHeap(), 0, p);
+        HeapFree(ClrGetProcessExecutableHeap(), 0, p);
     }
 }
 

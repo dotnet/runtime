@@ -25,6 +25,8 @@
 #undef min
 #undef max
 
+#include <algorithm>
+
 #if HAVE_SYS_TIME_H
  #include <sys/time.h>
 #else

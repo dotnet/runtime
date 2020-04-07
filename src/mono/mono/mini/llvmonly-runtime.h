@@ -28,13 +28,11 @@ G_EXTERN_C MonoFtnDesc* mini_llvmonly_resolve_generic_virtual_iface_call (MonoVT
 G_EXTERN_C void mini_llvmonly_init_delegate (MonoDelegate *del);
 G_EXTERN_C void mini_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method);
 
-G_EXTERN_C void mini_llvm_init_method          (MonoAotFileInfo *info, gpointer aot_module, guint32 method_index);
-G_EXTERN_C void mini_llvm_init_gshared_method_this  (MonoAotFileInfo *info, gpointer aot_module, guint32 method_index, MonoObject *this_ins);
-G_EXTERN_C void mini_llvm_init_gshared_method_mrgctx  (MonoAotFileInfo *info, gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx);
-G_EXTERN_C void mini_llvm_init_gshared_method_vtable  (MonoAotFileInfo *info, gpointer aot_module, guint32 method_index, MonoVTable *vtable);
+/* Used for regular llvm as well */
+G_EXTERN_C void mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, gpointer method_info, MonoVTable *vtable);
 
 G_EXTERN_C void mini_llvmonly_throw_nullref_exception (void);
 
-G_EXTERN_C void mini_llvmonly_throw_missing_method_exception (void);
+G_EXTERN_C void mini_llvmonly_throw_aot_failed_exception (const char *name);
 
 #endif
