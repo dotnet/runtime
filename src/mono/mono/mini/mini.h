@@ -313,7 +313,12 @@ enum {
 #define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
+#ifdef TARGET_ARM64
+// FIXME: enable for Arm64
+#define MONO_CLASS_IS_SIMD(cfg, klass) (0)
+#else
 #define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass))
+#endif
 
 #else
 
@@ -2844,6 +2849,10 @@ typedef enum {
 #ifdef TARGET_WASM
 	MONO_CPU_WASM_SIMD = 1 << 1,
 #endif
+#ifdef TARGET_ARM64
+	MONO_CPU_ARM64_BASE   = 1 << 1,
+	MONO_CPU_ARM64_CRC    = 1 << 2,
+#endif
 } MonoCPUFeatures;
 
 G_ENUM_FUNCTIONS (MonoCPUFeatures)
@@ -2938,7 +2947,17 @@ typedef enum {
 	SIMD_OP_SSE_PSIGND,
 	SIMD_OP_SSE_PMADDUBSW,
 	SIMD_OP_SSE_PMULHRSW,
-	SIMD_OP_SSE_LDDQU
+	SIMD_OP_SSE_LDDQU,
+	SIMD_OP_ARM64_CRC32B,
+	SIMD_OP_ARM64_CRC32H,
+	SIMD_OP_ARM64_CRC32W,
+	SIMD_OP_ARM64_CRC32X,
+	SIMD_OP_ARM64_CRC32CB,
+	SIMD_OP_ARM64_CRC32CH,
+	SIMD_OP_ARM64_CRC32CW,
+	SIMD_OP_ARM64_CRC32CX,
+	SIMD_OP_ARM64_RBIT32,
+	SIMD_OP_ARM64_RBIT64
 } SimdOp;
 
 const char *mono_arch_xregname (int reg);

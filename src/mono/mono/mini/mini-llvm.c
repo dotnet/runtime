@@ -8678,14 +8678,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_POPCNT64:
 			values [ins->dreg] = call_intrins (ctx, INTRINS_CTPOP_I64, &lhs, "");
 			break;
-		case OP_LZCNT32:
-		case OP_LZCNT64: {
-			LLVMValueRef args [2];
-			args [0] = lhs;
-			args [1] = LLVMConstInt (LLVMInt1Type (), 1, FALSE);
-			values [ins->dreg] = call_intrins (ctx, ins->opcode == OP_LZCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64, args, "");
-			break;
-		}
 		case OP_CTTZ32:
 		case OP_CTTZ64: {
 			LLVMValueRef args [2];
@@ -8745,7 +8737,78 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 #endif /* ENABLE_NETCORE */
-#endif /* SIMD */
+#endif /* defined(TARGET_X86) || defined(TARGET_AMD64) */
+
+// Shared between ARM64 and X86
+#if defined(ENABLE_NETCORE) && (defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64))
+		case OP_LZCNT32:
+		case OP_LZCNT64: {
+			LLVMValueRef args [2];
+			args [0] = lhs;
+			args [1] = LLVMConstInt (LLVMInt1Type (), 1, FALSE);
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_LZCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64), args, 2, "");
+			break;
+		}
+#endif
+
+#if defined(ENABLE_NETCORE) && defined(TARGET_ARM64)
+		case OP_XOP_I4_I4:
+		case OP_XOP_I8_I8: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_ARM64_RBIT32: id = INTRINS_BITREVERSE_I32; break;
+			case SIMD_OP_ARM64_RBIT64: id = INTRINS_BITREVERSE_I64; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
+			break;
+		}
+		case OP_XOP_I4_I4_I4:
+		case OP_XOP_I4_I4_I8: {
+			IntrinsicId id = (IntrinsicId)0;
+			gboolean zext_last = FALSE;
+			switch (ins->inst_c0) {
+			case SIMD_OP_ARM64_CRC32B: id = INTRINS_AARCH64_CRC32B; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32H: id = INTRINS_AARCH64_CRC32H; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32W: id = INTRINS_AARCH64_CRC32W; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32X: id = INTRINS_AARCH64_CRC32X; break;
+			case SIMD_OP_ARM64_CRC32CB: id = INTRINS_AARCH64_CRC32CB; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32CH: id = INTRINS_AARCH64_CRC32CH; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32CW: id = INTRINS_AARCH64_CRC32CW; zext_last = TRUE; break;
+			case SIMD_OP_ARM64_CRC32CX: id = INTRINS_AARCH64_CRC32CX; break;
+			default: g_assert_not_reached (); break;
+			}
+			LLVMValueRef arg1 = rhs;
+			if (zext_last)
+				arg1 = LLVMBuildZExt (ctx->builder, arg1, LLVMInt32Type (), "");
+			LLVMValueRef args [] = { lhs, arg1 };
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+		case OP_LSCNT32:
+		case OP_LSCNT64: {
+			// %shr = ashr i32 %x, 31
+			// %xor = xor i32 %shr, %x
+			// %mul = shl i32 %xor, 1
+			// %add = or i32 %mul, 1
+			// %0 = tail call i32 @llvm.ctlz.i32(i32 %add, i1 false)
+			LLVMValueRef shr = LLVMBuildAShr (builder, lhs, ins->opcode == OP_LSCNT32 ? 
+				LLVMConstInt (LLVMInt32Type (), 31, FALSE) : 
+				LLVMConstInt (LLVMInt64Type (), 63, FALSE), "");
+			LLVMValueRef one = ins->opcode == OP_LSCNT32 ? 
+				LLVMConstInt (LLVMInt32Type (), 1, FALSE) : 
+				LLVMConstInt (LLVMInt64Type (), 1, FALSE);
+			LLVMValueRef xor = LLVMBuildXor (builder, shr, lhs, "");
+			LLVMValueRef mul = LLVMBuildShl (builder, xor, one, "");
+			LLVMValueRef add = LLVMBuildOr (builder, mul, one, "");
+			
+			LLVMValueRef args [2];
+			args [0] = add;
+			args [1] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, ins->opcode == OP_LSCNT32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64), args, 2, "");
+			break;
+		}
+#endif
 
 		case OP_DUMMY_USE:
 			break;
@@ -10151,6 +10214,14 @@ add_intrinsic (LLVMModuleRef module, int id)
 		intrins = add_intrins1 (module, id, sse_i8_t);
 		break;
 #endif
+#ifdef TARGET_ARM64	
+	case INTRINS_BITREVERSE_I32:	
+		intrins = add_intrins1 (module, id, LLVMInt32Type ());	
+		break;	
+	case INTRINS_BITREVERSE_I64:	
+		intrins = add_intrins1 (module, id, LLVMInt64Type ());	
+		break;	
+#endif
 	default:
 		g_assert_not_reached ();
 		break;
@@ -11532,8 +11603,12 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 		{ "bmi",	MONO_CPU_X86_BMI1 },
 		{ "bmi2",	MONO_CPU_X86_BMI2 },
 #endif
+#if defined(TARGET_ARM64)
+		{ "crc",	MONO_CPU_ARM64_CRC },
+#endif
 	};
 	if (!cpu_features)
 		cpu_features = MONO_CPU_INITED | (MonoCPUFeatures)mono_llvm_check_cpu_features (flags_map, G_N_ELEMENTS (flags_map));
+
 	return cpu_features;
 }
