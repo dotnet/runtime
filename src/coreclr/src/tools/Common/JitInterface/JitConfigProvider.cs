@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-
+using ILCompiler;
 using NumberStyles = System.Globalization.NumberStyles;
 
 namespace Internal.JitInterface
@@ -77,6 +77,7 @@ namespace Internal.JitInterface
             {
                 jitFlagBuilder.Add(jitFlag);
             }
+
             _jitFlags = jitFlagBuilder.ToArray();
 
             foreach (var param in parameters)

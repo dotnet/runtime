@@ -10,13 +10,58 @@
 #include "phase.h"
 
 //------------------------------------------------------------------------
+// Observations ctor: snapshot key compiler variables before running a phase
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+Phase::Observations::Observations(Compiler* compiler)
+{
+#ifdef DEBUG
+    m_compiler          = compiler->impInlineRoot();
+    m_fgBBcount         = m_compiler->fgBBcount;
+    m_fgBBNumMax        = m_compiler->fgBBNumMax;
+    m_compHndBBtabCount = m_compiler->compHndBBtabCount;
+    m_lvaCount          = m_compiler->lvaCount;
+    m_compGenTreeID     = m_compiler->compGenTreeID;
+    m_compStatementID   = m_compiler->compStatementID;
+    m_compBasicBlockID  = m_compiler->compBasicBlockID;
+#endif
+}
+
+//------------------------------------------------------------------------
+// Observations Check: verify key compiler variables are unchanged
+//    if phase claims it made no modifications
+//
+// Arguments:
+//    status - status from the just-completed phase
+//
+void Phase::Observations::Check(PhaseStatus status)
+{
+#ifdef DEBUG
+    if (status == PhaseStatus::MODIFIED_NOTHING)
+    {
+        assert(m_fgBBcount == m_compiler->fgBBcount);
+        assert(m_fgBBNumMax == m_compiler->fgBBNumMax);
+        assert(m_compHndBBtabCount == m_compiler->compHndBBtabCount);
+        assert(m_lvaCount == m_compiler->lvaCount);
+        assert(m_compGenTreeID == m_compiler->compGenTreeID);
+        assert(m_compStatementID == m_compiler->compStatementID);
+        assert(m_compBasicBlockID == m_compiler->compBasicBlockID);
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
 // Run: execute a phase and any before and after actions
 //
 void Phase::Run()
 {
+    Observations observations(comp);
     PrePhase();
-    DoPhase();
-    PostPhase();
+    PhaseStatus status = DoPhase();
+    PostPhase(status);
+    observations.Check(status);
 }
 
 //------------------------------------------------------------------------
@@ -40,9 +85,8 @@ void Phase::PrePhase()
     //
     // Currently the list is just the set of phases that have custom
     // derivations from the Phase class.
-    static Phases s_whitelist[] = {PHASE_ALLOCATE_OBJECTS, PHASE_BUILD_SSA, PHASE_RATIONALIZE, PHASE_LOWERING,
-                                   PHASE_STACK_LEVEL_SETTER};
-    bool doPrePhase = false;
+    static Phases s_whitelist[] = {PHASE_BUILD_SSA, PHASE_RATIONALIZE, PHASE_LOWERING, PHASE_STACK_LEVEL_SETTER};
+    bool          doPrePhase    = false;
 
     for (int i = 0; i < sizeof(s_whitelist) / sizeof(Phases); i++)
     {
@@ -88,9 +132,17 @@ void Phase::PrePhase()
 //------------------------------------------------------------------------
 // PostPhase: perform dumps and checks after a phase executes
 //
-void Phase::PostPhase()
+// Arguments:
+//    status - status from the DoPhase call for this phase
+//
+void Phase::PostPhase(PhaseStatus status)
 {
 #ifdef DEBUG
+
+    // Don't dump or check post phase unless the phase made changes.
+    const bool        madeChanges   = (status != PhaseStatus::MODIFIED_NOTHING);
+    const char* const statusMessage = madeChanges ? "" : " [no changes]";
+    bool              doPostPhase   = false;
 
     // To help in the incremental conversion of jit activity to phases
     // without greatly increasing dump size or checked jit time, we
@@ -99,21 +151,28 @@ void Phase::PostPhase()
     // the various methods in the phase.
     //
     // As we remove the explicit checks and dumps from each phase, we
-    // will add to thist list; once all phases are updated, we can
+    // will add to this list; once all phases are updated, we can
     // remove the list entirely.
     //
-    // Currently the list is just the set of phases that have custom
-    // derivations from the Phase class.
-    static Phases s_whitelist[] = {PHASE_ALLOCATE_OBJECTS, PHASE_BUILD_SSA, PHASE_RATIONALIZE, PHASE_LOWERING,
-                                   PHASE_STACK_LEVEL_SETTER};
-    bool doPostPhase = false;
+    // This list includes custom derivations from the Phase class as
+    // well as the new-style phases that have been updated to return
+    // PhaseStatus from their DoPhase methods.
+    //
+    static Phases s_whitelist[] =
+        {PHASE_IMPORTATION,       PHASE_INDXCALL,      PHASE_MORPH_INLINE,         PHASE_ALLOCATE_OBJECTS,
+         PHASE_EMPTY_TRY,         PHASE_EMPTY_FINALLY, PHASE_MERGE_FINALLY_CHAINS, PHASE_CLONE_FINALLY,
+         PHASE_MERGE_THROWS,      PHASE_BUILD_SSA,     PHASE_RATIONALIZE,          PHASE_LOWERING,
+         PHASE_STACK_LEVEL_SETTER};
 
-    for (int i = 0; i < sizeof(s_whitelist) / sizeof(Phases); i++)
+    if (madeChanges)
     {
-        if (m_phase == s_whitelist[i])
+        for (int i = 0; i < sizeof(s_whitelist) / sizeof(Phases); i++)
         {
-            doPostPhase = true;
-            break;
+            if (m_phase == s_whitelist[i])
+            {
+                doPostPhase = true;
+                break;
+            }
         }
     }
 
@@ -121,12 +180,12 @@ void Phase::PostPhase()
     {
         if (comp->compIsForInlining())
         {
-            printf("\n*************** Inline @[%06u] Finishing PHASE %s\n",
-                   Compiler::dspTreeID(comp->impInlineInfo->iciCall), m_name);
+            printf("\n*************** Inline @[%06u] Finishing PHASE %s%s\n",
+                   Compiler::dspTreeID(comp->impInlineInfo->iciCall), m_name, statusMessage);
         }
         else
         {
-            printf("\n*************** Finishing PHASE %s\n", m_name);
+            printf("\n*************** Finishing PHASE %s%s\n", m_name, statusMessage);
         }
 
         if (doPostPhase)
@@ -147,6 +206,7 @@ void Phase::PostPhase()
             comp->fgDebugCheckBBlist();
             comp->fgDebugCheckLinks();
             comp->fgDebugCheckNodesUniqueness();
+            comp->fgVerifyHandlerTab();
         }
     }
 

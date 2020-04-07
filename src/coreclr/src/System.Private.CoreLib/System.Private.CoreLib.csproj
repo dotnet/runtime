@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">$(TargetArchitecture)</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
@@ -165,7 +165,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AQNBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
@@ -398,11 +397,6 @@
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 
-  <!-- Setup ILLink.targets -->
-  <ItemGroup>
-    <PackageReference Include="ILLink.Tasks" Version="$(ILLinkTasksVersion)" ExcludeAssets="build" GeneratePathProperty="True" />
-  </ItemGroup>
-
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
 
   <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile"/>
@@ -413,7 +407,7 @@
   <ItemGroup>
     <EventingGenerationScript Include="$(CoreClrProjectRoot)/src/scripts/genRuntimeEventSources.py" />
     <EventManifestFile Include="$(CoreClrProjectRoot)/src/vm/ClrEtwAll.man" />
-    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(TargetArchitecture)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
       <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.CoreCLR.cs</Link>
     </EventingSourceFile>
     <Compile Include="@(EventingSourceFile)" />

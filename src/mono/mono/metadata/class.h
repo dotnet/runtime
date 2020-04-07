@@ -18,6 +18,13 @@ typedef struct _MonoClassField MonoClassField;
 typedef struct _MonoProperty MonoProperty;
 typedef struct _MonoEvent MonoEvent;
 
+typedef enum {
+	MONO_TYPE_NAME_FORMAT_IL,
+	MONO_TYPE_NAME_FORMAT_REFLECTION,
+	MONO_TYPE_NAME_FORMAT_FULL_NAME,
+	MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED
+} MonoTypeNameFormat;
+
 MONO_API MONO_RT_EXTERNAL_ONLY
 MonoClass *
 mono_class_get             (MonoImage *image, uint32_t type_token);
@@ -129,6 +136,9 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass);
 MONO_API MONO_RT_EXTERNAL_ONLY
 void*
 mono_ldtoken               (MonoImage *image, uint32_t token, MonoClass **retclass, MonoGenericContext *context);
+
+MONO_API char *
+mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format);
 
 MONO_API char*         
 mono_type_get_name         (MonoType *type);

@@ -37,7 +37,7 @@ namespace System.IO
                     // FileNotFound only if the containing directory exists.
 
                     bool isDirectory = (error.Error == Interop.Error.ENOENT) &&
-                        (overwrite || !DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(destFullPath))!));
+                        (overwrite || !DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(destFullPath.AsSpan()))!));
 
                     Interop.CheckIo(
                         error.Error,
@@ -172,8 +172,9 @@ namespace System.IO
             // link/unlink approach and generating any exceptional messages from there as necessary.
             Interop.Sys.FileStatus sourceStat, destStat;
             if (Interop.Sys.LStat(sourceFullPath, out sourceStat) == 0 && // source file exists
-               (Interop.Sys.LStat(destFullPath, out destStat) != 0 || // dest file does not exist
-                    sourceStat.Ino == destStat.Ino) && // source and dest are the same file on that device
+                (Interop.Sys.LStat(destFullPath, out destStat) != 0 || // dest file does not exist
+                (sourceStat.Dev == destStat.Dev && // source and dest are on the same device
+                sourceStat.Ino == destStat.Ino)) && // source and dest are the same file on that device
                 Interop.Sys.Rename(sourceFullPath, destFullPath) == 0) // try the rename
             {
                 // Renamed successfully.
@@ -287,10 +288,9 @@ namespace System.IO
                 int i = length - 1;
                 while (i >= lengthRoot && !somepathexists)
                 {
-                    string dir = fullPath.Substring(0, i + 1);
-                    if (!DirectoryExists(dir)) // Create only the ones missing
+                    if (!DirectoryExists(fullPath.AsSpan(0, i + 1))) // Create only the ones missing
                     {
-                        stackDir.Push(dir);
+                        stackDir.Push(fullPath.Substring(0, i + 1));
                     }
                     else
                     {
@@ -308,7 +308,7 @@ namespace System.IO
             int count = stackDir.Count;
             if (count == 0 && !somepathexists)
             {
-                string? root = Path.GetPathRoot(fullPath);
+                ReadOnlySpan<char> root = Path.GetPathRoot(fullPath.AsSpan());
                 if (!DirectoryExists(root))
                 {
                     throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);

@@ -63,7 +63,7 @@ namespace System
             return result;
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             return GetType().ToString();
         }

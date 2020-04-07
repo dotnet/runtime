@@ -17,8 +17,8 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal int Version;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn[] DigestAlgorithms;
         internal System.Security.Cryptography.Pkcs.Asn1.EncapsulatedContentInfoAsn EncapContentInfo;
-        internal System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn[] CertificateSet;
-        internal ReadOnlyMemory<byte>[] Crls;
+        internal System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn[]? CertificateSet;
+        internal ReadOnlyMemory<byte>[]? Crls;
         internal System.Security.Cryptography.Pkcs.Asn1.SignerInfoAsn[] SignerInfos;
 
         internal void Encode(AsnWriter writer)

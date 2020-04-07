@@ -252,9 +252,12 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static AsnWriter WritePkcs8(AsnWriter algorithmIdentifierWriter, AsnWriter privateKeyWriter)
+        internal static AsnWriter WritePkcs8(
+            AsnWriter algorithmIdentifierWriter,
+            AsnWriter privateKeyWriter,
+            AsnWriter? attributesWriter = null)
         {
-            // Ensure both input writers are balanced.
+            // Ensure both algorithm identifier and key writers are balanced.
             ReadOnlySpan<byte> algorithmIdentifier = algorithmIdentifierWriter.EncodeAsSpan();
             ReadOnlySpan<byte> privateKey = privateKeyWriter.EncodeAsSpan();
 
@@ -287,7 +290,13 @@ namespace System.Security.Cryptography
             // PKI.privateKey
             writer.WriteOctetString(privateKey);
 
-            // We don't currently accept attributes, so... done.
+            // PKI.Attributes
+            if (attributesWriter != null)
+            {
+                ReadOnlySpan<byte> attributes = attributesWriter.EncodeAsSpan();
+                writer.WriteEncodedValue(attributes);
+            }
+
             writer.PopSequence();
             return writer;
         }

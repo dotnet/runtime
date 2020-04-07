@@ -1532,7 +1532,8 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 // Notes:
 //    Normalizing the type involves examining the struct type to determine if it should
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
-//    for full enregistration, e.g. TYP_SIMD16.
+//    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
+//    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
 
 var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseType)
 {
@@ -1550,7 +1551,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
         {
             unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
-            if ((originalSize >= minSIMDStructBytes()) && (originalSize <= maxSIMDStructBytes()))
+            if (structSizeMightRepresentSIMDType(originalSize))
             {
                 unsigned int sizeBytes;
                 var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
@@ -4132,7 +4133,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_MathF_FusedMultiplyAdd:
             {
 #ifdef TARGET_XARCH
-                if (compSupports(InstructionSet_FMA))
+                if (compExactlyDependsOn(InstructionSet_FMA))
                 {
                     assert(varTypeIsFloating(callType));
 
@@ -19807,7 +19808,7 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         case CORINFO_INTRINSIC_Round:
         case CORINFO_INTRINSIC_Ceiling:
         case CORINFO_INTRINSIC_Floor:
-            return compSupports(InstructionSet_SSE41);
+            return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
         default:
             return false;

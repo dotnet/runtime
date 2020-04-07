@@ -102,7 +102,8 @@ HANDLES(ENV_16, "get_UserName", ves_icall_System_Environment_get_UserName, MonoS
 HANDLES(ENV_17, "internalGetEnvironmentVariable_native", ves_icall_System_Environment_GetEnvironmentVariable_native, MonoString, 1, (const_char_ptr))
 NOHANDLES(ICALL(ENV_20, "set_ExitCode", mono_environment_exitcode_set))
 
-ICALL_TYPE(GC, "System.GC", GC_10)
+ICALL_TYPE(GC, "System.GC", GC_13)
+HANDLES(GC_13, "AllocPinnedArray", ves_icall_System_GC_AllocPinnedArray, MonoArray, 2, (MonoReflectionType, gint32))
 NOHANDLES(ICALL(GC_10, "GetAllocatedBytesForCurrentThread", ves_icall_System_GC_GetAllocatedBytesForCurrentThread))
 NOHANDLES(ICALL(GC_0, "GetCollectionCount", ves_icall_System_GC_GetCollectionCount))
 HANDLES(GC_0a, "GetGeneration", ves_icall_System_GC_GetGeneration, int, 1, (MonoObject))

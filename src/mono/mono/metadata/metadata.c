@@ -2570,7 +2570,13 @@ retry:
 		return signature_in_image (type->data.method, image);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		return image == mono_get_image_for_generic_param (type->data.generic_param);
+		if (image == mono_get_image_for_generic_param (type->data.generic_param))
+			return TRUE;
+		else if (type->data.generic_param->gshared_constraint) {
+			type = type->data.generic_param->gshared_constraint;
+			goto retry;
+		}
+		return FALSE;
 	default:
 		/* At this point, we should've avoided all potential allocations in mono_class_from_mono_type_internal () */
 		return image == m_class_get_image (mono_class_from_mono_type_internal (type));
@@ -3055,6 +3061,9 @@ retry:
 	{
 		MonoImage *image = mono_get_image_for_generic_param (type->data.generic_param);
 		add_image (image, data);
+		type = type->data.generic_param->gshared_constraint;
+		if (type)
+			goto retry;
 		break;
 	}
 	case MONO_TYPE_CLASS:
@@ -3379,17 +3388,20 @@ MonoImageSet *
 mono_metadata_merge_image_sets (MonoImageSet *set1, MonoImageSet *set2)
 {
 	MonoImage **images = g_newa (MonoImage*, set1->nimages + set2->nimages);
+
+	/* Add images from set1 */
 	memcpy (images, set1->images, sizeof (MonoImage*) * set1->nimages);
 
 	int nimages = set1->nimages;
 	// FIXME: Quaratic
-	for (int i = 0; i < set1->nimages; ++i) {
+	/* Add images from set2 */
+	for (int i = 0; i < set2->nimages; ++i) {
 		int j;
-		for (j = 0; j < set2->nimages; ++j) {
-			if (set1->images [i] == set2->images [j])
+		for (j = 0; j < set1->nimages; ++j) {
+			if (set2->images [i] == set1->images [j])
 				break;
 		}
-		if (j == set2->nimages)
+		if (j == set1->nimages)
 			images [nimages ++] = set2->images [i];
 	}
 	return get_image_set (images, nimages);

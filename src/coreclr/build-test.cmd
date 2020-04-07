@@ -44,7 +44,7 @@ set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 :: Default __Exclude to issues.targets
 set __Exclude=%__TestDir%\issues.targets
 
-REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:__BuildArch=x64)
+REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:TargetArchitecture=x64)
 set "__args= %*"
 set processedArgs=
 set __UnprocessedBuildArgs=
@@ -141,8 +141,8 @@ if "%__TargetsWindows%"=="1" (
 
 @if defined _echo @echo on
 
-set __CommonMSBuildArgs=/p:__TargetOS=%__TargetOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch%
-set __msbuildArgs=/p:__TargetOS=%__TargetOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch% /nologo /verbosity:minimal /clp:Summary /maxcpucount
+set __CommonMSBuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch%
+set __msbuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch% /nologo /verbosity:minimal /clp:Summary /maxcpucount
 
 echo %__MsgPrefix%Commencing CoreCLR test build
 

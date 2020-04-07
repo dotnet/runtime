@@ -149,7 +149,6 @@ endif ()
 
 if(CLR_CMAKE_TARGET_FREEBSD)
     add_definitions(-D_BSD_SOURCE) # required for getline
-    add_link_options(-fuse-ld=lld)
 endif(CLR_CMAKE_TARGET_FREEBSD)
 
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
@@ -174,12 +173,6 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
     add_definitions(-DTARGET_UNIX)
 endif(CLR_CMAKE_TARGET_UNIX)
-
-function(install_library_and_symbols targetName)
-    install_symbols(${targetName} .)
-    set(install_source_file $<TARGET_FILE:${targetName}>)
-    install(PROGRAMS ${install_source_file} DESTINATION .)
-endfunction()
 
 include(configure.cmake)
 

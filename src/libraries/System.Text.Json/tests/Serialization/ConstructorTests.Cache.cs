@@ -24,53 +24,66 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void MultipleThreads()
         {
-            // Use local options to avoid obtaining already cached metadata from the default options.
-            var options = new JsonSerializerOptions();
-
             // Verify the test class has >32 properties since that is a threshold for using the fallback dictionary.
             Assert.True(typeof(ClassWithConstructor_SimpleAndComplexParameters).GetProperties(BindingFlags.Instance | BindingFlags.Public).Length > 32);
 
-            void DeserializeObjectMinimal()
+            void DeserializeObject(string json, Type type, JsonSerializerOptions options)
             {
-                var obj = Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(@"{""MyDecimal"" : 3.3}", options);
+                var obj = Serializer.Deserialize(json, type, options);
+                ((ITestClassWithParameterizedCtor)obj).Verify();
+            }
+
+            void DeserializeObjectMinimal(Type type, JsonSerializerOptions options)
+            {
+                string json = (string)type.GetProperty("s_json_minimal").GetValue(null);
+                var obj = Serializer.Deserialize(json, type, options);
+                ((ITestClassWithParameterizedCtor)obj).VerifyMinimal();
             };
 
-            void DeserializeObjectFlipped()
+            void DeserializeObjectFlipped(Type type, JsonSerializerOptions options)
             {
-                var obj = Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(
-                    ClassWithConstructor_SimpleAndComplexParameters.s_json_flipped, options);
-                obj.Verify();
+                string json = (string)type.GetProperty("s_json_flipped").GetValue(null);
+                DeserializeObject(json, type, options);
             };
 
-            void DeserializeObjectNormal()
+            void DeserializeObjectNormal(Type type, JsonSerializerOptions options)
             {
-                var obj = Serializer.Deserialize<ClassWithConstructor_SimpleAndComplexParameters>(
-                    ClassWithConstructor_SimpleAndComplexParameters.s_json, options);
-                obj.Verify();
+                string json = (string)type.GetProperty("s_json").GetValue(null);
+                DeserializeObject(json, type, options);
             };
 
-            void SerializeObject()
+            void SerializeObject(Type type, JsonSerializerOptions options)
             {
                 var obj = ClassWithConstructor_SimpleAndComplexParameters.GetInstance();
                 JsonSerializer.Serialize(obj, options);
             };
 
-            const int ThreadCount = 8;
-            const int ConcurrentTestsCount = 4;
-            Task[] tasks = new Task[ThreadCount * ConcurrentTestsCount];
-
-            for (int i = 0; i < tasks.Length; i += ConcurrentTestsCount)
+            void RunTest(Type type)
             {
-                // Create race condition to populate the sorted property cache with different json ordering.
-                tasks[i + 0] = Task.Run(() => DeserializeObjectMinimal());
-                tasks[i + 1] = Task.Run(() => DeserializeObjectFlipped());
-                tasks[i + 2] = Task.Run(() => DeserializeObjectNormal());
+                // Use local options to avoid obtaining already cached metadata from the default options.
+                var options = new JsonSerializerOptions();
 
-                // Ensure no exceptions on serialization
-                tasks[i + 3] = Task.Run(() => SerializeObject());
-            };
+                const int ThreadCount = 8;
+                const int ConcurrentTestsCount = 4;
+                Task[] tasks = new Task[ThreadCount * ConcurrentTestsCount];
 
-            Task.WaitAll(tasks);
+                for (int i = 0; i < tasks.Length; i += ConcurrentTestsCount)
+                {
+                    // Create race condition to populate the sorted property cache with different json ordering.
+                    tasks[i + 0] = Task.Run(() => DeserializeObjectMinimal(type, options));
+                    tasks[i + 1] = Task.Run(() => DeserializeObjectFlipped(type, options));
+                    tasks[i + 2] = Task.Run(() => DeserializeObjectNormal(type, options));
+
+                    // Ensure no exceptions on serialization
+                    tasks[i + 3] = Task.Run(() => SerializeObject(type, options));
+                };
+
+                Task.WaitAll(tasks);
+            }
+
+            RunTest(typeof(ClassWithConstructor_SimpleAndComplexParameters));
+            RunTest(typeof(Person_Class));
+            RunTest(typeof(Parameterized_Class_With_ComplexTuple));
         }
 
         [Fact]
