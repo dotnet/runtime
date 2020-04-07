@@ -27,6 +27,8 @@
     <LibrariesTesthostRoot>$(ArtifactsDir)bin\testhost\$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesTestConfig)-$(Platform)\</LibrariesTesthostRoot>
     <LibrariesTesthostRuntimeDir>$(LibrariesTesthostRoot)shared\Microsoft.NETCore.App\$(ProductVersion)\</LibrariesTesthostRuntimeDir>
     <XcodeDir Condition="'$(XcodeDir)' == ''">/Applications/Xcode.app/Contents/Developer</XcodeDir>
+    <_BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">true</_BuildMonoAOTCrossCompiler>
+    <_BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true'">true</_BuildMonoAOTCrossCompiler>
   </PropertyGroup>
 
   <!-- OSX/iOS/tvOS/Android/Linux Mono runtime build -->
@@ -684,13 +686,9 @@
     <Exec Command="make -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
     <Exec Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'" Command="make install -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)" />
 
-    <Message Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true'" Text="--- Building Mono AOT cross-compiler ---" Importance="High" />
-    <Exec Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true'" Command="make -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)cross" />
-    <Exec Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true'" Command="make install -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)cross" />
-
-    <Message Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" Text="--- Building Mono AOT cross-compiler ---" Importance="High" />
-    <Exec Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" Command="make -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)cross" />
-    <Exec Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" Command="make install -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)cross" />
+    <Message Condition="'$(_BuildMonoAOTCrossCompiler)' == 'true'" Text="--- Building Mono AOT cross-compiler ---" Importance="High" />
+    <Exec Condition="'$(_BuildMonoAOTCrossCompiler)' == 'true'" Command="make -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)cross" />
+    <Exec Condition="'$(_BuildMonoAOTCrossCompiler)' == 'true'" Command="make install -j$([System.Environment]::ProcessorCount)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)cross" />
   </Target>
 
   <!-- Windows Mono runtime build -->
