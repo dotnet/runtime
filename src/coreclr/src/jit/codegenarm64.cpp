@@ -2723,7 +2723,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
     emitAttr dataSize = emitActualTypeSize(data);
 
-    if (compiler->compSupports(InstructionSet_Atomics))
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
     {
         assert(!data->isContainedIntOrIImmed());
 
@@ -2860,7 +2860,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     genConsumeRegs(data);
     genConsumeRegs(comparand);
 
-    if (compiler->compSupports(InstructionSet_Atomics))
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
     {
         emitAttr dataSize = emitActualTypeSize(data);
 

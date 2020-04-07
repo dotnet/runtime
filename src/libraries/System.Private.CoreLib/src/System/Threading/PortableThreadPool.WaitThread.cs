@@ -11,7 +11,7 @@ namespace System.Threading
         /// <summary>
         /// A linked list of <see cref="WaitThread"/>s.
         /// </summary>
-        private WaitThreadNode _waitThreadsHead;
+        private WaitThreadNode? _waitThreadsHead;
 
         private readonly LowLevelLock _waitThreadLock = new LowLevelLock();
 
@@ -34,10 +34,10 @@ namespace System.Threading
 
                 // Register the wait handle on the first wait thread that is not at capacity.
                 WaitThreadNode prev;
-                WaitThreadNode current = _waitThreadsHead;
+                WaitThreadNode? current = _waitThreadsHead;
                 do
                 {
-                    if (current.Thread.RegisterWaitHandle(handle))
+                    if (current.Thread!.RegisterWaitHandle(handle))
                     {
                         return;
                     }
@@ -88,14 +88,14 @@ namespace System.Threading
         /// <param name="thread">The wait thread to remove from the list.</param>
         private void RemoveWaitThread(WaitThread thread)
         {
-            if (_waitThreadsHead.Thread == thread)
+            if (_waitThreadsHead!.Thread == thread)
             {
                 _waitThreadsHead = _waitThreadsHead.Next;
                 return;
             }
 
             WaitThreadNode prev;
-            WaitThreadNode current = _waitThreadsHead;
+            WaitThreadNode? current = _waitThreadsHead;
 
             do
             {
@@ -113,8 +113,8 @@ namespace System.Threading
 
         private class WaitThreadNode
         {
-            public WaitThread Thread { get; set; }
-            public WaitThreadNode Next { get; set; }
+            public WaitThread? Thread { get; set; }
+            public WaitThreadNode? Next { get; set; }
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace System.Threading
             /// <summary>
             /// A list of removals of wait handles that are waiting for the wait thread to process.
             /// </summary>
-            private readonly RegisteredWaitHandle[] _pendingRemoves = new RegisteredWaitHandle[WaitHandle.MaxWaitHandles - 1];
+            private readonly RegisteredWaitHandle?[] _pendingRemoves = new RegisteredWaitHandle[WaitHandle.MaxWaitHandles - 1];
             /// <summary>
             /// The number of pending removals.
             /// </summary>
@@ -228,7 +228,7 @@ namespace System.Threading
                         continue;
                     }
 
-                    RegisteredWaitHandle signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaits[signaledHandleIndex - 1] : null;
+                    RegisteredWaitHandle? signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaits[signaledHandleIndex - 1] : null;
 
                     if (signaledHandle != null)
                     {
@@ -290,8 +290,8 @@ namespace System.Threading
                                 _registeredWaits[j].OnRemoveWait();
                                 _registeredWaits[j] = _registeredWaits[_numUserWaits - 1];
                                 _waitHandles[j + 1] = _waitHandles[_numUserWaits];
-                                _registeredWaits[_numUserWaits - 1] = null;
-                                _waitHandles[_numUserWaits] = null;
+                                _registeredWaits[_numUserWaits - 1] = null!;
+                                _waitHandles[_numUserWaits] = null!;
                                 --_numUserWaits;
                                 _pendingRemoves[i] = null;
                                 break;

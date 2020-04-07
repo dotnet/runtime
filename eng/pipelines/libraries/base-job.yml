@@ -36,7 +36,7 @@ jobs:
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
       variables:
-        - _buildScriptFileName: libraries
+        - _buildScriptFileName: build
         - _BuildConfig: ${{ parameters.buildConfig }}
 
         - _msbuildCommonParameters: ''
@@ -83,7 +83,6 @@ jobs:
           - _extraHelixArguments: /p:BuildAllConfigurations=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
-          - _skipTestHostCopy: true
           - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
 
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
@@ -106,7 +105,7 @@ jobs:
 
           # WebAssembly uses linux implementation detail
           - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-            - _runtimeArtifactName: '$(runtimeFlavorName)Product_Linux_x64_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactName: 'CoreLib_Linux_x64_${{ parameters.liveRuntimeBuildConfig }}'
 
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -116,7 +115,7 @@ jobs:
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
 
-        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: -subsetcategory libraries -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
       dependsOn:

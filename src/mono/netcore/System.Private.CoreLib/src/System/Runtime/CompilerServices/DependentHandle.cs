@@ -6,8 +6,8 @@ namespace System.Runtime.CompilerServices
 {
     internal struct Ephemeron
     {
-        public object key;
-        public object value;
+        public object? key;
+        public object? value;
     }
 
     //
@@ -17,7 +17,7 @@ namespace System.Runtime.CompilerServices
     {
         private Ephemeron[] data;
 
-        public DependentHandle(object primary, object secondary)
+        public DependentHandle(object? primary, object? secondary)
         {
             data = new Ephemeron[1];
             data[0].key = primary;
@@ -30,7 +30,7 @@ namespace System.Runtime.CompilerServices
         // Getting the secondary object is more expensive than getting the first so
         // we provide a separate primary-only accessor for those times we only want the
         // primary.
-        public object GetPrimary()
+        public object? GetPrimary()
         {
             if (!IsAllocated)
                 throw new NotSupportedException();
@@ -39,7 +39,7 @@ namespace System.Runtime.CompilerServices
             return data[0].key;
         }
 
-        public object GetPrimaryAndSecondary(out object secondary)
+        public object? GetPrimaryAndSecondary(out object? secondary)
         {
             if (!IsAllocated)
                 throw new NotSupportedException();
@@ -52,14 +52,14 @@ namespace System.Runtime.CompilerServices
             return data[0].key;
         }
 
-        public void SetPrimary(object primary)
+        public void SetPrimary(object? primary)
         {
             if (!IsAllocated)
                 throw new NotSupportedException();
             data[0].key = primary;
         }
 
-        public void SetSecondary(object secondary)
+        public void SetSecondary(object? secondary)
         {
             if (!IsAllocated)
                 throw new NotSupportedException();
@@ -68,7 +68,7 @@ namespace System.Runtime.CompilerServices
 
         public void Free()
         {
-            data = null;
+            data = null!;
         }
     }
 }

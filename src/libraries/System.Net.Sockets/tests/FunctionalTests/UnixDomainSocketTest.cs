@@ -21,7 +21,6 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(PlatformSupportsUnixDomainSockets, Socket.OSSupportsUnixDomainSockets);
         }
 
-        [PlatformSpecific(~TestPlatforms.Windows)] // Windows doesn't currently support ConnectEx with domain sockets
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
         {
@@ -100,7 +99,7 @@ namespace System.Net.Sockets.Tests
                     }
 
                     Assert.Equal(
-                        RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SocketError.InvalidArgument : SocketError.AddressNotAvailable,
+                        RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
                         args.SocketError);
                 }
             }

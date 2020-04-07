@@ -197,25 +197,23 @@ namespace Internal.Cryptography.Pal
                 attrBytes[1] = sizeof(int);
                 MemoryMarshal.Write(attrBytes.AsSpan(2), ref keyIdx);
 
+                AttributeAsn attribute = new AttributeAsn
+                {
+                    AttrType = new Oid(Oids.LocalKeyId, null),
+                    AttrValues = new ReadOnlyMemory<byte>[]
+                    {
+                        attrBytes,
+                    }
+                };
                 keyBags[keyIdx] = new SafeBagAsn
                 {
                     BagId = Oids.Pkcs12ShroudedKeyBag,
                     BagValue = ExportPkcs8(certPal, passwordSpan),
-                    BagAttributes = new[]
-                    {
-                        new AttributeAsn
-                        {
-                            AttrType = new Oid(Oids.LocalKeyId, null),
-                            AttrValues = new ReadOnlyMemory<byte>[]
-                            {
-                                attrBytes,
-                            }
-                        }
-                    }
+                    BagAttributes = new[] { attribute }
                 };
 
                 // Reuse the attribute between the cert and the key.
-                certAttrs[certIdx] = keyBags[keyIdx].BagAttributes[0];
+                certAttrs[certIdx] = attribute;
                 keyIdx++;
             }
 

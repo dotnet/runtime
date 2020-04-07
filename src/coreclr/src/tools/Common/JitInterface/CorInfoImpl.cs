@@ -264,6 +264,37 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
 #if READYTORUN
             _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
+
+            // Detect cases where the instruction set support used is a superset of the baseline instruction set specification
+            var baselineSupport = _compilation.InstructionSetSupport;
+            bool needPerMethodInstructionSetFixup = false;
+            foreach (var instructionSet in _actualInstructionSetSupported)
+            {
+                if (!baselineSupport.IsInstructionSetSupported(instructionSet) &&
+                    !baselineSupport.NonSpecifiableFlags.HasInstructionSet(instructionSet))
+                {
+                    needPerMethodInstructionSetFixup = true;
+                }
+            }
+            foreach (var instructionSet in _actualInstructionSetUnsupported)
+            {
+                if (!baselineSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
+                {
+                    needPerMethodInstructionSetFixup = true;
+                }
+            }
+
+            if (needPerMethodInstructionSetFixup)
+            {
+                TargetArchitecture architecture = _compilation.TypeSystemContext.Target.Architecture;
+                _actualInstructionSetSupported.ExpandInstructionSetByImplication(architecture);
+                _actualInstructionSetUnsupported.ExpandInstructionSetByReverseImplication(architecture);
+                _actualInstructionSetUnsupported.Set64BitInstructionSetVariants(architecture);
+
+                InstructionSetSupport actualSupport = new InstructionSetSupport(_actualInstructionSetSupported, _actualInstructionSetUnsupported, architecture);
+                var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
+                ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+            }
 #endif
             PublishProfileData();
         }
@@ -364,6 +395,8 @@ namespace Internal.JitInterface
             _profileDataNode = null;
             _inlinedMethods = new ArrayBuilder<MethodDesc>();
 #endif
+            _actualInstructionSetSupported = default(InstructionSetFlags);
+            _actualInstructionSetUnsupported = default(InstructionSetFlags);
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -691,27 +724,25 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             // Check for SIMD intrinsics
-            DefType owningDefType = method.OwningType as DefType;
-            if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
+            if (method.Context.Target.MaximumSimdVectorLength == SimdVectorLength.None)
             {
-                throw new RequiresRuntimeJitException("This function is using SIMD intrinsics, their size is machine specific");
+                DefType owningDefType = method.OwningType as DefType;
+                if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
+                {
+                    throw new RequiresRuntimeJitException("This function is using SIMD intrinsics, their size is machine specific");
+                }
             }
 #endif
 
             // Check for hardware intrinsics
             if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
             {
-#if READYTORUN
-                if (!isMethodDefinedInCoreLib())
-                {
-                    throw new RequiresRuntimeJitException("This function is not defined in CoreLib and it is using hardware intrinsics.");
-                }
-#endif
 #if !READYTORUN
                 // Do not report the get_IsSupported method as an intrinsic - RyuJIT would expand it to
                 // a constant depending on the code generation flags passed to it, but we would like to
                 // do a dynamic check instead.
-                if (!HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
+                if (
+                    !HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
                     || HardwareIntrinsicHelpers.IsKnownSupportedIntrinsicAtCompileTime(method))
 #endif
                 {
@@ -2846,6 +2877,8 @@ namespace Internal.JitInterface
             foreach (var flag in JitConfigProvider.Instance.Flags)
                 flags.Set(flag);
 
+            flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
+
             // Set the rest of the flags that don't make sense to expose publically.
             flags.Set(CorJitFlag.CORJIT_FLAG_SKIP_VERIFICATION);
             flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
@@ -2855,68 +2888,27 @@ namespace Internal.JitInterface
 
             TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
 
+            switch (targetArchitecture)
+            {
+                case TargetArchitecture.X64:
+                case TargetArchitecture.X86:
+                    Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
+                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2))
+                    {
+                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
+                    }
+                    break;
+
+                case TargetArchitecture.ARM64:
+                    if (_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.ARM64_AdvSimd))
+                    {
+                        flags.Set(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
+                    }
+                    break;
+            }
+
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
-
-            if (targetArchitecture == TargetArchitecture.X86)
-            {
-                flags.Set(InstructionSet.X86_SSE);
-                flags.Set(InstructionSet.X86_SSE2);
-#if !READYTORUN
-                // This list needs to match the list of intrinsics we can generate detection code for
-                // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
-#else
-                // For ReadyToRun, this list needs to match up with the behavior of FilterNamedIntrinsicMethodAttribs
-                // In particular, that this list of supported hardware will not generate non-SSE2 safe instruction
-                // sequences when paired with the behavior in FilterNamedIntrinsicMethodAttribs
-                if (isMethodDefinedInCoreLib())
-#endif
-                {
-                    flags.Set(InstructionSet.X86_AES);
-                    flags.Set(InstructionSet.X86_PCLMULQDQ);
-                    flags.Set(InstructionSet.X86_SSE3);
-                    flags.Set(InstructionSet.X86_SSSE3);
-                    flags.Set(InstructionSet.X86_LZCNT);
-#if READYTORUN
-                    flags.Set(InstructionSet.X86_SSE41);
-                    flags.Set(InstructionSet.X86_SSE42);
-                    flags.Set(InstructionSet.X86_POPCNT);
-#endif
-                }
-            }
-            else if (targetArchitecture == TargetArchitecture.X64)
-            {
-                flags.Set(InstructionSet.X64_SSE);
-                flags.Set(InstructionSet.X64_SSE2);
-#if !READYTORUN
-                // This list needs to match the list of intrinsics we can generate detection code for
-                // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
-#else
-                // For ReadyToRun, this list needs to match up with the behavior of FilterNamedIntrinsicMethodAttribs
-                // In particular, that this list of supported hardware will not generate non-SSE2 safe instruction
-                // sequences when paired with the behavior in FilterNamedIntrinsicMethodAttribs
-                if (isMethodDefinedInCoreLib())
-#endif
-                {
-                    flags.Set(InstructionSet.X64_AES);
-                    flags.Set(InstructionSet.X64_PCLMULQDQ);
-                    flags.Set(InstructionSet.X64_SSE3);
-                    flags.Set(InstructionSet.X64_SSSE3);
-                    flags.Set(InstructionSet.X64_LZCNT);
-#if READYTORUN
-                    flags.Set(InstructionSet.X64_SSE41);
-                    flags.Set(InstructionSet.X64_SSE42);
-                    flags.Set(InstructionSet.X64_POPCNT);
-#endif
-                }
-            }
-            else if (targetArchitecture == TargetArchitecture.ARM64)
-            {
-                flags.Set(InstructionSet.ARM64_ArmBase);
-                flags.Set(InstructionSet.ARM64_AdvSimd);
-            }
-
-            flags.Set64BitInstructionSetVariants(targetArchitecture);
 
             if (this.MethodBeingCompiled.IsNativeCallable)
             {
@@ -2941,9 +2933,27 @@ namespace Internal.JitInterface
             return (uint)sizeof(CORJIT_FLAGS);
         }
 
+
+        InstructionSetFlags _actualInstructionSetSupported;
+        InstructionSetFlags _actualInstructionSetUnsupported;
+
         private void notifyInstructionSetUsage(InstructionSet instructionSet, bool supportEnabled)
         {
-            // Do nothing. This is currently just a notification that has no impact on anything
+            if (supportEnabled)
+            {
+                _actualInstructionSetSupported.AddInstructionSet(instructionSet);
+            }
+            else
+            {
+#if READYTORUN
+                // By policy we code review all changes into corelib, such that failing to use an instruction
+                // set is not a reason to not support usage of it.
+                if (!isMethodDefinedInCoreLib())
+#endif
+                {
+                    _actualInstructionSetSupported.AddInstructionSet(instructionSet);
+                }
+            }
         }
     }
 }

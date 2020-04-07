@@ -103,3 +103,19 @@ namespace System.Runtime.Intrinsics.X86
         public static bool TestZ(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
     }
 }
+
+namespace System.Runtime.Intrinsics.Arm
+{
+    internal abstract class ArmBase
+    {
+        public abstract class Arm64
+        {
+            public const bool IsSupported = false;
+            public static int LeadingZeroCount(ulong value) => throw new PlatformNotSupportedException();
+            public static uint ReverseElementBits(ulong value) => throw new PlatformNotSupportedException();
+        }
+        public const bool IsSupported = false;
+        public static int LeadingZeroCount(uint value) => throw new PlatformNotSupportedException();
+        public static uint ReverseElementBits(uint value) => throw new PlatformNotSupportedException();
+    }
+}

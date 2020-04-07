@@ -3562,7 +3562,7 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
             structSize = m_pComp->info.compCompHnd->getClassSize(structHnd);
             // We do not normalize the type field accesses during importation unless they
             // are used in a call, return or assignment.
-            if ((fieldType == TYP_STRUCT) && (structSize <= m_pComp->largestEnregisterableStructSize()))
+            if ((fieldType == TYP_STRUCT) && m_pComp->structSizeMightRepresentSIMDType(structSize))
             {
                 fieldType = m_pComp->impNormStructType(structHnd);
             }
