@@ -72,12 +72,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Fact]
-        public static void WriteTextString_InvalidUnicodeString_ShouldThrowEncoderFallbackException()
+        public static void WriteTextString_InvalidUnicodeString_ShouldThrowArgumentException()
         {
             // NB Xunit's InlineDataAttribute will corrupt string literals containing invalid unicode
             string invalidUnicodeString = "\ud800";
             using var writer = new CborWriter();
-            Assert.Throws<System.Text.EncoderFallbackException>(() => writer.WriteTextString(invalidUnicodeString));
+            Assert.Throws<ArgumentException>(() => writer.WriteTextString(invalidUnicodeString));
         }
 
         [Theory]
