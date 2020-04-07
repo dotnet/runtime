@@ -33,7 +33,6 @@ usage()
   echo "Actions (defaults to --restore --build):"
   echo "  --restore                  Restore dependencies (short: -r)"
   echo "  --build                    Build all source projects (short: -b)"
-  echo "  --buildtests               Build all test projects"
   echo "  --rebuild                  Rebuild all source projects"
   echo "  --test                     Build and run tests (short: -t)"
   echo "  --pack                     Package build outputs into NuGet packages"
@@ -46,6 +45,7 @@ usage()
   echo "  --framework                Build framework: netcoreapp5.0 or net472 (short: -f)"
   echo "  --coverage                 Collect code coverage when testing"
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
+  echo "  --testnobuild              Skip building tests when invoking -test"
   echo "  --allconfigurations        Build packages for all build configurations"
   echo ""
 
@@ -83,15 +83,14 @@ arguments=''
 cmakeargs=''
 extraargs=''
 build=false
-buildtests=false
 subsetCategory=''
-checkedPossibleDirectoryToBuild=false
+checkedSolutionBuild=false
 crossBuild=0
 
 source $scriptroot/native/init-os-and-arch.sh
 
 # Check if an action is passed in
-declare -a actions=("r" "restore" "b" "build" "buildtests" "rebuild" "t" "test" "pack" "sign" "publish" "clean")
+declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
 actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 
 while [[ $# > 0 ]]; do
@@ -138,12 +137,12 @@ while [[ $# > 0 ]]; do
       arguments="$arguments -build"
       shift 1
       ;;
-     -buildtests)
-      buildtests=true
-      shift 1
-      ;;
      -testscope)
       arguments="$arguments /p:TestScope=$2"
+      shift 2
+      ;;
+     -testnobuild)
+      arguments="$arguments /p:TestNoBuild=$2"
       shift 2
       ;;
      -coverage)
@@ -179,13 +178,13 @@ while [[ $# > 0 ]]; do
       *)
       ea=$1
 
-      if [[ $checkedPossibleDirectoryToBuild == false ]] && [[ $subsetCategory == "libraries" ]]; then
-        checkedPossibleDirectoryToBuild=true
+      if [[ $checkedSolutionBuild == false ]]; then
+        checkedSolutionBuild=true
 
         if [[ -d "$1" ]]; then
-          ea="/p:DirectoryToBuild=$1"
-        elif [[ -d "$scriptroot/../src/libraries/$1" ]]; then
-          ea="/p:DirectoryToBuild=$scriptroot/../src/libraries/$1"
+          ea="-projects $1"
+        elif [[ -d "$scriptroot/../src/libraries/$1/$1.sln" ]]; then
+          ea="-projects $scriptroot/../src/libraries/$1/$1.sln"
         fi
       fi
 
@@ -194,14 +193,6 @@ while [[ $# > 0 ]]; do
       ;;
   esac
 done
-
-if [[ "$buildtests" == true ]]; then
-  if [[ "$build" == true ]]; then
-    arguments="$arguments /p:BuildTests=true"
-  else
-    arguments="$arguments -build /p:BuildTests=only"
-  fi
-fi
 
 if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"

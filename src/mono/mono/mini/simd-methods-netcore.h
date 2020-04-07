@@ -194,3 +194,9 @@ METHOD(Insert)
 METHOD(TestZ)
 // Sse42
 METHOD(Crc32)
+// ArmBase
+METHOD(LeadingSignCount)
+METHOD(ReverseElementBits)
+// Crc32
+METHOD(ComputeCrc32)
+METHOD(ComputeCrc32C)

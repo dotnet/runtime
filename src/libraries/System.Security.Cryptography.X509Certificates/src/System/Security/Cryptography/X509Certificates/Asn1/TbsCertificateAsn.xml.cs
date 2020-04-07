@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         internal System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
         internal ReadOnlyMemory<byte>? IssuerUniqueId;
         internal ReadOnlyMemory<byte>? SubjectUniqueId;
-        internal System.Security.Cryptography.Asn1.X509ExtensionAsn[] Extensions;
+        internal System.Security.Cryptography.Asn1.X509ExtensionAsn[]? Extensions;
 
 #if DEBUG
         static TbsCertificateAsn()

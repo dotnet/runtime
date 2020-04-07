@@ -31,7 +31,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable disable
 #if MONO_FEATURE_SRE
 
 using System.Text;
@@ -52,61 +51,61 @@ namespace System.Reflection.Emit
         private RuntimeMethodHandle mhandle;
         private string name;
         private Type returnType;
-        private Type[] parameters;
+        private Type[]? parameters;
         private MethodAttributes attributes;
         private CallingConventions callingConvention;
         private Module module;
         private bool skipVisibility;
         private bool init_locals = true;
-        private ILGenerator ilgen;
+        private ILGenerator? ilgen;
         private int nrefs;
-        private object[] refs;
+        private object?[]? refs;
         private IntPtr referenced_by;
-        private Type owner;
+        private Type? owner;
         #endregion
 #pragma warning restore 169, 414, 649
 
-        private Delegate deleg;
-        private RuntimeMethodInfo method;
-        private ParameterBuilder[] pinfo;
+        private Delegate? deleg;
+        private RuntimeMethodInfo? method;
+        private ParameterBuilder[]? pinfo;
         internal bool creating;
-        private DynamicILInfo il_info;
+        private DynamicILInfo? il_info;
 
-        public DynamicMethod(string name, Type returnType, Type[] parameterTypes, Module m) : this(name, returnType, parameterTypes, m, false)
+        public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Module m) : this(name, returnType, parameterTypes, m, false)
         {
         }
 
-        public DynamicMethod(string name, Type returnType, Type[] parameterTypes, Type owner) : this(name, returnType, parameterTypes, owner, false)
+        public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Type owner) : this(name, returnType, parameterTypes, owner, false)
         {
         }
 
-        public DynamicMethod(string name, Type returnType, Type[] parameterTypes, Module m, bool skipVisibility) : this(name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, m, skipVisibility)
+        public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Module m, bool skipVisibility) : this(name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, m, skipVisibility)
         {
         }
 
-        public DynamicMethod(string name, Type returnType, Type[] parameterTypes, Type owner, bool skipVisibility) : this(name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, owner, skipVisibility)
+        public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, Type owner, bool skipVisibility) : this(name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, owner, skipVisibility)
         {
         }
 
-        public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, Type owner, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, owner, owner?.Module, skipVisibility, false, true)
+        public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type owner, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, owner, owner?.Module, skipVisibility, false, true)
         {
         }
 
-        public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, Module m, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, null, m, skipVisibility, false, false)
+        public DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Module m, bool skipVisibility) : this(name, attributes, callingConvention, returnType, parameterTypes, null, m, skipVisibility, false, false)
         {
         }
 
-        public DynamicMethod(string name, Type returnType, Type[] parameterTypes) : this(name, returnType, parameterTypes, false)
+        public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes) : this(name, returnType, parameterTypes, false)
         {
         }
 
         // FIXME: "Visibility is not restricted"
-        public DynamicMethod(string name, Type returnType, Type[] parameterTypes, bool restrictedSkipVisibility)
+        public DynamicMethod(string name, Type? returnType, Type[]? parameterTypes, bool restrictedSkipVisibility)
             : this(name, MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, returnType, parameterTypes, null, null, restrictedSkipVisibility, true, false)
         {
         }
 
-        private DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, Type owner, Module m, bool skipVisibility, bool anonHosted, bool typeOwner)
+        private DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type? owner, Module? m, bool skipVisibility, bool anonHosted, bool typeOwner)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -199,7 +198,7 @@ namespace System.Reflection.Emit
 
         [ComVisible(true)]
         public sealed
-        override Delegate CreateDelegate(Type delegateType, object target)
+        override Delegate CreateDelegate(Type delegateType, object? target)
         {
             if (delegateType == null)
                 throw new ArgumentNullException(nameof(delegateType));
@@ -210,19 +209,18 @@ namespace System.Reflection.Emit
             return Delegate.CreateDelegate(delegateType, target, this);
         }
 
-        public ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, string parameterName)
+        public ParameterBuilder? DefineParameter(int position, ParameterAttributes attributes, string? parameterName)
         {
             //
             // Extension: Mono allows position == 0 for the return attribute
             //
-            if ((position < 0) || (position > parameters.Length))
+            if ((position < 0) || (position > parameters!.Length))
                 throw new ArgumentOutOfRangeException(nameof(position));
 
             RejectIfCreated();
 
             ParameterBuilder pb = new ParameterBuilder(this, position, attributes, parameterName);
-            if (pinfo == null)
-                pinfo = new ParameterBuilder[parameters.Length + 1];
+            pinfo ??= new ParameterBuilder[parameters.Length + 1];
             pinfo[position] = pb;
             return pb;
         }
@@ -305,7 +303,7 @@ namespace System.Reflection.Emit
 
         internal override Type GetParameterType(int pos)
         {
-            return parameters[pos];
+            return parameters![pos];
         }
 
         /*
@@ -317,15 +315,14 @@ namespace System.Reflection.Emit
         }
         */
 
-        public override object Invoke(object obj, BindingFlags invokeAttr,
-                                       Binder binder, object[] parameters,
-                                       CultureInfo culture)
+        public override object? Invoke(object? obj, BindingFlags invokeAttr,
+                                       Binder? binder, object?[]? parameters,
+                                       CultureInfo? culture)
         {
             try
             {
                 CreateDynMethod();
-                if (method == null)
-                    method = new RuntimeMethodInfo(mhandle);
+                method ??= new RuntimeMethodInfo(mhandle);
 
                 return method.Invoke(obj, invokeAttr, binder, parameters, culture);
             }
@@ -374,7 +371,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get
             {
@@ -418,7 +415,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get
             {
@@ -432,7 +429,7 @@ namespace System.Reflection.Emit
             {
                 if (deleg == null)
                 {
-                    return new RuntimeParameterInfo((ParameterBuilder)null, returnType, this, -1);
+                    return new RuntimeParameterInfo((ParameterBuilder?)null, returnType, this, -1);
                 }
                 return deleg.Method.ReturnParameter;
             }
@@ -471,8 +468,7 @@ namespace System.Reflection.Emit
 
         internal int AddRef(object reference)
         {
-            if (refs == null)
-                refs = new object[4];
+            refs ??= new object?[4];
             if (nrefs >= refs.Length - 1)
             {
                 object[] new_refs = new object[refs.Length * 2];

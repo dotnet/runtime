@@ -299,7 +299,7 @@ generate_NugetPackages()
     echo "ROOTFS_DIR is $ROOTFS_DIR"
     # Build the packages
     # Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
-    "$__RepoRootDir"/eng/common/build.sh -r -b -projects "$__SourceDir"/.nuget/packages.builds \
+    "$__RepoRootDir"/eng/common/build.sh -r -b -projects "$__SourceDir"/.nuget/coreclr-packages.proj \
                                        -verbosity minimal -bl:"$__LogsDir/Nuget_$__TargetOS__$__BuildArch__$__BuildType.binlog" \
                                        /p:PortableBuild=true \
                                        /p:"__IntermediatesDir=$__IntermediatesDir" /p:"__RootBinDir=$__RootBinDir" /p:"__DoCrossArchBuild=$__CrossBuild" \

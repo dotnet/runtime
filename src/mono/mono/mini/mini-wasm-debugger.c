@@ -36,6 +36,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_object_properties (int object_id, gboolean expand_value_types);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_value_expanded (int object_id, int idx);
 
 //JS functions imported that we use
 extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name);
@@ -52,6 +53,7 @@ extern void mono_wasm_add_func_var (const char*, guint64);
 extern void mono_wasm_add_array_var (const char*, guint64);
 extern void mono_wasm_add_properties_var (const char*, gint32);
 extern void mono_wasm_add_array_item (int);
+extern void mono_wasm_set_is_async_method (guint64);
 
 G_END_DECLS
 
@@ -802,8 +804,6 @@ describe_object_properties_for_klass (void *obj, MonoClass *klass, gboolean isAs
 {
 	MonoClassField *f;
 	MonoProperty *p;
-	MonoObject *exc;
-	MonoObject *res;
 	MonoMethodSignature *sig;
 	gpointer iter = NULL;
 	ERROR_DECL (error);
@@ -922,6 +922,31 @@ describe_array_values (guint64 objectId)
 	return TRUE;
 }
 
+/* Expands valuetypes */
+static gboolean
+describe_array_value_expanded (guint64 objectId, guint64 idx)
+{
+	int esize;
+	gpointer elem;
+	ObjRef *ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objectId));
+	if (!ref) {
+		return FALSE;
+	}
+	MonoArray *arr = (MonoArray *)mono_gchandle_get_target_internal (ref->handle);
+	MonoObject *obj = &arr->obj;
+	if (!obj) {
+		return FALSE;
+	}
+	if (idx >= arr->max_length)
+		return FALSE;
+
+	esize = mono_array_element_size (obj->vtable->klass);
+	elem = (gpointer*)((char*)arr->vector + (idx * esize));
+	describe_value (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)), elem, TRUE);
+
+	return TRUE;
+}
+
 static void
 describe_async_method_locals (InterpFrame *frame, MonoMethod *method)
 {
@@ -930,7 +955,9 @@ describe_async_method_locals (InterpFrame *frame, MonoMethod *method)
 	if (mono_debug_lookup_method_async_debug_info (method)) {
 		addr = mini_get_interp_callbacks ()->frame_get_this (frame);
 		MonoObject *obj = *(MonoObject**)addr;
-		describe_object_properties (get_object_id(obj), TRUE, FALSE);
+		int objId = get_object_id (obj);
+		mono_wasm_set_is_async_method (objId);
+		describe_object_properties (objId, TRUE, FALSE);
 	}
 }
 
@@ -1039,6 +1066,14 @@ mono_wasm_get_array_values (int object_id)
 	DEBUG_PRINTF (2, "getting array values %d\n", object_id);
 
 	describe_array_values(object_id);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_get_array_value_expanded (int object_id, int idx)
+{
+	DEBUG_PRINTF (2, "getting array value %d for idx %d\n", object_id, idx);
+
+	describe_array_value_expanded (object_id, idx);
 }
 
 // Functions required by debugger-state-machine.
