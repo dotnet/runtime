@@ -2379,7 +2379,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 //
 void CodeGen::genCodeForBswap(GenTree* tree)
 {
-    assert(tree->OperIs(GT_BSWAP));
+    assert(tree->OperIs(GT_BSWAP, GT_BSWAP16));
 
     regNumber targetReg  = tree->GetRegNum();
     var_types targetType = tree->TypeGet();
@@ -2388,7 +2388,14 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     assert(operand->isUsedFromReg());
     regNumber operandReg = genConsumeReg(operand);
 
-    inst_RV_RV(INS_rev, targetReg, operandReg, targetType);
+    if (tree->OperIs(GT_BSWAP16))
+    {
+        inst_RV_RV(INS_rev16, targetReg, operandReg, targetType);
+    }
+    else
+    {
+        inst_RV_RV(INS_rev, targetReg, operandReg, targetType);
+    }
 
     genProduceReg(tree);
 }

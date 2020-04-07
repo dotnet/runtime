@@ -191,6 +191,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #if defined(TARGET_64BIT)
         case GT_BSWAP:
+        case GT_BSWAP16:
             genCodeForBswap(treeNode);
             break;
 #endif // defined(TARGET_64BIT)

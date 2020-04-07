@@ -4191,13 +4191,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 switch (sig->retType)
                 {
-#ifndef TARGET_ARM64 // TODO: implement GT_BSWAP16 for Arm64
                     case CorInfoType::CORINFO_TYPE_SHORT:
                     case CorInfoType::CORINFO_TYPE_USHORT:
                         retNode = gtNewCastNode(TYP_INT, gtNewOperNode(GT_BSWAP16, TYP_INT, impPopStack().val), false,
                                                 callType);
                         break;
-#endif // TARGET_ARM64
 
                     case CorInfoType::CORINFO_TYPE_INT:
                     case CorInfoType::CORINFO_TYPE_UINT:
