@@ -351,6 +351,25 @@ v8pi3w==
             }
         }
 
+        [Fact]
+        public static void ImportFromEncryptedPem_Pkcs8_NoEncryptedPem()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                string pem = @"
+-----BEGIN PRIVATE KEY-----
+MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
+IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
+1eFkMKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6
+fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
+55aYKyKwy5i8
+-----END PRIVATE KEY-----";
+                ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
+                    dsa.ImportFromEncryptedPem(pem, ""));
+                Assert.Contains(NoPemExceptionMarker, ae.Message);
+            }
+        }
+
         private static DSAParameters ToPublic(this DSAParameters dsaParams)
         {
             dsaParams.X = null;

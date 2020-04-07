@@ -483,6 +483,29 @@ CA7ffFk=
         }
 
         [Fact]
+        public static void ImportFromEncryptedPem_NoEncryptedPem()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                string pem = @"
+-----BEGIN PRIVATE KEY-----
+MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAtz9Z9e6L1V4kt/8C
+mtFqhUPJbSU+VDGbk1MsQcPBR3uJ2y0vM9e5qHRYSOBqjmg7UERRHhvKNiUn4Xz0
+KzgGFQIDAQABAkEAr+byNi+cr17FpJH4MCEiPXaKnmkH4c4U52EJtL9yg2gijBrp
+Ykat3c2nWb0EGGi5aWgXxQHoi7z97/ACD4X3KQIhAPNyex6GdiBVlNPHOgInTU8a
+mARKKVHIXM0SxvxXrRl7AiEAwLI66OpSqftDTv1KUfNe6+hyoh23ggzUSYiWuVT0
+Ya8CHwiO/cUU9RIt8A2B84gf2ZfuV2nPMaSuZpTPFC/K5UsCIQCsJMzx1JuilQAN
+acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
+9juGNbOPhoEL
+-----END PRIVATE KEY-----";
+                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
+                ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
+                    rsa.ImportFromEncryptedPem(pem, passwordBytes));
+                Assert.Contains(NoPemExceptionMarker, ae.Message);
+            }
+        }
+
+        [Fact]
         public static void ImportFromEncryptedPem_Pkcs8Encrypted_Char_NoPem()
         {
             using (RSA rsa = RSAFactory.Create())
