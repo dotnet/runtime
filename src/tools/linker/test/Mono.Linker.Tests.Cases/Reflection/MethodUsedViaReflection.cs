@@ -13,11 +13,13 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			TestName ();
 			TestNameAndExplicitBindingFlags ();
 			TestNameAndType ();
-			TestNameWithIntAndType ();
 			TestNameBindingFlagsAndParameterModifier ();
 			TestNameBindingFlagsCallingConventionParameterModifier ();
+#if NETCOREAPP
+			TestNameWithIntAndType ();
 			TestNameWithIntAndBindingFlags ();
 			TestNameWithIntBindingFlagsCallingConventionParameter ();
+#endif
 			TestNullName ();
 			TestEmptyName ();
 			TestNonExistingName ();
@@ -53,13 +55,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		static void TestNameWithIntAndType ()
-		{
-			var method = typeof (TestNameWithIntAndTypeClass).GetMethod ("OnlyCalledViaReflection", 1, new Type [] { typeof (int) });
-			method.Invoke (null, new object [] { });
-		}
-
-		[Kept]
 		static void TestNameBindingFlagsAndParameterModifier()
 		{
 			var method = typeof (TestNameBindingFlagsAndParameterClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.Public, null, new Type [] { }, null);
@@ -71,15 +66,27 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		{
 			var method = typeof (TestNameBindingFlagsCallingConventionParameterClass).GetMethod ("OnlyCalledViaReflection", BindingFlags.NonPublic, null, CallingConventions.Standard, new Type [] { }, null);
 		}
-
+#if NETCOREAPP
 		[Kept]
+#endif
+		static void TestNameWithIntAndType ()
+		{
+			var method = typeof (TestNameWithIntAndTypeClass).GetMethod ("OnlyCalledViaReflection", 1, new Type [] { typeof (int) });
+			method.Invoke (null, new object [] { });
+		}
+
+#if NETCOREAPP
+		[Kept]
+#endif
 		static void TestNameWithIntAndBindingFlags ()
 		{
 			var method = typeof (TestNameWithIntAndBindingClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Public, null, new Type [] { }, null);
 			method.Invoke (null, new object [] { });
 		}
 
+#if NETCOREAPP
 		[Kept]
+#endif
 		static void TestNameWithIntBindingFlagsCallingConventionParameter()
 		{
 			var method = typeof (TestNameWithIntBindingFlagsCallingConventionParameterClass).GetMethod ("OnlyCalledViaReflection", 1, BindingFlags.Static | BindingFlags.NonPublic, null, CallingConventions.Any, new Type [] { }, null);
@@ -105,7 +112,7 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			} else {
 				mystring = null;
 			}
-			var method = myType.GetMethod (mystring, 1, BindingFlags.Static, null, new Type [] { typeof (int) }, null);
+			var method = myType.GetMethod (mystring, BindingFlags.Static, null, new Type [] { typeof (int) }, null);
 			method.Invoke (null, new object [] { });
 		}
 
@@ -224,30 +231,6 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		}
 
 		[Kept]
-		private class TestNameWithIntAndTypeClass
-		{
-			[Kept]
-			private static int OnlyCalledViaReflection ()
-			{
-				return 42;
-			}
-			[Kept]
-			private int OnlyCalledViaReflection (int foo)
-			{
-				return 43;
-			}
-			[Kept]
-			public int OnlyCalledViaReflection (int foo, int bar)
-			{
-				return 44;
-			}
-			[Kept]
-			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-			{
-				return 45;
-			}
-		}
-		[Kept]
 		private class TestNameBindingFlagsAndParameterClass
 		{
 			private static int OnlyCalledViaReflection ()
@@ -293,7 +276,36 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			}
 		}
 
+#if NETCOREAPP
 		[Kept]
+#endif
+		private class TestNameWithIntAndTypeClass
+		{
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
+			[Kept]
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
+		}
+
+#if NETCOREAPP
+		[Kept]
+#endif
 		private class TestNameWithIntAndBindingClass
 		{
 			private static int OnlyCalledViaReflection ()
@@ -316,7 +328,9 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			}
 		}
 
+#if NETCOREAPP
 		[Kept]
+#endif
 		private class TestNameWithIntBindingFlagsCallingConventionParameterClass
 		{
 			[Kept]
