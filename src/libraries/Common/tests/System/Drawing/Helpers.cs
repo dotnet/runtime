@@ -41,6 +41,10 @@ namespace System.Drawing
             {
                 installedVersion = new Version(GetLibgdiplusVersion());
             }
+            catch (DllNotFoundException)
+            {
+                return false;
+            }
             catch (EntryPointNotFoundException)
             {
                 return false;
@@ -55,8 +59,8 @@ namespace System.Drawing
 
         public static bool GetRecentGdiPlusIsAvailable2()
         {
-            // RedHat and Ubuntu 14.04, as well as Fedora 25 and OpenSUSE 4.22 are running outdated versions of libgdiplus
-            if (PlatformDetection.IsRedHatFamily || PlatformDetection.IsUbuntu1404 || PlatformDetection.IsFedora || PlatformDetection.IsOpenSUSE)
+            // RedHat as well as Fedora 25 and OpenSUSE 4.22 are running outdated versions of libgdiplus
+            if (PlatformDetection.IsRedHatFamily || PlatformDetection.IsFedora || PlatformDetection.IsOpenSUSE)
             {
                 return false;
             }
@@ -86,8 +90,8 @@ namespace System.Drawing
 
         public static bool GetRecentGdiPlusIsAvailable()
         {
-            // RedHat and Ubuntu 14.04 are running outdated versions of libgdiplus
-            if (PlatformDetection.IsRedHatFamily || PlatformDetection.IsUbuntu1404)
+            // RedHat is running outdated versions of libgdiplus
+            if (PlatformDetection.IsRedHatFamily)
             {
                 return false;
             }

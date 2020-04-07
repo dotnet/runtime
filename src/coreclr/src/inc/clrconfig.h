@@ -66,10 +66,6 @@ public:
         EEConfig_default = 0,
     };
 
-    // Function pointer definition used for calling EEConfig::GetConfigValueCallback .
-    typedef HRESULT (* GetConfigValueFunction)
-        (__in_z LPCWSTR /*pKey*/, __deref_out_opt LPCWSTR* /*value*/, BOOL /*systemOnly*/, BOOL /*applicationFirst*/);
-
     // Struct used to store information about where/how to find a Config DWORD.
     // NOTE: Please do NOT create instances of this struct. Use the macros in file:CLRConfigValues.h instead.
     typedef struct ConfigDWORDInfo
@@ -182,13 +178,7 @@ public:
     // Free a string returned by GetConfigValue
     static void   FreeConfigString(__in __in_z LPWSTR name);
 
-    // Register EEConfig's GetConfigValueCallback function so CLRConfig can look in config files.
-    static void RegisterGetConfigValueCallback(GetConfigValueFunction func);
-
 private:
-    // Function pointer to EEConfig's GetConfigValueCallback function (can't static bind from utilcode to VM)
-    static GetConfigValueFunction s_GetConfigValueCallback;
-
 
     // Helper method to translate LookupOptions to REGUTIL::CORConfigLevel
     static REGUTIL::CORConfigLevel GetConfigLevel(LookupOptions options);

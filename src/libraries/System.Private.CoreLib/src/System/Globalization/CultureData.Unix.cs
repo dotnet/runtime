@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Text;
 
 namespace System.Globalization
 {
@@ -418,5 +414,7 @@ namespace System.Globalization
         internal bool IsWin32Installed => false;
 
         internal bool IsReplacementCulture => false;
+
+        internal static CultureData GetCurrentRegionData() => CultureInfo.CurrentCulture._cultureData;
     }
 }

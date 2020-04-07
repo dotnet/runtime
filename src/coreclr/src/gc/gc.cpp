@@ -1917,7 +1917,8 @@ retry:
     }
 }
 
-inline BOOL try_enter_spin_lock(GCSpinLock* spin_lock)
+inline
+static BOOL try_enter_spin_lock(GCSpinLock* spin_lock)
 {
     return (Interlocked::CompareExchange(&spin_lock->lock, 0, -1) < 0);
 }
@@ -2411,7 +2412,6 @@ static static_data static_data_table[latency_level_last - latency_level_first + 
         // loh
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0},
         // poh
-        // TODO: tuning https://github.com/dotnet/runtime/issues/13739
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0},
     },
 
@@ -2432,7 +2432,6 @@ static static_data static_data_table[latency_level_last - latency_level_first + 
         // loh
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0},
         // poh
-        // TODO: tuning https://github.com/dotnet/runtime/issues/13739
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0}
     },
 };
@@ -4334,12 +4333,12 @@ heap_segment* heap_segment_next_in_range (heap_segment* seg)
     return heap_segment_in_range (ns);
 }
 
-typedef struct
+struct imemory_data
 {
     uint8_t* memory_base;
-} imemory_data;
+};
 
-typedef struct
+struct initial_memory_details
 {
     imemory_data *initial_memory;
     imemory_data *initial_normal_heap; // points into initial_memory_array
@@ -4401,7 +4400,7 @@ typedef struct
         }
     };
 
-} initial_memory_details;
+};
 
 initial_memory_details memory_details;
 
@@ -11246,9 +11245,9 @@ gc_heap::init_gc_heap (int  h_number)
     heap_segment_allocated (pseg) = heap_segment_mem (pseg) + Align (min_obj_size, get_alignment_constant (FALSE));
     heap_segment_used (pseg) = heap_segment_allocated (pseg) - plug_skew;
 
-    generation_of (max_generation)->free_list_allocator = allocator(NUM_GEN2_ALIST, BASE_GEN2_ALIST, gen2_alloc_list);
-    generation_of (loh_generation)->free_list_allocator = allocator(NUM_LOH_ALIST, BASE_LOH_ALIST, loh_alloc_list);
-    generation_of (poh_generation)->free_list_allocator = allocator(NUM_POH_ALIST, BASE_POH_ALIST, poh_alloc_list);
+    generation_of (max_generation)->free_list_allocator = allocator(NUM_GEN2_ALIST, BASE_GEN2_ALIST_BITS, gen2_alloc_list);
+    generation_of (loh_generation)->free_list_allocator = allocator(NUM_LOH_ALIST, BASE_LOH_ALIST_BITS, loh_alloc_list);
+    generation_of (poh_generation)->free_list_allocator = allocator(NUM_POH_ALIST, BASE_POH_ALIST_BITS, poh_alloc_list);
 
     for (int gen_num = 0; gen_num < total_generation_count; gen_num++)
     {
@@ -11861,11 +11860,11 @@ void gc_heap::check_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 }
 #endif //VERIFY_HEAP && BACKGROUND_GC
 
-allocator::allocator (unsigned int num_b, size_t fbs, alloc_list* b)
+allocator::allocator (unsigned int num_b, int fbb, alloc_list* b)
 {
     assert (num_b < MAX_BUCKET_COUNT);
     num_buckets = num_b;
-    frst_bucket_size = fbs;
+    first_bucket_bits = fbb;
     buckets = b;
 }
 
@@ -11921,65 +11920,38 @@ void allocator::clear()
 }
 
 //always thread to the end.
-void allocator::thread_free_item (uint8_t* item, uint8_t*& head, uint8_t*& tail)
+void allocator::thread_item (uint8_t* item, size_t size)
 {
+    unsigned int a_l_number = first_suitable_bucket(size);
+    alloc_list* al = &alloc_list_of (a_l_number);
+    uint8_t*& head = al->alloc_list_head();
+    uint8_t*& tail = al->alloc_list_tail();
+
     free_list_slot (item) = 0;
     free_list_undo (item) = UNDO_EMPTY;
     assert (item != head);
 
     if (head == 0)
     {
-       head = item;
-    }
-    //TODO: This shouldn't happen anymore - verify that's the case.
-    //the following is necessary because the last free element
-    //may have been truncated, and tail isn't updated.
-    else if (free_list_slot (head) == 0)
-    {
-        free_list_slot (head) = item;
+        head = item;
     }
     else
     {
+        assert ((free_list_slot(head) != 0) || (tail == head));
         assert (item != tail);
         assert (free_list_slot(tail) == 0);
+
         free_list_slot (tail) = item;
     }
+
     tail = item;
-}
-
-void allocator::thread_item (uint8_t* item, size_t size)
-{
-    size_t sz = frst_bucket_size;
-    unsigned int a_l_number = 0;
-
-    for (; a_l_number < (num_buckets-1); a_l_number++)
-    {
-        if (size < sz)
-        {
-            break;
-        }
-        sz = sz * 2;
-    }
-    alloc_list* al = &alloc_list_of (a_l_number);
-    thread_free_item (item,
-                      al->alloc_list_head(),
-                      al->alloc_list_tail());
 }
 
 void allocator::thread_item_front (uint8_t* item, size_t size)
 {
-    //find right free list
-    size_t sz = frst_bucket_size;
-    unsigned int a_l_number = 0;
-    for (; a_l_number < (num_buckets-1); a_l_number++)
-    {
-        if (size < sz)
-        {
-            break;
-        }
-        sz = sz * 2;
-    }
+    unsigned int a_l_number = first_suitable_bucket (size);
     alloc_list* al = &alloc_list_of (a_l_number);
+
     free_list_slot (item) = al->alloc_list_head();
     free_list_undo (item) = UNDO_EMPTY;
 
@@ -12198,7 +12170,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
         uint8_t* obj_start = acontext->alloc_ptr;
         assert(start >= obj_start);
         uint8_t* obj_end = obj_start + size - plug_skew;
-        assert(obj_end > clear_start);
+        assert(obj_end >= clear_start);
 
         // if clearing at the object start, clear the syncblock.
         if(obj_start == start)
@@ -12644,66 +12616,62 @@ BOOL gc_heap::a_fit_free_list_p (int gen_number,
     BOOL can_fit = FALSE;
     generation* gen = generation_of (gen_number);
     allocator* gen_allocator = generation_allocator (gen);
-    size_t sz_list = gen_allocator->first_bucket_size();
-    for (unsigned int a_l_idx = 0; a_l_idx < gen_allocator->number_of_buckets(); a_l_idx++)
+
+    for (unsigned int a_l_idx = gen_allocator->first_suitable_bucket(size); a_l_idx < gen_allocator->number_of_buckets(); a_l_idx++)
     {
-        if ((size < sz_list) || (a_l_idx == (gen_allocator->number_of_buckets()-1)))
+        uint8_t* free_list = gen_allocator->alloc_list_head_of (a_l_idx);
+        uint8_t* prev_free_item = 0;
+
+        while (free_list != 0)
         {
-            uint8_t* free_list = gen_allocator->alloc_list_head_of (a_l_idx);
-            uint8_t* prev_free_item = 0;
-
-            while (free_list != 0)
+            dprintf (3, ("considering free list %Ix", (size_t)free_list));
+            size_t free_list_size = unused_array_size (free_list);
+            if ((size + Align (min_obj_size, align_const)) <= free_list_size)
             {
-                dprintf (3, ("considering free list %Ix", (size_t)free_list));
-                size_t free_list_size = unused_array_size (free_list);
-                if ((size + Align (min_obj_size, align_const)) <= free_list_size)
+                dprintf (3, ("Found adequate unused area: [%Ix, size: %Id",
+                                (size_t)free_list, free_list_size));
+
+                gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
+                // We ask for more Align (min_obj_size)
+                // to make sure that we can insert a free object
+                // in adjust_limit will set the limit lower
+                size_t limit = limit_from_size (size, flags, free_list_size, gen_number, align_const);
+
+                uint8_t*  remain = (free_list + limit);
+                size_t remain_size = (free_list_size - limit);
+                if (remain_size >= Align(min_free_list, align_const))
                 {
-                    dprintf (3, ("Found adequate unused area: [%Ix, size: %Id",
-                                 (size_t)free_list, free_list_size));
-
-                    gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
-                    // We ask for more Align (min_obj_size)
-                    // to make sure that we can insert a free object
-                    // in adjust_limit will set the limit lower
-                    size_t limit = limit_from_size (size, flags, free_list_size, gen_number, align_const);
-
-                    uint8_t*  remain = (free_list + limit);
-                    size_t remain_size = (free_list_size - limit);
-                    if (remain_size >= Align(min_free_list, align_const))
-                    {
-                        make_unused_array (remain, remain_size);
-                        gen_allocator->thread_item_front (remain, remain_size);
-                        assert (remain_size >= Align (min_obj_size, align_const));
-                    }
-                    else
-                    {
-                        //absorb the entire free list
-                        limit += remain_size;
-                    }
-                    generation_free_list_space (gen) -= limit;
-
-                    adjust_limit_clr (free_list, limit, size, acontext, flags, 0, align_const, gen_number);
-
-                    can_fit = TRUE;
-                    goto end;
-                }
-                else if (gen_allocator->discard_if_no_fit_p())
-                {
-                    assert (prev_free_item == 0);
-                    dprintf (3, ("couldn't use this free area, discarding"));
-                    generation_free_obj_space (gen) += free_list_size;
-
-                    gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
-                    generation_free_list_space (gen) -= free_list_size;
+                    make_unused_array (remain, remain_size);
+                    gen_allocator->thread_item_front (remain, remain_size);
+                    assert (remain_size >= Align (min_obj_size, align_const));
                 }
                 else
                 {
-                    prev_free_item = free_list;
+                    //absorb the entire free list
+                    limit += remain_size;
                 }
-                free_list = free_list_slot (free_list);
+                generation_free_list_space (gen) -= limit;
+
+                adjust_limit_clr (free_list, limit, size, acontext, flags, 0, align_const, gen_number);
+
+                can_fit = TRUE;
+                goto end;
             }
+            else if (gen_allocator->discard_if_no_fit_p())
+            {
+                assert (prev_free_item == 0);
+                dprintf (3, ("couldn't use this free area, discarding"));
+                generation_free_obj_space (gen) += free_list_size;
+
+                gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
+                generation_free_list_space (gen) -= free_list_size;
+            }
+            else
+            {
+                prev_free_item = free_list;
+            }
+            free_list = free_list_slot (free_list);
         }
-        sz_list = sz_list * 2;
     }
 end:
     return can_fit;
@@ -12807,89 +12775,85 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
 #ifdef BACKGROUND_GC
     int cookie = -1;
 #endif //BACKGROUND_GC
-    size_t sz_list = allocator->first_bucket_size();
-    for (unsigned int a_l_idx = 0; a_l_idx < allocator->number_of_buckets(); a_l_idx++)
+
+    for (unsigned int a_l_idx = allocator->first_suitable_bucket(size); a_l_idx < allocator->number_of_buckets(); a_l_idx++)
     {
-        if ((size < sz_list) || (a_l_idx == (allocator->number_of_buckets()-1)))
+        uint8_t* free_list = allocator->alloc_list_head_of (a_l_idx);
+        uint8_t* prev_free_item = 0;
+        while (free_list != 0)
         {
-            uint8_t* free_list = allocator->alloc_list_head_of (a_l_idx);
-            uint8_t* prev_free_item = 0;
-            while (free_list != 0)
+            dprintf (3, ("considering free list %Ix", (size_t)free_list));
+
+            size_t free_list_size = unused_array_size(free_list);
+
+            ptrdiff_t diff = free_list_size - size;
+
+#ifdef FEATURE_LOH_COMPACTION
+            diff -= loh_pad;
+#endif //FEATURE_LOH_COMPACTION
+
+            // must fit exactly or leave formattable space
+            if ((diff == 0) || (diff > (ptrdiff_t)Align (min_obj_size, align_const)))
             {
-                dprintf (3, ("considering free list %Ix", (size_t)free_list));
+#ifdef BACKGROUND_GC
+                cookie = bgc_alloc_lock->uoh_alloc_set (free_list);
+                bgc_track_uoh_alloc();
+#endif //BACKGROUND_GC
 
-                size_t free_list_size = unused_array_size(free_list);
+                //unlink the free_item
+                allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
 
-                ptrdiff_t diff = free_list_size - size;
+                // Substract min obj size because limit_from_size adds it. Not needed for LOH
+                size_t limit = limit_from_size (size - Align(min_obj_size, align_const), flags, free_list_size,
+                                                gen_number, align_const);
 
 #ifdef FEATURE_LOH_COMPACTION
-                diff -= loh_pad;
-#endif //FEATURE_LOH_COMPACTION
-
-                // must fit exactly or leave formattable space
-                if ((diff == 0) || (diff > (ptrdiff_t)Align (min_obj_size, align_const)))
+                if (loh_pad)
                 {
-#ifdef BACKGROUND_GC
-                    cookie = bgc_alloc_lock->uoh_alloc_set (free_list);
-                    bgc_track_uoh_alloc();
-#endif //BACKGROUND_GC
-
-                    //unlink the free_item
-                    allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
-
-                    // Substract min obj size because limit_from_size adds it. Not needed for LOH
-                    size_t limit = limit_from_size (size - Align(min_obj_size, align_const), flags, free_list_size,
-                                                    gen_number, align_const);
-
-#ifdef FEATURE_LOH_COMPACTION
-                    if (loh_pad)
-                    {
-                        make_unused_array (free_list, loh_pad);
-                        limit -= loh_pad;
-                        free_list += loh_pad;
-                        free_list_size -= loh_pad;
-                    }
+                    make_unused_array (free_list, loh_pad);
+                    limit -= loh_pad;
+                    free_list += loh_pad;
+                    free_list_size -= loh_pad;
+                }
 #endif //FEATURE_LOH_COMPACTION
 
-                    uint8_t*  remain = (free_list + limit);
-                    size_t remain_size = (free_list_size - limit);
-                    if (remain_size != 0)
-                    {
-                        assert (remain_size >= Align (min_obj_size, align_const));
-                        make_unused_array (remain, remain_size);
-                    }
-                    if (remain_size >= Align(min_free_list, align_const))
-                    {
-                        loh_thread_gap_front (remain, remain_size, gen);
-                        assert (remain_size >= Align (min_obj_size, align_const));
-                    }
-                    else
-                    {
-                        generation_free_obj_space (gen) += remain_size;
-                    }
-                    generation_free_list_space (gen) -= free_list_size;
-                    dprintf (3, ("found fit on loh at %Ix", free_list));
-#ifdef BACKGROUND_GC
-                    if (cookie != -1)
-                    {
-                        bgc_uoh_alloc_clr (free_list, limit, acontext, flags, align_const, cookie, FALSE, 0);
-                    }
-                    else
-#endif //BACKGROUND_GC
-                    {
-                        adjust_limit_clr (free_list, limit, size, acontext, flags, 0, align_const, gen_number);
-                    }
-
-                    //fix the limit to compensate for adjust_limit_clr making it too short
-                    acontext->alloc_limit += Align (min_obj_size, align_const);
-                    can_fit = TRUE;
-                    goto exit;
+                uint8_t*  remain = (free_list + limit);
+                size_t remain_size = (free_list_size - limit);
+                if (remain_size != 0)
+                {
+                    assert (remain_size >= Align (min_obj_size, align_const));
+                    make_unused_array (remain, remain_size);
                 }
-                prev_free_item = free_list;
-                free_list = free_list_slot (free_list);
+                if (remain_size >= Align(min_free_list, align_const))
+                {
+                    loh_thread_gap_front (remain, remain_size, gen);
+                    assert (remain_size >= Align (min_obj_size, align_const));
+                }
+                else
+                {
+                    generation_free_obj_space (gen) += remain_size;
+                }
+                generation_free_list_space (gen) -= free_list_size;
+                dprintf (3, ("found fit on loh at %Ix", free_list));
+#ifdef BACKGROUND_GC
+                if (cookie != -1)
+                {
+                    bgc_uoh_alloc_clr (free_list, limit, acontext, flags, align_const, cookie, FALSE, 0);
+                }
+                else
+#endif //BACKGROUND_GC
+                {
+                    adjust_limit_clr (free_list, limit, size, acontext, flags, 0, align_const, gen_number);
+                }
+
+                //fix the limit to compensate for adjust_limit_clr making it too short
+                acontext->alloc_limit += Align (min_obj_size, align_const);
+                can_fit = TRUE;
+                goto exit;
             }
+            prev_free_item = free_list;
+            free_list = free_list_slot (free_list);
         }
-        sz_list = sz_list * 2;
     }
 exit:
     return can_fit;
@@ -13465,7 +13429,7 @@ int bgc_allocate_spin(size_t min_gc_size, size_t bgc_begin_size, size_t bgc_size
 
     if (((bgc_begin_size / end_size) >= 2) || (bgc_size_increased >= bgc_begin_size))
     {
-        if ((bgc_begin_size / end_size) > 2)
+        if ((bgc_begin_size / end_size) >= 2)
         {
             dprintf (3, ("alloc-ed too much before bgc started"));
         }
@@ -13616,7 +13580,14 @@ BOOL gc_heap::uoh_try_fit (int gen_number,
 #ifdef BACKGROUND_GC
         if (can_allocate && recursive_gc_sync::background_running_p())
         {
-            bgc_loh_size_increased += size;
+            if (gen_number == poh_generation)
+            {
+                bgc_poh_size_increased += size;
+            }
+            else
+            {
+                bgc_loh_size_increased += size;
+            }
         }
 #endif //BACKGROUND_GC
     }
@@ -13761,7 +13732,7 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
                 bgc_loh_allocate_spin() :
                 bgc_poh_allocate_spin();
 
-            if (spin_for_allocation >= 0)
+            if (spin_for_allocation > 0)
             {
                 add_saved_spinlock_info (true, me_release, mt_alloc_large);
                 leave_spin_lock (&more_space_lock_uoh);
@@ -13772,7 +13743,7 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
                 add_saved_spinlock_info (true, me_acquire, mt_alloc_large);
                 dprintf (SPINLOCK_LOG, ("[%d]spin Emsl uoh", heap_number));
             }
-            else
+            else if (spin_for_allocation < 0)
             {
                 wait_for_background (awr_uoh_alloc_during_bgc, true);
             }
@@ -14809,51 +14780,46 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
     if (! (size_fit_p (size REQD_ALIGN_AND_OFFSET_ARG, generation_allocation_pointer (gen),
                        generation_allocation_limit (gen), old_loc, USE_PADDING_TAIL | pad_in_front)))
     {
-        size_t sz_list = gen_allocator->first_bucket_size();
-        for (unsigned int a_l_idx = 0; a_l_idx < gen_allocator->number_of_buckets(); a_l_idx++)
+        for (unsigned int a_l_idx = gen_allocator->first_suitable_bucket(real_size * 2); a_l_idx < gen_allocator->number_of_buckets(); a_l_idx++)
         {
-            if ((real_size < (sz_list / 2)) || (a_l_idx == (gen_allocator->number_of_buckets()-1)))
+            uint8_t* free_list = gen_allocator->alloc_list_head_of (a_l_idx);
+            uint8_t* prev_free_item = 0;
+            while (free_list != 0)
             {
-                uint8_t* free_list = gen_allocator->alloc_list_head_of (a_l_idx);
-                uint8_t* prev_free_item = 0;
-                while (free_list != 0)
+                dprintf (3, ("considering free list %Ix", (size_t)free_list));
+
+                size_t free_list_size = unused_array_size (free_list);
+
+                if (size_fit_p (size REQD_ALIGN_AND_OFFSET_ARG, free_list, (free_list + free_list_size),
+                                old_loc, USE_PADDING_TAIL | pad_in_front))
                 {
-                    dprintf (3, ("considering free list %Ix", (size_t)free_list));
+                    dprintf (4, ("F:%Ix-%Id",
+                                    (size_t)free_list, free_list_size));
 
-                    size_t free_list_size = unused_array_size (free_list);
+                    gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, !discard_p);
+                    generation_free_list_space (gen) -= free_list_size;
+                    remove_gen_free (gen->gen_num, free_list_size);
 
-                    if (size_fit_p (size REQD_ALIGN_AND_OFFSET_ARG, free_list, (free_list + free_list_size),
-                                    old_loc, USE_PADDING_TAIL | pad_in_front))
-                    {
-                        dprintf (4, ("F:%Ix-%Id",
-                                     (size_t)free_list, free_list_size));
-
-                        gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, !discard_p);
-                        generation_free_list_space (gen) -= free_list_size;
-                        remove_gen_free (gen->gen_num, free_list_size);
-
-                        adjust_limit (free_list, free_list_size, gen, from_gen_number+1);
-                        generation_allocate_end_seg_p (gen) = FALSE;
-                        goto finished;
-                    }
-                    // We do first fit on bucket 0 because we are not guaranteed to find a fit there.
-                    else if (discard_p || (a_l_idx == 0))
-                    {
-                        dprintf (3, ("couldn't use this free area, discarding"));
-                        generation_free_obj_space (gen) += free_list_size;
-
-                        gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
-                        generation_free_list_space (gen) -= free_list_size;
-                        remove_gen_free (gen->gen_num, free_list_size);
-                    }
-                    else
-                    {
-                        prev_free_item = free_list;
-                    }
-                    free_list = free_list_slot (free_list);
+                    adjust_limit (free_list, free_list_size, gen, from_gen_number+1);
+                    generation_allocate_end_seg_p (gen) = FALSE;
+                    goto finished;
                 }
+                // We do first fit on bucket 0 because we are not guaranteed to find a fit there.
+                else if (discard_p || (a_l_idx == 0))
+                {
+                    dprintf (3, ("couldn't use this free area, discarding"));
+                    generation_free_obj_space (gen) += free_list_size;
+
+                    gen_allocator->unlink_item (a_l_idx, free_list, prev_free_item, FALSE);
+                    generation_free_list_space (gen) -= free_list_size;
+                    remove_gen_free (gen->gen_num, free_list_size);
+                }
+                else
+                {
+                    prev_free_item = free_list;
+                }
+                free_list = free_list_slot (free_list);
             }
-            sz_list = sz_list * 2;
         }
         //go back to the beginning of the segment list
         heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
@@ -17413,27 +17379,22 @@ void gc_heap::record_gcs_during_no_gc()
 BOOL gc_heap::find_loh_free_for_no_gc()
 {
     allocator* loh_allocator = generation_allocator (generation_of (loh_generation));
-    size_t sz_list = loh_allocator->first_bucket_size();
     size_t size = loh_allocation_no_gc;
-    for (unsigned int a_l_idx = 0; a_l_idx < loh_allocator->number_of_buckets(); a_l_idx++)
+    for (unsigned int a_l_idx = loh_allocator->first_suitable_bucket(size); a_l_idx < loh_allocator->number_of_buckets(); a_l_idx++)
     {
-        if ((size < sz_list) || (a_l_idx == (loh_allocator->number_of_buckets()-1)))
+        uint8_t* free_list = loh_allocator->alloc_list_head_of (a_l_idx);
+        while (free_list)
         {
-            uint8_t* free_list = loh_allocator->alloc_list_head_of (a_l_idx);
-            while (free_list)
+            size_t free_list_size = unused_array_size(free_list);
+
+            if (free_list_size > size)
             {
-                size_t free_list_size = unused_array_size(free_list);
-
-                if (free_list_size > loh_allocation_no_gc)
-                {
-                    dprintf (3, ("free item %Ix(%Id) for no gc", (size_t)free_list, free_list_size));
-                    return TRUE;
-                }
-
-                free_list = free_list_slot (free_list);
+                dprintf (3, ("free item %Ix(%Id) for no gc", (size_t)free_list, free_list_size));
+                return TRUE;
             }
+
+            free_list = free_list_slot (free_list);
         }
-        sz_list = sz_list * 2;
     }
 
     return FALSE;
@@ -23136,7 +23097,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                                   (1 + condemned_gen_number));
     generation*  older_gen = 0;
     generation* consing_gen = condemned_gen1;
-    alloc_list  r_free_list [MAX_BUCKET_COUNT];
+    alloc_list  r_free_list [MAX_SOH_BUCKET_COUNT];
 
     size_t r_free_list_space = 0;
     size_t r_free_obj_space = 0;
@@ -31653,26 +31614,22 @@ BOOL gc_heap::can_expand_into_p (heap_segment* seg, size_t min_free_size, size_t
         size_t largest_free_space = free_space;
         dprintf (SEG_REUSE_LOG_0, ("can_expand_into_p: gen1: testing segment [%Ix %Ix", first_address, end_address));
         //find the first free list in range of the current segment
-        size_t sz_list = gen_allocator->first_bucket_size();
-        unsigned int a_l_idx = 0;
         uint8_t* free_list = 0;
+        unsigned int a_l_idx = gen_allocator->first_suitable_bucket(eph_gen_starts);
         for (; a_l_idx < gen_allocator->number_of_buckets(); a_l_idx++)
         {
-            if ((eph_gen_starts <= sz_list) || (a_l_idx == (gen_allocator->number_of_buckets()-1)))
+            free_list = gen_allocator->alloc_list_head_of (a_l_idx);
+            while (free_list)
             {
-                free_list = gen_allocator->alloc_list_head_of (a_l_idx);
-                while (free_list)
+                if ((free_list >= first_address) &&
+                    (free_list < end_address) &&
+                    (unused_array_size (free_list) >= eph_gen_starts))
                 {
-                    if ((free_list >= first_address) &&
-                        (free_list < end_address) &&
-                        (unused_array_size (free_list) >= eph_gen_starts))
-                    {
-                        goto next;
-                    }
-                    else
-                    {
-                        free_list = free_list_slot (free_list);
-                    }
+                    goto next;
+                }
+                else
+                {
+                    free_list = free_list_slot (free_list);
                 }
             }
         }
@@ -36421,10 +36378,8 @@ HRESULT GCHeap::Initialize()
 
 #ifdef MULTIPLE_HEAPS
     gc_heap::n_heaps = nhp;
-    // TODO: tuning https://github.com/dotnet/runtime/issues/13739
     hr = gc_heap::initialize_gc (seg_size, large_seg_size /*loh_segment_size*/, large_seg_size /*poh_segment_size*/, nhp);
 #else
-    // TODO: tuning https://github.com/dotnet/runtime/issues/13739
     hr = gc_heap::initialize_gc (seg_size, large_seg_size /*loh_segment_size*/, large_seg_size /*poh_segment_size*/);
 #endif //MULTIPLE_HEAPS
 
@@ -37106,187 +37061,74 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
     }                                                                                       \
 } while (false)
 
-//
-// Small Object Allocator
-//
-//
+#ifdef FEATURE_64BIT_ALIGNMENT
+
 // Allocate small object with an alignment requirement of 8-bytes.
-Object*
-GCHeap::AllocAlign8(gc_alloc_context* ctx, size_t size, uint32_t flags )
+Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags)
 {
-#ifdef FEATURE_64BIT_ALIGNMENT
     CONTRACTL {
         NOTHROW;
         GC_TRIGGERS;
     } CONTRACTL_END;
-
-    alloc_context* acontext = static_cast<alloc_context*>(ctx);
-
-#ifdef MULTIPLE_HEAPS
-    if (acontext->get_alloc_heap() == 0)
-    {
-        AssignHeap (acontext);
-        assert (acontext->get_alloc_heap());
-    }
-
-    gc_heap* hp = acontext->get_alloc_heap()->pGenGCHeap;
-#else
-    gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-
-    return AllocAlign8Common(hp, acontext, size, flags);
-#else
-    UNREFERENCED_PARAMETER(ctx);
-    UNREFERENCED_PARAMETER(size);
-    UNREFERENCED_PARAMETER(flags);
-    assert(!"should not call GCHeap::AllocAlign8 without FEATURE_64BIT_ALIGNMENT defined!");
-    return nullptr;
-#endif  //FEATURE_64BIT_ALIGNMENT
-}
-
-// Common code used by both variants of AllocAlign8 above.
-Object*
-GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint32_t flags)
-{
-#ifdef FEATURE_64BIT_ALIGNMENT
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    gc_heap* hp = (gc_heap*)_hp;
-
-    TRIGGERSGC();
 
     Object* newAlloc = NULL;
 
-    if (size < loh_size_threshold)
+    // Depending on where in the object the payload requiring 8-byte alignment resides we might have to
+    // align the object header on an 8-byte boundary or midway between two such boundaries. The unaligned
+    // case is indicated to the GC via the GC_ALLOC_ALIGN8_BIAS flag.
+    size_t desiredAlignment = (flags & GC_ALLOC_ALIGN8_BIAS) ? 4 : 0;
+
+    // Retrieve the address of the next allocation from the context (note that we're inside the alloc
+    // lock at this point).
+    uint8_t*  result = acontext->alloc_ptr;
+
+    // Will an allocation at this point yield the correct alignment and fit into the remainder of the
+    // context?
+    if ((((size_t)result & 7) == desiredAlignment) && ((result + size) <= acontext->alloc_limit))
     {
-#ifdef TRACE_GC
-        AllocSmallCount++;
-#endif //TRACE_GC
-
-        // Depending on where in the object the payload requiring 8-byte alignment resides we might have to
-        // align the object header on an 8-byte boundary or midway between two such boundaries. The unaligned
-        // case is indicated to the GC via the GC_ALLOC_ALIGN8_BIAS flag.
-        size_t desiredAlignment = (flags & GC_ALLOC_ALIGN8_BIAS) ? 4 : 0;
-
-        // Retrieve the address of the next allocation from the context (note that we're inside the alloc
-        // lock at this point).
-        uint8_t*  result = acontext->alloc_ptr;
-
-        // Will an allocation at this point yield the correct alignment and fit into the remainder of the
-        // context?
-        if ((((size_t)result & 7) == desiredAlignment) && ((result + size) <= acontext->alloc_limit))
-        {
-            // Yes, we can just go ahead and make the allocation.
-            newAlloc = (Object*) hp->allocate (size, acontext, flags);
-            ASSERT(((size_t)newAlloc & 7) == desiredAlignment);
-        }
-        else
-        {
-            // No, either the next available address is not aligned in the way we require it or there's
-            // not enough space to allocate an object of the required size. In both cases we allocate a
-            // padding object (marked as a free object). This object's size is such that it will reverse
-            // the alignment of the next header (asserted below).
-            //
-            // We allocate both together then decide based on the result whether we'll format the space as
-            // free object + real object or real object + free object.
-            ASSERT((Align(min_obj_size) & 7) == 4);
-            CObjectHeader *freeobj = (CObjectHeader*) hp->allocate (Align(size) + Align(min_obj_size), acontext, flags);
-            if (freeobj)
-            {
-                if (((size_t)freeobj & 7) == desiredAlignment)
-                {
-                    // New allocation has desired alignment, return this one and place the free object at the
-                    // end of the allocated space.
-                    newAlloc = (Object*)freeobj;
-                    freeobj = (CObjectHeader*)((uint8_t*)freeobj + Align(size));
-                }
-                else
-                {
-                    // New allocation is still mis-aligned, format the initial space as a free object and the
-                    // rest of the space should be correctly aligned for the real object.
-                    newAlloc = (Object*)((uint8_t*)freeobj + Align(min_obj_size));
-                    ASSERT(((size_t)newAlloc & 7) == desiredAlignment);
-                    if (flags & GC_ALLOC_ZEROING_OPTIONAL)
-                    {
-                        // clean the syncblock of the aligned object.
-                        *(((PTR_PTR)newAlloc)-1) = 0;
-                    }
-                }
-                freeobj->SetFree(min_obj_size);
-            }
-        }
+        // Yes, we can just go ahead and make the allocation.
+        newAlloc = (Object*) hp->allocate (size, acontext, flags);
+        ASSERT(((size_t)newAlloc & 7) == desiredAlignment);
     }
     else
     {
-        // The LOH always guarantees at least 8-byte alignment, regardless of platform. Moreover it doesn't
-        // support mis-aligned object headers so we can't support biased headers as above. Luckily for us
-        // we've managed to arrange things so the only case where we see a bias is for boxed value types and
-        // these can never get large enough to be allocated on the LOH.
-        ASSERT(65536 < loh_size_threshold);
-        ASSERT((flags & GC_ALLOC_ALIGN8_BIAS) == 0);
-
-        alloc_context* acontext = generation_alloc_context (hp->generation_of (loh_generation));
-
-        newAlloc = (Object*) hp->allocate_uoh_object (size, flags, loh_generation, acontext->alloc_bytes_uoh);
-        ASSERT(((size_t)newAlloc & 7) == 0);
+        // No, either the next available address is not aligned in the way we require it or there's
+        // not enough space to allocate an object of the required size. In both cases we allocate a
+        // padding object (marked as a free object). This object's size is such that it will reverse
+        // the alignment of the next header (asserted below).
+        //
+        // We allocate both together then decide based on the result whether we'll format the space as
+        // free object + real object or real object + free object.
+        ASSERT((Align(min_obj_size) & 7) == 4);
+        CObjectHeader *freeobj = (CObjectHeader*) hp->allocate (Align(size) + Align(min_obj_size), acontext, flags);
+        if (freeobj)
+        {
+            if (((size_t)freeobj & 7) == desiredAlignment)
+            {
+                // New allocation has desired alignment, return this one and place the free object at the
+                // end of the allocated space.
+                newAlloc = (Object*)freeobj;
+                freeobj = (CObjectHeader*)((uint8_t*)freeobj + Align(size));
+            }
+            else
+            {
+                // New allocation is still mis-aligned, format the initial space as a free object and the
+                // rest of the space should be correctly aligned for the real object.
+                newAlloc = (Object*)((uint8_t*)freeobj + Align(min_obj_size));
+                ASSERT(((size_t)newAlloc & 7) == desiredAlignment);
+                if (flags & GC_ALLOC_ZEROING_OPTIONAL)
+                {
+                    // clean the syncblock of the aligned object.
+                    *(((PTR_PTR)newAlloc)-1) = 0;
+                }
+            }
+            freeobj->SetFree(min_obj_size);
+        }
     }
 
-    CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
-
-#ifdef TRACE_GC
-    AllocCount++;
-#endif //TRACE_GC
     return newAlloc;
-#else
-    UNREFERENCED_PARAMETER(_hp);
-    UNREFERENCED_PARAMETER(acontext);
-    UNREFERENCED_PARAMETER(size);
-    UNREFERENCED_PARAMETER(flags);
-    assert(!"Should not call GCHeap::AllocAlign8Common without FEATURE_64BIT_ALIGNMENT defined!");
-    return nullptr;
+}
 #endif // FEATURE_64BIT_ALIGNMENT
-}
-
-Object *
-GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    TRIGGERSGC();
-
-    Object* newAlloc = NULL;
-
-#ifdef MULTIPLE_HEAPS
-    //take the first heap....
-    gc_heap* hp = gc_heap::g_heaps[0];
-#else
-    gc_heap* hp = pGenGCHeap;
-#ifdef _PREFAST_
-    // prefix complains about us dereferencing hp in wks build even though we only access static members
-    // this way. not sure how to shut it up except for this ugly workaround:
-    PREFIX_ASSUME(hp != NULL);
-#endif //_PREFAST_
-#endif //MULTIPLE_HEAPS
-
-    alloc_context* acontext = generation_alloc_context (hp->generation_of (loh_generation));
-    newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
-
-#ifdef FEATURE_STRUCTALIGN
-    newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
-#endif // FEATURE_STRUCTALIGN
-    CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
-
-#ifdef TRACE_GC
-    AllocCount++;
-#endif //TRACE_GC
-    return newAlloc;
-}
 
 Object*
 GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_DCL)
@@ -37317,23 +37159,46 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
 #endif //_PREFAST_
 #endif //MULTIPLE_HEAPS
 
-    if (size < loh_size_threshold)
-    {
+    assert(size < loh_size_threshold || (flags & GC_ALLOC_LARGE_OBJECT_HEAP));
 
-#ifdef TRACE_GC
-        AllocSmallCount++;
-#endif //TRACE_GC
-        newAlloc = (Object*) hp->allocate (size + ComputeMaxStructAlignPad(requiredAlignment), acontext, flags);
+    if (flags & GC_ALLOC_USER_OLD_HEAP)
+    {
+        // The LOH always guarantees at least 8-byte alignment, regardless of platform. Moreover it doesn't
+        // support mis-aligned object headers so we can't support biased headers. Luckily for us
+        // we've managed to arrange things so the only case where we see a bias is for boxed value types and
+        // these can never get large enough to be allocated on the LOH.
+        ASSERT((flags & GC_ALLOC_ALIGN8_BIAS) == 0);
+        ASSERT(65536 < loh_size_threshold);
+
+        int gen_num = (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? poh_generation : loh_generation;
+        newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, gen_num, acontext->alloc_bytes_uoh);
+        ASSERT(((size_t)newAlloc & 7) == 0);
+
 #ifdef FEATURE_STRUCTALIGN
-        newAlloc = (Object*) hp->pad_for_alignment ((uint8_t*) newAlloc, requiredAlignment, size, acontext);
+        newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
 #endif // FEATURE_STRUCTALIGN
-//        ASSERT (newAlloc);
     }
     else
     {
-        newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
+#ifdef TRACE_GC
+        AllocSmallCount++;
+#endif //TRACE_GC
+
+#ifdef FEATURE_64BIT_ALIGNMENT
+        if (flags & GC_ALLOC_ALIGN8)
+        {
+            newAlloc = AllocAlign8 (acontext, hp, size, flags);
+        }
+        else
+#else
+        assert ((flags & GC_ALLOC_ALIGN8) == 0);
+#endif
+        {
+            newAlloc = (Object*) hp->allocate (size + ComputeMaxStructAlignPad(requiredAlignment), acontext, flags);
+        }
+
 #ifdef FEATURE_STRUCTALIGN
-        newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
+        newAlloc = (Object*) hp->pad_for_alignment ((uint8_t*) newAlloc, requiredAlignment, size, acontext);
 #endif // FEATURE_STRUCTALIGN
     }
 

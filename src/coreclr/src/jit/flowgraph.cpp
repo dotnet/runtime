@@ -65,6 +65,7 @@ void Compiler::fgInit()
     fgFirstBB        = nullptr;
     fgLastBB         = nullptr;
     fgFirstColdBlock = nullptr;
+    fgEntryBB        = nullptr;
 
 #if defined(FEATURE_EH_FUNCLETS)
     fgFirstFuncletBB  = nullptr;
@@ -4328,6 +4329,12 @@ bool Compiler::fgMayExplicitTailCall()
         return false;
     }
 
+    if (opts.IsReversePInvoke())
+    {
+        // Reverse P/Invoke
+        return false;
+    }
+
 #if !FEATURE_FIXED_OUT_ARGS
     if (info.compIsVarArgs)
     {
@@ -5177,16 +5184,19 @@ void Compiler::fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, boo
     }
 }
 
-/*****************************************************************************
- *
- *  Finally link up the bbJumpDest of the blocks together
- */
+//------------------------------------------------------------------------
+// fgMarkBackwardJump: mark blocks indicating there is a jump backwards in
+//   IL, from a higher to lower IL offset.
+//
+// Arguments:
+//   targetBlock -- target of the jump
+//   sourceBlock -- source of the jump
 
-void Compiler::fgMarkBackwardJump(BasicBlock* startBlock, BasicBlock* endBlock)
+void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlock)
 {
-    noway_assert(startBlock->bbNum <= endBlock->bbNum);
+    noway_assert(targetBlock->bbNum <= sourceBlock->bbNum);
 
-    for (BasicBlock* block = startBlock; block != endBlock->bbNext; block = block->bbNext)
+    for (BasicBlock* block = targetBlock; block != sourceBlock->bbNext; block = block->bbNext)
     {
         if ((block->bbFlags & BBF_BACKWARD_JUMP) == 0)
         {
@@ -5194,6 +5204,8 @@ void Compiler::fgMarkBackwardJump(BasicBlock* startBlock, BasicBlock* endBlock)
             compHasBackwardJump = true;
         }
     }
+
+    targetBlock->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
 }
 
 /*****************************************************************************
@@ -5981,6 +5993,28 @@ void Compiler::fgFindBasicBlocks()
         }
 
         return;
+    }
+
+    // If we are doing OSR, add an entry block that simply branches to the right IL offset.
+    if (opts.IsOSR())
+    {
+        // Remember the original entry block in case this method is tail recursive.
+        fgEntryBB = fgLookupBB(0);
+
+        // Find the OSR entry block.
+        assert(info.compILEntry >= 0);
+        BasicBlock* bbTarget = fgLookupBB(info.compILEntry);
+
+        fgEnsureFirstBBisScratch();
+        fgFirstBB->bbJumpKind = BBJ_ALWAYS;
+        fgFirstBB->bbJumpDest = bbTarget;
+        fgAddRefPred(bbTarget, fgFirstBB);
+
+        JITDUMP("OSR: redirecting flow at entry via " FMT_BB " to " FMT_BB " (il offset 0x%x)\n", fgFirstBB->bbNum,
+                bbTarget->bbNum, info.compILEntry);
+
+        // rebuild lookup table... should be able to avoid this by leaving room up front.
+        fgInitBBLookup();
     }
 
     /* Mark all blocks within 'try' blocks as such */
@@ -6852,14 +6886,15 @@ unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNestin
     return curNesting;
 }
 
-/*****************************************************************************
- *
- *  Import the basic blocks of the procedure.
- */
-
-void Compiler::fgImport()
+//------------------------------------------------------------------------
+// fgImport: read the IL forf the method and create jit IR
+//
+// Returns:
+//    phase status
+//
+PhaseStatus Compiler::fgImport()
 {
-    impImport(fgFirstBB);
+    impImport();
 
     // Estimate how much of method IL was actually imported.
     //
@@ -6902,6 +6937,16 @@ void Compiler::fgImport()
     {
         compInlineResult->SetImportedILSize(info.compILImportSize);
     }
+
+    // Full preds are only used later on
+    assert(!fgComputePredsDone);
+    if (fgCheapPredsValid)
+    {
+        // Cheap predecessors are only used during importation
+        fgRemovePreds();
+    }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 /*****************************************************************************
@@ -9693,118 +9738,238 @@ void Compiler::fgSimpleLowering()
 #endif
 }
 
-/*****************************************************************************
- *
- *  Find and remove any basic blocks that are useless (e.g. they have not been
- *  imported because they are not reachable, or they have been optimized away).
- */
-
+//------------------------------------------------------------------------
+// fgRemoveEmptyBlocks: clean up flow graph after importation
+//
+// Notes:
+//
+//  Find and remove any basic blocks that are useless (e.g. they have not been
+//  imported because they are not reachable, or they have been optimized away).
+//
+//  Remove try regions where no blocks in the try were imported.
+//  Update the end of try and handler regions where trailing blocks were not imported.
+//  Update the start of try regions that were partially imported (OSR)
+//
 void Compiler::fgRemoveEmptyBlocks()
 {
+    JITDUMP("\n*************** In fgRemoveEmptyBlocks\n");
+
     BasicBlock* cur;
     BasicBlock* nxt;
 
-    /* If we remove any blocks, we'll have to do additional work */
-
+    // If we remove any blocks, we'll have to do additional work
     unsigned removedBlks = 0;
 
     for (cur = fgFirstBB; cur != nullptr; cur = nxt)
     {
-        /* Get hold of the next block (in case we delete 'cur') */
-
+        // Get hold of the next block (in case we delete 'cur')
         nxt = cur->bbNext;
 
-        /* Should this block be removed? */
-
+        // Should this block be removed?
         if (!(cur->bbFlags & BBF_IMPORTED))
         {
             noway_assert(cur->isEmpty());
 
             if (ehCanDeleteEmptyBlock(cur))
             {
-                /* Mark the block as removed */
+                JITDUMP(FMT_BB " was not imported, marking as removed (%d)\n", cur->bbNum, removedBlks);
 
                 cur->bbFlags |= BBF_REMOVED;
-
-                /* Remember that we've removed a block from the list */
-
                 removedBlks++;
 
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf(FMT_BB " was not imported, marked as removed (%d)\n", cur->bbNum, removedBlks);
-                }
-#endif // DEBUG
-
-                /* Drop the block from the list */
-
+                // Drop the block from the list.
+                //
+                // We rely on the fact that this does not clear out
+                // cur->bbNext or cur->bbPrev in the code that
+                // follows.
                 fgUnlinkBlock(cur);
             }
             else
             {
-                // We were prevented from deleting this block by EH normalization. Mark the block as imported.
+                // We were prevented from deleting this block by EH
+                // normalization. Mark the block as imported.
                 cur->bbFlags |= BBF_IMPORTED;
             }
         }
     }
 
-    /* If no blocks were removed, we're done */
-
+    // If no blocks were removed, we're done
     if (removedBlks == 0)
     {
         return;
     }
 
-    /*  Update all references in the exception handler table.
-     *  Mark the new blocks as non-removable.
-     *
-     *  We may have made the entire try block unreachable.
-     *  Check for this case and remove the entry from the EH table.
-     */
-
+    // Update all references in the exception handler table.
+    //
+    // We may have made the entire try block unreachable.
+    // Check for this case and remove the entry from the EH table.
+    //
+    // For OSR, just the initial part of a try range may become
+    // unreachable; if so we need to shrink the try range down
+    // to the portion that was imported.
     unsigned  XTnum;
     EHblkDsc* HBtab;
-    INDEBUG(unsigned delCnt = 0;)
+    unsigned  delCnt = 0;
 
+    // Walk the EH regions from inner to outer
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
     AGAIN:
-        /* If the beginning of the try block was not imported, we
-         * need to remove the entry from the EH table. */
 
+        // If start of a try region was not imported, then we either
+        // need to trim the region extent, or remove the region
+        // entirely.
+        //
+        // In normal importation, it is not valid to jump into the
+        // middle of a try, so if the try entry was not imported, the
+        // entire try can be removed.
+        //
+        // In OSR importation the entry patchpoint may be in the
+        // middle of a try, and we need to determine how much of the
+        // try ended up getting imported.  Because of backwards
+        // branches we may end up importing the entire try even though
+        // execution starts in the middle.
+        //
+        // Note it is common in both cases for the ends of trys (and
+        // associated handlers) to end up not getting imported, so if
+        // the try region is not removed, we always check if we need
+        // to trim the ends.
+        //
         if (HBtab->ebdTryBeg->bbFlags & BBF_REMOVED)
         {
-            noway_assert(!(HBtab->ebdTryBeg->bbFlags & BBF_IMPORTED));
-#ifdef DEBUG
-            if (verbose)
+            // Usual case is that the entire try can be removed.
+            bool removeTryRegion = true;
+
+            if (opts.IsOSR())
             {
-                printf("Beginning of try block (" FMT_BB ") not imported "
-                       "- remove index #%u from the EH table\n",
-                       HBtab->ebdTryBeg->bbNum, XTnum + delCnt);
+                // For OSR we may need to trim the try region start.
+                //
+                // We rely on the fact that removed blocks have been snipped from
+                // the main block list, but that those removed blocks have kept
+                // their bbprev (and bbnext) links.
+                //
+                // Find the first unremoved block before the try entry block.
+                //
+                BasicBlock* const oldTryEntry  = HBtab->ebdTryBeg;
+                BasicBlock*       tryEntryPrev = oldTryEntry->bbPrev;
+                while ((tryEntryPrev != nullptr) && ((tryEntryPrev->bbFlags & BBF_REMOVED) != 0))
+                {
+                    tryEntryPrev = tryEntryPrev->bbPrev;
+                }
+
+                // Because we've added an unremovable scratch block as
+                // fgFirstBB, this backwards walk should always find
+                // some block.
+                assert(tryEntryPrev != nullptr);
+
+                // If there is a next block of this prev block, and that block is
+                // contained in the current try, we'd like to make that block
+                // the new start of the try, and keep the region.
+                BasicBlock* newTryEntry    = tryEntryPrev->bbNext;
+                bool        updateTryEntry = false;
+
+                if ((newTryEntry != nullptr) && bbInTryRegions(XTnum, newTryEntry))
+                {
+                    // We want to trim the begin extent of the current try region to newTryEntry.
+                    //
+                    // This method is invoked after EH normalization, so we may need to ensure all
+                    // try regions begin at blocks that are not the start or end of some other try.
+                    //
+                    // So, see if this block is already the start or end of some other EH region.
+                    if (bbIsTryBeg(newTryEntry))
+                    {
+                        // We've already end-trimmed the inner try. Do the same now for the
+                        // current try, so it is easier to detect when they mutually protect.
+                        // (we will call this again later, which is harmless).
+                        fgSkipRmvdBlocks(HBtab);
+
+                        // If this try and the inner try form a "mutually protected try region"
+                        // then we must continue to share the try entry block.
+                        EHblkDsc* const HBinner = ehGetBlockTryDsc(newTryEntry);
+                        assert(HBinner->ebdTryBeg == newTryEntry);
+
+                        if (HBtab->ebdTryLast != HBinner->ebdTryLast)
+                        {
+                            updateTryEntry = true;
+                        }
+                    }
+                    // Also, a try and handler cannot start at the same block
+                    else if (bbIsHandlerBeg(newTryEntry))
+                    {
+                        updateTryEntry = true;
+                    }
+
+                    if (updateTryEntry)
+                    {
+                        // We need to trim the current try to begin at a different block. Normally
+                        // this would be problematic as we don't have enough context to redirect
+                        // all the incoming edges, but we know oldTryEntry is unreachable.
+                        // So there are no incoming edges to worry about.
+                        //
+                        assert(!tryEntryPrev->bbFallsThrough());
+
+                        // What follows is similar to fgNewBBInRegion, but we can't call that
+                        // here as the oldTryEntry is no longer in the main bb list.
+                        newTryEntry = bbNewBasicBlock(BBJ_NONE);
+                        newTryEntry->bbFlags |= (BBF_IMPORTED | BBF_INTERNAL);
+
+                        // Set the right EH region indices on this new block.
+                        //
+                        // Patchpoints currently cannot be inside handler regions,
+                        // and so likewise the old and new try region entries.
+                        assert(!oldTryEntry->hasHndIndex());
+                        newTryEntry->setTryIndex(XTnum);
+                        newTryEntry->clearHndIndex();
+                        fgInsertBBafter(tryEntryPrev, newTryEntry);
+
+                        JITDUMP("OSR: changing start of try region #%u from " FMT_BB " to new " FMT_BB "\n",
+                                XTnum + delCnt, oldTryEntry->bbNum, newTryEntry->bbNum);
+                    }
+                    else
+                    {
+                        // We can just trim the try to newTryEntry as it is not part of some inner try or handler.
+                        JITDUMP("OSR: changing start of try region #%u from " FMT_BB " to " FMT_BB "\n", XTnum + delCnt,
+                                oldTryEntry->bbNum, newTryEntry->bbNum);
+                    }
+
+                    // Update the handler table
+                    fgSetTryBeg(HBtab, newTryEntry);
+
+                    // Try entry blocks get specially marked and have special protection.
+                    HBtab->ebdTryBeg->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_HAS_LABEL;
+
+                    // We are keeping this try region
+                    removeTryRegion = false;
+                }
             }
-            delCnt++;
-#endif // DEBUG
 
-            fgRemoveEHTableEntry(XTnum);
-
-            if (XTnum < compHndBBtabCount)
+            if (removeTryRegion)
             {
-                // There are more entries left to process, so do more. Note that
-                // HBtab now points to the next entry, that we copied down to the
-                // current slot. XTnum also stays the same.
-                goto AGAIN;
-            }
+                // In the dump, refer to the region by its original index.
+                JITDUMP("Try region #%u (" FMT_BB " -- " FMT_BB ") not imported, removing try from the EH table\n",
+                        XTnum + delCnt, HBtab->ebdTryBeg->bbNum, HBtab->ebdTryLast->bbNum);
 
-            break; // no more entries (we deleted the last one), so exit the loop
+                delCnt++;
+
+                fgRemoveEHTableEntry(XTnum);
+
+                if (XTnum < compHndBBtabCount)
+                {
+                    // There are more entries left to process, so do more. Note that
+                    // HBtab now points to the next entry, that we copied down to the
+                    // current slot. XTnum also stays the same.
+                    goto AGAIN;
+                }
+
+                // no more entries (we deleted the last one), so exit the loop
+                break;
+            }
         }
 
-/* At this point we know we have a valid try block */
-
-#ifdef DEBUG
+        // If we get here, the try entry block was not removed.
+        // Check some invariants.
         assert(HBtab->ebdTryBeg->bbFlags & BBF_IMPORTED);
         assert(HBtab->ebdTryBeg->bbFlags & BBF_DONT_REMOVE);
-
         assert(HBtab->ebdHndBeg->bbFlags & BBF_IMPORTED);
         assert(HBtab->ebdHndBeg->bbFlags & BBF_DONT_REMOVE);
 
@@ -9813,10 +9978,10 @@ void Compiler::fgRemoveEmptyBlocks()
             assert(HBtab->ebdFilter->bbFlags & BBF_IMPORTED);
             assert(HBtab->ebdFilter->bbFlags & BBF_DONT_REMOVE);
         }
-#endif // DEBUG
 
+        // Finally, do region end trimming -- update try and handler ends to reflect removed blocks.
         fgSkipRmvdBlocks(HBtab);
-    } /* end of the for loop over XTnum */
+    }
 
     // Renumber the basic blocks
     JITDUMP("\nRenumbering the basic blocks for fgRemoveEmptyBlocks\n");
@@ -13221,6 +13386,10 @@ void Compiler::fgComputeCalledCount(BasicBlock::weight_t returnWeight)
         if (fgFirstBB->bbWeight == 0)
         {
             fgFirstBB->bbFlags |= BBF_RUN_RARELY;
+        }
+        else
+        {
+            fgFirstBB->bbFlags &= ~BBF_RUN_RARELY;
         }
     }
 
@@ -20570,6 +20739,12 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
+    // For OSR, we allow the firstBB to branch to the middle of a try.
+    if (comp->opts.IsOSR() && (blockPred == comp->fgFirstBB))
+    {
+        return true;
+    }
+
     printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
@@ -20752,6 +20927,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #endif // DEBUG
 
     fgDebugCheckBlockLinks();
+    fgFirstBBisScratch();
 
     if (fgBBcount > 10000 && expensiveDebugCheckLevel < 1)
     {
@@ -21757,30 +21933,48 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
     return depth;
 }
 
-/*****************************************************************************
- *
- *  Inlining phase
- */
-
-void Compiler::fgInline()
+//------------------------------------------------------------------------
+// fgInline - expand inline candidates
+//
+// Returns:
+//   phase status indicating if anything was modified
+//
+// Notes:
+//   Inline candidates are identified during importation and candidate calls
+//   must be top-level expressions. In input IR, the result of the call (if any)
+//   is consumed elsewhere by a GT_RET_EXPR node.
+//
+//   For successful inlines, calls are replaced by a sequence of argument setup
+//   instructions, the inlined method body, and return value cleanup. Note
+//   Inlining may introduce new inline candidates. These are processed in a
+//   depth-first fashion, as the inliner walks the IR in statement order.
+//
+//   After inline expansion in a statement, the statement tree
+//   is walked to locate GT_RET_EXPR nodes. These are replaced by either
+//   * the original call tree, if the inline failed
+//   * the return value tree from the inlinee, if the inline succeeded
+//
+//   This replacement happens in preorder; on the postorder side of the same
+//   tree walk, we look for opportunties to devirtualize or optimize now that
+//   we know the context for the newly supplied return value tree.
+//
+//   Inline arguments may be directly substituted into the body of the inlinee
+//   in some cases. See impInlineFetchArg.
+//
+PhaseStatus Compiler::fgInline()
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgInline()\n");
-    }
-
     fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods().contains(info.compMethodName, info.compClassName,
                                                                         &info.compMethodInfo->args);
-
 #endif // DEBUG
 
-    BasicBlock* block = fgFirstBB;
+    BasicBlock* block       = fgFirstBB;
+    bool        madeChanges = false;
     noway_assert(block != nullptr);
 
     // Set the root inline context on all statements
@@ -21834,6 +22028,9 @@ void Compiler::fgInline()
 
                     fgMorphCallInline(call, &inlineResult);
 
+                    // If there's a candidate to process, we will make changes
+                    madeChanges = true;
+
                     // fgMorphCallInline may have updated the
                     // statement expression to a GT_NOP if the
                     // call returned a value, regardless of
@@ -21871,6 +22068,7 @@ void Compiler::fgInline()
             if (expr->OperGet() == GT_COMMA && expr->AsOp()->gtOp1->OperGet() == GT_CALL &&
                 expr->AsOp()->gtOp2->OperGet() == GT_NOP)
             {
+                madeChanges = true;
                 stmt->SetRootNode(expr->AsOp()->gtOp1);
             }
         }
@@ -21900,13 +22098,6 @@ void Compiler::fgInline()
 
     fgVerifyHandlerTab();
 
-    if (verbose)
-    {
-        printf("*************** After fgInline()\n");
-        fgDispBasicBlocks(true);
-        fgDispHandlerTab();
-    }
-
     if (verbose || fgPrintInlinedMethods)
     {
         JITDUMP("**************** Inline Tree");
@@ -21915,6 +22106,8 @@ void Compiler::fgInline()
     }
 
 #endif // DEBUG
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 #ifdef DEBUG
@@ -23749,6 +23942,9 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
 //------------------------------------------------------------------------
 // fgRemoveEmptyFinally: Remove try/finallys where the finally is empty
 //
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
 // Notes:
 //    Removes all try/finallys in the method with empty finallys.
 //    These typically arise from inlining empty Dispose methods.
@@ -23763,11 +23959,9 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
 //    empty (from say subsequent optimization). An SPMI run with
 //    just the "detection" part of this phase run after optimization
 //    found only one example where a new empty finally was detected.
-
-void Compiler::fgRemoveEmptyFinally()
+//
+PhaseStatus Compiler::fgRemoveEmptyFinally()
 {
-    JITDUMP("\n*************** In fgRemoveEmptyFinally()\n");
-
 #if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
@@ -23779,19 +23973,19 @@ void Compiler::fgRemoveEmptyFinally()
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, nothing to remove.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no removal.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no removal.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -23986,15 +24180,17 @@ void Compiler::fgRemoveEmptyFinally()
             printf("\n");
         }
 
-        fgVerifyHandlerTab();
-        fgDebugCheckBBlist(false, false);
-
 #endif // DEBUG
     }
+
+    return (emptyCount > 0) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
 // fgRemoveEmptyTry: Optimize try/finallys where the try is empty
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
 //
 // Notes:
 //    In runtimes where thread abort is not possible, `try {} finally {S}`
@@ -24008,8 +24204,8 @@ void Compiler::fgRemoveEmptyFinally()
 //    this optimization, the code block `S` can lose special
 //    within-finally status and so complete execution is no longer
 //    guaranteed.
-
-void Compiler::fgRemoveEmptyTry()
+//
+PhaseStatus Compiler::fgRemoveEmptyTry()
 {
     JITDUMP("\n*************** In fgRemoveEmptyTry()\n");
 
@@ -24031,25 +24227,25 @@ void Compiler::fgRemoveEmptyTry()
     if (!enableRemoveEmptyTry)
     {
         JITDUMP("Empty try removal disabled.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, nothing to remove.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no removal.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no removal.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -24305,25 +24501,17 @@ void Compiler::fgRemoveEmptyTry()
     {
         JITDUMP("fgRemoveEmptyTry() optimized %u empty-try try-finally clauses\n", emptyCount);
         fgOptimizedFinally = true;
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\n*************** After fgRemoveEmptyTry()\n");
-            fgDispBasicBlocks();
-            fgDispHandlerTab();
-            printf("\n");
-        }
-
-        fgVerifyHandlerTab();
-        fgDebugCheckBBlist(false, false);
-
-#endif // DEBUG
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
+
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
 // fgCloneFinally: Optimize normal exit path from a try/finally
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
 //
 // Notes:
 //    Handles finallys that are not enclosed by or enclosing other
@@ -24348,11 +24536,9 @@ void Compiler::fgRemoveEmptyTry()
 //    BBF_CLONED_FINALLY_BEGIN and BBF_CLONED_FINALLY_END. However
 //    these markers currently can get lost during subsequent
 //    optimizations.
-
-void Compiler::fgCloneFinally()
+//
+PhaseStatus Compiler::fgCloneFinally()
 {
-    JITDUMP("\n*************** In fgCloneFinally()\n");
-
 #if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
@@ -24371,31 +24557,30 @@ void Compiler::fgCloneFinally()
     if (!enableCloning)
     {
         JITDUMP("Finally cloning disabled.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, no cloning.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no cloning.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no cloning.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n*************** Before fgCloneFinally()\n");
         fgDispBasicBlocks();
         fgDispHandlerTab();
         printf("\n");
@@ -24899,23 +25084,21 @@ void Compiler::fgCloneFinally()
     if (cloneCount > 0)
     {
         JITDUMP("fgCloneFinally() cloned %u finally handlers\n", cloneCount);
-        fgOptimizedFinally = true;
 
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\n*************** After fgCloneFinally()\n");
             fgDispBasicBlocks();
             fgDispHandlerTab();
             printf("\n");
         }
 
-        fgVerifyHandlerTab();
-        fgDebugCheckBBlist(false, false);
         fgDebugCheckTryFinallyExits();
 
 #endif // DEBUG
     }
+
+    return (cloneCount > 0 ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING);
 }
 
 #ifdef DEBUG
@@ -25152,27 +25335,30 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
 #endif // !FEATURE_EH_FUNCLETS
 }
 
-//------------------------------------------------------------------------
-// fgUpdateFinallyTargetFlags: recompute BBF_FINALLY_TARGET bits for all blocks
-// after finally optimizations have run.
-
-void Compiler::fgUpdateFinallyTargetFlags()
-{
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-    // Any fixup required?
-    if (!fgOptimizedFinally)
+//------------------------------------------------------------------------
+// fgUpdateFinallyTargetFlags: recompute BBF_FINALLY_TARGET bits
+//    after EH optimizations
+//
+// Returns:
+//   phase status indicating if anything was modified
+//
+PhaseStatus Compiler::fgUpdateFinallyTargetFlags()
+{
+    // Any finally targetflag fixup required?
+    if (fgOptimizedFinally)
     {
-        JITDUMP("In fgUpdateFinallyTargetFlags - no finally opts, no fixup required\n");
-        return;
+        JITDUMP("updating finally target flag bits\n");
+        fgClearAllFinallyTargetBits();
+        fgAddFinallyTargetFlags();
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
-
-    JITDUMP("In fgUpdateFinallyTargetFlags, updating finally target flag bits\n");
-
-    fgClearAllFinallyTargetBits();
-    fgAddFinallyTargetFlags();
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    else
+    {
+        JITDUMP("no finally opts, no fixup required\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -25181,8 +25367,6 @@ void Compiler::fgUpdateFinallyTargetFlags()
 //
 void Compiler::fgClearAllFinallyTargetBits()
 {
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
     JITDUMP("*************** In fgClearAllFinallyTargetBits()\n");
 
     // Note that we clear the flags even if there are no EH clauses (compHndBBtabCount == 0)
@@ -25193,8 +25377,6 @@ void Compiler::fgClearAllFinallyTargetBits()
     {
         block->bbFlags &= ~BBF_FINALLY_TARGET;
     }
-
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 }
 
 //------------------------------------------------------------------------
@@ -25202,8 +25384,6 @@ void Compiler::fgClearAllFinallyTargetBits()
 //
 void Compiler::fgAddFinallyTargetFlags()
 {
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
     JITDUMP("*************** In fgAddFinallyTargetFlags()\n");
 
     if (compHndBBtabCount == 0)
@@ -25228,11 +25408,15 @@ void Compiler::fgAddFinallyTargetFlags()
             }
         }
     }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 }
+
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 //------------------------------------------------------------------------
 // fgMergeFinallyChains: tail merge finally invocations
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
 //
 // Notes:
 //
@@ -25241,10 +25425,8 @@ void Compiler::fgAddFinallyTargetFlags()
 //    try-finallys where there are multiple exit points in the try
 //    that have the same target.
 
-void Compiler::fgMergeFinallyChains()
+PhaseStatus Compiler::fgMergeFinallyChains()
 {
-    JITDUMP("\n*************** In fgMergeFinallyChains()\n");
-
 #if defined(FEATURE_EH_FUNCLETS)
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
@@ -25256,19 +25438,19 @@ void Compiler::fgMergeFinallyChains()
     if (compHndBBtabCount == 0)
     {
         JITDUMP("No EH in this method, nothing to merge.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.MinOpts())
     {
         JITDUMP("Method compiled with minOpts, no merging.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no merging.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     bool enableMergeFinallyChains = true;
@@ -25293,13 +25475,12 @@ void Compiler::fgMergeFinallyChains()
     if (!enableMergeFinallyChains)
     {
         JITDUMP("fgMergeFinallyChains disabled\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n*************** Before fgMergeFinallyChains()\n");
         fgDispBasicBlocks();
         fgDispHandlerTab();
         printf("\n");
@@ -25323,7 +25504,7 @@ void Compiler::fgMergeFinallyChains()
     if (!hasFinally)
     {
         JITDUMP("Method does not have any try-finallys; no merging.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // Process finallys from outside in, merging as we go. This gives
@@ -25446,6 +25627,8 @@ void Compiler::fgMergeFinallyChains()
                     "likely the non-canonical callfinallys were unreachable\n");
         }
     }
+
+    return didMerge ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -25603,6 +25786,9 @@ bool Compiler::fgUseThrowHelperBlocks()
 //------------------------------------------------------------------------
 // fgTailMergeThrows: Tail merge throw blocks and blocks with no return calls.
 //
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
 // Notes:
 //    Scans the flow graph for throw blocks and blocks with no return calls
 //    that can be merged, and opportunistically merges them.
@@ -25641,7 +25827,7 @@ bool Compiler::fgUseThrowHelperBlocks()
 //    *  CALL      void   ThrowHelper.ThrowArgumentOutOfRangeException
 //    \--*  CNS_INT   int    33
 //
-void Compiler::fgTailMergeThrows()
+PhaseStatus Compiler::fgTailMergeThrows()
 {
     noway_assert(opts.OptimizationEnabled());
 
@@ -25651,7 +25837,7 @@ void Compiler::fgTailMergeThrows()
     if (optNoReturnCallCount < 2)
     {
         JITDUMP("Method does not have multiple noreturn calls.\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // This transformation requires block pred lists to be built
@@ -25710,6 +25896,14 @@ void Compiler::fgTailMergeThrows()
     // and there is less jumbled flow to sort out later.
     for (BasicBlock* block = fgLastBB; block != nullptr; block = block->bbPrev)
     {
+        // Workaround: don't consider try entry blocks as candidates
+        // for merging; if the canonical throw is later in the same try,
+        // we'll create invalid flow.
+        if ((block->bbFlags & BBF_TRY_BEG) != 0)
+        {
+            continue;
+        }
+
         // For throw helpers the block should have exactly one statement....
         // (this isn't guaranteed, but seems likely)
         Statement* stmt = block->firstStmt();
@@ -25766,7 +25960,7 @@ void Compiler::fgTailMergeThrows()
     if (numCandidates == 0)
     {
         JITDUMP("\n*************** no throws can be tail merged, sorry\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     JITDUMP("\n*** found %d merge candidates, rewriting flow\n\n", numCandidates);
@@ -25839,6 +26033,11 @@ void Compiler::fgTailMergeThrows()
         }
     }
 
+    if (updateCount == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     // If we altered flow, reset fgModified. Given where we sit in the
     // phase list, flow-dependent side data hasn't been built yet, so
     // nothing needs invalidation.
@@ -25846,21 +26045,9 @@ void Compiler::fgTailMergeThrows()
     // Note we could invoke a cleanup pass here, but optOptimizeFlow
     // seems to be missing some safety checks and doesn't expect to
     // see an already cleaned-up flow graph.
-    if (updateCount > 0)
-    {
-        assert(fgModified);
-        fgModified = false;
-    }
-
-#if DEBUG
-    if (verbose)
-    {
-        printf("\n*************** After fgTailMergeThrows(%d updates)\n", updateCount);
-        fgDispBasicBlocks();
-        fgVerifyHandlerTab();
-        fgDebugCheckBBlist();
-    }
-#endif // DEBUG
+    assert(fgModified);
+    fgModified = false;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------

@@ -27,7 +27,7 @@ bld/
 msbuild.log
 msbuild.err
 msbuild.wrn
-msbuild.binlog
+*.binlog
 .deps/
 .dirstamp
 .libs/
@@ -211,8 +211,6 @@ browse.VC.db
 !**/.vscode/c_cpp_properties.json
 
 ### MonoDevelop ###
-
-*.pidb
 *.userprefs
 
 ### Windows ###
@@ -272,7 +270,6 @@ Temporary Items
 *.un~
 Session.vim
 .netrwhist
-*~
 
 # Visual Studio Code
 .vscode/

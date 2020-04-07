@@ -16,7 +16,6 @@ class JitInstance
 private:
     char*          PathToOriginalJit;
     char*          PathToTempJit;
-    HANDLE         ourHeap;
     HMODULE        hLib;
     PgetJit        pngetJit;
     PjitStartup    pnjitStartup;

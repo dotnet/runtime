@@ -717,7 +717,7 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
 
     // we need to load the method table for string from the global
 
-    // mov ecx, [g_pStringMethodTable]
+    // mov ecx, [g_pStringClass]
     sl.Emit16(0x0d8b);
     sl.Emit32((int)(size_t)&g_pStringClass);
 
@@ -1101,7 +1101,6 @@ void InitJITHelpers1()
 #endif
 
     // Leave the patched region writable for StompWriteBarrierEphemeral(), StompWriteBarrierResize()
-    // and CTPMethodTable::ActivatePrecodeRemotingThunk
 
     // Initialize g_TailCallFrameVptr for JIT_TailCall helper
     g_TailCallFrameVptr = (void*)TailCallFrame::GetMethodFrameVPtr();

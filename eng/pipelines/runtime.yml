@@ -119,6 +119,27 @@ jobs:
       - eng/pipelines/libraries/*
 
 #
+# Build CoreLib release
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-corelib-job.yml
+    buildConfig: release
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_musl_x64
+    - Linux_musl_arm64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    - Windows_NT_arm
+    - Windows_NT_arm64
+    jobParameters:
+      testGroup: innerloop
+
+#
 # Build CoreCLR checked
 # Only when CoreCLR is changed
 #
@@ -137,6 +158,24 @@ jobs:
     - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Build CoreCLR checked using GCC toolchain
+# Only when CoreCLR is changed
+# 
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_x64
+    jobParameters:
+      testGroup: innerloop
+      compilerName: gcc
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -184,7 +223,8 @@ jobs:
 
 #
 # Build CoreCLR Formatting Job
-# Only when CoreCLR is changed
+# Only when CoreCLR is changed, and only in the 'master' branch (no release branches;
+# both CI and PR builds).
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -194,9 +234,13 @@ jobs:
     - Windows_NT_x64
     jobParameters:
       condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        and(
+          or(
+            eq(variables['Build.SourceBranchName'], 'master'),
+            eq(variables['System.PullRequest.TargetBranch'], 'master')),
+          or(
+            eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+            eq(variables['isFullMatrix'], true)))
 
 #
 # Build Mono debug
@@ -208,6 +252,13 @@ jobs:
     runtimeFlavor: mono
     buildConfig: debug
     platforms:
+    - Android_x64
+    - Android_x86
+    - Android_arm
+    - Android_arm64
+    - iOS_x64
+    - iOS_arm
+    - iOS_arm64
     - OSX_x64
     - Linux_x64
     - Linux_arm
@@ -235,6 +286,13 @@ jobs:
     runtimeFlavor: mono
     buildConfig: release
     platforms:
+    - Android_x64
+    - Android_x86
+    - Android_arm
+    - Android_arm64
+    - iOS_x64
+    - iOS_arm
+    - iOS_arm64
     - OSX_x64
     - Linux_x64
     - Linux_arm
@@ -339,6 +397,42 @@ jobs:
     - Windows_NT_x64
     jobParameters:
       liveRuntimeBuildConfig: release
+
+#
+# Build libraries using Mono CoreLib only
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Android_x64
+    - Android_x86
+    - Android_arm
+    - Android_arm64
+    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_arm64
+    - iOS_x64
+    jobParameters:
+      liveRuntimeBuildConfig: release
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Debug
+    runtimeFlavor: mono
+    platforms:
+    - Android_x64
+    - Android_x86
+    - Android_arm
+    - Android_arm64
+    # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+    - iOS_arm64
+    - iOS_x64
+    jobParameters:
+      liveRuntimeBuildConfig: debug
+
 #
 # Libraries Build that only run when libraries is changed
 #
@@ -420,6 +514,22 @@ jobs:
       - Linux_arm64
       - Linux_musl_x64
       - Windows_NT_x64
+    jobParameters:
+      liveRuntimeBuildConfig: release
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+
+- template: /eng/pipelines/installer/installer-matrix.yml
+  parameters:
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    runtimeFlavor: mono
+    platforms:
+      - iOS_x64
+      # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
+      - iOS_arm64
+      - Android_x64
+      - Android_x86
+      - Android_arm
+      - Android_arm64
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}

@@ -1622,7 +1622,12 @@ mini_usage (void)
  		"    --debugger-agent=options Enable the debugger agent\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
+#ifdef __linux__		
 		"    --jitmap               Output a jit method map to /tmp/perf-PID.map\n"
+#endif
+#ifdef ENABLE_JIT_DUMP
+		"    --jitdump              Output a jitdump file to /tmp/jit-PID.dump\n"
+#endif
 		"    --help-devel           Shows more options available to developers\n"
 		"\n"
 		"Runtime:\n"
@@ -2168,7 +2173,7 @@ mono_main (int argc, char* argv[])
 			char *build = mono_get_runtime_build_info ();
 			char *gc_descr;
 
-			g_print ("Mono JIT compiler version %s\nCopyright (C) 2002-2014 Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com\n", build);
+			g_print ("Mono JIT compiler version %s\nCopyright (C) Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com\n", build);
 			g_free (build);
 			char *info = mono_get_version_info ();
 			g_print (info);
@@ -2342,6 +2347,10 @@ mono_main (int argc, char* argv[])
 			forced_version = &argv [i][10];
 		} else if (strcmp (argv [i], "--jitmap") == 0) {
 			mono_enable_jit_map ();
+#ifdef ENABLE_JIT_DUMP
+		} else if (strcmp (argv [i], "--jitdump") == 0) {
+			mono_enable_jit_dump ();
+#endif
 		} else if (strcmp (argv [i], "--profile") == 0) {
 			mini_add_profiler_argument (NULL);
 		} else if (strncmp (argv [i], "--profile=", 10) == 0) {
@@ -2391,7 +2400,7 @@ mono_main (int argc, char* argv[])
 				enable_debugging = FALSE;
 			}
 #endif
- 		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
+		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
 			sdb_options = g_strdup (argv [i] + 17);

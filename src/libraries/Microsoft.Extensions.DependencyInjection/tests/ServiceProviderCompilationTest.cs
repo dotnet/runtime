@@ -16,6 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [InlineData(ServiceProviderMode.Runtime, typeof(I999))]
         [InlineData(ServiceProviderMode.ILEmit, typeof(I999))]
         [InlineData(ServiceProviderMode.Expressions, typeof(I999))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
         private async Task CompilesInLimitedStackSpace(ServiceProviderMode mode, Type serviceType)
         {
             // Arrange

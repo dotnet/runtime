@@ -6,9 +6,9 @@ build_test_wrappers()
         echo "${__MsgPrefix}Creating test wrappers..."
 
         if [[ $__Mono -eq 1 ]]; then
-            export RuntimeName="mono"
+            export RuntimeFlavor="mono"
         else
-            export RuntimeName="coreclr"
+            export RuntimeFlavor="coreclr"
         fi
 
         __Exclude="${__ProjectDir}/tests/issues.targets"
@@ -32,7 +32,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:__TargetOS=$__TargetOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
+        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:TargetOS=$__TargetOS /p:Configuration=$__BuildType /p:TargetArchitecture=$__BuildArch"
         eval $nextCommand
 
         local exitCode="$?"
@@ -90,7 +90,7 @@ generate_layout()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    __BuildProperties="-p:TargetOS=${__TargetOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
+    __BuildProperties="-p:TargetOS=${__TargetOS} -p:TargetArchitecture=${__BuildArch} -p:Configuration=${__BuildType}"
 
     # =========================================================================================
     # ===
@@ -311,7 +311,7 @@ build_Tests()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    __BuildProperties="-p:TargetOS=${__TargetOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
+    __BuildProperties="-p:TargetOS=${__TargetOS} -p:TargetArchitecture=${__BuildArch} -p:Configuration=${__BuildType}"
 
     # =========================================================================================
     # ===
@@ -487,14 +487,18 @@ build_MSBuild_projects()
 }
 
 usage_list=("-buildtestwrappersonly: only build the test wrappers.")
+usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-crossgen: Precompiles the framework managed assemblies in coreroot.")
+usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
+usage_list+=("-generatetesthostonly: only generate the test host.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
-usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
 usage_list+=("-skiprestorepackages: skip package restore.")
+usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
+usage_list+=("-excludemonofailures: Mark the build as running on Mono runtime so that mono-specific issues are honored.")
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
@@ -504,6 +508,10 @@ handle_arguments_local() {
     case "$1" in
         buildtestwrappersonly|-buildtestwrappersonly)
             __BuildTestWrappersOnly=1
+            ;;
+
+        skiptestwrappers|-skiptestwrappers)
+            __BuildTestWrappers=0
             ;;
 
         copynativeonly|-copynativeonly)

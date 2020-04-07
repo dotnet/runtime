@@ -35,6 +35,8 @@ struct JitInterfaceCallbacks
     void (* methodMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoException** ppException, void* method);
     void* (* mapMethodDeclToMethodImpl)(void * thisHandle, CorInfoException** ppException, void* method);
     void (* getGSCookie)(void * thisHandle, CorInfoException** ppException, void* pCookieVal, void** ppCookieVal);
+    void (* setPatchpointInfo)(void * thisHandle, CorInfoException** ppException, void* patchpointInfo);
+    void* (* getOSRInfo)(void * thisHandle, CorInfoException** ppException, unsigned* ilOffset);
     void (* resolveToken)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
     void (* tryResolveToken)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
     void (* findSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned sigTOK, void* context, void* sig);
@@ -161,6 +163,7 @@ struct JitInterfaceCallbacks
     void (* MethodCompileComplete)(void * thisHandle, CorInfoException** ppException, void* methHnd);
     void* (* getTailCallCopyArgsThunk)(void * thisHandle, CorInfoException** ppException, void* pSig, int flags);
     bool (* convertPInvokeCalliToCall)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, bool mustConvert);
+    void (* notifyInstructionSetUsage)(void * thisHandle, CorInfoException** ppException, int instructionSet, bool supportEnabled);
     void (* allocMem)(void * thisHandle, CorInfoException** ppException, unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock);
     void (* reserveUnwindInfo)(void * thisHandle, CorInfoException** ppException, int isFunclet, int isColdCode, unsigned int unwindSize);
     void (* allocUnwindInfo)(void * thisHandle, CorInfoException** ppException, unsigned char* pHotCode, unsigned char* pColdCode, unsigned int startOffset, unsigned int endOffset, unsigned int unwindSize, unsigned char* pUnwindBlock, int funcKind);
@@ -405,6 +408,23 @@ public:
         _callbacks->getGSCookie(_thisHandle, &pException, pCookieVal, ppCookieVal);
         if (pException != nullptr)
             throw pException;
+    }
+
+    virtual void setPatchpointInfo(void* patchpointInfo)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->setPatchpointInfo(_thisHandle, &pException, patchpointInfo);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual void* getOSRInfo(unsigned* ilOffset)
+    {
+        CorInfoException* pException = nullptr;
+        void* _ret = _callbacks->getOSRInfo(_thisHandle, &pException, ilOffset);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
     }
 
     virtual void resolveToken(void* pResolvedToken)
@@ -1489,6 +1509,14 @@ public:
         if (pException != nullptr)
             throw pException;
         return _ret;
+    }
+
+    virtual void notifyInstructionSetUsage(int instructionSet, bool supportEnabled)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->notifyInstructionSetUsage(_thisHandle, &pException, instructionSet, supportEnabled);
+        if (pException != nullptr)
+            throw pException;
     }
 
     virtual void allocMem(unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock)

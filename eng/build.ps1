@@ -1,17 +1,16 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
   [switch][Alias('h')]$help,
-  [switch][Alias('b')]$build,
   [switch][Alias('t')]$test,
-  [switch]$buildtests,
-  [string][Alias('c')]$configuration = "Debug",
+  [string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
   [string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
-  [string]$arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant(),
+  [switch]$testnobuild,
+  [string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
   [string]$subsetCategory,
   [string]$subset,
   [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration,
@@ -25,8 +24,8 @@ function Get-Help() {
   Write-Host "  -subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
   Write-Host "  -vs                       Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
   Write-Host "  -os                       Build operating system: Windows_NT or Unix"
-  Write-Host "  -arch                     Build platform: x86, x64, arm or arm64"
-  Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
+  Write-Host "  -arch                     Build platform: x86, x64, arm or arm64 (short: -a). Pass a comma-separated list to build for multiple architectures."
+  Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c). Pass a comma-separated list to build for multiple configurations"
   Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
   Write-Host "  -librariesConfiguration   Libraries build configuration: Debug or Release"
   Write-Host "  -verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
@@ -37,7 +36,6 @@ function Get-Help() {
   Write-Host "Actions (defaults to -restore -build):"
   Write-Host "  -restore                Restore dependencies (short: -r)"
   Write-Host "  -build                  Build all source projects (short: -b)"
-  Write-Host "  -buildtests             Build all test projects"
   Write-Host "  -rebuild                Rebuild all source projects"
   Write-Host "  -test                   Build and run tests (short: -t)"
   Write-Host "  -pack                   Package build outputs into NuGet packages"
@@ -50,6 +48,7 @@ function Get-Help() {
   Write-Host "  -framework              Build framework: netcoreapp5.0 or net472 (short: -f)"
   Write-Host "  -coverage               Collect code coverage when testing"
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all"
+  Write-Host "  -testnobuild            Skip building tests when invoking -test"
   Write-Host "  -allconfigurations      Build packages for all build configurations"
   Write-Host ""
 
@@ -102,6 +101,12 @@ if ($vs) {
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
 
+  if ($runtimeConfiguration)
+  {
+    # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
+    $env:RUNTIMECONFIGURATION=$runtimeConfiguration
+  }
+
   # Launch Visual Studio with the locally defined environment variables
   ."$vs"
 
@@ -109,7 +114,7 @@ if ($vs) {
 }
 
 # Check if an action is passed in
-$actions = "r","restore","b","build","buildtests","rebuild","t","test","pack","sign","publish","clean"
+$actions = "b","build","r","restore","rebuild","sign","testnobuild","publish","clean"
 $actionPassedIn = @(Compare-Object -ReferenceObject @($PSBoundParameters.Keys) -DifferenceObject $actions -ExcludeDifferent -IncludeEqual).Length -ne 0
 if ($null -ne $properties -and $actionPassedIn -ne $true) {
   $actionPassedIn = @(Compare-Object -ReferenceObject $properties -DifferenceObject $actions.ForEach({ "-" + $_ }) -ExcludeDifferent -IncludeEqual).Length -ne 0
@@ -119,17 +124,16 @@ if (!$actionPassedIn) {
   $arguments = "-restore -build"
 }
 
-$possibleDirToBuild = if($properties.Length -gt 0) { $properties[0]; } else { $null }
+$solutionLeaf = if($properties.Length -gt 0) { $properties[0]; } else { $null }
 
-if ($null -ne $possibleDirToBuild -and $subsetCategory -eq "libraries") {
-  $dtb = $possibleDirToBuild.TrimEnd('\')
-  if (Test-Path $dtb) {
-    $properties[0] = "/p:DirectoryToBuild=$(Resolve-Path $dtb)"
+if ($null -ne $solutionLeaf) {
+  if (Test-Path $solutionLeaf) {
+    $properties[0] = "-projects $(Resolve-Path $solutionLeaf)"
   }
   else {
-    $dtb = Join-Path "$PSSCriptRoot\..\src\libraries" $dtb
-    if (Test-Path $dtb) {
-      $properties[0] = "/p:DirectoryToBuild=$(Resolve-Path $dtb)"
+    $dtb = Join-Path "$PSSCriptRoot\..\src\libraries" $solutionLeaf | Join-Path -ChildPath "$solutionLeaf.sln"
+    if (Test-Path $dtb) { 
+      $properties[0] = "-projects $(Resolve-Path $dtb)"
     }
   }
 }
@@ -138,21 +142,39 @@ foreach ($argument in $PSBoundParameters.Keys)
 {
   switch($argument)
   {
-    "build"                { $arguments += " -build" }
-    "buildtests"           { if ($build -eq $true) { $arguments += " /p:BuildTests=true" } else { $arguments += " -build /p:BuildTests=only" } }
-    "test"                 { $arguments += " -test" }
-    "configuration"        { $arguments += " -configuration $((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
-    "runtimeConfiguration" { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
-    "framework"            { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
-    "os"                   { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
-    "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
-    "arch"                 { $arch = $PSBoundParameters[$argument]; $arguments += " /p:ArchGroup=$arch /p:TargetArchitecture=$arch" }
-    "properties"           { $arguments += " " + $properties }
-    default                { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
+    "runtimeConfiguration"   { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
+    "librariesConfiguration" { $arguments += " /p:LibrariesConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
+    "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
+    "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
+    "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
+    "properties"             { $arguments += " " + $properties }
+    # configuration and arch can be specified multiple times, so they should be no-ops here
+    "configuration"          {}
+    "arch"                   {}
+    default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
 
-$env:__DistroRid="win-$arch"
+$failedBuilds = @()
 
-Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $arguments"
-exit $lastExitCode
+foreach ($config in $configuration) {
+  $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
+  foreach ($singleArch in $arch) {
+    $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
+    $env:__DistroRid="win-$singleArch"
+    Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
+    if ($lastExitCode -ne 0) {
+        $failedBuilds += "Configuration: $config, Architecture: $singleArch"
+    }
+  }
+}
+
+if ($failedBuilds.Count -ne 0) {
+    Write-Host "Some builds failed:"
+    foreach ($failedBuild in $failedBuilds) {
+        Write-Host "`t$failedBuild"
+    }
+    exit 1
+}
+
+exit 0

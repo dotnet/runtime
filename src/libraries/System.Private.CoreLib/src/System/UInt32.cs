@@ -78,12 +78,12 @@ namespace System
         // The base 10 representation of the number with no extra padding.
         public override string ToString()
         {
-            return Number.UInt32ToDecStr(m_value, -1);
+            return Number.UInt32ToDecStr(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatUInt32(m_value, null, provider);
+            return Number.UInt32ToDecStr(m_value);
         }
 
         public string ToString(string? format)

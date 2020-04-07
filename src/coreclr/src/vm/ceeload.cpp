@@ -568,6 +568,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_FixupCrst.Init(CrstModuleFixup, (CrstFlags)(CRST_HOST_BREAKABLE|CRST_REENTRANCY));
     m_InstMethodHashTableCrst.Init(CrstInstMethodHashTable, CRST_REENTRANCY);
     m_ISymUnmanagedReaderCrst.Init(CrstISymUnmanagedReader, CRST_DEBUGGER_THREAD);
+    m_DictionaryCrst.Init(CrstDomainLocalBlock);
 
     if (!m_file->HasNativeImage())
     {
@@ -700,7 +701,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 #endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%ws\".\n", GetDebugName()));
-
 }
 
 #endif // DACCESS_COMPILE
@@ -10513,10 +10513,20 @@ void Module::RunEagerFixupsUnlocked()
                 SIZE_T fixupIndex = fixupCell - (SIZE_T *)tableBase;
                 if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell))
                 {
-                    _ASSERTE(!"LoadDynamicInfoEntry failed");
-                    ThrowHR(COR_E_BADIMAGEFORMAT);
+                    if (IsReadyToRun())
+                    {
+                        GetReadyToRunInfo()->DisableAllR2RCode();
+                    }
+                    else
+                    {
+                        _ASSERTE(!"LoadDynamicInfoEntry failed");
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                    }
                 }
-                _ASSERTE(*fixupCell != NULL);
+                else
+                {
+                    _ASSERTE(*fixupCell != NULL);
+                }
             }
         }
         else
@@ -10532,8 +10542,15 @@ void Module::RunEagerFixupsUnlocked()
                 {
                     if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell))
                     {
-                        _ASSERTE(!"LoadDynamicInfoEntry failed");
-                        ThrowHR(COR_E_BADIMAGEFORMAT);
+                        if (IsReadyToRun())
+                        {
+                            GetReadyToRunInfo()->DisableAllR2RCode();
+                        }
+                        else
+                        {
+                            _ASSERTE(!"LoadDynamicInfoEntry failed");
+                            ThrowHR(COR_E_BADIMAGEFORMAT);
+                        }
                     }
                     _ASSERTE(!CORCOMPILE_IS_FIXUP_TAGGED(*fixupCell, pSection));
                 }

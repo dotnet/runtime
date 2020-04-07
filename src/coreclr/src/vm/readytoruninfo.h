@@ -66,6 +66,8 @@ class ReadyToRunInfo
     PTR_CORCOMPILE_IMPORT_SECTION   m_pImportSections;
     DWORD                           m_nImportSections;
 
+    bool                            m_readyToRunCodeDisabled;
+
     NativeFormat::NativeReader      m_nativeReader;
     NativeFormat::NativeArray       m_methodDefEntryPoints;
     NativeFormat::NativeHashtable   m_instMethodEntryPoints;
@@ -87,6 +89,8 @@ public:
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);
 
     bool IsComponentAssembly() const { return m_isComponentAssembly; }
+
+    PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
 
     PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }
 
@@ -110,6 +114,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
+    }
+
+    void DisableAllR2RCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_readyToRunCodeDisabled = TRUE;
     }
 
     BOOL HasNonShareablePInvokeStubs()

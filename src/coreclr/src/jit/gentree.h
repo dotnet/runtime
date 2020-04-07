@@ -1840,6 +1840,10 @@ public:
     // yields an address into a local
     GenTreeLclVarCommon* IsLocalAddrExpr();
 
+    // Determine if this tree represents the value of an entire implict byref parameter,
+    // and if so return the tree for the parameter.
+    GenTreeLclVar* IsImplicitByrefParameterValue(Compiler* compiler);
+
     // Determine if this is a LclVarCommon node and return some additional info about it in the
     // two out parameters.
     bool IsLocalExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, FieldSeqNode** pFldSeq);

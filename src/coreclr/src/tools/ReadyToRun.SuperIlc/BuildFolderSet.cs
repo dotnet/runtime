@@ -16,33 +16,6 @@ namespace ReadyToRun.SuperIlc
 {
     public class BuildFolderSet
     {
-        class FrameworkExclusion
-        {
-            public readonly string SimpleName;
-            public readonly string Reason;
-            public readonly bool Crossgen2Only;
-
-            public FrameworkExclusion(string simpleName, string reason, bool crossgen2Only = false)
-            {
-                SimpleName = simpleName;
-                Reason = reason;
-                Crossgen2Only = crossgen2Only;
-            }
-        }
-
-        private static readonly FrameworkExclusion[] s_frameworkExclusions =
-        {
-            new FrameworkExclusion("CommandLine", "Not a framework assembly"),
-            new FrameworkExclusion("R2RDump", "Not a framework assembly"),
-            new FrameworkExclusion("System.Runtime.WindowsRuntime", "WinRT is currently not supported"),
-            new FrameworkExclusion("xunit.performance.api", "Not a framework assembly"),
-
-            // TODO (DavidWr): IBC-related failures
-            new FrameworkExclusion("Microsoft.CodeAnalysis.CSharp", "Ibc TypeToken 6200019a has type token which resolves to a nil token", crossgen2Only: true),
-            new FrameworkExclusion("Microsoft.CodeAnalysis", "Ibc TypeToken 620001af unable to find external typedef", crossgen2Only: true),
-            new FrameworkExclusion("Microsoft.CodeAnalysis.VisualBasic", "Ibc TypeToken 620002ce unable to find external typedef", crossgen2Only: true),
-        };
-
         private readonly IEnumerable<BuildFolder> _buildFolders;
 
         private readonly IEnumerable<CompilerRunner> _compilerRunners;
@@ -274,10 +247,9 @@ namespace ReadyToRun.SuperIlc
                     foreach (string frameworkDll in ComputeManagedAssemblies.GetManagedAssembliesInFolder(_options.CoreRootDirectory.FullName))
                     {
                         string simpleName = Path.GetFileNameWithoutExtension(frameworkDll);
-                        FrameworkExclusion exclusion = s_frameworkExclusions.FirstOrDefault(asm => asm.SimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase));
-                        if (exclusion != null && (!exclusion.Crossgen2Only || runner.Index == CompilerIndex.CPAOT))
+                        if (FrameworkExclusion.Exclude(simpleName, runner.Index, out string reason))
                         {
-                            _frameworkExclusions[exclusion.SimpleName] = exclusion.Reason;
+                            _frameworkExclusions[simpleName] = reason;
                         }
                         else
                         {
@@ -288,7 +260,7 @@ namespace ReadyToRun.SuperIlc
 
                     if (inputFrameworkDlls.Count > 0)
                     {
-                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, "framework");
+                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, "framework-r2r.dll");
                         ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFileName, inputFrameworkDlls));
                         compilationsToRun.Add(compilationProcess);
                         processes[(int)runner.Index] = compilationProcess;
@@ -300,18 +272,21 @@ namespace ReadyToRun.SuperIlc
                 foreach (string frameworkDll in ComputeManagedAssemblies.GetManagedAssembliesInFolder(_options.CoreRootDirectory.FullName))
                 {
                     string simpleName = Path.GetFileNameWithoutExtension(frameworkDll);
-                    FrameworkExclusion exclusion = s_frameworkExclusions.FirstOrDefault(asm => asm.SimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase));
 
                     ProcessInfo[] processes = new ProcessInfo[(int)CompilerIndex.Count];
                     compilationsPerRunner.Add(new KeyValuePair<string, ProcessInfo[]>(frameworkDll, processes));
                     foreach (CompilerRunner runner in frameworkRunners)
                     {
-                        if (exclusion != null && (!exclusion.Crossgen2Only || runner.Index == CompilerIndex.CPAOT))
+                        if (FrameworkExclusion.Exclude(simpleName, runner.Index, out string reason))
                         {
-                            _frameworkExclusions[exclusion.SimpleName] = exclusion.Reason;
+                            _frameworkExclusions[simpleName] = reason;
                             continue;
                         }
-                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _options.CoreRootDirectory.FullName, new string[] { frameworkDll }));
+                        var compilationProcess = new ProcessInfo(
+                            new CompilationProcessConstructor(
+                                runner,
+                                Path.Combine(runner.GetOutputPath(_options.CoreRootDirectory.FullName), Path.GetFileName(frameworkDll)),
+                                new string[] { frameworkDll }));
                         compilationsToRun.Add(compilationProcess);
                         processes[(int)runner.Index] = compilationProcess;
                     }

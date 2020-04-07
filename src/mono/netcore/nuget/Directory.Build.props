@@ -23,7 +23,7 @@
 
     <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
 
-    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Android;Linux;FreeBSD</SupportedPackageOSGroups>
+    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;iOS;Android;Linux;FreeBSD</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
 
     <!-- Identify OS family based upon the RuntimeOS, which could be distro specific (e.g. osx.10.12) or
@@ -39,6 +39,7 @@
   <!-- derive an OS Group based on the OS Family -->
   <PropertyGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'osx'">OSX</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'ios'">iOS</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'android'">Android</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'win'">Windows_NT</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(TargetOS)' != ''">$(TargetOS)</_derivedPackageTargetOSGroup>
@@ -50,9 +51,7 @@
   <!-- _packageTargetOSGroup is used to control the runtime package imports, don't import runtime package targets for
        an unsupported OS Group -->
   <PropertyGroup Condition="'$(PackageTargetRuntime)' != '' and '$(_isSupportedOSGroup)' == 'true'">
-    <!-- Android will use Linux package definitions -->
     <_packageTargetOSGroup>$(_derivedPackageTargetOSGroup)</_packageTargetOSGroup>
-    <_packageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == 'Android'">Linux</_packageTargetOSGroup>
   </PropertyGroup>
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
@@ -75,42 +74,47 @@
     <When Condition="'$(_runtimeOSFamily)' == 'win'">
       <PropertyGroup>
         <!-- Note: Windows builds are always portable (-PortableBuild=false is ignored) -->
-        <PackageRID>win-$(ArchGroup)</PackageRID>
+        <PackageRID>win-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'osx'">
       <PropertyGroup>
-        <PackageRID>osx.10.12-$(ArchGroup)</PackageRID>
+        <PackageRID>osx.10.12-$(TargetArchitecture)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
-        <PackageRID Condition="'$(PortableBuild)' == 'true'">osx-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">osx-$(TargetArchitecture)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'ios'">
+      <PropertyGroup>
+        <PackageRID>ios.$(iOSVersionMin.TrimEnd('.0'))-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'freebsd'">
       <PropertyGroup>
-        <PackageRID>freebsd.11-$(ArchGroup)</PackageRID>
+        <PackageRID>freebsd.11-$(TargetArchitecture)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
-        <PackageRID Condition="'$(PortableBuild)' == 'true'">freebsd-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">freebsd-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'android'">
       <PropertyGroup>
-        <PackageRID>android.21-$(ArchGroup)</PackageRID>
+        <PackageRID>android.21-$(TargetArchitecture)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
-        <PackageRID Condition="'$(PortableBuild)' == '1'">android-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == '1'">android-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'rhel'">
       <PropertyGroup>
-        <PackageRID>$(OSRid)-$(ArchGroup)</PackageRID>
+        <PackageRID>$(OSRid)-$(TargetArchitecture)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
-        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </When>
     <Otherwise>
       <PropertyGroup>
-        <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
+        <PackageRID>$(RuntimeOS)-$(TargetArchitecture)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
-        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(TargetArchitecture)</PackageRID>
       </PropertyGroup>
     </Otherwise>
   </Choose>
@@ -140,6 +144,27 @@
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';OSX;'))">
     <OfficialBuildRID Include="osx-x64" />
   </ItemGroup>
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';iOS;'))">
+    <OfficialBuildRID Include="ios-x64" />
+    <OfficialBuildRID Include="ios-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="ios-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
+  </ItemGroup>
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Android;'))">
+    <OfficialBuildRID Include="android-x64" />
+    <OfficialBuildRID Include="android-x86">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="android-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="android-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
+  </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';FreeBSD;'))">
     <OfficialBuildRID Include="freebsd-x64" />
   </ItemGroup>
@@ -161,8 +186,8 @@
     <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
     <BuildRID Include="$(PackageRID)"
               Condition="'$(_isSupportedOSGroup)' == 'true'">
-      <Platform Condition="'$(ArchGroup)' == 'x64'">x64</Platform>
-      <Platform Condition="'$(ArchGroup)' != 'x64'">$(ArchGroup)</Platform>
+      <Platform Condition="'$(TargetArchitecture)' == 'x64'">x64</Platform>
+      <Platform Condition="'$(TargetArchitecture)' != 'x64'">$(TargetArchitecture)</Platform>
     </BuildRID>
   </ItemGroup>
 

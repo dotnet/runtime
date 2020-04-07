@@ -1818,6 +1818,17 @@ namespace System.Net.Sockets
             }
         }
 
+        /// <summary>Sets a socket option value using platform-specific level and name identifiers.</summary>
+        /// <param name="optionLevel">The platform-defined option level.</param>
+        /// <param name="optionName">The platform-defined option name.</param>
+        /// <param name="optionValue">The value to which the option should be set.</param>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <remarks>
+        /// In general, the SetSocketOption method should be used whenever setting a <see cref="Socket"/> option.
+        /// The <see cref="SetRawSocketOption"/> should be used only when <see cref="SocketOptionLevel"/> and <see cref="SocketOptionName"/>
+        /// do not expose the required option.
+        /// </remarks>
         public void SetRawSocketOption(int optionLevel, int optionName, ReadOnlySpan<byte> optionValue)
         {
             ThrowIfDisposed();
@@ -1926,6 +1937,18 @@ namespace System.Net.Sockets
             return optionValue;
         }
 
+        /// <summary>Gets a socket option value using platform-specific level and name identifiers.</summary>
+        /// <param name="optionLevel">The platform-defined option level.</param>
+        /// <param name="optionName">The platform-defined option name.</param>
+        /// <param name="optionValue">The span into which the retrieved option value should be stored.</param>
+        /// <returns>The number of bytes written into <paramref name="optionValue"/> for a successfully retrieved value.</returns>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <remarks>
+        /// In general, the GetSocketOption method should be used whenever getting a <see cref="Socket"/> option.
+        /// The <see cref="GetRawSocketOption"/> should be used only when <see cref="SocketOptionLevel"/> and <see cref="SocketOptionName"/>
+        /// do not expose the required option.
+        /// </remarks>
         public int GetRawSocketOption(int optionLevel, int optionName, Span<byte> optionValue)
         {
             ThrowIfDisposed();
@@ -2067,11 +2090,17 @@ namespace System.Net.Sockets
 
         private bool CanUseConnectEx(EndPoint remoteEP)
         {
+            Debug.Assert(remoteEP.GetType() != typeof(DnsEndPoint));
+
+            // ConnectEx supports connection-oriented sockets.
+            // The socket must be bound before calling ConnectEx.
+            //     In case of IPEndPoint, the Socket will be bound using WildcardBindForConnectIfNecessary.
+            // Unix sockets are not supported by ConnectEx.
+
             return (_socketType == SocketType.Stream) &&
-                (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint));
+                   (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint)) &&
+                   (remoteEP.AddressFamily != AddressFamily.Unix);
         }
-
-
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state, bool flowContext = false)
         {
@@ -3794,7 +3823,15 @@ namespace System.Net.Sockets
                 SocketError socketError = SocketError.Success;
                 try
                 {
-                    socketError = e.DoOperationConnect(this, _handle);
+                    if (CanUseConnectEx(endPointSnapshot))
+                    {
+                        socketError = e.DoOperationConnectEx(this, _handle);
+                    }
+                    else
+                    {
+                        // For connectionless protocols, Connect is not an I/O call.
+                        socketError = e.DoOperationConnect(this, _handle);
+                    }
                 }
                 catch
                 {

@@ -74,7 +74,7 @@ namespace System
 
         public string ToString(IFormatProvider? provider)
         {
-            return ToString(null, provider);
+            return Number.FormatInt32(m_value, 0, null, provider);
         }
 
         public string ToString(string? format)

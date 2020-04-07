@@ -204,6 +204,12 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 }
 
 MonoArray*
+mono_gc_alloc_pinned_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
+{
+	return mono_gc_alloc_vector (vtable, size, max_length);
+}
+
+MonoArray*
 mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 {
 	MonoArray *obj = g_calloc (1, size);

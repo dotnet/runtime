@@ -690,6 +690,7 @@ TESTS_CS_SRC=		\
 	monitor.cs	\
 	generic-xdomain.2.cs	\
 	threadpool-exceptions7.cs	\
+	threadpool-exceptions8.cs \
 	cross-domain.cs	\
 	generic-unloading.2.cs	\
 	namedmutex-destroy-race.cs	\
@@ -726,6 +727,7 @@ TESTS_CS_SRC=		\
 	async-generic-enum.cs \
 	null-blob-main.cs \
 	last-error.cs \
+	rgctx-thread-static.cs \
 	bug-gh-17285.cs
 
 # some tests fail to compile on mcs
@@ -1394,6 +1396,7 @@ PROFILE_DISABLED_TESTS += \
 	monitor.exe	\
 	generic-xdomain.2.exe	\
 	threadpool-exceptions7.exe	\
+	threadpool-exceptions8.exe	\
 	cross-domain.exe	\
 	generic-unloading.2.exe	\
 	appdomain-threadpool-unload.exe
@@ -1607,6 +1610,7 @@ PROFILE_DISABLED_TESTS += \
 	suspend-stress-test.exe \
 	thread6.exe \
 	threadpool-exceptions7.exe \
+	threadpool-exceptions8.exe	\
 	unhandled-exception-7.exe \
 	unhandled-exception-test-case.2.exe \
 	unload-appdomain-on-shutdown.exe \

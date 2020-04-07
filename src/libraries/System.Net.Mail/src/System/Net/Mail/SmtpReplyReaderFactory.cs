@@ -27,8 +27,8 @@ namespace System.Net.Mail
         }
 
         private readonly BufferedReadStream _bufferedStream;
-        private byte[] _byteBuffer;
-        private SmtpReplyReader _currentReader;
+        private byte[]? _byteBuffer;
+        private SmtpReplyReader? _currentReader;
         private const int DefaultBufferSize = 256;
         private ReadState _readState = ReadState.Status0;
         private SmtpStatusCode _statusCode;
@@ -38,7 +38,7 @@ namespace System.Net.Mail
             _bufferedStream = new BufferedReadStream(stream);
         }
 
-        internal SmtpReplyReader CurrentReader
+        internal SmtpReplyReader? CurrentReader
         {
             get
             {
@@ -54,14 +54,14 @@ namespace System.Net.Mail
             }
         }
 
-        internal IAsyncResult BeginReadLines(SmtpReplyReader caller, AsyncCallback callback, object state)
+        internal IAsyncResult BeginReadLines(SmtpReplyReader caller, AsyncCallback? callback, object? state)
         {
             ReadLinesAsyncResult result = new ReadLinesAsyncResult(this, callback, state);
             result.Read(caller);
             return result;
         }
 
-        internal IAsyncResult BeginReadLine(SmtpReplyReader caller, AsyncCallback callback, object state)
+        internal IAsyncResult BeginReadLine(SmtpReplyReader caller, AsyncCallback? callback, object? state)
         {
             ReadLinesAsyncResult result = new ReadLinesAsyncResult(this, callback, state, true);
             result.Read(caller);
@@ -370,20 +370,20 @@ namespace System.Net.Mail
 
         private class ReadLinesAsyncResult : LazyAsyncResult
         {
-            private StringBuilder _builder;
-            private ArrayList _lines;
+            private StringBuilder? _builder;
+            private ArrayList? _lines;
             private readonly SmtpReplyReaderFactory _parent;
             private static readonly AsyncCallback s_readCallback = new AsyncCallback(ReadCallback);
             private int _read;
             private int _statusRead;
             private readonly bool _oneLine;
 
-            internal ReadLinesAsyncResult(SmtpReplyReaderFactory parent, AsyncCallback callback, object state) : base(null, state, callback)
+            internal ReadLinesAsyncResult(SmtpReplyReaderFactory parent, AsyncCallback? callback, object? state) : base(null, state, callback)
             {
                 _parent = parent;
             }
 
-            internal ReadLinesAsyncResult(SmtpReplyReaderFactory parent, AsyncCallback callback, object state, bool oneLine) : base(null, state, callback)
+            internal ReadLinesAsyncResult(SmtpReplyReaderFactory parent, AsyncCallback? callback, object? state, bool oneLine) : base(null, state, callback)
             {
                 _oneLine = oneLine;
                 _parent = parent;
@@ -416,14 +416,14 @@ namespace System.Net.Mail
             {
                 ReadLinesAsyncResult thisPtr = (ReadLinesAsyncResult)result;
                 thisPtr.InternalWaitForCompletion();
-                return (LineInfo[])thisPtr._lines.ToArray(typeof(LineInfo));
+                return (LineInfo[])thisPtr._lines!.ToArray(typeof(LineInfo));
             }
 
             private void Read()
             {
                 do
                 {
-                    IAsyncResult result = _parent._bufferedStream.BeginRead(_parent._byteBuffer, 0, _parent._byteBuffer.Length, s_readCallback, this);
+                    IAsyncResult result = _parent._bufferedStream.BeginRead(_parent._byteBuffer!, 0, _parent._byteBuffer!.Length, s_readCallback, this);
                     if (!result.CompletedSynchronously)
                     {
                         return;
@@ -436,8 +436,8 @@ namespace System.Net.Mail
             {
                 if (!result.CompletedSynchronously)
                 {
-                    Exception exception = null;
-                    ReadLinesAsyncResult thisPtr = (ReadLinesAsyncResult)result.AsyncState;
+                    Exception? exception = null;
+                    ReadLinesAsyncResult thisPtr = (ReadLinesAsyncResult)result.AsyncState!;
                     try
                     {
                         thisPtr._read = thisPtr._parent._bufferedStream.EndRead(result);
@@ -467,7 +467,7 @@ namespace System.Net.Mail
 
                 for (int start = 0; start != _read;)
                 {
-                    int actual = _parent.ProcessRead(_parent._byteBuffer, start, _read - start, true);
+                    int actual = _parent.ProcessRead(_parent._byteBuffer!, start, _read - start, true);
 
                     if (_statusRead < 4)
                     {
@@ -481,26 +481,26 @@ namespace System.Net.Mail
                         }
                     }
 
-                    _builder.Append(Encoding.UTF8.GetString(_parent._byteBuffer, start, actual));
+                    _builder!.Append(Encoding.UTF8.GetString(_parent._byteBuffer!, start, actual));
                     start += actual;
 
                     if (_parent._readState == ReadState.Status0)
                     {
-                        _lines.Add(new LineInfo(_parent._statusCode, _builder.ToString(0, _builder.Length - 2))); // return everything except CRLF
+                        _lines!.Add(new LineInfo(_parent._statusCode, _builder.ToString(0, _builder.Length - 2))); // return everything except CRLF
                         _builder = new StringBuilder();
                         _statusRead = 0;
 
                         if (_oneLine)
                         {
-                            _parent._bufferedStream.Push(_parent._byteBuffer, start, _read - start);
+                            _parent._bufferedStream.Push(_parent._byteBuffer!, start, _read - start);
                             InvokeCallback();
                             return false;
                         }
                     }
                     else if (_parent._readState == ReadState.Done)
                     {
-                        _lines.Add(new LineInfo(_parent._statusCode, _builder.ToString(0, _builder.Length - 2))); // return everything except CRLF
-                        _parent._bufferedStream.Push(_parent._byteBuffer, start, _read - start);
+                        _lines!.Add(new LineInfo(_parent._statusCode, _builder.ToString(0, _builder.Length - 2))); // return everything except CRLF
+                        _parent._bufferedStream.Push(_parent._byteBuffer!, start, _read - start);
                         InvokeCallback();
                         return false;
                     }

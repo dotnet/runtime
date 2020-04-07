@@ -16,7 +16,6 @@
 #include "cor.h"
 #include "util.hpp"
 #include "clsload.hpp"
-#include "codeman.h"
 #include "class.h"
 #include "siginfo.hpp"
 #include "methodimpl.h"
@@ -24,7 +23,6 @@
 #include <stddef.h>
 #include "eeconfig.h"
 #include "precode.h"
-#include "codeversion.h"
 
 #ifndef FEATURE_PREJIT
 #include "fixuppointer.h"
@@ -1788,7 +1786,7 @@ public:
     //
     PCODE DoBackpatch(MethodTable * pMT, MethodTable * pDispatchingMT, BOOL fFullBackPatch);
 
-    PCODE DoPrestub(MethodTable *pDispatchingMT);
+    PCODE DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode = CallerGCMode::Unknown);
 
     VOID GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
     VOID GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
@@ -2000,7 +1998,7 @@ public:
 
 #ifndef DACCESS_COMPILE
 public:
-    PCODE PrepareInitialCode();
+    PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
 
 private:
@@ -2040,10 +2038,15 @@ public:
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    virtual unsigned GetILOffset() const { return 0; }
+#endif
     BOOL ProfilerRejectedPrecompiledCode();
     BOOL ReadyToRunRejectedPrecompiledCode();
     void SetProfilerRejectedPrecompiledCode();
     void SetReadyToRunRejectedPrecompiledCode();
+    CallerGCMode GetCallerGCMode();
+    void SetCallerGCMode(CallerGCMode mode);
 
 #ifdef FEATURE_CODE_VERSIONING
 public:
@@ -2100,6 +2103,7 @@ public:
         Optimized,
         QuickJitted,
         OptimizedTier1,
+        OptimizedTier1OSR,
 
         Count
     };
@@ -2165,6 +2169,7 @@ protected:
     BOOL m_mayUsePrecompiledCode;
     BOOL m_ProfilerRejectedPrecompiledCode;
     BOOL m_ReadyToRunRejectedPrecompiledCode;
+    CallerGCMode m_callerGCMode;
 
 #ifdef FEATURE_CODE_VERSIONING
 private:
@@ -2613,6 +2618,7 @@ protected:
         nomdMulticastStub         = 0x1000,
         nomdUnboxingILStub        = 0x2000,
         nomdWrapperDelegateStub   = 0x4000,
+        nomdNativeCallableStub    = 0x8000,
 
         nomdILStub          = 0x00010000,
         nomdLCGMethod       = 0x00020000,
@@ -2705,6 +2711,7 @@ public:
     }
 
     bool IsReverseStub()     { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdReverseStub));  }
+    bool IsNativeCallableStub() { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdNativeCallableStub)); }
     bool IsCALLIStub()       { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdCALLIStub));    }
     bool IsDelegateStub()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateStub)); }
     bool IsCLRToCOMStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsDelegateStub() && !IsStructMarshalStub()); }
@@ -3140,9 +3147,10 @@ public:
     //
     LPVOID FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const;
 
+#ifdef TARGET_WINDOWS
 private:
     FARPROC FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName) const;
-
+#endif
 public:
 
     void SetStackArgumentSize(WORD cbDstBuffer, CorPinvokeMap unmgdCallConv)
@@ -3464,6 +3472,9 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+        // No lock needed here. In the case of a generic dictionary expansion, the values of the old dictionary
+        // slots are copied to the newly allocated dictionary, and the old dictionary is kept around. Whether we
+        // return the old or new dictionary here, the values of the instantiation arguments will always be the same.
         return Instantiation(IMD_GetMethodDictionary()->GetInstantiation(), m_wNumGenericArgs);
     }
 
@@ -3569,11 +3580,24 @@ public:
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
             return pIMD->m_pDictLayout.GetValueMaybeNull();
         }
-        else
-        if (IMD_IsSharedByGenericMethodInstantiations())
+        else if (IMD_IsSharedByGenericMethodInstantiations())
             return m_pDictLayout.GetValueMaybeNull();
         else
             return NULL;
+    }
+
+    void IMD_SetDictionaryLayout(DictionaryLayout* pNewLayout)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
+        {
+            InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
+            pIMD->m_pDictLayout.SetValueMaybeNull(pNewLayout);
+        }
+        else if (IMD_IsSharedByGenericMethodInstantiations())
+        {
+            m_pDictLayout.SetValueMaybeNull(pNewLayout);
+        }
     }
 #endif // !DACCESS_COMPILE
 

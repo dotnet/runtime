@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class GetIDispatchForObjectTests
     {
-        public static IEnumerable<object[]> GetIUnknownForObject_ComObject_TestData()
+        public static IEnumerable<object[]> GetIDispatchForObject_ComObject_TestData()
         {
             yield return new object[] { new ComImportObject() };
 
@@ -26,6 +26,21 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new NonDualComObjectEmpty() };
             yield return new object[] { new AutoDispatchComObjectEmpty() };
             yield return new object[] { new AutoDualComObjectEmpty() };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [MemberData(nameof(GetIDispatchForObject_ComObject_TestData))]
+        public void GetIDispatchForObject_DispatchObject_Success(object obj)
+        {
+            IntPtr ptr = Marshal.GetIDispatchForObject(obj);
+            try
+            {
+                Assert.NotEqual(IntPtr.Zero, ptr);
+            }
+            finally
+            {
+                Marshal.Release(ptr);
+            }
         }
     }
 }

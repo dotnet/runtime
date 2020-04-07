@@ -1186,26 +1186,42 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->type = (opcode == OP_ATOMIC_ADD_I4) ? STACK_I4 : STACK_I8;
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
-		} else if (strcmp (cmethod->name, "Add") == 0 && fsig->param_count == 2) {
+		} else if (fsig->param_count == 2 &&
+					((strcmp (cmethod->name, "Add") == 0) ||
+					 (strcmp (cmethod->name, "And") == 0) ||
+					 (strcmp (cmethod->name, "Or") == 0))) {
 			guint32 opcode = 0;
+			guint32 opcode_i4 = 0;
+			guint32 opcode_i8 = 0;
+
+			if (strcmp (cmethod->name, "Add") == 0) {
+				opcode_i4 = OP_ATOMIC_ADD_I4;
+				opcode_i8 = OP_ATOMIC_ADD_I8;
+			} else if (strcmp (cmethod->name, "And") == 0) {
+				opcode_i4 = OP_ATOMIC_AND_I4;
+				opcode_i8 = OP_ATOMIC_AND_I8;
+			} else if (strcmp (cmethod->name, "Or") == 0) {
+				opcode_i4 = OP_ATOMIC_OR_I4;
+				opcode_i8 = OP_ATOMIC_OR_I8;
+			} else {
+				g_assert_not_reached ();
+			}
 
 			if (fsig->params [0]->type == MONO_TYPE_I4) {
-				opcode = OP_ATOMIC_ADD_I4;
+				opcode = opcode_i4;
 				cfg->has_atomic_add_i4 = TRUE;
+			} else if (fsig->params [0]->type == MONO_TYPE_I8 && SIZEOF_REGISTER == 8) {
+				opcode = opcode_i8;
 			}
-#if SIZEOF_REGISTER == 8
-			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_I8;
-#endif
-			if (opcode) {
-				if (!mono_arch_opcode_supported (opcode))
-					return NULL;
+
+			// For now, only Add is supported in non-LLVM back-ends
+			if (opcode && (COMPILE_LLVM (cfg) || mono_arch_opcode_supported (opcode))) {
 				MONO_INST_NEW (cfg, ins, opcode);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->inst_basereg = args [0]->dreg;
 				ins->inst_offset = 0;
 				ins->sreg2 = args [1]->dreg;
-				ins->type = (opcode == OP_ATOMIC_ADD_I4) ? STACK_I4 : STACK_I8;
+				ins->type = (opcode == opcode_i4) ? STACK_I4 : STACK_I8;
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 		}
@@ -1911,10 +1927,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 
 #ifdef ENABLE_NETCORE
-	// Return false for IsSupported for all types in System.Runtime.Intrinsics.X86 
-	// as we don't support them now
+	// Return false for IsSupported for all types in System.Runtime.Intrinsics.* 
+	// if it's not handled in mono_emit_simd_intrinsics
 	if (in_corlib && 
-		!strcmp ("System.Runtime.Intrinsics.X86", cmethod_klass_name_space) && 
+		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25) && 
 		!strcmp (cmethod->name, "get_IsSupported")) {
 		EMIT_NEW_ICONST (cfg, ins, 0);
 		ins->type = STACK_I4;

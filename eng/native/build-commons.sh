@@ -168,8 +168,9 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armel, -arm64, -armel, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armel, -arm64, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
+    echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
     echo "-ci: indicates if this is a CI build."
     echo "-clang: optional argument to build using clang in PATH (default)."
@@ -186,7 +187,6 @@ usage()
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-skipgenerateversion: disable version generation even if MSBuild is supported."
-    echo "-stripsymbols: skip native image generation."
     echo "-verbose: optional argument to enable verbose build output."
     echo ""
     echo "Additional Options:"
@@ -204,6 +204,7 @@ __BuildArch=$arch
 __HostArch=$arch
 __TargetOS=$os
 __HostOS=$os
+__BuildOS=$os
 
 __msbuildonunsupportedplatform=0
 
@@ -335,10 +336,6 @@ while :; do
             __SkipGenerateVersion=1
             ;;
 
-        stripsymbols|-stripsymbols)
-            __CMakeArgs="-DSTRIP_SYMBOLS=true $__CMakeArgs"
-            ;;
-
         verbose|-verbose)
             __VerboseBuild=1
             ;;
@@ -353,6 +350,16 @@ while :; do
 
         wasm|-wasm)
             __BuildArch=wasm
+            ;;
+
+        os|-os)
+            if [[ -n "$2" ]]; then
+                __TargetOS="$2"
+                shift
+            else
+                echo "ERROR: 'os' requires a non-empty option argument"
+                exit 1
+            fi
             ;;
 
         *)
@@ -381,7 +388,7 @@ else
   __NumProc=$(nproc --all)
 fi
 
-__CommonMSBuildArgs="/p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
+__CommonMSBuildArgs="/p:TargetArchitecture=$__BuildArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 
 # Configure environment if we are doing a verbose build
 if [[ "$__VerboseBuild" == 1 ]]; then

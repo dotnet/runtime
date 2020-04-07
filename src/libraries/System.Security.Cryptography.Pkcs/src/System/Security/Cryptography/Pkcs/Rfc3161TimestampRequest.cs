@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Pkcs
                 return coll;
             }
 
-            X509ExtensionAsn[] rawExtensions = _parsedData.Extensions;
+            X509ExtensionAsn[] rawExtensions = _parsedData.Extensions!;
 
             foreach (X509ExtensionAsn rawExtension in rawExtensions)
             {

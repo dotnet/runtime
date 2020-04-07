@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs">
+      <Link>Microsoft.Extensions.Configuration\tests\ConfigurationProviderTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs">
+      <Link>Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs">
+      <Link>Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ReplaceCulture.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\ReplaceCulture.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\FrameworkSkipConditionAttribute.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\FrameworkSkipConditionAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\RuntimeFrameworks.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\RuntimeFrameworks.cs</Link>
+    </Compile>
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TestPlatformHelper.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TestPlatformHelper.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ReferenceFromRuntime Include="Microsoft.Extensions.Configuration.Xml" />
+  </ItemGroup>
+
+</Project>

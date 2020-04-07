@@ -23,6 +23,7 @@ class FuncPtrStubs;
 #include "callcounting.h"
 #include "methoddescbackpatchinfo.h"
 #include "crossloaderallocatorhash.h"
+#include "onstackreplacement.h"
 
 #define VPTRU_LoaderAllocator 0x3200
 
@@ -151,6 +152,8 @@ protected:
     // Heaps for allocating data that persists for the life of the AppDomain
     // Objects that are allocated frequently should be allocated into the HighFreq heap for
     // better page management
+
+    DAC_ALIGNAS(UINT64) // Align the first member to alignof(m_nLoaderAllocator). Windows does this by default, force Linux to match.
     BYTE *              m_InitialReservedMemForLoaderHeaps;
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
@@ -279,6 +282,10 @@ private:
 
 #ifndef CROSSGEN_COMPILE
     MethodDescBackpatchInfoTracker m_methodDescBackpatchInfoTracker;
+#endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    PTR_OnStackReplacementManager m_onStackReplacementManager;
 #endif
 
 #ifndef DACCESS_COMPILE
@@ -609,6 +616,12 @@ public:
         return &m_methodDescBackpatchInfoTracker;
     }
 #endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+public:
+    PTR_OnStackReplacementManager GetOnStackReplacementManager();
+#endif // FEATURE_ON_STACK_REPLACEMENT
+
 };  // class LoaderAllocator
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
@@ -618,6 +631,7 @@ class GlobalLoaderAllocator : public LoaderAllocator
     VPTR_VTABLE_CLASS(GlobalLoaderAllocator, LoaderAllocator)
     VPTR_UNIQUE(VPTRU_LoaderAllocator+1)
 
+    DAC_ALIGNAS(LoaderAllocator) // Align the first member to the alignment of the base class
     BYTE                m_ExecutableHeapInstance[sizeof(LoaderHeap)];
 
 protected:
@@ -640,6 +654,7 @@ class AssemblyLoaderAllocator : public LoaderAllocator
     VPTR_UNIQUE(VPTRU_LoaderAllocator+3)
 
 protected:
+    DAC_ALIGNAS(LoaderAllocator) // Align the first member to the alignment of the base class
     LoaderAllocatorID  m_Id;
     ShuffleThunkCache* m_pShuffleThunkCache;
 public:

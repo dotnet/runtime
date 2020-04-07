@@ -262,6 +262,7 @@ public:
     {
         SUPPORTS_DAC;
         return pRealCodeHeader->phdrJitGCInfo;
+
     }
     PTR_MethodDesc          GetMethodDesc()
     {

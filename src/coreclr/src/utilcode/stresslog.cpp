@@ -18,7 +18,10 @@
 #include "ex.h"
 
  #if !defined(STRESS_LOG_READONLY)
+#ifdef HOST_WINDOWS
 HANDLE StressLogChunk::s_LogChunkHeap = NULL;
+#endif
+thread_local ThreadStressLog* StressLog::t_pCurrentThreadLog;
 #endif // !STRESS_LOG_READONLY
 
 /*********************************************************************************/
@@ -149,7 +152,6 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
         return;
     }
 
-    _ASSERTE (theLog.TLSslot == (unsigned int)TLS_OUT_OF_INDEXES);
     theLog.lock = ClrCreateCriticalSection(CrstStressLog,(CrstFlags)(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD));
     // StressLog::Terminate is going to free memory.
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
@@ -167,7 +169,6 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
     theLog.facilitiesToLog = facilities | LF_ALWAYS;
     theLog.levelToLog = level;
     theLog.deadCount = 0;
-    theLog.TLSslot = TlsIdx_StressLog;
 
     theLog.tickFrequency = getTickFrequency();
 
@@ -187,11 +188,11 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
     theLog.moduleOffset = (SIZE_T)PAL_GetSymbolModuleBase((void *)StressLog::Initialize);
 #endif // !HOST_UNIX
 
-#if !defined (STRESS_LOG_READONLY)
-    StressLogChunk::s_LogChunkHeap = ClrHeapCreate (0, STRESSLOG_CHUNK_SIZE * 128, 0);
+#if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
+    StressLogChunk::s_LogChunkHeap = HeapCreate (0, STRESSLOG_CHUNK_SIZE * 128, 0);
     if (StressLogChunk::s_LogChunkHeap == NULL)
     {
-        StressLogChunk::s_LogChunkHeap = ClrGetProcessHeap ();
+        StressLogChunk::s_LogChunkHeap = GetProcessHeap ();
     }
     _ASSERTE (StressLogChunk::s_LogChunkHeap);
 #endif //!STRESS_LOG_READONLY
@@ -202,46 +203,44 @@ void StressLog::Terminate(BOOL fProcessDetach) {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
 
-    if (theLog.TLSslot != (unsigned int)TLS_OUT_OF_INDEXES) {
-        theLog.facilitiesToLog = 0;
+    theLog.facilitiesToLog = 0;
 
-        StressLogLockHolder lockh(theLog.lock, FALSE);
-        if (!fProcessDetach) {
-            lockh.Acquire(); lockh.Release();       // The Enter() Leave() forces a memory barrier on weak memory model systems
-                                    // we want all the other threads to notice that facilitiesToLog is now zero
+    StressLogLockHolder lockh(theLog.lock, FALSE);
+    if (!fProcessDetach) {
+        lockh.Acquire(); lockh.Release();       // The Enter() Leave() forces a memory barrier on weak memory model systems
+                                // we want all the other threads to notice that facilitiesToLog is now zero
 
-                    // This is not strictly threadsafe, since there is no way of insuring when all the
-                    // threads are out of logMsg.  In practice, since they can no longer enter logMsg
-                    // and there are no blocking operations in logMsg, simply sleeping will insure
-                    // that everyone gets out.
-            ClrSleepEx(2, FALSE);
-            lockh.Acquire();
-        }
-
-        // Free the log memory
-        ThreadStressLog* ptr = theLog.logs;
-        theLog.logs = 0;
-        while(ptr != 0) {
-            ThreadStressLog* tmp = ptr;
-            ptr = ptr->next;
-            delete tmp;
-        }
-
-        theLog.TLSslot = TLS_OUT_OF_INDEXES;
-        if (!fProcessDetach) {
-            lockh.Release();
-        }
+                // This is not strictly threadsafe, since there is no way of insuring when all the
+                // threads are out of logMsg.  In practice, since they can no longer enter logMsg
+                // and there are no blocking operations in logMsg, simply sleeping will insure
+                // that everyone gets out.
+        ClrSleepEx(2, FALSE);
+        lockh.Acquire();
     }
-#if !defined (STRESS_LOG_READONLY)
-    if (StressLogChunk::s_LogChunkHeap != NULL && StressLogChunk::s_LogChunkHeap != ClrGetProcessHeap ())
+
+    // Free the log memory
+    ThreadStressLog* ptr = theLog.logs;
+    theLog.logs = 0;
+    while(ptr != 0) {
+        ThreadStressLog* tmp = ptr;
+        ptr = ptr->next;
+        delete tmp;
+    }
+
+    if (!fProcessDetach) {
+        lockh.Release();
+    }
+
+#if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
+    if (StressLogChunk::s_LogChunkHeap != NULL && StressLogChunk::s_LogChunkHeap != GetProcessHeap ())
     {
-        ClrHeapDestroy (StressLogChunk::s_LogChunkHeap);
+        HeapDestroy (StressLogChunk::s_LogChunkHeap);
     }
 #endif //!STRESS_LOG_READONLY
 }
 
 /*********************************************************************************/
-/* create a new thread stress log buffer associated with Thread local slot TLSslot, for the Stress log */
+/* create a new thread stress log buffer associated with Thread local slot, for the Stress log */
 
 ThreadStressLog* StressLog::CreateThreadStressLog() {
     CONTRACTL
@@ -254,7 +253,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
 
     static PVOID callerID = NULL;
 
-    ThreadStressLog* msgs = (ThreadStressLog*) ClrFlsGetValue(theLog.TLSslot);
+    ThreadStressLog* msgs = t_pCurrentThreadLog;
     if (msgs != NULL)
     {
         return msgs;
@@ -265,8 +264,15 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         return NULL;
     }
 
+#ifdef HOST_WINDOWS
+    if (!StressLogChunk::s_LogChunkHeap)
+    {
+        return NULL;
+    }
+#endif
+
     //if we are not allowed to allocate stress log, we should not even try to take the lock
-    if (!StressLogChunk::s_LogChunkHeap || !CanThisThreadCallIntoHost() || IsInCantAllocStressLogRegion ())
+    if (IsInCantAllocStressLogRegion ())
     {
         return NULL;
     }
@@ -310,7 +316,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         // ClrFlsSetValue can throw an OOM exception the first time its called on a thread for a given slot. We go
         // ahead and try to provoke that now, before we've altered the list of available stress logs, and bail if
         // we fail.
-        ClrFlsSetValue(theLog.TLSslot, NULL);
+        t_pCurrentThreadLog = NULL;
     }
 #pragma warning(suppress: 4101)
     PAL_CPP_CATCH_DERIVED(OutOfMemoryException, obj)
@@ -335,9 +341,6 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
-
-    _ASSERTE(theLog.TLSslot != (unsigned int)TLS_OUT_OF_INDEXES); // because facilitiesToLog is != 0
-
 
     BOOL skipInsert = FALSE;
     ThreadStressLog* msgs = NULL;
@@ -405,12 +408,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
 
     msgs->Activate ();
 
-    // We know this isn't going to throw an exception now because the call to ClrFlsSetValue above succeeded for
-    // this thread.
-    {
-        CONTRACT_VIOLATION(ThrowsViolation);
-        ClrFlsSetValue(theLog.TLSslot, msgs);
-    }
+    t_pCurrentThreadLog = msgs;
 
     if (!skipInsert) {
 #ifdef _DEBUG
@@ -433,10 +431,12 @@ LEAVE:
 
 /*********************************************************************************/
 /* static */
-void StressLog::ThreadDetach(ThreadStressLog *msgs) {
+void StressLog::ThreadDetach() {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
+
+    ThreadStressLog* msgs = t_pCurrentThreadLog;
 
 #ifndef DACCESS_COMPILE
     if (msgs == 0)
@@ -444,7 +444,8 @@ void StressLog::ThreadDetach(ThreadStressLog *msgs) {
         return;
     }
 
-    _ASSERTE(theLog.TLSslot != (unsigned int)TLS_OUT_OF_INDEXES); // because facilitiesToLog is != 0
+    t_pCurrentThreadLog = NULL;
+
     // We are deleting a fiber.  The thread is running a different fiber now.
     // We should write this message to the StressLog for deleted fiber.
     msgs->LogMsg (LF_STARTUP, 0, "******* DllMain THREAD_DETACH called Thread dying *******\n");
@@ -479,7 +480,7 @@ BOOL StressLog::AllowNewChunk (LONG numChunksInCurThread)
 
 BOOL StressLog::ReserveStressLogChunks (unsigned chunksToReserve)
 {
-    ThreadStressLog* msgs = (ThreadStressLog*) ClrFlsGetValue(theLog.TLSslot);
+    ThreadStressLog* msgs = t_pCurrentThreadLog;
 
     if (msgs == 0)
     {
@@ -646,7 +647,7 @@ void StressLog::LogMsg (unsigned level, unsigned facility, int cArgs, const char
 
     if(InlinedStressLogOn(facility, level))
     {
-        ThreadStressLog* msgs = (ThreadStressLog*) ClrFlsGetValue(theLog.TLSslot);
+        ThreadStressLog* msgs = t_pCurrentThreadLog;
 
         if (msgs == 0) {
             msgs = CreateThreadStressLog();

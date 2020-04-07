@@ -40,7 +40,7 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
         };
 
-        private ReadStateInfo _readState;
+        private ReadStateInfo? _readState;
         private readonly WriteStateInfoBase _writeState;
 
         internal QEncodedStream(WriteStateInfoBase wsi) : base(new MemoryStream())
@@ -52,7 +52,7 @@ namespace System.Net.Mime
 
         internal WriteStateInfoBase WriteState => _writeState;
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (buffer == null)
             {
@@ -326,7 +326,7 @@ namespace System.Net.Mime
 
             private int _written;
 
-            internal WriteAsyncResult(QEncodedStream parent, byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+            internal WriteAsyncResult(QEncodedStream parent, byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
                 : base(null, state, callback)
             {
                 _parent = parent;
@@ -352,7 +352,7 @@ namespace System.Net.Mime
             {
                 if (!result.CompletedSynchronously)
                 {
-                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState;
+                    WriteAsyncResult thisPtr = (WriteAsyncResult)result.AsyncState!;
                     try
                     {
                         thisPtr.CompleteWrite(result);

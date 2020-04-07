@@ -1,5 +1,3 @@
-#nullable disable
-
 //
 // System.Reflection.Emit/FieldOnTypeBuilderInst.cs
 //
@@ -16,10 +14,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -30,111 +28,127 @@
 //
 
 #if MONO_FEATURE_SRE
-using System;
 using System.Globalization;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-	/*
-	 * This class represents a field of an instantiation of a generic type builder.
-	 */
-	[StructLayout (LayoutKind.Sequential)]
-	internal class FieldOnTypeBuilderInst : FieldInfo
-	{
-		#region Keep in sync with object-internals.h
-		internal TypeBuilderInstantiation instantiation;
-		internal FieldInfo fb;
-		#endregion
+    /*
+     * This class represents a field of an instantiation of a generic type builder.
+     */
+    [StructLayout(LayoutKind.Sequential)]
+    internal class FieldOnTypeBuilderInst : FieldInfo
+    {
+        #region Keep in sync with object-internals.h
+        internal TypeBuilderInstantiation instantiation;
+        internal FieldInfo fb;
+        #endregion
 
-		public FieldOnTypeBuilderInst (TypeBuilderInstantiation instantiation, FieldInfo fb) {
-			this.instantiation = instantiation;
-			this.fb = fb;
-		}
+        public FieldOnTypeBuilderInst(TypeBuilderInstantiation instantiation, FieldInfo fb)
+        {
+            this.instantiation = instantiation;
+            this.fb = fb;
+        }
 
-		//
-		// MemberInfo members
-		//
-		
-		public override Type DeclaringType {
-			get {
-				return instantiation;
-			}
-		}
+        //
+        // MemberInfo members
+        //
 
-		public override string Name {
-			get {
-				return fb.Name;
-			}
-		}
+        public override Type DeclaringType
+        {
+            get
+            {
+                return instantiation;
+            }
+        }
 
-		public override Type ReflectedType {
-			get {
-				return instantiation;
-			}
-		}
+        public override string Name
+        {
+            get
+            {
+                return fb.Name;
+            }
+        }
 
-		public override bool IsDefined (Type attributeType, bool inherit)
-		{
-			throw new NotSupportedException ();
-		}
+        public override Type ReflectedType
+        {
+            get
+            {
+                return instantiation;
+            }
+        }
 
-		public override object [] GetCustomAttributes (bool inherit)
-		{
-			throw new NotSupportedException ();
-		}
+        public override bool IsDefined(Type attributeType, bool inherit)
+        {
+            throw new NotSupportedException();
+        }
 
-		public override object [] GetCustomAttributes (Type attributeType, bool inherit)
-		{
-			throw new NotSupportedException ();
-		}
+        public override object[] GetCustomAttributes(bool inherit)
+        {
+            throw new NotSupportedException();
+        }
 
-		public override string ToString ()
-		{
-			return fb.FieldType.ToString () + " " + Name;
-		}
-		//
-		// FieldInfo members
-		//
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            throw new NotSupportedException();
+        }
 
-		public override FieldAttributes Attributes {
-			get {
-				return fb.Attributes;
-			}
-		}
+        public override string ToString()
+        {
+            return fb.FieldType.ToString() + " " + Name;
+        }
+        //
+        // FieldInfo members
+        //
 
-		public override RuntimeFieldHandle FieldHandle {
-			get {
-				throw new NotSupportedException ();
-			}
-		}
+        public override FieldAttributes Attributes
+        {
+            get
+            {
+                return fb.Attributes;
+            }
+        }
 
-		public override int MetadataToken {
-			get {
-				throw new InvalidOperationException ();
-			} 
-		}
+        public override RuntimeFieldHandle FieldHandle
+        {
+            get
+            {
+                throw new NotSupportedException();
+            }
+        }
 
-		public override Type FieldType {
-			get {
-				throw new NotSupportedException ();
-			}
-		}
+        public override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException();
+            }
+        }
 
-		public override object GetValue(object obj) {
-			throw new NotSupportedException ();
-		}
+        public override Type FieldType
+        {
+            get
+            {
+                throw new NotSupportedException();
+            }
+        }
 
-		public override void SetValue (object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture) {
-			throw new NotSupportedException ();
-		}
+        public override object? GetValue(object? obj)
+        {
+            throw new NotSupportedException();
+        }
 
-		// Called from the runtime to return the corresponding finished FieldInfo object
-		internal FieldInfo RuntimeResolve () {
-			var type = instantiation.RuntimeResolve ();
-			return type.GetField (fb);
-		}
-	}
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
+        {
+            throw new NotSupportedException();
+        }
+
+        // Called from the runtime to return the corresponding finished FieldInfo object
+        internal FieldInfo RuntimeResolve()
+        {
+            Type type = instantiation.RuntimeResolve();
+            return type.GetField(fb);
+        }
+    }
 }
 #endif

@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">$(TargetArchitecture)</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
@@ -87,7 +87,6 @@
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
     <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'x64'">CODE_ANALYSIS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
@@ -104,25 +103,12 @@
     <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
   </PropertyGroup>
 
-  <!-- SourceLink -->
-  <PropertyGroup>
-    <!-- This is needed to embed build-time generated sources such as eventing and resource files to sourcelink PDBs. -->
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-  </PropertyGroup>
-
   <!--
     Helper Paths
   -->
   <PropertyGroup>
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
-  </PropertyGroup>
-
-  <!-- Msbuild variables needed to get CoreCLR features to be set properly. -->
-  <PropertyGroup>
-    <!-- These are needed to make sure we have the right set of defines -->
-    <TargetArch Condition="'$(Platform)'=='x86'">i386</TargetArch>
-    <TargetArch Condition="'$(Platform)'!='x86'">$(Platform)</TargetArch>
   </PropertyGroup>
 
   <!-- Compilation options -->
@@ -151,14 +137,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Delegate.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventDispatcher.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventProvider.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeMetadataGenerator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipePayloadDecoder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\RuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventHandleTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrameHelper.cs" />
@@ -186,7 +165,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AQNBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
@@ -300,9 +278,6 @@
   <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.CoreCLR.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
-  </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
   </ItemGroup>
@@ -389,7 +364,6 @@
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Unix.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\RuntimeEventSourceHelper.Unix.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
@@ -400,7 +374,6 @@
     <Compile Include="$(BclSourcesRoot)\System\ApplicationModel.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\RuntimeEventSourceHelper.Windows.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureAppX)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.Uap.cs" />
@@ -424,11 +397,6 @@
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 
-  <!-- Setup ILLink.targets -->
-  <ItemGroup>
-    <PackageReference Include="ILLink.Tasks" Version="$(ILLinkTasksVersion)" ExcludeAssets="build" GeneratePathProperty="True" />
-  </ItemGroup>
-
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
 
   <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile"/>
@@ -439,8 +407,8 @@
   <ItemGroup>
     <EventingGenerationScript Include="$(CoreClrProjectRoot)/src/scripts/genRuntimeEventSources.py" />
     <EventManifestFile Include="$(CoreClrProjectRoot)/src/vm/ClrEtwAll.man" />
-    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
-      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.cs</Link>
+    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(TargetArchitecture)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.CoreCLR.cs</Link>
     </EventingSourceFile>
     <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
@@ -451,7 +419,7 @@
           DependsOnTargets="FindPython"
           BeforeTargets="BeforeCompile">
 
-    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
+    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.CoreCLR.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
     <PropertyGroup>
       <_PythonWarningParameter>-Wall</_PythonWarningParameter>
       <_PythonWarningParameter Condition="'$(MSBuildTreatWarningsAsErrors)' == 'true'">$(_PythonWarningParameter) -Werror</_PythonWarningParameter>

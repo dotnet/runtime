@@ -8,6 +8,7 @@
 
 #include "common.h"
 #include "codeversion.h"
+#include "patchpointinfo.h"
 
 #ifdef FEATURE_CODE_VERSIONING
 #include "threadsuspend.h"
@@ -52,7 +53,9 @@ NativeCodeVersionNode::NativeCodeVersionNode(
     NativeCodeVersionId id,
     MethodDesc* pMethodDesc,
     ReJITID parentId,
-    NativeCodeVersion::OptimizationTier optimizationTier)
+    NativeCodeVersion::OptimizationTier optimizationTier,
+    PatchpointInfo* patchpointInfo,
+    unsigned ilOffset)
     :
     m_pNativeCode(NULL),
     m_pMethodDesc(pMethodDesc),
@@ -64,6 +67,10 @@ NativeCodeVersionNode::NativeCodeVersionNode(
 #endif
 #ifdef HAVE_GCCOVER
     m_gcCover(PTR_NULL),
+#endif
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    m_patchpointInfo(patchpointInfo),
+    m_ilOffset(ilOffset),
 #endif
     m_flags(0)
 {}
@@ -152,6 +159,17 @@ void NativeCodeVersionNode::SetOptimizationTier(NativeCodeVersion::OptimizationT
 #endif
 
 #endif // FEATURE_TIERED_COMPILATION
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+PatchpointInfo* NativeCodeVersionNode::GetOSRInfo(unsigned * ilOffset)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    *ilOffset = m_ilOffset;
+    return m_patchpointInfo;
+}
+
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 #ifdef HAVE_GCCOVER
 
@@ -333,6 +351,24 @@ void NativeCodeVersion::SetOptimizationTier(OptimizationTier tier)
 #endif
 
 #endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+PatchpointInfo * NativeCodeVersion::GetOSRInfo(unsigned * ilOffset)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        return AsNode()->GetOSRInfo(ilOffset);
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+#endif
+
 
 #ifdef HAVE_GCCOVER
 
@@ -869,22 +905,6 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     return pIL;
 }
 
-PTR_COR_ILMETHOD ILCodeVersion::GetILNoThrow() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    PTR_COR_ILMETHOD ret;
-    EX_TRY
-    {
-        ret = GetIL();
-    }
-    EX_CATCH
-    {
-        ret = NULL;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-    return ret;
-}
-
 DWORD ILCodeVersion::GetJitFlags() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -945,11 +965,14 @@ void ILCodeVersion::SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap)
 HRESULT ILCodeVersion::AddNativeCodeVersion(
     MethodDesc* pClosedMethodDesc,
     NativeCodeVersion::OptimizationTier optimizationTier,
-    NativeCodeVersion* pNativeCodeVersion)
+    NativeCodeVersion* pNativeCodeVersion,
+    PatchpointInfo* patchpointInfo,
+    unsigned ilOffset
+    )
 {
     LIMITED_METHOD_CONTRACT;
     CodeVersionManager* pManager = GetModule()->GetCodeVersionManager();
-    HRESULT hr = pManager->AddNativeCodeVersion(*this, pClosedMethodDesc, optimizationTier, pNativeCodeVersion);
+    HRESULT hr = pManager->AddNativeCodeVersion(*this, pClosedMethodDesc, optimizationTier, pNativeCodeVersion, patchpointInfo, ilOffset);
     if (FAILED(hr))
     {
         _ASSERTE(hr == E_OUTOFMEMORY);
@@ -1571,7 +1594,9 @@ HRESULT CodeVersionManager::AddNativeCodeVersion(
     ILCodeVersion ilCodeVersion,
     MethodDesc* pClosedMethodDesc,
     NativeCodeVersion::OptimizationTier optimizationTier,
-    NativeCodeVersion* pNativeCodeVersion)
+    NativeCodeVersion* pNativeCodeVersion,
+    PatchpointInfo* patchpointInfo,
+    unsigned ilOffset)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(IsLockOwnedByCurrentThread());
@@ -1585,7 +1610,7 @@ HRESULT CodeVersionManager::AddNativeCodeVersion(
     }
 
     NativeCodeVersionId newId = pMethodVersioningState->AllocateVersionId();
-    NativeCodeVersionNode* pNativeCodeVersionNode = new (nothrow) NativeCodeVersionNode(newId, pClosedMethodDesc, ilCodeVersion.GetVersionId(), optimizationTier);
+    NativeCodeVersionNode* pNativeCodeVersionNode = new (nothrow) NativeCodeVersionNode(newId, pClosedMethodDesc, ilCodeVersion.GetVersionId(), optimizationTier, patchpointInfo, ilOffset);
     if (pNativeCodeVersionNode == NULL)
     {
         return E_OUTOFMEMORY;
@@ -1611,6 +1636,7 @@ HRESULT CodeVersionManager::AddNativeCodeVersion(
 
 PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
     MethodDesc* pMethodDesc,
+    CallerGCMode callerGCMode,
     bool *doBackpatchRef,
     bool *doFullBackpatchRef)
 {
@@ -1655,7 +1681,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         _ASSERTE(hr == E_OUTOFMEMORY);
         ReportCodePublishError(pMethodDesc, hr);
         *doBackpatchRef = false;
-        return pCode != NULL ? pCode : pMethodDesc->PrepareInitialCode();
+        return pCode != NULL ? pCode : pMethodDesc->PrepareInitialCode(callerGCMode);
     } while (false);
 
     while (true)
@@ -1670,6 +1696,9 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         {
             PrepareCodeConfigBuffer configBuffer(activeVersion);
             PrepareCodeConfig *config = configBuffer.GetConfig();
+
+            // Record the caller's GC mode.
+            config->SetCallerGCMode(callerGCMode);
             pCode = pMethodDesc->PrepareCode(config);
 
         #ifdef FEATURE_CODE_VERSIONING

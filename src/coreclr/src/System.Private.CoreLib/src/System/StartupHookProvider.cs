@@ -28,7 +28,7 @@ namespace System
             // Initialize tracing before any user code can be called.
             System.Diagnostics.Tracing.RuntimeEventSource.Initialize();
 
-            string? startupHooksVariable = (string?)AppContext.GetData("STARTUP_HOOKS");
+            string? startupHooksVariable = AppContext.GetData("STARTUP_HOOKS") as string;
             if (startupHooksVariable == null)
             {
                 return;

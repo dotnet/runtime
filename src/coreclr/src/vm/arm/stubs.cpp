@@ -1414,9 +1414,9 @@ void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 
     ThumbEmitLoadRegIndirect(dest, dest, offsetof(TEB, ThreadLocalStoragePointer));
 
-    ThumbEmitLoadRegIndirect(dest, dest, sizeof(void *) * (g_TlsIndex & 0xFFFF));
+    ThumbEmitLoadRegIndirect(dest, dest, sizeof(void *) * _tls_index);
 
-    ThumbEmitLoadRegIndirect(dest, dest, (g_TlsIndex & 0x7FFF0000) >> 16);
+    ThumbEmitLoadRegIndirect(dest, dest, (int)Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo));
 
 #endif // TARGET_UNIX
 }
@@ -2769,6 +2769,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
+
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
@@ -2777,6 +2779,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
     pArgs->signature = pLookup->signature;
     pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
+
+    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
 
     // It's available only via the run-time helper function,
 
@@ -2791,17 +2795,14 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     else
     {
         int indirectionsSize = 0;
+        if (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+        {
+            indirectionsSize += (pLookup->sizeOffset >= 0xFFF ? 10 : 4);
+            indirectionsSize += 12;
+        }
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
-            if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
-            {
-                indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 2);
-                indirectionsSize += 4;
-            }
-            else
-            {
-                indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 4);
-            }
+            indirectionsSize += (pLookup->offsets[i] >= 0xFFF ? 10 : 4);
         }
 
         int codeSize = indirectionsSize + (pLookup->testForNull ? 26 : 2);
@@ -2815,76 +2816,80 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             p += 2;
         }
 
+        BYTE* pBLECall = NULL;
+
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
-            if ((i == 0 && pLookup->indirectFirstOffset) || (i == 1 && pLookup->indirectSecondOffset))
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
-                if (pLookup->offsets[i] >= 0xFF)
+                _ASSERTE(pLookup->testForNull && i > 0);
+
+                if (pLookup->sizeOffset >= 0xFFF)
                 {
                     // mov r2, offset
-                    MovRegImm(p, 2, pLookup->offsets[i]);
-                    p += 8;
-
-                    // add r0, r2
-                    *(WORD *)p = 0x4410;
-                    p += 2;
+                    MovRegImm(p, 2, pLookup->sizeOffset); p += 8;
+                    // ldr r1, [r0, r2]
+                    *(WORD*)p = 0x5881; p += 2;
                 }
                 else
                 {
-                    // add r0, <offset>
-                   *(WORD *)p = (WORD)((WORD)0x3000 | (WORD)((0x00FF) & pLookup->offsets[i]));
-                   p += 2;
+                    // ldr r1, [r0 + offset]
+                    *(WORD*)p = 0xF8D0; p += 2;
+                    *(WORD*)p = (WORD)(0xFFF & pLookup->sizeOffset) | 0x1000; p += 2;
                 }
 
-                // r0 is pointer + offset[0]
-                // ldr r2, [r0]
-                *(WORD *)p = 0x6802;
-                p += 2;
+                // mov r2, slotOffset
+                MovRegImm(p, 2, slotOffset); p += 8;
 
-                // r2 is offset1
-                // add r0, r2
-                *(WORD *)p = 0x4410;
+                // cmp r1,r2
+                *(WORD*)p = 0x4291; p += 2;
+
+                // ble 'CALL HELPER'
+                pBLECall = p;       // Offset filled later
+                *(WORD*)p = 0xdd00; p += 2;
+            }
+            if (pLookup->offsets[i] >= 0xFFF)
+            {
+                // mov r2, offset
+                MovRegImm(p, 2, pLookup->offsets[i]);
+                p += 8;
+
+                // ldr r0, [r0, r2]
+                *(WORD *)p = 0x5880;
                 p += 2;
             }
             else
             {
-                if (pLookup->offsets[i] >= 0xFFF)
-                {
-                    // mov r2, offset
-                    MovRegImm(p, 2, pLookup->offsets[i]);
-                    p += 8;
-
-                    // ldr r0, [r0, r2]
-                    *(WORD *)p = 0x5880;
-                    p += 2;
-                }
-                else
-                {
-                    // ldr r0, [r0 + offset]
-                    *(WORD *)p = 0xF8D0;
-                    p += 2;
-                    *(WORD *)p = (WORD)(0xFFF & pLookup->offsets[i]);
-                    p += 2;
-                }
+                // ldr r0, [r0 + offset]
+                *(WORD *)p = 0xF8D0;
+                p += 2;
+                *(WORD *)p = (WORD)(0xFFF & pLookup->offsets[i]);
+                p += 2;
             }
         }
 
         // No null test required
         if (!pLookup->testForNull)
         {
+            _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
+
             // mov pc, lr
             *(WORD *)p = 0x46F7;
             p += 2;
         }
         else
         {
-            // cbz r0, nullvaluelabel
+            // cbz r0, 'CALL HELPER'
             *(WORD *)p = 0xB100;
             p += 2;
             // mov pc, lr
             *(WORD *)p = 0x46F7;
             p += 2;
-            // nullvaluelabel:
+
+            // CALL HELPER:
+            if (pBLECall != NULL)
+                *(WORD*)pBLECall |= (((BYTE)(p - pBLECall) - 4) >> 1);
+
             // mov r0, r3
             *(WORD *)p = 0x4618;
             p += 2;

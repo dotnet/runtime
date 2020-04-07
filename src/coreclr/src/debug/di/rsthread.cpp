@@ -2992,41 +2992,30 @@ HRESULT CordbUnmanagedThread::RestoreLeafSeh()
 //    return value of data in the slot, *pRead = true
 // 2) On failure to read block (block doens't exist yet, any other failure)
 //    return value == 0 (assumed default, *pRead = false
-REMOTE_PTR CordbUnmanagedThread::GetPreDefTlsSlot(SIZE_T slot, bool * pRead)
+REMOTE_PTR CordbUnmanagedThread::GetPreDefTlsSlot(SIZE_T offset)
 {
-    REMOTE_PTR pBlock = (REMOTE_PTR) GetEETlsDataBlock();
+    REMOTE_PTR tlsDataAddress;
+    HRESULT hr = GetClrModuleTlsDataAddress(&tlsDataAddress);
+    if (FAILED(hr))
+    {
+        LOG((LF_CORDB, LL_INFO1000, "CUT::GEETV: GetClrModuleTlsDataAddress FAILED %x for 0x%x\n", hr, m_id));
+        return NULL;
+    }
 
     REMOTE_PTR data = 0;
 
-    // We don't have a maximum size, but we know it's less than ~200. This assert
-    // will catch if we're just passsing Garbage.
-    _ASSERTE(slot < 200);
-
-    bool dummy;
-    if (pRead == NULL)
+    // Read the thread's TLS value.
+    REMOTE_PTR slotAddr = (BYTE*)tlsDataAddress + offset;
+    hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(slotAddr), &data);
+    if (FAILED(hr))
     {
-        pRead = &dummy;
+        LOG((LF_CORDB, LL_INFO1000, "CUT::GEETV: failed to get TLS value: tlsData=0x%p offset=%d, err=%x\n",
+            tlsDataAddress, offset, hr));
+        return NULL;
     }
 
-    if (pBlock != NULL)
-    {
-        REMOTE_PTR p = ((BYTE*) pBlock) + slot * sizeof(data);
-
-        // Now read the "special" status out of the PreDef block.
-        HRESULT hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(p), &data);
-
-        // The predef block should be valid at this point, so the ReadProcessMemory ought to work.
-        SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
-
-        if (SUCCEEDED(hr))
-        {
-            *pRead = true;
-            return data;
-        }
-    }
-
-    *pRead = false;
-    return 0;
+    LOG((LF_CORDB, LL_INFO1000000, "CUT::GEETV: EE Thread TLS value is 0x%x for 0x%x\n", data, m_id));
+    return data;
 }
 
 // Read the contents from a LS threads's TLS slot.
@@ -3072,7 +3061,7 @@ HRESULT CordbUnmanagedThread::GetTlsSlot(DWORD slot, REMOTE_PTR * pValue)
     hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(pEEThreadTLS), pValue);
     if (FAILED(hr))
     {
-        LOG((LF_CORDB, LL_INFO1000, "CUT::GTS: failed to read TLS value: computed addr=0x%p index=%d, err=%x\n",
+        LOG((LF_CORDB, LL_INFO1000, "CUT::GTS: failed to read TLS value: computed addr=0x%p slot=%d, err=%x\n",
            pEEThreadTLS, slot, hr));
         return hr;
     }
@@ -3165,7 +3154,7 @@ DWORD_PTR CordbUnmanagedThread::GetEEThreadValue()
     }
 
     // Read the thread's TLS value.
-    REMOTE_PTR EEThreadAddr = (BYTE*)tlsDataAddress + OFFSETOF__TLS__tls_CurrentThread;
+    REMOTE_PTR EEThreadAddr = (BYTE*)tlsDataAddress + GetProcess()->m_runtimeOffsets.m_TLSEEThreadOffset + OFFSETOF__TLS__tls_CurrentThread;
     hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(EEThreadAddr), &ret);
     if (FAILED(hr))
     {
@@ -3196,10 +3185,8 @@ HRESULT CordbUnmanagedThread::GetClrModuleTlsDataAddress(REMOTE_PTR* pAddress)
         return E_FAIL;
     }
 
-    DWORD slot = (DWORD)(GetProcess()->m_runtimeOffsets.m_TLSIndex);
-
     REMOTE_PTR clrModuleTlsDataAddr;
-    hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)tlsArrayAddr + (slot & 0xFFFF) * sizeof(void*)), &clrModuleTlsDataAddr);
+    hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)tlsArrayAddr + GetProcess()->m_runtimeOffsets.m_TLSIndex * sizeof(void*)), &clrModuleTlsDataAddr);
     if (FAILED(hr))
     {
         return hr;
@@ -3211,34 +3198,8 @@ HRESULT CordbUnmanagedThread::GetClrModuleTlsDataAddress(REMOTE_PTR* pAddress)
         return E_FAIL;
     }
 
-    *pAddress = (BYTE*) clrModuleTlsDataAddr + ((slot & 0x7FFF0000) >> 16);
+    *pAddress = (BYTE*) clrModuleTlsDataAddr;
     return S_OK;
-}
-
-// Gets the value of gCurrentThreadInfo.m_EETlsData
-REMOTE_PTR CordbUnmanagedThread::GetEETlsDataBlock()
-{
-    REMOTE_PTR ret;
-
-    REMOTE_PTR tlsDataAddress;
-    HRESULT hr = GetClrModuleTlsDataAddress(&tlsDataAddress);
-    if (FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CUT::GEETDB: GetClrModuleTlsDataAddress FAILED %x for 0x%x\n", hr, m_id));
-        return NULL;
-    }
-
-    REMOTE_PTR blockAddr = (BYTE*)tlsDataAddress + OFFSETOF__TLS__tls_EETlsData;
-    hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(blockAddr), &ret);
-    if (FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CUT::GEETDB: failed to read EETlsData address: computed addr=0x%p offset=%d, err=%x\n",
-             blockAddr, OFFSETOF__TLS__tls_EETlsData, hr));
-        return NULL;
-    }
-
-    LOG((LF_CORDB, LL_INFO1000000, "CUT::GEETDB: EETlsData address value is 0x%p for 0x%x\n", ret, m_id));
-    return ret;
 }
 
 /*
@@ -3341,46 +3302,6 @@ void CordbUnmanagedThread::GetEEState(bool *threadStepping, bool *specialManaged
     return;
 }
 
-// Currently, the EE manually tracks its "can't-stop" regions. This retrieves that manual tracking value.
-// @todo - This should eventually become deprecated since the Entire EE will be a can't-stop region.
-bool CordbUnmanagedThread::GetEEThreadCantStopHelper()
-{
-    // Note: any failure to read memory is okay for this method. We simply say that the thread is not is a can't stop
-    // state, and that's okay.
-
-    REMOTE_PTR pEEThread;
-
-    HRESULT hr = GetEEThreadPtr(&pEEThread);
-
-    _ASSERTE(SUCCEEDED(hr));
-    _ASSERTE(pEEThread != NULL);
-
-    // Compute the address of the thread's debugger word #1
-    DebuggerIPCRuntimeOffsets *pRO = &(GetProcess()->m_runtimeOffsets);
-    void *pEEThreadCantStop = (BYTE*) pEEThread + pRO->m_EEThreadCantStopOffset;
-
-    // Grab the debugger word #1 out of the EE Thread.
-    DWORD EEThreadCantStop;
-    hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(pEEThreadCantStop), &EEThreadCantStop);
-
-    if (FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CUT::GEETS: failed to read thread cant stop: 0x%08x + 0x%x = 0x%08x, err=%d\n",
-             pEEThread, pRO->m_EEThreadCantStopOffset, pEEThreadCantStop, GetLastError()));
-
-        return false;
-    }
-
-    LOG((LF_CORDB, LL_INFO1000000, "CUT::GEETS: EE Thread cant stop is 0x%08x\n", EEThreadCantStop));
-
-    // Looks like we've got it.
-    if (EEThreadCantStop != 0)
-        return true;
-    else
-        return false;
-}
-
-
 // Is the thread in a "can't stop" region?
 // "Can't-Stop" regions include anything that's "inside" the runtime; ie, the runtime has some
 // synchronization mechanism that will halt this thread, and so we don't need to suspend it.
@@ -3433,8 +3354,7 @@ bool CordbUnmanagedThread::IsCantStop()
     // them, they may be holding a lock that blocks the helper thread.
     // The helper thread is marked as "special".
     {
-        SIZE_T idx = pRO->m_TLSIsSpecialIndex;
-        REMOTE_PTR special = GetPreDefTlsSlot(idx, NULL);
+        REMOTE_PTR special = GetPreDefTlsSlot(pRO->m_TLSIsSpecialOffset);
 
         // If it's a special thread
         if ((special != 0) && (pEEThread == NULL))
@@ -3448,8 +3368,7 @@ bool CordbUnmanagedThread::IsCantStop()
     // (or when we don't have a thread object).
     // If a LS thread takes a debugger lock, it will increment the Can't-Stop count.
     {
-        SIZE_T idx = pRO->m_TLSCantStopIndex;
-        REMOTE_PTR count = (REMOTE_PTR) GetPreDefTlsSlot(idx, NULL);
+        REMOTE_PTR count = GetPreDefTlsSlot(pRO->m_TLSCantStopOffset);
 
         // Just a sanity check here. There's nothing special about 1000, but if the
         // stop-count gets this big, 99% chance it's:
@@ -3497,9 +3416,9 @@ bool CordbUnmanagedThread::IsCantStop()
 
     // This checks for an explicit "can't" stop region.
     // Eventually, these explicit regions should become a complete subset of the other checks.
-    if (GetEEThreadCantStopHelper())
+    REMOTE_PTR count = GetPreDefTlsSlot(GetProcess()->m_runtimeOffsets.m_TLSCantStopOffset);
+    if (count > 0)
         return true;
-
 
     // If we're in cooperative mode (either managed code or parts inside the runtime), then don't stop.
     // Note we could remove this since the check is made in side of the DAC request below,

@@ -978,6 +978,7 @@ protected:
     void genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
+    void genSIMDIntrinsicUnOpWithImm(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode);
@@ -1534,9 +1535,10 @@ public:
     }
 
 protected:
-    virtual void DoPhase() override
+    virtual PhaseStatus DoPhase() override
     {
         (codeGen->*action)();
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
 private:

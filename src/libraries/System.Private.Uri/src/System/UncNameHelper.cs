@@ -49,9 +49,9 @@ namespace System
         //
         // Assumption is the caller will check on the resulting name length
         // Remarks:  MUST NOT be used unless all input indexes are verified and trusted.
-        internal static unsafe bool IsValid(char* name, ushort start, ref int returnedEnd, bool notImplicitFile)
+        internal static unsafe bool IsValid(char* name, int start, ref int returnedEnd, bool notImplicitFile)
         {
-            ushort end = (ushort)returnedEnd;
+            int end = returnedEnd;
 
             if (start == end)
                 return false;
@@ -59,7 +59,7 @@ namespace System
             // First segment could consist of only '_' or '-' but it cannot be all digits or empty
             //
             bool validShortName = false;
-            ushort i = start;
+            int i = start;
             for (; i < end; ++i)
             {
                 if (name[i] == '/' || name[i] == '\\' || (notImplicitFile && (name[i] == ':' || name[i] == '?' || name[i] == '#')))

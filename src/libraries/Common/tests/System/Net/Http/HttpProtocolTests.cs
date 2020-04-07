@@ -20,9 +20,15 @@ namespace System.Net.Http.Functional.Tests
 
         public HttpProtocolTests(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
+        [ConditionalFact]
         public async Task GetAsync_RequestVersion10_Success()
         {
+#if WINHTTPHANDLER_TEST
+            if (UseVersion > HttpVersion.Version11)
+            {
+                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+            }
+#endif
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -454,7 +460,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpMessageInvoker client = new HttpMessageInvoker(CreateHttpClientHandler()))
-                using (HttpResponseMessage resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, CancellationToken.None))
+                using (HttpResponseMessage resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = base.UseVersion }, CancellationToken.None))
                 using (Stream respStream = await resp.Content.ReadAsStreamAsync())
                 {
                     var actualData = new MemoryStream();
@@ -467,7 +473,11 @@ namespace System.Net.Http.Functional.Tests
                     {
                         byte[] buffer = new byte[4096];
                         int bytesRead;
+#if !NETFRAMEWORK
                         while ((bytesRead = await respStream.ReadAsync(buffer)) > 0)
+#else
+                        while ((bytesRead = await respStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+#endif
                         {
                             actualData.Write(buffer, 0, bytesRead);
                         }

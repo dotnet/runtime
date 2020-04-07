@@ -124,7 +124,7 @@ namespace System.Text.Json
             }
             else
             {
-                state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty;
+                state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
                 success = Converter.TryWriteDataExtensionProperty(writer, value, Options, ref state);
             }
 
@@ -169,6 +169,33 @@ namespace System.Text.Json
                             Set!(obj, value);
                         }
                     }
+                }
+            }
+
+            return success;
+        }
+
+        public override bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        {
+            bool success;
+            bool isNullToken = reader.TokenType == JsonTokenType.Null;
+            if (isNullToken && !Converter.HandleNullValue && !state.IsContinuation)
+            {
+                value = default(TTypeToConvert)!;
+                success = true;
+            }
+            else
+            {
+                // Optimize for internal converters by avoiding the extra call to TryRead.
+                if (Converter.CanUseDirectReadOrWrite)
+                {
+                    value = Converter.Read(ref reader, RuntimePropertyType!, Options);
+                    return true;
+                }
+                else
+                {
+                    success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out TTypeToConvert typedValue);
+                    value = typedValue;
                 }
             }
 
