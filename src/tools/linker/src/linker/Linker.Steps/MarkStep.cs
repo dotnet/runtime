@@ -3869,32 +3869,36 @@ namespace Mono.Linker.Steps {
 			void MarkMethodsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, BindingFlags? bindingFlags, int? parametersCount = null)
 			{
 				bool foundMatch = false;
-				foreach (var method in declaringType.Methods) {
-					var mname = method.Name;
+				do {
+					foreach (var method in declaringType.Methods) {
+						var mname = method.Name;
 
-					if (mname != name) {
-						continue;
+						if (mname != name) {
+							continue;
+						}
+
+						if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Static && !method.IsStatic)
+							continue;
+
+						if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Instance && method.IsStatic)
+							continue;
+
+						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public && !method.IsPublic)
+							continue;
+
+						if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic && method.IsPublic)
+							continue;
+
+						if (parametersCount != null && parametersCount != method.Parameters.Count)
+							continue;
+
+						foundMatch = true;
+						var methodCalling = reflectionContext.MethodCalling;
+						reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
 					}
 
-					if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Static && !method.IsStatic)
-						continue;
-
-					if ((bindingFlags & (BindingFlags.Instance | BindingFlags.Static)) == BindingFlags.Instance && method.IsStatic)
-						continue;
-
-					if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public && !method.IsPublic)
-						continue;
-
-					if ((bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.NonPublic && method.IsPublic)
-						continue;
-
-					if (parametersCount != null && parametersCount != method.Parameters.Count)
-						continue;
-
-					foundMatch = true;
-					var methodCalling = reflectionContext.MethodCalling;
-					reflectionContext.RecordRecognizedPattern (method, () => _markStep.MarkIndirectlyCalledMethod (method, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-				}
+					declaringType = declaringType.BaseType.Resolve ();
+				} while (!foundMatch && declaringType.FullName != "System.Object");
 
 				if (!foundMatch) {
 					bool publicOnly = (bindingFlags & (BindingFlags.Public | BindingFlags.NonPublic)) == BindingFlags.Public;
@@ -3905,32 +3909,36 @@ namespace Mono.Linker.Steps {
 			void MarkPropertiesFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, bool staticOnly = false)
 			{
 				bool foundMatch = false;
-				foreach (var property in declaringType.Properties) {
-					if (property.Name != name)
-						continue;
+				do {
+					foreach (var property in declaringType.Properties) {
+						if (property.Name != name)
+							continue;
 
-					bool markedAny = false;
-					var methodCalling = reflectionContext.MethodCalling;
+						bool markedAny = false;
+						var methodCalling = reflectionContext.MethodCalling;
 
-					// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
-					// Be conservative and mark everything for the property.
-					var getter = property.GetMethod;
-					if (getter != null && (!staticOnly || staticOnly && getter.IsStatic)) {
-						reflectionContext.RecordRecognizedPattern (getter, () => _markStep.MarkIndirectlyCalledMethod (getter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-						markedAny = true;
+						// It is not easy to reliably detect in the IL code whether the getter or setter (or both) are used.
+						// Be conservative and mark everything for the property.
+						var getter = property.GetMethod;
+						if (getter != null && (!staticOnly || staticOnly && getter.IsStatic)) {
+							reflectionContext.RecordRecognizedPattern (getter, () => _markStep.MarkIndirectlyCalledMethod (getter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+							markedAny = true;
+						}
+
+						var setter = property.SetMethod;
+						if (setter != null && (!staticOnly || staticOnly && setter.IsStatic)) {
+							reflectionContext.RecordRecognizedPattern (setter, () => _markStep.MarkIndirectlyCalledMethod (setter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+							markedAny = true;
+						}
+
+						if (markedAny) {
+							foundMatch = true;
+							reflectionContext.RecordRecognizedPattern (property, () => _markStep.MarkProperty (property, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+						}
 					}
 
-					var setter = property.SetMethod;
-					if (setter != null && (!staticOnly || staticOnly && setter.IsStatic)) {
-						reflectionContext.RecordRecognizedPattern (setter, () => _markStep.MarkIndirectlyCalledMethod (setter, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-						markedAny = true;
-					}
-
-					if (markedAny) {
-						foundMatch = true;
-						reflectionContext.RecordRecognizedPattern (property, () => _markStep.MarkProperty (property, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-					}
-				}
+					declaringType = declaringType.BaseType.Resolve ();
+				} while (!foundMatch && declaringType.FullName != "System.Object");
 
 				if (!foundMatch)
 					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve property `{name}` on type `{declaringType.FullName}`.");
@@ -3940,17 +3948,21 @@ namespace Mono.Linker.Steps {
 			{
 				bool foundMatch = false;
 				var methodCalling = reflectionContext.MethodCalling;
-				foreach (var field in declaringType.Fields) {
-					if (field.Name != name)
-						continue;
+				do {
+					foreach (var field in declaringType.Fields) {
+						if (field.Name != name)
+							continue;
 
-					if (staticOnly && !field.IsStatic)
-						continue;
+						if (staticOnly && !field.IsStatic)
+							continue;
 
-					foundMatch = true;
-					reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-					break;
-				}
+						foundMatch = true;
+						reflectionContext.RecordRecognizedPattern (field, () => _markStep.MarkField (field, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+						break;
+					}
+
+					declaringType = declaringType.BaseType.Resolve ();
+				} while (!foundMatch && declaringType.FullName != "System.Object");
 
 				if (!foundMatch)
 					reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{reflectionContext.MethodCalled.FullName}' inside '{reflectionContext.MethodCalling.FullName}' could not resolve field `{name}` on type `{declaringType.FullName}`.");

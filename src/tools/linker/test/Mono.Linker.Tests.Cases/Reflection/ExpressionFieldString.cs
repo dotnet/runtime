@@ -179,10 +179,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[Kept]
 	class ABase
 	{
-		// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
+		[Kept]
 		protected static bool _protectedFieldOnBase;
 
-		// [Kept] - TODO - should be kept: https://github.com/mono/linker/issues/1042
+		[Kept]
 		public static bool _publicFieldOnBase;
 	}
 
