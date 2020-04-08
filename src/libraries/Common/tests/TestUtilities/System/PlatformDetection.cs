@@ -174,10 +174,19 @@ namespace System
             }
             catch { }
 
-            return new Version(version & 0xFF,
-                            (version >> 8)  & 0xFF,
-                            (version >> 16) & 0xFF,
-                             version >> 24);
+            if (BitConverter.IsLittleEndian)
+            {
+
+                return new Version(version & 0xFF,
+                                (version >> 8)  & 0xFF,
+                                (version >> 16) & 0xFF,
+                                 version >> 24);
+            }
+
+            return new Version(version >> 24,
+                              (version >> 16) & 0xFF,
+                              (version >> 8) & 0xFF,
+                               version & 0xFF);
         }
 
         private static bool GetIsInContainer()

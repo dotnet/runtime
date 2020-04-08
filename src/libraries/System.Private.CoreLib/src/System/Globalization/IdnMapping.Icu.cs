@@ -11,9 +11,10 @@ namespace System.Globalization
         private unsafe string IcuGetAsciiCore(string unicodeString, char* unicode, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseIcu);
             Debug.Assert(unicodeString != null && unicodeString.Length >= count);
 
-            uint flags = Flags;
+            uint flags = IcuFlags;
             CheckInvalidIdnCharacters(unicode, count, flags, nameof(unicode));
 
             const int StackallocThreshold = 512;
@@ -54,9 +55,10 @@ namespace System.Globalization
         private unsafe string IcuGetUnicodeCore(string asciiString, char* ascii, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseIcu);
             Debug.Assert(asciiString != null && asciiString.Length >= count);
 
-            uint flags = Flags;
+            uint flags = IcuFlags;
             CheckInvalidIdnCharacters(ascii, count, flags, nameof(ascii));
 
             const int StackAllocThreshold = 512;
@@ -78,6 +80,7 @@ namespace System.Globalization
         private unsafe string IcuGetUnicodeCore(string asciiString, char* ascii, int count, uint flags, char* output, int outputLength, bool reattempt)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseIcu);
             Debug.Assert(asciiString != null && asciiString.Length >= count);
 
             int realLen = Interop.Globalization.ToUnicode(flags, ascii, count, output, outputLength);
@@ -105,6 +108,17 @@ namespace System.Globalization
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
+
+        private uint IcuFlags
+        {
+            get
+            {
+                int flags =
+                    (AllowUnassigned ? Interop.Globalization.AllowUnassigned : 0) |
+                    (UseStd3AsciiRules ? Interop.Globalization.UseStd3AsciiRules : 0);
+                return (uint)flags;
+            }
+        }
 
         /// <summary>
         /// ICU doesn't check for invalid characters unless the STD3 rules option

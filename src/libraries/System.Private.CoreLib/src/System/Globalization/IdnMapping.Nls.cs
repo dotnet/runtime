@@ -13,9 +13,10 @@ namespace System.Globalization
         private unsafe string NlsGetAsciiCore(string unicodeString, char* unicode, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseIcu);
             Debug.Assert(unicodeString != null && unicodeString.Length >= count);
 
-            uint flags = Flags;
+            uint flags = NlsFlags;
 
             // Determine the required length
             int length = Interop.Normaliz.IdnToAscii(flags, unicode, count, null, 0);
@@ -44,6 +45,7 @@ namespace System.Globalization
         private unsafe string NlsGetAsciiCore(string unicodeString, char* unicode, int count, uint flags, char* output, int outputLength)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseIcu);
             Debug.Assert(unicodeString != null && unicodeString.Length >= count);
 
             int length = Interop.Normaliz.IdnToAscii(flags, unicode, count, output, outputLength);
@@ -58,9 +60,10 @@ namespace System.Globalization
         private unsafe string NlsGetUnicodeCore(string asciiString, char* ascii, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseIcu);
             Debug.Assert(asciiString != null && asciiString.Length >= count);
 
-            uint flags = Flags;
+            uint flags = NlsFlags;
 
             // Determine the required length
             int length = Interop.Normaliz.IdnToUnicode(flags, ascii, count, null, 0);
@@ -89,6 +92,7 @@ namespace System.Globalization
         private unsafe string NlsGetUnicodeCore(string asciiString, char* ascii, int count, uint flags, char* output, int outputLength)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseIcu);
             Debug.Assert(asciiString != null && asciiString.Length >= count);
 
             int length = Interop.Normaliz.IdnToUnicode(flags, ascii, count, output, outputLength);
@@ -103,6 +107,17 @@ namespace System.Globalization
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
+
+        private uint NlsFlags
+        {
+            get
+            {
+                int flags =
+                    (AllowUnassigned ? Interop.Normaliz.IDN_ALLOW_UNASSIGNED : 0) |
+                    (UseStd3AsciiRules ? Interop.Normaliz.IDN_USE_STD3_ASCII_RULES : 0);
+                return (uint)flags;
+            }
+        }
 
         [DoesNotReturn]
         private static void ThrowForZeroLength(bool unicode)

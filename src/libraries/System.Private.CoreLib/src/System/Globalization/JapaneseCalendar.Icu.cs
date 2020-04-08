@@ -11,6 +11,8 @@ namespace System.Globalization
     {
         private static EraInfo[]? IcuGetJapaneseEras()
         {
+            Debug.Assert(GlobalizationMode.UseIcu);
+
             if (GlobalizationMode.Invariant)
             {
                 return null;

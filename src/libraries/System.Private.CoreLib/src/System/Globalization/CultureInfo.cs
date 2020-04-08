@@ -819,19 +819,13 @@ namespace System.Globalization
             return new GregorianCalendar();
         }
 
-        internal static CultureInfo GetUserDefaultCulture()
-        {
-            return GlobalizationMode.UseIcu ?
-                IcuGetUserDefaultCulture() :
-                NlsGetUserDefaultCulture();
-        }
+        internal static CultureInfo GetUserDefaultCulture() => GlobalizationMode.UseIcu ?
+                                                                   IcuGetUserDefaultCulture() :
+                                                                   NlsGetUserDefaultCulture();
 
-        private static CultureInfo GetUserDefaultUICulture()
-        {
-            return GlobalizationMode.UseIcu ?
-                IcuGetUserDefaultUICulture() :
-                NlsGetUserDefaultUICulture();
-        }
+        private static CultureInfo GetUserDefaultUICulture() => GlobalizationMode.UseIcu ?
+                                                                    IcuGetUserDefaultUICulture() :
+                                                                    NlsGetUserDefaultUICulture();
 
         /// <summary>
         /// Return/set the default calendar used by this culture.

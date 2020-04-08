@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 #if TARGET_WINDOWS
 using Internal.Win32;
 #endif
@@ -30,6 +32,8 @@ namespace System.Globalization
         //     english name, and abbreviated english names.
         private static EraInfo[]? NlsGetJapaneseEras()
         {
+            Debug.Assert(!GlobalizationMode.UseIcu);
+
             // Look in the registry key and see if we can find any ranges
             int iFoundEras = 0;
             EraInfo[]? registryEraRanges = null;
@@ -122,7 +126,11 @@ namespace System.Globalization
         // the reason to have it is to simplify the build
         // this way we avoid having to include RegistryKey
         // and all it's windows PInvokes.
-        private static EraInfo[]? NlsGetJapaneseEras() => null;
+        private static EraInfo[]? NlsGetJapaneseEras()
+        {
+            Debug.Fail("Should never be called non-Windows platforms.");
+            throw new PlatformNotSupportedException();
+        }
 #endif
 
         //

@@ -177,17 +177,6 @@ namespace System.Globalization
         // Legal "dot" separators (i.e: . in www.microsoft.com)
         private static readonly char[] s_dotSeparators = { '.', '\u3002', '\uFF0E', '\uFF61' };
 
-        private uint Flags
-        {
-            get
-            {
-                int flags =
-                    (AllowUnassigned ? Interop.Globalization.AllowUnassigned : 0) |
-                    (UseStd3AsciiRules ? Interop.Globalization.UseStd3AsciiRules : 0);
-                return (uint)flags;
-            }
-        }
-
         private string GetAsciiInvariant(string unicode, int index, int count)
         {
             if (index > 0 || count < unicode.Length)

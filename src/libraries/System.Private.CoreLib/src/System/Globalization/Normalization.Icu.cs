@@ -11,12 +11,8 @@ namespace System.Globalization
     {
         private static bool IcuIsNormalized(string strInput, NormalizationForm normalizationForm)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                // In Invariant mode we assume all characters are normalized.
-                // This is because we don't support any linguistic operation on the strings
-                return true;
-            }
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseIcu);
 
             ValidateArguments(strInput, normalizationForm);
 
@@ -32,12 +28,8 @@ namespace System.Globalization
 
         private static string IcuNormalize(string strInput, NormalizationForm normalizationForm)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                // In Invariant mode we assume all characters are normalized.
-                // This is because we don't support any linguistic operation on the strings
-                return strInput;
-            }
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseIcu);
 
             ValidateArguments(strInput, normalizationForm);
 

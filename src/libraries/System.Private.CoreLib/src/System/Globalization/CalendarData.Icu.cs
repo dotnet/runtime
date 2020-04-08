@@ -33,6 +33,8 @@ namespace System.Globalization
     {
         private bool IcuLoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
+            Debug.Assert(GlobalizationMode.UseIcu);
+
             bool result = true;
 
             // these can return null but are later replaced with String.Empty or other non-nullable value
@@ -81,6 +83,8 @@ namespace System.Globalization
 
         internal static int IcuGetTwoDigitYearMax(CalendarId calendarId)
         {
+            Debug.Assert(GlobalizationMode.UseIcu);
+
             // There is no user override for this value on Linux or in ICU.
             // So just return -1 to use the hard-coded defaults.
             return -1;
@@ -90,6 +94,7 @@ namespace System.Globalization
         internal static int IcuGetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(GlobalizationMode.UseIcu);
 
             // NOTE: there are no 'user overrides' on Linux
             int count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
@@ -106,6 +111,7 @@ namespace System.Globalization
 
         private static bool IcuSystemSupportsTaiwaneseCalendar()
         {
+            Debug.Assert(GlobalizationMode.UseIcu);
             return true;
         }
 

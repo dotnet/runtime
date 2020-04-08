@@ -2,12 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Globalization
 {
     public partial class CultureInfo : IFormatProvider
     {
         internal static CultureInfo NlsGetUserDefaultCulture()
         {
+            Debug.Assert(!GlobalizationMode.UseIcu);
+
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 
@@ -28,6 +32,8 @@ namespace System.Globalization
 
         private static CultureInfo NlsGetPredefinedCultureInfo(string name)
         {
+            Debug.Assert(!GlobalizationMode.UseIcu);
+
             CultureInfo culture = GetCultureInfo(name);
             string englishName = culture.EnglishName;
 
@@ -46,6 +52,8 @@ namespace System.Globalization
 
         private static unsafe CultureInfo NlsGetUserDefaultUICulture()
         {
+            Debug.Assert(!GlobalizationMode.UseIcu);
+
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 

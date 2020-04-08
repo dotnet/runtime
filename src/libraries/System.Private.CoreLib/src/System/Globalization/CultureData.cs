@@ -844,12 +844,9 @@ namespace System.Globalization
             return true;
         }
 
-        private bool InitCultureDataCore()
-        {
-            return GlobalizationMode.UseIcu ?
-                IcuInitCultureData() :
-                NlsInitCultureData();
-        }
+        private bool InitCultureDataCore() => GlobalizationMode.UseIcu ?
+                                                IcuInitCultureData() :
+                                                NlsInitCultureData();
 
         /// We'd rather people use the named version since this doesn't allow custom locales
         internal static CultureData GetCultureData(int culture, bool bUseUserOverride)
@@ -1002,12 +999,9 @@ namespace System.Globalization
             }
         }
 
-        private string GetLanguageDisplayNameCore(string cultureName)
-        {
-            return GlobalizationMode.UseIcu ?
-                IcuGetLanguageDisplayName(cultureName) :
-                NlsGetLanguageDisplayName(cultureName);
-        }
+        private string GetLanguageDisplayNameCore(string cultureName) => GlobalizationMode.UseIcu ?
+                                                                            IcuGetLanguageDisplayName(cultureName) :
+                                                                            NlsGetLanguageDisplayName(cultureName);
 
         /// <summary>
         /// English pretty name for this locale (ie: English (United States))
@@ -2264,33 +2258,21 @@ namespace System.Globalization
         /// </remarks>
         internal static string AnsiToLower(string testString) => TextInfo.ToLowerAsciiInvariant(testString);
 
-        private int GetLocaleInfoCore(LocaleNumberData type)
-        {
-            return GlobalizationMode.UseIcu ?
-                IcuGetLocaleInfo(type) :
-                NlsGetLocaleInfo(type);
-        }
+        private int GetLocaleInfoCore(LocaleNumberData type) => GlobalizationMode.UseIcu ?
+                                                                    IcuGetLocaleInfo(type) :
+                                                                    NlsGetLocaleInfo(type);
 
-        private string GetLocaleInfoCore(LocaleStringData type)
-        {
-            return GlobalizationMode.UseIcu ?
-                IcuGetLocaleInfo(type) :
-                NlsGetLocaleInfo(type);
-        }
+        private string GetLocaleInfoCore(LocaleStringData type) => GlobalizationMode.UseIcu ?
+                                                                    IcuGetLocaleInfo(type) :
+                                                                    NlsGetLocaleInfo(type);
 
-        private string GetLocaleInfoCore(string localeName, LocaleStringData type)
-        {
-            return GlobalizationMode.UseIcu ?
-                IcuGetLocaleInfo(localeName, type) :
-                NlsGetLocaleInfo(localeName, type);
-        }
+        private string GetLocaleInfoCore(string localeName, LocaleStringData type) => GlobalizationMode.UseIcu ?
+                                                                                        IcuGetLocaleInfo(localeName, type) :
+                                                                                        NlsGetLocaleInfo(localeName, type);
 
-        private int[] GetLocaleInfoCore(LocaleGroupingData type)
-        {
-            return GlobalizationMode.UseIcu ?
-                IcuGetLocaleInfo(type) :
-                NlsGetLocaleInfo(type);
-        }
+        private int[] GetLocaleInfoCore(LocaleGroupingData type) => GlobalizationMode.UseIcu ?
+                                                                       IcuGetLocaleInfo(type) :
+                                                                       NlsGetLocaleInfo(type);
 
         /// <remarks>
         /// The numeric values of the enum members match their Win32 counterparts.  The CultureData Win32 PAL implementation

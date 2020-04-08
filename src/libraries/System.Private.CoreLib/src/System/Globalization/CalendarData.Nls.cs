@@ -13,6 +13,7 @@ namespace System.Globalization
         private bool NlsLoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseIcu);
 
             bool ret = true;
 
@@ -106,15 +107,21 @@ namespace System.Globalization
         }
 
         // Get native two digit year max
-        internal static int NlsGetTwoDigitYearMax(CalendarId calendarId) =>
-            GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax :
-            CallGetCalendarInfoEx(null, calendarId, CAL_ITWODIGITYEARMAX, out int twoDigitYearMax) ? twoDigitYearMax :
-            -1;
+        internal static int NlsGetTwoDigitYearMax(CalendarId calendarId)
+        {
+            Debug.Assert(!GlobalizationMode.UseIcu);
+
+            return GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax :
+                    CallGetCalendarInfoEx(null, calendarId, CAL_ITWODIGITYEARMAX, out int twoDigitYearMax) ?
+                        twoDigitYearMax :
+                        -1;
+        }
 
         // Call native side to figure out which calendars are allowed
         internal static int NlsGetCalendars(string localeName, bool useUserOverride, CalendarId[] calendars)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseIcu);
 
             NlsEnumCalendarsData data = default;
             data.userOverride = 0;
@@ -150,6 +157,7 @@ namespace System.Globalization
         private static bool NlsSystemSupportsTaiwaneseCalendar()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseIcu);
 
             // Taiwanese calendar get listed as one of the optional zh-TW calendars only when having zh-TW UI
             return CallGetCalendarInfoEx("zh-TW", CalendarId.TAIWAN, CAL_SCALNAME, out string _);
