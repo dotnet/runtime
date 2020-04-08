@@ -127,6 +127,22 @@ jobs:
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
 
+  - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+
+    - name: CommonMSBuildArgs
+      value: >-
+        /p:PortableBuild=true
+        /p:SkipTests=true
+
+    - name: BaseJobBuildCommand
+      value: >-
+        $(Build.SourcesDirectory)/build.sh -subsetcategory installer -restore -build -ci
+        -configuration $(_BuildConfig)
+        -os FreeBSD -cross
+        $(LiveOverridePathArgs)
+        $(CommonMSBuildArgs)
+        $(OfficialBuildArg)
+
   - ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'Android') }}:
 
     - name: CommonMSBuildArgs
