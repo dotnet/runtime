@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x 
+
 # initNonPortableDistroRid
 #
 # Input:
@@ -122,6 +124,8 @@ initDistroRidGlobal()
     if [ -n "${rootfsDir}" ]; then
         # We may have a cross build. Check for the existance of the rootfsDir
         if [ ! -e "${rootfsDir}" ]; then
+            echo rootfsDir is set to ${rootfsDir}
+            ls -al ${rootfsDir}
             echo "Error rootfsDir has been passed, but the location is not valid."
             exit 1
         fi
