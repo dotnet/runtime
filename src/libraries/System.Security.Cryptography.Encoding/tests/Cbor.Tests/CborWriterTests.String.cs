@@ -77,7 +77,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             // NB Xunit's InlineDataAttribute will corrupt string literals containing invalid unicode
             string invalidUnicodeString = "\ud800";
             using var writer = new CborWriter();
-            Assert.Throws<ArgumentException>(() => writer.WriteTextString(invalidUnicodeString));
+            ArgumentException exn = Assert.Throws<ArgumentException>(() => writer.WriteTextString(invalidUnicodeString));
+            Assert.NotNull(exn.InnerException);
+            Assert.IsType<System.Text.EncoderFallbackException>(exn.InnerException);
         }
 
         [Theory]

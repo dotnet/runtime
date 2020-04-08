@@ -490,7 +490,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
-            Assert.Throws<FormatException>(() => reader.ReadTextString());
+            FormatException exn = Assert.Throws<FormatException>(() => reader.ReadTextString());
+            Assert.NotNull(exn.InnerException);
+            Assert.IsType<System.Text.DecoderFallbackException>(exn.InnerException);
         }
 
         [Theory]
@@ -502,7 +504,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             char[] buffer = new char[32];
             var reader = new CborReader(data);
 
-            Assert.Throws<FormatException>(() => reader.TryReadTextString(buffer, out int _));
+            FormatException exn = Assert.Throws<FormatException>(() => reader.TryReadTextString(buffer, out int _));
+            Assert.NotNull(exn.InnerException);
+            Assert.IsType<System.Text.DecoderFallbackException>(exn.InnerException);
         }
 
         [Fact]
