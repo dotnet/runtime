@@ -368,27 +368,8 @@ namespace System.Globalization
             return CompareString(string1, string2, options);
         }
 
-        internal int CompareOptionNone(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2)
-        {
-            // Check for empty span or span from a null string
-            if (string1.Length == 0 || string2.Length == 0)
-            {
-                return string1.Length - string2.Length;
-            }
-
-            return GlobalizationMode.Invariant ?
-                string.CompareOrdinal(string1, string2) :
-                CompareString(string1, string2, CompareOptions.None);
-        }
-
         internal int CompareOptionIgnoreCase(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2)
         {
-            // Check for empty span or span from a null string
-            if (string1.Length == 0 || string2.Length == 0)
-            {
-                return string1.Length - string2.Length;
-            }
-
             return GlobalizationMode.Invariant ?
                 CompareOrdinalIgnoreCase(string1, string2) :
                 CompareString(string1, string2, CompareOptions.IgnoreCase);
@@ -822,17 +803,6 @@ namespace System.Globalization
             return StartsWith(source, prefix, options);
         }
 
-        internal bool IsPrefix(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
-        {
-            Debug.Assert(prefix.Length != 0);
-            Debug.Assert(source.Length != 0);
-            Debug.Assert((options & ValidIndexMaskOffFlags) == 0);
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-
-            return StartsWith(source, prefix, options);
-        }
-
         /// <summary>
         /// Determines whether a string starts with a specific prefix.
         /// </summary>
@@ -952,17 +922,6 @@ namespace System.Globalization
             {
                 return source.EndsWith(suffix, (options & CompareOptions.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
             }
-
-            return EndsWith(source, suffix, options);
-        }
-
-        internal bool IsSuffix(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
-        {
-            Debug.Assert(suffix.Length != 0);
-            Debug.Assert(source.Length != 0);
-            Debug.Assert((options & ValidIndexMaskOffFlags) == 0);
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             return EndsWith(source, suffix, options);
         }
@@ -1302,15 +1261,6 @@ namespace System.Globalization
             return IndexOfNew(source, valueAsUtf16.Slice(0, charCount), options);
         }
 
-        internal int IndexOfOrdinalIgnoreCase(ReadOnlySpan<char> source, ReadOnlySpan<char> value)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!source.IsEmpty);
-            Debug.Assert(!value.IsEmpty);
-
-            return IndexOfOrdinalCore(source, value, ignoreCase: true, fromBeginning: true);
-        }
-
         internal static int IndexOfOrdinalIgnoreCaseNew(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool fromBeginning)
         {
             if (value.IsEmpty)
@@ -1323,7 +1273,8 @@ namespace System.Globalization
             if (value.Length > source.Length)
             {
                 // A non-linguistic search compares chars directly against one another, so large
-                // target strings can never be found inside small search spaces.
+                // target strings can never be found inside small search spaces. This check also
+                // handles empty 'source' spans.
 
                 return -1;
             }
@@ -1336,30 +1287,6 @@ namespace System.Globalization
             {
                 return IndexOfOrdinalCore(source, value, ignoreCase: true, fromBeginning);
             }
-        }
-
-        internal int LastIndexOfOrdinal(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!source.IsEmpty);
-            Debug.Assert(!value.IsEmpty);
-            return IndexOfOrdinalCore(source, value, ignoreCase, fromBeginning: false);
-        }
-
-        internal unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!source.IsEmpty);
-            Debug.Assert(!value.IsEmpty);
-            return IndexOfCore(source, value, options, null, fromBeginning: true);
-        }
-
-        internal unsafe int LastIndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!source.IsEmpty);
-            Debug.Assert(!value.IsEmpty);
-            return IndexOfCore(source, value, options, null, fromBeginning: false);
         }
 
         /// <summary>

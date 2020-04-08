@@ -51,26 +51,20 @@ namespace System
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
-                    return CultureInfo.CurrentCulture.CompareInfo.CompareOptionNone(span, other) == 0;
-
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return CultureInfo.CurrentCulture.CompareInfo.CompareOptionIgnoreCase(span, other) == 0;
+                    return CultureInfo.CurrentCulture.CompareInfo.Compare(span, other, string.GetCaseCompareOfComparisonCulture(comparisonType)) == 0;
 
                 case StringComparison.InvariantCulture:
-                    return CompareInfo.Invariant.CompareOptionNone(span, other) == 0;
-
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return CompareInfo.Invariant.CompareOptionIgnoreCase(span, other) == 0;
+                    return CompareInfo.Invariant.Compare(span, other, string.GetCaseCompareOfComparisonCulture(comparisonType)) == 0;
 
                 case StringComparison.Ordinal:
                     return EqualsOrdinal(span, other);
 
-                case StringComparison.OrdinalIgnoreCase:
+                default:
+                    Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
                     return EqualsOrdinalIgnoreCase(span, other);
             }
-
-            Debug.Fail("StringComparison outside range");
-            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -107,28 +101,22 @@ namespace System
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
-                    return CultureInfo.CurrentCulture.CompareInfo.CompareOptionNone(span, other);
-
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return CultureInfo.CurrentCulture.CompareInfo.CompareOptionIgnoreCase(span, other);
+                    return CultureInfo.CurrentCulture.CompareInfo.Compare(span, other, string.GetCaseCompareOfComparisonCulture(comparisonType));
 
                 case StringComparison.InvariantCulture:
-                    return CompareInfo.Invariant.CompareOptionNone(span, other);
-
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return CompareInfo.Invariant.CompareOptionIgnoreCase(span, other);
+                    return CompareInfo.Invariant.Compare(span, other, string.GetCaseCompareOfComparisonCulture(comparisonType));
 
                 case StringComparison.Ordinal:
                     if (span.Length == 0 || other.Length == 0)
                         return span.Length - other.Length;
                     return string.CompareOrdinal(span, other);
 
-                case StringComparison.OrdinalIgnoreCase:
+                default:
+                    Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
                     return CompareInfo.CompareOrdinalIgnoreCase(span, other);
             }
-
-            Debug.Fail("StringComparison outside range");
-            return 0;
         }
 
         /// <summary>
@@ -141,16 +129,6 @@ namespace System
         {
             string.CheckStringComparison(comparisonType);
 
-            if (value.Length == 0)
-            {
-                return 0; // empty substring trivially occurs at every index (including start) of search space
-            }
-
-            if (span.Length == 0)
-            {
-                return -1;
-            }
-
             if (comparisonType == StringComparison.Ordinal)
             {
                 return SpanHelpers.IndexOf(
@@ -160,24 +138,19 @@ namespace System
                     value.Length);
             }
 
-            if (GlobalizationMode.Invariant)
-            {
-                return CompareInfo.InvariantIndexOf(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType) != CompareOptions.None);
-            }
-
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return CultureInfo.CurrentCulture.CompareInfo.IndexOf(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
+                    return CultureInfo.CurrentCulture.CompareInfo.IndexOfNew(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
 
                 case StringComparison.InvariantCulture:
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return CompareInfo.Invariant.IndexOf(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
+                    return CompareInfo.Invariant.IndexOfNew(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
 
                 default:
                     Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
-                    return CompareInfo.Invariant.IndexOfOrdinalIgnoreCase(span, value);
+                    return CompareInfo.IndexOfOrdinalIgnoreCaseNew(span, value, fromBeginning: true);
             }
         }
 
@@ -191,34 +164,28 @@ namespace System
         {
             string.CheckStringComparison(comparisonType);
 
-            if (value.Length == 0)
+            if (comparisonType == StringComparison.Ordinal)
             {
-                return span.Length; // empty substring trivially occurs at every index (including end) of search space
-            }
-
-            if (span.Length == 0)
-            {
-                return -1;
-            }
-
-            if (GlobalizationMode.Invariant)
-            {
-                return CompareInfo.InvariantIndexOf(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType) != CompareOptions.None, fromBeginning: false);
+                return SpanHelpers.LastIndexOf(
+                    ref MemoryMarshal.GetReference(span),
+                    span.Length,
+                    ref MemoryMarshal.GetReference(value),
+                    value.Length);
             }
 
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return CultureInfo.CurrentCulture.CompareInfo.LastIndexOf(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
+                    return CultureInfo.CurrentCulture.CompareInfo.LastIndexOfNew(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
 
                 case StringComparison.InvariantCulture:
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return CompareInfo.Invariant.LastIndexOf(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
+                    return CompareInfo.Invariant.LastIndexOfNew(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
 
                 default:
-                    Debug.Assert(comparisonType == StringComparison.Ordinal || comparisonType == StringComparison.OrdinalIgnoreCase);
-                    return CompareInfo.Invariant.LastIndexOfOrdinal(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType) != CompareOptions.None);
+                    Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
+                    return CompareInfo.IndexOfOrdinalIgnoreCaseNew(span, value, fromBeginning: false);
             }
         }
 
@@ -336,27 +303,23 @@ namespace System
         {
             string.CheckStringComparison(comparisonType);
 
-            if (value.Length == 0)
+            switch (comparisonType)
             {
-                return true; // the empty string is trivially a suffix of every other string
-            }
+                case StringComparison.CurrentCulture:
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return CultureInfo.CurrentCulture.CompareInfo.IsSuffixNew(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
 
-            if (comparisonType >= StringComparison.Ordinal || GlobalizationMode.Invariant)
-            {
-                if (string.GetCaseCompareOfComparisonCulture(comparisonType) == CompareOptions.None)
+                case StringComparison.InvariantCulture:
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CompareInfo.Invariant.IsSuffixNew(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
+
+                case StringComparison.Ordinal:
                     return span.EndsWith(value);
 
-                return (span.Length >= value.Length) ? (CompareInfo.CompareOrdinalIgnoreCase(span.Slice(span.Length - value.Length), value) == 0) : false;
+                default:
+                    Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
+                    return span.EndsWithOrdinalIgnoreCase(value);
             }
-
-            if (span.Length == 0)
-            {
-                return false;
-            }
-
-            return (comparisonType >= StringComparison.InvariantCulture) ?
-                CompareInfo.Invariant.IsSuffix(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType)) :
-                    CultureInfo.CurrentCulture.CompareInfo.IsSuffix(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -379,27 +342,23 @@ namespace System
         {
             string.CheckStringComparison(comparisonType);
 
-            if (value.Length == 0)
+            switch (comparisonType)
             {
-                return true; // the empty string is trivially a prefix of every other string
-            }
+                case StringComparison.CurrentCulture:
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return CultureInfo.CurrentCulture.CompareInfo.IsPrefixNew(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
 
-            if (comparisonType >= StringComparison.Ordinal || GlobalizationMode.Invariant)
-            {
-                if (string.GetCaseCompareOfComparisonCulture(comparisonType) == CompareOptions.None)
+                case StringComparison.InvariantCulture:
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CompareInfo.Invariant.IsPrefixNew(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
+
+                case StringComparison.Ordinal:
                     return span.StartsWith(value);
 
-                return (span.Length >= value.Length) ? (CompareInfo.CompareOrdinalIgnoreCase(span.Slice(0, value.Length), value) == 0) : false;
+                default:
+                    Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
+                    return span.StartsWithOrdinalIgnoreCase(value);
             }
-
-            if (span.Length == 0)
-            {
-                return false;
-            }
-
-            return (comparisonType >= StringComparison.InvariantCulture) ?
-                CompareInfo.Invariant.IsPrefix(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType)) :
-                    CultureInfo.CurrentCulture.CompareInfo.IsPrefix(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
