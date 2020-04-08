@@ -52,6 +52,8 @@ namespace System.Text.Json.Serialization.Tests
             tasks[11] = Task.Run(async () => await RunTest<Point_With_Array>(Point_With_Array.s_data));
             tasks[12] = Task.Run(async () => await RunTest<Point_With_Dictionary>(Point_With_Dictionary.s_data));
             tasks[13] = Task.Run(async () => await RunTest<Point_With_Object>(Point_With_Object.s_data));
+
+            Task.WaitAll(tasks);
         }
 
         [Fact]

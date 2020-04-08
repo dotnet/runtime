@@ -14,12 +14,20 @@ namespace System.Text.Json
 
         StartToken,
 
-        MetadataPropertyName, // Read the first $id or $ref.
-        MetadataIdProperty, // Read value for $id.
-        MetadataRefProperty, // Read value for $ref.
-        MetadataRefPropertyEndObject, // Read EndObject for $ref.
-        MetadataValuesPropertyName, // Read $values property name.
-        MetadataValuesPropertyStartArray, // Read StartArray for $values.
+        MetadataTryReadName, // Try to move the reader to the the first $id or $ref.
+        MetadataReadName, // Read the first $id or $ref.
+
+        MetadataTryReadIdValue, // Try to move the reader to the value for $id.
+        MetadataTryReadRefValue, // Try to move the reader to the value for $ref.
+        MetadataReadIdValue, // Read value for $id.
+        MetadataReadRefValue, // Read value for $ref.
+        MetadataRefTryReadEndObject, // Try to move the reader to the EndObject for $ref.
+        MetadataRefReadEndObject, // Read the EndObject for $ref.
+
+        MetadataTryReadValuesName, // Try to move the reader to the $values property name.
+        MetadataReadValuesName, // Read $values property name.
+        MetadataTryReadValuesStartArray, // Try to move the reader to the StartArray for $values.
+        MetadataReadValuesStartArray, // Read the StartArray for $values.
         MetadataPropertyValue, // Whether all metadata properties has been read.
 
         CreatedObject,

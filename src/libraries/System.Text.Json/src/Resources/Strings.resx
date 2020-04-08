@@ -376,7 +376,7 @@
     <value>Comments cannot be stored when deserializing objects, only the Skip and Disallow comment handling modes are supported.</value>
   </data>
   <data name="DeserializeMissingDeserializationConstructor" xml:space="preserve">
-    <value>Deserialization of reference types without a parameterless constructor, a singular parameterized constructor, or a parameterized constructor annotated with '{0}' is not supported. Type '{1}'</value>
+    <value>Deserialization of types without a parameterless constructor, a singular parameterized constructor, or a parameterized constructor annotated with '{0}' is not supported. Type '{1}'.</value>
   </data>
   <data name="DeserializePolymorphicInterface" xml:space="preserve">
     <value>Deserialization of interface types is not supported. Type '{0}'</value>
@@ -514,5 +514,8 @@
   </data>
   <data name="JsonIncludeOnNonPublicInvalid" xml:space="preserve">
     <value>The non-public property '{0}' on type '{1}' is annotated with 'JsonIncludeAttribute' which is invalid.</value>
+  </data>
+  <data name="CannotPopulateCollection" xml:space="preserve">
+    <value>The collection type '{0}' is abstract, an interface, or is read only, and could not be instantiated and populated.</value>
   </data>
 </root>

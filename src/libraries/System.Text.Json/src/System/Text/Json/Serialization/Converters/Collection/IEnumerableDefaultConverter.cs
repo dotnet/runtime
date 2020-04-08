@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Converters
         : JsonCollectionConverter<TCollection, TElement>
     {
         protected abstract void Add(TElement value, ref ReadStack state);
-        protected abstract void CreateCollection(ref ReadStack state, JsonSerializerOptions options);
+        protected abstract void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options);
         protected virtual void ConvertCollection(ref ReadStack state, JsonSerializerOptions options) { }
 
         protected static JsonConverter<TElement> GetElementConverter(ref ReadStack state)
@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                 }
 
-                CreateCollection(ref state, options);
+                CreateCollection(ref reader, ref state, options);
 
                 JsonConverter<TElement> elementConverter = GetElementConverter(ref state);
                 if (elementConverter.CanUseDirectReadOrWrite)
@@ -117,7 +117,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                     {
-                        if (state.Current.ObjectState == StackFrameObjectState.MetadataRefPropertyEndObject)
+                        if (state.Current.ObjectState == StackFrameObjectState.MetadataRefReadEndObject)
                         {
                             value = (TCollection)state.Current.ReturnValue!;
                             return true;
@@ -132,7 +132,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (state.Current.ObjectState < StackFrameObjectState.CreatedObject)
                 {
-                    CreateCollection(ref state, options);
+                    CreateCollection(ref reader, ref state, options);
 
                     if (state.Current.MetadataId != null)
                     {

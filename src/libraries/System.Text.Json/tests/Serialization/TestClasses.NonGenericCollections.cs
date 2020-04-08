@@ -131,16 +131,16 @@ namespace System.Text.Json.Serialization.Tests
 
     public class WrapperForIEnumerable : IEnumerable
     {
-        private readonly List<object> _list = new List<object>();
+        private readonly List<object> _list;
 
-        public WrapperForIEnumerable() { }
-
-        public WrapperForIEnumerable(List<object> items)
+        public WrapperForIEnumerable()
         {
-            foreach (object item in items)
-            {
-                _list.Add(item);
-            }
+            _list = new List<object>();
+        }
+
+        public WrapperForIEnumerable(IEnumerable<object> items)
+        {
+            _list = new List<object>(items);
         }
 
         public IEnumerator GetEnumerator()
@@ -207,7 +207,17 @@ namespace System.Text.Json.Serialization.Tests
 
     public class WrapperForIList : IList
     {
-        private readonly List<object> _list = new List<object>();
+        private readonly List<object> _list;
+
+        public WrapperForIList()
+        {
+            _list = new List<object>();
+        }
+
+        public WrapperForIList(IEnumerable<object> items)
+        {
+            _list = new List<object>(items);
+        }
 
         public object this[int index] { get => ((IList)_list)[index]; set => ((IList)_list)[index] = value; }
 
@@ -276,6 +286,11 @@ namespace System.Text.Json.Serialization.Tests
         internal WrapperForIListInternalConstructor() { }
     }
 
+    public class ReadOnlyWrapperForIDictionary : WrapperForIDictionary
+    {
+        public override bool IsReadOnly => true;
+    }
+
     public class WrapperForIDictionary : IDictionary
     {
         private readonly Dictionary<string, object> _dictionary = new Dictionary<string, object>();
@@ -284,7 +299,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public bool IsFixedSize => ((IDictionary)_dictionary).IsFixedSize;
 
-        public bool IsReadOnly => ((IDictionary)_dictionary).IsReadOnly;
+        public virtual bool IsReadOnly => ((IDictionary)_dictionary).IsReadOnly;
 
         public ICollection Keys => ((IDictionary)_dictionary).Keys;
 
@@ -406,4 +421,6 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
     }
+
+    public interface IDerivedIList : IList { }
 }
