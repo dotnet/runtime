@@ -846,6 +846,11 @@ namespace Mono.Linker.Steps {
 				MarkMethod (property.SetMethod, reason);
 
 			MarkCustomAttributeArgument (namedArgument.Argument, ca);
+
+			if (property != null && _flowAnnotations.RequiresDataFlowAnalysis (property.SetMethod)) {
+				var scanner = new ReflectionMethodBodyScanner (this);
+				scanner.ProcessAttributeDataflow (property.SetMethod, new Collection<CustomAttributeArgument> { namedArgument.Argument });
+			}
 		}
 
 		PropertyDefinition GetProperty (TypeDefinition type, string propertyname)
@@ -879,6 +884,11 @@ namespace Mono.Linker.Steps {
 				MarkField (field, new DependencyInfo (DependencyKind.CustomAttributeField, ca));
 
 			MarkCustomAttributeArgument (namedArgument.Argument, ca);
+
+			if (field != null && _flowAnnotations.RequiresDataFlowAnalysis (field)) {
+				var scanner = new ReflectionMethodBodyScanner (this);
+				scanner.ProcessAttributeDataflow (field, namedArgument.Argument);
+			}
 		}
 
 		FieldDefinition GetField (TypeDefinition type, string fieldname)
@@ -918,6 +928,12 @@ namespace Mono.Linker.Steps {
 
 			foreach (var argument in ca.ConstructorArguments)
 				MarkCustomAttributeArgument (argument, ca);
+
+			var resolvedConstructor = ca.Constructor.Resolve ();
+			if (resolvedConstructor != null && _flowAnnotations.RequiresDataFlowAnalysis (resolvedConstructor)) {
+				var scanner = new ReflectionMethodBodyScanner (this);
+				scanner.ProcessAttributeDataflow (resolvedConstructor, ca.ConstructorArguments);
+			}
 		}
 
 		void MarkCustomAttributeArgument (CustomAttributeArgument argument, ICustomAttribute ca)
@@ -3366,6 +3382,55 @@ namespace Mono.Linker.Steps {
 						RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberKinds, MethodReturnValue, methodBody.Method.MethodReturnType);
 					}
 				}
+			}
+
+			public void ProcessAttributeDataflow (MethodDefinition method, Collection<CustomAttributeArgument> arguments)
+			{
+				int paramOffset = method.HasImplicitThis () ? 1 : 0;
+
+				for (int i = 0; i < method.Parameters.Count; i++)
+				{
+					var annotation = _flowAnnotations.GetParameterAnnotation (method, i + paramOffset);
+					if (annotation != 0) {
+						ValueNode valueNode = GetValueNodeForCustomAttributeArgument (arguments [i]);
+						if (valueNode != null) {
+							// TODO: There's no way to represent attribute dataflow in current ReflectionPatternContext (and the underlying IReflectionPatterRecorder)
+							ReflectionPatternContext context = new ReflectionPatternContext (_markStep._context, method, method, 0);
+							context.AnalyzingPattern ();
+							RequireDynamicallyAccessedMembers (ref context, annotation, valueNode, method);
+						}
+					}
+				}
+			}
+
+			public void ProcessAttributeDataflow (FieldDefinition field, CustomAttributeArgument value)
+			{
+				var annotation = _flowAnnotations.GetFieldAnnotation (field);
+				Debug.Assert (annotation != 0);
+
+				ValueNode valueNode = GetValueNodeForCustomAttributeArgument (value);
+				if (valueNode != null) {
+					// TODO: There's no way to represent store to a field given current ReflectionPatternContext (and the underlying IReflectionPatterRecorder)
+					var reflectionContext = new ReflectionPatternContext (_markStep._context, field.DeclaringType.Methods [0], field.DeclaringType.Methods [0], 0);
+					reflectionContext.AnalyzingPattern ();
+					RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, field);
+				}
+			}
+
+			private ValueNode GetValueNodeForCustomAttributeArgument(CustomAttributeArgument argument)
+			{
+				ValueNode valueNode;
+				if (argument.Type.Name == "Type") {
+					TypeDefinition referencedType = ((TypeReference)argument.Value).Resolve ();
+					valueNode = referencedType == null ? null : new SystemTypeValue (referencedType);
+				} else if (argument.Type.MetadataType == MetadataType.String) {
+					valueNode = new KnownStringValue ((string)argument.Value);
+				} else {
+					// We shouldn't have gotten a non-null annotation for this from GetParameterAnnotation
+					throw new InvalidOperationException ();
+				}
+
+				return valueNode;
 			}
 
 			protected override void WarnAboutInvalidILInMethod (MethodBody method, int ilOffset)
