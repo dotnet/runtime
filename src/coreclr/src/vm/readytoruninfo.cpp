@@ -618,6 +618,11 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     return new (pMemory) ReadyToRunInfo(pModule, pLayout, pHeader, nativeImage, pamTracker);
 }
 
+bool ReadyToRunInfo::IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModule2)
+{
+    return pModule1->GetReadyToRunInfo()->m_pComposite == pModule2->GetReadyToRunInfo()->m_pComposite;
+}
+
 ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, AllocMemTracker *pamTracker)
     : m_pModule(pModule),
     m_pHeader(pHeader),
@@ -709,7 +714,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     // For format version 4.1 and later, there is an optional inlining table
     if (IsImageVersionAtLeast(4, 1))
     {
-        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::InliningInfo2);
+        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo2);
         if (pInlineTrackingInfoDir != NULL)
         {
             const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
@@ -721,7 +726,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     // For format version 2.1 and later, there is an optional inlining table
     if (m_pPersistentInlineTrackingMap == nullptr && IsImageVersionAtLeast(2, 1))
     {
-        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::InliningInfo);
+        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo);
         if (pInlineTrackingInfoDir != NULL)
         {
             const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
