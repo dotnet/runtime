@@ -70,6 +70,34 @@
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'"/>
   </Target>
 
+  <!-- Setup the runtime packs for mobile app testing -->
+  <Target Name="SetupMobileTesting"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          AfterTargets="AfterResolveReferences"
+          Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'">
+
+    <ItemGroup>
+      <MobileFile Include="@(RuntimeFiles)" />
+      <CrossFile Include="@(MonoCrossFiles)" />
+      <IncludeFile Include="@(MonoIncludeFiles)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(MobileFile)"
+          DestinationFolder="$(NETCoreAppRuntimePackNativePath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+    <Copy SourceFiles="@(CrossFile)"
+          DestinationFolder="$(NETCoreAppRuntimePackNativeCrossPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+    <Copy SourceFiles="@(IncludeFile)"
+          DestinationFolder="$(NETCoreAppRuntimePackNativeIncludePath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+  </Target>
+
   <Target Name="OverrideRuntimeCoreCLR"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences;FilterNugetPackages"
