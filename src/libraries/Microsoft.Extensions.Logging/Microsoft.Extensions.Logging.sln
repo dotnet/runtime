@@ -21,6 +21,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Loggin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Testing.Tests", "tests\DI.Common\Common\tests\Microsoft.Extensions.Logging.Testing.Tests.csproj", "{AB968316-DB05-4237-8925-E074E34353E3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{23079270-3FED-4C99-9F13-637B79150A95}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,10 @@ Global
 		{AB968316-DB05-4237-8925-E074E34353E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AB968316-DB05-4237-8925-E074E34353E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AB968316-DB05-4237-8925-E074E34353E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23079270-3FED-4C99-9F13-637B79150A95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23079270-3FED-4C99-9F13-637B79150A95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23079270-3FED-4C99-9F13-637B79150A95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23079270-3FED-4C99-9F13-637B79150A95}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -54,6 +60,7 @@ Global
 		{70168406-EAF0-47A8-B5C4-12B34686738F} = {787403B8-4C97-440D-A171-ED3725B2E16A}
 		{57A1A1A3-A351-4733-912D-6FF725C269AC} = {70168406-EAF0-47A8-B5C4-12B34686738F}
 		{AB968316-DB05-4237-8925-E074E34353E3} = {1F3C5022-ADFF-455C-B1B1-224CC13961DF}
+		{23079270-3FED-4C99-9F13-637B79150A95} = {787403B8-4C97-440D-A171-ED3725B2E16A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7B8E1A89-1EAA-4C3D-AD1B-EFF67D45FEEB}

@@ -256,6 +256,8 @@ jobs:
     - Android_x86
     - Android_arm
     - Android_arm64
+    - tvOS_x64
+    - tvOS_arm64
     - iOS_x64
     - iOS_arm
     - iOS_arm64
@@ -290,6 +292,8 @@ jobs:
     - Android_x86
     - Android_arm
     - Android_arm64
+    - tvOS_x64
+    - tvOS_arm64
     - iOS_x64
     - iOS_arm
     - iOS_arm64
@@ -411,6 +415,8 @@ jobs:
     - Android_x86
     - Android_arm
     - Android_arm64
+    - tvOS_x64
+    - tvOS_arm64
     # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_arm64
     - iOS_x64
@@ -427,6 +433,8 @@ jobs:
     - Android_x86
     - Android_arm
     - Android_arm64
+    - tvOS_x64
+    - tvOS_arm64
     # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
     - iOS_arm64
     - iOS_x64
@@ -523,6 +531,8 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     runtimeFlavor: mono
     platforms:
+      - tvOS_x64
+      - tvOS_arm64
       - iOS_x64
       # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
       - iOS_arm64

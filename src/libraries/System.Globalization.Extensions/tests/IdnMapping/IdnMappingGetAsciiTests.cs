@@ -164,21 +164,21 @@ namespace System.Globalization.Tests
         [MemberData(nameof(GetAscii_Invalid_TestData))]
         public void GetAscii_Invalid(string unicode, int index, int count, Type exceptionType)
         {
-            GetAscii_Invalid(new IdnMapping() { UseStd3AsciiRules = false }, unicode, index, count, exceptionType);
-            GetAscii_Invalid(new IdnMapping() { UseStd3AsciiRules = true }, unicode, index, count, exceptionType);
-        }
-
-        private static void GetAscii_Invalid(IdnMapping idnMapping, string unicode, int index, int count, Type exceptionType)
-        {
-            if (unicode == null || index + count == unicode.Length)
+            static void getAscii_Invalid(IdnMapping idnMapping, string unicode, int index, int count, Type exceptionType)
             {
-                if (unicode == null || index == 0)
+                if (unicode == null || index + count == unicode.Length)
                 {
-                    Assert.Throws(exceptionType, () => idnMapping.GetAscii(unicode));
+                    if (unicode == null || index == 0)
+                    {
+                        Assert.Throws(exceptionType, () => idnMapping.GetAscii(unicode));
+                    }
+                    Assert.Throws(exceptionType, () => idnMapping.GetAscii(unicode, index));
                 }
-                Assert.Throws(exceptionType, () => idnMapping.GetAscii(unicode, index));
+                Assert.Throws(exceptionType, () => idnMapping.GetAscii(unicode, index, count));
             }
-            Assert.Throws(exceptionType, () => idnMapping.GetAscii(unicode, index, count));
+
+            getAscii_Invalid(new IdnMapping() { UseStd3AsciiRules = false }, unicode, index, count, exceptionType);
+            getAscii_Invalid(new IdnMapping() { UseStd3AsciiRules = true }, unicode, index, count, exceptionType);
         }
 
         [Fact]

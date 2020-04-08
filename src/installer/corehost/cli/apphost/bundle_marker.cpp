@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "marker.h"
+#include "bundle_marker.h"
 #include "pal.h"
 #include "trace.h"
 #include "utils.h"
 
-using namespace bundle;
-
-int64_t marker_t::header_offset()
+int64_t bundle_marker_t::header_offset()
 {
     // Contains the bundle_placeholder default value at compile time.
     // If this is a single-file bundle, the last 8 bytes are replaced 
@@ -27,7 +25,7 @@ int64_t marker_t::header_offset()
         0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
     };
 
-    volatile marker_t* marker = reinterpret_cast<volatile marker_t *>(placeholder);
+    volatile bundle_marker_t* marker = reinterpret_cast<volatile bundle_marker_t *>(placeholder);
 
     return marker->locator.bundle_header_offset;
 }

@@ -10,7 +10,7 @@
 
 #include <Security/Security.h>
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Generate a signature for algorithms which require only the data hash blob, like DSA and ECDSA.
 

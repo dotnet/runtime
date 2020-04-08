@@ -184,7 +184,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(RegionInfo regionInfo1, object obj, bool expected)
+        public void EqualsTest(RegionInfo regionInfo1, object obj, bool expected)
         {
             Assert.Equal(expected, regionInfo1.Equals(obj));
             Assert.Equal(regionInfo1.GetHashCode(), regionInfo1.GetHashCode());

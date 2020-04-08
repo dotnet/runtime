@@ -139,7 +139,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(SurrogatePairTestData_InvalidOnly))]
-        public static void Ctor_SurrogatePair_Valid(char highSurrogate, char lowSurrogate)
+        public static void Ctor_SurrogatePair_Invalid(char highSurrogate, char lowSurrogate)
         {
             string expectedParamName = !char.IsHighSurrogate(highSurrogate) ? nameof(highSurrogate) : nameof(lowSurrogate);
             Assert.Throws<ArgumentOutOfRangeException>(expectedParamName, () => new Rune(highSurrogate, lowSurrogate));
