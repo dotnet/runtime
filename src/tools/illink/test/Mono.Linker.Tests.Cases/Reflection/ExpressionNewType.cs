@@ -57,8 +57,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Expression.New (T);
 		}
 
-		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetType), new Type [] { typeof (string) })]
 		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type [] { typeof (Type) })]
 		[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.New), new Type [] { typeof (Type) })]
 		[Kept]

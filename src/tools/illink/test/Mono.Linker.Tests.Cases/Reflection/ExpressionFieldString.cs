@@ -128,8 +128,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[UnrecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetType), new Type [] { typeof (string) })]
-		[UnrecognizedReflectionAccessPattern (
 			typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 		[Kept]
 		static void Branch_UnrecognizedPatterns ()
