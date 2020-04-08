@@ -92,10 +92,6 @@ jobs:
             parameters:
               installDotnet: true
 
-        # Build CoreLib
-        - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib $(crossArg) -arch $(archType) -c ${{ parameters.liveRuntimeBuildConfig }} $(officialBuildIdArg) -ci
-          displayName: Build System.Private.CoreLib
-
         - script: $(_buildScript)
                 $(_buildArguments)
                 $(_addtionalBuildArguments)
