@@ -9,34 +9,24 @@ namespace System.Threading.Tests
 {
     public class CountdownEventTests
     {
-        [Fact]
-        public static void RunCountdownEventTest0_StateTrans()
+        [Theory]
+        [InlineData(0, 0, false)]
+        [InlineData(1, 0, false)]
+        [InlineData(128, 0, false)]
+        [InlineData(1024 * 1024, 0, false)]
+        [InlineData(1, 1024, false)]
+        [InlineData(128, 1024, false)]
+        [InlineData(1024 * 1024, 1024, false)]
+        [InlineData(1, 0, true)]
+        [InlineData(128, 0, true)]
+        [InlineData(1024 * 1024, 0, true)]
+        [InlineData(1, 1024, true)]
+        [InlineData(128, 1024, true)]
+        [InlineData(1024 * 1024, 1024, true)]
+        public static void RunCountdownEventTest0_StateTrans(int initCount, int increms, bool takeAllAtOnce)
         {
-            RunCountdownEventTest0_StateTrans(0, 0, false);
-            RunCountdownEventTest0_StateTrans(1, 0, false);
-            RunCountdownEventTest0_StateTrans(128, 0, false);
-            RunCountdownEventTest0_StateTrans(1024 * 1024, 0, false);
-            RunCountdownEventTest0_StateTrans(1, 1024, false);
-            RunCountdownEventTest0_StateTrans(128, 1024, false);
-            RunCountdownEventTest0_StateTrans(1024 * 1024, 1024, false);
-            RunCountdownEventTest0_StateTrans(1, 0, true);
-            RunCountdownEventTest0_StateTrans(128, 0, true);
-            RunCountdownEventTest0_StateTrans(1024 * 1024, 0, true);
-            RunCountdownEventTest0_StateTrans(1, 1024, true);
-            RunCountdownEventTest0_StateTrans(128, 1024, true);
-            RunCountdownEventTest0_StateTrans(1024 * 1024, 1024, true);
-        }
+            // Validates init, set, reset state transitions.
 
-        [Fact]
-        public static void RunCountdownEventTest1_SimpleTimeout()
-        {
-            RunCountdownEventTest1_SimpleTimeout(0);
-            RunCountdownEventTest1_SimpleTimeout(100);
-        }
-
-        // Validates init, set, reset state transitions.
-        private static void RunCountdownEventTest0_StateTrans(int initCount, int increms, bool takeAllAtOnce)
-        {
             CountdownEvent ev = new CountdownEvent(initCount);
 
             Assert.Equal(initCount, ev.InitialCount);
@@ -70,15 +60,17 @@ namespace System.Threading.Tests
             Assert.Equal(ev.InitialCount, ev.CurrentCount);
         }
 
-        // Tries some simple timeout cases.
-        private static void RunCountdownEventTest1_SimpleTimeout(int ms)
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
+        public static void RunCountdownEventTest1_SimpleTimeout(int ms)
         {
-            // Wait on the event.
             CountdownEvent ev = new CountdownEvent(999);
             Assert.False(ev.Wait(ms));
             Assert.False(ev.IsSet);
             Assert.False(ev.WaitHandle.WaitOne(ms));
         }
+
         [Fact]
         public static void RunCountdownEventTest2_Exceptions()
         {

@@ -60,7 +60,7 @@ namespace System.Globalization.Tests
         [InlineData("en-US", CompareOptions.IgnoreCase, "en-US", CompareOptions.IgnoreSymbols, false)]
         [InlineData("en-US", CompareOptions.IgnoreCase, "fr-FR", CompareOptions.IgnoreCase, false)]
         [InlineData("en-US", CompareOptions.IgnoreCase, "fr-FR", CompareOptions.Ordinal, false)]
-        public void Equals(string cultureName1, CompareOptions options1, string cultureName2, CompareOptions options2, bool expected)
+        public void EqualsTest(string cultureName1, CompareOptions options1, string cultureName2, CompareOptions options2, bool expected)
         {
             StringComparer comparer1 = new CultureInfo(cultureName1).CompareInfo.GetStringComparer(options1);
             StringComparer comparer2 = new CultureInfo(cultureName2).CompareInfo.GetStringComparer(options2);

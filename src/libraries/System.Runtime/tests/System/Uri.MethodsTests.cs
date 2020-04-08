@@ -386,7 +386,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(Uri uri1, object obj, bool expected)
+        public void EqualsTest(Uri uri1, object obj, bool expected)
         {
             Uri uri2 = obj as Uri;
             if (uri1 != null)
@@ -599,9 +599,9 @@ namespace System.Tests
         [MemberData(nameof(GetComponents_Basic_TestData))]
         public void GetComponents(Uri uri, UriComponents components, string expected)
         {
-            GetComponents(uri, components, UriFormat.SafeUnescaped, expected);
-            GetComponents(uri, components, UriFormat.Unescaped, expected);
-            GetComponents(uri, components, UriFormat.UriEscaped, expected);
+            GetComponents_Advanced(uri, components, UriFormat.SafeUnescaped, expected);
+            GetComponents_Advanced(uri, components, UriFormat.Unescaped, expected);
+            GetComponents_Advanced(uri, components, UriFormat.UriEscaped, expected);
         }
 
         public static IEnumerable<object[]> GetComponents_Advanced_TestData()
@@ -667,7 +667,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetComponents_Advanced_TestData))]
-        public void GetComponents(Uri uri, UriComponents components, UriFormat format, string expected)
+        public void GetComponents_Advanced(Uri uri, UriComponents components, UriFormat format, string expected)
         {
             Assert.Equal(expected, uri.GetComponents(components, format));
         }

@@ -295,5 +295,26 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 return cib;
             }
         }
+
+        // SkipValue() helper: reads a cbor string without allocating or copying to a buffer
+        // NB this only handles definite-length chunks
+        private void SkipString(CborMajorType type)
+        {
+            CborInitialByte header = PeekInitialByte(expectedType: type);
+
+            ReadOnlySpan<byte> buffer = _buffer.Span;
+            int byteLength = checked((int)ReadUnsignedInteger(buffer, header, out int additionalBytes));
+            EnsureBuffer(1 + additionalBytes + byteLength);
+
+            // force any utf8 decoding errors if text string
+            if (type == CborMajorType.TextString)
+            {
+                ReadOnlySpan<byte> encodedSlice = buffer.Slice(1 + additionalBytes, byteLength);
+                s_utf8Encoding.GetCharCount(encodedSlice);
+            }
+
+            AdvanceBuffer(1 + additionalBytes + byteLength);
+            AdvanceDataItemCounters();
+        }
     }
 }

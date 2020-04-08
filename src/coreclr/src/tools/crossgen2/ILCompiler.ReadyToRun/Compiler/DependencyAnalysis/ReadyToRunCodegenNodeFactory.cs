@@ -412,8 +412,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
 
-            MethodDesc localMethod = targetMethod.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            return _localMethodCache.GetOrAdd(localMethod);
+            return _localMethodCache.GetOrAdd(targetMethod.Method);
         }
 
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
@@ -536,7 +535,7 @@ namespace ILCompiler.DependencyAnalysis
 
             AssemblyTableNode assemblyTable = null;
 
-            if (CompilationModuleGroup.CompilationModuleSet.Skip(1).Any())
+            if (CompilationModuleGroup.IsCompositeBuildMode)
             {
                 assemblyTable = new AssemblyTableNode(Target);
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);

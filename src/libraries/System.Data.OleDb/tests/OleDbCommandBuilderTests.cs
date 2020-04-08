@@ -22,7 +22,7 @@ namespace System.Data.OleDb.Tests
         [ConditionalTheory(Helpers.IsDriverAvailable)]
         [InlineData(CommandType.Text)]
         [InlineData(CommandType.TableDirect)]
-        public void DeriveParameters_NullCommand_Throws(CommandType commandType)
+        public void DeriveParameters_InvalidCommandType_Throws(CommandType commandType)
         {
             using (var cmd = (OleDbCommand)OleDbFactory.Instance.CreateCommand())
             {

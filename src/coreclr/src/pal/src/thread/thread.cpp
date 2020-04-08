@@ -1666,7 +1666,10 @@ CorUnix::InternalSetThreadDescription(
 
     // Null terminate early.
     // pthread_setname_np only accepts up to 16 chars.
-    nameBuf[15] = '\0';
+    if (nameSize > 15)
+    {
+        nameBuf[15] = '\0';
+    }
 
     error = pthread_setname_np(pTargetThread->GetPThreadSelf(), nameBuf);
 

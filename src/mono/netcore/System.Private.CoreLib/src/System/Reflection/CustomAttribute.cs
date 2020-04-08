@@ -32,14 +32,14 @@ namespace System.Reflection
 {
     internal static class CustomAttribute
     {
-        private static Assembly corlib;
+        private static Assembly? corlib;
         [ThreadStatic]
-        private static Dictionary<Type, AttributeUsageAttribute> usage_cache;
+        private static Dictionary<Type, AttributeUsageAttribute>? usage_cache;
 
         /* Treat as user types all corlib types extending System.Type that are not RuntimeType and TypeBuilder */
         private static bool IsUserCattrProvider(object obj)
         {
-            Type type = obj as Type;
+            Type? type = obj as Type;
             if ((type is RuntimeType) || (RuntimeFeature.IsDynamicCodeSupported && type?.IsTypeBuilder() == true))
                 return false;
             if ((obj is Type))
@@ -52,9 +52,9 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Attribute[] GetCustomAttributesInternal(ICustomAttributeProvider obj, Type attributeType, bool pseudoAttrs);
 
-        internal static object[] GetPseudoCustomAttributes(ICustomAttributeProvider obj, Type attributeType)
+        internal static object[]? GetPseudoCustomAttributes(ICustomAttributeProvider obj, Type attributeType)
         {
-            object[] pseudoAttrs = null;
+            object[]? pseudoAttrs = null;
             /* FIXME: Add other types */
             if (obj is RuntimeMethodInfo monoMethod)
                 pseudoAttrs = monoMethod.GetPseudoCustomAttributes();
@@ -79,7 +79,7 @@ namespace System.Reflection
             return pseudoAttrs;
         }
 
-        private static object[] GetPseudoCustomAttributes(Type type)
+        private static object[]? GetPseudoCustomAttributes(Type type)
         {
             int count = 0;
             TypeAttributes Attributes = type.Attributes;
@@ -103,14 +103,15 @@ namespace System.Reflection
             return attrs;
         }
 
-        internal static object[] GetCustomAttributesBase(ICustomAttributeProvider obj, Type attributeType, bool inheritedOnly)
+        // FIXME: Callers are explicitly passing in null for attributeType, but GetCustomAttributes prohibits null attributeType arguments
+        internal static object[] GetCustomAttributesBase(ICustomAttributeProvider obj, Type? attributeType, bool inheritedOnly)
         {
             object[] attrs;
 
             if (IsUserCattrProvider(obj))
-                attrs = obj.GetCustomAttributes(attributeType, true);
+                attrs = obj.GetCustomAttributes(attributeType!, true);
             else
-                attrs = GetCustomAttributesInternal(obj, attributeType, false);
+                attrs = GetCustomAttributesInternal(obj, attributeType!, false);
 
             //
             // All pseudo custom attributes are Inherited = false hence we can avoid
@@ -118,7 +119,7 @@ namespace System.Reflection
             //
             if (!inheritedOnly)
             {
-                object[] pseudoAttrs = GetPseudoCustomAttributes(obj, attributeType);
+                object[]? pseudoAttrs = GetPseudoCustomAttributes(obj, attributeType!);
                 if (pseudoAttrs != null)
                 {
                     object[] res = new Attribute[attrs.Length + pseudoAttrs.Length];
@@ -141,15 +142,16 @@ namespace System.Reflection
                 && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute) && attributeType != typeof(object))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
+            // FIXME: GetCustomAttributesBase doesn't like being passed a null attributeType
             if (attributeType == typeof(CustomAttribute))
-                attributeType = null;
+                attributeType = null!;
             if (attributeType == typeof(Attribute))
-                attributeType = null;
+                attributeType = null!;
             if (attributeType == typeof(object))
-                attributeType = null;
+                attributeType = null!;
 
             object[] r;
-            object[] res = GetCustomAttributesBase(obj, attributeType, false);
+            object[] res = GetCustomAttributesBase(obj, attributeType!, false);
             // shortcut
             if (!inherit && res.Length == 1)
             {
@@ -190,8 +192,8 @@ namespace System.Reflection
             }
 
             int initialSize = Math.Max(res.Length, 16);
-            List<object> a = null;
-            ICustomAttributeProvider btype = obj;
+            List<object>? a = null;
+            ICustomAttributeProvider? btype = obj;
             object[] array;
 
             /* Non-inherit case */
@@ -224,7 +226,7 @@ namespace System.Reflection
                 if (attributeType == null || attributeType.IsValueType)
                     array = new Attribute[a.Count];
                 else
-                    array = Array.CreateInstance(attributeType, a.Count) as object[];
+                    array = (Array.CreateInstance(attributeType, a.Count) as object[])!;
                 a.CopyTo(array, 0);
                 return array;
             }
@@ -249,7 +251,7 @@ namespace System.Reflection
                             continue;
                     }
 
-                    AttributeInfo firstAttribute;
+                    AttributeInfo? firstAttribute;
                     if (attributeInfos.TryGetValue(attrType, out firstAttribute))
                         usage = firstAttribute.Usage;
                     else
@@ -283,7 +285,7 @@ namespace System.Reflection
             if (attributeType == null || attributeType.IsValueType)
                 array = new Attribute[a.Count];
             else
-                array = Array.CreateInstance(attributeType, a.Count) as object[];
+                array = (Array.CreateInstance(attributeType, a.Count) as object[])!;
 
             // copy attributes to array
             a.CopyTo(array, 0);
@@ -319,7 +321,7 @@ namespace System.Reflection
             return GetCustomAttributesData(obj, typeof(CustomAttribute), inherit);
         }
 
-        internal static IList<CustomAttributeData> GetCustomAttributesData(ICustomAttributeProvider obj, Type attributeType, bool inherit)
+        internal static IList<CustomAttributeData> GetCustomAttributesData(ICustomAttributeProvider obj, Type? attributeType, bool inherit)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
@@ -365,8 +367,8 @@ namespace System.Reflection
             }
 
             int initialSize = Math.Max(res.Count, 16);
-            List<CustomAttributeData> a = null;
-            ICustomAttributeProvider btype = obj;
+            List<CustomAttributeData>? a = null;
+            ICustomAttributeProvider? btype = obj;
 
             /* Non-inherit case */
             if (!inherit)
@@ -419,7 +421,7 @@ namespace System.Reflection
                             continue;
                     }
 
-                    AttributeInfo firstAttribute;
+                    AttributeInfo? firstAttribute;
                     if (attributeInfos.TryGetValue(attrType, out firstAttribute))
                         usage = firstAttribute.Usage;
                     else
@@ -455,7 +457,7 @@ namespace System.Reflection
             return a.ToArray();
         }
 
-        internal static IList<CustomAttributeData> GetCustomAttributesDataBase(ICustomAttributeProvider obj, Type attributeType, bool inheritedOnly)
+        internal static IList<CustomAttributeData> GetCustomAttributesDataBase(ICustomAttributeProvider obj, Type? attributeType, bool inheritedOnly)
         {
             CustomAttributeData[] attrsData;
             if (IsUserCattrProvider(obj))
@@ -473,7 +475,7 @@ namespace System.Reflection
             //
             if (!inheritedOnly)
             {
-                CustomAttributeData[] pseudoAttrsData = GetPseudoCustomAttributesData(obj, attributeType);
+                CustomAttributeData[]? pseudoAttrsData = GetPseudoCustomAttributesData(obj, attributeType);
                 if (pseudoAttrsData != null)
                 {
                     if (attrsData.Length == 0)
@@ -488,9 +490,9 @@ namespace System.Reflection
             return Array.AsReadOnly(attrsData);
         }
 
-        internal static CustomAttributeData[] GetPseudoCustomAttributesData(ICustomAttributeProvider obj, Type attributeType)
+        internal static CustomAttributeData[]? GetPseudoCustomAttributesData(ICustomAttributeProvider obj, Type? attributeType)
         {
-            CustomAttributeData[] pseudoAttrsData = null;
+            CustomAttributeData[]? pseudoAttrsData = null;
 
             /* FIXME: Add other types */
             if (obj is RuntimeMethodInfo monoMethod)
@@ -521,7 +523,7 @@ namespace System.Reflection
             return pseudoAttrsData;
         }
 
-        private static CustomAttributeData[] GetPseudoCustomAttributesData(Type type)
+        private static CustomAttributeData[]? GetPseudoCustomAttributesData(Type type)
         {
             int count = 0;
             TypeAttributes Attributes = type.Attributes;
@@ -538,9 +540,9 @@ namespace System.Reflection
             count = 0;
 
             if ((Attributes & TypeAttributes.Serializable) != 0)
-                attrsData[count++] = new CustomAttributeData((typeof(SerializableAttribute)).GetConstructor(Type.EmptyTypes));
+                attrsData[count++] = new CustomAttributeData((typeof(SerializableAttribute)).GetConstructor(Type.EmptyTypes)!);
             if ((Attributes & TypeAttributes.Import) != 0)
-                attrsData[count++] = new CustomAttributeData((typeof(ComImportAttribute)).GetConstructor(Type.EmptyTypes));
+                attrsData[count++] = new CustomAttributeData((typeof(ComImportAttribute)).GetConstructor(Type.EmptyTypes)!);
 
             return attrsData;
         }
@@ -552,7 +554,7 @@ namespace System.Reflection
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
-            AttributeUsageAttribute usage = null;
+            AttributeUsageAttribute? usage = null;
             do
             {
                 if (IsUserCattrProvider(obj))
@@ -561,7 +563,7 @@ namespace System.Reflection
                 if (IsDefinedInternal(obj, attributeType))
                     return true;
 
-                object[] pseudoAttrs = GetPseudoCustomAttributes(obj, attributeType);
+                object[]? pseudoAttrs = GetPseudoCustomAttributes(obj, attributeType);
                 if (pseudoAttrs != null)
                 {
                     for (int i = 0; i < pseudoAttrs.Length; ++i)
@@ -579,7 +581,7 @@ namespace System.Reflection
                         return false;
                 }
 
-                obj = GetBase(obj);
+                obj = GetBase(obj)!;
             } while (obj != null);
 
             return false;
@@ -588,9 +590,9 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool IsDefinedInternal(ICustomAttributeProvider obj, Type AttributeType);
 
-        private static PropertyInfo GetBasePropertyDefinition(RuntimePropertyInfo property)
+        private static PropertyInfo? GetBasePropertyDefinition(RuntimePropertyInfo property)
         {
-            MethodInfo method = property.GetGetMethod(true);
+            MethodInfo? method = property.GetGetMethod(true);
             if (method == null || !method.IsVirtual)
                 method = property.GetSetMethod(true);
             if (method == null || !method.IsVirtual)
@@ -605,21 +607,21 @@ namespace System.Reflection
                     Type[] paramTypes = new Type[parameters.Length];
                     for (int i = 0; i < paramTypes.Length; i++)
                         paramTypes[i] = parameters[i].ParameterType;
-                    return baseMethod.DeclaringType.GetProperty(property.Name, property.PropertyType,
+                    return baseMethod.DeclaringType!.GetProperty(property.Name, property.PropertyType,
                                              paramTypes);
                 }
                 else
                 {
-                    return baseMethod.DeclaringType.GetProperty(property.Name, property.PropertyType);
+                    return baseMethod.DeclaringType!.GetProperty(property.Name, property.PropertyType);
                 }
             }
             return null;
 
         }
 
-        private static EventInfo GetBaseEventDefinition(RuntimeEventInfo evt)
+        private static EventInfo? GetBaseEventDefinition(RuntimeEventInfo evt)
         {
-            MethodInfo method = evt.GetAddMethod(true);
+            MethodInfo? method = evt.GetAddMethod(true);
             if (method == null || !method.IsVirtual)
                 method = evt.GetRaiseMethod(true);
             if (method == null || !method.IsVirtual)
@@ -633,7 +635,7 @@ namespace System.Reflection
                 BindingFlags flags = method.IsPublic ? BindingFlags.Public : BindingFlags.NonPublic;
                 flags |= method.IsStatic ? BindingFlags.Static : BindingFlags.Instance;
 
-                return baseMethod.DeclaringType.GetEvent(evt.Name, flags);
+                return baseMethod.DeclaringType!.GetEvent(evt.Name, flags);
             }
             return null;
         }
@@ -641,7 +643,7 @@ namespace System.Reflection
         // Handles Type, RuntimePropertyInfo and RuntimeMethodInfo.
         // The runtime has also cases for RuntimeEventInfo, RuntimeFieldInfo, Assembly and ParameterInfo,
         // but for those we return null here.
-        private static ICustomAttributeProvider GetBase(ICustomAttributeProvider obj)
+        private static ICustomAttributeProvider? GetBase(ICustomAttributeProvider obj)
         {
             if (obj == null)
                 return null;
@@ -649,7 +651,7 @@ namespace System.Reflection
             if (obj is Type)
                 return ((Type)obj).BaseType;
 
-            MethodInfo method = null;
+            MethodInfo? method = null;
             if (obj is RuntimePropertyInfo)
                 return GetBasePropertyDefinition((RuntimePropertyInfo)obj);
             else if (obj is RuntimeEventInfo)
@@ -690,7 +692,7 @@ namespace System.Reflection
                 /* Avoid endless recursion */
                 return new AttributeUsageAttribute(AttributeTargets.Class);
 
-            AttributeUsageAttribute usageAttribute = null;
+            AttributeUsageAttribute? usageAttribute = null;
             object[] attribs = GetCustomAttributes(attributeType, typeof(AttributeUsageAttribute), false);
             if (attribs.Length == 0)
             {
@@ -725,7 +727,7 @@ namespace System.Reflection
 
         private static AttributeUsageAttribute RetrieveAttributeUsage(Type attributeType)
         {
-            AttributeUsageAttribute usageAttribute = null;
+            AttributeUsageAttribute? usageAttribute = null;
             /* Usage a thread-local cache to speed this up, since it is called a lot from GetCustomAttributes () */
             if (usage_cache == null)
                 usage_cache = new Dictionary<Type, AttributeUsageAttribute>();

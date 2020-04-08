@@ -397,7 +397,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExtractAssociatedIcon_FilePath_Success()
         {
-            ExtractAssociatedIcon_FilePath_Success(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
+            ExtractAssociatedIcon_FilePath_Success_Helper(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // UNC
@@ -422,10 +422,10 @@ namespace System.Drawing.Tests
 
             Assert.True(new Uri(bitmapUncPath).IsUnc);
 
-            ExtractAssociatedIcon_FilePath_Success(bitmapUncPath);
+            ExtractAssociatedIcon_FilePath_Success_Helper(bitmapUncPath);
         }
 
-        private void ExtractAssociatedIcon_FilePath_Success(string filePath)
+        private void ExtractAssociatedIcon_FilePath_Success_Helper(string filePath)
         {
             using (Icon icon = Icon.ExtractAssociatedIcon(filePath))
             {

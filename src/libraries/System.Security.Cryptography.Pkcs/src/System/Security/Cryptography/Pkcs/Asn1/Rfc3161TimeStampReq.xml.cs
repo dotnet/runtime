@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal Oid? ReqPolicy;
         internal ReadOnlyMemory<byte>? Nonce;
         internal bool CertReq;
-        internal System.Security.Cryptography.Asn1.X509ExtensionAsn[] Extensions;
+        internal System.Security.Cryptography.Asn1.X509ExtensionAsn[]? Extensions;
 
 #if DEBUG
         static Rfc3161TimeStampReq()

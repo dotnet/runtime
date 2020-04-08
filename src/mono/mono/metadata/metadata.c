@@ -2570,7 +2570,13 @@ retry:
 		return signature_in_image (type->data.method, image);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		return image == mono_get_image_for_generic_param (type->data.generic_param);
+		if (image == mono_get_image_for_generic_param (type->data.generic_param))
+			return TRUE;
+		else if (type->data.generic_param->gshared_constraint) {
+			type = type->data.generic_param->gshared_constraint;
+			goto retry;
+		}
+		return FALSE;
 	default:
 		/* At this point, we should've avoided all potential allocations in mono_class_from_mono_type_internal () */
 		return image == m_class_get_image (mono_class_from_mono_type_internal (type));
@@ -3055,6 +3061,9 @@ retry:
 	{
 		MonoImage *image = mono_get_image_for_generic_param (type->data.generic_param);
 		add_image (image, data);
+		type = type->data.generic_param->gshared_constraint;
+		if (type)
+			goto retry;
 		break;
 	}
 	case MONO_TYPE_CLASS:

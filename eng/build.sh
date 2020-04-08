@@ -18,12 +18,12 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print available subsets with -subset help"
-  echo "  --subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
-  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, iOS or Android"
-  echo "  --arch                     Build platform: x86, x64, arm or arm64"
+  echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS or Android"
+  echo "  --arch                     Build platform: x86, x64, arm, armel or arm64"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
   echo "  --librariesConfiguration   Libraries build configuration: Debug or Release"
+  echo "  --projects <value>         Project or solution file(s) to build"
   echo "  --verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
   echo "  --binaryLog                Output binary log (short: -bl)"
   echo "  --cross                    Optional argument to signify cross compilation"
@@ -33,7 +33,6 @@ usage()
   echo "Actions (defaults to --restore --build):"
   echo "  --restore                  Restore dependencies (short: -r)"
   echo "  --build                    Build all source projects (short: -b)"
-  echo "  --buildtests               Build all test projects"
   echo "  --rebuild                  Rebuild all source projects"
   echo "  --test                     Build and run tests (short: -t)"
   echo "  --pack                     Package build outputs into NuGet packages"
@@ -46,6 +45,7 @@ usage()
   echo "  --framework                Build framework: netcoreapp5.0 or net472 (short: -f)"
   echo "  --coverage                 Collect code coverage when testing"
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
+  echo "  --testnobuild              Skip building tests when invoking -test"
   echo "  --allconfigurations        Build packages for all build configurations"
   echo ""
 
@@ -82,16 +82,12 @@ initDistroRid()
 arguments=''
 cmakeargs=''
 extraargs=''
-build=false
-buildtests=false
-subsetCategory=''
-checkedPossibleDirectoryToBuild=false
 crossBuild=0
 
 source $scriptroot/native/init-os-and-arch.sh
 
 # Check if an action is passed in
-declare -a actions=("r" "restore" "b" "build" "buildtests" "rebuild" "t" "test" "pack" "sign" "publish" "clean")
+declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
 actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 
 while [[ $# > 0 ]]; do
@@ -100,11 +96,6 @@ while [[ $# > 0 ]]; do
      -help|-h)
       usage
       exit 0
-      ;;
-     -subsetcategory)
-      subsetCategory="$(echo "$2" | awk '{print tolower($0)}')"
-      arguments="$arguments /p:SubsetCategory=$subsetCategory"
-      shift 2
       ;;
      -subset)
       arguments="$arguments /p:Subset=$2"
@@ -133,17 +124,12 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:BuildAllConfigurations=true"
       shift 1
       ;;
-     -build)
-      build=true
-      arguments="$arguments -build"
-      shift 1
-      ;;
-     -buildtests)
-      buildtests=true
-      shift 1
-      ;;
      -testscope)
       arguments="$arguments /p:TestScope=$2"
+      shift 2
+      ;;
+     -testnobuild)
+      arguments="$arguments /p:TestNoBuild=$2"
       shift 2
       ;;
      -coverage)
@@ -177,31 +163,11 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
       *)
-      ea=$1
-
-      if [[ $checkedPossibleDirectoryToBuild == false ]] && [[ $subsetCategory == "libraries" ]]; then
-        checkedPossibleDirectoryToBuild=true
-
-        if [[ -d "$1" ]]; then
-          ea="/p:DirectoryToBuild=$1"
-        elif [[ -d "$scriptroot/../src/libraries/$1" ]]; then
-          ea="/p:DirectoryToBuild=$scriptroot/../src/libraries/$1"
-        fi
-      fi
-
-      extraargs="$extraargs $ea"
+      extraargs="$extraargs $1"
       shift 1
       ;;
   esac
 done
-
-if [[ "$buildtests" == true ]]; then
-  if [[ "$build" == true ]]; then
-    arguments="$arguments /p:BuildTests=true"
-  else
-    arguments="$arguments -build /p:BuildTests=only"
-  fi
-fi
 
 if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
