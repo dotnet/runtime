@@ -65,6 +65,9 @@ jobs:
         value: /p:OutputRid=linux-musl-${{ parameters.archType }}
       - name: _PortableBuild
         value: true
+    - ${{ if eq(parameters.osGroup, 'tvOS') }}:
+      - name: osOverride
+        value: -os tvOS
     - ${{ if eq(parameters.osGroup, 'iOS') }}:
       - name: osOverride
         value: -os iOS
@@ -79,7 +82,7 @@ jobs:
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:

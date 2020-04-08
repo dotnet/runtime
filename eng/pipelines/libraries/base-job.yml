@@ -66,6 +66,10 @@ jobs:
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 
+        # force a value for OS when cross-building tvOS on OSX
+        - ${{ if eq(parameters.osGroup, 'tvOS') }}:
+          - _runtimeOSArg: -os ${{ parameters.osGroup }}
+
         # force a value for OS when cross-building iOS on OSX
         - ${{ if eq(parameters.osGroup, 'iOS') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
