@@ -20,6 +20,8 @@ elseif (CLR_CMAKE_TARGET_OSX)
     include_directories(SYSTEM /usr/local/include)
 elseif (CLR_CMAKE_TARGET_IOS)
     set(PAL_UNIX_NAME \"IOS\")
+elseif (CLR_CMAKE_TARGET_TVOS)
+    set(PAL_UNIX_NAME \"TVOS\")
 elseif (CLR_CMAKE_TARGET_FREEBSD)
     set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
@@ -109,6 +111,11 @@ check_symbol_exists(
     getifaddrs
     ifaddrs.h
     HAVE_GETIFADDRS)
+
+check_symbol_exists(
+    fork
+    unistd.h
+    HAVE_FORK)
 
 check_symbol_exists(
     lseek64
@@ -457,6 +464,13 @@ if(CLR_CMAKE_TARGET_IOS)
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
     unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    unset(HAVE_FORK) # exists but blocked by kernel
+elseif(CLR_CMAKE_TARGET_TVOS)
+    # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
+    unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
+    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
+    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_ANDROID)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
@@ -726,7 +740,7 @@ check_symbol_exists(
     HAVE_TCP_FSM_H
 )
 
-if(CLR_CMAKE_TARGET_IOS)
+if(CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
     set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h")
 else()

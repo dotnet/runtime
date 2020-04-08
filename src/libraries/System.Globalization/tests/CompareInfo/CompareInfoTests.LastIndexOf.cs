@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> LastIndexOf_TestData()
         {
             // Empty strings
-            yield return new object[] { s_invariantCompare, "foo", "", 2, 3, CompareOptions.None, 2 };
+            yield return new object[] { s_invariantCompare, "foo", "", 2, 3, CompareOptions.None, 3 };
             yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0 };
             yield return new object[] { s_invariantCompare, "", "a", 0, 0, CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "", "", -1, 0, CompareOptions.None, 0 };
@@ -30,8 +30,8 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Hello", "b", 5, 5, CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "Hello", "l", 5, 0, CompareOptions.None, -1 };
 
-            yield return new object[] { s_invariantCompare, "Hello", "", 5, 5, CompareOptions.None, 4 };
-            yield return new object[] { s_invariantCompare, "Hello", "", 5, 0, CompareOptions.None, 4 };
+            yield return new object[] { s_invariantCompare, "Hello", "", 5, 5, CompareOptions.None, 5 };
+            yield return new object[] { s_invariantCompare, "Hello", "", 5, 0, CompareOptions.None, 5 };
 
             // OrdinalIgnoreCase
             yield return new object[] { s_invariantCompare, "Hello", "l", 4, 5, CompareOptions.OrdinalIgnoreCase, 3 };
@@ -157,6 +157,32 @@ namespace System.Globalization.Tests
             // Use LastIndexOf(string, string, int, int, CompareOptions)
             Assert.Equal(expected, compareInfo.LastIndexOf(source, value, startIndex, count, options));
 
+            // Fixup offsets so that we can call the span-based APIs.
+
+            ReadOnlySpan<char> sourceSpan;
+            int adjustmentFactor; // number of chars to add to retured index from span-based APIs
+
+            if (startIndex == source.Length - 1 && count == source.Length)
+            {
+                // This idiom means "read the whole span"
+                sourceSpan = source;
+                adjustmentFactor = 0;
+            }
+            else if (startIndex == source.Length)
+            {
+                // Account for possible off-by-one at the call site
+                sourceSpan = source.AsSpan()[^(Math.Max(0, count - 1))..];
+                adjustmentFactor = source.Length - sourceSpan.Length;
+            }
+            else
+            {
+                // Bump 'startIndex' by 1, then go back 'count' chars
+                sourceSpan = source.AsSpan()[..(startIndex + 1)][^count..];
+                adjustmentFactor = startIndex + 1 - count;
+            }
+
+            if (expected < 0) { adjustmentFactor = 0; } // don't modify "not found" (-1) return values
+
             if ((compareInfo == s_invariantCompare) && ((options == CompareOptions.None) || (options == CompareOptions.IgnoreCase)))
             {
                 StringComparison stringComparison = (options == CompareOptions.IgnoreCase) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture;
@@ -165,20 +191,7 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected, source.LastIndexOf(value, startIndex, count, stringComparison));
 
                 // Use int MemoryExtensions.LastIndexOf(this ReadOnlySpan<char>, ReadOnlySpan<char>, StringComparison)
-                // Filter differences betweeen string-based and Span-based LastIndexOf
-                // - Empty value handling - https://github.com/dotnet/runtime/issues/13382
-                // - Negative count
-                if (value.Length == 0 || count < 0)
-                    return;
-
-                if (startIndex == source.Length)
-                {
-                    startIndex--;
-                    if (count > 0)
-                        count--;
-                }
-                int leftStartIndex = (startIndex - count + 1);
-                Assert.Equal((expected == -1) ? -1 : (expected - leftStartIndex), source.AsSpan(leftStartIndex, count).LastIndexOf(value.AsSpan(), stringComparison));
+                Assert.Equal(expected - adjustmentFactor, sourceSpan.LastIndexOf(value.AsSpan(), stringComparison));
             }
         }
 

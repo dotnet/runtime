@@ -13,7 +13,7 @@ Cross compiling CoreCLR
 
 Build using "arm" as the architecture. For example:
 
-    C:\runtime> build.cmd -subsetCategory CoreClr -subset Runtime -arch arm -c debug
+    C:\runtime> build.cmd -subset clr.runtime -arch arm -c debug
 
 -or-
 
@@ -101,7 +101,7 @@ Cross compiling CoreCLR
 -----------------------
 `ROOTFS_DIR` must be set when running `build-runtime.sh`.
 
-    ~/runtime/ $ ROOTFS_DIR=/home/arm ./build.sh --subsetCategory CoreClr --subset Runtime --arch arm -c debug -v verbose --cross
+    ~/runtime/ $ ROOTFS_DIR=/home/arm ./build.sh --subset clr.runtime --arch arm -c debug -v verbose --cross
 
 -or-
 
@@ -144,7 +144,7 @@ The following instructions assume you are on a Linux machine such as Ubuntu 14.0
 To build System.Private.CoreLib for Linux, run the following command:
 
 ```
-    lgs@ubuntu ~/git/runtime/ $ ./build.sh --subsetCategory CoreClr --subset CoreLib-NativeCoreLib --arch arm -c debug -v verbose
+    lgs@ubuntu ~/git/runtime/ $ ./build.sh --subset clr.corelib+clr.nativecorelib --arch arm -c debug -v verbose
 ```
 
 The output is at `artifacts/bin/coreclr/<TargetOS>.arm.Debug/IL/System.Private.CoreLib.dll`.
