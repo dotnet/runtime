@@ -2,7 +2,7 @@
   <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
 
   <ItemGroup>
-    <ProjectReference Include="Microsoft.NETCore.Tool.MonoAOT\Microsoft.NETCore.Tool.MonoAOT.proj" Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" />
+    <ProjectReference Include="Microsoft.NETCore.Tool.MonoAOT\Microsoft.NETCore.Tool.MonoAOT.proj" Condition="('$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true') or ('$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true')" />
     <ProjectReference Include="Microsoft.NETCore.Runtime.Mono\Microsoft.NETCore.Runtime.Mono.proj" />
   </ItemGroup>
 

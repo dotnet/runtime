@@ -9,7 +9,7 @@
 
 #include <Security/Security.h>
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Enumerate the certificates which are root trusted by the user.
 
