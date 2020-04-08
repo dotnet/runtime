@@ -94,6 +94,15 @@ jobs:
             parameters:
               installDotnet: true
 
+        # Build Private CoreLib
+        - script: $(_buildScript)
+                -subset clr.corelib 
+                -runtimeConfiguration ${{ parameters.liveRuntimeBuildConfig }}
+                $(_buildArguments)
+                $(_addtionalBuildArguments)
+
+          displayName: Build System.Private.CoreLib
+
         - script: $(_buildScript)
                 -subset $(_subset)
                 $(_buildArguments)
