@@ -218,19 +218,11 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
 
     while (TRUE) {
         StateHolder<MyEnterLogLock, MyLeaveLogLock> LogLockHolder(FALSE);
-
         CounterHolder handleHolder(&m_dwThreadHandleBeingUsed);
-
-        // Whether or not "goto retry" should YieldProcessor and __SwitchToThread
-        BOOL doSwitchToThread = TRUE;
 
         hThread = GetThreadHandle();
         if (hThread == INVALID_HANDLE_VALUE) {
             str = STR_UnstartedOrDead;
-            break;
-        }
-        else if (hThread == SWITCHOUT_HANDLE_VALUE) {
-            str = STR_SwitchedOut;
             break;
         }
 
@@ -282,107 +274,92 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
 
         if ((int)dwSuspendCount >= 0)
         {
-            if (hThread == GetThreadHandle())
+            // read m_dwForbidSuspendThread again after suspension, it may have changed.
+            if (m_dwForbidSuspendThread.LoadWithoutBarrier() != 0)
             {
-                // read m_dwForbidSuspendThread again after suspension, it may have changed.
-                if (m_dwForbidSuspendThread.LoadWithoutBarrier() != 0)
-                {
 #if defined(_DEBUG)
-                    // Log diagnostic below 8 times during the i64TimestampTicksMax period
-                    if (i64TimestampCur-i64TimestampStart >= nCnt*(i64TimestampTicksMax>>3) )
-                    {
-                        CONTEXT ctx;
-                        SetIP(&ctx, -1);
-                        ctx.ContextFlags = CONTEXT_CONTROL;
-                        this->GetThreadContext(&ctx);
-                        STRESS_LOG7(LF_SYNC, LL_INFO1000,
-                            "Thread::SuspendThread[%p]:  EIP=%p. nCnt=%d. result=%d.\n"
-                            "\t\t\t\t\t\t\t\t\t     forbidSuspend=%d. coop=%d. state=%x.\n",
-                            this, GetIP(&ctx), nCnt, dwSuspendCount,
-                            (LONG)this->m_dwForbidSuspendThread, (ULONG)this->m_fPreemptiveGCDisabled, this->GetSnapshotState());
-
-                        // Enable a preemptive assert in diagnostic mode: before we
-                        // resume the target thread to get its current state in the debugger
-                        if (bDiagSuspend)
-                        {
-                            // triggered after 6 * 250msec
-                            _ASSERTE(nCnt < 6 && "Timing out in Thread::SuspendThread");
-                        }
-
-                        ++nCnt;
-                    }
-#endif // _DEBUG
-                    ::ResumeThread(hThread);
-
-#if defined(_DEBUG)
-                    // If the suspend diagnostics are enabled we need to spin here in order to avoid
-                    // the case where we Suspend/Resume the target thread without giving it a chance to run.
-                    if ((!fOneTryOnly) && bDiagSuspend)
-                    {
-                        while ( m_dwForbidSuspendThread != 0 &&
-                            CLRGetTickCount64()-i64TimestampStart < nCnt*(i64TimestampTicksMax>>3) )
-                        {
-                            if (g_SystemInfo.dwNumberOfProcessors > 1)
-                            {
-                                if ((tries++) % 20 != 0) {
-                                    YieldProcessorNormalized(); // play nice on hyperthreaded CPUs
-                                } else {
-                                    __SwitchToThread(0, ++dwSwitchCount);
-                                }
-                            }
-                            else
-                            {
-                                __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
-                            }
-                        }
-                    }
-#endif // _DEBUG
-                    goto retry;
-                }
-                // We suspend the right thread
-#ifdef _DEBUG
-                Thread * pCurThread = GetThread();
-                if (pCurThread != NULL)
+                // Log diagnostic below 8 times during the i64TimestampTicksMax period
+                if (i64TimestampCur-i64TimestampStart >= nCnt*(i64TimestampTicksMax>>3) )
                 {
-                    pCurThread->dbg_m_cSuspendedThreads ++;
-                    _ASSERTE(pCurThread->dbg_m_cSuspendedThreads > 0);
-                }
-#endif
-                IncCantAllocCount();
+                    CONTEXT ctx;
+                    SetIP(&ctx, -1);
+                    ctx.ContextFlags = CONTEXT_CONTROL;
+                    this->GetThreadContext(&ctx);
+                    STRESS_LOG7(LF_SYNC, LL_INFO1000,
+                        "Thread::SuspendThread[%p]:  EIP=%p. nCnt=%d. result=%d.\n"
+                        "\t\t\t\t\t\t\t\t\t     forbidSuspend=%d. coop=%d. state=%x.\n",
+                        this, GetIP(&ctx), nCnt, dwSuspendCount,
+                        (LONG)this->m_dwForbidSuspendThread, (ULONG)this->m_fPreemptiveGCDisabled, this->GetSnapshotState());
 
-                m_ThreadHandleForResume = hThread;
-                str = STR_Success;
-                break;
-            }
-            else
-            {
-                // A thread was switch out but in again.
-                // We suspend a wrong thread.
+                    // Enable a preemptive assert in diagnostic mode: before we
+                    // resume the target thread to get its current state in the debugger
+                    if (bDiagSuspend)
+                    {
+                        // triggered after 6 * 250msec
+                        _ASSERTE(nCnt < 6 && "Timing out in Thread::SuspendThread");
+                    }
+
+                    ++nCnt;
+                }
+#endif // _DEBUG
                 ::ResumeThread(hThread);
-                doSwitchToThread = FALSE;
+
+#if defined(_DEBUG)
+                // If the suspend diagnostics are enabled we need to spin here in order to avoid
+                // the case where we Suspend/Resume the target thread without giving it a chance to run.
+                if ((!fOneTryOnly) && bDiagSuspend)
+                {
+                    while ( m_dwForbidSuspendThread != 0 &&
+                        CLRGetTickCount64()-i64TimestampStart < nCnt*(i64TimestampTicksMax>>3) )
+                    {
+                        if (g_SystemInfo.dwNumberOfProcessors > 1)
+                        {
+                            if ((tries++) % 20 != 0) {
+                                YieldProcessorNormalized(); // play nice on hyperthreaded CPUs
+                            } else {
+                                __SwitchToThread(0, ++dwSwitchCount);
+                            }
+                        }
+                        else
+                        {
+                            __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
+                        }
+                    }
+                }
+#endif // _DEBUG
                 goto retry;
             }
-        }
-        else {
-            // We can get here either SuspendThread fails
-            // Or the fiber thread dies after this fiber switched out.
+            // We suspend the right thread
+#ifdef _DEBUG
+            Thread * pCurThread = GetThread();
+            if (pCurThread != NULL)
+            {
+                pCurThread->dbg_m_cSuspendedThreads ++;
+                _ASSERTE(pCurThread->dbg_m_cSuspendedThreads > 0);
+            }
+#endif
+            IncCantAllocCount();
 
-            if ((int)dwSuspendCount != -1) {
+            m_ThreadHandleForResume = hThread;
+            str = STR_Success;
+            break;
+        }
+        else
+        {
+            // SuspendThread failed
+            if ((int)dwSuspendCount != -1)
+            {
                 STRESS_LOG1(LF_SYNC, LL_INFO1000, "In Thread::SuspendThread ::SuspendThread returned %x\n", dwSuspendCount);
             }
-            if (GetThreadHandle() == SWITCHOUT_HANDLE_VALUE) {
-                str = STR_SwitchedOut;
-                break;
-            }
-            else {
-                // Our callers generally expect that STR_Failure means that
-                // the thread has exited.
+
+            // Our callers generally expect that STR_Failure means that
+            // the thread has exited.
 #ifndef TARGET_UNIX
-                _ASSERTE(NtCurrentTeb()->LastStatusValue != STATUS_SUSPEND_COUNT_EXCEEDED);
+            _ASSERTE(NtCurrentTeb()->LastStatusValue != STATUS_SUSPEND_COUNT_EXCEEDED);
 #endif // !TARGET_UNIX
-                str = STR_Failure;
-                break;
-            }
+
+            str = STR_Failure;
+            break;
         }
 
 retry:
@@ -412,26 +389,18 @@ retry:
         }
 #endif // _DEBUG
 
-        if (doSwitchToThread)
+        // Allow the target thread to run in order to make some progress.
+        // On multi processor machines we saw the suspending thread resuming immediately after the __SwitchToThread()
+        // because it has another few processors available.  As a consequence the target thread was being Resumed and
+        // Suspended right away, w/o a real chance to make any progress.
+        if (g_SystemInfo.dwNumberOfProcessors > 1 && (tries++) % 20 != 0)
         {
-            // When looking for deadlocks we need to allow the target thread to run in order to make some progress.
-            // On multi processor machines we saw the suspending thread resuming immediately after the __SwitchToThread()
-            // because it has another few processors available.  As a consequence the target thread was being Resumed and
-            // Suspended right away, w/o a real chance to make any progress.
-            if (g_SystemInfo.dwNumberOfProcessors > 1)
-            {
-                if ((tries++) % 20 != 0) {
-                    YieldProcessorNormalized(); // play nice on hyperthreaded CPUs
-                } else {
-                    __SwitchToThread(0, ++dwSwitchCount);
-                }
-            }
-            else
-            {
-                __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
-            }
+            YieldProcessorNormalized(); // play nice on hyperthreaded CPUs
         }
-
+        else
+        {
+            __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
+        }
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -468,7 +437,6 @@ DWORD Thread::ResumeThread()
     CONTRACTL_END;
 
     _ASSERTE (m_ThreadHandleForResume != INVALID_HANDLE_VALUE);
-
     _ASSERTE (GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
 
     //DWORD res = ::ResumeThread(GetThreadHandle());
@@ -1511,28 +1479,6 @@ LRetry:
             __SwitchToThread(0, ++dwSwitchCount);
             continue;
 
-        case STR_SwitchedOut:
-            // If the thread is in preemptive gc mode, we can erect a barrier to block the
-            // thread to return to cooperative mode.  Then we can do stack crawl and make decision.
-            if (!m_fPreemptiveGCDisabled)
-            {
-                checkForAbort.NeedStackCrawl();
-                if (GetThreadHandle() != SWITCHOUT_HANDLE_VALUE || m_fPreemptiveGCDisabled)
-                {
-                    checkForAbort.Release();
-                    __SwitchToThread(0, ++dwSwitchCount);
-                    continue;
-                }
-                else
-                {
-                    goto LStackCrawl;
-                }
-            }
-            else
-            {
-                goto LPrepareRetry;
-            }
-
         default:
             UNREACHABLE();
         }
@@ -1655,10 +1601,6 @@ LRetry:
         {
             goto LPrepareRetry;
         }
-
-#ifndef DISABLE_THREADSUSPEND
-LStackCrawl:
-#endif // DISABLE_THREADSUSPEND
 
         if (!ReadyForAbort()) {
             goto LPrepareRetry;
@@ -1902,7 +1844,7 @@ void Thread::SetAbortRequestBit()
     WRAPPER_NO_CONTRACT;
     while (TRUE)
     {
-        Volatile<LONG> curValue = (LONG)m_State;
+        LONG curValue = (LONG)m_State;
         if ((curValue & TS_AbortRequested) != 0)
         {
             break;
@@ -1932,7 +1874,7 @@ void Thread::RemoveAbortRequestBit()
 #endif
     while (TRUE)
     {
-        Volatile<LONG> curValue = (LONG)m_State;
+        LONG curValue = (LONG)m_State;
         if ((curValue & TS_AbortRequested) == 0)
         {
             break;
@@ -3716,10 +3658,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 // Oops.
                 thread->ResumeThread();
             }
-            else
-            if (str == Thread::STR_SwitchedOut) {
-                STRESS_LOG1(LF_SYNC, LL_WARNING, "    Inspecting thread 0x%x was in cooperative, but now is switched out\n", thread);
-            }
             else {
                 _ASSERTE(str == Thread::STR_Failure || str == Thread::STR_UnstartedOrDead);
                 STRESS_LOG3(LF_SYNC, LL_ERROR, "    ERROR: Could not suspend thread 0x%x, result = %d, lastError = 0x%x\n", thread, str, GetLastError());
@@ -4773,18 +4711,6 @@ RetrySuspension:
 
             // If the thread has gone, we can't wait on it.
             goto Label_MarkThreadAsSynced;
-        }
-        else if (str == STR_SwitchedOut)
-        {
-            // The thread was switched b/c of fiber-mode stuff.
-            if (!thread->m_fPreemptiveGCDisabled && !thread->IsInForbidSuspendForDebuggerRegion())
-            {
-                goto Label_MarkThreadAsSynced;
-            }
-            else
-            {
-                goto RetrySuspension;
-            }
         }
         else if (str == STR_NoStressLog)
         {
@@ -6407,9 +6333,8 @@ bool Thread::InjectGcSuspension()
     if (injectionEnabled.val(CLRConfig::INTERNAL_ThreadSuspendInjection) == 0)
         return false;
 
-    Volatile<HANDLE> hThread;
-    hThread = GetThreadHandle();
-    if (hThread != INVALID_HANDLE_VALUE && hThread != SWITCHOUT_HANDLE_VALUE)
+    HANDLE hThread = GetThreadHandle();
+    if (hThread != INVALID_HANDLE_VALUE)
     {
         ::PAL_InjectActivation(hThread);
         return true;

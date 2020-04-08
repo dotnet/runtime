@@ -2405,10 +2405,6 @@ public:
         // that either we are not allowed to call into the host, or we ran
         // out of memory.
         STR_NoStressLog,
-
-        // The EE thread is currently switched out.  This can only happen
-        // if we are hosted and the host schedules EE threads on fibers.
-        STR_SwitchedOut,
     };
 
 #if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
