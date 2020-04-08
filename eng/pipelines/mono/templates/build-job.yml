@@ -117,12 +117,6 @@ jobs:
       - script: build$(scriptExt) -subset mono -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
         displayName: Build nupkg
 
-    # Save packages using the prepare-signed-artifacts format.
-    - ${{ if eq(parameters.isOfficialBuild, true) }}:
-      - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
-        parameters:
-          name: ${{ parameters.platform }}
-
     # Publish official build
     - ${{ if and(ne(parameters.llvm, true), eq(parameters.publishToBlobFeed, 'true')) }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
