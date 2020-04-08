@@ -2000,13 +2000,12 @@ guint32
 ves_icall_type_GetTypeCodeInternal (MonoReflectionTypeHandle ref_type, MonoError *error)
 {
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
-	int t = type->type;
 
 	if (type->byref)
 		return TYPECODE_OBJECT;
 
 handle_enum:
-	switch (t) {
+	switch (type->type) {
 	case MONO_TYPE_VOID:
 		return TYPECODE_OBJECT;
 	case MONO_TYPE_BOOLEAN:
@@ -2041,7 +2040,7 @@ handle_enum:
 		MonoClass *klass = type->data.klass;
 		
 		if (m_class_is_enumtype (klass)) {
-			t = mono_class_enum_basetype_internal (klass)->type;
+			type = mono_class_enum_basetype_internal (klass);
 			goto handle_enum;
 		} else if (mono_is_corlib_image (m_class_get_image (klass))) {
 			if (strcmp (m_class_get_name_space (klass), "System") == 0) {
@@ -2072,9 +2071,13 @@ handle_enum:
 		}
 		return TYPECODE_OBJECT;
 	case MONO_TYPE_GENERICINST:
+		if (m_class_is_enumtype (type->data.generic_class->container_class)) {
+			type = mono_class_enum_basetype_internal (type->data.generic_class->container_class);
+			goto handle_enum;
+		}
 		return TYPECODE_OBJECT;
 	default:
-		g_error ("type 0x%02x not handled in GetTypeCode()", t);
+		g_error ("type 0x%02x not handled in GetTypeCode()", type->type);
 	}
 	return 0;
 }
