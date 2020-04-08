@@ -73,6 +73,19 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData("61ff")]
+        [InlineData("62f090")]
+        public static void SkipValue_InvalidUtf8_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            FormatException exn = Assert.Throws<FormatException>(() => reader.SkipValue());
+            Assert.NotNull(exn.InnerException);
+            Assert.IsType<DecoderFallbackException>(exn.InnerException);
+        }
+
+        [Theory]
         [InlineData(50_000)]
         public static void SkipValue_ExtremelyNestedValues_ShouldNotStackOverflow(int depth)
         {
