@@ -25,6 +25,7 @@ namespace System.Text.Json
             ClassType runtimeClassType,
             PropertyInfo? propertyInfo,
             JsonConverter converter,
+            JsonIgnoreCondition? ignoreCondition,
             JsonSerializerOptions options)
         {
             base.Initialize(
@@ -34,6 +35,7 @@ namespace System.Text.Json
                 runtimeClassType,
                 propertyInfo,
                 converter,
+                ignoreCondition,
                 options);
 
             if (propertyInfo != null)
@@ -57,7 +59,7 @@ namespace System.Text.Json
                 HasSetter = true;
             }
 
-            GetPolicies();
+            GetPolicies(ignoreCondition);
         }
 
         public override JsonConverter ConverterBase
