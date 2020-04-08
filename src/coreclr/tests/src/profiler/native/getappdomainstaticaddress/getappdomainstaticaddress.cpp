@@ -18,6 +18,9 @@ using std::lock_guard;
 using std::wstring;
 using std::vector;
 
+// Prints a lot to the console for easier tracking
+#define DEBUG_OUT false
+
 
 GetAppDomainStaticAddress::GetAppDomainStaticAddress() :
     refCount(0),
@@ -74,7 +77,10 @@ HRESULT GetAppDomainStaticAddress::Initialize(IUnknown *pICorProfilerInfoUnk)
 
             if (!IsRuntimeExecutingManagedCode())
             {
-                printf("Runtime has not started executing managed code yet.\n");
+                if (DEBUG_OUT)
+                {
+                    printf("Runtime has not started executing managed code yet.\n");
+                }
                 continue;
             }
 
@@ -137,7 +143,11 @@ HRESULT GetAppDomainStaticAddress::ModuleLoadFinished(ModuleID moduleId, HRESULT
         ++failures;
     }
 
-    wprintf(L"Module 0x%" PRIxPTR " (%s) loaded\n", moduleId, name);
+    if (DEBUG_OUT)
+    {
+        wprintf(L"Module 0x%" PRIxPTR " (%s) loaded\n", moduleId, name);
+    }
+
     return S_OK;
 }
 
@@ -160,9 +170,12 @@ HRESULT GetAppDomainStaticAddress::ModuleUnloadStarted(ModuleID moduleId)
         return E_FAIL;
     }
 
-    wprintf(L"Module 0x%" PRIxPTR " (%s) unload started\n", moduleId, name);
+    if (DEBUG_OUT)
+    {
+        wprintf(L"Module 0x%" PRIxPTR " (%s) unload started\n", moduleId, name);
+    }
 
-    for (auto it = classADMap.begin(); it != classADMap.end(); ++it)
+    for (auto it = classADMap.begin(); it != classADMap.end(); )
     {
         ClassID classId = it->first;
 
@@ -177,18 +190,28 @@ HRESULT GetAppDomainStaticAddress::ModuleUnloadStarted(ModuleID moduleId)
 
         if (modId == moduleId)
         {
-            printf("ClassID 0x%" PRIxPTR " being removed due to parent module unloading\n", classId);
+            if (DEBUG_OUT)
+            {
+                printf("ClassID 0x%" PRIxPTR " being removed due to parent module unloading\n", classId);
+            }
+
             it = classADMap.erase(it);
             continue;
         }
 
         // Now check the generic arguments
+        bool shouldEraseClassId = false;
         vector<ClassID> genericTypes = GetGenericTypeArgs(classId);
         for (auto genericIt = genericTypes.begin(); genericIt != genericTypes.end(); ++genericIt)
         {
             ClassID typeArg = *genericIt;
             ModuleID typeArgModId;
-            printf("Checking generic argument 0x%" PRIxPTR " of class 0x%" PRIxPTR "\n", typeArg, classId);
+
+            if (DEBUG_OUT)
+            {
+                printf("Checking generic argument 0x%" PRIxPTR " of class 0x%" PRIxPTR "\n", typeArg, classId);
+            }
+
             hr = pCorProfilerInfo->GetClassIDInfo(typeArg, &typeArgModId, NULL);
             if (FAILED(hr))
             {
@@ -199,10 +222,24 @@ HRESULT GetAppDomainStaticAddress::ModuleUnloadStarted(ModuleID moduleId)
 
             if (typeArgModId == moduleId)
             {
-                wprintf(L"ClassID 0x%" PRIxPTR " (%s) being removed due to generic argument 0x%" PRIxPTR " (%s) belonging to the parent module 0x%" PRIxPTR " unloading\n",
-                 classId, GetClassIDName(classId).ToWString().c_str(), typeArg, GetClassIDName(typeArg).ToWString().c_str(), typeArgModId);
-                 it = classADMap.erase(it);
+                if (DEBUG_OUT)
+                {
+                    wprintf(L"ClassID 0x%" PRIxPTR " (%s) being removed due to generic argument 0x%" PRIxPTR " (%s) belonging to the parent module 0x%" PRIxPTR " unloading\n",
+                            classId, GetClassIDName(classId).ToWString().c_str(), typeArg, GetClassIDName(typeArg).ToWString().c_str(), typeArgModId);
+                }
+
+                shouldEraseClassId = true;
+                break;
             }
+        }
+
+        if (shouldEraseClassId)
+        {
+            it = classADMap.erase(it);
+        }
+        else
+        {
+            ++it;
         }
     }
 
@@ -267,7 +304,10 @@ HRESULT GetAppDomainStaticAddress::ClassLoadFinished(ClassID classId, HRESULT hr
 
     wstring name = GetClassIDName(classId).ToWString();
 
-    wprintf(L"Class 0x%" PRIxPTR " (%s) loaded from module 0x%" PRIxPTR "\n", classId, name.c_str(), modId);
+    if (DEBUG_OUT)
+    {
+        wprintf(L"Class 0x%" PRIxPTR " (%s) loaded from module 0x%" PRIxPTR "\n", classId, name.c_str(), modId);
+    }
 
     return hr;
 }
@@ -290,7 +330,11 @@ HRESULT GetAppDomainStaticAddress::ClassUnloadStarted(ClassID classId)
         ++failures;
     }
 
-    wprintf(L"Class 0x%" PRIxPTR " (%s) unload started\n", classId, GetClassIDName(classId).ToWString().c_str());
+    if (DEBUG_OUT)
+    {
+        wprintf(L"Class 0x%" PRIxPTR " (%s) unload started\n", classId, GetClassIDName(classId).ToWString().c_str());
+    }
+
     for (auto it = classADMap.begin(); it != classADMap.end(); ++it)
     {
         ClassID mapClass = it->first;
@@ -329,8 +373,12 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
         ClassID classId = iCADM->first;
         AppDomainID appDomainId = iCADM->second;
 
-        printf("Calling GetClassIDInfo2 on classId 0x%" PRIxPTR "\n", classId);
-        fflush(stdout);
+        if (DEBUG_OUT)
+        {
+            printf("Calling GetClassIDInfo2 on classId 0x%" PRIxPTR "\n", classId);
+            fflush(stdout);
+        }
+
         ModuleID classModuleId = NULL;
         hr = pCorProfilerInfo->GetClassIDInfo2(classId,
                                     &classModuleId,
@@ -369,8 +417,12 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
         mdFieldDef fieldTokens[SHORT_LENGTH];
         ULONG cTokens = NULL;
 
-        printf("Calling GetClassIDInfo2 (again?) on classId 0x%" PRIxPTR "\n", classId);
-        fflush(stdout);
+        if (DEBUG_OUT)
+        {
+            printf("Calling GetClassIDInfo2 (again?) on classId 0x%" PRIxPTR "\n", classId);
+            fflush(stdout);
+        }
+
         // Get class token to enum all field    s from MetaData.  (Needed for statics)
         hr = pCorProfilerInfo->GetClassIDInfo2(classId,
                                             NULL,
@@ -448,8 +500,12 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
                 {
                     PVOID staticOffSet = NULL;
 
-                    printf("Calling GetAppDomainStaticAddress on classId=0x%" PRIxPTR "\n", classId);
-                    fflush(stdout);
+                    if (DEBUG_OUT)
+                    {
+                        printf("Calling GetAppDomainStaticAddress on classId=0x%" PRIxPTR "\n", classId);
+                        fflush(stdout);
+                    }
+
                     hr = pCorProfilerInfo->GetAppDomainStaticAddress(classId,
                                                 fieldTokens[i],
                                                 appDomainId,

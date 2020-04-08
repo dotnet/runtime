@@ -32,7 +32,6 @@ namespace Profiler.Tests
         {
             LoadCollectibleAssembly();
 
-            Console.WriteLine("Collect snapshot in profiler (ForceGC(), ForceGC(), GetAppDomainStaticAddress() at end of second GC)");
             Thread.Sleep(TimeSpan.FromSeconds(3));
 
             return 100;
