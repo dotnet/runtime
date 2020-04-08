@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -270,53 +271,31 @@ namespace System.Globalization
 
         public int Compare(string? string1, string? string2, CompareOptions options)
         {
-            if (options == CompareOptions.OrdinalIgnoreCase)
-            {
-                return string.Compare(string1, string2, StringComparison.OrdinalIgnoreCase);
-            }
-
-            // Verify the options before we do any real comparison.
-            if ((options & CompareOptions.Ordinal) != 0)
-            {
-                if (options != CompareOptions.Ordinal)
-                {
-                    throw new ArgumentException(SR.Argument_CompareOptionOrdinal, nameof(options));
-                }
-
-                return string.CompareOrdinal(string1, string2);
-            }
-
-            if ((options & ValidCompareMaskOffFlags) != 0)
-            {
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
-            }
+            int retVal;
 
             // Our paradigm is that null sorts less than any other string and
             // that two nulls sort as equal.
+
             if (string1 == null)
             {
-                if (string2 == null)
-                {
-                    return 0;
-                }
-                return -1; // null < non-null
+                retVal = (string2 == null) ? 0 : -1;
+                goto CheckOptionsAndReturn;
             }
             if (string2 == null)
             {
-                return 1; // non-null > null
+                retVal = 1;
+                goto CheckOptionsAndReturn;
             }
 
-            if (GlobalizationMode.Invariant)
-            {
-                if ((options & CompareOptions.IgnoreCase) != 0)
-                {
-                    return CompareOrdinalIgnoreCase(string1, string2);
-                }
+            return Compare(string1.AsSpan(), string2.AsSpan(), options);
 
-                return string.CompareOrdinal(string1, string2);
-            }
+        CheckOptionsAndReturn:
 
-            return CompareString(string1.AsSpan(), string2.AsSpan(), options);
+            // If we're short-circuiting the globalization logic, we still need to check that
+            // the provided options were valid.
+
+            CheckCompareOptionsForCompare(options);
+            return retVal;
         }
 
         // TODO https://github.com/dotnet/runtime/issues/8890:
@@ -377,7 +356,7 @@ namespace System.Globalization
         /// </summary>
         public int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2)
         {
-            return Compare(string1, offset1, length1, string2, offset2, length2, 0);
+            return Compare(string1, offset1, length1, string2, offset2, length2, CompareOptions.None);
         }
 
         public int Compare(string? string1, int offset1, string? string2, int offset2, CompareOptions options)
@@ -388,83 +367,94 @@ namespace System.Globalization
 
         public int Compare(string? string1, int offset1, string? string2, int offset2)
         {
-            return Compare(string1, offset1, string2, offset2, 0);
+            return Compare(string1, offset1, string2, offset2, CompareOptions.None);
         }
 
         public int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2, CompareOptions options)
         {
-            if (options == CompareOptions.OrdinalIgnoreCase)
-            {
-                int result = string.Compare(string1, offset1, string2, offset2, length1 < length2 ? length1 : length2, StringComparison.OrdinalIgnoreCase);
-                if ((length1 != length2) && result == 0)
-                {
-                    return length1 > length2 ? 1 : -1;
-                }
+            ReadOnlySpan<char> span1 = default;
+            ReadOnlySpan<char> span2 = default;
 
-                return result;
+            if (string1 == null)
+            {
+                if (offset1 != 0 || length1 != 0)
+                {
+                    goto BoundsCheckError;
+                }
             }
+            else if (!string1.TryGetSpan(offset1, length1, out span1))
+            {
+                goto BoundsCheckError;
+            }
+
+            if (string2 == null)
+            {
+                if (offset2 != 0 || length2 != 0)
+                {
+                    goto BoundsCheckError;
+                }
+            }
+            else if (!string2.TryGetSpan(offset2, length2, out span2))
+            {
+                goto BoundsCheckError;
+            }
+
+            // At this point both string1 and string2 have been bounds-checked.
+
+            int retVal;
+
+            // Our paradigm is that null sorts less than any other string and
+            // that two nulls sort as equal.
+
+            if (string1 == null)
+            {
+                retVal = (string2 == null) ? 0 : -1;
+                goto CheckOptionsAndReturn;
+            }
+            if (string2 == null)
+            {
+                retVal = 1;
+                goto CheckOptionsAndReturn;
+            }
+
+            // At this point we know both string1 and string2 weren't null,
+            // though they may have been empty.
+
+            Debug.Assert(!Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span1)));
+            Debug.Assert(!Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span2)));
+
+            return Compare(span1, span2, options);
+
+        CheckOptionsAndReturn:
+
+            // If we're short-circuiting the globalization logic, we still need to check that
+            // the provided options were valid.
+
+            CheckCompareOptionsForCompare(options);
+            return retVal;
+
+        BoundsCheckError:
+
+            // We know a bounds check error occurred. Now we just need to figure
+            // out the correct error message to surface.
 
             if (length1 < 0 || length2 < 0)
             {
                 throw new ArgumentOutOfRangeException((length1 < 0) ? nameof(length1) : nameof(length2), SR.ArgumentOutOfRange_NeedPosNum);
             }
+
             if (offset1 < 0 || offset2 < 0)
             {
                 throw new ArgumentOutOfRangeException((offset1 < 0) ? nameof(offset1) : nameof(offset2), SR.ArgumentOutOfRange_NeedPosNum);
             }
+
             if (offset1 > (string1 == null ? 0 : string1.Length) - length1)
             {
                 throw new ArgumentOutOfRangeException(nameof(string1), SR.ArgumentOutOfRange_OffsetLength);
             }
-            if (offset2 > (string2 == null ? 0 : string2.Length) - length2)
-            {
-                throw new ArgumentOutOfRangeException(nameof(string2), SR.ArgumentOutOfRange_OffsetLength);
-            }
-            if ((options & CompareOptions.Ordinal) != 0)
-            {
-                if (options != CompareOptions.Ordinal)
-                {
-                    throw new ArgumentException(SR.Argument_CompareOptionOrdinal,
-                                                nameof(options));
-                }
-            }
-            else if ((options & ValidCompareMaskOffFlags) != 0)
-            {
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
-            }
 
-            if (string1 == null)
-            {
-                if (string2 == null)
-                {
-                    return 0;
-                }
-                return -1;
-            }
-            if (string2 == null)
-            {
-                return 1;
-            }
-
-            ReadOnlySpan<char> span1 = string1.AsSpan(offset1, length1);
-            ReadOnlySpan<char> span2 = string2.AsSpan(offset2, length2);
-
-            if (options == CompareOptions.Ordinal)
-            {
-                return string.CompareOrdinal(span1, span2);
-            }
-
-            if (GlobalizationMode.Invariant)
-            {
-                if ((options & CompareOptions.IgnoreCase) != 0)
-                {
-                    return CompareOrdinalIgnoreCase(span1, span2);
-                }
-
-                return string.CompareOrdinal(span1, span2);
-            }
-
-            return CompareString(span1, span2, options);
+            Debug.Assert(offset2 > (string2 == null ? 0 : string2.Length) - length2);
+            throw new ArgumentOutOfRangeException(nameof(string2), SR.ArgumentOutOfRange_OffsetLength);
         }
 
         /// <summary>
@@ -483,6 +473,12 @@ namespace System.Globalization
         /// </exception>
         public int Compare(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options = CompareOptions.None)
         {
+            if (string1 == string2) // referential equality + length
+            {
+                CheckCompareOptionsForCompare(options);
+                return 0;
+            }
+
             if ((options & ValidCompareMaskOffFlags) == 0)
             {
                 // Common case: caller is attempting to perform linguistic comparison.
@@ -517,9 +513,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    throw new ArgumentException(
-                        paramName: nameof(options),
-                        message: SR.Argument_InvalidFlag);
+                    ThrowCompareOptionsCheckFailed(options);
                 }
             }
 
@@ -528,6 +522,33 @@ namespace System.Globalization
 
         ReturnOrdinalIgnoreCase:
             return CompareOrdinalIgnoreCase(string1, string2);
+        }
+
+        // Checks that 'CompareOptions' is valid for a call to Compare, throwing the appropriate
+        // exception if the check fails.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [StackTraceHidden]
+        private static void CheckCompareOptionsForCompare(CompareOptions options)
+        {
+            // Any combination of defined CompareOptions flags is valid, except for
+            // Ordinal and OrdinalIgnoreCase, which may only be used in isolation.
+
+            if ((options & ValidCompareMaskOffFlags) != 0)
+            {
+                if (options != CompareOptions.Ordinal && options != CompareOptions.OrdinalIgnoreCase)
+                {
+                    ThrowCompareOptionsCheckFailed(options);
+                }
+            }
+        }
+
+        [DoesNotReturn]
+        [StackTraceHidden]
+        private static void ThrowCompareOptionsCheckFailed(CompareOptions options)
+        {
+            throw new ArgumentException(
+                paramName: nameof(options),
+                message: ((options & CompareOptions.Ordinal) != 0) ? SR.Argument_CompareOptionOrdinal : SR.Argument_InvalidFlag);
         }
 
         /// <summary>
