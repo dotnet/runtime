@@ -14,43 +14,11 @@ namespace System.Net
 {
     internal static partial class NameResolutionPal
     {
-        private static volatile bool s_initialized;
-        private static readonly object s_initializedLock = new object();
-
         private static readonly unsafe Interop.Sys.GetHostEntryForNameCallback s_getHostEntryForNameCallback = GetHostEntryForNameCallback;
-        private static bool s_platformSupportsGetAddrInfoAsync;
 
-        public static void EnsureSocketsAreInitialized()
-        {
-            // Actually a No-op for Unix as sockets don't need a startup, but used
-            // to check whether async address resolution is available or not.
+        public static bool SupportsGetAddrInfoAsync { get; } = Interop.Sys.PlatformSupportsGetAddrInfoAsync();
 
-            if (!s_initialized)
-            {
-                Initialize();
-            }
-
-            static void Initialize()
-            {
-                lock (s_initializedLock)
-                {
-                    if (!s_initialized)
-                    {
-                        s_platformSupportsGetAddrInfoAsync = Interop.Sys.PlatformSupportsGetAddrInfoAsync();
-                        s_initialized = true;
-                    }
-                }
-            }
-        }
-
-        public static bool SupportsGetAddrInfoAsync
-        {
-            get
-            {
-                EnsureSocketsAreInitialized();
-                return s_platformSupportsGetAddrInfoAsync;
-            }
-        }
+        public static void EnsureSocketsAreInitialized() { } // No-op for Unix
 
         public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
         {

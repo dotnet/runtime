@@ -344,8 +344,7 @@ static int32_t GetHostEntries(const uint8_t* address, struct addrinfo* info, Hos
         }
     }
 #else
-    // Actually not needed, but to use the parameter in case of HAVE_GETIFADDRS expands to 0.
-    address = NULL;
+    (void)address;
 #endif
 
     if (entry->IPAddressCount > 0)
@@ -425,7 +424,6 @@ cleanup:
 #if HAVE_GETADDRINFO_A
 struct GetAddrInfoAsyncState
 {
-    struct addrinfo hint;
     struct gaicb gai_request;
     struct gaicb* gai_requests;
     struct sigevent sigevent;
@@ -443,45 +441,32 @@ static void GetHostEntryForNameAsyncComplete(sigval_t context)
 
     GetHostEntryForNameCallback callback = state->callback;
 
-    int result = gai_error(&state->gai_request);
-    HostEntry* entry = state->entry;
+    int ret = ConvertGetAddrInfoAndGetNameInfoErrorsToPal(gai_error(&state->gai_request));
 
-    int ret = ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
-
-    if (result == 0)
+    if (ret == 0)
     {
         const uint8_t* address = state->address;
         struct addrinfo* info = state->gai_request.ar_result;
 
-        ret = GetHostEntries(address, info, entry);
+        ret = GetHostEntries(address, info, state->entry);
     }
-
-    free(state);
 
     if (callback != NULL)
     {
-        callback(entry, ret);
+        callback(state->entry, ret);
     }
+
+    free(state);
 }
 #endif
-
-static void GetHostEntryForNameCreateHint(struct addrinfo* hint)
-{
-    // Get all address families and the canonical name
-
-    memset(hint, 0, sizeof(struct addrinfo));
-    hint->ai_family = AF_UNSPEC;
-    hint->ai_flags = AI_CANONNAME;
-}
 
 int32_t SystemNative_PlatformSupportsGetAddrInfoAsync()
 {
-#if HAVE_GETADDRINFO_A
-    return 1;
-#else
-    return 0;
-#endif
+    return HAVE_GETADDRINFO_A;
 }
+
+// Get all address families and the canonical name
+static const struct addrinfo s_hostEntryForNameHints = {.ai_family = AF_UNSPEC, .ai_flags = AI_CANONNAME};
 
 int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entry)
 {
@@ -490,12 +475,9 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entr
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }
 
-    struct addrinfo hint;
-    GetHostEntryForNameCreateHint(&hint);
-
     struct addrinfo* info = NULL;
 
-    int result = getaddrinfo((const char*)address, NULL, &hint, &info);
+    int result = getaddrinfo((const char*)address, NULL, &s_hostEntryForNameHints, &info);
     if (result != 0)
     {
         return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
@@ -512,22 +494,32 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, HostEntry*
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }
 
-    struct GetAddrInfoAsyncState* state = malloc(sizeof(struct GetAddrInfoAsyncState));
+    struct GetAddrInfoAsyncState* state = malloc(sizeof(*state));
 
-    GetHostEntryForNameCreateHint(&state->hint);
-    state->gai_request.ar_name = (const char*)address;
-    state->gai_request.ar_service = NULL;
-    state->gai_request.ar_request = &state->hint;
-    state->gai_request.ar_result = NULL;
-    state->gai_requests = &state->gai_request;
+    if (state == NULL)
+    {
+        return GetAddrInfoErrorFlags_EAI_MEMORY;
+    }
 
-    state->sigevent.sigev_notify = SIGEV_THREAD;
-    state->sigevent.sigev_value.sival_ptr = state;
-    state->sigevent.sigev_notify_function = GetHostEntryForNameAsyncComplete;
-
-    state->address = address;
-    state->entry = entry;
-    state->callback = callback;
+    *state = (struct GetAddrInfoAsyncState){
+        .gai_request = {
+            .ar_name = (const char*)address,
+            .ar_service = NULL,
+            .ar_request = &s_hostEntryForNameHints,
+            .ar_result = NULL
+        },
+        .gai_requests = &state->gai_request,
+        .sigevent = {
+            .sigev_notify = SIGEV_THREAD,
+            .sigev_value = {
+                .sival_ptr = state
+            },
+            .sigev_notify_function = GetHostEntryForNameAsyncComplete
+        },
+        .address = address,
+        .entry = entry,
+        .callback = callback
+    };
 
     atomic_thread_fence(memory_order_release);
 
@@ -541,11 +533,9 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, HostEntry*
 
     return result;
 #else
-    // Actually not needed, but otherwise the parameters are unused.
-    if (address != NULL && entry != NULL && callback != NULL)
-    {
-        return -1;
-    }
+    (void)address;
+    (void)entry;
+    (void)callback;
 
     // GetHostEntryForNameAsync is not supported on this platform.
     return -1;
