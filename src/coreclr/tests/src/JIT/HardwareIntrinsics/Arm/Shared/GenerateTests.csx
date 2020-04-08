@@ -73,6 +73,17 @@ private const string VecReduceOpTest_ValidationLogic = @"if ({ValidateReduceOpRe
                 }
             }";
 
+private const string SecureHashOpTest_ValidationLogic = @"{RetBaseType}[] expectedResult = new {RetBaseType}[]{ExpectedResult};
+
+            for (int i = 0; i < RetElementCount; i++)
+            {
+                if (result[i] != expectedResult[i])
+                {
+                    succeeded = false;
+                    break;
+                }
+            }";
+
 private static readonly (string templateFileName, string outputTemplateName, Dictionary<string, string> templateData)[] Templates = new[]
 {
     ("_BinaryOpTestTemplate.template",        "SimpleBinOpTest.template",       new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleOpTest_ValidationLogic }),
@@ -82,7 +93,10 @@ private static readonly (string templateFileName, string outputTemplateName, Dic
     ("_BinaryOpTestTemplate.template",        "VecPairBinOpTest.template",      new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = VecPairBinOpTest_ValidationLogic }),
     ("_UnaryOpTestTemplate.template",         "VecReduceUnOpTest.template",     new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = VecReduceOpTest_ValidationLogic }),
     ("_BinaryOpTestTemplate.template",        "VecBinOpTest.template",          new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleVecOpTest_ValidationLogic }),
-    ("_TernaryOpTestTemplate.template",       "SimpleTernOpTest.template",      new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleOpTest_ValidationLogic })
+    ("_TernaryOpTestTemplate.template",       "SimpleTernOpTest.template",      new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleOpTest_ValidationLogic }),
+    ("_BinaryOpTestTemplate.template",        "SecureHashBinOpTest.template",   new Dictionary<string, string> { ["TemplateName"] = "SecureHash",  ["TemplateValidationLogic"] = SecureHashOpTest_ValidationLogic }),
+    ("_TernaryOpTestTemplate.template",       "SecureHashTernOpTest.template",  new Dictionary<string, string> { ["TemplateName"] = "SecureHash",  ["TemplateValidationLogic"] = SecureHashOpTest_ValidationLogic })
+
 };
 
 private static readonly (string templateFileName, Dictionary<string, string> templateData)[] AdvSimdInputs = new []
@@ -940,6 +954,14 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
     ("ScalarBinOpTest.template",     new Dictionary<string, string> { ["TestName"] = "ComputeCrc32C_UInt64",                                    ["Isa"] = "Crc32.Arm64",                            ["Method"] = "ComputeCrc32C",                                                            ["RetBaseType"] = "UInt32",                                   ["Op1BaseType"] = "UInt32",                                  ["Op2BaseType"] = "UInt64",                                                                                            ["NextValueOp1"] = "0xFFFFFFFF",                               ["NextValueOp2"] = "0x20191113110219UL",                                                                                      ["ValidateResult"] = "uint expectedResult = 0x6295C71A; isUnexpectedResult = (expectedResult != result);" }),
 };
 
+private static readonly (string templateFileName, Dictionary<string, string> templateData)[] Sha256Inputs = new []
+{
+    ("SecureHashTernOpTest.template",new Dictionary<string, string> { ["TestName"] = "HashUpdate1_Vector128_UInt32",                            ["Isa"] = "Sha256",        ["LoadIsa"] = "AdvSimd", ["Method"] = "HashUpdate1",                             ["RetVectorType"] = "Vector128", ["RetBaseType"] = "UInt32",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "UInt32", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "UInt32", ["Op3VectorType"] = "Vector128", ["Op3BaseType"] = "UInt32", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "0x00112233",                               ["NextValueOp2"] = "0x44556677",                               ["NextValueOp3"] = "0x8899AABB",                               ["ExpectedResult"] = "{0x3D22118E, 0x987CA5FB, 0x54F4E477, 0xDFB50278}"}),
+    ("SecureHashTernOpTest.template",new Dictionary<string, string> { ["TestName"] = "HashUpdate2_Vector128_UInt32",                            ["Isa"] = "Sha256",        ["LoadIsa"] = "AdvSimd", ["Method"] = "HashUpdate2",                             ["RetVectorType"] = "Vector128", ["RetBaseType"] = "UInt32",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "UInt32", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "UInt32", ["Op3VectorType"] = "Vector128", ["Op3BaseType"] = "UInt32", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "0x00112233",                               ["NextValueOp2"] = "0x44556677",                               ["NextValueOp3"] = "0x8899AABB",                               ["ExpectedResult"] = "{0xFFD38634, 0x2A33F83F, 0x55A1BE45, 0x5002B4C4}"}),
+    ("SecureHashBinOpTest.template", new Dictionary<string, string> { ["TestName"] = "ScheduleUpdate0_Vector128_UInt32",                        ["Isa"] = "Sha256",        ["LoadIsa"] = "AdvSimd", ["Method"] = "ScheduleUpdate0",                         ["RetVectorType"] = "Vector128", ["RetBaseType"] = "UInt32",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "UInt32", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "UInt32",                                                              ["LargestVectorSize"] = "16", ["NextValueOp1"] = "0x00112233",                               ["NextValueOp2"] = "0x44556677",                                                                                              ["ExpectedResult"] = "{0x2E9FE839, 0x2E9FE839, 0x2E9FE839, 0xBFB0F94A}"}),
+    ("SecureHashTernOpTest.template",new Dictionary<string, string> { ["TestName"] = "ScheduleUpdate1_Vector128_UInt32",                        ["Isa"] = "Sha256",        ["LoadIsa"] = "AdvSimd", ["Method"] = "ScheduleUpdate1",                         ["RetVectorType"] = "Vector128", ["RetBaseType"] = "UInt32",  ["Op1VectorType"] = "Vector128", ["Op1BaseType"] = "UInt32", ["Op2VectorType"] = "Vector128", ["Op2BaseType"] = "UInt32", ["Op3VectorType"] = "Vector128", ["Op3BaseType"] = "UInt32", ["LargestVectorSize"] = "16", ["NextValueOp1"] = "0x00112233",                               ["NextValueOp2"] = "0x44556677",                               ["NextValueOp3"] = "0x8899AABB",                               ["ExpectedResult"] = "{0x248F1BDF, 0x248F1BDF, 0xB303DDBA, 0xF74821FE}"}),
+};
+
 private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
 {
     var directoryName = Path.Combine("..", groupName);
@@ -1060,3 +1082,4 @@ ProcessInputs("ArmBase", ArmBaseInputs);
 ProcessInputs("ArmBase.Arm64", ArmBase_Arm64Inputs);
 ProcessInputs("Crc32", Crc32Inputs);
 ProcessInputs("Crc32.Arm64", Crc32_Arm64Inputs);
+ProcessInputs("Sha256", Sha256Inputs);
