@@ -84,12 +84,12 @@ namespace System
                     // Set the terminal console encoding.
                     ConsolePal.SetConsoleInputEncoding(value);
 
-                    s_inputEncoding = (Encoding)value.Clone();
+                    Volatile.Write(ref s_inputEncoding, (Encoding)value.Clone());
 
                     // We need to reinitialize 'Console.In' in the next call to s_in
                     // This will discard the current StreamReader, potentially
                     // losing buffered data.
-                    s_in = null;
+                    Volatile.Write(ref s_in, null);
                 }
             }
         }
@@ -127,15 +127,15 @@ namespace System
                     if (s_out != null && !s_isOutTextWriterRedirected)
                     {
                         s_out.Flush();
-                        s_out = null;
+                        Volatile.Write(ref s_out, null);
                     }
                     if (s_error != null && !s_isErrorTextWriterRedirected)
                     {
                         s_error.Flush();
-                        s_error = null;
+                        Volatile.Write(ref s_error, null);
                     }
 
-                    s_outputEncoding = (Encoding)value.Clone();
+                    Volatile.Write(ref s_outputEncoding, (Encoding)value.Clone());
                 }
             }
         }
@@ -532,7 +532,7 @@ namespace System
             lock (s_syncObject)
             {
                 s_isOutTextWriterRedirected = true;
-                s_out = newOut;
+                Volatile.Write(ref s_out, newOut);
             }
         }
 
@@ -543,7 +543,7 @@ namespace System
             lock (s_syncObject)
             {
                 s_isErrorTextWriterRedirected = true;
-                s_error = newError;
+                Volatile.Write(ref s_error, newError);
             }
         }
 
