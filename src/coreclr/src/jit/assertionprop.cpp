@@ -4545,6 +4545,7 @@ private:
     ASSERT_TP* mJumpDestGen;
 
     BitVecTraits* apTraits;
+    Compiler*     m_compiler;
 
 public:
     AssertionPropFlowCallback(Compiler* pCompiler, ASSERT_TP* jumpDestOut, ASSERT_TP* jumpDestGen)
@@ -4553,6 +4554,7 @@ public:
         , mJumpDestOut(jumpDestOut)
         , mJumpDestGen(jumpDestGen)
         , apTraits(pCompiler->apTraits)
+        , m_compiler(pCompiler)
     {
     }
 
@@ -4590,7 +4592,56 @@ public:
     //   It means we can propagate only assertions that are valid for the whole try region.
     void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
     {
-        BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, firstTryBlock->bbAssertionIn);
+        JITDUMP("AssertionPropCallback::MergeHandler  : " FMT_BB " in -> %s, try-beg " FMT_BB " try-end " FMT_BB "\n\n",
+                block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionIn), firstTryBlock->bbNum,
+                lastTryBlock->bbNum);
+
+        // For OSR the first try block may not be the try entry block for
+        // control flow purposes. Find the actual entry blocks. Since control
+        // is coming from the OSR entry point, at least one such block must
+        // not be in any try region.
+        if (m_compiler->opts.IsOSR())
+        {
+            JITDUMP("OSR case -- scanning try range for possible non-first try entry BB\n");
+            assert(firstTryBlock->hasTryIndex());
+
+            const unsigned tryIndex           = firstTryBlock->getTryIndex();
+            bool           foundEntry         = false;
+            bool           foundExternalEntry = false;
+
+            // Scan try extent looking for a block with a predecessor that is not in the try.
+            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->bbNext; tryBlock = tryBlock->bbNext)
+            {
+                assert(m_compiler->bbInTryRegions(tryIndex, tryBlock));
+
+                for (flowList* pred = tryBlock->bbPreds; pred; pred = pred->flNext)
+                {
+                    BasicBlock* predBlock = pred->flBlock;
+
+                    if (!m_compiler->bbInTryRegions(tryIndex, predBlock))
+                    {
+                        JITDUMP("Pred " FMT_BB " of  " FMT_BB " is outside try, using latter as entry\n",
+                                predBlock->bbNum, tryBlock->bbNum);
+                        BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, tryBlock->bbAssertionIn);
+                        foundEntry = true;
+                        foundExternalEntry |= !predBlock->hasTryIndex();
+                    }
+                }
+            }
+
+            // We should have found at least one entry. We might see more than one.
+            assert(foundEntry);
+
+            // We should have found at least one external entry. We might see more than one (eventually).
+            assert(foundExternalEntry);
+        }
+        else
+        {
+            BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, firstTryBlock->bbAssertionIn);
+        }
+
+        // TODO -- possible bug: we may need to merge in the out set for every block in the try range.
+        //
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, lastTryBlock->bbAssertionOut);
     }
 
