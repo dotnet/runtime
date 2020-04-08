@@ -846,6 +846,11 @@ namespace Mono.Linker.Steps {
 				MarkMethod (property.SetMethod, reason);
 
 			MarkCustomAttributeArgument (namedArgument.Argument, ca);
+
+			if (property != null && _flowAnnotations.RequiresDataFlowAnalysis (property.SetMethod)) {
+				var scanner = new ReflectionMethodBodyScanner (this);
+				scanner.ProcessAttributeDataflow (property.SetMethod, new Collection<CustomAttributeArgument> { namedArgument.Argument });
+			}
 		}
 
 		PropertyDefinition GetProperty (TypeDefinition type, string propertyname)
@@ -879,6 +884,11 @@ namespace Mono.Linker.Steps {
 				MarkField (field, new DependencyInfo (DependencyKind.CustomAttributeField, ca));
 
 			MarkCustomAttributeArgument (namedArgument.Argument, ca);
+
+			if (field != null && _flowAnnotations.RequiresDataFlowAnalysis (field)) {
+				var scanner = new ReflectionMethodBodyScanner (this);
+				scanner.ProcessAttributeDataflow (field, namedArgument.Argument);
+			}
 		}
 
 		FieldDefinition GetField (TypeDefinition type, string fieldname)
@@ -918,6 +928,12 @@ namespace Mono.Linker.Steps {
 
 			foreach (var argument in ca.ConstructorArguments)
 				MarkCustomAttributeArgument (argument, ca);
+
+			var resolvedConstructor = ca.Constructor.Resolve ();
+			if (resolvedConstructor != null && _flowAnnotations.RequiresDataFlowAnalysis (resolvedConstructor)) {
+				var scanner = new ReflectionMethodBodyScanner (this);
+				scanner.ProcessAttributeDataflow (resolvedConstructor, ca.ConstructorArguments);
+			}
 		}
 
 		void MarkCustomAttributeArgument (CustomAttributeArgument argument, ICustomAttribute ca)
@@ -2782,47 +2798,6 @@ namespace Mono.Linker.Steps {
 									ProcessSystemTypeGetMemberLikeCall (ref reflectionContext, System.Reflection.MemberTypes.Property, instructionIndex - 1);
 
 								break;
-
-							//
-							// GetType (string)
-							// GetType (string, Boolean)
-							// GetType (string, Boolean, Boolean)
-							// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>)
-							// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean)
-							// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)
-							//
-							case "GetType":
-								if (!methodCalled.IsStatic) {
-									break;
-								} else {
-									reflectionContext.AnalyzingPattern ();
-									
-									var first_arg_instr = GetInstructionAtStackDepth (_instructions, instructionIndex - 1, methodCalled.Parameters.Count);
-									if (first_arg_instr < 0) {
-										reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' couldn't be decomposed");
-										break;
-									}
-
-									//
-									// The next value must be string constant (we don't handle anything else)
-									//
-									var first_arg = _instructions [first_arg_instr];
-									if (first_arg.OpCode != OpCodes.Ldstr) {
-										reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with argument which cannot be analyzed");
-										break;
-									}
-
-									string typeName = (string)first_arg.Operand;
-									TypeDefinition foundType = _markStep.ResolveFullyQualifiedTypeName (typeName);
-									if (foundType == null) {
-										reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{methodCalled.FullName}' inside '{_methodCalling.FullName}' was detected with type name `{typeName}` which can't be resolved.");
-										break;
-									}
-
-									var methodCalling = reflectionContext.MethodCalling;
-									reflectionContext.RecordRecognizedPattern (foundType, () => _markStep.MarkType (foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
-								}
-								break;
 						}
 
 						break;
@@ -3409,6 +3384,55 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
+			public void ProcessAttributeDataflow (MethodDefinition method, Collection<CustomAttributeArgument> arguments)
+			{
+				int paramOffset = method.HasImplicitThis () ? 1 : 0;
+
+				for (int i = 0; i < method.Parameters.Count; i++)
+				{
+					var annotation = _flowAnnotations.GetParameterAnnotation (method, i + paramOffset);
+					if (annotation != 0) {
+						ValueNode valueNode = GetValueNodeForCustomAttributeArgument (arguments [i]);
+						if (valueNode != null) {
+							// TODO: There's no way to represent attribute dataflow in current ReflectionPatternContext (and the underlying IReflectionPatterRecorder)
+							ReflectionPatternContext context = new ReflectionPatternContext (_markStep._context, method, method, 0);
+							context.AnalyzingPattern ();
+							RequireDynamicallyAccessedMembers (ref context, annotation, valueNode, method);
+						}
+					}
+				}
+			}
+
+			public void ProcessAttributeDataflow (FieldDefinition field, CustomAttributeArgument value)
+			{
+				var annotation = _flowAnnotations.GetFieldAnnotation (field);
+				Debug.Assert (annotation != 0);
+
+				ValueNode valueNode = GetValueNodeForCustomAttributeArgument (value);
+				if (valueNode != null) {
+					// TODO: There's no way to represent store to a field given current ReflectionPatternContext (and the underlying IReflectionPatterRecorder)
+					var reflectionContext = new ReflectionPatternContext (_markStep._context, field.DeclaringType.Methods [0], field.DeclaringType.Methods [0], 0);
+					reflectionContext.AnalyzingPattern ();
+					RequireDynamicallyAccessedMembers (ref reflectionContext, annotation, valueNode, field);
+				}
+			}
+
+			private ValueNode GetValueNodeForCustomAttributeArgument(CustomAttributeArgument argument)
+			{
+				ValueNode valueNode;
+				if (argument.Type.Name == "Type") {
+					TypeDefinition referencedType = ((TypeReference)argument.Value).Resolve ();
+					valueNode = referencedType == null ? null : new SystemTypeValue (referencedType);
+				} else if (argument.Type.MetadataType == MetadataType.String) {
+					valueNode = new KnownStringValue ((string)argument.Value);
+				} else {
+					// We shouldn't have gotten a non-null annotation for this from GetParameterAnnotation
+					throw new InvalidOperationException ();
+				}
+
+				return valueNode;
+			}
+
 			protected override void WarnAboutInvalidILInMethod (MethodBody method, int ilOffset)
 			{
 				// TODO: remove once we're ready to scan actual invalid IL
@@ -3449,13 +3473,14 @@ namespace Mono.Linker.Steps {
 
 				DynamicallyAccessedMemberKinds returnValueDynamicallyAccessedMemberKinds = 0;
 
+				methodReturnValue = null;
+
+				var calledMethodDefinition = calledMethod.Resolve ();
+				if (calledMethodDefinition == null)
+					return false;
+
 				try {
 
-					methodReturnValue = null;
-
-					var calledMethodDefinition = calledMethod.Resolve ();
-					if (calledMethodDefinition == null)
-						return false;
 
 					bool requiresDataFlowAnalysis = _flowAnnotations.RequiresDataFlowAnalysis (calledMethodDefinition);
 					returnValueDynamicallyAccessedMemberKinds =  requiresDataFlowAnalysis ?
@@ -3576,6 +3601,48 @@ namespace Mono.Linker.Steps {
 							break;
 
 						//
+						// GetType (string)
+						// GetType (string, Boolean)
+						// GetType (string, Boolean, Boolean)
+						// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>)
+						// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean)
+						// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)
+						//
+						case "GetType" when calledMethod.DeclaringType.Name == "Type"
+							&& calledMethod.DeclaringType.Namespace == "System"
+							&& calledMethod.Parameters.Count >= 1
+							&& calledMethod.Parameters [0].ParameterType.MetadataType == MetadataType.String: {
+								reflectionContext.AnalyzingPattern ();
+
+								foreach (var typeNameValue in methodParams [0].UniqueValues ()) {
+									if (typeNameValue is KnownStringValue knownStringValue) {
+										TypeDefinition foundType = _markStep.ResolveFullyQualifiedTypeName (knownStringValue.Contents);
+										if (foundType == null) {
+											// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
+											reflectionContext.RecordHandledPattern ();
+										} else {
+											var methodCalling = reflectionContext.MethodCalling;
+											reflectionContext.RecordRecognizedPattern (foundType, () => _markStep.MarkType (foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, methodCalling)));
+											methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new SystemTypeValue (foundType));
+										}
+									} else if (typeNameValue == NullValue.Instance) {
+										reflectionContext.RecordHandledPattern ();
+									} else if (typeNameValue is LeafValueWithDynamicallyAccessedMemberNode valueWithDynamicallyAccessedMember && valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberKinds != 0) {
+										// Propagate the annotation from the type name to the return value. Annotation on a string value will be fullfilled whenever a value is assigned to the string with annotation.
+										// So while we don't know which type it is, we can guarantee that it will fullfill the annotation.
+										reflectionContext.RecordHandledPattern ();
+										methodReturnValue = MergePointValue.MergeValues (methodReturnValue, new MethodReturnValue (valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberKinds) {
+											SourceContext = calledMethod.Parameters [0]
+										});
+									} else {
+										reflectionContext.RecordUnrecognizedPattern ($"Reflection call '{calledMethod.FullName}' inside '{reflectionContext.MethodCalling.FullName}' was detected with unknown value for the type name.");
+									}
+								}
+
+							}
+							break;
+
+						//
 						// static CreateInstance (System.Type type)
 						// static CreateInstance (System.Type type, bool nonPublic)
 						// static CreateInstance (System.Type type, params object?[]? args)
@@ -3594,7 +3661,7 @@ namespace Mono.Linker.Steps {
 
 								int? ctorParameterCount = null;
 								BindingFlags bindingFlags = BindingFlags.Instance;
-								if (parameters.Count > 1) {									
+								if (parameters.Count > 1) {
 									if (parameters [1].ParameterType.MetadataType == MetadataType.Boolean) {
 										// The overload that takes a "nonPublic" bool
 										bool nonPublic = true;
@@ -3696,7 +3763,9 @@ namespace Mono.Linker.Steps {
 				// unknown value with the return type of the method.
 				if (methodReturnValue == null) {
 					if (calledMethod.ReturnType.MetadataType != MetadataType.Void) {
-						methodReturnValue = new MethodReturnValue(returnValueDynamicallyAccessedMemberKinds);
+						methodReturnValue = new MethodReturnValue (returnValueDynamicallyAccessedMemberKinds) {
+							SourceContext = calledMethodDefinition
+						};
 					}
 				}
 
@@ -3708,6 +3777,7 @@ namespace Mono.Linker.Steps {
 					}
 					else if (methodReturnValue is SystemTypeValue) {
 						// SystemTypeValue can fullfill any requirement, so it's always valid
+						// The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
 					}
 					else {
 						throw new InvalidOperationException ($"Internal linker error: processing of call from {callingMethodBody.Method} to {calledMethod} returned value which is not correctly annotated with the expected dynamic member access kinds.");
@@ -3731,51 +3801,14 @@ namespace Mono.Linker.Steps {
 							reflectionContext.RecordHandledPattern ();
 						}
 					} else if (uniqueValue is SystemTypeValue systemTypeValue) {
-						// Note that it's important to first test for the widest selector (Constructors > PublicConstructors > DefaultConstructor)
-						// as the wider ones include the narrower ones in the bitfield values.
-						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Constructors)) {
-							MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
-						}
-						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicConstructors)) {
-							MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, filter: m => m.IsPublic);
-						}
-						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.DefaultConstructor)) {
-							MarkConstructorsOnType (ref reflectionContext, systemTypeValue.TypeRepresented, filter: m => m.Parameters.Count == 0);
-						}
-
-						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Methods)) {
-							MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
-						}
-						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicMethods)) {
-							MarkMethodsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: m => m.IsPublic);
-						}
-
-						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Fields)) {
-							MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
-						}
-						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicFields)) {
-							MarkFieldsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => f.IsPublic);
-						}
-
-						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.NestedTypes)) {
-							MarkNestedTypesOnType (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
-						}
-						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicNestedTypes)) {
-							MarkNestedTypesOnType (ref reflectionContext, systemTypeValue.TypeRepresented, filter: t => t.IsNestedPublic);
-						}
-
-						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Properties)) {
-							MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
-						}
-						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicProperties)) {
-							MarkPropertiesOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => (f.GetMethod == null || f.GetMethod.IsPublic) || (f.SetMethod == null || f.SetMethod.IsPublic));
-						}
-
-						if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Events)) {
-							MarkEventsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: null);
-						}
-						else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicEvents)) {
-							MarkEventsOnTypeHierarchy (ref reflectionContext, systemTypeValue.TypeRepresented, filter: f => (f.AddMethod == null || f.AddMethod.IsPublic) || (f.RemoveMethod == null || f.RemoveMethod.IsPublic));
+						MarkTypeForDynamicallyAccessedMembers (ref reflectionContext, systemTypeValue.TypeRepresented, requiredMemberKinds);
+					} else if (uniqueValue is KnownStringValue knownStringValue) {
+						TypeDefinition foundType = _markStep.ResolveFullyQualifiedTypeName (knownStringValue.Contents);
+						if (foundType == null) {
+							// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
+							reflectionContext.RecordHandledPattern ();
+						} else {
+							MarkTypeForDynamicallyAccessedMembers (ref reflectionContext, foundType, requiredMemberKinds);
 						}
 					} else if (uniqueValue == NullValue.Instance) {
 						// Ignore - probably unreachable path as it would fail at runtime anyway.
@@ -3788,6 +3821,49 @@ namespace Mono.Linker.Steps {
 				}
 
 				reflectionContext.RecordHandledPattern ();
+			}
+
+			void MarkTypeForDynamicallyAccessedMembers (ref ReflectionPatternContext reflectionContext, TypeDefinition typeDefinition, DynamicallyAccessedMemberKinds requiredMemberKinds)
+			{
+				// Note that it's important to first test for the widest selector (Constructors > PublicConstructors > DefaultConstructor)
+				// as the wider ones include the narrower ones in the bitfield values.
+				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Constructors)) {
+					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: null);
+				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicConstructors)) {
+					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: m => m.IsPublic);
+				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.DefaultConstructor)) {
+					MarkConstructorsOnType (ref reflectionContext, typeDefinition, filter: m => m.Parameters.Count == 0);
+				}
+
+				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Methods)) {
+					MarkMethodsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
+				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicMethods)) {
+					MarkMethodsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: m => m.IsPublic);
+				}
+
+				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Fields)) {
+					MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
+				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicFields)) {
+					MarkFieldsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: f => f.IsPublic);
+				}
+
+				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.NestedTypes)) {
+					MarkNestedTypesOnType (ref reflectionContext, typeDefinition, filter: null);
+				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicNestedTypes)) {
+					MarkNestedTypesOnType (ref reflectionContext, typeDefinition, filter: t => t.IsNestedPublic);
+				}
+
+				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Properties)) {
+					MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
+				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicProperties)) {
+					MarkPropertiesOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: f => (f.GetMethod == null || f.GetMethod.IsPublic) || (f.SetMethod == null || f.SetMethod.IsPublic));
+				}
+
+				if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.Events)) {
+					MarkEventsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: null);
+				} else if (requiredMemberKinds.HasFlag (DynamicallyAccessedMemberKinds.PublicEvents)) {
+					MarkEventsOnTypeHierarchy (ref reflectionContext, typeDefinition, filter: f => (f.AddMethod == null || f.AddMethod.IsPublic) || (f.RemoveMethod == null || f.RemoveMethod.IsPublic));
+				}
 			}
 
 			void MarkMethodsFromReflectionCall (ref ReflectionPatternContext reflectionContext, TypeDefinition declaringType, string name, BindingFlags? bindingFlags, int? parametersCount = null)
