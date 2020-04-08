@@ -1448,9 +1448,10 @@
     },
     "runtime.native.System.IO.Ports": {
       "StableVersions": [
-        "4.6.0"
+        "4.6.0",
+        "4.7.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "4.7.0",
       "InboxOn": {}
     },
     "SMDiagnostics": {
