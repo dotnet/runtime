@@ -178,10 +178,8 @@ include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
-if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)  # TODO: reenable
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     add_subdirectory(System.IO.Ports.Native)
-endif()
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
