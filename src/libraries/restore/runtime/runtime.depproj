@@ -44,9 +44,6 @@
           Condition="'$(BinPlaceTestSharedFramework)' == 'true'"
           AfterTargets="AfterResolveReferences">
     <PropertyGroup>
-      <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-      <DotNetVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetVersion>
-
       <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
       <HostFxrFileName Condition="'$(TargetsWindows)' != 'true'">libhostfxr</HostFxrFileName>
 
