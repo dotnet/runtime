@@ -15,6 +15,7 @@
 #endif // FEATURE_COMINTEROP
 
 #include "gctoclreventsink.h"
+#include "configuration.h"
 
 // the method table for the WeakReference class
 extern MethodTable* pWeakReferenceMT;
