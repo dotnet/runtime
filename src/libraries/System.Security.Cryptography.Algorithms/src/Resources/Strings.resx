@@ -163,7 +163,7 @@
     <value>The specified Oid is not valid. The Oid.FriendlyName or Oid.Value property must be set.</value>
   </data>
   <data name="Cryptography_InvalidCurveKeyParameters" xml:space="preserve">
-    <value>The specified key parameters are not valid. Q.X and Q.Y are required fields. Q.X, Q.Y must be the same length. If D is specified it must be the same length as Q.X and Q.Y for named curves or the same length as Order for explicit curves.</value>
+    <value>The specified key parameters are not valid. Q.X and Q.Y, or D, must be specified. Q.X, Q.Y must be the same length. If D is specified it must be the same length as Q.X and Q.Y if also specified for named curves or the same length as Order for explicit curves.</value>
   </data>
   <data name="Cryptography_InvalidDsaParameters_MissingFields" xml:space="preserve">
     <value>The specified DSA parameters are not valid; P, Q, G and Y are all required.</value>
