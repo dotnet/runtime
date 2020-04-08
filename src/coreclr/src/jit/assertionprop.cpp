@@ -4597,17 +4597,15 @@ public:
                 lastTryBlock->bbNum);
 
         // For OSR the first try block may not be the try entry block for
-        // control flow purposes. Find the actual entry blocks. Since control
-        // is coming from the OSR entry point, at least one such block must
-        // not be in any try region.
+        // control flow purposes. Find the actual entry blocks.
+        //
         if (m_compiler->opts.IsOSR())
         {
             JITDUMP("OSR case -- scanning try range for possible non-first try entry BB\n");
             assert(firstTryBlock->hasTryIndex());
 
-            const unsigned tryIndex           = firstTryBlock->getTryIndex();
-            bool           foundEntry         = false;
-            bool           foundExternalEntry = false;
+            const unsigned tryIndex   = firstTryBlock->getTryIndex();
+            bool           foundEntry = false;
 
             // Scan try extent looking for a block with a predecessor that is not in the try.
             for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->bbNext; tryBlock = tryBlock->bbNext)
@@ -4624,16 +4622,12 @@ public:
                                 predBlock->bbNum, tryBlock->bbNum);
                         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, tryBlock->bbAssertionIn);
                         foundEntry = true;
-                        foundExternalEntry |= !predBlock->hasTryIndex();
                     }
                 }
             }
 
             // We should have found at least one entry. We might see more than one.
             assert(foundEntry);
-
-            // We should have found at least one external entry. We might see more than one (eventually).
-            assert(foundExternalEntry);
         }
         else
         {
