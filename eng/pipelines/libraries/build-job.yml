@@ -66,7 +66,7 @@ jobs:
         - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, ''), ne(parameters.osGroup, 'WebAssembly')) }}:
           - _subset: clr.corelib+libs
         - ${{ if eq(parameters.runTests, true) }}:
-          - _subset: libs+libs.tests
+          - _subset: clr.corelib+libs+libs.tests
           - _addtionalBuildArguments: /p:ArchiveTests=true
 
         - ${{ parameters.variables }}

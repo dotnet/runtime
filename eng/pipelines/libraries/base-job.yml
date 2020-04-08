@@ -108,7 +108,7 @@ jobs:
 
           # WebAssembly uses linux implementation detail
           - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
-            - _runtimeArtifactName: 'CoreLib_Linux_x64_${{ parameters.liveRuntimeBuildConfig }}'
+            - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(Build.SourcesDirectory)/artifacts/bin/coreclr/Linux.x64.Release'
 
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
