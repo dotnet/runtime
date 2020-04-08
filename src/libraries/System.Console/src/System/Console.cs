@@ -47,7 +47,11 @@ namespace System
 
                     lock (s_syncObject) // Ensures In and InputEncoding are synchronized.
                     {
-                        return s_in ??= ConsolePal.GetOrCreateReader();
+                        if (s_in == null)
+                        {
+                            Volatile.Write(ref s_in, ConsolePal.GetOrCreateReader());
+                        }
+                        return s_in;
                     }
                 }
             }
@@ -62,7 +66,11 @@ namespace System
                 {
                     lock (s_syncObject)
                     {
-                        encoding = s_inputEncoding ??= ConsolePal.InputEncoding;
+                        if (s_inputEncoding == null)
+                        {
+                            Volatile.Write(ref s_inputEncoding, ConsolePal.InputEncoding);
+                        }
+                        encoding = s_inputEncoding;
                     }
                 }
                 return encoding;
@@ -95,7 +103,11 @@ namespace System
                 {
                     lock (s_syncObject)
                     {
-                        encoding = s_outputEncoding ??= ConsolePal.OutputEncoding;
+                        if (s_outputEncoding == null)
+                        {
+                            Volatile.Write(ref s_outputEncoding, ConsolePal.OutputEncoding);
+                        }
+                        encoding = s_outputEncoding;
                     }
                 }
                 return encoding;
@@ -170,7 +182,11 @@ namespace System
                 {
                     lock (s_syncObject) // Ensures Out and OutputEncoding are synchronized.
                     {
-                        return s_out ??= CreateOutputWriter(OpenStandardOutput());
+                        if (s_out == null)
+                        {
+                            Volatile.Write(ref s_out, CreateOutputWriter(OpenStandardOutput()));
+                        }
+                        return s_out;
                     }
                 }
             }
@@ -186,7 +202,11 @@ namespace System
                 {
                     lock (s_syncObject) // Ensures Error and OutputEncoding are synchronized.
                     {
-                        return s_error ??= CreateOutputWriter(OpenStandardError());
+                        if (s_error == null)
+                        {
+                            Volatile.Write(ref s_error, CreateOutputWriter(OpenStandardError()));
+                        }
+                        return s_error;
                     }
                 }
             }
