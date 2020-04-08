@@ -624,12 +624,15 @@ namespace System.Globalization
             return sortKeyLength;
         }
 
-        private static unsafe bool IsSortable(char* text, int length)
+        private static unsafe bool IsSortableCore(ReadOnlySpan<char> text)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(text != null);
+            Debug.Assert(!text.IsEmpty);
 
-            return Interop.Kernel32.IsNLSDefinedString(Interop.Kernel32.COMPARE_STRING, 0, IntPtr.Zero, text, length);
+            fixed (char* pText = &MemoryMarshal.GetReference(text))
+            {
+                return Interop.Kernel32.IsNLSDefinedString(Interop.Kernel32.COMPARE_STRING, 0, IntPtr.Zero, pText, text.Length);
+            }
         }
 
         private const int COMPARE_OPTIONS_ORDINAL = 0x40000000;       // Ordinal

@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -800,43 +801,28 @@ namespace System.Globalization
             return new SortKey(this, source, options, keyData);
         }
 
-        private static unsafe bool IsSortable(char *text, int length)
+        private static bool IsSortableCore(ReadOnlySpan<char> text)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!text.IsEmpty);
 
-            int index = 0;
-            UnicodeCategory uc;
-
-            while (index < length)
+            do
             {
-                if (char.IsHighSurrogate(text[index]))
+                if (Rune.DecodeFromUtf16(text, out Rune result, out int charsConsumed) != OperationStatus.Done)
                 {
-                    if (index == length - 1 || !char.IsLowSurrogate(text[index+1]))
-                        return false; // unpaired surrogate
-
-                    uc = CharUnicodeInfo.GetUnicodeCategory(char.ConvertToUtf32(text[index], text[index+1]));
-                    if (uc == UnicodeCategory.PrivateUse || uc == UnicodeCategory.OtherNotAssigned)
-                        return false;
-
-                    index += 2;
-                    continue;
+                    return false; // found an unpaired surrogate somewhere in the text
                 }
 
-                if (char.IsLowSurrogate(text[index]))
+                UnicodeCategory category = Rune.GetUnicodeCategory(result);
+                if (category == UnicodeCategory.PrivateUse || category == UnicodeCategory.OtherNotAssigned)
                 {
-                    return false; // unpaired surrogate
+                    return false; // can't sort private use or unassigned code points
                 }
 
-                uc = CharUnicodeInfo.GetUnicodeCategory(text[index]);
-                if (uc == UnicodeCategory.PrivateUse || uc == UnicodeCategory.OtherNotAssigned)
-                {
-                    return false;
-                }
+                text = text.Slice(charsConsumed);
+            } while (!text.IsEmpty);
 
-                index++;
-            }
-
-            return true;
+            return true; // saw no unsortable data in the buffer
         }
 
         // -----------------------------

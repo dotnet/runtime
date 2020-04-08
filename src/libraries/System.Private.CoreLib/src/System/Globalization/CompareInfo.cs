@@ -124,18 +124,17 @@ namespace System.Globalization
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
 
-        public static unsafe bool IsSortable(char ch)
+        public static bool IsSortable(char ch)
         {
             if (GlobalizationMode.Invariant)
             {
-                return true;
+                return true; // all chars are sortable in invariant mode
             }
 
-            char* pChar = &ch;
-            return IsSortable(pChar, 1);
+            return IsSortableCore(MemoryMarshal.CreateReadOnlySpan(ref ch, 1));
         }
 
-        public static unsafe bool IsSortable(string text)
+        public static bool IsSortable(string text)
         {
             if (text == null)
             {
@@ -152,10 +151,7 @@ namespace System.Globalization
                 return true;
             }
 
-            fixed (char* pChar = text)
-            {
-                return IsSortable(pChar, text.Length);
-            }
+            return IsSortableCore(text);
         }
 
         /// <summary>
@@ -166,7 +162,7 @@ namespace System.Globalization
         /// <see langword="true"/> if <paramref name="text"/> is non-empty and contains
         /// only sortable Unicode characters; otherwise, <see langword="false"/>.
         /// </returns>
-        public static unsafe bool IsSortable(ReadOnlySpan<char> text)
+        public static bool IsSortable(ReadOnlySpan<char> text)
         {
             if (text.Length == 0)
             {
@@ -178,10 +174,7 @@ namespace System.Globalization
                 return true;
             }
 
-            fixed (char* pChar = text)
-            {
-                return IsSortable(pChar, text.Length);
-            }
+            return IsSortableCore(text);
         }
 
         /// <summary>
