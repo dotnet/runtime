@@ -16,7 +16,7 @@ namespace System
 
             uint fourByteBuffer = 0;
             int bytesLeftInBuffer = 0;
-            var fourByteSpan = new ReadOnlySpan<byte>(&fourByteBuffer, 4);
+            var fourByteSpan = new ReadOnlySpan<byte>(&fourByteBuffer, sizeof(uint));
 
             int totalCharsConsumed = 0;
             int charsToCopy = 0;
