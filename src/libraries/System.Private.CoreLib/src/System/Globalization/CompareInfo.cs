@@ -757,43 +757,14 @@ namespace System.Globalization
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
             if (prefix == null)
             {
-                throw new ArgumentNullException(nameof(prefix));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.prefix);
             }
 
-            if (prefix.Length == 0)
-            {
-                return true;
-            }
-            if (source.Length == 0)
-            {
-                return false;
-            }
-
-            if (options == CompareOptions.OrdinalIgnoreCase)
-            {
-                return source.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
-            }
-
-            if (options == CompareOptions.Ordinal)
-            {
-                return source.StartsWith(prefix, StringComparison.Ordinal);
-            }
-
-            if ((options & ValidIndexMaskOffFlags) != 0)
-            {
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
-            }
-
-            if (GlobalizationMode.Invariant)
-            {
-                return source.StartsWith(prefix, (options & CompareOptions.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-            }
-
-            return StartsWith(source, prefix, options);
+            return IsPrefixNew(source, prefix, options);
         }
 
         /// <summary>
@@ -869,7 +840,7 @@ namespace System.Globalization
 
         public bool IsPrefix(string source, string prefix)
         {
-            return IsPrefix(source, prefix, 0);
+            return IsPrefix(source, prefix, CompareOptions.None);
         }
 
         /// <summary>
@@ -880,43 +851,14 @@ namespace System.Globalization
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
             if (suffix == null)
             {
-                throw new ArgumentNullException(nameof(suffix));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.suffix);
             }
 
-            if (suffix.Length == 0)
-            {
-                return true;
-            }
-            if (source.Length == 0)
-            {
-                return false;
-            }
-
-            if (options == CompareOptions.OrdinalIgnoreCase)
-            {
-                return source.EndsWith(suffix, StringComparison.OrdinalIgnoreCase);
-            }
-
-            if (options == CompareOptions.Ordinal)
-            {
-                return source.EndsWith(suffix, StringComparison.Ordinal);
-            }
-
-            if ((options & ValidIndexMaskOffFlags) != 0)
-            {
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
-            }
-
-            if (GlobalizationMode.Invariant)
-            {
-                return source.EndsWith(suffix, (options & CompareOptions.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-            }
-
-            return EndsWith(source, suffix, options);
+            return IsSuffixNew(source, suffix, options);
         }
 
         /// <summary>
@@ -992,7 +934,7 @@ namespace System.Globalization
 
         public bool IsSuffix(string source, string suffix)
         {
-            return IsSuffix(source, suffix, 0);
+            return IsSuffix(source, suffix, CompareOptions.None);
         }
 
         /// <summary>

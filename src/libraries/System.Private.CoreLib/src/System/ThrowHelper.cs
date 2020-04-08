@@ -690,6 +690,10 @@ namespace System
                     return "str";
                 case ExceptionArgument.options:
                     return "options";
+                case ExceptionArgument.prefix:
+                    return "prefix";
+                case ExceptionArgument.suffix:
+                    return "suffix";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -944,6 +948,8 @@ namespace System
         codePoint,
         str,
         options,
+        prefix,
+        suffix,
     }
 
     //
