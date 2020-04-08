@@ -76,8 +76,15 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       fi
     fi
 
-    __ResponseFile=$PWD/composite-r2r.dll.rsp
+    if [ ! -z ${CompositeBuildMode+x} ]%3B then
+        __OutputFile=$PWD/composite-r2r.dll
+    else
+        __OutputFile=$PWD/$(MSBuildProjectName).dll
+    fi
+
+    __ResponseFile=$__OutputFile ".rsp"
     rm $__ResponseFile
+
     __Command=$_DebuggerFullPath
     __Command+=" $CORE_ROOT/corerun"
     __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
@@ -86,14 +93,14 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
     if [ ! -z ${CompositeBuildMode+x} ]%3B then
       echo --composite>>$__ResponseFile
-      echo -o:$(scriptPath)composite-r2r.dll>>$__ResponseFile
       echo $PWD/IL/*.dll>>$__ResponseFile
     else
       echo --inputbubble>>$__ResponseFile
-      echo -o:$(scriptPath)$(MSBuildProjectName).dll>>$__ResponseFile
+      echo $PWD/IL/$(MSBuildProjectName).dll>>$__ResponseFile
       echo -r:$PWD/IL/*.dll>>$__ResponseFile
     fi
 
+    echo -o:$(__OutputFile)>>$__ResponseFile
     echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
     echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
     echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
@@ -164,7 +171,13 @@ if defined RunCrossGen2 (
         )
     )
 
-    set __ResponseFile=!scriptPath!\composite-r2r.dll.rsp
+    if defined CompositeBuildMode (
+        set __OutputFile=!scriptPath!\composite-r2r.dll
+    ) else (
+        set __OutputFile=!scriptPath!\$(MSBuildProjectName).dll
+    )
+
+    set __ResponseFile=!__OutputFile!.rsp
     del /Q !__ResponseFile!
 
     set __Command=!_DebuggerFullPath!
@@ -175,15 +188,15 @@ if defined RunCrossGen2 (
 
     if defined CompositeBuildMode (
         echo --composite>>!__ResponseFile!
-        echo -o:!scriptPath!composite-r2r.dll>>!__ResponseFile!
         rem In composite mode, treat all dll's in the test folder as rooting inputs
         echo !scriptPath!IL\*.dll>>!__ResponseFile!
     ) else (
         echo --inputbubble>>!__ResponseFile!
-        echo -o:!scriptPath!$(MSBuildProjectName).dll>>!__ResponseFile!
-        echo -r:%21scriptPath%21IL\*.dll>>!__ResponseFile!
+        echo !scriptPath!IL\$(MSBuildProjectName).dll>>!__ResponseFile!
+        echo -r:!scriptPath!IL\*.dll>>!__ResponseFile!
     )
 
+    echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:x64>>!__ResponseFile!
     echo -O>>!__ResponseFile!
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
