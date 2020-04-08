@@ -538,7 +538,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/27015", TargetFrameworkMonikers.Netcoreapp)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "VT_RECORD not supported on .NET Core")]
         public void GetObjectForNativeVariant_Record_ReturnsExpected()
         {
             int record = 10;

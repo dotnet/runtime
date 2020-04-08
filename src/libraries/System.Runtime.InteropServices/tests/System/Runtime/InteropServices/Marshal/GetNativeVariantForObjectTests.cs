@@ -119,10 +119,6 @@ namespace System.Runtime.InteropServices.Tests
             {
                 yield return new object[] { new DispatchWrapper(10), VarEnum.VT_DISPATCH, IntPtr.Zero, null };
             }
-            else
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => new DispatchWrapper(10));
-            }
             yield return new object[] { new ErrorWrapper(10), VarEnum.VT_ERROR, (IntPtr)10, 10 };
             yield return new object[] { new CurrencyWrapper(10), VarEnum.VT_CY, (IntPtr)100000, 10m };
             yield return new object[] { new BStrWrapper("a"), VarEnum.VT_BSTR, (IntPtr)(-1), "a" };
@@ -132,10 +128,6 @@ namespace System.Runtime.InteropServices.Tests
             if (!PlatformDetection.IsNetCore)
             {
                 yield return new object[] { new DispatchWrapper[] { new DispatchWrapper(null), new DispatchWrapper(10) }, (VarEnum)8201, (IntPtr)(-1), new object[] { null, 10 } };
-            }
-            else
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => new DispatchWrapper(10));
             }
             yield return new object[] { new ErrorWrapper[] { new ErrorWrapper(10) }, (VarEnum)8202, (IntPtr)(-1), new uint[] { 10 } };
             yield return new object[] { new CurrencyWrapper[] { new CurrencyWrapper(10) }, (VarEnum)8198, (IntPtr)(-1), new decimal[] { 10 } };
@@ -148,13 +140,21 @@ namespace System.Runtime.InteropServices.Tests
             var genericClass = new GenericClass<string>();
             yield return new object[] { new GenericClass<string>[] { genericClass, null }, (VarEnum)8205, (IntPtr)(-1), new object[] { genericClass, null } };
 
-            var nonGenericStruct = new NonGenericStruct();
-            yield return new object[] { new NonGenericStruct[] { nonGenericStruct }, (VarEnum)8228, (IntPtr)(-1), new NonGenericStruct[] { nonGenericStruct } };
+            if (!PlatformDetection.IsNetCore)
+            {
+                var nonGenericStruct = new NonGenericStruct();
+                yield return new object[] { new NonGenericStruct[] { nonGenericStruct }, (VarEnum)8228, (IntPtr)(-1), new NonGenericStruct[] { nonGenericStruct } };
+            }
 
             var classWithInterface = new ClassWithInterface();
             var structWithInterface = new StructWithInterface();
             yield return new object[] { new ClassWithInterface[] { classWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, null } };
-            yield return new object[] { new StructWithInterface[] { structWithInterface }, (VarEnum)8228, (IntPtr)(-1), new StructWithInterface[] { structWithInterface } };
+
+            if (!PlatformDetection.IsNetCore)
+            {
+                yield return new object[] { new StructWithInterface[] { structWithInterface }, (VarEnum)8228, (IntPtr)(-1), new StructWithInterface[] { structWithInterface } };
+            }
+
             yield return new object[] { new INonGenericInterface[] { classWithInterface, structWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, structWithInterface, null } };
 
             // Enums.
@@ -183,7 +183,6 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [MemberData(nameof(GetNativeVariantForObject_NonRoundtrippingPrimitives_TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/26820")]
         public void GetNativeVariantForObject_ValidObject_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue, object expectedRoundtripValue)
         {
             var v = new Variant();
