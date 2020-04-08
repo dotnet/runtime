@@ -127,22 +127,22 @@ jobs:
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
 
-  - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
-
-    - name: CommonMSBuildArgs
-      value: >-
-        /p:PortableBuild=true
-        /p:SkipTests=true
-        /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
-
-    - name: BaseJobBuildCommand
-      value: >-
-        $(Build.SourcesDirectory)/build.sh -subset installer -ci
-        -configuration $(_BuildConfig)
-        -os FreeBSD -cross
-        $(LiveOverridePathArgs)
-        $(CommonMSBuildArgs)
-        $(OfficialBuildArg)
+#  - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+#
+#    - name: CommonMSBuildArgs
+#      value: >-
+#        /p:PortableBuild=true
+#        /p:SkipTests=true
+#        /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+#
+#    - name: BaseJobBuildCommand
+#      value: >-
+#        $(Build.SourcesDirectory)/build.sh -subset installer -ci
+#        -configuration $(_BuildConfig)
+#        -os FreeBSD -cross
+#        $(LiveOverridePathArgs)
+#        $(CommonMSBuildArgs)
+#        $(OfficialBuildArg)
 
   - ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'Android') }}:
 
@@ -162,7 +162,7 @@ jobs:
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
 
-  - ${{ if eq(parameters.osGroup, 'Linux') }}:
+  - ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
 
     # Preserve the NuGet authentication env vars into the Docker container.
     # The 'NuGetAuthenticate' build step may have set these.
@@ -195,6 +195,7 @@ jobs:
     - name: CommonMSBuildArgs
       value: >-
         /p:Configuration=$(_BuildConfig)
+        -os ${{ parameters.osGroup}}
         /p:TargetArchitecture=${{ parameters.archType }}
         $(OfficialBuildArg)
 
