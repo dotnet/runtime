@@ -76,6 +76,54 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal("8301" + hexEncodedValue + "60", hexResult.ToLower());
         }
 
+        public const string Enc = Helpers.EncodedPrefixIdentifier;
+
+        [Theory]
+        [InlineData(new object[] { new object[] { Enc, "8101" } }, true, "818101")]
+        [InlineData(new object[] { new object[] { Enc, "8101" } }, false, "9f8101ff")]
+        [InlineData(new object[] { Map, new object[] { Enc, "8101" }, 42 }, true, "a18101182a")]
+        [InlineData(new object[] { Map, new object[] { Enc, "8101" }, 42 }, false, "bf8101182aff")]
+        [InlineData(new object[] { Map, 42, new object[] { Enc, "8101" } }, true, "a1182a8101")]
+        [InlineData(new object[] { Map, 42, new object[] { Enc, "8101" } }, false, "bf182a8101ff")]
+
+        public static void WriteEncodedValue_ContextScenaria_HappyPath(object value, bool useDefiniteLength, string hexExpectedEncoding)
+        {
+            using var writer = new CborWriter();
+
+            Helpers.WriteValue(writer, value, useDefiniteLengthCollections: useDefiniteLength);
+
+            string hexEncoding = writer.ToArray().ByteArrayToHex().ToLower();
+            Assert.Equal(hexExpectedEncoding, hexEncoding);
+        }
+
+        [Fact]
+        public static void WriteEncodedValue_IndefiniteLengthTextString_HappyPath()
+        {
+            using var writer = new CborWriter();
+
+            writer.WriteStartTextStringIndefiniteLength();
+            writer.WriteTextString("foo");
+            writer.WriteEncodedValue("63626172".HexToByteArray());
+            writer.WriteEndTextStringIndefiniteLength();
+
+            byte[] encoding = writer.ToArray();
+            Assert.Equal("7f63666f6f63626172ff", encoding.ByteArrayToHex().ToLower());
+        }
+
+        [Fact]
+        public static void WriteEncodedValue_IndefiniteLengthByteString_HappyPath()
+        {
+            using var writer = new CborWriter();
+
+            writer.WriteStartByteStringIndefiniteLength();
+            writer.WriteByteString(new byte[] { 1, 1, 1 });
+            writer.WriteEncodedValue("43020202".HexToByteArray());
+            writer.WriteEndByteStringIndefiniteLength();
+
+            byte[] encoding = writer.ToArray();
+            Assert.Equal("5f4301010143020202ff", encoding.ByteArrayToHex().ToLower());
+        }
+
         [Fact]
         public static void WriteEncodedValue_BadIndefiniteLengthStringValue_ShouldThrowInvalidOperationException()
         {
