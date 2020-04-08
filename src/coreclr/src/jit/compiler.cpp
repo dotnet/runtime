@@ -2161,7 +2161,7 @@ const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 void Compiler::compSetProcessor()
 {
     //
-    // NOTE: This function needs to be kept in sync with EEJitManager::SetCpuInfo() in vm\codemap.cpp
+    // NOTE: This function needs to be kept in sync with EEJitManager::SetCpuInfo() in vm\codeman.cpp
     //
 
     const JitFlags& jitFlags = *opts.jitFlags;
@@ -2195,13 +2195,14 @@ void Compiler::compSetProcessor()
 
 #endif // TARGET_X86
 
+    // The VM will set the ISA flags depending on actual hardware support.
+    // We then select which ISAs to leave enabled based on the JIT config.
+    // The exception to this is the dummy Vector64/128/256 ISAs, which must be added explicitly.
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA                            = 0;
     opts.compSupportsISAReported                    = 0;
 
 #ifdef TARGET_XARCH
-    bool avxSupported = false;
-
     if (JitConfig.EnableHWIntrinsic())
     {
         // Dummy ISAs for simplifying the JIT code
@@ -2315,8 +2316,6 @@ void Compiler::compSetProcessor()
     if (JitConfig.EnableHWIntrinsic())
     {
         // Dummy ISAs for simplifying the JIT code
-        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
-        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
     }
