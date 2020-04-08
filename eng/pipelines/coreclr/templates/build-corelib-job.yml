@@ -84,7 +84,7 @@ jobs:
           installDotnet: true
 
     # Build Private CoreLib
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build System.Private.CoreLib
 
 

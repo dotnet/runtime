@@ -92,7 +92,7 @@ namespace Microsoft.Win32.RegistryTests
 
         [Theory]
         [MemberData(nameof(TestRegistrySubKeyNames))]
-        public void Verify_DeleteSubKeyTree_KeyDoesNotExists_Throws(string expected, string subKeyName) =>
+        public void DeleteSubKeyTree_KeyDoesNotExists_Throws(string expected, string subKeyName) =>
             Verify_DeleteSubKeyTree_KeyDoesNotExists_Throws(expected, () => TestRegistryKey.DeleteSubKeyTree(subKeyName));
     }
 }

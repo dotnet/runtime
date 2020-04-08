@@ -15,7 +15,7 @@
 
   <Target Name="FindInvalidSpecifiedSubsetNames">
     <ItemGroup>
-      <SpecifiedSubsetName Include="$([MSBuild]::Unescape($(Subset.Replace('-', ';'))))" />
+      <SpecifiedSubsetName Include="$([MSBuild]::Unescape($(Subset.Replace('+', ';').Replace('-', ';'))))" />
 
       <!-- MSBuild Exclude is case-insensitive, which matches intended behavior. -->
       <InvalidSpecifiedSubsetName Include="@(SpecifiedSubsetName)" Exclude="@(SubsetName)" />
@@ -29,9 +29,7 @@
   <Target Name="ReportValidSubsetList"
           Condition="'@(InvalidSpecifiedSubsetName)' != ''">
     <ItemGroup>
-      <SubsetName Text="- " />
-      <SubsetName Condition="'%(Category)' != ''" Text="%(Text)%(Category)|" />
-      <SubsetName Text="%(Text)%(Identity)" />
+      <SubsetName Text="- %(Identity)" />
       <SubsetName Text="%(Text) [only runs on demand]" Condition="'%(SubsetName.OnDemand)' == 'true'" />
       <SubsetName Text="%(Text)%0A    %(Description)" />
     </ItemGroup>

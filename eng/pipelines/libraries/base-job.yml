@@ -66,6 +66,10 @@ jobs:
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 
+        # force a value for OS when cross-building tvOS on OSX
+        - ${{ if eq(parameters.osGroup, 'tvOS') }}:
+          - _runtimeOSArg: -os ${{ parameters.osGroup }}
+
         # force a value for OS when cross-building iOS on OSX
         - ${{ if eq(parameters.osGroup, 'iOS') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
@@ -115,7 +119,7 @@ jobs:
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
 
-        - _buildArguments: -subsetcategory libraries -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
       dependsOn:

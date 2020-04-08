@@ -55,7 +55,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         [InlineData(ContextType.Machine, "", null)]
         [InlineData(ContextType.Machine, "\0", null)]
         [InlineData(ContextType.Machine, "name", null)]
-        public void Ctor_ContextType_Name(ContextType contextType, string name, string container)
+        public void Ctor_ContextType_Name_Container(ContextType contextType, string name, string container)
         {
             var context = new PrincipalContext(contextType, name, container);
             Assert.Equal(contextType, context.ContextType);

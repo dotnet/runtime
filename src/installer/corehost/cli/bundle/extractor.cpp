@@ -197,7 +197,10 @@ void extractor_t::extract_new(reader_t& reader)
     begin();
     for (const file_entry_t& entry : m_manifest.files) 
     {
-        extract(entry, reader);
+        if (entry.needs_extraction())
+        {
+            extract(entry, reader);
+        }
     }
     commit_dir();
 }
@@ -211,6 +214,11 @@ void extractor_t::verify_recover_extraction(reader_t& reader)
 
     for (const file_entry_t& entry : m_manifest.files)
     {
+        if (!entry.needs_extraction())
+        {
+            continue;
+        }
+
         pal::string_t file_path = ext_dir;
         append_path(&file_path, entry.relative_path().c_str());
 

@@ -282,7 +282,7 @@ namespace System.IO.Tests
         public Task ManyConcurrentWriteAsyncs()
         {
             // For inner loop, just test one case
-            return ManyConcurrentWriteAsyncs(
+            return ManyConcurrentWriteAsyncs_OuterLoop(
                 useAsync: RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
                 presize: false,
                 exposeHandle: false,
@@ -295,7 +295,7 @@ namespace System.IO.Tests
         [Theory]
         [MemberData(nameof(MemberData_FileStreamAsyncWriting))]
         [OuterLoop] // many combinations: we test just one in inner loop and the rest outer
-        public async Task ManyConcurrentWriteAsyncs(
+        public async Task ManyConcurrentWriteAsyncs_OuterLoop(
             bool useAsync, bool presize, bool exposeHandle, bool cancelable, int bufferSize, int writeSize, int numWrites)
         {
             long totalLength = writeSize * numWrites;

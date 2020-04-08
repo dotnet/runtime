@@ -40,7 +40,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(CompareInfo compare1, object value, bool expected)
+        public void EqualsTest(CompareInfo compare1, object value, bool expected)
         {
             Assert.Equal(expected, compare1.Equals(value));
             if (value is CompareInfo)
@@ -60,7 +60,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetHashCodeTestData))]
-        public void GetHashCode(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
+        public void GetHashCodeTest(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
         {
             CompareInfo invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
             Assert.Equal(expected, invariantCompare.GetHashCode(source1, options1).Equals(invariantCompare.GetHashCode(source2, options2)));
@@ -80,7 +80,7 @@ namespace System.Globalization.Tests
         [InlineData("", "CompareInfo - ")]
         [InlineData("en-US", "CompareInfo - en-US")]
         [InlineData("EN-US", "CompareInfo - en-US")]
-        public void ToString(string name, string expected)
+        public void ToStringTest(string name, string expected)
         {
             Assert.Equal(expected, new CultureInfo(name).CompareInfo.ToString());
         }
@@ -310,7 +310,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> IndexOf_TestData()
         {
-            yield return new object[] { s_invariantCompare, "foo", "", 0,  0, 0 };
+            yield return new object[] { s_invariantCompare, "foo", "", 0, 0, 1 };
             yield return new object[] { s_invariantCompare, "", "", 0, 0, 0 };
             yield return new object[] { s_invariantCompare, "Hello", "l", 0,  2, -1 };
             yield return new object[] { s_invariantCompare, "Hello", "l", 3,  3, 3 };
@@ -321,10 +321,14 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> IsSortable_TestData()
         {
-            yield return new object[] { "", false, false };
-            yield return new object[] { "abcdefg",  false, true };
-            yield return new object[] { "\uD800\uDC00", true,  true };
-            yield return new object[] { "\uD800\uD800", true,  false };
+            yield return new object[] { "", false };
+            yield return new object[] { "abcdefg", true };
+            yield return new object[] { "\uD800\uDC00", true };
+
+            // VS test runner for xunit doesn't handle ill-formed UTF-16 strings properly.
+            // We'll send this one through as an array to avoid U+FFFD substitution.
+
+            yield return new object[] { new char[] { '\uD800', '\uD800' }, false };
         }
 
         [Theory]
@@ -413,13 +417,13 @@ namespace System.Globalization.Tests
         public void IndexOfTest(CompareInfo compareInfo, string source, string value, int startIndex, int indexOfExpected, int lastIndexOfExpected)
         {
             Assert.Equal(indexOfExpected, compareInfo.IndexOf(source, value, startIndex));
-            if (value.Length > 0)
+            if (value.Length == 1)
             {
                 Assert.Equal(indexOfExpected, compareInfo.IndexOf(source, value[0], startIndex));
             }
 
             Assert.Equal(lastIndexOfExpected, compareInfo.LastIndexOf(source, value, startIndex));
-            if (value.Length > 0)
+            if (value.Length == 1)
             {
                 Assert.Equal(lastIndexOfExpected, compareInfo.LastIndexOf(source, value[0], startIndex));
             }
@@ -427,13 +431,16 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IsSortable_TestData))]
-        public void IsSortableTest(string source, bool hasSurrogate, bool expected)
+        public void IsSortableTest(object sourceObj, bool expected)
         {
+            string source = sourceObj as string ?? new string((char[])sourceObj);
             Assert.Equal(expected, CompareInfo.IsSortable(source));
 
-            bool charExpectedResults = hasSurrogate ? false : expected;
+            // If the string as a whole is sortable, then all chars which aren't standalone
+            // surrogate halves must also be sortable.
+
             foreach (char c in source)
-                Assert.Equal(charExpectedResults, CompareInfo.IsSortable(c));
+                Assert.Equal(expected && !char.IsSurrogate(c), CompareInfo.IsSortable(c));
         }
 
         [Fact]
