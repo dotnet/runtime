@@ -93,11 +93,11 @@
     </BinPlaceTargetFrameworks>
 
     <!-- Setup the mobile testing directory -->
-    <BinPlaceTargetFrameworks Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'" Include="$(NetCoreAppCurrent)-$(TargetOS)" >
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)" >
       <RuntimePath>$(NETCoreAppRuntimePackLibPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
-    <BinPlaceTargetFrameworks Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'" Include="$(NetCoreAppCurrent)-$(TargetOS)" >
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestRuntimePack)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)" >
       <RuntimePath>$(NETCoreAppRuntimePackNativePath)</RuntimePath>
       <ItemName>BinMobileNative</ItemName>
     </BinPlaceTargetFrameworks>

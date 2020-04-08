@@ -74,7 +74,7 @@
   <Target Name="SetupMobileTesting"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences"
-          Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'Android'">
+          Condition="'$(BinPlaceTestRuntimePack)' == 'true'">
 
     <ItemGroup>
       <MobileFile Include="@(RuntimeFiles)" />
