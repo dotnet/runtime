@@ -103,20 +103,6 @@ generate_event_logging()
     fi
 }
 
-build_tools()
-{
-    "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary "$__ArcadeScriptArgs" /restore \
-        "$__RepoRootDir/src/coreclr/src/tools/GetModuleIndex/GetModuleIndex.csproj" \
-        /p:BinDir="$__BinDir" /p:NetCoreAppCurrent=netcoreapp3.1 /p:MicrosoftNETCoreAppVersion=3.1.0 \
-        $__CommonMSBuildArgs $__UnprocessedBuildArgs
-
-    local exit_code="$?"
-    if [[ "$exit_code" != 0 ]]; then
-        echo "${__ErrMsgPrefix}Failed to generate native version file."
-        exit "$exit_code"
-    fi
-}
-
 build_cross_architecture_components()
 {
     local intermediatesForBuild="$__IntermediatesDir/Host$__CrossArch/crossgen"
@@ -523,9 +509,6 @@ restore_optdata
 
 # Generate event logging infrastructure sources
 generate_event_logging
-
-# Build DAC/DBI index tool
-build_tools
 
 # Build the coreclr (native) components.
 __CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize -DCLR_REPO_ROOT_DIR=\"$__RepoRootDir\" $__CMakeArgs"
