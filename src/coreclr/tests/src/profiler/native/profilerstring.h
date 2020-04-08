@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <cstring>
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 // On linux the runtime uses 16 bit strings but the native platform wchar_t is 32 bit.
 // This means there aren't c runtime functions like wcslen for 16 bit strings. The idea
 // here is to provide the easy ones to avoid all the copying and transforming. If more complex
@@ -50,9 +50,9 @@ inline int wcscmp(const char16_t *lhs, const char16_t *rhs)
     return lhs[i] - rhs[i];
 }
 
-#else // defined(__linux__) || defined(__APPLE__)
+#else // defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 #define WCHAR(str) L##str
-#endif // defined(__linux__) || defined(__APPLE__)
+#endif // defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 
 // 16 bit string type that works cross plat and doesn't require changing widths
 // on non-windows platforms
@@ -202,11 +202,11 @@ inline std::wostream& operator<<(std::wostream& os, const String& obj)
             break;
         }
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
         os << static_cast<wchar_t>(obj.buffer[i]);
-#else // defined(__linux__) || defined(__APPLE__)
+#else // defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
         os << obj.buffer[i];
-#endif // defined(__linux__) || defined(__APPLE__)
+#endif // defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
     }
 
     return os;
