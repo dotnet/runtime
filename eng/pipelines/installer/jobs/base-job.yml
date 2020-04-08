@@ -127,7 +127,7 @@ jobs:
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
 
-  - ${{ if in(parameters.osGroup, 'iOS', 'Android') }}:
+  - ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'Android') }}:
 
     - name: CommonMSBuildArgs
       value: >-

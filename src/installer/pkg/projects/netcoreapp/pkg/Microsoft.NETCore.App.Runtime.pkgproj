@@ -6,6 +6,7 @@
   -->
   <PropertyGroup>
     <ExcludeHostAssets Condition="'$(TargetOS)' == 'iOS'">true</ExcludeHostAssets>
+    <ExcludeHostAssets Condition="'$(TargetOS)' == 'tvOS'">true</ExcludeHostAssets>
     <ExcludeHostAssets Condition="'$(TargetOS)' == 'Android'">true</ExcludeHostAssets>
   </PropertyGroup>
   <!--
