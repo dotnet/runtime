@@ -6308,7 +6308,7 @@ private:
 
 // Load the library directly. On Unix systems, don't register it yet with PAL.
 // * External callers like System.Runtime.InteropServices.NativeLibrary.Load() need the raw system handle
-// * Internal callers like LoadLibraryModule() can convert this handle to a HMODULE via PAL APIs on Unix
+// * Internal callers like LoadNativeLibrary() can convert this handle to a HMODULE via PAL APIs on Unix
 static NATIVE_LIBRARY_HANDLE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTracker *pErrorTracker )
 {
     STANDARD_VM_CONTRACT;
@@ -6486,11 +6486,9 @@ namespace
     }
 #endif // !TARGET_UNIX
 
-    NATIVE_LIBRARY_HANDLE LoadLibraryModuleViaAssemblyLoadContext(Assembly * pAssembly, PCWSTR wszLibName)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContext(Assembly * pAssembly, PCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
-        //Dynamic Pinvoke Support:
-        //Check if we  need to provide the host a chance to provide the unmanaged dll
 
 #ifndef TARGET_UNIX
         if (IsWindowsAPISet(wszLibName))
@@ -6603,7 +6601,7 @@ namespace
         return ptrManagedAssemblyLoadContext;
     }
 
-    NATIVE_LIBRARY_HANDLE LoadLibraryModuleViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
@@ -6645,7 +6643,7 @@ namespace
         return hmod;
     }
 
-    NATIVE_LIBRARY_HANDLE LoadLibraryModuleViaCallback(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaDllImportResolver(NDirectMethodDesc * pMD, LPCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
@@ -6838,7 +6836,7 @@ namespace
 #endif // TARGET_UNIX
 
     // Search for the library and variants of its name in probing directories.
-    NATIVE_LIBRARY_HANDLE LoadLibraryModuleBySearch(Assembly *callingAssembly,
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(Assembly *callingAssembly,
                                                     BOOL searchAssemblyDirectory, DWORD dllImportSearchPathFlags,
                                                     LoadLibErrorTracker * pErrorTracker, LPCWSTR wszLibName)
     {
@@ -6945,7 +6943,7 @@ namespace
         return hmod;
     }
 
-    NATIVE_LIBRARY_HANDLE LoadLibraryModuleBySearch(NDirectMethodDesc *pMD, LoadLibErrorTracker *pErrorTracker, PCWSTR wszLibName)
+    NATIVE_LIBRARY_HANDLE LoadNativeLibraryBySearch(NDirectMethodDesc *pMD, LoadLibErrorTracker *pErrorTracker, PCWSTR wszLibName)
     {
         STANDARD_VM_CONTRACT;
 
@@ -6955,7 +6953,7 @@ namespace
         GetDllImportSearchPathFlags(pMD, &dllImportSearchPathFlags, &searchAssemblyDirectory);
 
         Assembly *pAssembly = pMD->GetMethodTable()->GetAssembly();
-        return LoadLibraryModuleBySearch(pAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
+        return LoadNativeLibraryBySearch(pAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
     }
 }
 
@@ -6975,7 +6973,7 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryByName(LPCWSTR libraryName, Assembly *
     NATIVE_LIBRARY_HANDLE hmod = nullptr;
 
     // Resolve using the AssemblyLoadContext.LoadUnmanagedDll implementation
-    hmod = LoadLibraryModuleViaAssemblyLoadContext(callingAssembly, libraryName);
+    hmod = LoadNativeLibraryViaAssemblyLoadContext(callingAssembly, libraryName);
     if (hmod != nullptr)
         return hmod;
 
@@ -6997,12 +6995,12 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryByName(LPCWSTR libraryName, Assembly *
     }
 
     LoadLibErrorTracker errorTracker;
-    hmod = LoadLibraryModuleBySearch(callingAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
+    hmod = LoadNativeLibraryBySearch(callingAssembly, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
     if (hmod != nullptr)
         return hmod;
 
     // Resolve using the AssemblyLoadContext.ResolvingUnmanagedDll event
-    hmod = LoadLibraryModuleViaAssemblyLoadContextEvent(callingAssembly, libraryName);
+    hmod = LoadNativeLibraryViaAssemblyLoadContextEvent(callingAssembly, libraryName);
     if (hmod != nullptr)
         return hmod;
 
@@ -7016,7 +7014,7 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryByName(LPCWSTR libraryName, Assembly *
 }
 
 // This Method returns an instance of the PAL-Registered handle
-NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
+NATIVE_LIBRARY_HANDLE NDirect::LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
 {
     CONTRACTL
     {
@@ -7032,7 +7030,7 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLi
     PREFIX_ASSUME( name != NULL );
     MAKE_WIDEPTR_FROMUTF8( wszLibName, name );
 
-    NativeLibraryHandleHolder hmod = LoadLibraryModuleViaCallback(pMD, wszLibName);
+    NativeLibraryHandleHolder hmod = LoadNativeLibraryViaDllImportResolver(pMD, wszLibName);
     if (hmod != NULL)
     {
         return hmod.Extract();
@@ -7041,7 +7039,7 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLi
     AppDomain* pDomain = GetAppDomain();
     Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
 
-    hmod = LoadLibraryModuleViaAssemblyLoadContext(pAssembly, wszLibName);
+    hmod = LoadNativeLibraryViaAssemblyLoadContext(pAssembly, wszLibName);
     if (hmod != NULL)
     {
         return hmod.Extract();
@@ -7053,7 +7051,7 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLi
        return hmod.Extract();
     }
 
-    hmod = LoadLibraryModuleBySearch(pMD, pErrorTracker, wszLibName);
+    hmod = LoadNativeLibraryBySearch(pMD, pErrorTracker, wszLibName);
     if (hmod != NULL)
     {
         // If we have a handle add it to the cache.
@@ -7061,7 +7059,7 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLi
         return hmod.Extract();
     }
 
-    hmod = LoadLibraryModuleViaAssemblyLoadContextEvent(pAssembly, wszLibName);
+    hmod = LoadNativeLibraryViaAssemblyLoadContextEvent(pAssembly, wszLibName);
     if (hmod != NULL)
     {
         return hmod.Extract();
@@ -7117,7 +7115,7 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
     LoadLibErrorTracker errorTracker;
 
     BOOL fSuccess = FALSE;
-    NATIVE_LIBRARY_HANDLE hmod = LoadLibraryModule( pMD, &errorTracker );
+    NATIVE_LIBRARY_HANDLE hmod = LoadNativeLibrary( pMD, &errorTracker );
     if ( hmod )
     {
         LPVOID pvTarget = NDirectGetEntryPoint(pMD, hmod);

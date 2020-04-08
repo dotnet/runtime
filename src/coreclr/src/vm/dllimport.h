@@ -76,7 +76,7 @@ public:
     static NATIVE_LIBRARY_HANDLE LoadLibraryByName(LPCWSTR name, Assembly *callingAssembly,
                                                    BOOL hasDllImportSearchPathFlags, DWORD dllImportSearchPathFlags,
                                                    BOOL throwOnError);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
+    static NATIVE_LIBRARY_HANDLE LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
     static void FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle);
     static INT_PTR GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError);
 
