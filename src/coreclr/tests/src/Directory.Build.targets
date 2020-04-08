@@ -73,7 +73,8 @@
     <_WillCLRTestProjectBuild Condition="'$(_WillCLRTestProjectBuild)' == ''">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' != 'true'">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
-    <_WillCLRTestProjectBuild Condition="'$(CLRTestNeedTargetToBuild)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestNeedTargetToBuild)'">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(CLRTestNeedTargetToBuild)' == 'targetGeneric' And '$(CLRTestNeedTarget)' == '1'">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(CLRTestNeedTargetToBuild)' == 'targetSpecific' And '$(CLRTestNeedTarget)' != '1'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
 
