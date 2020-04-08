@@ -97,7 +97,6 @@ jobs:
         # Build Private CoreLib
         - script: $(_buildScript)
                 -subset clr.corelib 
-                -runtimeConfiguration ${{ parameters.liveRuntimeBuildConfig }}
                 $(_buildArguments)
                 $(_addtionalBuildArguments)
 
