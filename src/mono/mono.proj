@@ -861,7 +861,7 @@
   <Import Project="Directory.Build.targets" />
 
   <Target Name="BuildAppleAppBuilder">
-    <MSBuild Projects="$(MonoProjectRoot)AppleAppBuilder\AppleAppBuilder.csproj"
+    <MSBuild Projects="$(MonoProjectRoot)msbuild\AppleAppBuilder\AppleAppBuilder.csproj"
              Properties="Configuration=$(Configuration)"
              Targets="Restore;Build" />
   </Target>
