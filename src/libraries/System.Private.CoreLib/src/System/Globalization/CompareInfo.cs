@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Text.Unicode;
 using Internal.Runtime.CompilerServices;
 
@@ -181,6 +182,21 @@ namespace System.Globalization
             {
                 return IsSortable(pChar, text.Length);
             }
+        }
+
+        /// <summary>
+        /// Indicates whether a specified <see cref="Rune"/> is sortable.
+        /// </summary>
+        /// <param name="value">A Unicode scalar value.</param>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="value"/> is a sortable Unicode scalar
+        /// value; otherwise, <see langword="false"/>.
+        /// </returns>
+        public static bool IsSortable(Rune value)
+        {
+            Span<char> valueAsUtf16 = stackalloc char[Rune.MaxUtf16CharsPerRune];
+            int charCount = value.EncodeToUtf16(valueAsUtf16);
+            return IsSortable(valueAsUtf16.Slice(0, charCount));
         }
 
         [OnDeserializing]
@@ -1266,6 +1282,26 @@ namespace System.Globalization
             return IndexOfOrdinalIgnoreCaseNew(source, value, fromBeginning: true);
         }
 
+        /// <summary>
+        /// Searches for the first occurrence of a <see cref="Rune"/> within a source string.
+        /// </summary>
+        /// <param name="source">The string to search within.</param>
+        /// <param name="value">The <see cref="Rune"/> to locate within <paramref name="source"/>.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> to use during the search.</param>
+        /// <returns>
+        /// The zero-based index into <paramref name="source"/> where <paramref name="value"/>
+        /// first appears; or -1 if <paramref name="value"/> cannot be found within <paramref name="source"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported combination of flags.
+        /// </exception>
+        public int IndexOfNew(ReadOnlySpan<char> source, Rune value, CompareOptions options = CompareOptions.None)
+        {
+            Span<char> valueAsUtf16 = stackalloc char[Rune.MaxUtf16CharsPerRune];
+            int charCount = value.EncodeToUtf16(valueAsUtf16);
+            return IndexOfNew(source, valueAsUtf16.Slice(0, charCount), options);
+        }
+
         internal int IndexOfOrdinalIgnoreCase(ReadOnlySpan<char> source, ReadOnlySpan<char> value)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -1754,6 +1790,26 @@ namespace System.Globalization
 
         ReturnOrdinalIgnoreCase:
             return IndexOfOrdinalIgnoreCaseNew(source, value, fromBeginning: false);
+        }
+
+        /// <summary>
+        /// Searches for the last occurrence of a <see cref="Rune"/> within a source string.
+        /// </summary>
+        /// <param name="source">The string to search within.</param>
+        /// <param name="value">The <see cref="Rune"/> to locate within <paramref name="source"/>.</param>
+        /// <param name="options">The <see cref="CompareOptions"/> to use during the search.</param>
+        /// <returns>
+        /// The zero-based index into <paramref name="source"/> where <paramref name="value"/>
+        /// last appears; or -1 if <paramref name="value"/> cannot be found within <paramref name="source"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="options"/> contains an unsupported combination of flags.
+        /// </exception>
+        public unsafe int LastIndexOfNew(ReadOnlySpan<char> source, Rune value, CompareOptions options = CompareOptions.None)
+        {
+            Span<char> valueAsUtf16 = stackalloc char[Rune.MaxUtf16CharsPerRune];
+            int charCount = value.EncodeToUtf16(valueAsUtf16);
+            return LastIndexOfNew(source, valueAsUtf16.Slice(0, charCount), options);
         }
 
         private static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
