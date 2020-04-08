@@ -18,7 +18,7 @@ StatusCode runner_t::extract()
 {
     try
     {
-        const int8_t* addr = map_bundle();
+        const char* addr = map_bundle();
 
         // Set the Reader at header_offset
         reader_t reader(addr, m_bundle_size, m_header_offset);

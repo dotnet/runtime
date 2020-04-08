@@ -61,7 +61,7 @@ StatusCode info_t::process_header()
 {
     try
     {
-        const int8_t* addr = map_bundle();
+        const char* addr = map_bundle();
 
         reader_t reader(addr, m_bundle_size, m_header_offset);
 
@@ -79,7 +79,7 @@ StatusCode info_t::process_header()
     }
 }
 
-int8_t* info_t::config_t::map(const pal::string_t& path, const location_t* &location)
+char* info_t::config_t::map(const pal::string_t& path, const location_t* &location)
 {
     assert(is_single_file_bundle());
 
@@ -107,27 +107,28 @@ int8_t* info_t::config_t::map(const pal::string_t& path, const location_t* &loca
     // * There is no performance limitation due to a larger sized mapping, since we actually only read the pages with relevant contents.
     // * Files that are too large to be mapped (ex: that exhaust 32-bit virtual address space) are not supported. 
 
-    int8_t* addr = (int8_t*)pal::mmap_copy_on_write(app->m_bundle_path);
+    char* addr = (char*)pal::mmap_copy_on_write(app->m_bundle_path);
     if (addr == nullptr)
     {
         trace::error(_X("Failure processing application bundle."));
         trace::error(_X("Failed to map bundle file [%s]"), path.c_str());
     }
 
+    trace::info(_X("Mapped bundle for [%s]"), path.c_str());
+
     return addr + location->offset;
 }
 
-void info_t::config_t::unmap(const int8_t* addr, const location_t* location)
+void info_t::config_t::unmap(const char* addr, const location_t* location)
 {
     // Adjust to the beginning of the bundle.
     addr -= location->offset;
-
     bundle::info_t::the_app->unmap_bundle(addr);
 }
 
-const int8_t* info_t::map_bundle()
+const char* info_t::map_bundle()
 {
-    void *addr = pal::mmap_read(m_bundle_path, &m_bundle_size);
+    const void *addr = pal::mmap_read(m_bundle_path, &m_bundle_size);
 
     if (addr == nullptr)
     {
@@ -136,14 +137,20 @@ const int8_t* info_t::map_bundle()
         throw StatusCode::BundleExtractionIOError;
     }
 
-    return (int8_t *)addr;
+    trace::info(_X("Mapped application bundle"));
+
+    return (const char *)addr;
 }
 
-void info_t::unmap_bundle(const int8_t* addr) const
+void info_t::unmap_bundle(const char* addr) const
 {
     if (!pal::munmap((void*)addr, m_bundle_size))
     {
         trace::warning(_X("Failed to unmap bundle after extraction."));
+    }
+    else
+    {
+        trace::info(_X("Unmapped application bundle"));
     }
 }
 

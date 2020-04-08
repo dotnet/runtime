@@ -123,7 +123,7 @@ static void* map_file(const pal::string_t& path, size_t *length, DWORD mapping_p
     return address;
 }
 
-void* pal::mmap_read(const string_t& path, size_t* length)
+const void* pal::mmap_read(const string_t& path, size_t* length)
 {
     return map_file(path, length, PAGE_READONLY, FILE_MAP_READ);
 }

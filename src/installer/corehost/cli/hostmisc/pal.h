@@ -256,7 +256,7 @@ namespace pal
         return fallbackRid;
     }
 
-    void* mmap_read(const string_t& path, size_t* length = nullptr);
+    const void* mmap_read(const string_t& path, size_t* length = nullptr);
     void* mmap_copy_on_write(const string_t& path, size_t* length = nullptr);
 
     bool touch_file(const string_t& path);

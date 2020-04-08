@@ -15,7 +15,6 @@
 #include "utils.h"
 #include <cassert>
 #include <cstdint>
-#include "bundle/info.h"
 
 namespace {
 
@@ -136,20 +135,30 @@ bool json_parser_t::parse_file(const pal::string_t& path)
 {
     // This code assumes that the caller has checked that the file `path` exists
     // either within the bundle, or as a real file on disk.
+    assert(m_bundle_data == nullptr);
+    assert(m_bundle_location == nullptr);
 
     if (bundle::info_t::is_single_file_bundle())
     {
-        const bundle::location_t *location = nullptr;
-        char* data = (char*) bundle::info_t::config_t::map(path, location);
+        m_bundle_data = bundle::info_t::config_t::map(path, m_bundle_location);
+        // The mapping will be unmapped by the json_parser destructor.
+        // The mapping cannot be immediately released due to in-situ parsing on Linux. 
 
-        if (data != nullptr)
+        if (m_bundle_data != nullptr)
         {
-            bool result = parse_json(data, location->size, path);
-            bundle::info_t::config_t::unmap((const int8_t*)data, location);
+            bool result = parse_json(m_bundle_data, m_bundle_location->size, path);
             return result;
         }
     }
 
     pal::ifstream_t file{ path };
     return parse_stream(file, path);
+}
+
+json_parser_t::~json_parser_t()
+{
+    if (m_bundle_data != nullptr)
+    {
+        bundle::info_t::config_t::unmap(m_bundle_data, m_bundle_location);
+    }
 }

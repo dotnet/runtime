@@ -13,7 +13,7 @@ namespace bundle
     // Helper class for reading sequentially from the memory-mapped bundle file.
     struct reader_t
     {
-        reader_t(const int8_t* base_ptr, int64_t bound, int64_t start_offset = 0)
+        reader_t(const char* base_ptr, int64_t bound, int64_t start_offset = 0)
             : m_base_ptr(base_ptr)
             , m_ptr(base_ptr)
             , m_bound(bound)
@@ -26,7 +26,7 @@ namespace bundle
 
         void set_offset(int64_t offset);
 
-        operator const int8_t*() const
+        operator const char*() const
         {
             return m_ptr;
         }
@@ -47,10 +47,10 @@ namespace bundle
 
         // Return a pointer to the requested bytes within the memory-mapped file.
         // Skip over len bytes.
-        const int8_t* read_direct(int64_t len)
+        const char* read_direct(int64_t len)
         {
             bounds_check(len);
-            const int8_t *ptr = m_ptr;
+            const char *ptr = m_ptr;
             m_ptr += len;
             return ptr;
         }
@@ -61,12 +61,12 @@ namespace bundle
     private:
 
         void bounds_check(int64_t len = 1);
-        static const int8_t* add_without_overflow(const int8_t* ptr, int64_t len);
+        static const char* add_without_overflow(const char* ptr, int64_t len);
 
-        const int8_t* const m_base_ptr;
-        const int8_t* m_ptr;
+        const char* const m_base_ptr;
+        const char* m_ptr;
         const int64_t m_bound;
-        const int8_t* const m_bound_ptr;
+        const char* const m_bound_ptr;
     };
 }
 

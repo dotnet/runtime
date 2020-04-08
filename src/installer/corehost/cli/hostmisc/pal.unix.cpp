@@ -58,7 +58,7 @@ bool pal::touch_file(const pal::string_t& path)
     return true;
 }
 
-static void* map_file(const pal::string_t& path, size_t* length, int flags)
+static void* map_file(const pal::string_t& path, size_t* length, int prot, int flags)
 {
     int fd = open(path.c_str(), O_RDONLY);
     if (fd == -1)
@@ -81,7 +81,7 @@ static void* map_file(const pal::string_t& path, size_t* length, int flags)
         *length = size;
     }
 
-    void* address = mmap(nullptr, size, PROT_READ, flags, fd, 0);
+    void* address = mmap(nullptr, size, prot, flags, fd, 0);
 
     if (address == MAP_FAILED)
     {
@@ -93,14 +93,14 @@ static void* map_file(const pal::string_t& path, size_t* length, int flags)
     return address;
 }
 
-void* pal::mmap_read(const string_t& path, size_t* length)
+const void* pal::mmap_read(const string_t& path, size_t* length)
 {
-    return map_file(path, length, MAP_SHARED);
+    return map_file(path, length, PROT_READ, MAP_SHARED);
 }
 
 void* pal::mmap_copy_on_write(const string_t& path, size_t* length)
 {
-    return map_file(path, length, MAP_PRIVATE);
+    return map_file(path, length, PROT_READ | PROT_WRITE, MAP_PRIVATE);
 }
 
 bool pal::getcwd(pal::string_t* recv)

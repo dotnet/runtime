@@ -50,8 +50,8 @@ namespace bundle
                 m_location = location;
             }
 
-            static int8_t* map(const pal::string_t& path, const location_t* &location);
-            static void unmap(const int8_t* addr, const location_t* location);
+            static char* map(const pal::string_t& path, const location_t* &location);
+            static void unmap(const char* addr, const location_t* location);
 
         private:
             pal::string_t m_path;
@@ -73,8 +73,8 @@ namespace bundle
                  const pal::char_t* app_path,
                  int64_t header_offset);
 
-        const int8_t* map_bundle();
-        void unmap_bundle(const int8_t* addr) const;
+        const char* map_bundle();
+        void unmap_bundle(const char* addr) const;
 
         pal::string_t m_bundle_path;
         pal::string_t m_base_path;
