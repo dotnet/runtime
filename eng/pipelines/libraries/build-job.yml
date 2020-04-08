@@ -95,12 +95,12 @@ jobs:
               installDotnet: true
 
         # Build Private CoreLib
-        - script: $(_buildScript)
-                -subset clr.corelib 
-                $(_buildArguments)
-                $(_addtionalBuildArguments)
-
-          displayName: Build System.Private.CoreLib
+        - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.testScope, '')) }}:
+          - script: $(_buildScript)
+                  -subset clr.corelib 
+                  $(_buildArguments)
+                  $(_addtionalBuildArguments)
+            displayName: Build System.Private.CoreLib
 
         - script: $(_buildScript)
                 -subset $(_subset)
