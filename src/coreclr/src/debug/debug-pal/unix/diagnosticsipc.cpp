@@ -239,6 +239,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
                 // will technically meet the requirements for POLLIN
                 // i.e., a call to recv/read won't block
                 rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::HANGUP;
+                delete[] pollfds;
                 return -1;
             }
             else if ((pollfds[i].revents & (POLLERR|POLLNVAL)))
@@ -246,6 +247,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
                 if (callback != nullptr)
                     callback("Poll error", (uint32_t)pollfds[i].revents);
                 rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::ERR;
+                delete[] pollfds;
                 return -1;
             }
             else if (pollfds[i].revents & POLLIN)
@@ -268,7 +270,6 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *const * rgpIpcPollHandles
                 }
                 else
                 {
-                    // *ppStream = ppStreams[i];
                     rgpIpcPollHandles[i]->revents = (uint8_t)PollEvents::SIGNALED;
                 }
                 break;

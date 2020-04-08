@@ -60,10 +60,6 @@ namespace Tracing.Tests.ReverseValidation
                     if (duringExecution != null)
                         await duringExecution(process.Id);
                 }
-                catch (Exception e)
-                {
-                    throw e;
-                }
                 finally
                 {
                     process.Kill();
