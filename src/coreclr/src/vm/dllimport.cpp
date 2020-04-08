@@ -6306,9 +6306,7 @@ private:
     SString  m_message;
 };  // class LoadLibErrorTracker
 
-// Load the library directly. On Unix systems, don't register it yet with PAL.
-// * External callers like System.Runtime.InteropServices.NativeLibrary.Load() need the raw system handle
-// * Internal callers like LoadNativeLibrary() can convert this handle to a HMODULE via PAL APIs on Unix
+// Load the library directly and return the raw system handle
 static NATIVE_LIBRARY_HANDLE LocalLoadLibraryHelper( LPCWSTR name, DWORD flags, LoadLibErrorTracker *pErrorTracker )
 {
     STANDARD_VM_CONTRACT;
@@ -7013,7 +7011,6 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryByName(LPCWSTR libraryName, Assembly *
     return hmod;
 }
 
-// This Method returns an instance of the PAL-Registered handle
 NATIVE_LIBRARY_HANDLE NDirect::LoadNativeLibrary(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
 {
     CONTRACTL
