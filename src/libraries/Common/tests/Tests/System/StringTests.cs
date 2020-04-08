@@ -1119,7 +1119,7 @@ namespace System.Tests
         [InlineData("", "", true)]
         [InlineData("", "hello", false)]
         [InlineData("Hello", "", true)]
-        public static void Contains(string s, string value, bool expected)
+        public static void Contains_String(string s, string value, bool expected)
         {
             Assert.Equal(expected, s.Contains(value));
             Assert.Equal(expected, s.AsSpan().Contains(value.AsSpan(), StringComparison.Ordinal));
@@ -1666,7 +1666,7 @@ namespace System.Tests
         [InlineData("Hello", "llo" + SoftHyphen, StringComparison.OrdinalIgnoreCase, false)]
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", "a", StringComparison.OrdinalIgnoreCase, false)]
-        public static void EndsWith(string s, string value, StringComparison comparisonType, bool expected)
+        public static void EndsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
             {
@@ -2482,7 +2482,7 @@ namespace System.Tests
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("123", 123, StringComparison.OrdinalIgnoreCase, false)] // Not a string
         [InlineData("\0AAAAAAAAA", "\0BBBBBBBBBBBB", StringComparison.OrdinalIgnoreCase, false)]
-        public static void Equals(string s1, object obj, StringComparison comparisonType, bool expected)
+        public static void EqualsTest(string s1, object obj, StringComparison comparisonType, bool expected)
         {
             string s2 = obj as string;
             if (s1 != null)
@@ -4516,7 +4516,7 @@ namespace System.Tests
                     "Mauris nulla sapien, convallis et quam quis, accumsan sodales mi. Praesent dapibus urna fermentum, sollicitudin posuere.",
                     'e', 'E',
                     "LorEm ipsum dolor sit amEt, consEctEtur adipiscing Elit. Proin maximus convallis luctus. Curabitur porttitor mi blandit tEllus maximus varius. " +
-                    "Mauris nulla sapiEn, convallis Et quam quis, accumsan sodalEs mi. PraEsEnt dapibus urna fErmEntum, sollicitudin posuErE.")] 
+                    "Mauris nulla sapiEn, convallis Et quam quis, accumsan sodalEs mi. PraEsEnt dapibus urna fErmEntum, sollicitudin posuErE.")]
         public static void Replace_Char_Char(string s, char oldChar, char newChar, string expected)
         {
             Assert.Equal(expected, s.Replace(oldChar, newChar));
@@ -4637,7 +4637,7 @@ namespace System.Tests
         [InlineData("Hello", SoftHyphen + "Hel", StringComparison.OrdinalIgnoreCase, false)]
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", "hello", StringComparison.OrdinalIgnoreCase, false)]
-        public static void StartsWith(string s, string value, StringComparison comparisonType, bool expected)
+        public static void StartsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
             {
@@ -5016,7 +5016,7 @@ namespace System.Tests
         [InlineData("hElLo", "hello")]
         [InlineData("HeLlO", "hello")]
         [InlineData("", "")]
-        public static void ToLower(string s, string expected)
+        public static void ToLower_String(string s, string expected)
         {
             Assert.Equal(expected, s.ToLower());
 
@@ -5123,7 +5123,7 @@ namespace System.Tests
             Assert.Equal(expected, s1.ToLower(CultureInfo.CurrentCulture).ToArray());
             Assert.Equal(expected, s1.ToLowerInvariant().ToArray());
             {
-                AssertExtensions.AssertThrows<InvalidOperationException, char>(a, a => 
+                AssertExtensions.AssertThrows<InvalidOperationException, char>(a, a =>
                 {
                     ReadOnlySpan<char> source = a;
                     Span<char> destination = a;
@@ -5156,7 +5156,7 @@ namespace System.Tests
                 var source = new ReadOnlySpan<char>(a, 1, 3);
 
                 AssertExtensions.AssertThrows<InvalidOperationException,char>(source, source =>
-                { 
+                {
                     var destination = new Span<char>(a, 3, 3);
                     source.ToLower(destination, CultureInfo.CurrentCulture);
                 });
@@ -5220,7 +5220,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ToLower()
+        public static void ToLower_CharArray()
         {
             var expectedSource = new char[3] { 'a', 'B', 'c' };
             var expectedDestination = new char[3] { 'a', 'b', 'c' };
@@ -5432,7 +5432,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ToUpper()
+        public static void ToUpper_CharArray()
         {
             var expectedSource = new char[3] { 'a', 'B', 'c' };
             var expectedDestination = new char[3] { 'A', 'B', 'C' };
@@ -5542,7 +5542,7 @@ namespace System.Tests
         [Theory]
         [InlineData("")]
         [InlineData("hello")]
-        public static void ToString(string s)
+        public static void ToStringTest(string s)
         {
             Assert.Same(s, s.ToString());
             Assert.Same(s, s.ToString(null));
@@ -5557,7 +5557,7 @@ namespace System.Tests
         [InlineData("hElLo", "HELLO")]
         [InlineData("HeLlO", "HELLO")]
         [InlineData("", "")]
-        public static void ToUpper(string s, string expected)
+        public static void ToUpper_String(string s, string expected)
         {
             Assert.Equal(expected, s.ToUpper());
 

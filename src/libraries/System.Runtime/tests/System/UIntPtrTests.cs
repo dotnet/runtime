@@ -105,7 +105,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(UIntPtr ptr1, object obj, bool expected)
+        public static void EqualsTest(UIntPtr ptr1, object obj, bool expected)
         {
             if (obj is UIntPtr)
             {

@@ -47,7 +47,7 @@ namespace System.IO.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
-        public void File_Move_From_Watched_To_Unwatched(int filesCount)
+        public void File_Move_Multiple_From_Watched_To_Unwatched(int filesCount)
         {
             FileMove_Multiple_FromWatchedToUnwatched(filesCount, skipOldEvents: false);
         }

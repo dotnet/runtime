@@ -287,7 +287,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals(AssemblyBuilder assembly, object obj, bool expected)
+        public void EqualsTest(AssemblyBuilder assembly, object obj, bool expected)
         {
             Assert.Equal(expected, assembly.Equals(obj));
             if (obj is AssemblyBuilder)

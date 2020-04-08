@@ -1413,9 +1413,13 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        private void HmacMustBeMultipleOfEightBits(int bits)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20429")]
+        [Fact]
+        public void HmacMustBeMultipleOfEightBits()
         {
-            string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+            static void hmacMustBeMultipleOfEightBits(int bits)
+            {
+                string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
 <Signature xmlns=""http://www.w3.org/2000/09/xmldsig#"">
   <SignedInfo>
     <CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" />
@@ -1433,20 +1437,17 @@ namespace System.Security.Cryptography.Xml.Tests
   <Object Id=""object"">some other text</Object>
 </Signature>
 ";
-            SignedXml sign = GetSignedXml(string.Format(xml, bits));
-            // only multiple of 8 bits are supported
-            sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret")));
-        }
+                SignedXml sign = GetSignedXml(string.Format(xml, bits));
+                // only multiple of 8 bits are supported
+                sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret")));
+            }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/20429")]
-        public void HmacMustBeMultipleOfEightBits()
-        {
             for (int i = 1; i < 160; i++)
             {
                 // The .NET framework only supports multiple of 8 bits
                 if (i % 8 != 0)
                 {
-                    Assert.Throws<CryptographicException>(() => HmacMustBeMultipleOfEightBits(i));
+                    Assert.Throws<CryptographicException>(() => hmacMustBeMultipleOfEightBits(i));
                 }
             }
         }

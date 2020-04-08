@@ -51,7 +51,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void Equals()
+        public void EqualsTest()
         {
             var ds = new DataSet();
             DataTable dtParent = DataProvider.CreateParentDataTable();
@@ -120,7 +120,7 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public new void ToString()
+        public void ToStringTest()
         {
             DataTable dtParent = DataProvider.CreateParentDataTable();
             DataTable dtChild = DataProvider.CreateChildDataTable();
