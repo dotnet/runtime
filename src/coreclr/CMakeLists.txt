@@ -25,6 +25,14 @@ set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
 set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/dlls/mscordac/palredefines.S)
 
+if(CLR_CMAKE_HOST_UNIX)
+    set(CLR_DOTNET_COMMAND ${CLR_REPO_ROOT_DIR}/dotnet.sh)
+endif(CLR_CMAKE_HOST_UNIX)
+
+if(CLR_CMAKE_HOST_WIN32)
+    set(CLR_DOTNET_COMMAND ${CLR_REPO_ROOT_DIR}/dotnet.cmd)
+endif(CLR_CMAKE_HOST_WIN32)
+
 # Avoid logging when skipping up-to-date copies
 set(CMAKE_INSTALL_MESSAGE LAZY)
 

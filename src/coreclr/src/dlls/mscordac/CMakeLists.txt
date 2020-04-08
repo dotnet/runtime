@@ -196,7 +196,7 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_WIN32)
     )
     add_custom_command(
         OUTPUT ${DAC_MODULE_INDEX_FILE}
-        COMMAND dotnet ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:mscordaccore> > ${DAC_MODULE_INDEX_FILE}
+        COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:mscordaccore> > ${DAC_MODULE_INDEX_FILE}
         DEPENDS $<TARGET_FILE:mscordaccore> 
         COMMENT "Generating DAC module index file -> ${DAC_MODULE_INDEX_FILE}"
     )

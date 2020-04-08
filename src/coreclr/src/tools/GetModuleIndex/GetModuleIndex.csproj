@@ -1,10 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <TargetFramework Condition="'$(BuildingInsideVisualStudio)' == 'true'">netcoreapp3.1</TargetFramework>
-    <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
-    <RuntimeFrameworkVersion Condition="'$(BuildingInsideVisualStudio)' == 'true'">3.1.0</RuntimeFrameworkVersion>
+    <TargetFramework>netcoreapp5.0</TargetFramework>
     <UseAppHost>false</UseAppHost>
     <OutputPath>$(BinDir)/GetModuleIndex</OutputPath>
   </PropertyGroup>
