@@ -32,9 +32,8 @@ namespace bundle
         uint32_t minor_version;
         int32_t num_embedded_files;
 
-        bool is_valid(bool exact_match = false) const;
+        bool is_valid() const;
     };
-#pragma pack(pop)
 
     // netcoreapp3_compat_mode flag is set on a .net5 app, which chooses to build single-file apps in .netcore3.x compat mode,
     // This indicates that:
@@ -46,12 +45,13 @@ namespace bundle
         netcoreapp3_compat_mode = 1
     };
 
-#pragma pack(push, 1)
     struct location_t
     {
     public:
         int64_t offset;
         int64_t size;
+
+        bool is_valid() const { return offset != 0; }
     };
 
     // header_fixed_v2_t is available in single-file apps targetting .net5+ frameworks.
@@ -65,6 +65,8 @@ namespace bundle
         location_t deps_json_location;
         location_t runtimeconfig_json_location;
         header_flags_t flags;
+
+        bool is_netcoreapp3_compat_mode() const { return (flags & header_flags_t::netcoreapp3_compat_mode) != 0; }
     };
 #pragma pack(pop)
 
@@ -74,14 +76,17 @@ namespace bundle
         header_t(int32_t num_embedded_files = 0)
             : m_num_embedded_files(num_embedded_files)
             , m_bundle_id()
-            , m_v2_header(NULL)
-
+            , m_v2_header()
         {
         }
 
-        static header_t read(reader_t& reader, bool need_exact_version);
-        const pal::string_t& bundle_id() { return m_bundle_id; }
-        int32_t num_embedded_files() { return m_num_embedded_files; }
+        static header_t read(reader_t& reader);
+        const pal::string_t& bundle_id() const { return m_bundle_id; }
+        int32_t num_embedded_files() const { return m_num_embedded_files; }
+
+        const location_t& deps_json_location() const { return m_v2_header.deps_json_location; }
+        const location_t& runtimeconfig_json_location() const { return m_v2_header.runtimeconfig_json_location; }
+        bool is_netcoreapp3_compat_mode() const { return m_v2_header.is_netcoreapp3_compat_mode(); }
 
         static const uint32_t major_version = 2;
         static const uint32_t minor_version = 0;
@@ -89,8 +94,7 @@ namespace bundle
     private:
         int32_t m_num_embedded_files;
         pal::string_t m_bundle_id;
-        const header_fixed_v2_t* m_v2_header;
-
+        header_fixed_v2_t m_v2_header;
     };
 }
 #endif // __HEADER_H__
