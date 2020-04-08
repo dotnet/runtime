@@ -133,6 +133,7 @@ jobs:
       value: >-
         /p:PortableBuild=true
         /p:SkipTests=true
+        /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
 
     - name: BaseJobBuildCommand
       value: >-
