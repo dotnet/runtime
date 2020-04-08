@@ -943,79 +943,68 @@ namespace System.Globalization
         /// the specified value is not found.  If value equals string.Empty,
         /// startIndex is returned.  Throws IndexOutOfRange if startIndex or
         /// endIndex is less than zero or greater than the length of string.
-        /// Throws ArgumentException if value is null.
+        /// Throws ArgumentException if value (as a string) is null.
         /// </summary>
         public int IndexOf(string source, char value)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
-            return IndexOf(source, value, 0, source.Length, CompareOptions.None);
+            return IndexOf(source, value, CompareOptions.None);
         }
 
         public int IndexOf(string source, string value)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            return IndexOf(source, value, 0, source.Length, CompareOptions.None);
+            return IndexOf(source, value, CompareOptions.None);
         }
 
         public int IndexOf(string source, char value, CompareOptions options)
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return IndexOf(source, value, 0, source.Length, options);
+            return IndexOfNew(source, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
         }
 
         public int IndexOf(string source, string value, CompareOptions options)
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+            if (value == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            return IndexOf(source, value, 0, source.Length, options);
+            return IndexOfNew(source, value, options);
         }
 
         public int IndexOf(string source, char value, int startIndex)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
-            return IndexOf(source, value, startIndex, source.Length - startIndex, CompareOptions.None);
+            return IndexOf(source, value, startIndex, CompareOptions.None);
         }
 
         public int IndexOf(string source, string value, int startIndex)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            return IndexOf(source, value, startIndex, source.Length - startIndex, CompareOptions.None);
+            return IndexOf(source, value, startIndex, CompareOptions.None);
         }
 
         public int IndexOf(string source, char value, int startIndex, CompareOptions options)
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             return IndexOf(source, value, startIndex, source.Length - startIndex, options);
+
         }
 
         public int IndexOf(string source, string value, int startIndex, CompareOptions options)
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             return IndexOf(source, value, startIndex, source.Length - startIndex, options);
@@ -1035,76 +1024,64 @@ namespace System.Globalization
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (startIndex < 0 || startIndex > source.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
-            }
-            if (count < 0 || startIndex > source.Length - count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source.Length == 0)
+            if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
             {
-                return -1;
+                // Bounds check failed - figure out exactly what went wrong so that we can
+                // surface the correct argument exception.
+
+                if ((uint)startIndex > (uint)source.Length)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                }
+                else
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_Count);
+                }
             }
 
-            // Validate CompareOptions
-            // Ordinal can't be selected with other flags
-            if ((options & ValidIndexMaskOffFlags) != 0 && (options != CompareOptions.Ordinal && options != CompareOptions.OrdinalIgnoreCase))
+            int result = IndexOfNew(sourceSpan, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            if (result >= 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
+                result += startIndex;
             }
-
-            return IndexOf(source, char.ToString(value), startIndex, count, options, null);
+            return result;
         }
 
         public unsafe int IndexOf(string source, string value, int startIndex, int count, CompareOptions options)
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (startIndex > source.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            // In Everett we used to return -1 for empty string even if startIndex is negative number so we keeping same behavior here.
-            // We return 0 if both source and value are empty strings for Everett compatibility too.
-            if (source.Length == 0)
+            if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
             {
-                if (value.Length == 0)
+                // Bounds check failed - figure out exactly what went wrong so that we can
+                // surface the correct argument exception.
+
+                if ((uint)startIndex > (uint)source.Length)
                 {
-                    return 0;
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
                 }
-                return -1;
+                else
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_Count);
+                }
             }
 
-            if (startIndex < 0)
+            int result = IndexOfNew(sourceSpan, value, options);
+            if (result >= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
+                result += startIndex;
             }
-
-            if (count < 0 || startIndex > source.Length - count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
-            }
-
-            // Validate CompareOptions
-            // Ordinal can't be selected with other flags
-            if ((options & ValidIndexMaskOffFlags) != 0 && (options != CompareOptions.Ordinal && options != CompareOptions.OrdinalIgnoreCase))
-            {
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
-            }
-
-            return IndexOf(source, value, startIndex, count, options, null);
+            return result;
         }
 
         /// <summary>
@@ -1163,9 +1140,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    throw new ArgumentException(
-                        paramName: nameof(options),
-                        message: SR.Argument_InvalidFlag);
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidFlag, ExceptionArgument.options);
                 }
             }
 
