@@ -365,37 +365,6 @@ namespace System.Globalization
             return FindString(positionFlag | (uint)GetNativeCompareFlags(options), source, target, matchLengthPtr);
         }
 
-        private unsafe int LastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            Debug.Assert(!string.IsNullOrEmpty(source));
-            Debug.Assert(target != null);
-            Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
-
-            // startIndex points to the final char to include in the search space.
-            // empty target strings trivially occur at the end of the search space.
-
-            if (target.Length == 0)
-                return startIndex + 1;
-
-            if ((options & CompareOptions.Ordinal) != 0)
-            {
-                return FastLastIndexOfString(source, target, startIndex, count, target.Length);
-            }
-            else
-            {
-                int retValue = FindString(FIND_FROMEND | (uint)GetNativeCompareFlags(options), source.AsSpan(startIndex - count + 1, count), target, null);
-
-                if (retValue >= 0)
-                {
-                    return retValue + startIndex - (count - 1);
-                }
-            }
-
-            return -1;
-        }
-
         private unsafe bool StartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

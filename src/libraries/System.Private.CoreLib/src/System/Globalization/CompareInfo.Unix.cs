@@ -458,52 +458,6 @@ namespace System.Globalization
             }
         }
 
-        private unsafe int LastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            Debug.Assert(!string.IsNullOrEmpty(source));
-            Debug.Assert(target != null);
-            Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
-
-            // startIndex points to the final char to include in the search space.
-            // empty target strings trivially occur at the end of the search space.
-
-            if (target.Length == 0)
-            {
-                return startIndex + 1;
-            }
-
-            if (options == CompareOptions.Ordinal)
-            {
-                return LastIndexOfOrdinalCore(source, target, startIndex, count, ignoreCase: false);
-            }
-
-            // startIndex is the index into source where we start search backwards from. leftStartIndex is the index into source
-            // of the start of the string that is count characters away from startIndex.
-            int leftStartIndex = (startIndex - count + 1);
-
-            int lastIndex;
-
-            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
-            {
-                if ((options & CompareOptions.IgnoreCase) != 0)
-                    lastIndex = IndexOfOrdinalIgnoreCaseHelper(source.AsSpan(leftStartIndex, count), target.AsSpan(), options, matchLengthPtr: null, fromBeginning: false);
-                else
-                    lastIndex = IndexOfOrdinalHelper(source.AsSpan(leftStartIndex, count), target.AsSpan(), options, matchLengthPtr: null, fromBeginning: false);
-            }
-            else
-            {
-                fixed (char* pSource = source)
-                fixed (char* pTarget = target)
-                {
-                    lastIndex = Interop.Globalization.LastIndexOf(_sortHandle, pTarget, target.Length, pSource + (startIndex - count + 1), count, options);
-                }
-            }
-
-            return lastIndex != -1 ? lastIndex + leftStartIndex : -1;
-        }
-
         private unsafe bool StartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
