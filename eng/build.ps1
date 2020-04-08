@@ -11,8 +11,7 @@ Param(
   [string]$testscope,
   [switch]$testnobuild,
   [string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
-  [string]$subsetCategory,
-  [string]$subset,
+  [Parameter(Position=0)][string]$subset,
   [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string]$librariesConfiguration,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
@@ -21,7 +20,6 @@ Param(
 function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -subset                   Build a subset, print available subsets with -subset help"
-  Write-Host "  -subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
   Write-Host "  -vs                       Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
   Write-Host "  -os                       Build operating system: Windows_NT or Unix"
   Write-Host "  -arch                     Build platform: x86, x64, arm or arm64 (short: -a). Pass a comma-separated list to build for multiple architectures."
@@ -60,8 +58,6 @@ if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $
   Get-Help
   exit 0
 }
-
-$subsetCategory = $subsetCategory.ToLowerInvariant()
 
 # VS Test Explorer support for libraries
 if ($vs) {
@@ -122,20 +118,6 @@ if ($null -ne $properties -and $actionPassedIn -ne $true) {
 
 if (!$actionPassedIn) {
   $arguments = "-restore -build"
-}
-
-$solutionLeaf = if($properties.Length -gt 0) { $properties[0]; } else { $null }
-
-if ($null -ne $solutionLeaf) {
-  if (Test-Path $solutionLeaf) {
-    $properties[0] = "-projects $(Resolve-Path $solutionLeaf)"
-  }
-  else {
-    $dtb = Join-Path "$PSSCriptRoot\..\src\libraries" $solutionLeaf | Join-Path -ChildPath "$solutionLeaf.sln"
-    if (Test-Path $dtb) { 
-      $properties[0] = "-projects $(Resolve-Path $dtb)"
-    }
-  }
 }
 
 foreach ($argument in $PSBoundParameters.Keys)

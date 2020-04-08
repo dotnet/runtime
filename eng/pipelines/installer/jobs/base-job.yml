@@ -106,7 +106,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        build.cmd -subsetcategory installer -restore -build -test -ci
+        build.cmd -subset installer -test -ci
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
@@ -121,7 +121,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subsetcategory installer -restore -build -test -ci
+        $(Build.SourcesDirectory)/build.sh -subset installer -test -ci
         -configuration $(_BuildConfig)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
@@ -136,7 +136,7 @@ jobs:
 
     - name: BaseJobBuildCommand
       value: >-
-        $(Build.SourcesDirectory)/build.sh -subsetcategory installer --restore --build --ci --test
+        $(Build.SourcesDirectory)/build.sh -subset installer --ci --test
         -configuration $(_BuildConfig)
         -os ${{ parameters.osGroup }}
         -arch ${{ parameters.archType }}
@@ -175,7 +175,7 @@ jobs:
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - name: BuildScript
-        value: ./eng/install-nuget-credprovider-then-build.sh --subsetCategory installer
+        value: ./eng/install-nuget-credprovider-then-build.sh --subset installer
       - name: MSBuildScript
         value: /root/runtime/eng/install-nuget-credprovider-then-msbuild.sh
 
@@ -198,7 +198,7 @@ jobs:
 
     - name: BuildArguments
       value: >-
-        -subsetcategory installer -restore -build -test -ci
+        -subset installer -test -ci
         /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
