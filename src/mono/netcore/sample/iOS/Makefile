@@ -21,7 +21,7 @@ BCL_LIBS = \
 	Microsoft.Win32.Primitives.dll \
 	System.Console.dll
 
-all: mono-libraries build
+all: mono build
 
 program:
 	$(DOTNET) build -c Debug Program.csproj
@@ -35,6 +35,7 @@ build: clean program
 	$(DOTNET) msbuild /t:BuildAppleApp /p:Configuration=$(MONO_CONFIG) \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:TargetOS=iOS \
+	/p:OutputDirectory=bin \
 	/p:ProjectName=HelloiOS \
 	/p:Optimized=false \
 	/p:AppDir=$(CURDIR)/bin \
@@ -45,16 +46,17 @@ build: clean program
 	/p:MainLibraryFileName=Program.dll \
 	../../../mono.proj
 
-deploy-sim: build
+deploy-sim:
+	make build MONO_ARCH=x64
 	xcrun simctl shutdown "iPhone 11" || true
 	xcrun simctl boot "iPhone 11"
 	open -a Simulator
-	xcrun simctl install "iPhone 11" bin/bin-HelloiOS-x64/HelloiOS/Debug-iphonesimulator/HelloiOS.app
+	xcrun simctl install "iPhone 11" $(realpath ../../../../../artifacts/bin/mono/iOS.x64.$(MONO_CONFIG)/HelloiOS/HelloiOS/Debug-iphonesimulator/HelloiOS.app)
 	xcrun simctl launch booted net.dot.HelloiOS
 
-# rebuild mono and libraries for iOS and arm64 or x64
-mono-libraries:
-	../../../../.././build.sh -os iOS -arch $(MONO_ARCH) --subsetCategory mono-libraries
+# rebuild mono for iOS-arm64 or x64
+mono:
+	../../../../.././build.sh -c $(MONO_CONFIG) -os iOS -arch $(MONO_ARCH) -subset Mono
 
 clean:
 	rm -rf bin
