@@ -17,7 +17,7 @@ Building coreclr tests must be done using a specific script as follows:
 
 This will use `crossgen.exe` to precompile test executables before they are executed.
 
-## Building specific Priority Tests
+## Building Specific Priority Tests
 
 ```
 > src\coreclr\build-test.cmd -priority=1
