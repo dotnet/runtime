@@ -881,6 +881,7 @@
         GenerateXcodeProject="$(GenerateXcodeProject)"
         BuildAppBundle="$(BuildAppBundle)"
         DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(BinDir)\$(ProjectName)"
         AppDir="$(AppDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />

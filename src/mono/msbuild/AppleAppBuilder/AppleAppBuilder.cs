@@ -43,6 +43,11 @@ public class AppleAppBuilderTask : Task
     public string MainLibraryFileName { get; set; } = ""!;
 
     /// <summary>
+    /// Path to store build artifacts
+    /// </summary>
+    public string? OutputDirectory { get; set; }
+
+    /// <summary>
     /// Path to a custom main.m with custom UI
     /// A default one is used if it's not set
     /// </summary>
@@ -121,6 +126,10 @@ public class AppleAppBuilderTask : Task
             .ToArray();
 
         string binDir = Path.Combine(AppDir, $"bin-{ProjectName}-{Arch}");
+        if (!string.IsNullOrEmpty(OutputDirectory))
+        {
+            binDir = OutputDirectory;
+        }
         Directory.CreateDirectory(binDir);
 
         // run AOT compilation only for devices
