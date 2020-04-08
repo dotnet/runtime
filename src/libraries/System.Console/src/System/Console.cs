@@ -522,7 +522,10 @@ namespace System
         {
             CheckNonNull(newIn, nameof(newIn));
             newIn = SyncTextReader.GetSynchronizedTextReader(newIn);
-            Volatile.Write(ref s_in, newIn);
+            lock (s_syncObject)
+            {
+                Volatile.Write(ref s_in, newIn);
+            }
         }
 
         public static void SetOut(TextWriter newOut)
