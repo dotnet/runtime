@@ -146,15 +146,15 @@ void Compiler::optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool ex
     noway_assert(begBlk->bbNum <= endBlk->bbNum);
     noway_assert(begBlk->isLoopHead());
     noway_assert(fgReachable(begBlk, endBlk));
+    noway_assert(!opts.MinOpts());
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nMarking loop L%02u", begBlk->bbLoopNum);
+        printf("\nMarking a loop from " FMT_BB " to " FMT_BB, begBlk->bbNum,
+               excludeEndBlk ? endBlk->bbPrev->bbNum : endBlk->bbNum);
     }
 #endif
-
-    noway_assert(!opts.MinOpts());
 
     /* Build list of backedges for block begBlk */
     flowList* backedgeList = nullptr;
@@ -327,11 +327,11 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         {
             if (backEdgeCount > 0)
             {
-                printf("\nNot removing loop L%02u, due to an additional back edge", begBlk->bbLoopNum);
+                printf("\nNot removing loop at " FMT_BB ", due to an additional back edge", begBlk->bbNum);
             }
             else if (backEdgeCount == 0)
             {
-                printf("\nNot removing loop L%02u, due to no back edge", begBlk->bbLoopNum);
+                printf("\nNot removing loop at " FMT_BB ", due to no back edge", begBlk->bbNum);
             }
         }
 #endif
@@ -343,7 +343,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nUnmarking loop L%02u", begBlk->bbLoopNum);
+        printf("\nUnmarking loop at " FMT_BB, begBlk->bbNum);
     }
 #endif
 
@@ -651,14 +651,6 @@ void Compiler::optPrintLoopInfo(unsigned      loopInd,
 {
     noway_assert(lpHead);
 
-    //
-    // NOTE: we take "loopInd" as an argument instead of using the one
-    //       stored in begBlk->bbLoopNum because sometimes begBlk->bbLoopNum
-    //       has not be set correctly. For example, in optRecordLoop().
-    //       However, in most of the cases, loops should have been recorded.
-    //       Therefore the correct way is to call the Compiler::optPrintLoopInfo(unsigned lnum)
-    //       version of this method.
-    //
     printf("L%02u, from " FMT_BB, loopInd, lpFirst->bbNum);
     if (lpTop != lpFirst)
     {
@@ -4371,8 +4363,6 @@ void Compiler::optOptimizeLayout()
             continue;
         }
 
-        assert(block->bbLoopNum == 0);
-
         if (compCodeOpt() != SMALL_CODE)
         {
             /* Optimize "while(cond){}" loops to "cond; do{}while(cond);" */
@@ -4480,11 +4470,6 @@ void Compiler::optOptimizeLoops()
             if (foundBottom)
             {
                 loopNum++;
-#ifdef DEBUG
-                /* Mark the loop header as such */
-                assert(FitsIn<unsigned char>(loopNum));
-                top->bbLoopNum = (unsigned char)loopNum;
-#endif
 
                 /* Mark all blocks between 'top' and 'bottom' */
 
