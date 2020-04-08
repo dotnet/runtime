@@ -846,9 +846,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    throw new ArgumentException(
-                        paramName: nameof(options),
-                        message: SR.Argument_InvalidFlag);
+                    ThrowCompareOptionsCheckFailed(options);
                 }
             }
 
@@ -940,9 +938,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    throw new ArgumentException(
-                        paramName: nameof(options),
-                        message: SR.Argument_InvalidFlag);
+                    ThrowCompareOptionsCheckFailed(options);
                 }
             }
 
@@ -1804,62 +1800,57 @@ namespace System.Globalization
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
-            if ((options & ValidCompareMaskOffFlags) == 0)
-            {
-                // No unsupported flags are set - continue on with the regular logic
-                if (GlobalizationMode.Invariant)
-                {
-                    return ((options & CompareOptions.IgnoreCase) != 0) ? source.GetHashCodeOrdinalIgnoreCase() : source.GetHashCode();
-                }
 
-                return GetHashCodeOfStringCore(source, options);
-            }
-            else if (options == CompareOptions.Ordinal)
-            {
-                // We allow Ordinal in isolation
-                return source.GetHashCode();
-            }
-            else if (options == CompareOptions.OrdinalIgnoreCase)
-            {
-                // We allow OrdinalIgnoreCase in isolation
-                return source.GetHashCodeOrdinalIgnoreCase();
-            }
-            else
-            {
-                // Unsupported combination of flags specified
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
-            }
+            return GetHashCode(source.AsSpan(), options);
         }
 
         public int GetHashCode(ReadOnlySpan<char> source, CompareOptions options)
         {
             if ((options & ValidCompareMaskOffFlags) == 0)
             {
-                // No unsupported flags are set - continue on with the regular logic
-                if (GlobalizationMode.Invariant)
-                {
-                    return ((options & CompareOptions.IgnoreCase) != 0) ? string.GetHashCodeOrdinalIgnoreCase(source) : string.GetHashCode(source);
-                }
+                // Common case: caller is attempting to get a linguistic sort key.
+                // Pass the flags down to NLS or ICU unless we're running in invariant
+                // mode, at which point we normalize the flags to Orginal[IgnoreCase].
 
-                return GetHashCodeOfStringCore(source, options);
-            }
-            else if (options == CompareOptions.Ordinal)
-            {
-                // We allow Ordinal in isolation
-                return string.GetHashCode(source);
-            }
-            else if (options == CompareOptions.OrdinalIgnoreCase)
-            {
-                // We allow OrdinalIgnoreCase in isolation
-                return string.GetHashCodeOrdinalIgnoreCase(source);
+                if (!GlobalizationMode.Invariant)
+                {
+                    return GetHashCodeOfStringCore(source, options);
+                }
+                else if ((options & CompareOptions.IgnoreCase) == 0)
+                {
+                    goto ReturnOrdinal;
+                }
+                else
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
             }
             else
             {
-                // Unsupported combination of flags specified
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
+                // Less common case: caller is attempting to get a non-linguistic sort key,
+                // or an invalid combination of flags was supplied.
+
+                if (options == CompareOptions.Ordinal)
+                {
+                    goto ReturnOrdinal;
+                }
+                else if (options == CompareOptions.OrdinalIgnoreCase)
+                {
+                    goto ReturnOrdinalIgnoreCase;
+                }
+                else
+                {
+                    ThrowCompareOptionsCheckFailed(options);
+                }
             }
+
+        ReturnOrdinal:
+            return string.GetHashCode(source);
+
+        ReturnOrdinalIgnoreCase:
+            return string.GetHashCodeOrdinalIgnoreCase(source);
         }
 
         public override string ToString() => "CompareInfo - " + Name;
