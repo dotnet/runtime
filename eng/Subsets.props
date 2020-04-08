@@ -56,7 +56,7 @@
     <DefaultCoreClrSubsets>runtime-linuxdac-corelib-nativecorelib-tools-packages</DefaultCoreClrSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">llvm-</DefaultMonoSubsets>
-    <DefaultMonoSubsets>$(DefaultMonoSubsets)runtime-corelib-packages</DefaultMonoSubsets>
+    <DefaultMonoSubsets>$(DefaultMonoSubsets)runtime-corelib</DefaultMonoSubsets>
 
     <DefaultLibrariesSubsets>depprojs-native-ref-src-pretest-packages</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(IncludeLibrariesTestSubset)' == 'true'">$(DefaultLibrariesSubsets)-libtests</DefaultLibrariesSubsets>
@@ -106,7 +106,6 @@
     <!-- Mono -->
     <SubsetName Include="Runtime" Category="Mono" Description="The Mono .NET runtime." />
     <SubsetName Include="CoreLib" Category="Mono" Description="The managed System.Private.CoreLib library for Mono." />
-    <SubsetName Include="Packages" Category="Mono" Description="The projects that produce NuGet packages for the Mono runtime." />
 
     <!-- Installer -->
     <SubsetName Include="All" Category="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
@@ -194,10 +193,6 @@
 
   <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('-corelib-'))">
     <MonoProject Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('-packages-'))">
-    <MonoProject Include="$(MonoProjectRoot)netcore\nuget\mono-packages.proj" Pack="True" />
   </ItemGroup>
 
   <!-- Libraries sets -->
