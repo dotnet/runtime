@@ -276,7 +276,11 @@
     <ASPNETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\aspnetcoreapp\lib</ASPNETCoreAppPackageRuntimePath>
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
-
+    <NETCoreAppRuntimePackPath>$(ArtifactsBinDir)lib-runtime-packs/</NetCoreAppRuntimePackPath>
+    <NETCoreAppRuntimePackLibPath>$(NETCoreAppRuntimePackPath)lib/<NETCoreAppRuntimePackLibPath>
+    <NETCoreAppRuntimePackNativePath>$(NETCoreAppRuntimePackPath)native/<NETCoreAppRuntimePackNativePath>
+    <NETCoreAppRuntimePackNativeIncludePath>$(NETCoreAppRuntimePackNativePath)include/<NETCoreAppRuntimePackNativeIncludePath>
+    <NETCoreAppRuntimePackNativeCrossPath>$(NETCoreAppRuntimePackNativePath)cross/<NETCoreAppRuntimePackNativeCrossPath>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
 
