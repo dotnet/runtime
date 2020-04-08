@@ -18,12 +18,12 @@ usage()
 {
   echo "Common settings:"
   echo "  --subset                   Build a subset, print available subsets with -subset help"
-  echo "  --subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
   echo "  --os                       Build operating system: Windows_NT, Linux, FreeBSD, OSX, tvOS, iOS or Android"
   echo "  --arch                     Build platform: x86, x64, arm, armel or arm64"
   echo "  --configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   echo "  --runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
   echo "  --librariesConfiguration   Libraries build configuration: Debug or Release"
+  echo "  --projects <value>         Project or solution file(s) to build"
   echo "  --verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
   echo "  --binaryLog                Output binary log (short: -bl)"
   echo "  --cross                    Optional argument to signify cross compilation"
@@ -82,9 +82,6 @@ initDistroRid()
 arguments=''
 cmakeargs=''
 extraargs=''
-build=false
-subsetCategory=''
-checkedSolutionBuild=false
 crossBuild=0
 
 source $scriptroot/native/init-os-and-arch.sh
@@ -99,11 +96,6 @@ while [[ $# > 0 ]]; do
      -help|-h)
       usage
       exit 0
-      ;;
-     -subsetcategory)
-      subsetCategory="$(echo "$2" | awk '{print tolower($0)}')"
-      arguments="$arguments /p:SubsetCategory=$subsetCategory"
-      shift 2
       ;;
      -subset)
       arguments="$arguments /p:Subset=$2"
@@ -130,11 +122,6 @@ while [[ $# > 0 ]]; do
       ;;
      -allconfigurations)
       arguments="$arguments /p:BuildAllConfigurations=true"
-      shift 1
-      ;;
-     -build)
-      build=true
-      arguments="$arguments -build"
       shift 1
       ;;
      -testscope)
@@ -176,19 +163,7 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
       *)
-      ea=$1
-
-      if [[ $checkedSolutionBuild == false ]]; then
-        checkedSolutionBuild=true
-
-        if [[ -d "$1" ]]; then
-          ea="-projects $1"
-        elif [[ -d "$scriptroot/../src/libraries/$1/$1.sln" ]]; then
-          ea="-projects $scriptroot/../src/libraries/$1/$1.sln"
-        fi
-      fi
-
-      extraargs="$extraargs $ea"
+      extraargs="$extraargs $1"
       shift 1
       ;;
   esac
