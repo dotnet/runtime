@@ -920,7 +920,7 @@ namespace System.Net.Http
             }
             else
             {
-                string headerValue = staticValue ?? descriptor.GetHeaderValue(literalValue);
+                string headerValue = staticValue ?? _connection.GetResponseHeaderValueWithCaching(descriptor, literalValue);
 
                 switch (_headerState)
                 {
