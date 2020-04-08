@@ -137,7 +137,7 @@ jobs:
         displayName: Build Cross OS Linux DAC for Windows
 
     # Build CoreCLR Managed Components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib-nativecorelib-tools-packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
     # Build native test components

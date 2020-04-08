@@ -116,7 +116,7 @@ jobs:
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
 
-        - _buildArguments: -subsetcategory coreclr-libraries -subset corelib-depprojs-ref-native-src -runtimeConfiguration ${{ parameters.liveRuntimeBuildConfig }} -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_testScopeArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
         - ${{ parameters.variables }}
 
       dependsOn:
