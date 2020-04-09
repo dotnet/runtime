@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     }
 
                     string dateString = ReadTextString();
-                    return DateTimeOffset.Parse(dateString, formatProvider: null, DateTimeStyles.RoundtripKind);
+                    return DateTimeOffset.ParseExact(dateString, CborWriter.Rfc3339FormatString, null);
 
                 case CborTag.DateTimeUnixSeconds:
                     ReadTag();

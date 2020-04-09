@@ -17,10 +17,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         // Additional tagged type support
 
+        internal const string Rfc3339FormatString = "yyyy-MM-ddTHH:mm:ss.FFFFFFFK";
+
         public void WriteDateTimeOffset(DateTimeOffset value)
         {
+            string dateString =
+                value.Offset == TimeSpan.Zero ?
+                value.UtcDateTime.ToString(Rfc3339FormatString) : // prefer 'Z' over '+00:00'
+                value.ToString(Rfc3339FormatString);
+
             WriteTag(CborTag.DateTimeString);
-            WriteTextString(value.ToString("O"));
+            WriteTextString(dateString);
         }
 
         public void WriteUnixTimeSeconds(long unixTimeSeconds)
