@@ -16,9 +16,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Branch_SystemTypeValueNode_UnknownStringValue ();
 			Branch_MethodParameterValueNode (typeof (ExpressionFieldString), "Foo");
 			Branch_UnrecognizedPatterns ();
-			// TODO
-			Expression.Field(null, typeof(ADerived), "_protectedFieldOnBase");
-			Expression.Field(null, typeof(ADerived), "_publicFieldOnBase");
 		}
 
 		[Kept]
@@ -29,6 +26,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestType (0);
 			TestType (1);
 			StaticFieldExpected ();
+			FieldsOnBaseType ();
 		}
 
 		[Kept]
@@ -95,6 +93,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			Expression.Field (null, T, "Foo");
+		}
+
+		[Kept]
+		static void FieldsOnBaseType ()
+		{
+			Expression.Field (null, typeof (ADerived), "_protectedFieldOnBase");
+			Expression.Field (null, typeof (ADerived), "_publicFieldOnBase");
 		}
 		#endregion
 
