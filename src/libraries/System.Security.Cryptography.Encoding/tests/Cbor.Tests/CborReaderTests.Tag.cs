@@ -160,6 +160,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData("c07330392f30342f323032302031393a35313a3530")] // 0("09/04/2020 19:51:50")
+        [InlineData("c06e4c617374204368726973746d6173")] // 0("Last Christmas")
+        public static void ReadDateTimeOffset_InvalidDateString_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            Assert.Throws<FormatException>(() => reader.ReadDateTimeOffset());
+        }
+
+        [Theory]
         [InlineData("01")] // numeric value without tag
         [InlineData("c301")] // non-datetime tag
         public static void ReadDateTimeOffset_InvalidTag_ShouldThrowInvalidOperationxception(string hexEncoding)

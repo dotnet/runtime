@@ -57,7 +57,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     }
 
                     string dateString = ReadTextString();
-                    return DateTimeOffset.ParseExact(dateString, CborWriter.Rfc3339FormatString, null);
+
+                    if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out DateTimeOffset result))
+                    {
+                        throw new FormatException("DateTime string is not valid RFC3339.");
+                    }
+
+                    return result;
 
                 case CborTag.DateTimeUnixSeconds:
                     ReadTag();
