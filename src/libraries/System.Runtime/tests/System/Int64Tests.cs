@@ -82,7 +82,7 @@ namespace System.Tests
         [InlineData((long)789, null, false)]
         [InlineData((long)789, "789", false)]
         [InlineData((long)789, 789, false)]
-        public static void Equals(long i1, object obj, bool expected)
+        public static void EqualsTest(long i1, object obj, bool expected)
         {
             if (obj is long)
             {
@@ -143,7 +143,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToString(long i, string format, IFormatProvider provider, string expected)
+        public static void ToStringTest(long i, string format, IFormatProvider provider, string expected)
         {
             // Format is case insensitive
             string upperFormat = format.ToUpperInvariant();

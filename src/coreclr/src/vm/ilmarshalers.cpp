@@ -143,15 +143,16 @@ void ILDelegateMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit
     // COMPAT: There is a subtle difference between argument and field marshaling with Delegate types.
     // During field marshaling, the plain Delegate type can be used even though that type doesn't
     // represent a concrete type. Argument marshaling doesn't permit this so we use the public
-    // API which will validate that Delegate and MulticastDelegate aren't directly used.
+    // API which will validate that Delegate isn't directly used.
     if (IsFieldMarshal(m_dwMarshalFlags))
     {
         // Delegate System.Marshal.GetDelegateForFunctionPointerInternal(IntPtr p, Type t)
         pslILEmit->EmitCALL(METHOD__MARSHAL__GET_DELEGATE_FOR_FUNCTION_POINTER_INTERNAL, 2, 1);
         EmitStoreManagedValue(pslILEmit);
 
-        // Field marshalling of delegates supports marshalling back null from native code.
-        // Parameter and return value marshalling does not.
+        // Field marshaling of delegates supports marshaling back null from native code.
+        // COMPAT: Parameter and return value marshalling does not marshal back a null value.
+        //    e.g. `extern static void SetNull(ref Action f);` <- f will not be null on return.
         ILCodeLabel* pFinishedLabel = pslILEmit->NewCodeLabel();
         pslILEmit->EmitBR(pFinishedLabel);
         pslILEmit->EmitLabel(pNullLabel);

@@ -69,7 +69,7 @@ namespace System.Tests
         [InlineData((ulong)789, null, false)]
         [InlineData((ulong)789, "789", false)]
         [InlineData((ulong)789, 789, false)]
-        public static void Equals(ulong i1, object obj, bool expected)
+        public static void EqualsTest(ulong i1, object obj, bool expected)
         {
             if (obj is ulong i2)
             {
@@ -124,7 +124,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToString(ulong i, string format, IFormatProvider provider, string expected)
+        public static void ToStringTest(ulong i, string format, IFormatProvider provider, string expected)
         {
             // Format is case insensitive
             string upperFormat = format.ToUpperInvariant();

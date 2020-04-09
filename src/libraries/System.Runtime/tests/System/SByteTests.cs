@@ -77,7 +77,7 @@ namespace System.Tests
         [InlineData((sbyte)78, null, false)]
         [InlineData((sbyte)78, "78", false)]
         [InlineData((sbyte)78, 78, false)]
-        public static void Equals(sbyte i1, object obj, bool expected)
+        public static void EqualsTest(sbyte i1, object obj, bool expected)
         {
             if (obj is sbyte)
             {
@@ -138,7 +138,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToString(sbyte i, string format, IFormatProvider provider, string expected)
+        public static void ToStringTest(sbyte i, string format, IFormatProvider provider, string expected)
         {
             // Format is case insensitive
             string upperFormat = format.ToUpperInvariant();

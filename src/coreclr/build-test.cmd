@@ -73,6 +73,8 @@ set __GenerateLayoutOnly=0
 set __Priority=0
 set __PriorityArg=
 
+set __BuildNeedTargetArg=
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 
@@ -108,6 +110,8 @@ if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!pro
 if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
+if /i "%1" == "targetGeneric"         (set "__BuildNeedTargetArg=/p:CLRTestNeedTargetToBuild=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "targetSpecific"        (set "__BuildNeedTargetArg=/p:CLRTestNeedTargetToBuild=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -300,7 +304,7 @@ powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   %__SkipFXRestoreArg%^
-  !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__UnprocessedBuildArgs%
+  !__Logging! %__CommonMSBuildArgs% %__PriorityArg% %__BuildNeedTargetArg% %__UnprocessedBuildArgs%
 
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Package restoration failed. Refer to the build log files for details:
@@ -360,7 +364,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__Logging!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !TargetsWindowsMsbuildArg!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__msbuildArgs!
-        set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__PriorityArg!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__PriorityArg! !__BuildNeedTargetArg!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__UnprocessedBuildArgs!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:CopyNativeProjectBinaries=!__CopyNativeProjectsAfterCombinedTestBuild!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:__SkipPackageRestore=true
@@ -379,7 +383,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
             goto     :Exit_Failure
         )
     ) else (
-        set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__SkipFXRestoreArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
+        set __MSBuildBuildArgs=!__ProjectDir!\tests\build.proj -warnAsError:0 /nodeReuse:false !__Logging! !TargetsWindowsMsbuildArg! !__msbuildArgs!  !__PriorityArg! !__BuildNeedTargetArg! !__SkipFXRestoreArg! !__UnprocessedBuildArgs! "/t:CopyAllNativeProjectReferenceBinaries"
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -464,7 +468,7 @@ powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount^
   %__SkipFXRestoreArg%^
-  !__Logging! %__CommonMSBuildArgs% %RuntimeIdArg% %__PriorityArg% %__UnprocessedBuildArgs%
+  !__Logging! %__CommonMSBuildArgs% %RuntimeIdArg% %__PriorityArg% %__BuildNeedTargetArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Create Test Overlay failed. Refer to the build log files for details:
     echo     %__BuildLog%
@@ -606,6 +610,8 @@ echo -priority=^<N^> : specify a set of tests that will be built and run, with p
 echo     0: Build only priority 0 cases as essential testcases (default)
 echo     1: Build all tests with priority 0 and 1
 echo     666: Build all tests with priority 0, 1 ... 666
+echo targetGeneric: Only build tests which run on any target platform.
+echo targetSpecific: Only build tests which run on a specific target platform.
 echo -verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
 exit /b 1
 

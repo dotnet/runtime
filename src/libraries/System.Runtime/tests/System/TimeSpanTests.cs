@@ -293,7 +293,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(TimeSpan timeSpan1, object obj, bool expected)
+        public static void EqualsTest(TimeSpan timeSpan1, object obj, bool expected)
         {
             if (obj is TimeSpan)
             {
@@ -1111,7 +1111,7 @@ namespace System.Tests
         }
 
         [Theory, MemberData(nameof(ParseDifferentLengthFractionWithLeadingZerosData))]
-        public static void Multiplication(string input, TimeSpan expected)
+        public static void ParseDifferentLengthFractionWithLeadingZeros(string input, TimeSpan expected)
         {
             Assert.Equal(expected, TimeSpan.Parse(input, CultureInfo.InvariantCulture));
             Assert.Equal(expected, TimeSpan.ParseExact(input, "g", CultureInfo.InvariantCulture));

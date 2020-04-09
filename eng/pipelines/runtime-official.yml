@@ -209,7 +209,6 @@ stages:
       platforms:
       - tvOS_x64
       - tvOS_arm64
-      - iOS_arm
       # - iOS_arm # https://github.com/dotnet/runtime/issues/34465
       - iOS_arm64
       - iOS_x64

@@ -30,12 +30,15 @@ add_compile_options(-Wno-empty-translation-unit)
 add_compile_options(-Wno-cast-align)
 add_compile_options(-Wno-typedef-redefinition)
 add_compile_options(-Wno-c11-extensions)
+add_compile_options(-Wno-unknown-pragmas)
 add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
 add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 add_compile_options(-g)
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     add_compile_options(-Wthread-safety)
     add_compile_options(-Wno-thread-safety-analysis)
+elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
+    add_compile_options(-Wno-stringop-truncation)
 endif()
 
 # Suppress warnings-as-errors in release branches to reduce servicing churn
@@ -178,10 +181,8 @@ include(configure.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
-if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)  # TODO: reenable
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
     add_subdirectory(System.IO.Ports.Native)
-endif()
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
