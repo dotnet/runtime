@@ -126,6 +126,8 @@
 #include "safemath.h"
 #include "threadsuspend.h"
 #include "inlinetracking.h"
+#include "clrconfignative.h"
+#include <configuration.h>
 
 #ifdef PROFILING_SUPPORTED
 #include "profilinghelper.h"
@@ -9175,6 +9177,62 @@ HRESULT ProfToEEInterfaceImpl::EnumModules(ICorProfilerModuleEnum ** ppEnum)
     return S_OK;
 }
 
+void ProfToEEInterfaceImpl::ParseVersionString(LPCWSTR versionString,
+                                               ULONG   cchVersionString,
+                                               USHORT *pMajorVersion,
+                                               USHORT *pMinorVersion,
+                                               USHORT *pBuildNumber)
+{    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+        CANNOT_TAKE_LOCK;
+
+        PRECONDITION(CheckPointer(versionString));
+        PRECONDITION(CheckPointer(pMajorVersion));
+        PRECONDITION(CheckPointer(pMinorVersion));
+        PRECONDITION(CheckPointer(pBuildNumber));
+    }
+    CONTRACTL_END;
+
+    NewArrayHolder<WCHAR> versionStringWriteable = new (nothrow) WCHAR[cchVersionString];
+    if (versionStringWriteable == NULL)
+    {
+        return;
+    }
+
+    CopyMemory(versionStringWriteable, versionString, cchVersionString * sizeof(WCHAR));
+
+    LPCWSTR delims = W(".-");
+    WCHAR *buffer;
+    LPCWSTR token = wcstok_s(versionStringWriteable, delims, &buffer);
+    if (token == NULL)
+    {
+        return;
+    }
+
+    *pMajorVersion = _wtoi(token);
+    _ASSERTE(*pMajorVersion > 0);
+
+    token = wcstok_s(NULL, delims, &buffer);
+    if (token == NULL)
+    {
+        return;
+    }
+
+    *pMinorVersion = _wtoi(token);
+
+    token = wcstok_s(NULL, delims, &buffer);
+    if (token == NULL)
+    {
+        return;
+    }
+
+    *pBuildNumber = _wtoi(token);
+}
+
 HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
                                                      COR_PRF_RUNTIME_TYPE * pRuntimeType,
                                                      USHORT * pMajorVersion,
@@ -9215,15 +9273,55 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
         return E_INVALIDARG;
     }
 
-    if (pcchVersionString != NULL)
+    // Try and get the version set by the host
+    LPCWSTR fxProductVersion = Configuration::GetKnobStringValue(W("FX_PRODUCT_VERSION"));
+    ULONG cchFxProductVersion =  fxProductVersion == NULL ? 0 : (ULONG)wcslen(fxProductVersion) + 1;
+
+    if (pcchVersionString != NULL || szVersionString != NULL)
     {
-        HRESULT hr = GetCORVersionInternal(szVersionString, (DWORD)cchVersionString, (DWORD *)pcchVersionString);
-        if (FAILED(hr))
-            return hr;
+        if (fxProductVersion != NULL)
+        {
+            if (pcchVersionString != NULL)
+            {
+                *pcchVersionString = cchFxProductVersion;
+            }
+
+            if (cchFxProductVersion >= cchVersionString)
+            {
+                return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+            }
+
+            if (szVersionString != NULL)
+            {
+                CopyMemory(szVersionString, fxProductVersion, cchFxProductVersion * sizeof(WCHAR));
+            }
+        }
+        else
+        {
+            // The host hasn't set a version, fall back to the compile time ones
+            HRESULT hr = GetCORVersionInternal(szVersionString, (DWORD)cchVersionString, (DWORD *)pcchVersionString);
+            if (FAILED(hr))
+            {
+                return hr;
+            }
+        }
+    }
+
+    // defaults to use if the host hasn't set a version to parse
+    USHORT majorVersion = CLR_MAJOR_VERSION;
+    USHORT minorVersion = CLR_MINOR_VERSION;
+    USHORT buildNumber = CLR_BUILD_VERSION;
+
+    if (fxProductVersion != NULL)
+    {
+        // Get the versions from the FX_PRODUCT_VERSION config set by the host
+        ParseVersionString(fxProductVersion, cchFxProductVersion, &majorVersion, &minorVersion, &buildNumber);
     }
 
     if (pClrInstanceId != NULL)
+    {
         *pClrInstanceId = static_cast<USHORT>(GetClrInstanceId());
+    }
 
     if (pRuntimeType != NULL)
     {
@@ -9231,16 +9329,24 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
     }
 
     if (pMajorVersion != NULL)
-        *pMajorVersion = CLR_MAJOR_VERSION;
+    {
+        *pMajorVersion = majorVersion;
+    }
 
     if (pMinorVersion != NULL)
-        *pMinorVersion = CLR_MINOR_VERSION;
+    {
+        *pMinorVersion = minorVersion;
+    }
 
     if (pBuildNumber != NULL)
-        *pBuildNumber = CLR_BUILD_VERSION;
+    {
+        *pBuildNumber = buildNumber;
+    }
 
     if (pQFEVersion != NULL)
+    {
         *pQFEVersion = CLR_BUILD_VERSION_QFE;
+    }
 
     return S_OK;
 }

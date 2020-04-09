@@ -650,7 +650,7 @@ public:
 
     COM_METHOD EventPipeDefineEvent(
         EVENTPIPE_PROVIDER provHandle,
-        const WCHAR *szName, 
+        const WCHAR *szName,
         UINT32 eventID,
         UINT64 keywords,
         UINT32 eventVersion,
@@ -668,7 +668,7 @@ public:
         LPCGUID pRelatedActivityId);
 
     // end ICorProfilerInfo12
-    
+
 protected:
 
     // Internal Helper Functions
@@ -701,6 +701,12 @@ protected:
     HRESULT EnumJITedFunctionsHelper(ProfilerFunctionEnum ** ppEnum, IJitManager ** ppJitMgr);
 
     HRESULT SetupThreadForReJIT();
+
+    void ParseVersionString(LPCWSTR versionString,
+                            ULONG   cchVersionString,
+                            USHORT *pMajorVersion,
+                            USHORT *pMinorVersion,
+                            USHORT *pBuildNumber);
 
 #ifdef TARGET_X86
     HRESULT ProfilerEbpWalker(Thread * pThreadToSnapshot, LPCONTEXT pctxSeed, StackSnapshotCallback * callback, void * clientData);
