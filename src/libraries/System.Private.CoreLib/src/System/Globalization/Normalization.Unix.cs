@@ -70,7 +70,10 @@ namespace System.Globalization
 
                     if (realLen <= buffer.Length)
                     {
-                        return new string(buffer.Slice(0, realLen));
+                        ReadOnlySpan<char> result = buffer.Slice(0, realLen);
+                        return result.SequenceEqual(strInput)
+                            ? strInput
+                            : new string(result);
                     }
 
                     Debug.Assert(realLen > 512);

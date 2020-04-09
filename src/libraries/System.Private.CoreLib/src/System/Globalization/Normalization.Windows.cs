@@ -98,7 +98,10 @@ namespace System.Globalization
                     switch (lastError)
                     {
                         case Interop.Errors.ERROR_SUCCESS:
-                            return new string(buffer.Slice(0, realLength));
+                            ReadOnlySpan<char> result = buffer.Slice(0, realLength);
+                            return result.SequenceEqual(strInput)
+                                ? strInput
+                                : new string(result);
 
                         // Do appropriate stuff for the individual errors:
                         case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
