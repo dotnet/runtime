@@ -50,6 +50,7 @@ namespace System.Runtime.InteropServices.Tests
 
             // Wrappers.
             yield return new object[] { new UnknownWrapper(10), VarEnum.VT_UNKNOWN, IntPtr.Zero, null };
+            yield return new object[] { new DispatchWrapper[] { new DispatchWrapper(null), new DispatchWrapper(null) }, (VarEnum)8201, (IntPtr)(-1), new object[] { null, null } };
             yield return new object[] { new ErrorWrapper(10), VarEnum.VT_ERROR, (IntPtr)10, 10 };
             yield return new object[] { new CurrencyWrapper(10), VarEnum.VT_CY, (IntPtr)100000, 10m };
             yield return new object[] { new BStrWrapper("a"), VarEnum.VT_BSTR, (IntPtr)(-1), "a" };
@@ -326,11 +327,6 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        public struct StructWithValue
-        {
-            public int Value;
-        }
-
         public class ClassWithInterface : INonGenericInterface { }
         public struct StructWithInterface : INonGenericInterface { }
 
@@ -343,9 +339,6 @@ namespace System.Runtime.InteropServices.Tests
         public enum UInt16Enum : ushort { Value1, Value2 }
         public enum UInt32Enum : uint { Value1, Value2 }
         public enum UInt64Enum : ulong { Value1, Value2 }
-
-        private static void NonGenericMethod(int i) { }
-        public delegate void NonGenericDelegate(int i);
 
         public class FakeSafeHandle : SafeHandle
         {
