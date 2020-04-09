@@ -64,6 +64,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         }
 
         /// <summary>
+        ///     Removes all items from the set.
+        /// </summary>
+        internal void Clear()
+        {
+            _ranges.Clear();
+        }
+
+        /// <summary>
         ///     Adds given value to the set. Equivalent to adding range [value, value].
         /// </summary>
         /// <param name="value">Value to be added.</param>
@@ -146,6 +154,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 _ranges.RemoveRange(index, removeCount - 1);
                 _ranges[index].Start = start;
                 _ranges[index].End = end;
+            }
+        }
+
+        /// <summary>
+        ///     Adds all items from other instance of <see cref="RangeSet"/>.
+        /// </summary>
+        /// <param name="other">Ranges to be included.</param>
+        internal void Add(RangeSet ranges)
+        {
+            for (int i = 0; i < ranges.Count; i++)
+            {
+                Add(ranges[i].Start, ranges[i].End);
             }
         }
 
@@ -272,6 +292,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             _ranges.RemoveRange(index, removeCount);
+        }
+
+        /// <summary>
+        ///     Removes items present in the provided ranges from the set.
+        /// </summary>
+        /// <param name="ranges">Ranges to be removed.</param>
+        internal void Remove(RangeSet ranges)
+        {
+            for (int i = ranges.Count - 1; i >= 0; i--)
+            {
+                Remove(ranges[i].Start, ranges[i].End);
+            }
         }
 
         /// <summary>

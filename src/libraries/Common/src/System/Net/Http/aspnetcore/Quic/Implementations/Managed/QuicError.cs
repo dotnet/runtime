@@ -5,11 +5,12 @@ namespace System.Net.Quic.Implementations.Managed
     internal class QuicError
     {
         internal TransportErrorCode ErrorCode { get; }
-        internal FrameType? FrameType { get; }
+        internal FrameType FrameType { get; }
         internal string? ReasonPhrase { get; }
         internal bool IsQuicError { get; }
 
-        public QuicError(TransportErrorCode errorCode, FrameType? frameType = null, string? reasonPhrase = null, bool isQuicError = true)
+        public QuicError(TransportErrorCode errorCode, string? reasonPhrase = null, FrameType frameType = FrameType.Padding,
+            bool isQuicError = true)
         {
             ErrorCode = errorCode;
             FrameType = frameType;

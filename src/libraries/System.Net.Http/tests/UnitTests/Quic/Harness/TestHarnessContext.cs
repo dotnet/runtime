@@ -4,9 +4,9 @@ using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 
 namespace System.Net.Quic.Tests.Harness
 {
-    internal class TestHarness
+    internal class TestHarnessContext
     {
-        public TestHarness(ManagedQuicConnection sender)
+        public TestHarnessContext(ManagedQuicConnection sender)
         {
             Sender = sender;
             ConnectionIdCollection.Add(sender.SourceConnectionId.Data);

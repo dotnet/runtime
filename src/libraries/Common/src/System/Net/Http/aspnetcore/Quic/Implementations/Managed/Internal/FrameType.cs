@@ -2,6 +2,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal enum FrameType : ulong
     {
+        // placing these here so they are not used by built in ToString on the FrameType when visualizing in debugger
+        StreamOffBit = 0x04,
+        StreamLenBit = 0x02,
+        StreamFinBit = 0x01,
+
         Padding = 0x00,
         Ping = 0x01,
         Ack = 0x02,
@@ -11,9 +16,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         Crypto = 0x06,
         NewToken = 0x07,
         Stream = 0x08,
-        StreamOffBit = 0x04,
-        StreamLenBit = 0x02,
-        StreamFinBit = 0x01,
         StreamMask = Stream | StreamOffBit | StreamLenBit | StreamFinBit,
         MaxData = 0x10,
         MaxStreamData = 0x11,

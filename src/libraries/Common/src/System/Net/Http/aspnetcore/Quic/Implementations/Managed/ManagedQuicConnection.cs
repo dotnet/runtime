@@ -89,7 +89,21 @@ namespace System.Net.Quic.Implementations.Managed
 
         private readonly string? privateKey;
 
+        /// <summary>
+        ///     Version of the QUIC protocol used for this connection.
+        /// </summary>
         private readonly QuicVersion version = QuicVersion.Draft27;
+
+        /// <summary>
+        ///     True if PING frame should be sent during next flight.
+        ///     //TODO-RZ: this is currently only debug aid to ensure that some ack-eliciting packet is sent.
+        /// </summary>
+        private bool _pingWanted;
+
+        internal void Ping()
+        {
+            _pingWanted = true;
+        }
 
         public ManagedQuicConnection(QuicClientConnectionOptions options)
             : this(false)
@@ -119,7 +133,11 @@ namespace System.Net.Quic.Implementations.Managed
             // TODO-RZ: compose transport params from options
             _localTransportParameters = new TransportParameters();
 
-            _epochs = new EpochData[3] {new EpochData(), new EpochData(), new EpochData()};
+            _epochs = new EpochData[3]
+            {
+                new EpochData(PacketEpoch.Initial), new EpochData(PacketEpoch.Handshake),
+                new EpochData(PacketEpoch.Application)
+            };
         }
 
         public ConnectionId? SourceConnectionId { get; private set; }
@@ -189,7 +207,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             var segment = new ArraySegment<byte>(buffer, 0, count);
             var reader = new QuicReader(segment);
-            var context = new Context(now);
+            var context = new RecvContext(now);
 
             while (reader.BytesLeft > 0)
             {
@@ -201,7 +219,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private ProcessPacketResult Receive1Rtt(QuicReader reader, in ShortPacketHeader header, Context context)
+        private ProcessPacketResult Receive1Rtt(QuicReader reader, in ShortPacketHeader header, RecvContext context)
         {
             int pnOffset = reader.BytesRead;
             PacketType packetType = PacketType.OneRtt;
@@ -211,19 +229,19 @@ namespace System.Net.Quic.Implementations.Managed
             return ReceiveProtectedFrames(reader, epoch, pnOffset, payloadLength, packetType, context);
         }
 
-        private ProcessPacketResult ReceiveRetry(QuicReader reader, in LongPacketHeader header, Context context)
+        private ProcessPacketResult ReceiveRetry(QuicReader reader, in LongPacketHeader header, RecvContext context)
         {
             throw new NotImplementedException();
         }
 
         private ProcessPacketResult ReceiveVersionNegotiation(QuicReader reader, in LongPacketHeader header,
-            Context context)
+            RecvContext context)
         {
             throw new NotImplementedException();
         }
 
         private ProcessPacketResult ReceiveCommon(QuicReader reader, in LongPacketHeader header,
-            in SharedPacketData headerData, Context context)
+            in SharedPacketData headerData, RecvContext context)
         {
             //TODO-RZ: Version negotiation
             //TODO-RZ: Check connection id length (beware that length is unbounded in initial packets)
@@ -249,8 +267,8 @@ namespace System.Net.Quic.Implementations.Managed
                 // check UDP datagram size, by now the reader's buffer end is aligned with the UDP datagram end.
                 if (reader.Buffer.Offset + reader.Buffer.Count < QuicConstants.MinimumClientInitialDatagramSize)
                 {
-                    return CloseConnection(TransportErrorCode.ProtocolViolation, null,
-                        QuicErrors.InitialPacketTooShort);
+                    return CloseConnection(TransportErrorCode.ProtocolViolation,
+                        Internal.QuicError.InitialPacketTooShort);
                 }
             }
 
@@ -259,7 +277,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, EpochData epoch, int pnOffset,
             int payloadLength,
-            PacketType packetType, Context context)
+            PacketType packetType, RecvContext context)
         {
             if (epoch.RecvCryptoSeal == null)
             {
@@ -302,7 +320,8 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessFramesWithoutTag(reader, packetType, context);
         }
 
-        private ProcessPacketResult ProcessFramesWithoutTag(QuicReader reader, PacketType packetType, Context context)
+        private ProcessPacketResult ProcessFramesWithoutTag(QuicReader reader, PacketType packetType,
+            RecvContext context)
         {
             // HACK: we do not want to try processing the AEAD integrity tag as if it were frames.
             var originalSegment = reader.Buffer;
@@ -314,7 +333,7 @@ namespace System.Net.Quic.Implementations.Managed
         }
 
         private ProcessPacketResult ReceiveLongHeaderPackets(QuicReader reader, in LongPacketHeader header,
-            Context context)
+            RecvContext context)
         {
             var type = header.PacketType;
 
@@ -349,7 +368,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private ProcessPacketResult ReceiveOne(QuicReader reader, Context context)
+        private ProcessPacketResult ReceiveOne(QuicReader reader, RecvContext context)
         {
             byte first = reader.PeekUInt8();
 
@@ -403,9 +422,8 @@ namespace System.Net.Quic.Implementations.Managed
             return desiredLevel;
         }
 
-        private void SendOne(QuicWriter writer, IPEndPoint? receiver, EncryptionLevel level, Context context)
+        private bool SendOne(QuicWriter writer, IPEndPoint? receiver, EncryptionLevel level, SendContext context)
         {
-            // TODO-RZ: process lost packets
             var packetType = level switch
             {
                 EncryptionLevel.Initial => PacketType.Initial,
@@ -448,10 +466,12 @@ namespace System.Net.Quic.Implementations.Managed
                 // no data to send
                 // TODO-RZ: we might be able to detect this sooner
                 writer.Reset(writer.Buffer);
-                return;
+                return false;
             }
 
-            // the frame is going to be sent, increment the next packet number
+            // remember what we sent in this packet
+            epoch.PacketsInFlight.Add(epoch.NextPacketNumber, context.SentPacket);
+            context.SentPacket.Sent = context.Now;
             epoch.NextPacketNumber++;
 
             if (!_isServer && packetType == PacketType.Initial)
@@ -466,6 +486,12 @@ namespace System.Net.Quic.Implementations.Managed
                     writer.GetWritableSpan(paddingLength).Clear();
             }
 
+            // pad the packet payload so that it can always be sampled for header protection
+            if (writer.BytesWritten - pnOffset < seal.PayloadSampleLength + 4)
+            {
+                writer.GetWritableSpan(seal.PayloadSampleLength + 4 - writer.BytesWritten + pnOffset).Clear();
+            }
+
             // reserve space for AEAD integrity tag
             writer.GetWritableSpan(seal.TagLength);
             int payloadLength = writer.BytesWritten - pnOffset;
@@ -477,6 +503,8 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             seal.EncryptPacket(writer.Buffer, pnOffset, payloadLength, truncatedPn);
+
+            return true;
         }
 
         private void WritePacketHeader(QuicWriter writer, PacketType packetType, int pnLength)
@@ -509,8 +537,10 @@ namespace System.Net.Quic.Implementations.Managed
         internal int SendData(byte[] targetBuffer, out IPEndPoint? receiver, DateTime now)
         {
             receiver = default;
-            var context = new Context(now);
+            // TODO-RZ: process lost packets
+            // TODO-RZ: pool SentPacket, SendContext and QuicWriter instances
 
+            var context = new SendContext(now);
             var writer = new QuicWriter(targetBuffer);
 
             int written = 0;
@@ -525,9 +555,7 @@ namespace System.Net.Quic.Implementations.Managed
                 }
 
                 // TODO-RZ get client address
-                SendOne(writer, null, level, context);
-
-                if (writer.BytesWritten == 0)
+                if (!SendOne(writer, null, level, context))
                     break;
 
                 written += writer.BytesWritten;
@@ -542,6 +570,7 @@ namespace System.Net.Quic.Implementations.Managed
                 if (nextLevel <= level)
                     break;
 
+                context.SentPacket = new SentPacket();
                 level = nextLevel;
                 writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
             }
@@ -587,9 +616,9 @@ namespace System.Net.Quic.Implementations.Managed
             };
         }
 
-        private ProcessPacketResult CloseConnection(TransportErrorCode errorCode, FrameType? frameType, string? reason)
+        private ProcessPacketResult CloseConnection(TransportErrorCode errorCode, string? reason, FrameType frameType = FrameType.Padding)
         {
-            outboundError = new QuicError(errorCode, frameType, reason);
+            outboundError = new QuicError(errorCode, reason, frameType);
             return ProcessPacketResult.ConnectionClose;
         }
 
@@ -637,14 +666,38 @@ namespace System.Net.Quic.Implementations.Managed
             return 1;
         }
 
-        private sealed class Context
+        private class ContextBase
         {
-            public Context(DateTime now)
+            public ContextBase(DateTime now)
             {
                 Now = now;
             }
 
+            /// <summary>
+            ///     Timestamp when the next tick of internal processing was requested.
+            /// </summary>
             internal DateTime Now { get; }
+        }
+
+        private sealed class RecvContext : ContextBase
+        {
+            public RecvContext(DateTime now) : base(now)
+            {
+            }
+        }
+
+
+        private sealed class SendContext : ContextBase
+        {
+            public SendContext(DateTime now)
+                : base(now)
+            {
+            }
+
+            /// <summary>
+            ///     Data about next packet that is to be sent.
+            /// </summary>
+            internal SentPacket SentPacket { get; set; } = new SentPacket();
         }
 
         internal enum ProcessPacketResult

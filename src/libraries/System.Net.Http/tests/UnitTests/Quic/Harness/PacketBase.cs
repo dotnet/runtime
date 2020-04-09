@@ -28,11 +28,11 @@ namespace System.Net.Quic.Tests.Harness
             return "";
         }
 
-        internal abstract void Serialize(QuicWriter writer, TestHarness context);
+        internal abstract void Serialize(QuicWriter writer, TestHarnessContext context);
 
-        internal abstract void Deserialize(QuicReader reader, TestHarness context);
+        internal abstract void Deserialize(QuicReader reader, TestHarnessContext context);
 
-        internal static List<PacketBase> ParseMany(byte[] buffer, int count, TestHarness context)
+        internal static List<PacketBase> ParseMany(byte[] buffer, int count, TestHarnessContext context)
         {
             var segment = new ArraySegment<byte>(buffer, 0, count);
             var reader = new QuicReader(segment);
@@ -50,7 +50,7 @@ namespace System.Net.Quic.Tests.Harness
             return packets;
         }
 
-        internal static PacketBase Parse(QuicReader reader, TestHarness context)
+        internal static PacketBase Parse(QuicReader reader, TestHarnessContext context)
         {
             var type = HeaderHelpers.GetPacketType(reader.PeekUInt8());
             PacketBase packet = type switch
@@ -68,7 +68,7 @@ namespace System.Net.Quic.Tests.Harness
             return packet;
         }
 
-        protected void SerializePayloadWithFrames(QuicWriter writer, TestHarness context, IEnumerable<FrameBase> frames)
+        protected void SerializePayloadWithFrames(QuicWriter writer, TestHarnessContext context, IEnumerable<FrameBase> frames)
         {
             var seal = context.GetSenderEpoch(PacketType).SendCryptoSeal;
 
@@ -97,15 +97,15 @@ namespace System.Net.Quic.Tests.Harness
             seal.EncryptPacket(writer.Buffer, pnOffset, payloadLength, (uint) PacketNumber);
         }
 
-        protected (int pnLength, ulong packetNumber) DeserializePayloadWithFrames(QuicReader reader, TestHarness harness, List<FrameBase> frames, PacketType packetType, int payloadLength)
+        protected (int pnLength, ulong packetNumber) DeserializePayloadWithFrames(QuicReader reader, TestHarnessContext harnessContext, List<FrameBase> frames, PacketType packetType, int payloadLength)
         {
             // this more or less duplicates code inside ManagedQuicConnection
             int pnOffset = reader.BytesRead;
 
             // first, strip packet protection.
-            var epoch = harness.GetSenderEpoch(packetType);
+            var epoch = harnessContext.GetSenderEpoch(packetType);
 
-            var seal = harness.GetRecvSeal(packetType);
+            var seal = harnessContext.GetRecvSeal(packetType);
 
             // guess largest acked packet number to make deserialization work
             Assert.True(seal.DecryptPacket(reader.Buffer, pnOffset, payloadLength, (ulong) Math.Max(0, (int) epoch.NextPacketNumber - 3)));

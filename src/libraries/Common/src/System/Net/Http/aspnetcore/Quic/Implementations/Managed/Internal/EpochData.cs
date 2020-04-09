@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Collections.Generic;
 using System.Net.Quic.Implementations.Managed.Internal.Buffers;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Runtime.CompilerServices;
@@ -11,6 +12,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     /// </summary>
     internal class EpochData
     {
+        public EpochData(PacketEpoch epoch)
+        {
+            Epoch = epoch;
+        }
+
+        /// <summary>
+        ///     Encryption level of this epoch
+        /// </summary>
+        internal PacketEpoch Epoch { get; }
+
         /// <summary>
         ///     Largest packet number received from the peer.
         /// </summary>
@@ -60,6 +71,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         ///     Inbound messages from CRYPTO frames.
         /// </summary>
         internal InboundBuffer CryptoInboundBuffer { get; } = new InboundBuffer(ulong.MaxValue);
+
+        /// <summary>
+        ///     All sent packets, for which we are still awaiting acknowledgement.
+        /// </summary>
+        internal SortedList<ulong, ManagedQuicConnection.SentPacket> PacketsInFlight { get; } = new SortedList<ulong, ManagedQuicConnection.SentPacket>();
 
         /// <summary>
         ///     Gets packet number and it's minimum safe encoding length for the next packet sent.

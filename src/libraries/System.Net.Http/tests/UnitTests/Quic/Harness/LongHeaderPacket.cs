@@ -10,12 +10,12 @@ namespace System.Net.Quic.Tests.Harness
 
         internal QuicVersion Version;
 
-        internal override void Serialize(QuicWriter writer, TestHarness context)
+        internal override void Serialize(QuicWriter writer, TestHarnessContext context)
         {
             LongPacketHeader.Write(writer, new LongPacketHeader(PacketType, PacketNumberLength, Version, DestinationConnectionId, SourceConnectionId));
         }
 
-        internal override void Deserialize(QuicReader reader, TestHarness context)
+        internal override void Deserialize(QuicReader reader, TestHarnessContext context)
         {
             LongPacketHeader.Read(reader, out var header);
             SourceConnectionId = header.SourceConnectionId.ToArray();

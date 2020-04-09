@@ -5,6 +5,7 @@ using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Tests.Harness;
 using Xunit;
 using Xunit.Abstractions;
+using QuicError = System.Net.Quic.Implementations.Managed.Internal.QuicError;
 
 namespace System.Net.Quic.Tests
 {
@@ -12,90 +13,43 @@ namespace System.Net.Quic.Tests
     {
         private readonly ITestOutputHelper output;
 
-        private readonly byte[] buffer;
         private readonly QuicClientConnectionOptions _clientOpts;
         private readonly QuicListenerOptions _serverOpts;
         private readonly ManagedQuicConnection _client;
         private readonly ManagedQuicConnection _server;
 
+        private readonly TestHarness _harness;
+
         private static readonly IPEndPoint IpEndPoint = new IPEndPoint(IPAddress.Any, 1010);
 
         public HandshakeTests(ITestOutputHelper output)
         {
-            buffer = new byte[16 * 1024];
             this.output = output;
             // this is safe as tests within the same class will not run parallel to each other.
             Console.SetOut(new XUnitTextWriter(output));
             _clientOpts = new QuicClientConnectionOptions();
-            _serverOpts = new QuicListenerOptions()
+            _serverOpts = new QuicListenerOptions
             {
-                CertificateFilePath = "Certs/cert.crt",
-                PrivateKeyFilePath = "Certs/cert.key"
+                CertificateFilePath = TestHarness.CertificateFilePath,
+                PrivateKeyFilePath = TestHarness.PrivateKeyFilePath
             };
             _client = new ManagedQuicConnection(_clientOpts);
             _server = new ManagedQuicConnection(_serverOpts);
-        }
 
-        private PacketFlight GetFlightToSend(ManagedQuicConnection from)
-        {
-            int written = from.SendData(buffer, out _, DateTime.Now);
-            var copy = buffer.AsSpan(0, written).ToArray();
-            var packets = PacketBase.ParseMany(copy, written, new TestHarness(from));
-
-            return new PacketFlight(packets, written);
-        }
-
-        private void SendFlight(ManagedQuicConnection source,
-            ManagedQuicConnection destination, IEnumerable<PacketBase> packets)
-        {
-            QuicWriter writer = new QuicWriter(new ArraySegment<byte>(buffer));
-            TestHarness testHarness = new TestHarness(source);
-
-            output.WriteLine(source == _client ? "\nClient:" : "\nServer:");
-            foreach (PacketBase packet in packets)
-            {
-                output.WriteLine(packet.ToString());
-                packet.Serialize(writer,testHarness);
-                writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
-            }
-
-            destination.ReceiveData(buffer, writer.Buffer.Offset + writer.BytesWritten, IpEndPoint, DateTime.Now);
-        }
-
-        private void SendPacket(ManagedQuicConnection source, ManagedQuicConnection destination, PacketBase packet)
-        {
-            SendFlight(source, destination, new []{packet});
-        }
-
-        private PacketFlight SendFlight(ManagedQuicConnection source, ManagedQuicConnection destination)
-        {
-            // make a copy of the buffer, because decryption happens in-place
-            int written = source.SendData(buffer, out _, DateTime.Now);
-            var copy = buffer.AsSpan(0, written).ToArray();
-
-            output.WriteLine(source == _client ? "\nClient:" : "\nServer:");
-            var packets = PacketBase.ParseMany(copy, written, new TestHarness(source));
-            foreach (var packet in packets)
-            {
-                output.WriteLine(packet.ToString());
-            }
-
-            destination.ReceiveData(buffer, written, IpEndPoint, DateTime.Now);
-
-            return new PacketFlight(packets, written);
+            _harness = new TestHarness(output, _client);
         }
 
         [Fact]
         public void SendsConnectionCloseOnSmallClientInitial()
         {
-            var flight = GetFlightToSend(_client);
+            var flight = _harness.GetFlightToSend(_client);
 
             // remove all padding, leading to a very short client initial packet.
             var initial = Assert.IsType<InitialPacket>(flight.Packets[0]);
             initial.Frames.RemoveAll(f => f.FrameType == FrameType.Padding);
-            SendFlight(_client, _server, flight.Packets);
+            _harness.SendFlight(_client, _server, flight.Packets);
 
-            var response = SendFlight(_server, _client);
+            var response = _harness.SendFlight(_server, _client);
             initial = Assert.IsType<InitialPacket>(response.Packets[0]);
 
             // there should be a single frame only
@@ -104,7 +58,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(TransportErrorCode.ProtocolViolation, closeFrame.ErrorCode);
             Assert.True(closeFrame.IsQuicError);
             Assert.Equal(FrameType.Padding, closeFrame.ErrorFrameType); // 0x00
-            Assert.Equal(QuicErrors.InitialPacketTooShort, closeFrame.ReasonPhrase);
+            Assert.Equal(QuicError.InitialPacketTooShort, closeFrame.ReasonPhrase);
         }
 
         [Fact]
@@ -127,7 +81,7 @@ namespace System.Net.Quic.Tests
             // client:
             // Initial[0]: CRYPTO[CH] ->
             {
-                var flight = SendFlight(_client, _server);
+                var flight = _harness.SendFlight(_client, _server);
                 Assert.Equal(QuicConstants.MinimumClientInitialDatagramSize, flight.UdpDatagramSize);
 
                 // client: single initial packet
@@ -143,7 +97,7 @@ namespace System.Net.Quic.Tests
             //                                  Initial[0]: CRYPTO[SH] ACK[0]
             //                     <- Handshake[0]: CRYPTO[EE, CERT, CV, FIN]
             {
-                var flight = SendFlight(_server, _client);
+                var flight = _harness.SendFlight(_server, _client);
                 Assert.Equal(2, flight.Packets.Count);
 
                 var initialPacket = Assert.IsType<InitialPacket>(flight.Packets[0]);
@@ -164,7 +118,7 @@ namespace System.Net.Quic.Tests
             // Initial[1]: ACK[0]
             // Handshake[0]: CRYPTO[FIN], ACK[0] ->
             {
-                var flight = SendFlight(_client, _server);
+                var flight = _harness.SendFlight(_client, _server);
                 Assert.Equal(2, flight.Packets.Count);
 
                 Assert.True(QuicConstants.MinimumClientInitialDatagramSize <= flight.UdpDatagramSize);
@@ -195,11 +149,11 @@ namespace System.Net.Quic.Tests
             //                                           Handshake[1]: ACK[0]
             //                                    <- OneRtt[0]: HandshakeDone
             {
-                var flight = SendFlight(_server, _client);
+                var flight = _harness.SendFlight(_server, _client);
                 var handshakePacket = Assert.IsType<HandShakePacket>(flight.Packets[0]);
 
                 Assert.Equal(1u, handshakePacket.PacketNumber);
-                var ackFrame = Assert.IsType<AckFrame>(Assert.Single(handshakePacket.Frames));
+                var ackFrame = Assert.IsType<AckFrame>(Assert.Single(handshakePacket.Frames.Where(f => f.FrameType != FrameType.Padding)));
                 Assert.Equal(0u, ackFrame.LargestAcknowledged);
                 Assert.Equal(0u, ackFrame.FirstAckRange);
                 Assert.Empty(ackFrame.AckRanges);

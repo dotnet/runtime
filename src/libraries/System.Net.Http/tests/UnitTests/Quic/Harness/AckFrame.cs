@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Text;
 
 namespace System.Net.Quic.Tests.Harness
 {
@@ -66,7 +67,34 @@ namespace System.Net.Quic.Tests.Harness
         internal ulong CeCount;
 
         public override string ToString() =>
-            $"{(HasEcnCounts ? nameof(FrameType.AckWithEcn) : nameof(FrameType.Ack))}[{LargestAcknowledged}]";
+            $"{(HasEcnCounts ? nameof(FrameType.AckWithEcn) : nameof(FrameType.Ack))}[{GetRangesString()}]";
+
+        private string GetRangesString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(LargestAcknowledged);
+            var lastAcked = LargestAcknowledged - FirstAckRange;
+            if (lastAcked != LargestAcknowledged)
+            {
+                builder.Append('-');
+                builder.Append(lastAcked);
+            }
+
+            foreach (var range in AckRanges)
+            {
+                builder.Append(lastAcked - range.Gap - 2);
+                ulong nextLast = lastAcked - range.Gap - range.Acked - 2;
+
+                if (lastAcked != nextLast)
+                {
+                    builder.Append('-');
+                    builder.Append(nextLast);
+                    lastAcked = nextLast;
+                }
+            }
+
+            return builder.ToString();
+        }
 
         internal override FrameType FrameType => HasEcnCounts ? FrameType.AckWithEcn : FrameType.Ack;
 

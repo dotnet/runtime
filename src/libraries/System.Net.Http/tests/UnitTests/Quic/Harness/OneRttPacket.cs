@@ -19,14 +19,14 @@ namespace System.Net.Quic.Tests.Harness
 
         protected override string GetAdditionalInfo() => $": {string.Join(", ", Frames)}";
 
-        internal override void Serialize(QuicWriter writer, TestHarness context)
+        internal override void Serialize(QuicWriter writer, TestHarnessContext context)
         {
             ShortPacketHeader.Write(writer, new ShortPacketHeader(SpinBit, KeyPhase, PacketNumberLength, new ConnectionId(DestinationConnectionId)));
 
             SerializePayloadWithFrames(writer, context, Frames);
         }
 
-        internal override void Deserialize(QuicReader reader, TestHarness context)
+        internal override void Deserialize(QuicReader reader, TestHarnessContext context)
         {
             Assert.True(ShortPacketHeader.Read(reader, context.ConnectionIdCollection, out var header));
 

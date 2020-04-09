@@ -45,7 +45,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal (ulong offset, ulong count) GetNextSendableRange()
         {
             ulong sendableLength = MaxData - _pending[0].Start;
-            return (_pending[0].Start, Math.Min(sendableLength, _pending[0].Length));
+            ulong count = Math.Min(sendableLength, _pending[0].Length);
+            Debug.Assert(count > 0);
+            return (_pending[0].Start, count);
         }
 
         /// <summary>

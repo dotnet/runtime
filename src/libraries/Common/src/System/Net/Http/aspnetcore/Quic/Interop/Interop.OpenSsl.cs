@@ -164,7 +164,7 @@ internal static partial class Interop
             IntPtr ptr;
             while ((ptr = SslGetCipherList(ssl, priority)) != IntPtr.Zero)
             {
-                list.Add(Marshal.PtrToStringAnsi(ptr));
+                list.Add(Marshal.PtrToStringAnsi(ptr)!);
                 priority++;
             }
 

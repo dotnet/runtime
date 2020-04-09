@@ -14,6 +14,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
         public int TagLength => _algorithm.TagLength;
 
+        public int PayloadSampleLength => _algorithm.SampleLength;
+
         public CryptoSeal(TlsCipherSuite alg, ReadOnlySpan<byte> secret)
         {
             IV = KeyDerivation.DeriveIv(secret);

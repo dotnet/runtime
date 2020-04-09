@@ -31,7 +31,7 @@ namespace System.Net.Quic.Tests.Harness
 
         protected override string GetAdditionalInfo() => $": {string.Join(", ", Frames)}";
 
-        internal override void Serialize(QuicWriter writer, TestHarness context)
+        internal override void Serialize(QuicWriter writer, TestHarnessContext context)
         {
             base.Serialize(writer, context);
 
@@ -40,7 +40,7 @@ namespace System.Net.Quic.Tests.Harness
             SerializePayloadWithFrames(writer, context, Frames);
         }
 
-        internal override void Deserialize(QuicReader reader, TestHarness context)
+        internal override void Deserialize(QuicReader reader, TestHarnessContext context)
         {
             base.Deserialize(reader, context);
 
