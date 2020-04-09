@@ -6,7 +6,7 @@ namespace System.Globalization
 {
     internal partial class GlobalizationMode
     {
-        internal static bool UseIcu => false;
+        internal static bool UseNls => true;
 
         private static bool GetGlobalizationInvariantMode()
         {
