@@ -904,15 +904,6 @@ namespace System.Xml.Tests
 </xs:schema>
 "
                     }
-                    // NOTE: the cases of totalDigits, with larger and smaller
-                    // values are not tested here as Issue 34426 was found
-                    // and will be addressed separately.
-                    // NOTE: the case of fractionDigits with a larger
-                    //   value is not tested here as Issue 34413 was found,
-                    //   and will be addressed separately.
-                    // NOTE: the case of fractionDigits with a smaller
-                    //   value is not tested here as Issue 34418 was found,
-                    //   and will be addressed separately.
                 };
             }
         }
