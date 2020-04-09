@@ -48,7 +48,7 @@ namespace System.IO.MemoryMappedFiles
             HandleInheritability inheritability,
             bool leaveOpen)
         {
-            long updatedCapacity = MemoryMappedFileInternal.VerifyParametersCreateFromFile(fileStream, mapName, capacity, access, inheritability);
+            long updatedCapacity = MemoryMappedFile.VerifyParametersCreateFromFile(fileStream, mapName, capacity, access, inheritability);
 
             if (memoryMappedFileSecurity == null)
             {
@@ -57,13 +57,8 @@ namespace System.IO.MemoryMappedFiles
 
             fixed (byte* pSecurityDescriptor = memoryMappedFileSecurity.GetSecurityDescriptorBinaryForm())
             {
-                SafeMemoryMappedFileHandle handle = MemoryMappedFileInternal.CreateCore(fileStream, mapName, access, MemoryMappedFileOptions.None, updatedCapacity, MemoryMappedFileInternal.GetSecAttrs(pSecurityDescriptor, inheritability));
-
-                IDisposable disposable = leaveOpen ?
-                    new MemoryMappedFileInternal.FileStreamRooter(fileStream) :
-                    (IDisposable)fileStream;
-
-                return new MemoryMappedFile(handle, disposable);
+                SafeMemoryMappedFileHandle handle = MemoryMappedFile.CreateCore(fileStream, mapName, access, MemoryMappedFileOptions.None, updatedCapacity, MemoryMappedFile.GetSecAttrs(pSecurityDescriptor, inheritability));
+                return new MemoryMappedFile(handle, fileStream, leaveOpen);
             }
         }
 
@@ -95,7 +90,7 @@ namespace System.IO.MemoryMappedFiles
             MemoryMappedFileSecurity memoryMappedFileSecurity,
             HandleInheritability inheritability)
         {
-            MemoryMappedFileInternal.VerifyParametersCreateNew(mapName, capacity, access, options, inheritability);
+            MemoryMappedFile.VerifyParametersCreateNew(mapName, capacity, access, options, inheritability);
 
             if (memoryMappedFileSecurity == null)
             {
@@ -104,7 +99,7 @@ namespace System.IO.MemoryMappedFiles
 
             fixed (byte* pSecurityDescriptor = memoryMappedFileSecurity.GetSecurityDescriptorBinaryForm())
             {
-                SafeMemoryMappedFileHandle handle = MemoryMappedFileInternal.CreateCore(null, mapName, access, options, capacity, MemoryMappedFileInternal.GetSecAttrs(pSecurityDescriptor, inheritability));
+                SafeMemoryMappedFileHandle handle = MemoryMappedFile.CreateCore(null, mapName, access, options, capacity, MemoryMappedFile.GetSecAttrs(pSecurityDescriptor, inheritability));
                 return new MemoryMappedFile(handle);
             }
         }
@@ -135,7 +130,7 @@ namespace System.IO.MemoryMappedFiles
             MemoryMappedFileSecurity memoryMappedFileSecurity,
             HandleInheritability inheritability)
         {
-            MemoryMappedFileInternal.VerifyParametersCreateOrOpen(mapName, capacity, access, options, inheritability);
+            MemoryMappedFile.VerifyParametersCreateOrOpen(mapName, capacity, access, options, inheritability);
 
             if (memoryMappedFileSecurity == null)
             {
@@ -146,13 +141,13 @@ namespace System.IO.MemoryMappedFiles
             // special case for write access; create will never succeed
             if (access == MemoryMappedFileAccess.Write)
             {
-                handle = MemoryMappedFileInternal.OpenCore(mapName, inheritability, access, true);
+                handle = MemoryMappedFile.OpenCore(mapName, inheritability, access, true);
             }
             else
             {
                 fixed (byte* pSecurityDescriptor = memoryMappedFileSecurity.GetSecurityDescriptorBinaryForm())
                 {
-                    handle = MemoryMappedFileInternal.CreateOrOpenCore(mapName, inheritability, access, options, capacity, MemoryMappedFileInternal.GetSecAttrs(pSecurityDescriptor, inheritability));
+                    handle = MemoryMappedFile.CreateOrOpenCore(mapName, inheritability, access, options, capacity, MemoryMappedFile.GetSecAttrs(pSecurityDescriptor, inheritability));
                 }
             }
 

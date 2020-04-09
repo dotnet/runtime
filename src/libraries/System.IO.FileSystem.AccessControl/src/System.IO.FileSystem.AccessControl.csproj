@@ -11,6 +11,9 @@
   <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="System.IO.FileSystem.AccessControl.TypeForwards.cs" />
+  </ItemGroup>
   <!-- Source includes -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetsNetFx)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs">
@@ -30,9 +33,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateDirectory.cs">
       <Link>Common\Interop\Windows\Interop.CreateDirectory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFileMapping.cs">
-      <Link>Common\Interop\Windows\Interop.CreateFileMapping.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
@@ -79,9 +79,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs">
       <Link>Common\Interop\Windows\Interop.MemOptions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OpenFileMapping.cs">
-      <Link>Common\Interop\Windows\Interop.OpenFileMapping.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
@@ -108,12 +105,6 @@
     </Compile>
     <Compile Include="$(CommonPath)System\IO\FileSystem.DirectoryCreation.Windows.cs">
       <Link>Common\System\IO\FileSystem.DirectoryCreation.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\MemoryMappedFileInternal.cs">
-      <Link>Common\System\IO\MemoryMappedFileInternal.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\MemoryMappedFileInternal.Windows.cs">
-      <Link>Common\System\IO\MemoryMappedFileInternal.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
       <Link>Common\System\Text\ValueStringBuilder.cs</Link>
@@ -142,15 +133,9 @@
     <Compile Include="System\Security\AccessControl\FileSystemRights.cs" />
     <Compile Include="System\Security\AccessControl\FileSystemSecurity.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetsNetFx)' != 'true' and '$(TargetFramework)' != 'netstandard2.0'">
-    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileAcl.cs" />
-    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileSecurity.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true' and '$(TargetFramework)' != 'netstandard2.0'">
-    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileAcl.net46.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Compile Include="System\IO\FileSystemAclExtensions.net46.cs" />
+    <Compile Include="System\IO\MemoryMappedFileAcl.net46.cs" />
   </ItemGroup>
   <!-- Reference includes -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetsNetFx)' != 'true'">
@@ -170,12 +155,14 @@
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.IO.MemoryMappedFiles" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.Handles" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <ProjectReference Include="..\..\System.IO.MemoryMappedFiles\src\System.IO.MemoryMappedFiles.csproj" />
   </ItemGroup>
 </Project>

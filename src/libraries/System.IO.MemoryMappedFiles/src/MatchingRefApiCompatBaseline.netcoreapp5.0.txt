@@ -1,0 +1,4 @@
+Compat issues with assembly System.IO.MemoryMappedFiles:
+TypesMustExist : Type 'System.IO.MemoryMappedFiles.MemoryMappedFileAcl' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.IO.MemoryMappedFiles.MemoryMappedFileSecurity' does not exist in the reference but it does exist in the implementation.
+Total Issues: 2

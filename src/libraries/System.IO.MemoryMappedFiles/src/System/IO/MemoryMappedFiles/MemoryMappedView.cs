@@ -87,7 +87,7 @@ namespace System.IO.MemoryMappedFiles
 
             extraMemNeeded = offset % allocationGranularity;
             newOffset = offset - extraMemNeeded;
-            newSize = (size != MemoryMappedFileInternal.DefaultSize) ? (ulong)size + (ulong)extraMemNeeded : 0;
+            newSize = (size != MemoryMappedFile.DefaultSize) ? (ulong)size + (ulong)extraMemNeeded : 0;
 
             if (IntPtr.Size == 4 && newSize > uint.MaxValue)
             {

@@ -10,9 +10,10 @@ namespace System.IO.MemoryMappedFiles
 {
     public partial class MemoryMappedFile : IDisposable
     {
-        private readonly SafeMemoryMappedFileHandle _handle;
         private readonly bool _leaveOpen;
         private readonly IDisposable? _fileStream;
+
+        internal const int DefaultSize = 0;
 
         /// <summary>
         /// Initializes a new instance of a memory-mapped file using an existing safe handle and leaves the handle open after the memory-mapped file is disposed.
@@ -20,7 +21,7 @@ namespace System.IO.MemoryMappedFiles
         /// <param name="handle">A safe handle that represents a memory-mapped file for sequential access.</param>
         /// <exception cref="ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException"><paramref name="handle" /> is closed or invalid.</exception>
-        public MemoryMappedFile(SafeMemoryMappedFileHandle handle)
+        internal MemoryMappedFile(SafeMemoryMappedFileHandle handle)
         {
             if (handle == null)
             {
@@ -37,18 +38,11 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_HandleIsInvalid);
             }
 
-            _handle = handle;
+            SafeMemoryMappedFileHandle = handle;
             _leaveOpen = true; // No FileStream to dispose of in this case.
         }
 
-        /// <summary>
-        /// Initializes a new instance of a memory-mapped file using an existing safe handle, the file stream of the , and the option to leave the file stream open.
-        /// </summary>
-        /// <param name="handle">A safe handle that represents a memory-mapped file for sequential access.</param>
-        /// <param name="fileStream">An optional disposable object that needs to get rooted during the lifetime of the memory mapped file, and then needs to get disposed when the memory mapped file is disposed. This object should ideally be the <see cref="FileStream" /> associated with the <paramref name="handle" />.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentException"><paramref name="handle" /> is closed or invalid.</exception>
-        public MemoryMappedFile(SafeMemoryMappedFileHandle handle, IDisposable? fileStream)
+        internal MemoryMappedFile(SafeMemoryMappedFileHandle handle, FileStream fileStream, bool leaveOpen)
         {
             if (handle == null)
             {
@@ -65,8 +59,8 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_HandleIsInvalid);
             }
 
-            _handle = handle;
-            _leaveOpen = (fileStream == null);
+            SafeMemoryMappedFileHandle = handle;
+            _leaveOpen = leaveOpen;
             _fileStream = fileStream;
         }
 
@@ -124,16 +118,16 @@ namespace System.IO.MemoryMappedFiles
         // changed by the leaveOpen boolean argument.
         public static MemoryMappedFile CreateFromFile(string path)
         {
-            return CreateFromFile(path, FileMode.Open, null, MemoryMappedFileInternal.DefaultSize, MemoryMappedFileAccess.ReadWrite);
+            return CreateFromFile(path, FileMode.Open, null, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
         public static MemoryMappedFile CreateFromFile(string path, FileMode mode)
         {
-            return CreateFromFile(path, mode, null, MemoryMappedFileInternal.DefaultSize, MemoryMappedFileAccess.ReadWrite);
+            return CreateFromFile(path, mode, null, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
         public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string? mapName)
         {
-            return CreateFromFile(path, mode, mapName, MemoryMappedFileInternal.DefaultSize, MemoryMappedFileAccess.ReadWrite);
+            return CreateFromFile(path, mode, mapName, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
         public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string? mapName, long capacity)
@@ -192,7 +186,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
             }
 
-            if (capacity == MemoryMappedFileInternal.DefaultSize)
+            if (capacity == DefaultSize)
             {
                 capacity = fileStream.Length;
             }
@@ -204,7 +198,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
 
-            SafeMemoryMappedFileHandle? handle = null;
+            SafeMemoryMappedFileHandle? handle;
             try
             {
                 handle = CreateCore(fileStream, mapName, HandleInheritability.None,
@@ -218,7 +212,7 @@ namespace System.IO.MemoryMappedFiles
 
             Debug.Assert(handle != null);
             Debug.Assert(!handle.IsInvalid);
-            return new MemoryMappedFile(handle, fileStream);
+            return new MemoryMappedFile(handle, fileStream, false);
         }
 
         public static MemoryMappedFile CreateFromFile(FileStream fileStream,
@@ -227,16 +221,12 @@ namespace System.IO.MemoryMappedFiles
             MemoryMappedFileAccess access,
             HandleInheritability inheritability, bool leaveOpen)
         {
-            long updatedCapacity = MemoryMappedFileInternal.VerifyParametersCreateFromFile(fileStream, mapName, capacity, access, inheritability);
+            long updatedCapacity = VerifyParametersCreateFromFile(fileStream, mapName, capacity, access, inheritability);
 
             SafeMemoryMappedFileHandle handle = CreateCore(fileStream, mapName, inheritability,
                 access, MemoryMappedFileOptions.None, updatedCapacity);
 
-            IDisposable disposable = leaveOpen ?
-                new MemoryMappedFileInternal.FileStreamRooter(fileStream) :
-                (IDisposable)fileStream;
-
-            return new MemoryMappedFile(handle, disposable);
+            return new MemoryMappedFile(handle, fileStream, leaveOpen);
         }
 
         // Factory Method Group #3: Creates a new empty memory mapped file.  Such memory mapped files are ideal
@@ -260,7 +250,7 @@ namespace System.IO.MemoryMappedFiles
             MemoryMappedFileOptions options,
             HandleInheritability inheritability)
         {
-            MemoryMappedFileInternal.VerifyParametersCreateNew(mapName, capacity, access, options, inheritability);
+            VerifyParametersCreateNew(mapName, capacity, access, options, inheritability);
 
             SafeMemoryMappedFileHandle handle = CreateCore(null, mapName, inheritability, access, options, capacity);
             return new MemoryMappedFile(handle);
@@ -288,7 +278,7 @@ namespace System.IO.MemoryMappedFiles
             MemoryMappedFileOptions options,
             HandleInheritability inheritability)
         {
-            MemoryMappedFileInternal.VerifyParametersCreateOrOpen(mapName, capacity, access, options, inheritability);
+            VerifyParametersCreateOrOpen(mapName, capacity, access, options, inheritability);
 
             SafeMemoryMappedFileHandle handle;
             // special case for write access; create will never succeed
@@ -306,7 +296,7 @@ namespace System.IO.MemoryMappedFiles
         // Creates a new view in the form of a stream.
         public MemoryMappedViewStream CreateViewStream()
         {
-            return CreateViewStream(0, MemoryMappedFileInternal.DefaultSize, MemoryMappedFileAccess.ReadWrite);
+            return CreateViewStream(0, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
         public MemoryMappedViewStream CreateViewStream(long offset, long size)
@@ -336,14 +326,14 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException(nameof(size), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
 
-            MemoryMappedView view = MemoryMappedView.CreateView(_handle, access, offset, size);
+            MemoryMappedView view = MemoryMappedView.CreateView(SafeMemoryMappedFileHandle, access, offset, size);
             return new MemoryMappedViewStream(view);
         }
 
         // Creates a new view in the form of an accessor.  Accessors are for random access.
         public MemoryMappedViewAccessor CreateViewAccessor()
         {
-            return CreateViewAccessor(0, MemoryMappedFileInternal.DefaultSize, MemoryMappedFileAccess.ReadWrite);
+            return CreateViewAccessor(0, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
         public MemoryMappedViewAccessor CreateViewAccessor(long offset, long size)
@@ -373,7 +363,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException(nameof(size), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
 
-            MemoryMappedView view = MemoryMappedView.CreateView(_handle, access, offset, size);
+            MemoryMappedView view = MemoryMappedView.CreateView(SafeMemoryMappedFileHandle, access, offset, size);
             return new MemoryMappedViewAccessor(view);
         }
 
@@ -387,9 +377,9 @@ namespace System.IO.MemoryMappedFiles
         {
             try
             {
-                if (!_handle.IsClosed)
+                if (!SafeMemoryMappedFileHandle.IsClosed)
                 {
-                    _handle.Dispose();
+                    SafeMemoryMappedFileHandle.Dispose();
                 }
             }
             finally
@@ -401,9 +391,156 @@ namespace System.IO.MemoryMappedFiles
             }
         }
 
-        public SafeMemoryMappedFileHandle SafeMemoryMappedFileHandle
+        public SafeMemoryMappedFileHandle SafeMemoryMappedFileHandle { get; private set; }
+
+        internal static long VerifyParametersCreateFromFile(
+       FileStream fileStream,
+       string? mapName,
+       long capacity,
+       MemoryMappedFileAccess access,
+       HandleInheritability inheritability)
         {
-            get { return _handle; }
+            if (fileStream == null)
+            {
+                throw new ArgumentNullException(nameof(fileStream), SR.ArgumentNull_FileStream);
+            }
+
+            if (mapName != null && mapName.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_MapNameEmptyString);
+            }
+
+            if (capacity < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_PositiveOrDefaultCapacityRequired);
+            }
+
+            if (capacity == 0 && fileStream.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyFile);
+            }
+
+            if (access < MemoryMappedFileAccess.ReadWrite ||
+                access > MemoryMappedFileAccess.ReadWriteExecute)
+            {
+                throw new ArgumentOutOfRangeException(nameof(access));
+            }
+
+            if (access == MemoryMappedFileAccess.Write)
+            {
+                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
+            }
+
+            if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
+            {
+                throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
+            }
+
+            if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inheritability));
+            }
+
+            // flush any bytes written to the FileStream buffer so that we can see them in our MemoryMappedFile
+            fileStream.Flush();
+
+            long updatedCapacity = (capacity == DefaultSize) ? fileStream.Length : capacity;
+
+            // one can always create a small view if they do not want to map an entire file
+            if (fileStream.Length > updatedCapacity)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
+            }
+
+            return updatedCapacity;
+        }
+
+        internal static void VerifyParametersCreateNew(
+            string? mapName,
+            long capacity,
+            MemoryMappedFileAccess access,
+            MemoryMappedFileOptions options,
+            HandleInheritability inheritability)
+        {
+            if (mapName != null && mapName.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_MapNameEmptyString);
+            }
+
+            if (capacity <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedPositiveNumber);
+            }
+
+            if (IntPtr.Size == 4 && capacity > uint.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
+            }
+
+            if (access < MemoryMappedFileAccess.ReadWrite ||
+                access > MemoryMappedFileAccess.ReadWriteExecute)
+            {
+                throw new ArgumentOutOfRangeException(nameof(access));
+            }
+
+            if (access == MemoryMappedFileAccess.Write)
+            {
+                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
+            }
+
+            if (((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(options));
+            }
+
+            if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inheritability));
+            }
+        }
+
+        internal static void VerifyParametersCreateOrOpen(
+            string? mapName,
+            long capacity,
+            MemoryMappedFileAccess access,
+            MemoryMappedFileOptions options,
+            HandleInheritability inheritability)
+        {
+            if (mapName == null)
+            {
+                throw new ArgumentNullException(nameof(mapName), SR.ArgumentNull_MapName);
+            }
+
+            if (mapName.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_MapNameEmptyString);
+            }
+
+            if (capacity <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedPositiveNumber);
+            }
+
+            if (IntPtr.Size == 4 && capacity > uint.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
+            }
+
+            if (access < MemoryMappedFileAccess.ReadWrite ||
+                access > MemoryMappedFileAccess.ReadWriteExecute)
+            {
+                throw new ArgumentOutOfRangeException(nameof(access));
+            }
+
+            if (((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(options));
+            }
+
+            if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inheritability));
+            }
         }
 
         // This converts a MemoryMappedFileAccess to a FileAccess. MemoryMappedViewStream and
@@ -428,7 +565,7 @@ namespace System.IO.MemoryMappedFiles
             }
         }
 
-        // clean up: close file handle and delete files we created
+        // Close the handle and delete files we created
         private static void CleanupFile(FileStream fileStream, bool existed, string path)
         {
             fileStream.Dispose();
@@ -437,5 +574,6 @@ namespace System.IO.MemoryMappedFiles
                 File.Delete(path);
             }
         }
+
     }
 }

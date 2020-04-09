@@ -5,11 +5,7 @@
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
-  <!-- Compiled Source Files -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\IO\MemoryMappedFileInternal.cs">
-      <Link>Common\System\IO\MemoryMappedFileInternal.cs</Link>
-    </Compile>
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileAccess.cs" />
@@ -95,9 +91,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualQuery.cs">
       <Link>Common\Interop\Windows\Interop.VirtualQuery.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\IO\MemoryMappedFileInternal.Windows.cs">
-      <Link>Common\System\IO\MemoryMappedFileInternal.Windows.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
       <Link>System\IO\Win32Marshal.cs</Link>
     </Compile>
@@ -105,6 +98,8 @@
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.Windows.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\Interop.Windows.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Windows.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileAcl.Windows.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileSecurity.Windows.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
@@ -157,6 +152,8 @@
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.Unix.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Unix.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Unix.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileAcl.Unix.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileSecurity.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.IO.FileSystem" />
@@ -164,6 +161,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading" />

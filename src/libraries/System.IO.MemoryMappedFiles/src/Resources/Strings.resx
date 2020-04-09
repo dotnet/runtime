@@ -227,4 +227,7 @@
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
   </data>
+  <data name="ObjectDisposed_MemoryMappedFileClosed" xml:space="preserve">
+    <value>Cannot access a closed memory mapped file.</value>
+  </data>
 </root>

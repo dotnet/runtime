@@ -228,7 +228,4 @@
   <data name="Argument_InvalidFileModeAndFileSystemRightsCombo" xml:space="preserve">
     <value>Combining FileMode.{0} with FileSystemRights.{1} is invalid.</value>
   </data>
-  <data name="ObjectDisposed_MemoryMappedFileClosed" xml:space="preserve">
-    <value>Cannot access a closed memory mapped file.</value>
-  </data>
 </root>

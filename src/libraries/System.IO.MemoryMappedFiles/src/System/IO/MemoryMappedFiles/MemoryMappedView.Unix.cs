@@ -30,7 +30,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ObjectDisposedException(typeof(MemoryMappedFile).Name);
             }
 
-            if (requestedSize == MemoryMappedFileInternal.DefaultSize)
+            if (requestedSize == MemoryMappedFile.DefaultSize)
             {
                 requestedSize = memMappedFileHandle._capacity - requestedOffset;
             }
