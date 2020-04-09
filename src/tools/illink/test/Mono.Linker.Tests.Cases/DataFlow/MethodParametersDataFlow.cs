@@ -19,6 +19,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			DefaultConstructorParameter (typeof (TestType));
 			PublicConstructorsParameter (typeof (TestType));
 			ConstructorsParameter (typeof (TestType));
+			WriteToParameterOnStaticMethod (null);
+			LongWriteToParameterOnStaticMethod (0, 0, 0, 0, null);
 			instance.InstanceMethod (typeof (TestType));
 			instance.TwoAnnotatedParameters (typeof (TestType), typeof (TestType));
 			instance.TwoAnnotatedParametersIntoOneValue(typeof (TestType), typeof (TestType));
@@ -27,6 +29,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.AnnotatedValueToUnAnnotatedParameter (typeof (TestType));
 			instance.UnknownValueToUnAnnotatedParameter ();
 			instance.UnknownValueToUnAnnotatedParameterOnInterestingMethod ();
+			instance.WriteToParameterOnInstanceMethod (null);
+			instance.LongWriteToParameterOnInstanceMethod (0, 0, 0, 0, null);
 		}
 
 		// Validate the error message when annotated parameter is passed to another annotated parameter
@@ -73,6 +77,46 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			RequireDefaultConstructor (type);
 			RequirePublicConstructors (type);
+		}
+
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (WriteToParameterOnInstanceMethod), new Type [] { typeof (Type) })]
+		private void WriteToParameterOnInstanceMethod (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+			Type type)
+		{
+			type = ReturnThingsWithDefaultConstructor ();
+		}
+
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (WriteToParameterOnStaticMethod), new Type [] { typeof (Type) })]
+		private static void WriteToParameterOnStaticMethod (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+			Type type)
+		{
+			type = ReturnThingsWithDefaultConstructor ();
+		}
+
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (LongWriteToParameterOnInstanceMethod), new Type [] { typeof(int), typeof (int), typeof (int), typeof (int), typeof (Type) })]
+		private void LongWriteToParameterOnInstanceMethod (
+			int a, int b, int c, int d,
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+			Type type)
+		{
+			type = ReturnThingsWithDefaultConstructor ();
+		}
+
+		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (LongWriteToParameterOnStaticMethod), new Type [] { typeof (int), typeof (int), typeof (int), typeof (int), typeof (Type) })]
+		private static void LongWriteToParameterOnStaticMethod (
+			int a, int b, int c, int d,
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberKinds.Constructors)]
+			Type type)
+		{
+			type = ReturnThingsWithDefaultConstructor ();
+		}
+
+		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
+		static private Type ReturnThingsWithDefaultConstructor()
+		{
+			return null;
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (MethodParametersDataFlow), nameof (RequirePublicConstructors), new Type [] { typeof (Type) })]

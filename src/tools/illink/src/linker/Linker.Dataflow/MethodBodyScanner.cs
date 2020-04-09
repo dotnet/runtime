@@ -11,14 +11,14 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// Tracks information about the contents of a stack slot
 	/// </summary>
-	struct StackSlot
+	readonly struct StackSlot
 	{
-		public ValueNode Value { get; set; }
+		public ValueNode Value { get; }
 
 		/// <summary>
 		/// True if the value is on the stack as a byref
 		/// </summary>
-		public bool IsByRef { get; set; }
+		public bool IsByRef { get; }
 
 		public StackSlot (ValueNode value, bool isByRef = false)
 		{
@@ -318,7 +318,6 @@ namespace Mono.Linker.Dataflow
 					case Code.Ldc_I8:
 					case Code.Ldc_R4:
 					case Code.Ldc_R8:
-					case Code.Ldsflda:
 						PushUnknown (currentStack);
 						break;
 
@@ -423,13 +422,9 @@ namespace Mono.Linker.Dataflow
 
 					case Code.Ldfld:
 					case Code.Ldsfld:
-						ScanLdfld (operation, currentStack, thisMethod, methodBody);
-						break;
-
 					case Code.Ldflda:
-						// TODO: model field loads by ref
-						PopUnknown (currentStack, 1, methodBody, operation.Offset);
-						PushUnknown (currentStack);
+					case Code.Ldsflda:
+						ScanLdfld (operation, currentStack, thisMethod, methodBody);
 						break;
 
 					case Code.Newarr: {
@@ -458,6 +453,9 @@ namespace Mono.Linker.Dataflow
 						break;
 
 					case Code.Cpobj:
+						PopUnknown (currentStack, 2, methodBody, operation.Offset);
+						break;
+
 					case Code.Stind_I:
 					case Code.Stind_I1:
 					case Code.Stind_I2:
@@ -467,7 +465,7 @@ namespace Mono.Linker.Dataflow
 					case Code.Stind_R8:
 					case Code.Stind_Ref:
 					case Code.Stobj:
-						PopUnknown (currentStack, 2, methodBody, operation.Offset);
+						ScanIndirectStore (operation, currentStack, methodBody);
 						break;
 
 					case Code.Initobj:
@@ -477,8 +475,7 @@ namespace Mono.Linker.Dataflow
 
 					case Code.Starg:
 					case Code.Starg_S:
-						// TODO: might want to track this and ensure ldarg reports the stored value.
-						PopUnknown (currentStack, 1, methodBody, operation.Offset);
+						ScanStarg (operation, currentStack, thisMethod, methodBody);
 						break;
 
 					case Code.Stloc:
@@ -608,19 +605,60 @@ namespace Mono.Linker.Dataflow
 
 		private void ScanLdarg (Instruction operation, Stack<StackSlot> currentStack, MethodDefinition thisMethod, MethodBody methodBody)
 		{
+			Code code = operation.OpCode.Code;
+
+			bool isByRef;
+
+			// Thank you Cecil, Operand being a ParameterDefinition instead of an integer,
+			// (except for Ldarg_0 - Ldarg_3, where it's null) makes all of this really convenient...
+			// NOT.
 			int paramNum;
-			if (operation.OpCode.Code >= Code.Ldarg_0 &&
-				operation.OpCode.Code <= Code.Ldarg_3) {
-				paramNum = operation.OpCode.Code - Code.Ldarg_0;
+			if (code >= Code.Ldarg_0 &&
+				code <= Code.Ldarg_3) {
+				paramNum = code - Code.Ldarg_0;
+
+				if (thisMethod.HasImplicitThis ()) {
+					if (paramNum == 0) {
+						isByRef = thisMethod.DeclaringType.IsValueType;
+					}
+					else {
+						isByRef = thisMethod.Parameters [paramNum - 1].ParameterType.IsByRefOrPointer();
+					}
+				} else {
+					isByRef = thisMethod.Parameters [paramNum].ParameterType.IsByRefOrPointer();
+				}
 			} else {
-				paramNum = ((ParameterDefinition)operation.Operand).Index;
-				if (!thisMethod.IsStatic)
-					paramNum += 1;
+				var paramDefinition = (ParameterDefinition)operation.Operand;
+				if (thisMethod.HasImplicitThis()) {
+					if (paramDefinition == methodBody.ThisParameter) {
+						paramNum = 0;
+					}
+					else {
+						paramNum = paramDefinition.Index + 1;
+					}
+				}
+				else {
+					paramNum = paramDefinition.Index;
+				}
+
+				isByRef = paramDefinition.ParameterType.IsByRefOrPointer();
 			}
 
-			// TODO: isbyref
-			StackSlot slot = new StackSlot (GetMethodParameterValue (thisMethod, paramNum), isByRef: false);
+			isByRef |= code == Code.Ldarga || code == Code.Ldarga_S;
+
+			StackSlot slot = new StackSlot (GetMethodParameterValue (thisMethod, paramNum), isByRef);
 			currentStack.Push (slot);
+		}
+
+		private void ScanStarg(
+			Instruction operation,
+			Stack<StackSlot> currentStack,
+			MethodDefinition thisMethod,
+			MethodBody methodBody)
+		{
+			ParameterDefinition param = (ParameterDefinition)operation.Operand;
+			var valueToStore = PopUnknown (currentStack, 1, methodBody, operation.Offset);
+			HandleStoreParameter (thisMethod, param.Sequence, operation, valueToStore.Value);
 		}
 
 		private void ScanLdloc (
@@ -636,7 +674,8 @@ namespace Mono.Linker.Dataflow
 				return;
 			}
 
-			bool isByRef = (operation.OpCode.Code == Code.Ldloca || operation.OpCode.Code == Code.Ldloca_S);
+			bool isByRef = operation.OpCode.Code == Code.Ldloca || operation.OpCode.Code == Code.Ldloca_S
+				|| localDef.VariableType.IsByRefOrPointer();
 
 			ValueBasicBlockPair localValue;
 			locals.TryGetValue (localDef, out localValue);
@@ -644,7 +683,7 @@ namespace Mono.Linker.Dataflow
 				ValueNode valueToPush = localValue.Value;
 				currentStack.Push (new StackSlot (valueToPush, isByRef));
 			} else {
-				PushUnknown (currentStack);
+				currentStack.Push (new StackSlot (null, isByRef));
 			}
 		}
 
@@ -683,6 +722,24 @@ namespace Mono.Linker.Dataflow
 			StoreMethodLocalValue (locals, valueToStore.Value, localDef, curBasicBlock);
 		}
 
+		private void ScanIndirectStore (
+			Instruction operation,
+			Stack<StackSlot> currentStack,
+			MethodBody methodBody)
+		{
+			StackSlot valueToStore = PopUnknown (currentStack, 1, methodBody, operation.Offset);
+			StackSlot destination = PopUnknown (currentStack, 1, methodBody, operation.Offset);
+
+			foreach (var uniqueDestination in destination.Value.UniqueValues ()) {
+				if (uniqueDestination.Kind == ValueNodeKind.LoadField) {
+					HandleStoreField (methodBody.Method, ((LoadFieldValue)uniqueDestination).Field, operation, valueToStore.Value);
+				} else if (uniqueDestination.Kind == ValueNodeKind.MethodParameter) {
+					HandleStoreParameter (methodBody.Method, ((MethodParameterValue)uniqueDestination).ParameterIndex, operation, valueToStore.Value);
+				}
+			}
+
+		}
+
 		protected abstract ValueNode GetFieldValue (MethodDefinition method, FieldDefinition field);
 
 		private void ScanLdfld (
@@ -691,12 +748,15 @@ namespace Mono.Linker.Dataflow
 			MethodDefinition thisMethod,
 			MethodBody methodBody)
 		{
-			if (operation.OpCode.Code == Code.Ldfld)
+			Code code = operation.OpCode.Code;
+			if (code == Code.Ldfld || code == Code.Ldflda)
 				PopUnknown (currentStack, 1, methodBody, operation.Offset);
+
+			bool isByRef = code == Code.Ldflda || code == Code.Ldsflda;
 
 			FieldDefinition field = (operation.Operand as FieldReference)?.Resolve ();
 			if (field != null) {
-				StackSlot slot = new StackSlot (GetFieldValue (thisMethod, field), isByRef: false);
+				StackSlot slot = new StackSlot (GetFieldValue (thisMethod, field), isByRef);
 				currentStack.Push (slot);
 				return;
 			}
@@ -705,6 +765,10 @@ namespace Mono.Linker.Dataflow
 		}
 
 		protected virtual void HandleStoreField (MethodDefinition method, FieldDefinition field, Instruction operation, ValueNode valueToStore)
+		{
+		}
+
+		protected virtual void HandleStoreParameter (MethodDefinition method, int index, Instruction operation, ValueNode valueToStore)
 		{
 		}
 
@@ -799,7 +863,7 @@ namespace Mono.Linker.Dataflow
 			}
 
 			if (methodReturnValue != null)
-				currentStack.Push (new StackSlot (methodReturnValue));
+				currentStack.Push (new StackSlot (methodReturnValue, calledMethod.ReturnType.IsByRefOrPointer()));
 		}
 
 		public abstract bool HandleCall (
