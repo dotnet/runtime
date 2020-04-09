@@ -11,7 +11,6 @@
 struct state
 {
     HostEntry entry;
-    char* hostName;
     int errorCode;
     sem_t semaphore;
 };
@@ -65,6 +64,7 @@ int main(int argc, char** argv)
     }
 
     struct state state;
+    memset(&state.entry, 0, sizeof(HostEntry));
     sem_init(&state.semaphore, 0, 0);
 
     int error = SystemNative_GetHostEntryForNameAsync((uint8_t*)hostName, &state.entry, callback);
@@ -79,6 +79,8 @@ int main(int argc, char** argv)
 
     sem_wait(&state.semaphore);
     sem_destroy(&state.semaphore);
+
+    SystemNative_FreeHostEntry(&state.entry);
 
     printf("(%lu) main: exit, errorCode: %d\n", pthread_self(), state.errorCode);
 
