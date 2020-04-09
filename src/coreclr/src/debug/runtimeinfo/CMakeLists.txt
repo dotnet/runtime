@@ -4,8 +4,8 @@ set(RUNTIMEINFO_SOURCES
     runtimeinfo.cpp
 )
 
-add_library_clr(runtimeinfo_lib STATIC ${RUNTIMEINFO_SOURCES})
+add_library_clr(runtimeinfo STATIC ${RUNTIMEINFO_SOURCES})
 
-add_dependencies(runtimeinfo_lib runtime_module_index_header)
-add_dependencies(runtimeinfo_lib dac_module_index_header)
-add_dependencies(runtimeinfo_lib dbi_module_index_header)
+add_dependencies(runtimeinfo runtime_module_index_header)
+add_dependencies(runtimeinfo dac_module_index_header)
+add_dependencies(runtimeinfo dbi_module_index_header)

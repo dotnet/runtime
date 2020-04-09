@@ -127,7 +127,7 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_WIN32)
     add_custom_command(
         OUTPUT ${DBI_MODULE_INDEX_FILE}
         COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:mscordbi> ${DBI_MODULE_INDEX_FILE}
-        DEPENDS $<TARGET_FILE:mscordbi> 
+        DEPENDS mscordbi
         COMMENT "Generating DBI module index file -> ${DBI_MODULE_INDEX_FILE}"
     )
     set_source_files_properties(
