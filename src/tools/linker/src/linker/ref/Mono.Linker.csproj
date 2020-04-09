@@ -1,15 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>Mono</RootNamespace>
-    <LangVersion>latest</LangVersion>
-    <AssemblyName>illink</AssemblyName>
-    <Description>IL Linker</Description>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <IsPackable>true</IsPackable>
-    <!-- Nuget issues a warning about missing <reference> items in the generated nuspec,
-        used for packages.config which we do not support. -->
-    <NoWarn>$(NoWarn);NU5131</NoWarn>
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
   </PropertyGroup>
 

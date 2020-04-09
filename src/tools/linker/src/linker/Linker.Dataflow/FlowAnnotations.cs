@@ -97,7 +97,20 @@ namespace Mono.Linker.Dataflow
 
 					// We convert indices from metadata space to IL space here.
 					// IL space assigns index 0 to the `this` parameter on instance methods.
-					int offset = method.HasImplicitThis () ? 1 : 0;
+					int offset;
+					if (method.HasImplicitThis ()) {
+						offset = 1;
+						if (IsTypeInterestingForDataflow (method.DeclaringType)) {
+							DynamicallyAccessedMemberKinds ta = _source.GetThisParameterAnnotation (method);
+							if (ta != 0) {
+								paramAnnotations = new DynamicallyAccessedMemberKinds [method.Parameters.Count + offset];
+								paramAnnotations [0] = ta;
+							}
+						}
+					}
+					else {
+						offset = 0;
+					}
 
 					for (int i = 0; i < method.Parameters.Count; i++) {						
 						if (!IsTypeInterestingForDataflow (method.Parameters [i].ParameterType)) {
@@ -114,8 +127,6 @@ namespace Mono.Linker.Dataflow
 						}
 						paramAnnotations [i + offset] = pa;
 					}
-
-					// TODO: add special magic for instance methods on System.Type
 
 					DynamicallyAccessedMemberKinds returnAnnotation = IsTypeInterestingForDataflow(method.ReturnType) ?
 						_source.GetReturnParameterAnnotation (method) : 0;
@@ -157,7 +168,8 @@ namespace Mono.Linker.Dataflow
 					MethodDefinition setMethod = property.SetMethod;
 					if (setMethod != null) {
 
-						if (!ScanMethodBodyForFieldAccess (setMethod.Body, write: true, out backingFieldFromSetter)) {
+						// TODO: Handle abstract properties - no way to propagate the annotation to the field
+						if (!setMethod.HasBody || !ScanMethodBodyForFieldAccess (setMethod.Body, write: true, out backingFieldFromSetter)) {
 							// TODO: warn we couldn't find a unique backing field
 						}
 
@@ -179,7 +191,8 @@ namespace Mono.Linker.Dataflow
 					MethodDefinition getMethod = property.GetMethod;
 					if (getMethod != null) {
 
-						if (ScanMethodBodyForFieldAccess (getMethod.Body, write: false, out backingFieldFromGetter)) {
+						// TODO: Handle abstract properties - no way to propagate the annotation to the field
+						if (!getMethod.HasBody || !ScanMethodBodyForFieldAccess (getMethod.Body, write: false, out backingFieldFromGetter)) {
 							// TODO: warn we couldn't find a unique backing field
 						}
 
@@ -268,7 +281,11 @@ namespace Mono.Linker.Dataflow
 
 		private static bool IsTypeInterestingForDataflow(TypeReference typeReference)
 		{
-			return (typeReference.Name == "Type" || typeReference.Name == "String") &&
+			// We will accept any System.Type* as interesting to enable testing
+			// It's necessary to be able to implement a custom "Type" type in tests to validate
+			// the correct propagation of the annotations on "this" parameter. And tests can't really
+			// override System.Type - as it creates too many issues.
+			return (typeReference.Name.StartsWith ("Type") || typeReference.Name == "String") &&
 				typeReference.Namespace == "System";
 		}
 

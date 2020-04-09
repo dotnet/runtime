@@ -51,6 +51,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				tclo.Substitutions.Add (Path.Combine (inputPath, file));
 			}
 
+			foreach (var subsFile in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerDataflowAnnotationsFile))) {
+				var ca = subsFile.ConstructorArguments;
+				var file = (string)ca [0].Value;
+				tclo.DataflowAnnotations.Add (Path.Combine (inputPath, file));
+			}
+
 			foreach (var additionalArgumentAttr in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerArgumentAttribute)))
 			{
 				var ca = additionalArgumentAttr.ConstructorArguments;
@@ -86,27 +92,32 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				};
 			}
 
-			if (_testCaseTypeDefinition.CustomAttributes.Any (attr =>
-					attr.AttributeType.Name == nameof (VerifyAllReflectionAccessPatternsAreValidatedAttribute))
-				|| _testCaseTypeDefinition.AllMethods ().Any (method => method.CustomAttributes.Any (attr =>
-					attr.AttributeType.Name == nameof (RecognizedReflectionAccessPatternAttribute) ||
-					attr.AttributeType.Name == nameof (UnrecognizedReflectionAccessPatternAttribute)))) {
-				customizations.ReflectionPatternRecorder = new TestReflectionPatternRecorder ();
-				customizations.CustomizeContext += context => {
-					context.ReflectionPatternRecorder = customizations.ReflectionPatternRecorder;
-				};
-			} else if (_testCaseTypeDefinition.HasNestedTypes
-				  && _testCaseTypeDefinition.NestedTypes.Any (nestedType =>
-					  nestedType.CustomAttributes.Any (attr =>
-						  attr.AttributeType.Name == nameof (VerifyAllReflectionAccessPatternsAreValidatedAttribute)
-					  || _testCaseTypeDefinition.AllMethods ().Any (method => method.CustomAttributes.Any (attr =>
-						  attr.AttributeType.Name == nameof (RecognizedReflectionAccessPatternAttribute) ||
-						  attr.AttributeType.Name == nameof (UnrecognizedReflectionAccessPatternAttribute)))))) {
+			if (ValidatesReflectionAccessPatterns(_testCaseTypeDefinition)) {
 				customizations.ReflectionPatternRecorder = new TestReflectionPatternRecorder ();
 				customizations.CustomizeContext += context => {
 					context.ReflectionPatternRecorder = customizations.ReflectionPatternRecorder;
 				};
 			}
+		}
+
+		private bool ValidatesReflectionAccessPatterns (TypeDefinition testCaseTypeDefinition)
+		{
+			if (testCaseTypeDefinition.HasNestedTypes) {
+				var nestedTypes = new Queue<TypeDefinition> (testCaseTypeDefinition.NestedTypes.ToList ());
+				while (nestedTypes.Count > 0) {
+					if (ValidatesReflectionAccessPatterns (nestedTypes.Dequeue ()))
+						return true;
+				}
+			}
+
+			if (testCaseTypeDefinition.CustomAttributes.Any (attr =>
+					attr.AttributeType.Name == nameof (VerifyAllReflectionAccessPatternsAreValidatedAttribute))
+				|| testCaseTypeDefinition.AllMethods ().Any (method => method.CustomAttributes.Any (attr =>
+					attr.AttributeType.Name == nameof (RecognizedReflectionAccessPatternAttribute) ||
+					attr.AttributeType.Name == nameof (UnrecognizedReflectionAccessPatternAttribute))))
+				return true;
+
+			return false;
 		}
 
 #if NETCOREAPP
@@ -189,6 +200,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			return _testCaseTypeDefinition.CustomAttributes
 				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerSubstitutionFileAttribute))
+				.Select (GetSourceAndRelativeDestinationValue);
+		}
+
+		public virtual IEnumerable<SourceAndDestinationPair> GetDataflowAnnotationFiles ()
+		{
+			return _testCaseTypeDefinition.CustomAttributes
+				.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerDataflowAnnotationsFile))
 				.Select (GetSourceAndRelativeDestinationValue);
 		}
 

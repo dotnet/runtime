@@ -46,8 +46,8 @@ namespace Mono.Linker
 		/// <param name="sourceMethod">The method which contains the reflection access pattern.</param>
 		/// <param name="reflectionMethod">The reflection method which is at the heart of the access pattern.</param>
 		/// <param name="accessedItem">The item accessed through reflection. This can be one of:
-		///   TypeDefinition, MethodDefinition, PropertyDefinition, FieldDefinition, EventDefinition.</param>
-		void RecognizedReflectionAccessPattern (MethodDefinition sourceMethod, MethodDefinition reflectionMethod, IMemberDefinition accessedItem);
+		///   TypeDefinition, MethodDefinition, PropertyDefinition, FieldDefinition, EventDefinition, InterfaceImplementation.</param>
+		void RecognizedReflectionAccessPattern (MethodDefinition sourceMethod, MethodDefinition reflectionMethod, IMetadataTokenProvider accessedItem);
 
 		/// <summary>
 		/// Called when the linker detected a reflection access but was not able to recognize the entire pattern.

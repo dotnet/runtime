@@ -1,4 +1,4 @@
-﻿//
+//
 // Driver.cs
 //
 // Author:
@@ -353,7 +353,18 @@ namespace Mono.Linker {
 
 							continue;
 
-						case "--version":
+						case "--dataflow-json":
+							if (arguments.Count < 1) {
+								ErrorMissingArgument (token);
+								return false;
+							}
+
+							if (!GetStringParam (token, l => context.AddDataflowAnnotationsFile (l)))
+								return false;
+
+							continue;
+
+							case "--version":
 							Version ();
 							return true;
 
@@ -821,7 +832,11 @@ namespace Mono.Linker {
 		protected virtual LinkContext GetDefaultContext (Pipeline pipeline)
 		{
 			LinkContext context = new LinkContext (pipeline) {
+#if FEATURE_ILLINK
+				CoreAction = AssemblyAction.Link,
+#else
 				CoreAction = AssemblyAction.Skip,
+#endif
 				UserAction = AssemblyAction.Link,
 				OutputDirectory = "output",
 				StripResources = true
@@ -862,7 +877,11 @@ namespace Mono.Linker {
 
 			Console.WriteLine ();
 			Console.WriteLine ("Actions");
+#if FEATURE_ILLINK
+			Console.WriteLine ("  -c ACTION           Action on the framework assemblies. Defaults to 'link'");
+#else
 			Console.WriteLine ("  -c ACTION           Action on the framework assemblies. Defaults to 'skip'");
+#endif
 			Console.WriteLine ("                        copy: Copy the assembly into the output (it can be updated when any of its dependencies is removed)");
 			Console.WriteLine ("                        copyused: Same as copy but only for assemblies which are needed");
 			Console.WriteLine ("                        link: Remove any ununsed code or metadata from the assembly");
@@ -911,6 +930,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("  --strip-security          Remove metadata and code related to Code Access Security. Defaults to true");
 			Console.WriteLine ("  --substitutions FILE      Configuration file with field or methods substitution rules");
 			Console.WriteLine ("  --used-attrs-only         Attribute usage is removed if the attribute type is not used. Defaults to false");
+			Console.WriteLine ("  --dataflow-json FILE      Configuration file with field or methods dataflow annotations");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Analyzer");
