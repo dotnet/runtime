@@ -770,6 +770,7 @@ public:
 #define GTF_VAR_USEASG      0x40000000 // GT_LCL_VAR -- this is a partial definition, a use of the previous definition is implied
                                        // A partial definition usually occurs when a struct field is assigned to (s.f = ...) or
                                        // when a scalar typed variable is assigned to via a narrow store (*((byte*)&i) = ...).
+#define GTF_VAR_CONTEXT     0x20000000 // GT_LCL_VAR -- this is a generics context reference
 #define GTF_VAR_CAST        0x10000000 // GT_LCL_VAR -- has been explictly cast (variable node may not be type of local)
 #define GTF_VAR_ITERATOR    0x08000000 // GT_LCL_VAR -- this is a iterator reference in the loop condition
 #define GTF_VAR_CLONED      0x01000000 // GT_LCL_VAR -- this node has been cloned or is a clone

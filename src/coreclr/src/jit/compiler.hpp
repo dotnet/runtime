@@ -1931,9 +1931,8 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
         if (opts.compDbgCode)
             return true;
 
-        if (lvaGenericsContextUseCount > 0)
+        if (lvaGenericsContextInUse)
         {
-            JITDUMP("Reporting this as generic context: %u refs\n", lvaGenericsContextUseCount);
             return true;
         }
     }
@@ -1944,14 +1943,12 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     // because collectible types need the generics context when gc-ing.
     if (genericsContextIsThis)
     {
-        const bool isUsed   = lvaGenericsContextUseCount > 0;
+        const bool isUsed   = lvaGenericsContextInUse;
         const bool mustKeep = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
 
         if (isUsed || mustKeep)
         {
-            JITDUMP("Reporting this as generic context: %u refs%s\n", lvaGenericsContextUseCount,
-                    mustKeep ? ", must keep" : "");
-
+            JITDUMP("Reporting this as generic context: %s\n", mustKeep ? "must keep" : "referenced");
             return true;
         }
     }
@@ -1979,7 +1976,7 @@ inline bool Compiler::lvaReportParamTypeArg()
 
         // Otherwise, if an exact type parameter is needed in the body, report the generics context.
         // We do this because collectible types needs the generics context when gc-ing.
-        if (lvaGenericsContextUseCount > 0)
+        if (lvaGenericsContextInUse)
         {
             return true;
         }
