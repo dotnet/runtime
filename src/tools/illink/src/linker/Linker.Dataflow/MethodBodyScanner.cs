@@ -11,7 +11,7 @@ namespace Mono.Linker.Dataflow
 	/// <summary>
 	/// Tracks information about the contents of a stack slot
 	/// </summary>
-	class StackSlot
+	struct StackSlot
 	{
 		public ValueNode Value { get; set; }
 
@@ -20,11 +20,7 @@ namespace Mono.Linker.Dataflow
 		/// </summary>
 		public bool IsByRef { get; set; }
 
-		public StackSlot ()
-		{
-		}
-
-		public StackSlot (ValueNode value, bool isByRef = false) : this ()
+		public StackSlot (ValueNode value, bool isByRef = false)
 		{
 			Value = value;
 			IsByRef = isByRef;
@@ -49,14 +45,6 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		private void CheckForInvalidReturnStack (Stack<StackSlot> stack, MethodBody method, int ilOffset)
-		{
-			int numExpectedValuesOnStack = method.Method.ReturnType.MetadataType == MetadataType.Void ? 0 : 1;
-			if (stack.Count != numExpectedValuesOnStack) {
-				WarnAboutInvalidILInMethod (method, ilOffset);
-			}
-		}
-
 		private static void PushUnknown (Stack<StackSlot> stack)
 		{
 			stack.Push (new StackSlot ());
@@ -70,7 +58,10 @@ namespace Mono.Linker.Dataflow
 
 		private StackSlot PopUnknown (Stack<StackSlot> stack, int count, MethodBody method, int ilOffset)
 		{
-			StackSlot topOfStack = null;
+			if (count < 1)
+				throw new InvalidOperationException ();
+
+			StackSlot topOfStack = default;
 			CheckForInvalidStack (stack, count, method, ilOffset);
 
 			for (int i = 0; i < count; ++i) {
@@ -537,7 +528,6 @@ namespace Mono.Linker.Dataflow
 
 					case Code.Leave:
 					case Code.Leave_S:
-						PopUnknown (currentStack, currentStack.Count, methodBody, operation.Offset);
 						ClearStack (ref currentStack);
 						NewKnownStack (knownStacks, ((Instruction)operation.Operand).Offset, new Stack<StackSlot> (methodBody.MaxStackSize), methodBody);
 						break;
@@ -546,18 +536,21 @@ namespace Mono.Linker.Dataflow
 					case Code.Endfinally:
 					case Code.Rethrow:
 					case Code.Throw:
-						PopUnknown (currentStack, currentStack.Count, methodBody, operation.Offset);
 						ClearStack (ref currentStack);
 						break;
 
-					case Code.Ret:
-						CheckForInvalidReturnStack (currentStack, methodBody, operation.Offset);
-						StackSlot retValue = PopUnknown (currentStack, currentStack.Count, methodBody, operation.Offset);
-						if (retValue != null)
-							MethodReturnValue = MergePointValue.MergeValues (MethodReturnValue, retValue.Value);
-
-						ClearStack (ref currentStack);
-						break;
+					case Code.Ret: {
+							bool hasReturnValue = methodBody.Method.ReturnType.MetadataType != MetadataType.Void;
+							if (currentStack.Count != (hasReturnValue ? 1 : 0)) {
+								WarnAboutInvalidILInMethod (methodBody, operation.Offset);
+							}
+							if (hasReturnValue) {
+								StackSlot retValue = PopUnknown (currentStack, 1, methodBody, operation.Offset);
+								MethodReturnValue = MergePointValue.MergeValues (MethodReturnValue, retValue.Value);
+							}
+							ClearStack (ref currentStack);
+							break;
+						}
 
 					case Code.Switch: {
 							PopUnknown (currentStack, 1, methodBody, operation.Offset);
