@@ -104,10 +104,6 @@ namespace System.Globalization
                     switch (lastError)
                     {
                         case Interop.Errors.ERROR_SUCCESS:
-                            if (realLength == 0)
-                            {
-                                return string.Empty;
-                            }
                             return new string(buffer.Slice(0, realLength));
 
                         // Do appropriate stuff for the individual errors:
