@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 
@@ -31,7 +32,22 @@ namespace ILCompiler
     public class MetadataManager
     {
         protected readonly CompilerTypeSystemContext _typeSystemContext;
-        private List<MethodDesc> _methodsGenerated = new List<MethodDesc>();
+        private class PerModuleMethodsGenerated
+        {
+            public PerModuleMethodsGenerated(EcmaModule module)
+            {
+                Module = module;
+            }
+
+            public readonly EcmaModule Module;
+            public List<IMethodNode> MethodsGenerated = new List<IMethodNode>();
+            public List<IMethodNode> GenericMethodsGenerated = new List<IMethodNode>();
+        }
+
+        private Dictionary<EcmaModule, PerModuleMethodsGenerated> _methodsGenerated = new Dictionary<EcmaModule, PerModuleMethodsGenerated>();
+        private List<IMethodNode> _completeSortedMethods = new List<IMethodNode>();
+        private List<IMethodNode> _completeSortedGenericMethods = new List<IMethodNode>();
+
         private bool _sortedMethods = false;
 
         public MetadataManager(CompilerTypeSystemContext context)
@@ -54,22 +70,96 @@ namespace ILCompiler
                 lock (_methodsGenerated)
                 {
                     Debug.Assert(!_sortedMethods);
-                    _methodsGenerated.Add(methodNode.Method);
+                    MethodDesc method = methodNode.Method;
+                    EcmaModule module = (EcmaModule)((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                    if (!_methodsGenerated.TryGetValue(module, out var perModuleData))
+                    {
+                        perModuleData = new PerModuleMethodsGenerated(module);
+                        _methodsGenerated[module] = perModuleData;
+                    }
+                    if (method.HasInstantiation || method.OwningType.HasInstantiation)
+                    {
+                        perModuleData.GenericMethodsGenerated.Add(methodNode);
+                    }
+                    else
+                    {
+                        perModuleData.MethodsGenerated.Add(methodNode);
+                    }
                 }
             }
         }
-        public IEnumerable<MethodDesc> GetCompiledMethods()
+
+        public IEnumerable<IMethodNode> GetCompiledMethods(EcmaModule module, bool? genericInstantiations)
         {
             lock (_methodsGenerated)
             {
                 if (!_sortedMethods)
                 {
                     TypeSystemComparer comparer = new TypeSystemComparer();
-                    _methodsGenerated.Sort((x, y) => comparer.Compare(x, y));
+                    Comparison<IMethodNode> sortHelper = (x, y) => comparer.Compare(x.Method, y.Method);
+
+                    List<PerModuleMethodsGenerated> perModuleDatas = new List<PerModuleMethodsGenerated>(_methodsGenerated.Values);
+                    perModuleDatas.Sort((x, y) => x.Module.CompareTo(y.Module));
+
+                    foreach (var perModuleData in perModuleDatas)
+                    {
+                        perModuleData.MethodsGenerated.Sort(sortHelper);
+                        perModuleData.GenericMethodsGenerated.Sort(sortHelper);
+                        _completeSortedMethods.AddRange(perModuleData.MethodsGenerated);
+                        _completeSortedMethods.AddRange(perModuleData.GenericMethodsGenerated);
+                        _completeSortedGenericMethods.AddRange(perModuleData.GenericMethodsGenerated);
+                    }
                     _sortedMethods = true;
                 }
             }
-            return _methodsGenerated;
+            if (module == null)
+            {
+                if (!genericInstantiations.HasValue)
+                {
+                    return _completeSortedMethods;
+                }
+                else if (genericInstantiations.Value)
+                {
+                    return _completeSortedGenericMethods;
+                }
+                else
+                {
+                    // This isn't expected to be needed, and thus isn't implemented
+                    throw new ArgumentException();
+                }
+            }
+            else if (_methodsGenerated.TryGetValue(module, out var perModuleData))
+            {
+                if (!genericInstantiations.HasValue)
+                {
+                    return GetCompiledMethodsAllMethodsInModuleHelper(module);
+                }
+
+                if (genericInstantiations.Value)
+                {
+                    return perModuleData.GenericMethodsGenerated;
+                }
+                else
+                {
+                    return perModuleData.MethodsGenerated;
+                }
+            }
+            else
+            {
+                return Array.Empty<IMethodNode>();
+            }
+        }
+
+        private IEnumerable<IMethodNode> GetCompiledMethodsAllMethodsInModuleHelper(EcmaModule module)
+        {
+            foreach (var node in GetCompiledMethods(module, true))
+            {
+                yield return node;
+            }
+            foreach (var node in GetCompiledMethods(module, false))
+            {
+                yield return node;
+            }
         }
     }
 

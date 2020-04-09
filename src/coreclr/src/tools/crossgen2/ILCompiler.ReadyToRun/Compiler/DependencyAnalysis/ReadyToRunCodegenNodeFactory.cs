@@ -417,9 +417,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
         {
-            foreach (MethodDesc method in MetadataManager.GetCompiledMethods())
+            return EnumerateCompiledMethods(null, null);
+        }
+
+        public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods(EcmaModule module, bool? genericInstantiations)
+        {
+            foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(module, genericInstantiations))
             {
-                IMethodNode methodNode = MethodEntrypoint(method);
+                MethodDesc method = methodNode.Method;
+                Debug.Assert(methodNode == MethodEntrypoint(method));
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
                 if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
                 {
