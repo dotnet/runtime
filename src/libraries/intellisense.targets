@@ -79,6 +79,9 @@
     <ProjectAssetsCacheFile Condition="'$(ProjectAssetsCacheFile)' == ''">$(IntermediateOutputPath)$(MSBuildProjectName).assets.cache</ProjectAssetsCacheFile>
     <ProjectAssetsCacheFile>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), $(ProjectAssetsCacheFile)))</ProjectAssetsCacheFile>
     <NuGetTargetMoniker>$(TargetFrameworkMoniker)</NuGetTargetMoniker>
+    <!-- We change the default value of the output path set by the sdk in our targetframework.props file.
+         We need to update the properties derived from the output path in order to reflect the change.
+         TargetPath is one of such property. -->
     <TargetPath>$(OutputPath)$(TargetFileName)</TargetPath>
   </PropertyGroup>
 
