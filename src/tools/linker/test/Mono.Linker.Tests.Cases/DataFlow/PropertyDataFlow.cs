@@ -77,46 +77,43 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
 		Type _fieldWithPublicConstructors;
 
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
 		Type PropertyPublicConstructorsWithExplicitAccessors {
 			[RecognizedReflectionAccessPattern]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
 			get {
 				return _fieldWithPublicConstructors;
 			}
 
 			[RecognizedReflectionAccessPattern]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
+			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.PublicConstructors)]
 			set {
 				_fieldWithPublicConstructors = value;
 			}
 		}
 
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
 		Type PropertyDefaultConstructorWithExplicitAccessors {
 			[RecognizedReflectionAccessPattern]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
 			get {
 				return _fieldWithPublicConstructors;
 			}
 
 			[UnrecognizedReflectionAccessPattern(typeof (PropertyDataFlow), "set_" + nameof (PropertyDefaultConstructorWithExplicitAccessors), new Type [] { typeof (Type) })]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
+			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.DefaultConstructor)]
 			set {
 				_fieldWithPublicConstructors = value;
 			}
 		}
 
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
 		Type PropertyConstructorsWithExplicitAccessors {
 			[UnrecognizedReflectionAccessPattern (typeof (PropertyDataFlow), "get_" + nameof (PropertyConstructorsWithExplicitAccessors), new Type [] { })]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
 			get {
 				return _fieldWithPublicConstructors;
 			}
 
 			[RecognizedReflectionAccessPattern]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
+			[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberKinds.Constructors)]
 			set {
 				_fieldWithPublicConstructors = value;
 			}
