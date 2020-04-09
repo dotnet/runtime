@@ -4,6 +4,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 	[SetupLinkerArgument ("--exclude-feature", "etw")]
+	// Keep framework code that calls EventSource methods like OnEventCommand
+	[SetupLinkerCoreAction ("skip")]
 	// Used to avoid different compilers generating different IL which can mess up the instruction asserts
 	[SetupCompileArgument ("/optimize+")]
 	public class LocalsOfModifiedMethodAreRemoved {

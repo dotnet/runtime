@@ -5,6 +5,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 	[SetupLinkerArgument ("--exclude-feature", "etw")]
+	// Keep framework code that calls EventSource methods like OnEventCommand
+	[SetupLinkerCoreAction ("skip")]
 	public class BaseRemovedEventSource {
 		public static void Main ()
 		{
