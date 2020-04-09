@@ -448,5 +448,92 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(stringValue + stringValue, Encoding.UTF8.GetString(stream.ToArray()));
             }
         }
+
+        [Fact]
+        public static void CopyConstructorTest_OriginalMutable()
+        {
+            var options = CreateOptionsInstance();
+            var newOptions = new JsonSerializerOptions(options);
+            VerifyOptionsEqual(options, newOptions);
+
+            // No exception is thrown on mutating the new options instance because it is "unlocked".
+            newOptions.ReferenceHandling = ReferenceHandling.Preserve;
+            newOptions.Converters.Add(new JsonStringEnumConverter());
+            newOptions.Converters.Add(new JsonStringEnumConverter());
+
+            // Changes to new options don't affect old options.
+            Assert.Equal(ReferenceHandling.Default, options.ReferenceHandling);
+            Assert.Equal(2, options.Converters.Count);
+            Assert.Equal(4, newOptions.Converters.Count);
+
+            // Changes to old options don't affect new options.
+            options.DefaultBufferSize = 2;
+            options.Converters.Add(new ConverterForInt32());
+
+            Assert.Equal(20, newOptions.DefaultBufferSize);
+            Assert.Equal(3, options.Converters.Count);
+            Assert.Equal(4, newOptions.Converters.Count);
+        }
+
+        [Fact]
+        public static void CopyConstructorTest_OriginalLocked()
+        {
+            var options = CreateOptionsInstance();
+
+            // Perform serialization on options, after which it will be locked.
+            JsonSerializer.Serialize("1", options);
+            Assert.Throws<InvalidOperationException>(() => options.ReferenceHandling = ReferenceHandling.Preserve);
+
+            var newOptions = new JsonSerializerOptions(options);
+            VerifyOptionsEqual(options, newOptions);
+
+            // No exception is thrown on mutating the new options instance because it is "unlocked".
+            newOptions.ReferenceHandling = ReferenceHandling.Preserve;
+        }
+
+        [Fact]
+
+        private static JsonSerializerOptions CreateOptionsInstance()
+        {
+            var options = new JsonSerializerOptions
+            {
+                AllowTrailingCommas = true,
+                DefaultBufferSize = 20,
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+                IgnoreNullValues = true,
+                IgnoreReadOnlyProperties = true,
+                MaxDepth = 32,
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = new SimpleSnakeCasePolicy(),
+                ReadCommentHandling = JsonCommentHandling.Disallow,
+                ReferenceHandling = ReferenceHandling.Default,
+                WriteIndented = true,
+            };
+
+            options.Converters.Add(new JsonStringEnumConverter());
+            options.Converters.Add(new ConverterForInt32());
+
+            return options;
+        }
+
+        private static void VerifyOptionsEqual(JsonSerializerOptions options, JsonSerializerOptions newOptions)
+        {
+            Assert.Equal(options.AllowTrailingCommas, newOptions.AllowTrailingCommas);
+            Assert.Equal(options.DefaultBufferSize, newOptions.DefaultBufferSize);
+            Assert.Equal(options.DictionaryKeyPolicy, newOptions.DictionaryKeyPolicy);
+            Assert.Equal(options.IgnoreNullValues, newOptions.IgnoreNullValues);
+            Assert.Equal(options.IgnoreReadOnlyProperties, newOptions.IgnoreReadOnlyProperties);
+            Assert.Equal(options.MaxDepth, newOptions.MaxDepth);
+            Assert.Equal(options.PropertyNameCaseInsensitive, newOptions.PropertyNameCaseInsensitive);
+            Assert.Equal(options.PropertyNamingPolicy, newOptions.PropertyNamingPolicy);
+            Assert.Equal(options.ReadCommentHandling, newOptions.ReadCommentHandling);
+            Assert.Equal(options.WriteIndented, newOptions.WriteIndented);
+
+            Assert.Equal(options.Converters.Count, newOptions.Converters.Count);
+            for (int i = 0; i < options.Converters.Count; i++)
+            {
+                Assert.Equal(options.Converters[i], newOptions.Converters[i]);
+            }
+        }
     }
 }

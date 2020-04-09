@@ -208,6 +208,7 @@ namespace System.Text.Json
     public sealed partial class JsonSerializerOptions
     {
         public JsonSerializerOptions() { }
+        public JsonSerializerOptions(System.Text.Json.JsonSerializerOptions options) { }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonConverter> Converters { get { throw null; } }
         public int DefaultBufferSize { get { throw null; } set { } }

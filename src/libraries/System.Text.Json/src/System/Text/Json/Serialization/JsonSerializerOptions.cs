@@ -20,6 +20,8 @@ namespace System.Text.Json
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
 
+        // For any new option added, adding it to the options copied in the copy constructor below must be considered.
+
         private MemberAccessor? _memberAccessorStrategy;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
@@ -42,6 +44,37 @@ namespace System.Text.Json
         public JsonSerializerOptions()
         {
             Converters = new ConverterList(this);
+        }
+
+        /// <summary>
+        /// Copies the options from a <see cref="JsonSerializerOptions"/> instance to a new instance.
+        /// </summary>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> instance to copy options from.</param>
+        public JsonSerializerOptions(JsonSerializerOptions options)
+        {
+            _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
+            _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
+            _readCommentHandling = options._readCommentHandling;
+            _referenceHandling = options._referenceHandling;
+            _encoder = options._encoder;
+
+            _defaultBufferSize = options._defaultBufferSize;
+            _maxDepth = options._maxDepth;
+            _allowTrailingCommas = options._allowTrailingCommas;
+            _ignoreNullValues = options._ignoreNullValues;
+            _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
+            _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
+            _writeIndented = options._writeIndented;
+
+            Converters = new ConverterList(this);
+            for (int i = 0; i < options.Converters.Count; i++)
+            {
+                Converters.Add(options.Converters[i]);
+            }
+
+            // _memberAccessorStrategy is not copied as that is platform specific.
+            // _classes is not copied as we don't want to transfer cache information.
+            // _haveTypesBeenCreated is not copied; it's okay to make changes to this options instance.
         }
 
         /// <summary>
