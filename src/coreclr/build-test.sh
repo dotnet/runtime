@@ -494,6 +494,9 @@ usage_list+=("-crossgen2: Precompiles the framework managed assemblies in corero
 usage_list+=("-generatetesthostonly: only generate the test host.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
+usage_list+=("-targetGeneric: Only build tests which run on any target platform.")
+usage_list+=("-targetSpecific: Only build tests which run on a specific target platform.")
+
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
 usage_list+=("-skiprestorepackages: skip package restore.")
@@ -503,6 +506,7 @@ usage_list+=("-excludemonofailures: Mark the build as running on Mono runtime so
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
 __RepoRootDir="$(cd "$__ProjectRoot"/../..; pwd -P)"
+__BuildArch=
 
 handle_arguments_local() {
     case "$1" in
@@ -545,6 +549,14 @@ handle_arguments_local() {
             __UnprocessedBuildArgs+=("/p:CLRTestPriorityToBuild=1")
             ;;
 
+        targetGeneric|-targetGeneric)
+            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetGeneric")
+            ;;
+
+        targetSpecific|-targetSpecific)
+            __UnprocessedBuildArgs+=("/p:CLRTestNeedTargetToBuild=targetSpecific")
+            ;;
+
         rebuild|-rebuild)
             __RebuildTests=1
             ;;
@@ -570,7 +582,6 @@ handle_arguments_local() {
     esac
 }
 
-__BuildArch=
 __BuildType=Debug
 __CodeCoverage=
 __IncludeTests=INCLUDE_TESTS

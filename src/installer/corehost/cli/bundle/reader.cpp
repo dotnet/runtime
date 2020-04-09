@@ -8,9 +8,9 @@
 
 using namespace bundle;
 
-const int8_t* reader_t::add_without_overflow(const int8_t* ptr, int64_t len)
+const char* reader_t::add_without_overflow(const char* ptr, int64_t len)
 {
-    const int8_t* new_ptr = ptr + len;
+    const char* new_ptr = ptr + len;
 
     // The following check will fail in case len < 0 (which is also an error while reading) 
     // even if the actual arthmetic didn't overflow.
@@ -38,7 +38,7 @@ void reader_t::set_offset(int64_t offset)
 
 void reader_t::bounds_check(int64_t len)
 {
-    const int8_t* post_read_ptr = add_without_overflow(m_ptr, len);
+    const char* post_read_ptr = add_without_overflow(m_ptr, len);
     
     // It is legal for post_read_ptr == m_bound_ptr after reading the last byte.
     if (m_ptr < m_base_ptr || post_read_ptr > m_bound_ptr)
@@ -88,11 +88,14 @@ size_t reader_t::read_path_length()
     return length;
 }
 
-void reader_t::read_path_string(pal::string_t &str)
+size_t reader_t::read_path_string(pal::string_t &str)
 {
+    const char* start_ptr = m_ptr;
     size_t size = read_path_length();
     std::unique_ptr<uint8_t[]> buffer{ new uint8_t[size + 1] };
     read(buffer.get(), size);
     buffer[size] = 0; // null-terminator
     pal::clr_palstring(reinterpret_cast<const char*>(buffer.get()), &str);
+
+    return m_ptr - start_ptr; // This subtraction can't overflow because addition above is bounds_checked
 }

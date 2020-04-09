@@ -23,6 +23,9 @@ set(SOURCES
     ../version.cpp
     ../version_compatibility_range.cpp
     ../runtime_config.cpp
+    ../bundle/info.cpp
+    ../bundle/reader.cpp
+    ../bundle/header.cpp
 )
 
 set(HEADERS
@@ -37,6 +40,9 @@ set(HEADERS
     ../version.h
     ../version_compatibility_range.h
     ../runtime_config.h
+    ../bundle/info.h
+    ../bundle/reader.h
+    ../bundle/header.h
 )
 
 set(SKIP_VERSIONING 1)

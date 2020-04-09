@@ -5043,11 +5043,16 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
 #ifdef MULTIPLE_HEAPS
         heap_segment_heap (res) = hp;
 #endif //MULTIPLE_HEAPS
-        res->flags |= gen_number == poh_generation ?
+        res->flags |= (gen_number == poh_generation) ?
                                         heap_segment_flags_poh :
                                         heap_segment_flags_loh;
 
-        FIRE_EVENT(GCCreateSegment_V1, heap_segment_mem(res), (size_t)(heap_segment_reserved (res) - heap_segment_mem(res)), gc_etw_segment_large_object_heap);
+        FIRE_EVENT(GCCreateSegment_V1,
+            heap_segment_mem(res),
+            (size_t)(heap_segment_reserved (res) - heap_segment_mem(res)),
+            (gen_number == poh_generation) ?
+                gc_etw_segment_pinned_object_heap :
+                gc_etw_segment_large_object_heap);
 
         GCToEEInterface::DiagUpdateGenerationBounds();
 
@@ -16591,9 +16596,9 @@ inline
 void fire_overflow_event (uint8_t* overflow_min,
                           uint8_t* overflow_max,
                           size_t marked_objects,
-                          int large_objects_p)
+                          int gen_number)
 {
-    FIRE_EVENT(BGCOverflow, (uint64_t)overflow_min, (uint64_t)overflow_max, marked_objects, large_objects_p);
+    FIRE_EVENT(BGCOverflow_V1, (uint64_t)overflow_min, (uint64_t)overflow_max, marked_objects, gen_number == loh_generation, gen_number);
 }
 
 void gc_heap::concurrent_print_time_delta (const char* msg)
@@ -20359,7 +20364,7 @@ void gc_heap::background_process_mark_overflow_internal (int condemned_gen_numbe
             }
 
             dprintf (2, ("h%d: SOH: ov-mo: %Id", heap_number, total_marked_objects));
-            fire_overflow_event (min_add, max_add, total_marked_objects, !small_object_segments);
+            fire_overflow_event (min_add, max_add, total_marked_objects, i);
             if (small_object_segments)
             {
                 concurrent_print_time_delta (concurrent_p ? "Cov SOH" : "Nov SOH");
@@ -34880,32 +34885,32 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
 #endif // _PREFAST_
 #endif //MULTIPLE_HEAPS
 
-        int curr_gen_number0 = max_generation+1;
-        while (curr_gen_number0 >= 0)
+        for (int curr_gen_number = total_generation_count-1; curr_gen_number >= 0; curr_gen_number--)
         {
-            generation* gen = hp->generation_of (curr_gen_number0);
+            generation* gen = hp->generation_of (curr_gen_number);
             heap_segment* seg = generation_start_segment (gen);
             while (seg && (seg != hp->ephemeral_heap_segment))
             {
-                assert (curr_gen_number0 > 0);
+                assert (curr_gen_number > 0);
 
                 // report bounds from heap_segment_mem (seg) to
                 // heap_segment_allocated (seg);
-                // for generation # curr_gen_number0
+                // for generation # curr_gen_number
                 // for heap # heap_no
 
-                fn(context, curr_gen_number0, heap_segment_mem (seg),
+                fn(context, curr_gen_number, heap_segment_mem (seg),
                                               heap_segment_allocated (seg),
-                                              curr_gen_number0 == max_generation+1 ? heap_segment_reserved (seg) : heap_segment_allocated (seg));
+                                              curr_gen_number > max_generation ? heap_segment_reserved (seg) : heap_segment_allocated (seg));
 
                 seg = heap_segment_next (seg);
             }
+
             if (seg)
             {
                 assert (seg == hp->ephemeral_heap_segment);
-                assert (curr_gen_number0 <= max_generation);
+                assert (curr_gen_number <= max_generation);
                 //
-                if (curr_gen_number0 == max_generation)
+                if (curr_gen_number == max_generation)
                 {
                     if (heap_segment_mem (seg) < generation_allocation_start (hp->generation_of (max_generation-1)))
                     {
@@ -34913,33 +34918,32 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
                         // generation_allocation_start (generation_of (max_generation-1))
                         // for heap # heap_number
 
-                        fn(context, curr_gen_number0, heap_segment_mem (seg),
+                        fn(context, curr_gen_number, heap_segment_mem (seg),
                                                       generation_allocation_start (hp->generation_of (max_generation-1)),
                                                       generation_allocation_start (hp->generation_of (max_generation-1)) );
                     }
                 }
-                else if (curr_gen_number0 != 0)
+                else if (curr_gen_number != 0)
                 {
-                    //report bounds from generation_allocation_start (generation_of (curr_gen_number0))
-                    // to generation_allocation_start (generation_of (curr_gen_number0-1))
+                    //report bounds from generation_allocation_start (generation_of (curr_gen_number))
+                    // to generation_allocation_start (generation_of (curr_gen_number-1))
                     // for heap # heap_number
 
-                    fn(context, curr_gen_number0, generation_allocation_start (hp->generation_of (curr_gen_number0)),
-                                                  generation_allocation_start (hp->generation_of (curr_gen_number0-1)),
-                                                  generation_allocation_start (hp->generation_of (curr_gen_number0-1)));
+                    fn(context, curr_gen_number, generation_allocation_start (hp->generation_of (curr_gen_number)),
+                                                  generation_allocation_start (hp->generation_of (curr_gen_number-1)),
+                                                  generation_allocation_start (hp->generation_of (curr_gen_number-1)));
                 }
                 else
                 {
-                    //report bounds from generation_allocation_start (generation_of (curr_gen_number0))
+                    //report bounds from generation_allocation_start (generation_of (curr_gen_number))
                     // to heap_segment_allocated (ephemeral_heap_segment);
                     // for heap # heap_number
 
-                    fn(context, curr_gen_number0, generation_allocation_start (hp->generation_of (curr_gen_number0)),
+                    fn(context, curr_gen_number, generation_allocation_start (hp->generation_of (curr_gen_number)),
                                                   heap_segment_allocated (hp->ephemeral_heap_segment),
                                                   heap_segment_reserved (hp->ephemeral_heap_segment) );
                 }
             }
-            curr_gen_number0--;
         }
     }
 }

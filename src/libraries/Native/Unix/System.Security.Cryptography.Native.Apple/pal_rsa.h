@@ -10,7 +10,7 @@
 
 #include <Security/Security.h>
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Generate a new RSA keypair with the specified key size, in bits.
 

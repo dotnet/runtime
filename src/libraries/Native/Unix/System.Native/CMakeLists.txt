@@ -22,7 +22,7 @@ set(NATIVE_SOURCES
     pal_sysctl.c
 )
 
-if (CLR_CMAKE_TARGET_IOS)
+if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
         pal_log.m
         pal_searchpath.m)
@@ -69,7 +69,7 @@ add_library(System.Native-Static
     ${NATIVE_SOURCES}
 )
 
-if (CLR_CMAKE_TARGET_IOS)
+if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     target_link_libraries(System.Native "-framework Foundation")
 endif ()
 

@@ -1049,6 +1049,12 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
         return true;
     }
 
+    if (strcmp(key, "GCLargePages") == 0)
+    {
+        *value = Configuration::GetKnobBooleanValue(W("System.GC.LargePages"), CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCLargePages));
+        return true;
+    }
+
     WCHAR configKey[MaxConfigKeyLength];
     if (MultiByteToWideChar(CP_ACP, 0, key, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
     {

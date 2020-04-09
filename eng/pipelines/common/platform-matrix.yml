@@ -286,6 +286,46 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# tvOS x64
+
+- ${{ if containsValue(parameters.platforms, 'tvOS_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: tvOS
+      archType: x64
+      platform: tvOS_x64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# tvOS arm64
+
+- ${{ if containsValue(parameters.platforms, 'tvOS_arm64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      osGroup: tvOS
+      archType: arm64
+      platform: tvOS_arm64
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        managedTestBuildOsGroup: OSX
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # iOS x64
 
 - ${{ if containsValue(parameters.platforms, 'iOS_x64') }}:

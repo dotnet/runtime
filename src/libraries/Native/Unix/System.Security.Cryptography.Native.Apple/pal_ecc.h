@@ -9,7 +9,7 @@
 
 #include <Security/Security.h>
 
-#ifndef TARGET_IOS
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 /*
 Generate an ECC keypair of the specified size.
 
