@@ -13,15 +13,24 @@ internal static partial class Interop
         [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool IsNormalizedString(NormalizationForm normForm, string source, int length);
 
-        internal static int NormalizeString(NormalizationForm normForm, string source, int sourceLength, Span<char> destination) =>
-            NormalizeString(normForm, source, sourceLength, ref MemoryMarshal.GetReference(destination), destination.Length);
+        internal static int NormalizeString(NormalizationForm normForm, string source, int sourceLength, Span<char> destination)
+        {
+            unsafe
+            {
+                fixed (char* pSrc = source)
+                fixed (char* pDest = &MemoryMarshal.GetReference(destination))
+                {
+                    return NormalizeString(normForm, pSrc, sourceLength, pDest, destination.Length);
+                }
+            }
+        }
 
         [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern int NormalizeString(
+        private static extern unsafe int NormalizeString(
                                         NormalizationForm normForm,
-                                        string source,
+                                        char* source,
                                         int sourceLength,
-                                        ref char destination,
+                                        char* destination,
                                         int destinationLength);
     }
 }

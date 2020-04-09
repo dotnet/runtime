@@ -13,10 +13,19 @@ internal static partial class Interop
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IsNormalized")]
         internal static extern int IsNormalized(NormalizationForm normalizationForm, string src, int srcLen);
 
-        internal static int NormalizeString(NormalizationForm normalizationForm, string src, int srcLen, Span<char> dstBuffer) =>
-            NormalizeString(normalizationForm, src, srcLen, ref MemoryMarshal.GetReference(dstBuffer), dstBuffer.Length);
+        internal static int NormalizeString(NormalizationForm normalizationForm, string src, int srcLen, Span<char> dstBuffer)
+        {
+            unsafe
+            {
+                fixed (char* pSrc = src)
+                fixed (char* pDest = &MemoryMarshal.GetReference(dstBuffer))
+                {
+                    return NormalizeString(normalizationForm, pSrc, srcLen, pDest, dstBuffer.Length);
+                }
+            }
+        }
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_NormalizeString")]
-        private static extern int NormalizeString(NormalizationForm normalizationForm, string src, int srcLen, ref char dstBuffer, int dstBufferCapacity);
+        private static extern unsafe int NormalizeString(NormalizationForm normalizationForm, char* src, int srcLen, char* dstBuffer, int dstBufferCapacity);
     }
 }
