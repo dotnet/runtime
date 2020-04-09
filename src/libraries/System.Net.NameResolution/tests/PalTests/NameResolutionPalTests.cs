@@ -30,12 +30,6 @@ namespace System.Net.NameResolution.PalTests
             _output.WriteLine("------");
         }
 
-        [Fact]
-        public void HostName_NotNull()
-        {
-            Assert.NotNull(NameResolutionPal.GetHostName());
-        }
-
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -50,32 +44,6 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(aliases);
             Assert.NotNull(addresses);
             Assert.True(addresses.Length > 0);
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task GetAddrInfoAsync_LocalHost(bool justAddresses)
-        {
-            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
-            {
-                return;
-            }
-
-            if (justAddresses)
-            {
-                IPAddress[] addresses = await ((Task<IPAddress[]>)NameResolutionPal.GetAddrInfoAsync("localhost", justAddresses)).ConfigureAwait(false);
-
-                Assert.NotNull(addresses);
-                Assert.True(addresses.Length > 0);
-            }
-            else
-            {
-                IPHostEntry hostEntry = await ((Task<IPHostEntry>)NameResolutionPal.GetAddrInfoAsync("localhost", justAddresses)).ConfigureAwait(false);
-
-                Assert.NotNull(hostEntry);
-                Assert.True(hostEntry.AddressList.Length > 0);
-            }
         }
 
         [Theory]
@@ -102,6 +70,32 @@ namespace System.Net.NameResolution.PalTests
             }
             Assert.NotNull(aliases);
             Assert.NotNull(addresses);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TryGetAddrInfo_ExternalHost(bool justAddresses)
+        {
+            string hostName = "microsoft.com";
+
+            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out hostName, out string[] aliases, out IPAddress[] addresses, out _);
+            Assert.Equal(SocketError.Success, error);
+            Assert.NotNull(aliases);
+            Assert.NotNull(addresses);
+            Assert.True(addresses.Length > 0);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop("Uses external server")]
+        public void TryGetAddrInfo_UnknownHost(bool justAddresses)
+        {
+            SocketError error = NameResolutionPal.TryGetAddrInfo("test.123", justAddresses, out string? _, out string[] _, out IPAddress[] _, out int nativeErrorCode);
+
+            Assert.Equal(SocketError.HostNotFound, error);
+            Assert.NotEqual(0, nativeErrorCode);
         }
 
         [Fact]
@@ -180,53 +174,6 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void TryGetAddrInfo_ExternalHost(bool justAddresses)
-        {
-            string hostName = "microsoft.com";
-
-            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out hostName, out string[] aliases, out IPAddress[] addresses, out _);
-            Assert.Equal(SocketError.Success, error);
-            Assert.NotNull(aliases);
-            Assert.NotNull(addresses);
-            Assert.True(addresses.Length > 0);
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task GetAddrInfoAsync_ExternalHost(bool justAddresses)
-        {
-            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
-            {
-                return;
-            }
-
-            const string hostName = "microsoft.com";
-
-            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
-            {
-                return;
-            }
-
-            if (justAddresses)
-            {
-                IPAddress[] addresses = await ((Task<IPAddress[]>)NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses)).ConfigureAwait(false);
-
-                Assert.NotNull(addresses);
-                Assert.True(addresses.Length > 0);
-            }
-            else
-            {
-                IPHostEntry hostEntry = await ((Task<IPHostEntry>)NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses)).ConfigureAwait(false);
-
-                Assert.NotNull(hostEntry);
-                Assert.True(hostEntry.AddressList.Length > 0);
-            }
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
         public void TryGetNameInfo_LocalHost_IPv4_TryGetAddrInfo(bool justAddresses)
         {
             string name = NameResolutionPal.TryGetNameInfo(new IPAddress(new byte[] { 127, 0, 0, 1 }), out SocketError error, out _);
@@ -267,10 +214,144 @@ namespace System.Net.NameResolution.PalTests
         }
 
         [Fact]
+        public void HostName_NotNull()
+        {
+            Assert.NotNull(NameResolutionPal.GetHostName());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task GetAddrInfoAsync_LocalHost(bool justAddresses)
+        {
+            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
+            {
+                return;
+            }
+
+            if (justAddresses)
+            {
+                IPAddress[] addresses = await ((Task<IPAddress[]>)NameResolutionPal.GetAddrInfoAsync("localhost", justAddresses)).ConfigureAwait(false);
+
+                Assert.NotNull(addresses);
+                Assert.True(addresses.Length > 0);
+            }
+            else
+            {
+                IPHostEntry hostEntry = await ((Task<IPHostEntry>)NameResolutionPal.GetAddrInfoAsync("localhost", justAddresses)).ConfigureAwait(false);
+
+                Assert.NotNull(hostEntry);
+                Assert.True(hostEntry.AddressList.Length > 0);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop("Uses external server")]
+        public async Task GetAddrInfoAsync_HostName(bool justAddresses)
+        {
+            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
+            {
+                return;
+            }
+
+            string hostName = NameResolutionPal.GetHostName();
+            Assert.NotNull(hostName);
+
+            Task task = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses);
+
+            try
+            {
+                await task.ConfigureAwait(false);
+            }
+            catch (SocketException ex)
+            {
+                SocketError error = ex.SocketErrorCode;
+
+                if (error == SocketError.HostNotFound && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+                {
+                    // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
+                    // machine configurations, which varies by distro and is often inconsistent.
+                    return;
+                }
+
+                throw;
+            }
+
+            if (justAddresses)
+            {
+                IPAddress[] addresses = ((Task<IPAddress[]>)task).Result;
+
+                Assert.NotNull(addresses);
+                Assert.True(addresses.Length > 0);
+            }
+            else
+            {
+                IPHostEntry hostEntry = ((Task<IPHostEntry>)task).Result;
+
+                Assert.NotNull(hostEntry);
+                Assert.True(hostEntry.AddressList.Length > 0);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task GetAddrInfoAsync_ExternalHost(bool justAddresses)
+        {
+            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
+            {
+                return;
+            }
+
+            const string hostName = "microsoft.com";
+
+            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
+            {
+                return;
+            }
+
+            if (justAddresses)
+            {
+                IPAddress[] addresses = await ((Task<IPAddress[]>)NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses)).ConfigureAwait(false);
+
+                Assert.NotNull(addresses);
+                Assert.True(addresses.Length > 0);
+            }
+            else
+            {
+                IPHostEntry hostEntry = await ((Task<IPHostEntry>)NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses)).ConfigureAwait(false);
+
+                Assert.NotNull(hostEntry);
+                Assert.True(hostEntry.AddressList.Length > 0);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop("Uses external server")]
+        public async Task GetAddrInfoAsync_UnknownHost(bool justAddresses)
+        {
+            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
+            {
+                return;
+            }
+
+            const string hostName = "test.123";
+
+            SocketException socketException = await Assert.ThrowsAnyAsync<SocketException>(() => NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses)).ConfigureAwait(false);
+            SocketError socketError = socketException.SocketErrorCode;
+
+            Assert.Equal(SocketError.HostNotFound, socketError);
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Exception_HostNotFound_Success()
         {
-            var ex = new  SocketException((int)SocketError.HostNotFound);
+            var ex = new SocketException((int)SocketError.HostNotFound);
 
             Assert.Equal(-1, ex.Message.IndexOf("Device"));
         }
