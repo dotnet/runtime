@@ -33,7 +33,11 @@ namespace ComWrappersTests.Common
         CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out IntPtr ppv)
         {
             ppv = IntPtr.Zero;
-            if (iid != ICustomQueryInterface_GetInterfaceIID)
+            if (iid == typeof(ITest).GUID)
+            {
+                return CustomQueryInterfaceResult.NotHandled;
+            }
+            else if (iid != ICustomQueryInterface_GetInterfaceIID)
             {
                 return CustomQueryInterfaceResult.Failed;
             }

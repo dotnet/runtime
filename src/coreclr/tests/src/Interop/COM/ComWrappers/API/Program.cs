@@ -137,6 +137,11 @@ namespace ComWrappersTests
             const int E_NOINTERFACE = unchecked((int)0x80004002);
             Assert.AreEqual(hr, E_NOINTERFACE);
             Assert.AreEqual(result, IntPtr.Zero);
+
+            var anyGuid3 = typeof(ITest).GUID;
+            hr = Marshal.QueryInterface(comWrapper, ref anyGuid3, out result);
+            Assert.AreEqual(hr, 0);
+            Assert.AreNotEqual(result, IntPtr.Zero);
         }
 
         static void ValidateCreateObjectCachingScenario()

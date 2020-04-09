@@ -313,14 +313,10 @@ namespace System.Runtime.InteropServices
             if (customQueryInterface is null)
             {
                 ppObject = IntPtr.Zero;
-                return 1; // S_FALSE
+                return -1; // See TryInvokeICustomQueryInterfaceResult
             }
 
-            return customQueryInterface.GetInterface(ref iid, out ppObject) switch
-                {
-                    CustomQueryInterfaceResult.Handled => 0,    // S_OK
-                    _ => unchecked((int)0x80004002),            // E_NOINTERFACE
-                };
+            return (int)customQueryInterface.GetInterface(ref iid, out ppObject);
         }
     }
 }

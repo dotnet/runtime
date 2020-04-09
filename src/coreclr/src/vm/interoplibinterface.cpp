@@ -481,7 +481,7 @@ namespace
         CALL_MANAGED_METHOD_NORET(args);
     }
 
-    HRESULT CallICustomQueryInterface(
+    int CallICustomQueryInterface(
         _In_ OBJECTREF* implPROTECTED,
         _In_ REFGUID iid,
         _Outptr_result_maybenull_ void** ppObject)
@@ -495,21 +495,16 @@ namespace
         }
         CONTRACTL_END;
 
-        HRESULT hr;
+        int result;
 
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE);
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
         args[ARGNUM_1]  = PTR_TO_ARGHOLDER(&iid);
         args[ARGNUM_2]  = PTR_TO_ARGHOLDER(ppObject);
-        CALL_MANAGED_METHOD(hr, HRESULT, args);
+        CALL_MANAGED_METHOD(result, int, args);
 
-        // Assert the supported return values.
-        _ASSERTE(hr == S_OK
-                || hr == S_FALSE
-                || hr == E_NOINTERFACE);
-
-        return hr;
+        return result;
     }
 
     bool TryGetOrCreateComInterfaceForObjectInternal(
@@ -1054,7 +1049,7 @@ namespace InteropLibImports
         return hr;
     }
 
-    HRESULT TryInvokeICustomQueryInterface(
+    TryInvokeICustomQueryInterfaceResult TryInvokeICustomQueryInterface(
         _In_ InteropLib::OBJECTHANDLE handle,
         _In_ REFGUID iid,
         _Outptr_result_maybenull_ void** obj) noexcept
@@ -1070,7 +1065,8 @@ namespace InteropLibImports
 
         *obj = NULL;
 
-        HRESULT hr = S_FALSE;
+        auto result = TryInvokeICustomQueryInterfaceResult::FailedToInvoke;
+        HRESULT hr = S_OK;
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
             // Switch to Cooperative mode since object references
@@ -1088,13 +1084,17 @@ namespace InteropLibImports
             ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
             gc.objRef = ObjectFromHandle(objectHandle);
 
-            hr = CallICustomQueryInterface(&gc.objRef, iid, obj);
+            result = (TryInvokeICustomQueryInterfaceResult)CallICustomQueryInterface(&gc.objRef, iid, obj);
 
             GCPROTECT_END();
         }
         END_EXTERNAL_ENTRYPOINT;
 
-        return hr;
+        // Assert valid value.
+        _ASSERTE(TryInvokeICustomQueryInterfaceResult::Min <= result
+                && result <= TryInvokeICustomQueryInterfaceResult::Max);
+
+        return result;
     }
 
     struct RuntimeCallContext

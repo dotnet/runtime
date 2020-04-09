@@ -73,9 +73,23 @@ namespace InteropLibImports
         _In_ InteropLib::Com::CreateComInterfaceFlags trackerTargetFlags,
         _Outptr_ void** trackerTarget) noexcept;
 
+    // The enum describes the value of System.Runtime.InteropServices.CustomQueryInterfaceResult
+    // and the case where the object doesn't support ICustomQueryInterface.
+    enum class TryInvokeICustomQueryInterfaceResult
+    {
+        FailedToInvoke = -1,
+        Handled = 0,
+        NotHandled = 1,
+        Failed = 2,
+
+        // Range checks
+        Min = FailedToInvoke,
+        Max = Failed,
+    };
+
     // Attempt to call the ICustomQueryInterface on the supplied object.
     // Returns S_FALSE if the object doesn't support ICustomQueryInterface.
-    HRESULT TryInvokeICustomQueryInterface(
+    TryInvokeICustomQueryInterfaceResult TryInvokeICustomQueryInterface(
         _In_ InteropLib::OBJECTHANDLE handle,
         _In_ REFGUID iid,
         _Outptr_result_maybenull_ void** obj) noexcept;
