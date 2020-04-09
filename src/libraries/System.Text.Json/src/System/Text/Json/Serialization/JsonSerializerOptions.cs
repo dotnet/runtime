@@ -52,6 +52,7 @@ namespace System.Text.Json
         /// <param name="options">The <see cref="JsonSerializerOptions"/> instance to copy options from.</param>
         public JsonSerializerOptions(JsonSerializerOptions options)
         {
+            _memberAccessorStrategy = options.MemberAccessorStrategy;
             _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
@@ -66,15 +67,13 @@ namespace System.Text.Json
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
 
-            Converters = new ConverterList(this);
-            for (int i = 0; i < options.Converters.Count; i++)
-            {
-                Converters.Add(options.Converters[i]);
-            }
+            Converters = new ConverterList(this, (ConverterList)options.Converters);
+            EffectiveMaxDepth = options.EffectiveMaxDepth;
 
-            // _memberAccessorStrategy is not copied as that is platform specific.
-            // _classes is not copied as we don't want to transfer cache information.
-            // _haveTypesBeenCreated is not copied; it's okay to make changes to this options instance.
+            // _classes is not copied as sharing the JsonClassInfo and JsonPropertyInfo caches can result in
+            // unnecessary references to type metadata, potentially hindering garbage collection on the source options.
+
+            // _haveTypesBeenCreated is not copied; it's okay to make changes to this options instance as (de)serialization has not occured.
         }
 
         /// <summary>

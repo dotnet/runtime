@@ -452,7 +452,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CopyConstructorTest_OriginalMutable()
         {
-            var options = CreateOptionsInstance();
+            JsonSerializerOptions options = CreateOptionsInstance();
             var newOptions = new JsonSerializerOptions(options);
             VerifyOptionsEqual(options, newOptions);
 
@@ -478,9 +478,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CopyConstructorTest_OriginalLocked()
         {
-            var options = CreateOptionsInstance();
+            JsonSerializerOptions options = CreateOptionsInstance();
 
-            // Perform serialization on options, after which it will be locked.
+            // Perform serialization with options, after which it will be locked.
             JsonSerializer.Serialize("1", options);
             Assert.Throws<InvalidOperationException>(() => options.ReferenceHandling = ReferenceHandling.Preserve);
 
@@ -492,6 +492,35 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void CopyConstructorTest_MaxDepth()
+        {
+            static void RunTest(int maxDepth, int effectiveMaxDepth)
+            {
+                var options = new JsonSerializerOptions { MaxDepth = maxDepth };
+                var newOptions = new JsonSerializerOptions(options);
+
+                Assert.Equal(maxDepth, options.MaxDepth);
+                Assert.Equal(maxDepth, newOptions.MaxDepth);
+
+                // Test for default effective max depth in exception message.
+                var myList = new List<object>();
+                myList.Add(myList);
+
+                string effectiveMaxDepthAsStr = effectiveMaxDepth.ToString();
+
+                JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(myList, options));
+                Assert.Contains(effectiveMaxDepthAsStr, ex.ToString());
+
+                ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(myList, newOptions));
+                Assert.Contains(effectiveMaxDepthAsStr, ex.ToString());
+            }
+
+            // Zero max depth
+            RunTest(0, 64);
+
+            // Specified max depth
+            RunTest(25, 25);
+        }
 
         private static JsonSerializerOptions CreateOptionsInstance()
         {
@@ -500,6 +529,7 @@ namespace System.Text.Json.Serialization.Tests
                 AllowTrailingCommas = true,
                 DefaultBufferSize = 20,
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+                Encoder = JavaScriptEncoder.Default,
                 IgnoreNullValues = true,
                 IgnoreReadOnlyProperties = true,
                 MaxDepth = 32,
@@ -520,19 +550,21 @@ namespace System.Text.Json.Serialization.Tests
         {
             Assert.Equal(options.AllowTrailingCommas, newOptions.AllowTrailingCommas);
             Assert.Equal(options.DefaultBufferSize, newOptions.DefaultBufferSize);
-            Assert.Equal(options.DictionaryKeyPolicy, newOptions.DictionaryKeyPolicy);
             Assert.Equal(options.IgnoreNullValues, newOptions.IgnoreNullValues);
             Assert.Equal(options.IgnoreReadOnlyProperties, newOptions.IgnoreReadOnlyProperties);
             Assert.Equal(options.MaxDepth, newOptions.MaxDepth);
             Assert.Equal(options.PropertyNameCaseInsensitive, newOptions.PropertyNameCaseInsensitive);
-            Assert.Equal(options.PropertyNamingPolicy, newOptions.PropertyNamingPolicy);
             Assert.Equal(options.ReadCommentHandling, newOptions.ReadCommentHandling);
             Assert.Equal(options.WriteIndented, newOptions.WriteIndented);
+
+            Assert.Same(options.DictionaryKeyPolicy, newOptions.DictionaryKeyPolicy);
+            Assert.Same(options.Encoder, newOptions.Encoder);
+            Assert.Same(options.PropertyNamingPolicy, newOptions.PropertyNamingPolicy);
 
             Assert.Equal(options.Converters.Count, newOptions.Converters.Count);
             for (int i = 0; i < options.Converters.Count; i++)
             {
-                Assert.Equal(options.Converters[i], newOptions.Converters[i]);
+                Assert.Same(options.Converters[i], newOptions.Converters[i]);
             }
         }
     }
