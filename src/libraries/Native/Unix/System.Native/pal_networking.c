@@ -428,7 +428,7 @@ struct GetAddrInfoAsyncState
     struct gaicb* gai_requests;
     struct sigevent sigevent;
 
-    const uint8_t* address;
+    uint8_t* address;
     HostEntry* entry;
     GetHostEntryForNameCallback callback;
 };
@@ -456,6 +456,7 @@ static void GetHostEntryForNameAsyncComplete(sigval_t context)
         callback(state->entry, ret);
     }
 
+    free(state->address);
     free(state);
 }
 #endif
@@ -501,9 +502,11 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, HostEntry*
         return GetAddrInfoErrorFlags_EAI_MEMORY;
     }
 
-    *state = (struct GetAddrInfoAsyncState){
+    char* localAddress = strdup((const char*)address);
+
+    *state = (struct GetAddrInfoAsyncState) {
         .gai_request = {
-            .ar_name = (const char*)address,
+            .ar_name = localAddress,
             .ar_service = NULL,
             .ar_request = &s_hostEntryForNameHints,
             .ar_result = NULL
@@ -516,7 +519,7 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, HostEntry*
             },
             .sigev_notify_function = GetHostEntryForNameAsyncComplete
         },
-        .address = address,
+        .address = (uint8_t*)localAddress,
         .entry = entry,
         .callback = callback
     };
@@ -527,6 +530,7 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, HostEntry*
 
     if (result != 0)
     {
+        free(localAddress);
         free(state);
         return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
     }
@@ -546,8 +550,15 @@ void SystemNative_FreeHostEntry(HostEntry* entry)
 {
     if (entry != NULL)
     {
-        free(entry->CanonicalName);
-        free(entry->IPAddressList);
+        if (entry->CanonicalName != NULL)
+        {
+            free(entry->CanonicalName);
+        }
+
+        if (entry->IPAddressList != NULL)
+        {
+            free(entry->IPAddressList);
+        }
 
         entry->CanonicalName = NULL;
         entry->IPAddressList = NULL;
