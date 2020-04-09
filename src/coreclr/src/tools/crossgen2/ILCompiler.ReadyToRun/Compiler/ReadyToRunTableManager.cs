@@ -28,6 +28,13 @@ namespace ILCompiler
         }
     }
 
+    public enum CompiledMethodCategory
+    {
+        NonInstantiated,
+        Instantiated,
+        All
+    }
+
     // TODO-REFACTOR: merge with the table manager
     public class MetadataManager
     {
@@ -89,7 +96,7 @@ namespace ILCompiler
             }
         }
 
-        public IEnumerable<IMethodNode> GetCompiledMethods(EcmaModule module, bool? genericInstantiations)
+        public IEnumerable<IMethodNode> GetCompiledMethods(EcmaModule moduleToEnumerate, CompiledMethodCategory methodCategory)
         {
             lock (_methodsGenerated)
             {
@@ -112,13 +119,13 @@ namespace ILCompiler
                     _sortedMethods = true;
                 }
             }
-            if (module == null)
+            if (moduleToEnumerate == null)
             {
-                if (!genericInstantiations.HasValue)
+                if (methodCategory == CompiledMethodCategory.All)
                 {
                     return _completeSortedMethods;
                 }
-                else if (genericInstantiations.Value)
+                else if (methodCategory == CompiledMethodCategory.Instantiated)
                 {
                     return _completeSortedGenericMethods;
                 }
@@ -128,19 +135,20 @@ namespace ILCompiler
                     throw new ArgumentException();
                 }
             }
-            else if (_methodsGenerated.TryGetValue(module, out var perModuleData))
+            else if (_methodsGenerated.TryGetValue(moduleToEnumerate, out var perModuleData))
             {
-                if (!genericInstantiations.HasValue)
+                if (methodCategory == CompiledMethodCategory.All)
                 {
-                    return GetCompiledMethodsAllMethodsInModuleHelper(module);
+                    return GetCompiledMethodsAllMethodsInModuleHelper(moduleToEnumerate);
                 }
 
-                if (genericInstantiations.Value)
+                if (methodCategory == CompiledMethodCategory.Instantiated)
                 {
                     return perModuleData.GenericMethodsGenerated;
                 }
                 else
                 {
+                    Debug.Assert(methodCategory == CompiledMethodCategory.NonInstantiated);
                     return perModuleData.MethodsGenerated;
                 }
             }
@@ -150,13 +158,13 @@ namespace ILCompiler
             }
         }
 
-        private IEnumerable<IMethodNode> GetCompiledMethodsAllMethodsInModuleHelper(EcmaModule module)
+        private IEnumerable<IMethodNode> GetCompiledMethodsAllMethodsInModuleHelper(EcmaModule moduleToEnumerate)
         {
-            foreach (var node in GetCompiledMethods(module, true))
+            foreach (var node in GetCompiledMethods(moduleToEnumerate, CompiledMethodCategory.Instantiated))
             {
                 yield return node;
             }
-            foreach (var node in GetCompiledMethods(module, false))
+            foreach (var node in GetCompiledMethods(moduleToEnumerate, CompiledMethodCategory.NonInstantiated))
             {
                 yield return node;
             }

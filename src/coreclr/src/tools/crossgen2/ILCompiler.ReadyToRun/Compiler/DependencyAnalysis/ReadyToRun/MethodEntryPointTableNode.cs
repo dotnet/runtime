@@ -58,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             List<EntryPoint> ridToEntryPoint = new List<EntryPoint>();
 
-            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(_module, false))
+            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(_module, CompiledMethodCategory.NonInstantiated))
             {
                 Debug.Assert(method.Method is EcmaMethod);
                 EcmaMethod ecmaMethod = (EcmaMethod)method.Method;

@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Build a map from inlinee to the list of inliners
             // We are only interested in the generic definitions of these.
-            foreach (MethodWithGCInfo methodNode in factory.EnumerateCompiledMethods(_module, null))
+            foreach (MethodWithGCInfo methodNode in factory.EnumerateCompiledMethods(_module, CompiledMethodCategory.All))
             {
                 MethodDesc[] inlinees = methodNode.InlinedMethods;
                 MethodDesc inliner = methodNode.Method;

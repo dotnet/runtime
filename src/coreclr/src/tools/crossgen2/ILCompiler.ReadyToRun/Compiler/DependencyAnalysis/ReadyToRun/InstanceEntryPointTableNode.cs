@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Dictionary<byte[], BlobVertex> uniqueFixups = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
             Dictionary<byte[], BlobVertex> uniqueSignatures = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
 
-            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(null, true))
+            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(null, CompiledMethodCategory.Instantiated))
             {
                 Debug.Assert(method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation);
 
