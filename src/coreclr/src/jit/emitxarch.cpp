@@ -2322,7 +2322,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         }
         else
         {
-            if (dspIsZero && baseRegisterRequiresDisplacement(reg) && !baseRegisterRequiresDisplacement(rgx))
+            if (dspIsZero && baseRegisterRequiresDisplacement(reg) && !baseRegisterRequiresDisplacement(rgx) &&
+                !isFloatReg(rgx))
             {
                 /* Swap reg and rgx, such that reg is not EBP/R13 */
                 regNumber tmp                       = reg;
