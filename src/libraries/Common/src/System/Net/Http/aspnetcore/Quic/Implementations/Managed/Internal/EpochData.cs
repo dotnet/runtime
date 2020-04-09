@@ -59,7 +59,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Inbound messages from CRYPTO frames.
         /// </summary>
-        internal InboundBuffer CryptoInboundBuffer { get; } = new InboundBuffer();
+        internal InboundBuffer CryptoInboundBuffer { get; } = new InboundBuffer(ulong.MaxValue);
 
         /// <summary>
         ///     Gets packet number and it's minimum safe encoding length for the next packet sent.

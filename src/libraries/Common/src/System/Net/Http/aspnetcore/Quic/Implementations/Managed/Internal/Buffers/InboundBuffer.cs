@@ -9,6 +9,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
     /// </summary>
     internal sealed class InboundBuffer : BufferBase
     {
+        public InboundBuffer(ulong maxData)
+        {
+            UpdateMaxData(maxData);
+        }
+
         /// <summary>
         ///     Ranges of data which are received, but not delivered.
         /// </summary>

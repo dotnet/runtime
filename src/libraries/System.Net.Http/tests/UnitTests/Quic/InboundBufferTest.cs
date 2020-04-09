@@ -7,7 +7,7 @@ namespace System.Net.Quic.Tests
 {
     public class InboundBufferTest
     {
-        private InboundBuffer buffer = new InboundBuffer();
+        private InboundBuffer buffer = new InboundBuffer(ulong.MaxValue);
 
         private void ReceiveBytes(ulong offset, int count)
         {

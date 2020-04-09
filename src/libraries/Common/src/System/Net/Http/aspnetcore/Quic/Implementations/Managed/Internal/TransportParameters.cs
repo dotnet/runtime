@@ -56,13 +56,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         /// <summary>
         ///     Initial flow control limit for locally-initiated bidirectional streams. This limit applies to newly created
-        ///     bidirectional streams opened by the endpoint that receives the transport parameter.
+        ///     bidirectional streams opened by the endpoint that sends the transport parameter.
         /// </summary>
         internal ulong InitialMaxStreamDataBidiLocal { get; set; }
 
         /// <summary>
         ///     Initial flow control limit for peer-initiated bidirectional streams. This limit applies to newly created
-        ///     bidirectional streams opened by the endpoint that sends the transport parameter.
+        ///     bidirectional streams opened by the endpoint that receives the transport parameter.
         /// </summary>
         internal ulong InitialMaxStreamDataBidiRemote { get; set; }
 
@@ -129,6 +129,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal static bool Read(QuicReader reader, bool isServer, out TransportParameters? parameters)
         {
             parameters = new TransportParameters();
+
+            // TODO-RZ: handle duplicate transport parameters (TRANSPORT_PARAMETER_ERROR)
 
             while (reader.BytesLeft > 0)
             {
