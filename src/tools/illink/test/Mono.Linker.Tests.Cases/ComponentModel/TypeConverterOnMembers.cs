@@ -6,6 +6,18 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.ComponentModel
 {
+	// Keep framework code that calls TypeConverter methods like ConvertFrom
+	[SetupLinkerCoreAction ("skip")]
+	[Reference ("System.dll")]
+	public class TypeConverterOnMembers
+	{
+		public static void Main ()
+		{
+			var r1 = new OnProperty ().Foo;
+			var r2 = new OnField ().Field;
+		}
+	}
+
 	[Kept]
 	class OnProperty
 	{
@@ -25,7 +37,7 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
 		[KeptBaseType (typeof (TypeConverter))]
 		class Custom1 : TypeConverter
 		{
-			[Kept]			
+			[Kept]
 			public Custom1 (Type type)
 			{
 			}
@@ -60,16 +72,6 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
 			{
 				return "test";
 			}
-		}
-	}
-
-	[Reference ("System.dll")]
-	public class TypeConverterOnMembers
-	{		
-		public static void Main ()
-		{
-			var r1 = new OnProperty ().Foo;
-			var r2 = new OnField ().Field;
 		}
 	}
 }

@@ -1,4 +1,4 @@
-﻿//
+//
 // Driver.cs
 //
 // Author:
@@ -821,7 +821,11 @@ namespace Mono.Linker {
 		protected virtual LinkContext GetDefaultContext (Pipeline pipeline)
 		{
 			LinkContext context = new LinkContext (pipeline) {
+#if FEATURE_ILLINK
+				CoreAction = AssemblyAction.Link,
+#else
 				CoreAction = AssemblyAction.Skip,
+#endif
 				UserAction = AssemblyAction.Link,
 				OutputDirectory = "output",
 				StripResources = true
@@ -862,7 +866,11 @@ namespace Mono.Linker {
 
 			Console.WriteLine ();
 			Console.WriteLine ("Actions");
+#if FEATURE_ILLINK
+			Console.WriteLine ("  -c ACTION           Action on the framework assemblies. Defaults to 'link'");
+#else
 			Console.WriteLine ("  -c ACTION           Action on the framework assemblies. Defaults to 'skip'");
+#endif
 			Console.WriteLine ("                        copy: Copy the assembly into the output (it can be updated when any of its dependencies is removed)");
 			Console.WriteLine ("                        copyused: Same as copy but only for assemblies which are needed");
 			Console.WriteLine ("                        link: Remove any ununsed code or metadata from the assembly");
