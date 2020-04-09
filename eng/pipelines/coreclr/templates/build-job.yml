@@ -124,8 +124,8 @@ jobs:
         parameters:
           installDotnet: true
 
-    # Build CoreCLR Diagnostic tools needed by the native runtime build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.diagtools $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)/artifacts/log/clr.diagtools.binlog
+    # Build CoreCLR tools needed by the native runtime build
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.buildtools $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)/artifacts/log/clr.buildtools.binlog
       displayName: Build CoreCLR Diagnostic Tools
 
     # Build CoreCLR Runtime
