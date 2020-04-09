@@ -12,6 +12,7 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -223,7 +224,7 @@ namespace System
 
         // Determines whether a String represents true or false.
         //
-        public static bool TryParse(string? value, out bool result)
+        public static bool TryParse([NotNullWhen(true)] string? value, out bool result)
         {
             if (value == null)
             {
