@@ -109,17 +109,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				Expression.Property (Expression.Parameter (typeof (bool), "somename"), typeof (ADerived), "ProtectedPropertyOnBase");
 				Expression.Property (null, typeof (ADerived), "PublicPropertyOnBase");
 			}
-			#endregion
 
-			#region UnrecognizedReflectionAccessPatterns
-			[UnrecognizedReflectionAccessPattern (
-				typeof (Expression), nameof (Expression.Property), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 			[Kept]
 			public void StaticPropertyExpected ()
 			{
 				var expr = Expression.Property (null, typeof (Foo), "TestOnlyStatic2");
 			}
+			#endregion
 
+			#region UnrecognizedReflectionAccessPatterns
 			[UnrecognizedReflectionAccessPattern (
 				typeof (Expression), nameof (Expression.Property), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 			[Kept]
@@ -190,25 +188,25 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 				return "unknownstring";
 			}
+
+			[Kept]
+			class ABase
+			{
+				[Kept]
+				[KeptBackingField]
+				protected bool ProtectedPropertyOnBase { [Kept] get; }
+
+				[Kept]
+				[KeptBackingField]
+				public static bool PublicPropertyOnBase { [Kept] get; }
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (ABase))]
+			class ADerived : ABase
+			{
+			}
 			#endregion
-		}
-
-		[Kept]
-		class ABase
-		{
-			[Kept]
-			[KeptBackingField]
-			protected bool ProtectedPropertyOnBase { [Kept] get; }
-
-			[Kept]
-			[KeptBackingField]
-			public static bool PublicPropertyOnBase { [Kept] get; }
-		}
-
-		[Kept]
-		[KeptBaseType (typeof (ABase))]
-		class ADerived : ABase
-		{
 		}
 	}
 }

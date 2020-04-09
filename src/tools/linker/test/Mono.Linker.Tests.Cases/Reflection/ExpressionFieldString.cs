@@ -101,18 +101,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Expression.Field (null, typeof (ADerived), "_protectedFieldOnBase");
 			Expression.Field (null, typeof (ADerived), "_publicFieldOnBase");
 		}
-		#endregion
 
-		#region UnrecognizedReflectionAccessPatterns
-		[UnrecognizedReflectionAccessPattern (
-				typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 		[Kept]
 		static void StaticFieldExpected ()
 		{
 			var expr = Expression.Field (null, typeof (ExpressionFieldString), "TestOnlyStatic2");
 		}
+		#endregion
 
-
+		#region UnrecognizedReflectionAccessPatterns
 		[UnrecognizedReflectionAccessPattern (
 			typeof (Expression), nameof (Expression.Field), new Type [] { typeof (Expression), typeof (Type), typeof (string) })]
 		[Kept]
@@ -178,22 +175,22 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			return "unknownstring";
 		}
+
+		[Kept]
+		class ABase
+		{
+			[Kept]
+			protected static bool _protectedFieldOnBase;
+
+			[Kept]
+			public static bool _publicFieldOnBase;
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (ABase))]
+		class ADerived : ABase
+		{
+		}
 		#endregion
-	}
-
-	[Kept]
-	class ABase
-	{
-		[Kept]
-		protected static bool _protectedFieldOnBase;
-
-		[Kept]
-		public static bool _publicFieldOnBase;
-	}
-
-	[Kept]
-	[KeptBaseType (typeof (ABase))]
-	class ADerived : ABase
-	{
 	}
 }
