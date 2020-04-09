@@ -424,7 +424,7 @@ void GCHeap::DiagTraceGCSegments()
             {
                 uint8_t* address = heap_segment_mem (seg);
                 size_t size = heap_segment_reserved (seg) - heap_segment_mem (seg);
-                gc_etw_segment_type segment_type = (i == 3) ?
+                gc_etw_segment_type segment_type = (i == loh_generation) ?
                     gc_etw_segment_large_object_heap :
                     gc_etw_segment_pinned_object_heap;
                 FIRE_EVENT(GCCreateSegment_V1, address, size, static_cast<uint32_t>(segment_type));
