@@ -79,7 +79,7 @@ jobs:
       value: /p:OfficialBuildId=$(Build.BuildNumber)
 
   - name: buildCommandSourcesDirectory
-    ${{ if ne(parameters.osGroup, 'Linux') }}:
+    ${{ if not(in(parameters.osGroup, 'Linux', 'FreeBSD')) }}:
       value: '$(Build.SourcesDirectory)/'
     # This job runs within Docker containers, so Build.SourcesDirectory is not accurate.
     ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
