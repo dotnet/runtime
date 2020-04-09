@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Text;
 
@@ -41,26 +42,49 @@ namespace System.Globalization
 
             ValidateArguments(strInput, normalizationForm);
 
-            char[] buf = new char[strInput.Length];
-
-            for (int attempts = 2; attempts > 0; attempts--)
+            char[]? toReturn = null;
+            try
             {
-                int realLen = Interop.Globalization.NormalizeString(normalizationForm, strInput, strInput.Length, buf, buf.Length);
+                int realLen = strInput.Length;
 
-                if (realLen == -1)
+                for (int attempt = 0; attempt < 2; attempt++)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+                    if (toReturn != null)
+                    {
+                        // Clear toReturn first to ensure we don't return the same buffer twice
+                        char[] temp = toReturn;
+                        toReturn = null;
+                        ArrayPool<char>.Shared.Return(temp);
+                    }
+
+                    Span<char> buffer = realLen <= 512
+                        ? stackalloc char[512]
+                        : (toReturn = ArrayPool<char>.Shared.Rent(realLen));
+
+                    realLen = Interop.Globalization.NormalizeString(normalizationForm, strInput, strInput.Length, buffer);
+
+                    if (realLen == -1)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+                    }
+
+                    if (realLen <= buffer.Length)
+                    {
+                        return new string(buffer.Slice(0, realLen));
+                    }
+
+                    Debug.Assert(realLen > 512);
                 }
 
-                if (realLen <= buf.Length)
-                {
-                    return new string(buf, 0, realLen);
-                }
-
-                buf = new char[realLen];
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
             }
-
-            throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+            finally
+            {
+                if (toReturn != null)
+                {
+                    ArrayPool<char>.Shared.Return(toReturn);
+                }
+            }
         }
 
         // -----------------------------

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -24,7 +25,7 @@ namespace System.Globalization
             // The only way to know if IsNormalizedString failed is through checking the Win32 last error
             // IsNormalizedString pinvoke has SetLastError attribute property which will set the last error
             // to 0 (ERROR_SUCCESS) before executing the calls.
-            bool result = Interop.Normaliz.IsNormalizedString((int)normalizationForm, strInput, strInput.Length);
+            bool result = Interop.Normaliz.IsNormalizedString(normalizationForm, strInput, strInput.Length);
 
             int lastError = Marshal.GetLastWin32Error();
             switch (lastError)
@@ -70,7 +71,7 @@ namespace System.Globalization
             // to 0 (ERROR_SUCCESS) before executing the calls.
 
             // Guess our buffer size first
-            int iLength = Interop.Normaliz.NormalizeString((int)normalizationForm, strInput, strInput.Length, null, 0);
+            int iLength = Interop.Normaliz.NormalizeString(normalizationForm, strInput, strInput.Length, Span<char>.Empty);
 
             int lastError = Marshal.GetLastWin32Error();
             // Could have an error (actually it'd be quite hard to have an error here)
@@ -102,47 +103,64 @@ namespace System.Globalization
             // Don't break for empty strings (only possible for D & KD and not really possible at that)
             if (iLength == 0) return string.Empty;
 
-            // Someplace to stick our buffer
-            char[] cBuffer;
-
-            while (true)
+            char[]? toReturn = null;
+            try
             {
-                // (re)allocation buffer and normalize string
-                cBuffer = new char[iLength];
+                Span<char> buffer = iLength <= 512
+                    ? stackalloc char[512]
+                    : (toReturn = ArrayPool<char>.Shared.Rent(iLength));
 
-                // NormalizeString pinvoke has SetLastError attribute property which will set the last error
-                // to 0 (ERROR_SUCCESS) before executing the calls.
-                iLength = Interop.Normaliz.NormalizeString((int)normalizationForm, strInput, strInput.Length, cBuffer, cBuffer.Length);
-                lastError = Marshal.GetLastWin32Error();
-
-                if (lastError == Interop.Errors.ERROR_SUCCESS)
-                    break;
-
-                // Could have an error (actually it'd be quite hard to have an error here)
-                switch (lastError)
+                while (true)
                 {
-                    // Do appropriate stuff for the individual errors:
-                    case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
-                        iLength = Math.Abs(iLength);
-                        Debug.Assert(iLength > cBuffer.Length, "Buffer overflow should have iLength > cBuffer.Length");
-                        continue;
+                    // NormalizeString pinvoke has SetLastError attribute property which will set the last error
+                    // to 0 (ERROR_SUCCESS) before executing the calls.
+                    iLength = Interop.Normaliz.NormalizeString(normalizationForm, strInput, strInput.Length, buffer);
+                    lastError = Marshal.GetLastWin32Error();
 
-                    case Interop.Errors.ERROR_INVALID_PARAMETER:
-                    case Interop.Errors.ERROR_NO_UNICODE_TRANSLATION:
-                        // Illegal code point or order found.  Ie: FFFE or D800 D800, etc.
-                        throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+                    if (lastError == Interop.Errors.ERROR_SUCCESS)
+                        break;
 
-                    case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
-                        throw new OutOfMemoryException();
+                    // Could have an error (actually it'd be quite hard to have an error here)
+                    switch (lastError)
+                    {
+                        // Do appropriate stuff for the individual errors:
+                        case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
+                            iLength = Math.Abs(iLength);
+                            Debug.Assert(iLength > buffer.Length, "Buffer overflow should have iLength > cBuffer.Length");
+                            if (toReturn != null)
+                            {
+                                // Clear toReturn first to ensure we don't return the same buffer twice
+                                char[] temp = toReturn;
+                                toReturn = null;
+                                ArrayPool<char>.Shared.Return(temp);
+                            }
+                            buffer = toReturn = ArrayPool<char>.Shared.Rent(iLength);
+                            continue;
 
-                    default:
-                        // We shouldn't get here...
-                        throw new InvalidOperationException(SR.Format(SR.UnknownError_Num, lastError));
+                        case Interop.Errors.ERROR_INVALID_PARAMETER:
+                        case Interop.Errors.ERROR_NO_UNICODE_TRANSLATION:
+                            // Illegal code point or order found.  Ie: FFFE or D800 D800, etc.
+                            throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+
+                        case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
+                            throw new OutOfMemoryException();
+
+                        default:
+                            // We shouldn't get here...
+                            throw new InvalidOperationException(SR.Format(SR.UnknownError_Num, lastError));
+                    }
+                }
+
+                // Copy our buffer into our new string, which will be the appropriate size
+                return new string(buffer.Slice(0, iLength));
+            }
+            finally
+            {
+                if (toReturn != null)
+                {
+                    ArrayPool<char>.Shared.Return(toReturn);
                 }
             }
-
-            // Copy our buffer into our new string, which will be the appropriate size
-            return new string(cBuffer, 0, iLength);
         }
     }
 }
