@@ -792,21 +792,51 @@ namespace System
         //
         // Strip Bidirectional control characters from this string
         //
-        internal static unsafe string StripBidiControlCharacter(char* strToClean, int start, int length)
+        internal static unsafe string StripBidiControlCharacters(char* strToClean, int length, string? backingString = null)
         {
-            if (length <= 0) return "";
+            Debug.Assert(backingString is null || length == backingString.Length);
 
-            char[] cleanStr = new char[length];
-            int count = 0;
-            for (int i = 0; i < length; ++i)
+            int charsToRemove = 0;
+            for (int i = 0; i < length; i++)
             {
-                char c = strToClean[start + i];
-                if (c < '\u200E' || c > '\u202E' || !IsBidiControlCharacter(c))
+                if ((uint)(strToClean[i] - '\u200E') <= ('\u202E' - '\u200E') && IsBidiControlCharacter(strToClean[i]))
                 {
-                    cleanStr[count++] = c;
+                    charsToRemove++;
                 }
             }
-            return new string(cleanStr, 0, count);
+
+            if (charsToRemove == 0)
+            {
+                return backingString ?? new string(strToClean, 0, length);
+            }
+
+            if (charsToRemove == length)
+            {
+                return string.Empty;
+            }
+
+            return string.Create(length - charsToRemove, (ip: (IntPtr)strToClean, length), (buffer, state) =>
+            {
+                char* source = (char*)state.ip;
+                int destIndex = 0;
+                int length = state.length;
+                for (int i = 0; i < length; i++)
+                {
+                    if ((uint)(source[i] - '\u200E') > ('\u202E' - '\u200E') || !IsBidiControlCharacter(source[i]))
+                    {
+                        buffer[destIndex++] = source[i];
+                    }
+                }
+                Debug.Assert(buffer.Length == destIndex);
+            });
+        }
+
+        internal static unsafe string StripBidiControlCharacters(string strToClean)
+        {
+            fixed (char* strPointer = strToClean)
+            {
+                return StripBidiControlCharacters(strPointer, strToClean.Length, strToClean);
+            }
         }
     }
 }
