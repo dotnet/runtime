@@ -9,14 +9,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			public MethodDefinition SourceMethod;
 			public MethodDefinition ReflectionMethod;
-			public IMemberDefinition AccessedItem;
+			public IMetadataTokenProvider AccessedItem;
 			public string Message;
 		}
 
 		public List<ReflectionAccessPattern> RecognizedPatterns = new List<ReflectionAccessPattern> ();
 		public List<ReflectionAccessPattern> UnrecognizedPatterns = new List<ReflectionAccessPattern> ();
 
-		public void RecognizedReflectionAccessPattern (MethodDefinition sourceMethod, MethodDefinition reflectionMethod, IMemberDefinition accessedItem)
+		public void RecognizedReflectionAccessPattern (MethodDefinition sourceMethod, MethodDefinition reflectionMethod, IMetadataTokenProvider accessedItem)
 		{
 			RecognizedPatterns.Add (new ReflectionAccessPattern {
 				SourceMethod = sourceMethod,

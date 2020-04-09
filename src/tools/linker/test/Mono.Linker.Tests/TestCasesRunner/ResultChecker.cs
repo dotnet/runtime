@@ -808,7 +808,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return fullName;
 		}
 
-		static string GetFullMemberNameFromDefinition (IMemberDefinition member)
+		static string GetFullMemberNameFromDefinition (IMetadataTokenProvider member)
 		{
 			// Method which basically returns the same as member.ToString() but without the return type
 			// of a method (if it's a method).
@@ -816,19 +816,22 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			// as it would have to actually resolve the referenced method, which is very expensive and no necessary
 			// for the tests to work (the return types are redundant piece of information anyway).
 
-			if (member is TypeDefinition) {
-				return member.FullName;
+			if (member is IMemberDefinition memberDefinition) {
+				if (memberDefinition is TypeDefinition) {
+					return memberDefinition.FullName;
+				}
+
+				string fullName = memberDefinition.DeclaringType.FullName + "::";
+				if (memberDefinition is MethodDefinition method) {
+					fullName += method.GetSignature ();
+				} else {
+					fullName += memberDefinition.Name;
+				}
+
+				return fullName;
 			}
 
-			string fullName = member.DeclaringType.FullName + "::";
-			if (member is MethodDefinition method) {
-				fullName += method.GetSignature ();
-			}
-			else {
-				fullName += member.Name;
-			}
-
-			return fullName;
+			throw new NotImplementedException ($"Getting the full member name has not been implemented for {member}");
 		}
 
 		static string RecognizedReflectionAccessPatternToString (TestReflectionPatternRecorder.ReflectionAccessPattern pattern)
