@@ -130,7 +130,6 @@ bool pal::getcwd(pal::string_t* recv)
     return true;
 }
 
-#if defined(TARGET_LINUX)
 namespace
 {
     bool get_loaded_library_from_proc_maps(const pal::char_t *library_name, pal::dll_t *dll, pal::string_t *path)
@@ -177,7 +176,6 @@ namespace
         return true;
     }
 }
-#endif
 
 bool pal::get_loaded_library(
     const char_t *library_name,
@@ -199,12 +197,8 @@ bool pal::get_loaded_library(
             return false;
 
         // dlopen on some systems only finds loaded libraries when given the full path
-        // Check proc maps as a fallback on Linux
-#if defined(TARGET_LINUX)
+        // Check proc maps as a fallback
         return get_loaded_library_from_proc_maps(library_name, dll, path);
-#else
-        return false;
-#endif
     }
 
     // Not all systems support getting the path from just the handle (e.g. dlinfo),
