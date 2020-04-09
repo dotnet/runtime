@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Globalization
@@ -21,7 +22,14 @@ namespace System.Globalization
 
             ValidateArguments(strInput, normalizationForm);
 
-            int ret = Interop.Globalization.IsNormalized(normalizationForm, strInput, strInput.Length);
+            int ret;
+            unsafe
+            {
+                fixed (char* pInput = strInput)
+                {
+                    ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, strInput.Length);
+                }
+            }
 
             if (ret == -1)
             {
@@ -51,7 +59,15 @@ namespace System.Globalization
 
                 for (int attempt = 0; attempt < 2; attempt++)
                 {
-                    realLen = Interop.Globalization.NormalizeString(normalizationForm, strInput, strInput.Length, buffer);
+                    int realLen;
+                    unsafe
+                    {
+                        fixed (char* pInput = strInput)
+                        fixed (char* pDest = &MemoryMarshal.GetReference(buffer))
+                        {
+                            realLen = Interop.Globalization.NormalizeString(normalizationForm, pInput, strInput.Length, pDest, buffer.Length);
+                        }
+                    }
 
                     if (realLen == -1)
                     {
