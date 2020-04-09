@@ -474,7 +474,6 @@ namespace Mono.Linker {
 
 		public bool IsEnabled (CodeOptimizations optimizations, string assemblyName)
 		{
-			Debug.Assert (assemblyName != null);
 			// Only one bit is set
 			Debug.Assert (optimizations != 0 && (optimizations & (optimizations - 1)) == 0);
 
