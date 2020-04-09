@@ -12,7 +12,7 @@ namespace System.Globalization
     {
         private void NlsInitSortHandle()
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             _sortHandle = NlsGetSortHandle(_sortName);
         }
 
@@ -78,7 +78,7 @@ namespace System.Globalization
         private static int NlsIndexOfOrdinalCore(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             Debug.Assert(source.Length != 0);
             Debug.Assert(value.Length != 0);
@@ -90,7 +90,7 @@ namespace System.Globalization
         private static int NlsLastIndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             Debug.Assert(source != null);
             Debug.Assert(value != null);
@@ -107,7 +107,7 @@ namespace System.Globalization
         private unsafe int NlsGetHashCodeOfString(ReadOnlySpan<char> source, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             // LCMapStringEx doesn't support passing cchSrc = 0, so if given a null or empty input
@@ -172,7 +172,7 @@ namespace System.Globalization
         private static unsafe int NlsCompareStringOrdinalIgnoreCase(ref char string1, int count1, ref char string2, int count2)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             Debug.Assert(count1 > 0);
             Debug.Assert(count2 > 0);
@@ -200,7 +200,7 @@ namespace System.Globalization
         {
             Debug.Assert(string2 != null);
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
@@ -245,7 +245,7 @@ namespace System.Globalization
         private unsafe int NlsCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
@@ -363,7 +363,7 @@ namespace System.Globalization
         private unsafe int NlsIndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             Debug.Assert(target.Length != 0);
             Debug.Assert(options == CompareOptions.None || options == CompareOptions.IgnoreCase);
@@ -375,7 +375,7 @@ namespace System.Globalization
         private unsafe int NlsLastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
@@ -418,7 +418,7 @@ namespace System.Globalization
         private unsafe bool NlsEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             Debug.Assert(!suffix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -480,7 +480,7 @@ namespace System.Globalization
         private unsafe SortKey NlsCreateSortKey(string source, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             if (source == null) { throw new ArgumentNullException(nameof(source)); }
 
@@ -534,7 +534,7 @@ namespace System.Globalization
         private static unsafe bool NlsIsSortable(char* text, int length)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(text != null);
 
             return Interop.Kernel32.IsNLSDefinedString(Interop.Kernel32.COMPARE_STRING, 0, IntPtr.Zero, text, length);
@@ -581,7 +581,7 @@ namespace System.Globalization
         private unsafe SortVersion NlsGetSortVersion()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             Interop.Kernel32.NlsVersionInfoEx nlsVersion = default;
             nlsVersion.dwNLSVersionInfoSize = sizeof(Interop.Kernel32.NlsVersionInfoEx);

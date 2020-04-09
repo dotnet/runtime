@@ -81,13 +81,13 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 12, 13, CompareOptions.None, 10 };
 
             // Platform differences
-            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 11, 12, CompareOptions.None, PlatformDetection.ShouldUseNls ? 5 : -1 };
+            yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", 11, 12, CompareOptions.None, PlatformDetection.IsNlsGlobalization ? 5 : -1 };
 
         }
 
         public static IEnumerable<object[]> LastIndexOf_Aesc_Ligature_TestData()
         {
-            bool useNls = PlatformDetection.ShouldUseNls;
+            bool useNls = PlatformDetection.IsNlsGlobalization;
 
             // Searches for the ligature \u00C6
             string source = "Is AE or ae the same as \u00C6 or \u00E6?";
@@ -233,7 +233,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void LastIndexOf_UnassignedUnicode()
         {
-            bool useNls = PlatformDetection.ShouldUseNls;
+            bool useNls = PlatformDetection.IsNlsGlobalization;
             LastIndexOf_String(s_invariantCompare, "FooBar", "Foo\uFFFFBar", 5, 6, CompareOptions.None, useNls ? 0 : -1);
             LastIndexOf_String(s_invariantCompare, "~FooBar", "Foo\uFFFFBar", 6, 7, CompareOptions.IgnoreNonSpace, useNls ? 1 : -1);
         }

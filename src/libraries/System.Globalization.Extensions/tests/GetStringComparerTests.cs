@@ -35,7 +35,7 @@ namespace System.Globalization.Tests
         [InlineData("cot\u00E9", "c\u00F4te", "fr-FR", CompareOptions.None, 1, -1)]
         public static void Compare(string x, string y, string cultureName, CompareOptions options, int expectedNls, int expectedICU)
         {
-            int expected = PlatformDetection.ShouldUseNls ? expectedNls : expectedICU;
+            int expected = PlatformDetection.IsNlsGlobalization ? expectedNls : expectedICU;
             StringComparer comparer = new CultureInfo(cultureName).CompareInfo.GetStringComparer(options);
 
             Assert.Equal(expected, Math.Sign(comparer.Compare(x, y)));

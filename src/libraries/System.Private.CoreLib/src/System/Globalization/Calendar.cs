@@ -725,17 +725,7 @@ namespace System.Globalization
 
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
         {
-            int twoDigitYearMax;
-
-            if (GlobalizationMode.UseIcu)
-            {
-                twoDigitYearMax = CalendarData.IcuGetTwoDigitYearMax(CalID);
-            }
-            else
-            {
-                twoDigitYearMax = CalendarData.NlsGetTwoDigitYearMax(CalID);
-            }
-
+            int twoDigitYearMax = GlobalizationMode.UseNls ? CalendarData.NlsGetTwoDigitYearMax(CalID) : CalendarData.IcuGetTwoDigitYearMax(CalID);
             return twoDigitYearMax >= 0 ? twoDigitYearMax : defaultYearValue;
         }
     }

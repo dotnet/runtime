@@ -16,10 +16,10 @@ namespace System.Globalization.Tests
             Type globalizationMode = Type.GetType("System.Globalization.GlobalizationMode");
             if (globalizationMode != null)
             {
-                MethodInfo methodInfo = globalizationMode.GetProperty("UseIcu", BindingFlags.NonPublic | BindingFlags.Static).GetMethod;
+                MethodInfo methodInfo = globalizationMode.GetProperty("UseNls", BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
                 if (methodInfo != null)
                 {
-                    Assert.False((bool)methodInfo.Invoke(null, null));
+                    Assert.True((bool)methodInfo.Invoke(null, null));
                     return;
                 }
             }
@@ -30,7 +30,7 @@ namespace System.Globalization.Tests
         [Fact]
         public static void IcuShouldNotBeLoaded()
         {
-            Assert.False(PlatformDetection.ShouldUseIcu);
+            Assert.False(PlatformDetection.IsIcuGlobalization);
         }
     }
 }

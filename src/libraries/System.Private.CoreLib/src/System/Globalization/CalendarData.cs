@@ -105,9 +105,9 @@ namespace System.Globalization
 
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            bool loadedCalendarData = GlobalizationMode.UseIcu ?
-                                        IcuLoadCalendarDataFromSystem(localeName, calendarId) :
-                                        NlsLoadCalendarDataFromSystem(localeName, calendarId);
+            bool loadedCalendarData = GlobalizationMode.UseNls ?
+                                        NlsLoadCalendarDataFromSystem(localeName, calendarId) :
+                                        IcuLoadCalendarDataFromSystem(localeName, calendarId);
 
             if (!loadedCalendarData)
             {
@@ -381,8 +381,8 @@ namespace System.Globalization
             return "en-US";
         }
 
-        private bool SystemSupportsTaiwaneseCalendar() => GlobalizationMode.UseIcu ?
-                                                            IcuSystemSupportsTaiwaneseCalendar() :
-                                                            NlsSystemSupportsTaiwaneseCalendar();
+        private bool SystemSupportsTaiwaneseCalendar() => GlobalizationMode.UseNls ?
+                                                            NlsSystemSupportsTaiwaneseCalendar() :
+                                                            IcuSystemSupportsTaiwaneseCalendar();
     }
 }

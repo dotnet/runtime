@@ -49,7 +49,7 @@ namespace System.Globalization
         private unsafe bool NlsInitCultureData()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             int result;
             string realNameBuffer = _sRealName;
@@ -182,7 +182,7 @@ namespace System.Globalization
 
         private string NlsGetLocaleInfo(LocaleStringData type)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfo] Expected _sWindowsName to be populated by already");
             return NlsGetLocaleInfo(_sWindowsName, type);
         }
@@ -191,7 +191,7 @@ namespace System.Globalization
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
         private string NlsGetLocaleInfo(string localeName, LocaleStringData type)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             uint lctype = (uint)type;
 
             return GetLocaleInfoFromLCType(localeName, lctype, UseUserOverride);
@@ -199,7 +199,7 @@ namespace System.Globalization
 
         private int NlsGetLocaleInfo(LocaleNumberData type)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             uint lctype = (uint)type;
 
             // Fix lctype if we don't want overrides
@@ -216,21 +216,21 @@ namespace System.Globalization
 
         private int[] NlsGetLocaleInfo(LocaleGroupingData type)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
             return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sWindowsName, (uint)type, UseUserOverride));
         }
 
         private string? NlsGetTimeFormatString()
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
             return ReescapeWin32String(GetLocaleInfoFromLCType(_sWindowsName, Interop.Kernel32.LOCALE_STIMEFORMAT, UseUserOverride));
         }
 
         private int NlsGetFirstDayOfWeek()
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
 
             int result = GetLocaleInfoExInt(_sWindowsName, Interop.Kernel32.LOCALE_IFIRSTDAYOFWEEK | (!UseUserOverride ? Interop.Kernel32.LOCALE_NOUSEROVERRIDE : 0));
@@ -242,7 +242,7 @@ namespace System.Globalization
         private string[]? NlsGetTimeFormats()
         {
             // Note that this gets overrides for us all the time
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.DoEnumTimeFormats] Expected _sWindowsName to be populated by already");
             string[]? result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, 0, UseUserOverride));
 
@@ -252,7 +252,7 @@ namespace System.Globalization
         private string[]? NlsGetShortTimeFormats()
         {
             // Note that this gets overrides for us all the time
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.DoEnumShortTimeFormats] Expected _sWindowsName to be populated by already");
             string[]? result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, Interop.Kernel32.TIME_NOSECONDS, UseUserOverride));
 
@@ -264,7 +264,7 @@ namespace System.Globalization
         private static CultureData? NlsGetCultureDataFromRegionName(string regionName)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(regionName != null);
 
             EnumLocaleData context;
@@ -287,7 +287,7 @@ namespace System.Globalization
 
         private string NlsGetLanguageDisplayName(string cultureName)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             // Usually the UI culture shouldn't be different than what we got from WinRT except
             // if DefaultThreadCurrentUICulture was set
@@ -307,7 +307,7 @@ namespace System.Globalization
 
         private string NlsGetRegionDisplayName()
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             // If the current UI culture matching the OS UI language, we'll get the display name from the OS.
             // otherwise, we use the native name as we don't carry resources for the region display names anyway.
@@ -604,7 +604,7 @@ namespace System.Globalization
         private static unsafe string? NlsLCIDToLocaleName(int culture)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1]; // +1 for the null termination
             int length = Interop.Kernel32.LCIDToLocaleName(culture, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
@@ -619,50 +619,50 @@ namespace System.Globalization
 
         private int NlsGetAnsiCodePage(string cultureName)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             return NlsGetLocaleInfo(LocaleNumberData.AnsiCodePage);
         }
 
         private int NlsGetOemCodePage(string cultureName)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             return NlsGetLocaleInfo(LocaleNumberData.OemCodePage);
         }
 
         private int NlsGetMacCodePage(string cultureName)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             return NlsGetLocaleInfo(LocaleNumberData.MacCodePage);
         }
 
         private int NlsGetEbcdicCodePage(string cultureName)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             return NlsGetLocaleInfo(LocaleNumberData.EbcdicCodePage);
         }
 
         private int NlsGetGeoId(string cultureName)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             return NlsGetLocaleInfo(LocaleNumberData.GeoId);
         }
 
         private int NlsGetDigitSubstitution(string cultureName)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             return NlsGetLocaleInfo(LocaleNumberData.DigitSubstitution);
         }
 
         private string NlsGetThreeLetterWindowsLanguageName(string cultureName)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             return NlsGetLocaleInfo(cultureName, LocaleStringData.AbbreviatedWindowsLanguageName);
         }
 
         private static CultureInfo[] NlsEnumCultures(CultureTypes types)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             uint flags = 0;
 
@@ -712,7 +712,7 @@ namespace System.Globalization
 
         private string NlsGetConsoleFallbackName(string cultureName)
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             return NlsGetLocaleInfo(cultureName, LocaleStringData.ConsoleFallbackName);
         }
 
@@ -720,7 +720,7 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(!GlobalizationMode.UseIcu);
+                Debug.Assert(GlobalizationMode.UseNls);
                 EnumData context = default;
                 context.strings = new List<string>();
 
@@ -741,7 +741,7 @@ namespace System.Globalization
 
         internal static unsafe CultureData NlsGetCurrentRegionData()
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Span<char> geoIso2Letters = stackalloc char[10];
 
             int geoId = Interop.Kernel32.GetUserGeoID(Interop.Kernel32.GEOCLASS_NATION);

@@ -23,7 +23,7 @@ namespace System.Globalization.Tests
         /// In the CultureInfoAll test class we are testing the expected behavior
         /// for NLS by enumerating all locales on the system and then test them.
         /// </summary>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.ShouldUseIcu))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
         [MemberData(nameof(PercentPositivePattern_TestData))]
         public void PercentPositivePattern_Get_ReturnsExpected_ICU(NumberFormatInfo format, int expected)
         {

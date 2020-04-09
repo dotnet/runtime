@@ -16,12 +16,12 @@ namespace System.Globalization.Tests
 
         // On Windows, hiragana characters sort after katakana.
         // On ICU, it is the opposite
-        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.ShouldUseNls ? 1 : -1;
+        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsNlsGlobalization ? 1 : -1;
 
         // On Windows, all halfwidth characters sort before fullwidth characters.
         // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
         // sort before the corresponding characters that are in the block U+FF00-U+FFEF
-        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.ShouldUseNls ? -1 : 1;
+        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsNlsGlobalization ? -1 : 1;
 
         private const string SoftHyphen = "\u00AD";
 
@@ -39,7 +39,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3060", "\uFF80\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
 
-            bool useNls = PlatformDetection.ShouldUseNls;
+            bool useNls = PlatformDetection.IsNlsGlobalization;
 
             yield return new object[] { s_invariantCompare, "\u30C7\u30BF\u30D9\u30B9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E\uFF7D", CompareOptions.None, useNls ? 1 : -1 };
             yield return new object[] { s_invariantCompare, "\u30C7", "\uFF83\uFF9E", CompareOptions.None, useNls ? 1 : -1 };
@@ -237,7 +237,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("es-ES").CompareInfo, "llegar", "lugar", CompareOptions.None, -1 };
 
             // Misc differences between platforms
-            bool useNls = PlatformDetection.ShouldUseNls;
+            bool useNls = PlatformDetection.IsNlsGlobalization;
 
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A1", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, useNls ? 1: 0 };
             yield return new object[] { s_invariantCompare, "'\u3000'", "''", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, useNls ? 1 : -1 };
@@ -253,13 +253,13 @@ namespace System.Globalization.Tests
 
         // There is a regression in Windows 190xx version with the Kana comparison. Avoid running this test there.
         public static bool IsNotWindowsKanaRegressedVersion() => !PlatformDetection.IsWindows10Version1903OrGreater ||
-                                                              PlatformDetection.ShouldUseIcu ||
+                                                              PlatformDetection.IsIcuGlobalization ||
                                                               s_invariantCompare.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) == 0;
 
         [Fact]
         public void CompareWithUnassignedChars()
         {
-            int result = PlatformDetection.ShouldUseNls ? 0 : -1;
+            int result = PlatformDetection.IsNlsGlobalization ? 0 : -1;
             Compare(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result);
             Compare(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result);
         }

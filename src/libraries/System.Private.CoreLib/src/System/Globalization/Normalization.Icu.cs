@@ -12,7 +12,7 @@ namespace System.Globalization
         private static bool IcuIsNormalized(string strInput, NormalizationForm normalizationForm)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             ValidateArguments(strInput, normalizationForm);
 
@@ -29,7 +29,7 @@ namespace System.Globalization
         private static string IcuNormalize(string strInput, NormalizationForm normalizationForm)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             ValidateArguments(strInput, normalizationForm);
 

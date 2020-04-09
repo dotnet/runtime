@@ -54,7 +54,7 @@ namespace System.Globalization
             _cultureName = _cultureData.CultureName;
             _textInfoName = _cultureData.TextInfoName;
 
-            if (!GlobalizationMode.UseIcu)
+            if (GlobalizationMode.UseNls)
             {
                 _sortHandle = CompareInfo.NlsGetSortHandle(_textInfoName);
             }
@@ -820,13 +820,13 @@ namespace System.Globalization
 
         private unsafe void ChangeCaseCore(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
-            if (GlobalizationMode.UseIcu)
+            if (GlobalizationMode.UseNls)
             {
-                IcuChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
             }
             else
             {
-                NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                IcuChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
             }
         }
 

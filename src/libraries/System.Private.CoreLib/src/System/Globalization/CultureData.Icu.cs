@@ -23,7 +23,7 @@ namespace System.Globalization
             Debug.Assert(_sRealName != null);
 
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             string realNameBuffer = _sRealName;
 
@@ -117,7 +117,7 @@ namespace System.Globalization
         private string IcuGetLocaleInfo(LocaleStringData type)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo] Expected _sWindowsName to be populated already");
             return IcuGetLocaleInfo(_sWindowsName, type);
@@ -127,7 +127,7 @@ namespace System.Globalization
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
         private unsafe string IcuGetLocaleInfo(string localeName, LocaleStringData type)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(localeName != null, "[CultureData.IcuGetLocaleInfo] Expected localeName to be not be null");
 
             switch (type)
@@ -152,7 +152,7 @@ namespace System.Globalization
 
         private int IcuGetLocaleInfo(LocaleNumberData type)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo(LocaleNumberData)] Expected _sWindowsName to be populated already");
 
@@ -177,7 +177,7 @@ namespace System.Globalization
 
         private int[] IcuGetLocaleInfo(LocaleGroupingData type)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo(LocaleGroupingData)] Expected _sWindowsName to be populated already");
 
             int primaryGroupingSize = 0;
@@ -200,7 +200,7 @@ namespace System.Globalization
 
         private unsafe string IcuGetTimeFormatString(bool shortFormat)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected _sWindowsName to be populated already");
 
             char* buffer = stackalloc char[ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY];
@@ -307,7 +307,7 @@ namespace System.Globalization
         private static string? IcuLCIDToLocaleName(int culture)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             return IcuLocaleData.LCIDToLocaleName(culture);
         }
@@ -315,7 +315,7 @@ namespace System.Globalization
         private static int IcuLocaleNameToLCID(string cultureName)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             int lcid = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.Lcid);
             return lcid == -1 ? CultureInfo.LOCALE_CUSTOM_UNSPECIFIED : lcid;
@@ -323,56 +323,56 @@ namespace System.Globalization
 
         private static int IcuGetAnsiCodePage(string cultureName)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             int ansiCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.AnsiCodePage);
             return ansiCodePage == -1 ? CultureData.Invariant.ANSICodePage : ansiCodePage;
         }
 
         private static int IcuGetOemCodePage(string cultureName)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             int oemCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.OemCodePage);
             return oemCodePage == -1 ? CultureData.Invariant.OEMCodePage : oemCodePage;
         }
 
         private static int IcuGetMacCodePage(string cultureName)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             int macCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.MacCodePage);
             return macCodePage == -1 ? CultureData.Invariant.MacCodePage : macCodePage;
         }
 
         private static int IcuGetEbcdicCodePage(string cultureName)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             int ebcdicCodePage = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.EbcdicCodePage);
             return ebcdicCodePage == -1 ? CultureData.Invariant.EBCDICCodePage : ebcdicCodePage;
         }
 
         private static int IcuGetGeoId(string cultureName)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             int geoId = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.GeoId);
             return geoId == -1 ? CultureData.Invariant.GeoId : geoId;
         }
 
         private static int IcuGetDigitSubstitution(string cultureName)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             int digitSubstitution = IcuLocaleData.GetLocaleDataNumericPart(cultureName, IcuLocaleDataParts.DigitSubstitution);
             return digitSubstitution == -1 ? (int) DigitShapes.None : digitSubstitution;
         }
 
         private static string IcuGetThreeLetterWindowsLanguageName(string cultureName)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             return IcuLocaleData.GetThreeLetterWindowsLanguageName(cultureName) ?? "ZZZ" /* default lang name */;
         }
 
         private static CultureInfo[] IcuEnumCultures(CultureTypes types)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             if ((types & (CultureTypes.NeutralCultures | CultureTypes.SpecificCultures)) == 0)
             {
@@ -423,7 +423,7 @@ namespace System.Globalization
 
         private static string IcuGetConsoleFallbackName(string cultureName)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             return IcuLocaleData.GetConsoleUICulture(cultureName);
         }
     }

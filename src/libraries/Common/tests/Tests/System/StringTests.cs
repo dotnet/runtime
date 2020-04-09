@@ -1682,7 +1682,7 @@ namespace System.Tests
         // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
         // For desired behavior, use ordinal comparison instead of linguistic comparison.
         // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.ShouldUseNls))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]
@@ -1705,7 +1705,7 @@ namespace System.Tests
         // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
         // For desired behavior, use ordinal comparison instead of linguistic comparison.
         // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.ShouldUseNls))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData(StringComparison.InvariantCulture)]
         [InlineData(StringComparison.InvariantCultureIgnoreCase)]
         public static void EndsWith_NullInStrings_NonOrdinal(StringComparison comparison)
@@ -2527,8 +2527,8 @@ namespace System.Tests
             yield return new object[] { StringComparison.OrdinalIgnoreCase, false };
 
             // NLS and ICU disagree about how these strings compare in the default locale.
-            yield return new object[] { StringComparison.InvariantCulture, PlatformDetection.ShouldUseNls };
-            yield return new object[] { StringComparison.InvariantCultureIgnoreCase, PlatformDetection.ShouldUseNls };
+            yield return new object[] { StringComparison.InvariantCulture, PlatformDetection.IsNlsGlobalization };
+            yield return new object[] { StringComparison.InvariantCultureIgnoreCase, PlatformDetection.IsNlsGlobalization };
         }
 
         [Theory]
@@ -2671,7 +2671,7 @@ namespace System.Tests
             // This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
             // For desired behavior, use ordinal comparison instead of linguistic comparison.
             // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
-            if (target == '\0' && PlatformDetection.ShouldUseIcu)
+            if (target == '\0' && PlatformDetection.IsIcuGlobalization)
             {
                 throw new SkipTestException("Target \\0 is not supported in ICU");
             }
@@ -2785,7 +2785,7 @@ namespace System.Tests
         // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
         // For desired behavior, use ordinal comparison instead of linguistic comparison.
         // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.ShouldUseNls))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData("He\0lo", "He\0lo", 0)]
         [InlineData("He\0lo", "He\0", 0)]
         [InlineData("He\0lo", "\0", 2)]
@@ -2950,8 +2950,8 @@ namespace System.Tests
                     If CurrentCultureIgnoreCase is specified, ICU will use 'secondary' collation rules
                     which ignore the contraction collation weights (defined as 'tertiary' rules)
                 */
-                Assert.Equal(PlatformDetection.ShouldUseNls ? 0 : -1, source.IndexOf(target));
-                Assert.Equal(PlatformDetection.ShouldUseNls ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
+                Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target));
+                Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
 
                 Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
@@ -2959,7 +2959,7 @@ namespace System.Tests
 
                 ReadOnlySpan<char> span = source.AsSpan();
 
-                Assert.Equal(PlatformDetection.ShouldUseNls ? 0 : -1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
+                Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
 
                 Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.Ordinal));
@@ -3874,7 +3874,7 @@ namespace System.Tests
         // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
         // For desired behavior, use ordinal comparison instead of linguistic comparison.
         // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.ShouldUseNls))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData("He\0lo", "He\0lo", 0)]
         [InlineData("He\0lo", "He\0", 0)]
         [InlineData("He\0lo", "\0", 2)]
@@ -4663,7 +4663,7 @@ namespace System.Tests
         // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
         // For desired behavior, use ordinal comparison instead of linguistic comparison.
         // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.ShouldUseNls))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]
@@ -7091,7 +7091,7 @@ namespace System.Tests
         // NOTE: This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
         // For desired behavior, use ordinal comparison instead of linguistic comparison.
         // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.ShouldUseNls))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNlsGlobalization))]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.InvariantCulture)]

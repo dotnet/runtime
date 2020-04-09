@@ -16,15 +16,13 @@ namespace System.Globalization
 
         private void IcuInitSortHandle()
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
-
             if (GlobalizationMode.Invariant)
             {
                 _isAsciiEqualityOrdinal = true;
             }
             else
             {
-                Debug.Assert(GlobalizationMode.UseIcu);
+                Debug.Assert(!GlobalizationMode.UseNls);
 
                 // Inline the following condition to avoid potential implementation cycles within globalization
                 //
@@ -40,7 +38,7 @@ namespace System.Globalization
         private static unsafe int IcuIndexOfOrdinalCore(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(!value.IsEmpty);
 
             // Ordinal (non-linguistic) comparisons require the length of the target string to be no greater
@@ -102,7 +100,7 @@ namespace System.Globalization
         private static unsafe int IcuLastIndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             Debug.Assert(source != null);
             Debug.Assert(value != null);
@@ -152,7 +150,7 @@ namespace System.Globalization
         private static unsafe int IcuCompareStringOrdinalIgnoreCase(ref char string1, int count1, ref char string2, int count2)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             Debug.Assert(count1 > 0);
             Debug.Assert(count2 > 0);
@@ -172,7 +170,7 @@ namespace System.Globalization
         private unsafe int IcuCompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(string2 != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
@@ -189,7 +187,7 @@ namespace System.Globalization
         private unsafe int IcuCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             // Unlike NLS, ICU (ucol_getSortKey) allows passing nullptr for either of the source arguments
@@ -205,7 +203,7 @@ namespace System.Globalization
         private unsafe int IcuIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
@@ -236,7 +234,7 @@ namespace System.Globalization
         private unsafe int IcuIndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(source.Length != 0);
             Debug.Assert(target.Length != 0);
 
@@ -465,7 +463,7 @@ namespace System.Globalization
         private unsafe int IcuLastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
@@ -665,7 +663,7 @@ namespace System.Globalization
         private unsafe bool IcuEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             Debug.Assert(!suffix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -781,7 +779,7 @@ namespace System.Globalization
         private unsafe SortKey IcuCreateSortKey(string source, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             if (source==null) { throw new ArgumentNullException(nameof(source)); }
 
@@ -811,7 +809,7 @@ namespace System.Globalization
         private static unsafe bool IcuIsSortable(char *text, int length)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             int index = 0;
             UnicodeCategory uc;
@@ -855,7 +853,7 @@ namespace System.Globalization
         private unsafe int IcuGetHashCodeOfString(ReadOnlySpan<char> source, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             // according to ICU User Guide the performance of ucol_getSortKey is worse when it is called with null output buffer
@@ -927,7 +925,7 @@ namespace System.Globalization
         private SortVersion IcuGetSortVersion()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             int sortVersion = Interop.Globalization.GetSortVersion(_sortHandle);
             return new SortVersion(sortVersion, LCID, new Guid(sortVersion, 0, 0, 0, 0, 0, 0,

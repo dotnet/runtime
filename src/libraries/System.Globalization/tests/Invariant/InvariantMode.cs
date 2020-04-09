@@ -479,7 +479,7 @@ namespace System.Globalization.Tests
         [Fact]
         public static void IcuShouldNotBeLoaded()
         {
-            Assert.False(PlatformDetection.ShouldUseIcu);
+            Assert.False(PlatformDetection.IsIcuGlobalization);
         }
 
         [Theory]

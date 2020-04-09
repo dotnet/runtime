@@ -26,7 +26,7 @@ namespace System.Globalization
         internal unsafe void IcuChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             if (IsInvariant)
             {

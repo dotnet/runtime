@@ -50,7 +50,7 @@ namespace System.Globalization.Tests
             var idnStd3False = new IdnMapping { UseStd3AsciiRules = false };
             var idnStd3True = new IdnMapping { UseStd3AsciiRules = true };
 
-            if (containsInvalidHyphen && PlatformDetection.ShouldUseIcu)
+            if (containsInvalidHyphen && PlatformDetection.IsIcuGlobalization)
             {
                 // ICU always fails on leading/trailing hyphens regardless of the Std3 rules option.
                 AssertExtensions.Throws<ArgumentException>("unicode", () => idnStd3False.GetAscii(unicode));

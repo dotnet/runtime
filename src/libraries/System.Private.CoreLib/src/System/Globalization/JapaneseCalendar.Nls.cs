@@ -32,7 +32,7 @@ namespace System.Globalization
         //     english name, and abbreviated english names.
         private static EraInfo[]? NlsGetJapaneseEras()
         {
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
 
             // Look in the registry key and see if we can find any ranges
             int iFoundEras = 0;

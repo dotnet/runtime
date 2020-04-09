@@ -154,8 +154,8 @@ namespace System
         private static Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
         public static Version ICUVersion => m_icuVersion.Value;
 
-        public static bool ShouldUseIcu => ICUVersion > new Version(0,0,0,0);
-        public static bool ShouldUseNls => !ShouldUseIcu;
+        public static bool IsIcuGlobalization => ICUVersion > new Version(0,0,0,0);
+        public static bool IsNlsGlobalization => !IsIcuGlobalization;
 
         private static Version GetICUVersion()
         {
@@ -174,19 +174,10 @@ namespace System
             }
             catch { }
 
-            if (BitConverter.IsLittleEndian)
-            {
-
-                return new Version(version & 0xFF,
-                                (version >> 8)  & 0xFF,
-                                (version >> 16) & 0xFF,
-                                 version >> 24);
-            }
-
             return new Version(version >> 24,
-                              (version >> 16) & 0xFF,
+                              (version >> 16)  & 0xFF,
                               (version >> 8) & 0xFF,
-                               version & 0xFF);
+                              version & 0xFF);
         }
 
         private static bool GetIsInContainer()

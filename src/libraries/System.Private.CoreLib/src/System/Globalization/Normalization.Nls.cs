@@ -13,7 +13,7 @@ namespace System.Globalization
         private static bool NlsIsNormalized(string strInput, NormalizationForm normalizationForm)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(strInput != null);
 
             // The only way to know if IsNormalizedString failed is through checking the Win32 last error
@@ -52,7 +52,7 @@ namespace System.Globalization
         private static string NlsNormalize(string strInput, NormalizationForm normalizationForm)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseIcu);
+            Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(strInput != null);
 
             // we depend on Win32 last error when calling NormalizeString

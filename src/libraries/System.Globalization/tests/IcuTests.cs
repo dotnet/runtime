@@ -8,7 +8,7 @@ using Xunit.Sdk;
 
 namespace System.Globalization.Tests
 {
-    public class NlsSwitchTests
+    public class IcuTests
     {
         private static bool IsIcuCompatiblePlatform => PlatformDetection.IsNotWindows ||
                                                        (!PlatformDetection.IsMonoRuntime &&
@@ -20,10 +20,10 @@ namespace System.Globalization.Tests
             Type globalizationMode = Type.GetType("System.Globalization.GlobalizationMode");
             if (globalizationMode != null)
             {
-                MethodInfo methodInfo = globalizationMode.GetProperty("UseIcu", BindingFlags.NonPublic | BindingFlags.Static).GetMethod;
+                MethodInfo methodInfo = globalizationMode.GetProperty("UseNls", BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
                 if (methodInfo != null)
                 {
-                    Assert.True((bool)methodInfo.Invoke(null, null));
+                    Assert.False((bool)methodInfo.Invoke(null, null));
                     return;
                 }
             }
@@ -34,7 +34,7 @@ namespace System.Globalization.Tests
         [ConditionalFact(nameof(IsIcuCompatiblePlatform))]
         public static void IcuShouldBeLoaded()
         {
-            Assert.True(PlatformDetection.ShouldUseIcu);
+            Assert.True(PlatformDetection.IsIcuGlobalization);
         }
     }
 }

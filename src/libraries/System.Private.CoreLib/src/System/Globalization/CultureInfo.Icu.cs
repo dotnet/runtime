@@ -10,7 +10,7 @@ namespace System.Globalization
     {
         internal static CultureInfo IcuGetUserDefaultCulture()
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
@@ -32,7 +32,7 @@ namespace System.Globalization
 
         private static CultureInfo IcuGetPredefinedCultureInfo(string name)
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             if (!Interop.Globalization.IsPredefinedLocale(name))
             {
@@ -44,7 +44,7 @@ namespace System.Globalization
 
         private static CultureInfo IcuGetUserDefaultUICulture()
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             return InitializeUserDefaultCulture();
         }

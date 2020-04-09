@@ -71,7 +71,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Test's can be interesting", "Tests", CompareOptions.None, false };
 
             // Platform differences
-            bool useNls = PlatformDetection.ShouldUseNls;
+            bool useNls = PlatformDetection.IsNlsGlobalization;
             yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, useNls ? true : false };
             yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, useNls ? true : false };
             yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, useNls ? true : false };
@@ -107,7 +107,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void IsPrefix_UnassignedUnicode()
         {
-            bool result = PlatformDetection.ShouldUseNls ? true : false;
+            bool result = PlatformDetection.IsNlsGlobalization ? true : false;
             IsPrefix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.None, result);
             IsPrefix(s_invariantCompare, "FooBar", "Foo\uFFFFBar", CompareOptions.IgnoreNonSpace, result);
         }

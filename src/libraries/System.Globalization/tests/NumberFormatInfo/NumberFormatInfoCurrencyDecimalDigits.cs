@@ -20,7 +20,7 @@ namespace System.Globalization.Tests
         [MemberData(nameof(CurrencyDecimalDigits_TestData))]
         public void CurrencyDecimalDigits_Get_ReturnsExpected(NumberFormatInfo format, int expectedNls, int expectedIcu)
         {
-            int expected = PlatformDetection.ShouldUseNls ? expectedNls : expectedIcu;
+            int expected = PlatformDetection.IsNlsGlobalization ? expectedNls : expectedIcu;
             Assert.Equal(expected, format.CurrencyDecimalDigits);
         }
 

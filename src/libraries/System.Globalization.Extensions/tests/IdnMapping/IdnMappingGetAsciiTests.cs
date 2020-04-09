@@ -22,7 +22,7 @@ namespace System.Globalization.Tests
                     continue;
                 }
                 string ascii = c.ToString();
-                if (PlatformDetection.ShouldUseIcu) // expected platform differences, see https://github.com/dotnet/runtime/issues/17190
+                if (PlatformDetection.IsIcuGlobalization) // expected platform differences, see https://github.com/dotnet/runtime/issues/17190
                 {
                     if (c >= 'A' && c <= 'Z')
                     {

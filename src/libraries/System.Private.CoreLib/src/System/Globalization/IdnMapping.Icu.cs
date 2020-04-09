@@ -11,7 +11,7 @@ namespace System.Globalization
         private unsafe string IcuGetAsciiCore(string unicodeString, char* unicode, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(unicodeString != null && unicodeString.Length >= count);
 
             uint flags = IcuFlags;
@@ -55,7 +55,7 @@ namespace System.Globalization
         private unsafe string IcuGetUnicodeCore(string asciiString, char* ascii, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(asciiString != null && asciiString.Length >= count);
 
             uint flags = IcuFlags;
@@ -80,7 +80,7 @@ namespace System.Globalization
         private unsafe string IcuGetUnicodeCore(string asciiString, char* ascii, int count, uint flags, char* output, int outputLength, bool reattempt)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseIcu);
+            Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(asciiString != null && asciiString.Length >= count);
 
             int realLen = Interop.Globalization.ToUnicode(flags, ascii, count, output, outputLength);

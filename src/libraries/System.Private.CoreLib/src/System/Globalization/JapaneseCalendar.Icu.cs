@@ -11,12 +11,12 @@ namespace System.Globalization
     {
         private static EraInfo[]? IcuGetJapaneseEras()
         {
-            Debug.Assert(GlobalizationMode.UseIcu);
-
             if (GlobalizationMode.Invariant)
             {
                 return null;
             }
+
+            Debug.Assert(!GlobalizationMode.UseNls);
 
             string[]? eraNames;
             if (!CalendarData.EnumCalendarInfo("ja-JP", CalendarId.JAPAN, CalendarDataType.EraNames, out eraNames))
