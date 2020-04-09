@@ -169,7 +169,7 @@ jobs:
       archType: wasm
       platform: WebAssembly_wasm
       container:
-        image: ubuntu-18.04-webassembly-20200407092345-059fef0
+        image: ubuntu-18.04-webassembly-20200409132031-f70ea41
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
