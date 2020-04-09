@@ -7,6 +7,12 @@
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
+  <PropertyGroup>
+    <CLRTestNeedTarget>1</CLRTestNeedTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="StructABI.cs" />
     <Compile Include="StructABI.Windows.cs" Condition="'$(TargetOS)' == 'Windows_NT'" />
