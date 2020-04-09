@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Encoding.Tests
     {
         DateTimeString = 0,
         DateTimeUnixSeconds = 1,
-        PositiveBigNum = 2,
+        UnsignedBigNum = 2,
         NegativeBigNum = 3,
         DecimalFraction = 4,
         BigFloat = 5,

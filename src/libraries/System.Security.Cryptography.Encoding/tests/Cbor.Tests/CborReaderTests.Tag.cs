@@ -4,6 +4,7 @@
 
 #nullable enable
 using System;
+using System.Numerics;
 using Test.Cryptography;
 using Xunit;
 
@@ -179,6 +180,53 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(data);
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadDateTimeOffset());
+        }
+
+        [Theory]
+        [InlineData("0", "c24100")]
+        [InlineData("1", "c24101")]
+        [InlineData("-1", "c34100")]
+        [InlineData("255", "c241ff")]
+        [InlineData("-256", "c341ff")]
+        [InlineData("256", "c2420100")]
+        [InlineData("-257", "c3420100")]
+        [InlineData("9223372036854775807", "c2487fffffffffffffff")]
+        [InlineData("-9223372036854775808", "c3487fffffffffffffff")]
+        [InlineData("18446744073709551616", "c249010000000000000000")]
+        [InlineData("-18446744073709551617", "c349010000000000000000")]
+        public static void ReadBigInteger_SingleValue_HappyPath(string expectedValueString, string hexEncoding)
+        {
+            BigInteger expectedValue = BigInteger.Parse(expectedValueString);
+            byte[] data = hexEncoding.HexToByteArray();
+
+            var reader = new CborReader(data);
+
+            BigInteger result = reader.ReadBigInteger();
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Equal(expectedValue, result);
+        }
+
+
+        [Theory]
+        [InlineData("01")]
+        [InlineData("c001")]
+        public static void ReadBigInteger_InvalidCborTag_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            Assert.Throws<InvalidOperationException>(() => reader.ReadBigInteger());
+        }
+
+        [Theory]
+        [InlineData("c280")]
+        [InlineData("c301")]
+        public static void ReadBigInteger_InvalidTagPayload_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
+
+            Assert.Throws<FormatException>(() => reader.ReadBigInteger());
         }
     }
 }

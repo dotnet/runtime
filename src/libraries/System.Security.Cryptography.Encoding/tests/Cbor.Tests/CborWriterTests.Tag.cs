@@ -4,6 +4,7 @@
 
 #nullable enable
 using System;
+using System.Numerics;
 using Test.Cryptography;
 using Xunit;
 
@@ -41,7 +42,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            foreach (var tag in tags)
+            foreach (ulong tag in tags)
             {
                 writer.WriteTag((CborTag)tag);
             }
@@ -97,6 +98,29 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             using var writer = new CborWriter();
             writer.WriteUnixTimeSeconds(value);
+
+            byte[] encoding = writer.ToArray();
+            AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
+        }
+
+        [Theory]
+        [InlineData("0", "c24100")]
+        [InlineData("1", "c24101")]
+        [InlineData("-1", "c34100")]
+        [InlineData("255", "c241ff")]
+        [InlineData("-256", "c341ff")]
+        [InlineData("256", "c2420100")]
+        [InlineData("-257", "c3420100")]
+        [InlineData("9223372036854775807", "c2487fffffffffffffff")]
+        [InlineData("-9223372036854775808", "c3487fffffffffffffff")]
+        [InlineData("18446744073709551616", "c249010000000000000000")]
+        [InlineData("-18446744073709551617", "c349010000000000000000")]
+        public static void WriteInteger_SingleValue_HappyPath(string valueString, string expectedHexEncoding)
+        {
+            BigInteger value = BigInteger.Parse(valueString);
+
+            using var writer = new CborWriter();
+            writer.WriteBigInteger(value);
 
             byte[] encoding = writer.ToArray();
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);

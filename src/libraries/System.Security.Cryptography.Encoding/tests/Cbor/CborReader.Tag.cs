@@ -91,5 +91,26 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     throw new InvalidOperationException("CBOR tag is not a recognized DateTime value.");
             }
         }
+
+        public BigInteger ReadBigInteger()
+        {
+            bool isUnsigned = PeekTag() switch
+            {
+                CborTag.UnsignedBigNum => true,
+                CborTag.NegativeBigNum => false,
+                _ => throw new InvalidOperationException("CBOR tag is not a recognized Bignum value."),
+            };
+
+            ReadTag();
+
+            if (Peek() != CborReaderState.ByteString)
+            {
+                throw new FormatException("BigNum semantic tag should annotate byte string value.");
+            }
+
+            byte[] unsignedBigEndianEncoding = ReadByteString();
+            BigInteger unsignedValue = new BigInteger(unsignedBigEndianEncoding, isUnsigned: true, isBigEndian: true);
+            return isUnsigned ? unsignedValue : -1 - unsignedValue;
+        }
     }
 }
