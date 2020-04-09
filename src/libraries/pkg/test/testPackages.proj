@@ -177,7 +177,7 @@
           Condition="'$(ArchiveTests)' != 'true'">
 
     <PropertyGroup>
-      <TestRestoreCommand>$(TestDotNetPath)</TestRestoreCommand>
+      <TestRestoreCommand>&quot;$(TestDotNetPath)&quot;</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) --packages "$(TestPackageDir)"</TestRestoreCommand>
       <TestRestoreCommand>$(TestRestoreCommand) /p:LocalPackagesPath=$(PackageOutputPath)</TestRestoreCommand>
@@ -195,7 +195,7 @@
           Condition="'$(ArchiveTests)' != 'true'">
 
     <PropertyGroup>
-      <TestBuildCommand>$(TestDotNetPath)</TestBuildCommand>
+      <TestBuildCommand>&quot;$(TestDotNetPath)&quot;</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) msbuild</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) /t:Test</TestBuildCommand>
       <TestBuildCommand>$(TestBuildCommand) /nr:false</TestBuildCommand>
