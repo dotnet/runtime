@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices.Tests.Common;
 using Xunit;
 
-#pragma warning disable 618
-
 namespace System.Runtime.InteropServices.Tests
 {
     public partial class GetNativeVariantForObjectTests
@@ -127,5 +125,3 @@ namespace System.Runtime.InteropServices.Tests
         }
     }
 }
-
-#pragma warning restore 618
