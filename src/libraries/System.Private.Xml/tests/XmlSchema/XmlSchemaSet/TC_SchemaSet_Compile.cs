@@ -183,7 +183,7 @@ namespace System.Xml.Tests
         /// Test for issue #30218, resource Sch_MinLengthGtBaseMinLength
         /// </summary>
         [Fact]
-        public void MinLengthGtBaseMinLength_Throws()
+        public void MinLengthLtBaseMinLength_Throws()
         {
             string schema = @"<?xml version='1.0' encoding='utf-8' ?>
 <xs:schema elementFormDefault='qualified'
