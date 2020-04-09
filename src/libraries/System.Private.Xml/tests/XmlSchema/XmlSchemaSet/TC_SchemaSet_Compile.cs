@@ -403,7 +403,7 @@ namespace System.Xml.Tests
             Assert.Contains("maxLength", ex.Message);
         }
 
-        public static IEnumerable<object[]> MaxMinLengthBaseLength_TestData
+        public static IEnumerable<object[]> MaxMinLengthBaseLength_Success_TestData
         {
             get
             {
@@ -586,7 +586,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MaxMinLengthBaseLength_TestData))]
+        [MemberData(nameof(MaxMinLengthBaseLength_Success_TestData))]
         public void MaxMinLengthBaseLength_Test(string schema)
         {
             XmlSchemaSet ss = new XmlSchemaSet();
