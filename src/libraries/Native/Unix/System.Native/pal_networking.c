@@ -428,9 +428,9 @@ struct GetAddrInfoAsyncState
     struct gaicb* gai_requests;
     struct sigevent sigevent;
 
-    uint8_t* address;
     HostEntry* entry;
     GetHostEntryForNameCallback callback;
+    char address[];
 };
 
 static void GetHostEntryForNameAsyncComplete(sigval_t context)
@@ -445,7 +445,7 @@ static void GetHostEntryForNameAsyncComplete(sigval_t context)
 
     if (ret == 0)
     {
-        const uint8_t* address = state->address;
+        const uint8_t* address = (const uint8_t*)state->address;
         struct addrinfo* info = state->gai_request.ar_result;
 
         ret = GetHostEntries(address, info, state->entry);
@@ -456,7 +456,6 @@ static void GetHostEntryForNameAsyncComplete(sigval_t context)
         callback(state->entry, ret);
     }
 
-    free(state->address);
     free(state);
 }
 #endif
@@ -495,18 +494,25 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, HostEntry*
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }
 
-    struct GetAddrInfoAsyncState* state = malloc(sizeof(*state));
+    size_t addrlen = strlen((const char*)address);
+
+    if (addrlen > _POSIX_HOST_NAME_MAX)
+    {
+        return GetAddrInfoErrorFlags_EAI_BADARG;
+    }
+
+    struct GetAddrInfoAsyncState* state = malloc(sizeof(*state) + addrlen + 1);
 
     if (state == NULL)
     {
         return GetAddrInfoErrorFlags_EAI_MEMORY;
     }
 
-    char* localAddress = strdup((const char*)address);
+    memcpy(state->address, address, addrlen + 1);
 
     *state = (struct GetAddrInfoAsyncState) {
         .gai_request = {
-            .ar_name = localAddress,
+            .ar_name = state->address,
             .ar_service = NULL,
             .ar_request = &s_hostEntryForNameHints,
             .ar_result = NULL
@@ -519,7 +525,6 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, HostEntry*
             },
             .sigev_notify_function = GetHostEntryForNameAsyncComplete
         },
-        .address = (uint8_t*)localAddress,
         .entry = entry,
         .callback = callback
     };
@@ -530,7 +535,6 @@ int32_t SystemNative_GetHostEntryForNameAsync(const uint8_t* address, HostEntry*
 
     if (result != 0)
     {
-        free(localAddress);
         free(state);
         return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
     }
