@@ -15,71 +15,6 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class GetNativeVariantForObjectTests
     {
-        public static IEnumerable<object[]> GetNativeVariantForObject_RoundtrippingPrimitives_TestData()
-        {
-            yield return new object[] { null, VarEnum.VT_EMPTY, IntPtr.Zero };
-
-            yield return new object[] { (sbyte)10, VarEnum.VT_I1, (IntPtr)10 };
-            yield return new object[] { (short)10, VarEnum.VT_I2, (IntPtr)10 };
-            yield return new object[] { 10, VarEnum.VT_I4, (IntPtr)10 };
-            yield return new object[] { (long)10, VarEnum.VT_I8, (IntPtr)10 };
-            yield return new object[] { (byte)10, VarEnum.VT_UI1, (IntPtr)10 };
-            yield return new object[] { (ushort)10, VarEnum.VT_UI2, (IntPtr)10 };
-            yield return new object[] { (uint)10, VarEnum.VT_UI4, (IntPtr)10 };
-            yield return new object[] { (ulong)10, VarEnum.VT_UI8, (IntPtr)10 };
-
-            yield return new object[] { true, VarEnum.VT_BOOL, (IntPtr)ushort.MaxValue };
-            yield return new object[] { false, VarEnum.VT_BOOL, IntPtr.Zero };
-
-            yield return new object[] { 10m, VarEnum.VT_DECIMAL, (IntPtr)10 };
-
-            // Well known types.
-            DateTime dateTime = new DateTime(1899, 12, 30).AddDays(20);
-            yield return new object[] { dateTime, VarEnum.VT_DATE, (IntPtr)(-1) };
-
-            yield return new object[] { DBNull.Value, VarEnum.VT_NULL, IntPtr.Zero };
-            yield return new object[] { DBNull.Value, VarEnum.VT_NULL, IntPtr.Zero };
-
-            // Arrays.
-            yield return new object[] { new sbyte[] { 10, 11, 12 }, (VarEnum)8208, (IntPtr)(-1) };
-            yield return new object[] { new short[] { 10, 11, 12 }, (VarEnum)8194, (IntPtr)(-1) };
-            yield return new object[] { new int[] { 10, 11, 12 }, (VarEnum)8195, (IntPtr)(-1) };
-            yield return new object[] { new long[] { 10, 11, 12 }, (VarEnum)8212, (IntPtr)(-1) };
-            yield return new object[] { new byte[] { 10, 11, 12 }, (VarEnum)8209, (IntPtr)(-1) };
-            yield return new object[] { new ushort[] { 10, 11, 12 }, (VarEnum)8210, (IntPtr)(-1) };
-            yield return new object[] { new uint[] { 10, 11, 12 }, (VarEnum)8211, (IntPtr)(-1) };
-            yield return new object[] { new ulong[] { 10, 11, 12 }, (VarEnum)8213, (IntPtr)(-1) };
-
-            yield return new object[] { new bool[] { true, false }, (VarEnum)8203, (IntPtr)(-1) };
-
-            yield return new object[] { new float[] { 10, 11, 12 }, (VarEnum)8196, (IntPtr)(-1) };
-            yield return new object[] { new double[] { 10, 11, 12 }, (VarEnum)8197, (IntPtr)(-1) };
-            yield return new object[] { new decimal[] { 10m, 11m, 12m }, (VarEnum)8206, (IntPtr)(-1) };
-
-            yield return new object[] { new object[] { 10, 11, 12 }, (VarEnum)8204, (IntPtr)(-1) };
-            yield return new object[] { new string[] { "a", "b", "c" }, (VarEnum)8200, (IntPtr)(-1) };
-
-            yield return new object[] { new TimeSpan[] { new TimeSpan(10) }, (VarEnum)8228, (IntPtr)(-1) };
-            yield return new object[] { new int[,] { { 10 }, { 11 }, { 12 } }, (VarEnum)8195, (IntPtr)(-1) };
-
-            // Objects.
-            var nonGenericClass = new NonGenericClass();
-            yield return new object[] { nonGenericClass, VarEnum.VT_DISPATCH, (IntPtr)(-1) };
-
-            var valueType = new StructWithValue { Value = 10 };
-            yield return new object[] { valueType, VarEnum.VT_RECORD, (IntPtr)(-1) };
-
-            var genericClass = new GenericClass<string>();
-            yield return new object[] { new object[] { nonGenericClass, genericClass, null }, (VarEnum)8204, (IntPtr)(-1) };
-
-            yield return new object[] { new object[] { valueType, null }, (VarEnum)8204, (IntPtr)(-1) };
-
-            // Delegate.
-            MethodInfo method = typeof(GetNativeVariantForObjectTests).GetMethod(nameof(NonGenericMethod), BindingFlags.NonPublic | BindingFlags.Static);
-            Delegate d = method.CreateDelegate(typeof(NonGenericDelegate));
-            yield return new object[] { d, VarEnum.VT_DISPATCH, (IntPtr)(-1) };
-        }
-
         private void GetNativeVariantForObject_RoundtrippingPrimitives_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue)
         {
             GetNativeVariantForObject_ValidObject_Success(primitive, expectedVarType, expectedValue, primitive);
@@ -301,19 +236,6 @@ namespace System.Runtime.InteropServices.Tests
         {
             AssertExtensions.Throws<ArgumentException>("obj", () => Marshal.GetNativeVariantForObject(obj, (IntPtr)1));
             AssertExtensions.Throws<ArgumentException>("obj", () => Marshal.GetNativeVariantForObject<object>(obj, (IntPtr)1));
-        }
-
-        public static IEnumerable<object[]> GetNativeVariant_NotInteropCompatible_TestData()
-        {
-            yield return new object[] { new TimeSpan(10) };
-
-            yield return new object[] { new object[] { new GenericStruct<string>() } };
-
-            yield return new object[] { new GenericStruct<string>[0]};
-            yield return new object[] { new GenericStruct<string>[] { new GenericStruct<string>() } };
-
-            yield return new object[] { new Color[0] };
-            yield return new object[] { new Color[] { Color.FromArgb(10) } };
         }
 
         [Fact]
