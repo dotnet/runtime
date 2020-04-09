@@ -377,6 +377,15 @@ namespace System.Collections.Immutable.Tests
             Assert.True(clearedDictionary.ContainsKey("A"));
         }
 
+        [Fact]
+        public void Indexer_KeyNotFoundException_ContainsKeyInMessage()
+        {
+            var map = ImmutableDictionary.Create<string, string>()
+                .Add("a", "1").Add("b", "2");
+            var exception = Assert.Throws<KeyNotFoundException>(() => map["c"]);
+            Assert.Contains("'c'", exception.Message);
+        }
+
         protected override IImmutableDictionary<TKey, TValue> Empty<TKey, TValue>()
         {
             return ImmutableDictionaryTest.Empty<TKey, TValue>();
