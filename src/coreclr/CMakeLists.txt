@@ -27,11 +27,9 @@ set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/dlls/mscordac/palredefine
 
 if(CLR_CMAKE_HOST_UNIX)
     set(CLR_DOTNET_COMMAND ${CLR_REPO_ROOT_DIR}/dotnet.sh)
-endif(CLR_CMAKE_HOST_UNIX)
-
-if(CLR_CMAKE_HOST_WIN32)
+elseif(CLR_CMAKE_HOST_WIN32)
     set(CLR_DOTNET_COMMAND ${CLR_REPO_ROOT_DIR}/dotnet.cmd)
-endif(CLR_CMAKE_HOST_WIN32)
+endif(CLR_CMAKE_HOST_UNIX)
 
 # Avoid logging when skipping up-to-date copies
 set(CMAKE_INSTALL_MESSAGE LAZY)

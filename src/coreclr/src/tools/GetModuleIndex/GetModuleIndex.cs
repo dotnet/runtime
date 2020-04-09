@@ -14,13 +14,14 @@ public class GetModuleIndex
 {
     public static int Main(string[] args)
     {
-        if (args.Length < 1 || string.IsNullOrEmpty(args[0]))
+        if (args.Length < 2 || string.IsNullOrEmpty(args[0]) || string.IsNullOrEmpty(args[1]))
         {
-            throw new ArgumentException("No file name");
+            throw new ArgumentException("Invalid command line arguments");
         }
-        string fileName = args[0];
+        string moduleFileName = args[0];
+        string outputFileName = args[1];
 
-        using (FileStream stream = File.OpenRead(fileName))
+        using (FileStream stream = File.OpenRead(moduleFileName))
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
@@ -29,18 +30,20 @@ public class GetModuleIndex
                 if (buildId != null)
                 {
                     // First byte is the number of bytes total in the build id
-                    Console.WriteLine("0x{0:x2}, {1}", buildId.Length, ToHexString(buildId));
+                    string outputText = string.Format("0x{0:x2}, {1}", buildId.Length, ToHexString(buildId));
+                    File.WriteAllText(outputFileName, outputText);
                 }
                 else
                 {
-                    throw new BadInputFormatException($"{fileName} does not have a build id");
+                    throw new BadInputFormatException($"{moduleFileName} does not have a build id");
                 }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 var peFile = new PEFile(new StreamAddressSpace(stream));
                 // First byte is the number of bytes total in the index
-                Console.WriteLine("0x{0:x2}, {1} {2}", 8, ToHexString(peFile.Timestamp), ToHexString(peFile.SizeOfImage));
+                string outputText = string.Format("0x{0:x2}, {1} {2}", 8, ToHexString(peFile.Timestamp), ToHexString(peFile.SizeOfImage));
+                File.WriteAllText(outputFileName, outputText);
             }
             else
             {

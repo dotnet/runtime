@@ -173,7 +173,7 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_WIN32)
     )
     add_custom_command(
         OUTPUT ${RUNTIME_MODULE_INDEX_FILE}
-        COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:coreclr> > ${RUNTIME_MODULE_INDEX_FILE}
+        COMMAND ${CLR_DOTNET_COMMAND} ${CMAKE_INSTALL_PREFIX}/GetModuleIndex/GetModuleIndex.dll $<TARGET_FILE:coreclr> ${RUNTIME_MODULE_INDEX_FILE}
         DEPENDS $<TARGET_FILE:coreclr> 
         COMMENT "Generating runtime module index file -> ${RUNTIME_MODULE_INDEX_FILE}"
     )

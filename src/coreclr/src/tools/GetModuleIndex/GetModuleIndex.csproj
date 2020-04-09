@@ -8,7 +8,7 @@
   
   <ItemGroup>
     <PackageReference Include="Microsoft.FileFormats">
-      <Version>1.0.55801</Version>
+      <Version>$(MicrosoftFileFormatsVersion)</Version>
     </PackageReference>
   </ItemGroup>
 </Project>
