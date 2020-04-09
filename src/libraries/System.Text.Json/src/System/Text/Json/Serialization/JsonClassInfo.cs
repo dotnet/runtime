@@ -336,6 +336,8 @@ namespace System.Text.Json
             out Type runtimeType,
             JsonSerializerOptions options)
         {
+            ValidateType(type, parentClassType, propertyInfo);
+
             Debug.Assert(type != null);
 
             JsonConverter converter = options.DetermineConverter(parentClassType, type, propertyInfo)!;
@@ -381,6 +383,19 @@ namespace System.Text.Json
             }
 
             return converter;
+        }
+
+        public static void ValidateType(Type type, Type? parentClassType, PropertyInfo? propertyInfo)
+        {
+            if (IsInvalidForSerialization(type))
+            {
+                ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(type, parentClassType, propertyInfo);
+            }
+        }
+
+        public static bool IsInvalidForSerialization(Type type)
+        {
+            return type.IsPointer || type.IsByRefLike || type.ContainsGenericParameters;
         }
     }
 }

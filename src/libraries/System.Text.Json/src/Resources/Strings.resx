@@ -506,10 +506,13 @@
   <data name="BufferMaximumSizeExceeded" xml:space="preserve">
     <value>Cannot allocate a buffer of size {0}.</value>
   </data>
-  <data name="CannotSerializeOpenGeneric" xml:space="preserve">
-    <value>The type '{0}' has generic parameters that have not been replaced by specific types, which is not valid during serialization or deserialization.</value>
+  <data name="CannotSerializeInvalidType" xml:space="preserve">
+    <value>The type '{0}' contains generic parameters that have not been replaced by specific types, is a pointer type, or is a ref struct. This is invalid during serialization or deserialization.</value>
   </data>
   <data name="SerializeTypeInstanceNotSupported" xml:space="preserve">
     <value>Serialization and deserialization of 'System.Type' instances are not supported and should be avoided since they can lead to security issues.</value>
+  </data>
+  <data name="CannotSerializeInvalidMember" xml:space="preserve">
+    <value>The type '{0}' of property '{1}' on type '{2}' contains generic parameters that have not been replaced by specific types, is a pointer type, or is a ref struct. This is invalid during serialization or deserialization.</value>
   </data>
 </root>

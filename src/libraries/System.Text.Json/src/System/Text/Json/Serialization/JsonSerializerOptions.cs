@@ -337,11 +337,6 @@ namespace System.Text.Json
             // https://github.com/dotnet/runtime/issues/32357
             if (!_classes.TryGetValue(type, out JsonClassInfo? result))
             {
-                if (type.ContainsGenericParameters)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_CannotSerializeOpenGeneric(type);
-                }
-
                 result = _classes.GetOrAdd(type, new JsonClassInfo(type, this));
             }
 
