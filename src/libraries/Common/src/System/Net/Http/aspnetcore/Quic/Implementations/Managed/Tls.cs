@@ -50,7 +50,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private static ref OpenSslQuicMethods.NativeCallbacks Callbacks => ref _callbacks;
 
-        internal bool IsHandshakeFinishhed => Interop.OpenSslQuic.SslIsInInit(_ssl) == 0;
+        internal bool IsHandshakeComplete => Interop.OpenSslQuic.SslIsInitFinished(_ssl) == 1;
         public EncryptionLevel WriteLevel { get; private set; }
 
         public void Dispose()
@@ -130,12 +130,15 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal SslError DoHandshake()
         {
-            if (IsHandshakeFinishhed)
+            if (IsHandshakeComplete)
                 return SslError.None;
+
             int status = Interop.OpenSslQuic.SslDoHandshake(_ssl);
+
+            // update also write level
             WriteLevel = ToManagedEncryptionLevel(Interop.OpenSslQuic.SslQuicWriteLevel(_ssl));
 
-            if (status < 0)
+            if (status <= 0)
             {
                 return (SslError)Interop.OpenSslQuic.SslGetError(_ssl, status);
             }
@@ -161,8 +164,7 @@ namespace System.Net.Quic.Implementations.Managed
             new Span<byte>(data, length.ToInt32()).CopyTo(buffer);
             var reader = new QuicReader(new ArraySegment<byte>(buffer, 0, length.ToInt32()));
 
-            // TODO-RZ: Should failure to deserialize be a connection error?
-
+            // TODO-RZ: Failure to deserialize should prompt TRANSPORT_PARAMETER_ERROR
             TransportParameters.Read(reader, !isServer, out var parameters);
             ArrayPool<byte>.Shared.Return(buffer);
 

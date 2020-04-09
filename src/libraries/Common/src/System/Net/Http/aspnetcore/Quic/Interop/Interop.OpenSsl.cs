@@ -115,8 +115,8 @@ internal static partial class Interop
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_quic_write_level")]
         internal static extern OpenSslEncryptionLevel SslQuicWriteLevel(IntPtr ssl);
 
-        [DllImport(Libraries.Ssl, EntryPoint = "SSL_in_init")]
-        internal static extern int SslIsInInit(IntPtr ssl);
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_is_init_finished")]
+        internal static extern int SslIsInitFinished(IntPtr ssl);
 
         [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_current_cipher")]
         internal static extern IntPtr SslGetCurrentCipher(IntPtr ssl);

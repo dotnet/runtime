@@ -15,66 +15,7 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal sealed partial class ManagedQuicConnection : QuicConnectionProvider
     {
-        private struct ConnectionFlowControlLimits
-        {
-            /// <summary>
-            ///     Maximum amount of data the endpoint is allowed to send.
-            /// </summary>
-            internal ulong MaxData { get; set; }
-
-            /// <summary>
-            ///     Maximum number of streams the endpoint can open.
-            /// </summary>
-            internal ulong MaxStreams { get; set; }
-
-            /// <summary>
-            ///     Maximum number of bidirectional streams the endpoint is allowed to open.
-            /// </summary>
-            internal ulong MaxStreamsBidi { get; set; }
-
-            /// <summary>
-            ///     Maximum number of unidirectional streams the endpoint is allowed to open.
-            /// </summary>
-            internal ulong MaxStreamsUni { get; set; }
-        }
-
-        private sealed class Context
-        {
-            public Context(DateTime now)
-            {
-                Now = now;
-            }
-
-            internal DateTime Now { get; }
-        }
-
-        private readonly Tls _tls;
-        private readonly Recovery _recovery = new Recovery();
-
-        internal enum ProcessPacketResult
-        {
-            /// <summary>
-            ///     Packet processed without errors.
-            /// </summary>
-            Ok,
-
-            /// <summary>
-            ///     Packet is discarded. E.g. because it could not be decrypted (yet).
-            /// </summary>
-            DropPacket,
-
-            /// <summary>
-            ///     Packet is valid but violates the protocol, the connection should be closed.
-            /// </summary>
-            ConnectionClose,
-        }
-
         private readonly QuicClientConnectionOptions? _clientOpts;
-        private readonly QuicListenerOptions? _serverOpts;
-
-        private GCHandle _gcHandle;
-
-        private bool _isServer;
 
         private readonly EpochData[] _epochs;
 
@@ -83,21 +24,35 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private readonly TransportParameters _localTransportParameters;
 
-        /// <summary>
-        ///     QUIC transport parameters requested by peer endpoint.
-        /// </summary>
-        private TransportParameters _peerTransportParameters = TransportParameters.Default;
+        private readonly Recovery _recovery = new Recovery();
+        private readonly QuicListenerOptions? _serverOpts;
 
-        private QuicVersion version = QuicVersion.Draft27;
+        private readonly Tls _tls;
+
+        private GCHandle _gcHandle;
+
+        /// <summary>
+        ///     True if handshake has been confirmed by the peer. For server this means that TLS has reported handshake complete,
+        ///     for client it means that a HANDSHAKE_DONE frame has been received.
+        /// </summary>
+        private bool HandshakeConfirmed => _isServer ? _tls.IsHandshakeComplete : _handshakeDoneReceived;
+
+        /// <summary>
+        ///     True if HANDSHAKE_DONE frame has been received. Valid only for client.
+        /// </summary>
+        private bool _handshakeDoneReceived;
+
+        /// <summary>
+        ///     True if HANDSHAKE_DONE frame has been sent. Valid only for server.
+        /// </summary>
+        private bool _handshakeDoneSent;
+
+        private readonly bool _isServer;
 
         /// <summary>
         ///     Collection of local connection ids used by this endpoint.
         /// </summary>
-        private ConnectionIdCollection _localConnectionIdCollection = new ConnectionIdCollection();
-
-        private ConnectionId? _scid;
-
-        private ConnectionId? _dcid;
+        private readonly ConnectionIdCollection _localConnectionIdCollection = new ConnectionIdCollection();
 
         /// <summary>
         ///     Flow control limits for this endpoint for the entire connection.
@@ -109,29 +64,32 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private ConnectionFlowControlLimits _peerLimits;
 
-        // TODO-RZ: remove these, they don't need to be saved
-        private string? cert;
-
-        private string? privateKey;
+        /// <summary>
+        ///     QUIC transport parameters requested by peer endpoint.
+        /// </summary>
+        private readonly TransportParameters _peerTransportParameters = TransportParameters.Default;
 
         /// <summary>
         ///     All streams organized by the stream type.
         /// </summary>
-        private List<ManagedQuicStream>[] _streams = new List<ManagedQuicStream>[4];
+        private readonly List<ManagedQuicStream>[] _streams = new List<ManagedQuicStream>[4];
 
-        /// <summary>
-        ///     Error to send in next packet in a CONNECTION_CLOSE frame.
-        /// </summary>
-        private QuicError? outboundError;
+        // TODO-RZ: remove these, they don't need to be saved
+        private readonly string? cert;
 
         /// <summary>
         ///     Error received via CONNECTION_CLOSE frame to be reported to the user.
         /// </summary>
         private QuicError? inboundError;
 
-        public ConnectionId? SourceConnectionId => _scid;
+        /// <summary>
+        ///     Error to send in next packet in a CONNECTION_CLOSE frame.
+        /// </summary>
+        private QuicError? outboundError;
 
-        public ConnectionId? DestinationConnectionId => _dcid;
+        private readonly string? privateKey;
+
+        private readonly QuicVersion version = QuicVersion.Draft27;
 
         public ManagedQuicConnection(QuicClientConnectionOptions options)
             : this(false)
@@ -164,6 +122,10 @@ namespace System.Net.Quic.Implementations.Managed
             _epochs = new EpochData[3] {new EpochData(), new EpochData(), new EpochData()};
         }
 
+        public ConnectionId? SourceConnectionId { get; private set; }
+
+        public ConnectionId? DestinationConnectionId { get; private set; }
+
         private void Init()
         {
             _tls.Init(cert, privateKey, _isServer, _localTransportParameters);
@@ -174,12 +136,12 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             // init random connection ids for the client
-            _scid = ConnectionId.Random(20);
-            _dcid = ConnectionId.Random(20);
-            _localConnectionIdCollection.Add(_scid.Data);
+            SourceConnectionId = ConnectionId.Random(20);
+            DestinationConnectionId = ConnectionId.Random(20);
+            _localConnectionIdCollection.Add(SourceConnectionId.Data);
 
             // derive also clients initial secrets.
-            DeriveInitialProtectionKeys(_dcid.Data);
+            DeriveInitialProtectionKeys(DestinationConnectionId.Data);
 
             // generate first Crypto frames
             _tls.DoHandshake();
@@ -254,7 +216,8 @@ namespace System.Net.Quic.Implementations.Managed
             throw new NotImplementedException();
         }
 
-        private ProcessPacketResult ReceiveVersionNegotiation(QuicReader reader, in LongPacketHeader header, Context context)
+        private ProcessPacketResult ReceiveVersionNegotiation(QuicReader reader, in LongPacketHeader header,
+            Context context)
         {
             throw new NotImplementedException();
         }
@@ -276,11 +239,11 @@ namespace System.Net.Quic.Implementations.Managed
                 {
                     // initialize protection keys
                     // clients destination connection Id is ours source connection Id
-                    _scid = new ConnectionId(header.DestinationConnectionId.ToArray());
-                    _dcid = new ConnectionId(header.SourceConnectionId.ToArray());
+                    SourceConnectionId = new ConnectionId(header.DestinationConnectionId.ToArray());
+                    DestinationConnectionId = new ConnectionId(header.SourceConnectionId.ToArray());
 
-                    _localConnectionIdCollection.Add(_scid.Data);
-                    DeriveInitialProtectionKeys(_scid.Data);
+                    _localConnectionIdCollection.Add(SourceConnectionId.Data);
+                    DeriveInitialProtectionKeys(SourceConnectionId.Data);
                 }
 
                 // check UDP datagram size, by now the reader's buffer end is aligned with the UDP datagram end.
@@ -360,11 +323,11 @@ namespace System.Net.Quic.Implementations.Managed
             switch (type)
             {
                 case PacketType.Initial:
-                    // TODO-RZ: server must not send Token (Protocol violation)
+                // TODO-RZ: server must not send Token (Protocol violation)
                 case PacketType.Handshake:
                 case PacketType.ZeroRtt:
                     if (!SharedPacketData.Read(reader, header.FirstByte, out var headerData) ||
-                        headerData.Length > (ulong) reader.BytesLeft)
+                        headerData.Length > (ulong)reader.BytesLeft)
                     {
                         return ProcessPacketResult.DropPacket;
                     }
@@ -484,7 +447,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 // no data to send
                 // TODO-RZ: we might be able to detect this sooner
-                writer.Reset(writer.Buffer, 0);
+                writer.Reset(writer.Buffer);
                 return;
             }
 
@@ -510,7 +473,7 @@ namespace System.Net.Quic.Implementations.Managed
             // fill in the payload length retrospectively
             if (packetType != PacketType.OneRtt)
             {
-                QuicPrimitives.WriteVarInt(payloadLengthSpan, (ulong) payloadLength, 2);
+                QuicPrimitives.WriteVarInt(payloadLengthSpan, (ulong)payloadLength, 2);
             }
 
             seal.EncryptPacket(writer.Buffer, pnOffset, payloadLength, truncatedPn);
@@ -532,8 +495,8 @@ namespace System.Net.Quic.Implementations.Managed
                     packetType,
                     pnLength,
                     version,
-                    _dcid!.Data,
-                    _scid!.Data));
+                    DestinationConnectionId!.Data,
+                    SourceConnectionId!.Data));
 
                 // HACK: reserve 2 bytes for payload length and overwrite it later
                 SharedPacketData.Write(writer, new SharedPacketData(
@@ -548,21 +511,22 @@ namespace System.Net.Quic.Implementations.Managed
             receiver = default;
             var context = new Context(now);
 
-            if (_isServer && GetEpoch(EncryptionLevel.Initial).RecvCryptoSeal == null)
-            {
-                // if initial secrets have not been derived yet, we have nothing to send
-                return 0;
-            }
-
             var writer = new QuicWriter(targetBuffer);
 
             int written = 0;
+            var level = GetWriteLevel();
+
             while (true)
             {
-                var level = GetWriteLevel();
+                if (GetEpoch(level).SendCryptoSeal == null)
+                {
+                    // Secrets have not been derived yet, can't send anything
+                    break;
+                }
 
                 // TODO-RZ get client address
                 SendOne(writer, null, level, context);
+
                 if (writer.BytesWritten == 0)
                     break;
 
@@ -578,6 +542,7 @@ namespace System.Net.Quic.Implementations.Managed
                 if (nextLevel <= level)
                     break;
 
+                level = nextLevel;
                 writer.Reset(writer.Buffer.Slice(writer.BytesWritten));
             }
 
@@ -628,49 +593,6 @@ namespace System.Net.Quic.Implementations.Managed
             return ProcessPacketResult.ConnectionClose;
         }
 
-        #region Public API
-
-        internal override bool Connected => _tls.IsHandshakeFinishhed;
-
-        internal override IPEndPoint LocalEndPoint => _clientOpts!.LocalEndPoint!;
-
-        internal override IPEndPoint RemoteEndPoint => _clientOpts!.RemoteEndPoint!;
-
-        internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
-
-        internal override QuicStreamProvider OpenUnidirectionalStream()
-        {
-            // TODO-RZ: use messages from string resources
-            if (GetRemoteAvailableUnidirectionalStreamCount() == 0)
-                throw new InvalidOperationException("Cannot open stream");
-
-            return OpenStream(unidirectional: true);
-        }
-
-        internal override QuicStreamProvider OpenBidirectionalStream()
-        {
-            // TODO-RZ: use messages from string resources
-            if (GetRemoteAvailableBidirectionalStreamCount() == 0)
-                throw new InvalidOperationException("Cannot open stream");
-
-            return OpenStream(unidirectional: false);
-        }
-
-        internal override long GetRemoteAvailableUnidirectionalStreamCount() => throw new NotImplementedException();
-
-        internal override long GetRemoteAvailableBidirectionalStreamCount() => throw new NotImplementedException();
-
-        internal override ValueTask<QuicStreamProvider>
-            AcceptStreamAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
-
-        internal override SslApplicationProtocol NegotiatedApplicationProtocol { get; }
-
-        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
-
-        #endregion
-
 
         public override void Dispose()
         {
@@ -714,5 +636,76 @@ namespace System.Net.Quic.Implementations.Managed
 
             return 1;
         }
+
+        private sealed class Context
+        {
+            public Context(DateTime now)
+            {
+                Now = now;
+            }
+
+            internal DateTime Now { get; }
+        }
+
+        internal enum ProcessPacketResult
+        {
+            /// <summary>
+            ///     Packet processed without errors.
+            /// </summary>
+            Ok,
+
+            /// <summary>
+            ///     Packet is discarded. E.g. because it could not be decrypted (yet).
+            /// </summary>
+            DropPacket,
+
+            /// <summary>
+            ///     Packet is valid but violates the protocol, the connection should be closed.
+            /// </summary>
+            ConnectionClose
+        }
+
+        #region Public API
+
+        internal override bool Connected => HandshakeConfirmed;
+
+        internal override IPEndPoint LocalEndPoint => _clientOpts!.LocalEndPoint!;
+
+        internal override IPEndPoint RemoteEndPoint => _clientOpts!.RemoteEndPoint!;
+
+        internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        internal override QuicStreamProvider OpenUnidirectionalStream()
+        {
+            // TODO-RZ: use messages from string resources
+            if (GetRemoteAvailableUnidirectionalStreamCount() == 0)
+                throw new InvalidOperationException("Cannot open stream");
+
+            return OpenStream(true);
+        }
+
+        internal override QuicStreamProvider OpenBidirectionalStream()
+        {
+            // TODO-RZ: use messages from string resources
+            if (GetRemoteAvailableBidirectionalStreamCount() == 0)
+                throw new InvalidOperationException("Cannot open stream");
+
+            return OpenStream(false);
+        }
+
+        internal override long GetRemoteAvailableUnidirectionalStreamCount() => throw new NotImplementedException();
+
+        internal override long GetRemoteAvailableBidirectionalStreamCount() => throw new NotImplementedException();
+
+        internal override ValueTask<QuicStreamProvider>
+            AcceptStreamAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
+        internal override SslApplicationProtocol NegotiatedApplicationProtocol { get; }
+
+        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        #endregion
     }
 }

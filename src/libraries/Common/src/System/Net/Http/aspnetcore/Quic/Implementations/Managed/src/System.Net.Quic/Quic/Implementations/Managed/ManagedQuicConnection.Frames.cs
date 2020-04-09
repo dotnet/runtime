@@ -20,12 +20,12 @@ namespace System.Net.Quic.Implementations.Managed
             };
         }
 
-        private static bool IsFrameAllowed(FrameType frameType, PacketType packetType)
+        private bool IsFrameAllowed(FrameType frameType, PacketType packetType)
         {
             return packetType switch
             {
-                // 1-RTT packets may contain any frame
-                PacketType.OneRtt => true,
+                // 1-RTT packets may contain any frame, but HANDSHAKE_DONE can only be sent by server
+                PacketType.OneRtt => frameType != FrameType.HandshakeDone || !_isServer,
 
                 PacketType.Initial => frameType switch
                 {
@@ -125,7 +125,10 @@ namespace System.Net.Quic.Implementations.Managed
                         result = ProcessConnectionClose(reader);
                         break;
                     case FrameType.HandshakeDone:
-                        throw new NotImplementedException();
+                        Debug.Assert(!_isServer);
+                        _handshakeDoneReceived = true;
+                        reader.ReadFrameType();
+                        break;
                     default:
                         // unknown frame type
                         return CloseConnection(TransportErrorCode.FrameEncodingError, null, "Unknown frame type");
@@ -231,10 +234,18 @@ namespace System.Net.Quic.Implementations.Managed
             var epoch = GetEpoch(level);
 
             // TODO-RZ other frames
+
             if (outboundError != null)
             {
                 WriteConnectionCloseFrame(writer, outboundError!);
                 return;
+            }
+
+            if (writer.BytesAvailable > 0 && _isServer && !_handshakeDoneSent && packetType == PacketType.OneRtt && _tls.IsHandshakeComplete)
+            {
+                writer.WriteFrameType(FrameType.HandshakeDone);
+                // no data
+                _handshakeDoneSent = true;
             }
 
             WriteAckFrame(writer, epoch, context);

@@ -121,7 +121,8 @@ namespace System.Net.Quic.Tests
             // Initial[1]: ACK[0]
             // Handshake[0]: CRYPTO[FIN], ACK[0] ->
             //
-            //                                        <- Handshake[1]: ACK[0]
+            //                                           Handshake[1]: ACK[0]
+            //                                    <- OneRtt[0]: HandshakeDone
 
             // client:
             // Initial[0]: CRYPTO[CH] ->
@@ -185,14 +186,14 @@ namespace System.Net.Quic.Tests
                 Assert.Equal(0u, ackFrame.FirstAckRange);
                 Assert.Empty(ackFrame.AckRanges);
 
-                // after this, the TLS handshake should be complete
+                // after this, the TLS handshake should be complete, but not yet confirmed on the client
                 Assert.True(_server.Connected);
-                Assert.True(_client.Connected);
+                Assert.False(_client.Connected);
             }
 
-            // TODO-RZ HANDSHAKE_DONE frame?
             // server:
-            //                                        <- Handshake[1]: ACK[0]
+            //                                           Handshake[1]: ACK[0]
+            //                                    <- OneRtt[0]: HandshakeDone
             {
                 var flight = SendFlight(_server, _client);
                 var handshakePacket = Assert.IsType<HandShakePacket>(flight.Packets[0]);
@@ -202,6 +203,12 @@ namespace System.Net.Quic.Tests
                 Assert.Equal(0u, ackFrame.LargestAcknowledged);
                 Assert.Equal(0u, ackFrame.FirstAckRange);
                 Assert.Empty(ackFrame.AckRanges);
+
+                var oneRtt = Assert.IsType<OneRttPacket>(flight.Packets[1]);
+                Assert.Contains(oneRtt.Frames, f => f.FrameType == FrameType.HandshakeDone);
+
+                // handshake confirmed on the client
+                Assert.True(_client.Connected);
             }
         }
     }
