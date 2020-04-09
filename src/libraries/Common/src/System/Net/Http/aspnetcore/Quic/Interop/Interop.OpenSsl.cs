@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
 using System.Net.Security;
@@ -128,6 +129,46 @@ internal static partial class Interop
         {
             var cipher = SslGetCurrentCipher(ssl);
             return (TlsCipherSuite)SslCipherGetProtocolId(cipher);
+        }
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_ciphersuites")]
+        internal static extern int SslSetCiphersuites(IntPtr ssl, byte* list);
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_set_cipher_list")]
+        internal static extern int SslSetCipherList(IntPtr ssl, byte* list);
+
+        internal static int SslSetCipherList(IntPtr ssl, string list)
+        {
+            var ptr = Marshal.StringToHGlobalAnsi(list);
+            int result = SslSetCipherList(ssl, (byte*) ptr.ToPointer());
+            Marshal.FreeHGlobal(ptr);
+            return result;
+        }
+
+        internal static int SslSetCiphersuites(IntPtr ssl, string list)
+        {
+            var ptr = Marshal.StringToHGlobalAnsi(list);
+            int result = SslSetCiphersuites(ssl, (byte*) ptr.ToPointer());
+            Marshal.FreeHGlobal(ptr);
+            return result;
+        }
+
+        [DllImport(Libraries.Ssl, EntryPoint = "SSL_get_cipher_list")]
+        internal static extern IntPtr SslGetCipherList(IntPtr ssl, int priority);
+
+        internal static List<string> SslGetCipherList(IntPtr ssl)
+        {
+            var list = new List<string>();
+
+            int priority = 0;
+            IntPtr ptr;
+            while ((ptr = SslGetCipherList(ssl, priority)) != IntPtr.Zero)
+            {
+                list.Add(Marshal.PtrToStringAnsi(ptr));
+                priority++;
+            }
+
+            return list;
         }
 
         static OpenSslQuic()

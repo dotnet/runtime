@@ -101,6 +101,17 @@ namespace System.Net.Quic.Implementations.Managed
         internal unsafe void Init(string? cert, string? privateKey, bool isServer,
             TransportParameters localTransportParams)
         {
+            // explicitly set allowed suites
+            var ciphers = new []
+            {
+                TlsCipherSuite.TLS_AES_128_GCM_SHA256,
+                TlsCipherSuite.TLS_AES_128_CCM_SHA256,
+                TlsCipherSuite.TLS_AES_256_GCM_SHA384,
+                // not supported yet
+                // TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256
+            };
+            Interop.OpenSslQuic.SslSetCiphersuites(_ssl, string.Join(":", ciphers));
+
             if (cert != null)
                 Interop.OpenSslQuic.SslUseCertificateFile(_ssl, cert, SslFiletype.Pem);
             if (privateKey != null)
@@ -113,7 +124,7 @@ namespace System.Net.Quic.Implementations.Managed
             else
             {
                 Interop.OpenSslQuic.SslSetConnectState(_ssl);
-                // TODO-RZ get hostname
+                // TODO-RZ get hostname from somewhere
                 Interop.OpenSslQuic.SslSetTlsExHostName(_ssl, "localhost:2000");
             }
 
