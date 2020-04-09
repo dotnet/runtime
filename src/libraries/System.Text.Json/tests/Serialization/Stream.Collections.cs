@@ -46,7 +46,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 var optionsWithPreservedReferenceHandling = new JsonSerializerOptions(options)
                 {
-                    ReferenceHandling = ReferenceHandling.Preserve
+                    ReferenceHandler = ReferenceHandler.Preserve
                 };
 
                 object obj = GetPopulatedCollection<TElement>(type, thresholdSize);
@@ -97,7 +97,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 // TODO: https://github.com/dotnet/runtime/issues/35611.
                 // Can't control order of dictionary elements when serializing, so reference metadata might not match up.
-                if (!(DictionaryTypes<TElement>().Contains(type) && options.ReferenceHandling == ReferenceHandling.Preserve))
+                if(!(DictionaryTypes<TElement>().Contains(type) && options.ReferenceHandler == ReferenceHandler.Preserve))
                 {
                     JsonTestHelper.AssertJsonEqual(expectedJson, serialized);
                 }

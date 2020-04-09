@@ -27,18 +27,24 @@ namespace System.Text.Json
             {
                 metadataToWrite = MetadataPropertyName.NoMetadata;
             }
-            else if (state.ReferenceResolver.TryGetOrAddReferenceOnSerialize(currentValue, out string referenceId))
-            {
-                Debug.Assert(referenceId != null);
-                writer.WriteString(s_metadataRef, referenceId);
-                writer.WriteEndObject();
-                metadataToWrite = MetadataPropertyName.Ref;
-            }
             else
             {
-                Debug.Assert(referenceId != null);
-                writer.WriteString(s_metadataId, referenceId);
-                metadataToWrite = MetadataPropertyName.Id;
+
+                string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
+
+                if (alreadyExists)
+                {
+                    Debug.Assert(referenceId != null);
+                    writer.WriteString(s_metadataRef, referenceId);
+                    writer.WriteEndObject();
+                    metadataToWrite = MetadataPropertyName.Ref;
+                }
+                else
+                {
+                    Debug.Assert(referenceId != null);
+                    writer.WriteString(s_metadataId, referenceId);
+                    metadataToWrite = MetadataPropertyName.Id;
+                }
             }
 
             return metadataToWrite;
@@ -58,21 +64,26 @@ namespace System.Text.Json
                 writer.WriteStartArray();
                 metadataToWrite = MetadataPropertyName.NoMetadata;
             }
-            else if (state.ReferenceResolver.TryGetOrAddReferenceOnSerialize(currentValue, out string referenceId))
-            {
-                Debug.Assert(referenceId != null);
-                writer.WriteStartObject();
-                writer.WriteString(s_metadataRef, referenceId);
-                writer.WriteEndObject();
-                metadataToWrite = MetadataPropertyName.Ref;
-            }
             else
             {
-                Debug.Assert(referenceId != null);
-                writer.WriteStartObject();
-                writer.WriteString(s_metadataId, referenceId);
-                writer.WriteStartArray(s_metadataValues);
-                metadataToWrite = MetadataPropertyName.Id;
+                string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
+
+                if (alreadyExists)
+                {
+                    Debug.Assert(referenceId != null);
+                    writer.WriteStartObject();
+                    writer.WriteString(s_metadataRef, referenceId);
+                    writer.WriteEndObject();
+                    metadataToWrite = MetadataPropertyName.Ref;
+                }
+                else
+                {
+                    Debug.Assert(referenceId != null);
+                    writer.WriteStartObject();
+                    writer.WriteString(s_metadataId, referenceId);
+                    writer.WriteStartArray(s_metadataValues);
+                    metadataToWrite = MetadataPropertyName.Id;
+                }
             }
 
             return metadataToWrite;

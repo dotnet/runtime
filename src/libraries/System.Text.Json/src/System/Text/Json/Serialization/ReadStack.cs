@@ -47,7 +47,12 @@ namespace System.Text.Json
         public bool ReadAhead;
 
         // The bag of preservable references.
-        public DefaultReferenceResolver ReferenceResolver;
+        public ReferenceResolver ReferenceResolver;
+
+        /// <summary>
+        /// Try to read preserve references semantics.
+        /// </summary>
+        public bool ShouldReadPreservedReferences;
 
         /// <summary>
         /// Whether we need to read ahead in the inner read loop.
@@ -84,9 +89,10 @@ namespace System.Text.Json
             // The initial JsonPropertyInfo will be used to obtain the converter.
             Current.JsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
 
-            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            if (options.ReferenceHandler != null)
             {
-                ReferenceResolver = new DefaultReferenceResolver(writing: false);
+                ReferenceResolver = options.ReferenceHandler.CreateResolver();
+                ShouldReadPreservedReferences = true;
             }
 
             SupportContinuation = supportContinuation;

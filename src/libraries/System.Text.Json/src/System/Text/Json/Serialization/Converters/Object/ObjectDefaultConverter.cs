@@ -14,10 +14,9 @@ namespace System.Text.Json.Serialization.Converters
     {
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
-            bool shouldReadPreservedReferences = options.ReferenceHandling.ShouldReadPreservedReferences();
             object obj;
 
-            if (!state.SupportContinuation && !shouldReadPreservedReferences)
+            if (!state.SupportContinuation && !state.ShouldReadPreservedReferences)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
 
@@ -76,7 +75,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Handle the metadata properties.
                 if (state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
-                    if (shouldReadPreservedReferences)
+                    if (state.ShouldReadPreservedReferences)
                     {
                         if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                         {
@@ -106,10 +105,7 @@ namespace System.Text.Json.Serialization.Converters
                     obj = state.Current.JsonClassInfo.CreateObject!()!;
                     if (state.Current.MetadataId != null)
                     {
-                        if (!state.ReferenceResolver.AddReferenceOnDeserialize(state.Current.MetadataId, obj))
-                        {
-                            ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(state.Current.MetadataId, ref state);
-                        }
+                        state.ReferenceResolver.AddReference(state.Current.MetadataId, obj);
                     }
 
                     state.Current.ReturnValue = obj;
@@ -239,7 +235,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 writer.WriteStartObject();
 
-                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                if (state.ShouldWritePreservedReferences)
                 {
                     if (JsonSerializer.WriteReferenceForObject(this, objectValue, ref state, writer) == MetadataPropertyName.Ref)
                     {
@@ -294,7 +290,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     writer.WriteStartObject();
 
-                    if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                    if (state.ShouldWritePreservedReferences)
                     {
                         if (JsonSerializer.WriteReferenceForObject(this, objectValue, ref state, writer) == MetadataPropertyName.Ref)
                         {

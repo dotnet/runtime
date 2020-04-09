@@ -35,7 +35,12 @@ namespace System.Text.Json
         public bool IsContinuation => _continuationCount != 0;
 
         // The bag of preservable references.
-        public DefaultReferenceResolver ReferenceResolver;
+        public ReferenceResolver ReferenceResolver;
+
+        /// <summary>
+        /// Use preverse references semantics on serialization.
+        /// </summary>
+        public bool ShouldWritePreservedReferences;
 
         /// <summary>
         /// Internal flag to let us know that we need to read ahead in the inner read loop.
@@ -77,9 +82,10 @@ namespace System.Text.Json
                 Current.DeclaredJsonPropertyInfo = jsonClassInfo.PropertyInfoForClassInfo;
             }
 
-            if (options.ReferenceHandling.ShouldWritePreservedReferences())
+            if (options.ReferenceHandler != null)
             {
-                ReferenceResolver = new DefaultReferenceResolver(writing: true);
+                ReferenceResolver = options.ReferenceHandler.CreateResolver();
+                ShouldWritePreservedReferences = true;
             }
 
             SupportContinuation = supportContinuation;

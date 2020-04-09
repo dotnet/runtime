@@ -40,9 +40,7 @@ namespace System.Text.Json.Serialization.Converters
             ref ReadStack state,
             [MaybeNullWhen(false)] out TCollection value)
         {
-            bool shouldReadPreservedReferences = options.ReferenceHandling.ShouldReadPreservedReferences();
-
-            if (!state.SupportContinuation && !shouldReadPreservedReferences)
+            if (!state.SupportContinuation && !state.ShouldReadPreservedReferences)
             {
                 // Fast path that avoids maintaining state variables and dealing with preserved references.
 
@@ -97,7 +95,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         state.Current.ObjectState = StackFrameObjectState.PropertyValue;
                     }
-                    else if (shouldReadPreservedReferences)
+                    else if (state.ShouldReadPreservedReferences)
                     {
                         if (reader.TokenType != JsonTokenType.StartObject)
                         {
@@ -113,7 +111,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Handle the metadata properties.
-                if (shouldReadPreservedReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
+                if (state.ShouldReadPreservedReferences && state.Current.ObjectState < StackFrameObjectState.PropertyValue)
                 {
                     if (JsonSerializer.ResolveMetadata(this, ref reader, ref state))
                     {
@@ -137,10 +135,7 @@ namespace System.Text.Json.Serialization.Converters
                     if (state.Current.MetadataId != null)
                     {
                         value = (TCollection)state.Current.ReturnValue!;
-                        if (!state.ReferenceResolver.AddReferenceOnDeserialize(state.Current.MetadataId, value))
-                        {
-                            ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(state.Current.MetadataId, ref state);
-                        }
+                        state.ReferenceResolver.AddReference(state.Current.MetadataId, value);
                     }
 
                     state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PropertyInfoForClassInfo;
@@ -247,13 +242,11 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                bool shouldWritePreservedReferences = options.ReferenceHandling.ShouldWritePreservedReferences();
-
                 if (!state.Current.ProcessedStartToken)
                 {
                     state.Current.ProcessedStartToken = true;
 
-                    if (!shouldWritePreservedReferences)
+                    if (!state.ShouldWritePreservedReferences)
                     {
                         writer.WriteStartArray();
                     }

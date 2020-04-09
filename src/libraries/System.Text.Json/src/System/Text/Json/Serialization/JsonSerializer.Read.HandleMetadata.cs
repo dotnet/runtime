@@ -123,7 +123,7 @@ namespace System.Text.Json
                 string key = reader.GetString()!;
 
                 // todo: https://github.com/dotnet/runtime/issues/32354
-                state.Current.ReturnValue = state.ReferenceResolver.ResolveReferenceOnDeserialize(key);
+                state.Current.ReturnValue = state.ReferenceResolver.ResolveReference(key);
                 state.Current.ObjectState = StackFrameObjectState.ReadAheadRefEndObject;
             }
             else if (state.Current.ObjectState == StackFrameObjectState.ReadIdValue)
