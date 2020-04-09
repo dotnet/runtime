@@ -82,7 +82,7 @@ jobs:
     ${{ if ne(parameters.osGroup, 'Linux') }}:
       value: '$(Build.SourcesDirectory)/'
     # This job runs within Docker containers, so Build.SourcesDirectory is not accurate.
-    ${{ if eq(parameters.osGroup, 'Linux') }}:
+    ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
       value: '/root/runtime/'
 
   ###
