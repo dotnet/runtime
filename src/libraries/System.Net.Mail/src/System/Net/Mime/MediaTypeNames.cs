@@ -30,6 +30,7 @@ namespace System.Net.Mime
             public const string Gif = "image/gif";
             public const string Tiff = "image/tiff";
             public const string Jpeg = "image/jpeg";
+            public const string Png = "image/png";
         }
     }
 }
