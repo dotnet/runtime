@@ -1416,7 +1416,7 @@ protected:
     PER_HEAP
     void walk_survivors_relocation (void* profiling_context, record_surv_fn fn);
     PER_HEAP
-    void walk_survivors_for_loh (void* profiling_context, record_surv_fn fn);
+    void walk_survivors_for_uoh (void* profiling_context, record_surv_fn fn, int gen_number);
 
     PER_HEAP
     int generation_to_condemn (int n,
@@ -1922,7 +1922,7 @@ protected:
 #endif //MARK_ARRAY
 
     PER_HEAP
-    BOOL large_object_marked (uint8_t* o, BOOL clearp);
+    BOOL uoh_object_marked (uint8_t* o, BOOL clearp);
 
 #ifdef BACKGROUND_GC
     PER_HEAP

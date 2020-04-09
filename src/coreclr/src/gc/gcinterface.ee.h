@@ -302,10 +302,10 @@ public:
     virtual
     void DiagWalkSurvivors(void* gcContext, bool fCompacting) = 0;
 
-    // During a full GC after we discover what objects to survive on LOH,
+    // During a full GC after we discover what objects to survive on UOH,
     // gives the diagnostics code a chance to run.
     virtual
-    void DiagWalkLOHSurvivors(void* gcContext) = 0;
+    void DiagWalkUOHSurvivors(void* gcContext, int gen) = 0;
 
     // At the end of a background GC, gives the diagnostics code a chance to run.
     virtual
