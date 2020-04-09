@@ -195,7 +195,7 @@ jobs:
     - name: CommonMSBuildArgs
       value: >-
         /p:Configuration=$(_BuildConfig)
-        -os ${{ parameters.osGroup}}
+        /p:TargetOS=${{ parameters.osGroup }}
         /p:TargetArchitecture=${{ parameters.archType }}
         $(OfficialBuildArg)
 
