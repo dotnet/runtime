@@ -45,22 +45,12 @@ namespace System.Globalization
             char[]? toReturn = null;
             try
             {
-                int realLen = strInput.Length;
+                Span<char> buffer = strInput.Length <= 512
+                    ? stackalloc char[512]
+                    : (toReturn = ArrayPool<char>.Shared.Rent(strInput.Length));
 
                 for (int attempt = 0; attempt < 2; attempt++)
                 {
-                    if (toReturn != null)
-                    {
-                        // Clear toReturn first to ensure we don't return the same buffer twice
-                        char[] temp = toReturn;
-                        toReturn = null;
-                        ArrayPool<char>.Shared.Return(temp);
-                    }
-
-                    Span<char> buffer = realLen <= 512
-                        ? stackalloc char[512]
-                        : (toReturn = ArrayPool<char>.Shared.Rent(realLen));
-
                     realLen = Interop.Globalization.NormalizeString(normalizationForm, strInput, strInput.Length, buffer);
 
                     if (realLen == -1)
@@ -74,6 +64,19 @@ namespace System.Globalization
                     }
 
                     Debug.Assert(realLen > 512);
+
+                    if (attempt == 0)
+                    {
+                        if (toReturn != null)
+                        {
+                            // Clear toReturn first to ensure we don't return the same buffer twice
+                            char[] temp = toReturn;
+                            toReturn = null;
+                            ArrayPool<char>.Shared.Return(temp);
+                        }
+
+                        buffer = toReturn = ArrayPool<char>.Shared.Rent(realLen);
+                    }
                 }
 
                 throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
