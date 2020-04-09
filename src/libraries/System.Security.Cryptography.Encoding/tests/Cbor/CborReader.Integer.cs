@@ -56,16 +56,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
         }
 
-        public CborTag ReadTag()
-        {
-            CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Tag);
-            ulong tag = ReadUnsignedInteger(_buffer.Span, header, out int additionalBytes);
-            AdvanceBuffer(1 + additionalBytes);
-            // NB tag reads do not advance data item counters
-            _isTagContext = true;
-            return (CborTag)tag;
-        }
-
         // Returns the next CBOR negative integer encoding according to
         // https://tools.ietf.org/html/rfc7049#section-2.1
         public ulong ReadCborNegativeIntegerEncoding()

@@ -31,13 +31,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             AdvanceDataItemCounters();
         }
 
-        public void WriteTag(CborTag tag)
-        {
-            WriteUnsignedInteger(CborMajorType.Tag, (ulong)tag);
-            // NB tag writes do not advance data item counters
-            _isTagContext = true;
-        }
-
         // Unsigned integer encoding https://tools.ietf.org/html/rfc7049#section-2.1
         private void WriteUnsignedInteger(CborMajorType type, ulong value)
         {
