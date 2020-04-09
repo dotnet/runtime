@@ -6,6 +6,7 @@
       "/eng/common/internal-feed-operations.ps1",
       "/eng/common/internal-feed-operations.sh",
       "/src/libraries/Common/src/Interop/Windows/WinHttp/Interop.winhttp_types.cs",
+      "/src/libraries/Common/src/System/Security/Cryptography/EccSecurityTransforms.cs",
       "/src/libraries/Common/tests/System/Net/Configuration.Certificates.cs",
       "/src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.Authentication.cs",
       "/src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.cs",
