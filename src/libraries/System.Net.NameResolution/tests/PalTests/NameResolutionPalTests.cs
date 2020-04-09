@@ -49,6 +49,29 @@ namespace System.Net.NameResolution.PalTests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public void TryGetAddrInfo_EmptyHost(bool justAddresses)
+        {
+            SocketError error = NameResolutionPal.TryGetAddrInfo("", justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+            if (error == SocketError.HostNotFound && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+            {
+                // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
+                // machine configurations, which varies by distro and is often inconsistent.
+                return;
+            }
+
+            Assert.Equal(SocketError.Success, error);
+            if (!justAddresses)
+            {
+                Assert.NotNull(hostName);
+            }
+            Assert.NotNull(aliases);
+            Assert.NotNull(addresses);
+            Assert.True(addresses.Length > 0);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop("Uses external server")]
         public void TryGetAddrInfo_HostName(bool justAddresses)
         {
@@ -70,6 +93,7 @@ namespace System.Net.NameResolution.PalTests
             }
             Assert.NotNull(aliases);
             Assert.NotNull(addresses);
+            Assert.True(addresses.Length > 0);
         }
 
         [Theory]
@@ -239,6 +263,53 @@ namespace System.Net.NameResolution.PalTests
             else
             {
                 IPHostEntry hostEntry = await ((Task<IPHostEntry>)NameResolutionPal.GetAddrInfoAsync("localhost", justAddresses)).ConfigureAwait(false);
+
+                Assert.NotNull(hostEntry);
+                Assert.True(hostEntry.AddressList.Length > 0);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop("Uses external server")]
+        public async Task GetAddrInfoAsync_EmptyHost(bool justAddresses)
+        {
+            if (!NameResolutionPal.SupportsGetAddrInfoAsync)
+            {
+                return;
+            }
+
+            Task task = NameResolutionPal.GetAddrInfoAsync("", justAddresses);
+
+            try
+            {
+                await task.ConfigureAwait(false);
+            }
+            catch (SocketException ex)
+            {
+                SocketError error = ex.SocketErrorCode;
+
+                if (error == SocketError.HostNotFound && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+                {
+                    // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
+                    // machine configurations, which varies by distro and is often inconsistent.
+                    return;
+                }
+
+                throw;
+            }
+
+            if (justAddresses)
+            {
+                IPAddress[] addresses = ((Task<IPAddress[]>)task).Result;
+
+                Assert.NotNull(addresses);
+                Assert.True(addresses.Length > 0);
+            }
+            else
+            {
+                IPHostEntry hostEntry = ((Task<IPHostEntry>)task).Result;
 
                 Assert.NotNull(hostEntry);
                 Assert.True(hostEntry.AddressList.Length > 0);

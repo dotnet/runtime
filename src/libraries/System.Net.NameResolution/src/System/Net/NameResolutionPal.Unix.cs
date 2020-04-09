@@ -84,6 +84,12 @@ namespace System.Net
 
         public static unsafe Task GetAddrInfoAsync(string hostName, bool justAddresses)
         {
+            if (hostName == "")
+            {
+                // To match documented behavior on Windows, if an empty string is passed in, use the local host's name.
+                hostName = Dns.GetHostName();
+            }
+
             GetHostEntryForNameContext* context = GetHostEntryForNameContext.AllocateContext();
 
             GetHostEntryForNameState state;
