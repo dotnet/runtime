@@ -18,6 +18,7 @@
       "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/EC/ECKeyFileTests.cs",
       "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/EC/ECKeyFileTests.LimitedPrivate.cs",
       "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/RSA/RSAKeyFileTests.cs",
+      "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/RSA/RSAKeyPemTests.cs",
       "/src/libraries/System.Data.Common/tests/System/Data/Common/DbConnectionStringBuilderTest.cs",
       "/src/libraries/System.Diagnostics.Process/tests/ProcessStartInfoTests.cs",
       "/src/libraries/System.DirectoryServices.AccountManagement/src/System/DirectoryServices/AccountManagement/constants.cs",
