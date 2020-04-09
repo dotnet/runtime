@@ -107,7 +107,7 @@ namespace System.Net.Http.Headers
             return (ProductInfoHeaderValue)result;
         }
 
-        public static bool TryParse(string input, [NotNullWhen(true)] out ProductInfoHeaderValue? parsedValue)
+        public static bool TryParse([NotNullWhen(true)] string input, [NotNullWhen(true)] out ProductInfoHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
